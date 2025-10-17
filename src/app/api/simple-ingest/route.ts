@@ -26,23 +26,41 @@ export async function GET() {
       })
     }
 
-    // Test with just NFL for now
-    const response = await fetch(
-      `https://api.the-odds-api.com/v4/sports/americanfootball_nfl/odds?apiKey=${oddsApiKey}&regions=us&markets=h2h&oddsFormat=american&dateFormat=iso&commenceTimeFrom=${new Date().toISOString().split('T')[0]}T00:00:00Z&commenceTimeTo=${new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}T23:59:59Z&bookmakers=draftkings`
-    )
-
-    if (!response.ok) {
-      return NextResponse.json({
-        success: false,
-        error: `API call failed: ${response.status} ${response.statusText}`
-      })
-    }
-
-    const events = await response.json()
-    console.log(`Found ${events.length} NFL events`)
-
+    // Fetch all sports (NFL, NBA, MLB)
+    const sports = [
+      { key: 'americanfootball_nfl', name: 'NFL' },
+      { key: 'basketball_nba', name: 'NBA' },
+      { key: 'baseball_mlb', name: 'MLB' }
+    ]
+    
+    const today = new Date().toISOString().split('T')[0]
+    const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    
     let storedCount = 0
-    for (const event of events.slice(0, 3)) { // Just store first 3 for testing
+    let totalEvents = 0
+    
+    for (const sport of sports) {
+      console.log(`Fetching ${sport.name} odds...`)
+      
+      const response = await fetch(
+        `https://api.the-odds-api.com/v4/sports/${sport.key}/odds?apiKey=${oddsApiKey}&regions=us&markets=h2h&oddsFormat=american&dateFormat=iso&commenceTimeFrom=${today}T00:00:00Z&commenceTimeTo=${nextWeek}T23:59:59Z&bookmakers=draftkings,fanduel,caesars,betmgm`
+      )
+
+      if (!response.ok) {
+        console.error(`Failed to fetch ${sport.name} odds:`, response.statusText)
+        continue
+      }
+
+      const events = await response.json()
+      console.log(`Found ${events.length} ${sport.name} events`)
+      totalEvents += events.length
+      
+      if (events.length === 0) {
+        console.log(`No events found for ${sport.name}`)
+        continue
+      }
+
+      for (const event of events.slice(0, 5)) { // Store first 5 per sport
       console.log(`Storing: ${event.home_team} vs ${event.away_team}`)
       
       try {
@@ -71,8 +89,8 @@ export async function GET() {
           .from('games')
           .upsert({
             id: crypto.randomUUID(), // Generate proper UUID
-            sport: 'nfl',
-            league: 'NFL',
+            sport: mapSportKey(sport.key),
+            league: sport.name,
             home_team: { 
               name: event.home_team, 
               abbreviation: event.home_team.substring(0, 3).toUpperCase() 
@@ -100,11 +118,12 @@ export async function GET() {
         console.error(`❌ Exception storing ${event.id}:`, err)
       }
     }
+    }
     
     return NextResponse.json({
       success: true,
-      message: `Stored ${storedCount} games successfully`,
-      totalEvents: events.length,
+      message: `Stored ${storedCount} games successfully across NFL, NBA, MLB`,
+      totalEvents,
       storedCount
     })
 
