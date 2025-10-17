@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { TrendingUp, Activity, Lightbulb, AlertTriangle, Zap, BarChart, Rocket, MessageCircle, CheckCircle, XCircle, PlayCircle, Clock } from 'lucide-react'
 
@@ -255,6 +256,39 @@ export function RealDashboard() {
             </tbody>
           </table>
         </div>
+      </section>
+
+      {/* Quick Actions */}
+      <section className="mt-8">
+        <Card className="glass-effect neon-glow-purple">
+          <CardHeader>
+            <CardTitle className="text-gradient">Quick Actions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-4">
+              <Button variant="neon" className="h-20 flex-col space-y-2">
+                <Rocket className="h-6 w-6" />
+                <div>Create Pick</div>
+              </Button>
+              <Button variant="outline" className="h-20 flex-col space-y-2" asChild>
+                <a href="/odds">
+                  <BarChart className="h-6 w-6" />
+                  <div>Live Odds</div>
+                </a>
+              </Button>
+              <Button variant="outline" className="h-20 flex-col space-y-2" asChild>
+                <a href="/deploy">
+                  <Zap className="h-6 w-6" />
+                  <div>Deploy Functions</div>
+                </a>
+              </Button>
+              <Button variant="outline" className="h-20 flex-col space-y-2">
+                <MessageCircle className="h-6 w-6" />
+                <div>Notifications</div>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </section>
     </main>
   )
