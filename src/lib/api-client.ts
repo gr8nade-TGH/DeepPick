@@ -1,9 +1,6 @@
-import { createClient } from '@/lib/supabase/client'
 import { ApiResponse, PaginatedResponse } from '@/types'
 
 class ApiClient {
-  private supabase = createClient()
-
   // Generic API methods
   private async request<T>(
     endpoint: string,
@@ -37,8 +34,8 @@ class ApiClient {
 
   // User methods
   async getCurrentUser() {
-    const { data: { user } } = await this.supabase.auth.getUser()
-    return user
+    // TODO: Implement user authentication
+    return null
   }
 
   async getUserProfile(userId: string) {
@@ -201,53 +198,31 @@ class ApiClient {
     return this.request(`/analytics/trends?${params.toString()}`)
   }
 
-  // Real-time subscriptions
+  // TODO: Implement real-time subscriptions when Supabase is added back
   subscribeToPicks(callback: (payload: any) => void) {
-    return this.supabase
-      .channel('picks')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'picks' },
-        callback
-      )
-      .subscribe()
+    console.log('Real-time subscriptions not implemented yet')
+    return { unsubscribe: () => {} }
   }
 
   subscribeToGames(callback: (payload: any) => void) {
-    return this.supabase
-      .channel('games')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'games' },
-        callback
-      )
-      .subscribe()
+    console.log('Real-time subscriptions not implemented yet')
+    return { unsubscribe: () => {} }
   }
 
   subscribeToNotifications(callback: (payload: any) => void) {
-    return this.supabase
-      .channel('notifications')
-      .on('postgres_changes', 
-        { event: 'INSERT', schema: 'public', table: 'notifications' },
-        callback
-      )
-      .subscribe()
+    console.log('Real-time subscriptions not implemented yet')
+    return { unsubscribe: () => {} }
   }
 
-  // Utility methods
+  // TODO: Implement file upload when Supabase is added back
   async uploadFile(file: File, bucket: string) {
-    const { data, error } = await this.supabase.storage
-      .from(bucket)
-      .upload(`${Date.now()}-${file.name}`, file)
-
-    if (error) throw error
-    return data
+    console.log('File upload not implemented yet')
+    throw new Error('File upload not implemented yet')
   }
 
   async getFileUrl(bucket: string, path: string) {
-    const { data } = this.supabase.storage
-      .from(bucket)
-      .getPublicUrl(path)
-
-    return data.publicUrl
+    console.log('File URL not implemented yet')
+    return ''
   }
 }
 
