@@ -4,7 +4,7 @@ import { join } from 'path'
 
 export async function GET() {
   try {
-    const functionPath = join(process.cwd(), 'supabase/functions/ingest-odds/index.ts')
+    const functionPath = join(process.cwd(), 'edge-functions/ingest-odds/index.ts')
     const code = readFileSync(functionPath, 'utf-8')
     
     return new NextResponse(code, {
