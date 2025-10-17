@@ -46,6 +46,27 @@ export async function GET() {
       console.log(`Storing: ${event.home_team} vs ${event.away_team}`)
       
       try {
+        // Extract odds from bookmakers
+        const sportsbooks: any = {}
+        
+        for (const bookmaker of event.bookmakers || []) {
+          const bookmakerOdds: any = {
+            last_update: bookmaker.last_update
+          }
+
+          for (const market of bookmaker.markets || []) {
+            if (market.key === 'h2h') {
+              const homeOutcome = market.outcomes.find((o: any) => o.name === event.home_team)
+              const awayOutcome = market.outcomes.find((o: any) => o.name === event.away_team)
+              if (homeOutcome && awayOutcome) {
+                bookmakerOdds.moneyline = { home: homeOutcome.price, away: awayOutcome.price }
+              }
+            }
+          }
+
+          sportsbooks[bookmaker.key] = bookmakerOdds
+        }
+        
         const { error } = await supabase
           .from('games')
           .upsert({
@@ -63,7 +84,7 @@ export async function GET() {
             game_date: event.commence_time.split('T')[0],
             game_time: event.commence_time.split('T')[1].substring(0, 8),
             status: 'scheduled',
-            odds: { test: 'data' },
+            odds: sportsbooks,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           }, { onConflict: 'id' })
