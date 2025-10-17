@@ -1,9 +1,11 @@
 'use client'
 
-import { createClient } from '@/lib/supabase/client'
-import { User } from '@supabase/supabase-js'
-import { useRouter } from 'next/navigation'
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useState } from 'react'
+
+interface User {
+  id: string
+  email: string
+}
 
 interface AuthContextType {
   user: User | null
@@ -18,67 +20,29 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
-  const router = useRouter()
-  const supabase = createClient()
-
-  useEffect(() => {
-    // Get initial session
-    const getInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      setUser(session?.user ?? null)
-      setLoading(false)
-    }
-
-    getInitialSession()
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setUser(session?.user ?? null)
-        setLoading(false)
-
-        if (event === 'SIGNED_IN') {
-          router.push('/dashboard')
-        } else if (event === 'SIGNED_OUT') {
-          router.push('/login')
-        }
-      }
-    )
-
-    return () => subscription.unsubscribe()
-  }, [router, supabase.auth])
+  const [loading, setLoading] = useState(false)
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-    return { error }
+    // TODO: Implement Supabase auth
+    console.log('Sign in:', email, password)
+    return { error: null }
   }
 
   const signUp = async (email: string, password: string, username?: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          username: username || email.split('@')[0],
-        },
-      },
-    })
-    return { error }
+    // TODO: Implement Supabase auth
+    console.log('Sign up:', email, password, username)
+    return { error: null }
   }
 
   const signOut = async () => {
-    await supabase.auth.signOut()
+    // TODO: Implement Supabase auth
+    console.log('Sign out')
   }
 
   const resetPassword = async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    })
-    return { error }
+    // TODO: Implement Supabase auth
+    console.log('Reset password:', email)
+    return { error: null }
   }
 
   const value = {

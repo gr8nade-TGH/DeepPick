@@ -262,10 +262,7 @@ export interface AppError {
 // Environment types
 export interface Environment {
   NODE_ENV: 'development' | 'production' | 'test'
-  NEXT_PUBLIC_SUPABASE_URL: string
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: string
-  SUPABASE_SERVICE_ROLE_KEY: string
-  SPORTS_DATA_API_KEY: string
-  REDIS_URL: string
+  SPORTS_DATA_API_KEY?: string
+  REDIS_URL?: string
   SENTRY_DSN?: string
 }

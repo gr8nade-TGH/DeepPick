@@ -2,9 +2,6 @@ import { z } from 'zod'
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
   SPORTS_DATA_API_KEY: z.string().min(1).optional(),
   THE_ODDS_API_KEY: z.string().min(1).optional(),
   ESPN_API_KEY: z.string().min(1).optional(),
