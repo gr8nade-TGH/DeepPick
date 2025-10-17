@@ -7,7 +7,7 @@ export async function GET() {
     
     // Try to query the tables we expect to exist
     const expectedTables = ['users', 'teams', 'games', 'picks', 'pick_results', 'performance_metrics', 'notifications']
-    const tableStatus = {}
+    const tableStatus: Record<string, { exists: boolean; error: string | null; count: number }> = {}
     
     for (const tableName of expectedTables) {
       try {
@@ -31,7 +31,7 @@ export async function GET() {
       } catch (err) {
         tableStatus[tableName] = { 
           exists: false, 
-          error: err.message, 
+          error: err instanceof Error ? err.message : 'Unknown error', 
           count: 0 
         }
       }
