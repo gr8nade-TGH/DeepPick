@@ -16,6 +16,8 @@ export async function POST(request: NextRequest) {
     const allOddsData: any[] = []
     const today = new Date().toISOString().split('T')[0]
     const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    
+    console.log(`🔍 Fetching odds from ${today} to ${nextWeek}`)
 
     for (const sport of sports) {
       try {
@@ -73,6 +75,8 @@ export async function POST(request: NextRequest) {
           }
 
           // Store in Supabase
+          console.log(`💾 Storing game: ${event.home_team} vs ${event.away_team} on ${event.commence_time.split('T')[0]}`)
+          
           const { error: gameError } = await supabase
             .from('games')
             .upsert({
@@ -96,8 +100,9 @@ export async function POST(request: NextRequest) {
             }, { onConflict: 'id' })
 
           if (gameError) {
-            console.error(`Error upserting game ${event.id}:`, gameError.message)
+            console.error(`❌ Error upserting game ${event.id}:`, gameError.message)
           } else {
+            console.log(`✅ Successfully stored game ${event.id}`)
             allOddsData.push(event.id)
           }
         }
