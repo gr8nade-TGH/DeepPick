@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
       updated_at: game.updated_at,
       // Add computed fields
       time_until_game: getTimeUntilGame(game.game_date, game.game_time),
-      odds_summary: getOddsSummary(game.odds)
+      sportsbooks: game.odds ? Object.keys(game.odds) : []
     })) || []
 
     return NextResponse.json({
@@ -87,21 +87,3 @@ function getTimeUntilGame(gameDate: string, gameTime: string): string {
   return 'Starting soon'
 }
 
-function getOddsSummary(odds: any): string {
-  const parts = []
-  
-  if (odds.moneyline) {
-    parts.push(`ML: ${odds.moneyline.home}/${odds.moneyline.away}`)
-  }
-  if (odds.spread) {
-    parts.push(`Spread: ${odds.spread.line}`)
-  }
-  if (odds.total) {
-    parts.push(`Total: ${odds.total.line}`)
-  }
-  if (odds.player_props && odds.player_props.length > 0) {
-    parts.push(`${odds.player_props.length} props`)
-  }
-  
-  return parts.join(' • ')
-}

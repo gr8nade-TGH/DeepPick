@@ -28,11 +28,18 @@ interface Game {
   game_time: string
   status: string
   venue?: string
-  odds: any
+  odds: {
+    [bookmaker: string]: {
+      moneyline?: { home: number; away: number }
+      spread?: { home: number; away: number; line: number }
+      total?: { over: number; under: number; line: number }
+      last_update: string
+    }
+  }
   created_at: string
   updated_at: string
   time_until_game: string
-  odds_summary: string
+  sportsbooks: string[]
 }
 
 const SPORTS = [
@@ -256,156 +263,143 @@ export default function OddsPage() {
           </CardContent>
         </Card>
 
-        {/* Games List */}
-        <div className="space-y-4">
-          {loading ? (
-            <Card className="glass-effect">
-              <CardContent className="flex items-center justify-center py-12">
+        {/* Games Table */}
+        <Card className="glass-effect">
+          <CardContent className="p-0">
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
                 <RefreshCw className="w-8 h-8 animate-spin text-neon-blue" />
                 <span className="ml-2 text-lg">Loading odds...</span>
-              </CardContent>
-            </Card>
-          ) : error ? (
-            <Card className="glass-effect">
-              <CardContent className="flex items-center justify-center py-12 text-red-400">
+              </div>
+            ) : error ? (
+              <div className="flex items-center justify-center py-12 text-red-400">
                 <div className="text-center">
                   <Zap className="w-8 h-8 mx-auto mb-2" />
                   <p className="text-lg">Error loading odds</p>
                   <p className="text-sm text-muted-foreground">{error}</p>
                 </div>
-              </CardContent>
-            </Card>
-          ) : games.length === 0 ? (
-            <Card className="glass-effect">
-              <CardContent className="flex items-center justify-center py-12 text-muted-foreground">
+              </div>
+            ) : games.length === 0 ? (
+              <div className="flex items-center justify-center py-12 text-muted-foreground">
                 <div className="text-center">
                   <BarChart3 className="w-8 h-8 mx-auto mb-2" />
                   <p className="text-lg">No games found</p>
                   <p className="text-sm">Try refreshing or changing the sport filter</p>
                 </div>
-              </CardContent>
-            </Card>
-          ) : (
-            games.map((game) => {
-              const SportIcon = getSportIcon(game.sport)
-              return (
-                <Card key={game.id} className="glass-effect hover:neon-glow transition-all duration-300">
-                  <CardContent className="p-6">
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                      {/* Game Info */}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <SportIcon className="w-5 h-5 text-neon-blue" />
-                          <Badge variant="outline" className="text-xs">
-                            {game.league}
-                          </Badge>
-                          <Badge className={getStatusColor(game.status)}>
-                            {game.status}
-                          </Badge>
-                        </div>
-                        
-                        <div className="flex items-center gap-4 mb-2">
-                          <div className="text-lg font-semibold">
-                            {game.away_team.name} @ {game.home_team.name}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {game.away_team.abbreviation} @ {game.home_team.abbreviation}
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
-                            {new Date(game.game_date).toLocaleDateString()}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Clock className="w-4 h-4" />
-                            {game.time_until_game}
-                          </div>
-                          {game.venue && (
-                            <div className="flex items-center gap-1">
-                              <MapPin className="w-4 h-4" />
-                              {game.venue}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Odds Info */}
-                      <div className="lg:w-96">
-                        <div className="text-sm text-muted-foreground mb-2">
-                          {game.odds_summary}
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-4">
-                          {game.odds.moneyline && (
-                            <div className="bg-dark-300 p-3 rounded-lg">
-                              <div className="text-xs text-muted-foreground mb-1">Moneyline</div>
-                              <div className="text-sm">
-                                <div className="flex justify-between">
-                                  <span>{game.away_team.abbreviation}</span>
-                                  <span className="text-neon-green">{formatOdds(game.odds.moneyline.away)}</span>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-white/10">
+                      <th className="text-left p-4 font-semibold text-neon-blue">Matchup</th>
+                      <th className="text-left p-4 font-semibold text-neon-blue">Time</th>
+                      {games[0]?.sportsbooks?.map((bookmaker) => (
+                        <th key={bookmaker} className="text-center p-4 font-semibold text-neon-green">
+                          {bookmaker.charAt(0).toUpperCase() + bookmaker.slice(1)}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {games.map((game) => {
+                      const SportIcon = getSportIcon(game.sport)
+                      return (
+                        <tr key={game.id} className="border-b border-white/5 hover:bg-white/5">
+                          <td className="p-4">
+                            <div className="flex items-center gap-3">
+                              <SportIcon className="w-5 h-5 text-neon-blue" />
+                              <div>
+                                <div className="font-semibold">
+                                  {game.away_team.name} @ {game.home_team.name}
                                 </div>
-                                <div className="flex justify-between">
-                                  <span>{game.home_team.abbreviation}</span>
-                                  <span className="text-neon-green">{formatOdds(game.odds.moneyline.home)}</span>
+                                <div className="text-sm text-muted-foreground">
+                                  {game.league} • {game.away_team.abbreviation} @ {game.home_team.abbreviation}
+                                </div>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <Badge className={getStatusColor(game.status)}>
+                                    {game.status}
+                                  </Badge>
+                                  {game.venue && (
+                                    <span className="text-xs text-muted-foreground">
+                                      <MapPin className="w-3 h-3 inline mr-1" />
+                                      {game.venue}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             </div>
-                          )}
-                          
-                          {game.odds.spread && (
-                            <div className="bg-dark-300 p-3 rounded-lg">
-                              <div className="text-xs text-muted-foreground mb-1">Spread</div>
-                              <div className="text-sm">
-                                <div className="flex justify-between">
-                                  <span>{game.away_team.abbreviation}</span>
-                                  <span className="text-neon-blue">{game.odds.spread.line > 0 ? '+' : ''}{game.odds.spread.line}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span>{game.home_team.abbreviation}</span>
-                                  <span className="text-neon-blue">{game.odds.spread.line > 0 ? '-' : '+'}{Math.abs(game.odds.spread.line)}</span>
-                                </div>
+                          </td>
+                          <td className="p-4">
+                            <div className="text-sm">
+                              <div className="flex items-center gap-1">
+                                <Calendar className="w-4 h-4" />
+                                {new Date(game.game_date).toLocaleDateString()}
+                              </div>
+                              <div className="flex items-center gap-1 mt-1">
+                                <Clock className="w-4 h-4" />
+                                {game.time_until_game}
                               </div>
                             </div>
-                          )}
-                          
-                          {game.odds.total && (
-                            <div className="bg-dark-300 p-3 rounded-lg">
-                              <div className="text-xs text-muted-foreground mb-1">Total</div>
-                              <div className="text-sm">
-                                <div className="flex justify-between">
-                                  <span>Over</span>
-                                  <span className="text-neon-purple">{formatOdds(game.odds.total.over)}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span>Under</span>
-                                  <span className="text-neon-purple">{formatOdds(game.odds.total.under)}</span>
-                                </div>
-                                <div className="text-center text-xs text-muted-foreground mt-1">
-                                  {game.odds.total.line}
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                          
-                          {game.odds.player_props && game.odds.player_props.length > 0 && (
-                            <div className="bg-dark-300 p-3 rounded-lg">
-                              <div className="text-xs text-muted-foreground mb-1">Player Props</div>
-                              <div className="text-sm text-center">
-                                <span className="text-neon-yellow">{game.odds.player_props.length} available</span>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )
-            })
-          )}
-        </div>
+                          </td>
+                          {game.sportsbooks?.map((bookmaker) => {
+                            const bookmakerOdds = game.odds[bookmaker]
+                            return (
+                              <td key={bookmaker} className="p-4 text-center">
+                                {bookmakerOdds ? (
+                                  <div className="space-y-2">
+                                    {bookmakerOdds.moneyline && (
+                                      <div className="bg-dark-300 p-2 rounded text-xs">
+                                        <div className="text-muted-foreground mb-1">ML</div>
+                                        <div className="text-neon-green">
+                                          {game.away_team.abbreviation} {formatOdds(bookmakerOdds.moneyline.away)}
+                                        </div>
+                                        <div className="text-neon-green">
+                                          {game.home_team.abbreviation} {formatOdds(bookmakerOdds.moneyline.home)}
+                                        </div>
+                                      </div>
+                                    )}
+                                    {bookmakerOdds.spread && (
+                                      <div className="bg-dark-300 p-2 rounded text-xs">
+                                        <div className="text-muted-foreground mb-1">Spread</div>
+                                        <div className="text-neon-blue">
+                                          {game.away_team.abbreviation} {bookmakerOdds.spread.line > 0 ? '+' : ''}{bookmakerOdds.spread.line}
+                                        </div>
+                                        <div className="text-neon-blue">
+                                          {game.home_team.abbreviation} {bookmakerOdds.spread.line > 0 ? '-' : '+'}{Math.abs(bookmakerOdds.spread.line)}
+                                        </div>
+                                      </div>
+                                    )}
+                                    {bookmakerOdds.total && (
+                                      <div className="bg-dark-300 p-2 rounded text-xs">
+                                        <div className="text-muted-foreground mb-1">Total</div>
+                                        <div className="text-neon-purple">
+                                          O {formatOdds(bookmakerOdds.total.over)}
+                                        </div>
+                                        <div className="text-neon-purple">
+                                          U {formatOdds(bookmakerOdds.total.under)}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground mt-1">
+                                          {bookmakerOdds.total.line}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="text-muted-foreground text-sm">No odds</div>
+                                )}
+                              </td>
+                            )
+                          })}
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   )
