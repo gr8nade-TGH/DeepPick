@@ -38,7 +38,7 @@ export async function GET() {
           .from('games')
           .upsert({
             id: crypto.randomUUID(), // Generate proper UUID
-            sport: 'americanfootball_nfl',
+            sport: 'nfl',
             league: 'NFL',
             home_team: { 
               name: event.home_team, 

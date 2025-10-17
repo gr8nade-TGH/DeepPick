@@ -22,7 +22,7 @@ export async function GET() {
     // Test 2: Try to insert a simple test record
     const testGame = {
       id: crypto.randomUUID(),
-      sport: 'test',
+      sport: 'nfl',
       league: 'Test League',
       home_team: { name: 'Test Home', abbreviation: 'TH' },
       away_team: { name: 'Test Away', abbreviation: 'TA' },
