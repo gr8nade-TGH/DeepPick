@@ -33,6 +33,11 @@ export async function POST(request: NextRequest) {
         const events = await response.json()
         console.log(`Fetched ${events.length} ${sport} events`)
         
+        if (events.length === 0) {
+          console.log(`No events found for ${sport}`)
+          continue
+        }
+        
         // Convert and store each event
         for (const event of events) {
           const sportsbooks: any = {}
