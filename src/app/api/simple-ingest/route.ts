@@ -37,7 +37,7 @@ export async function GET() {
         const { error } = await supabase
           .from('games')
           .upsert({
-            id: event.id,
+            id: crypto.randomUUID(), // Generate proper UUID
             sport: 'americanfootball_nfl',
             league: 'NFL',
             home_team: { 

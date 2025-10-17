@@ -4,7 +4,8 @@ import { supabase } from '@/lib/supabase/server'
 // GET /api/picks - Get all picks
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url)
+    const url = new URL(request.url)
+    const searchParams = url.searchParams
     const limit = parseInt(searchParams.get('limit') || '50')
     const offset = parseInt(searchParams.get('offset') || '0')
     const status = searchParams.get('status')
