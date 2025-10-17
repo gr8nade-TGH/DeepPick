@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/server'
+import { TheOddsAPIService } from '@/lib/api/the-odds-api'
 
 export interface OddsData {
   game_id: string
@@ -74,13 +75,15 @@ export class OddsIngestionService {
 
   private async ingestOddsData(): Promise<void> {
     try {
-      console.log('📊 Ingesting fresh odds data...')
+      console.log('📊 Ingesting fresh odds data from The Odds API...')
       
-      // Fetch from multiple sources
+      const oddsAPI = TheOddsAPIService.getInstance()
+      
+      // Fetch from multiple sports
       const [nflData, nbaData, mlbData] = await Promise.allSettled([
-        this.fetchNFLData(),
-        this.fetchNBAData(),
-        this.fetchMLBData()
+        this.fetchNFLData(oddsAPI),
+        this.fetchNBAData(oddsAPI),
+        this.fetchMLBData(oddsAPI)
       ])
 
       // Process and store data
@@ -102,41 +105,49 @@ export class OddsIngestionService {
     }
   }
 
-  private async fetchNFLData(): Promise<OddsData[]> {
-    // TODO: Integrate with NFL odds API
-    // For now, return mock data
-    return [
-      {
-        game_id: 'nfl-2025-01-19-kc-den',
-        sport: 'nfl',
-        league: 'NFL',
-        home_team: 'Kansas City Chiefs',
-        away_team: 'Denver Broncos',
-        game_date: '2025-01-19',
-        game_time: '20:00:00',
-        odds: {
-          moneyline: { home: -150, away: 130 },
-          spread: { home: -3.5, away: 3.5, line: 3.5 },
-          total: { over: -110, under: -110, line: 45.5 },
-          player_props: [
-            { player_name: 'Patrick Mahomes', prop_type: 'passing_yards', line: 275.5, over_odds: -110, under_odds: -110 },
-            { player_name: 'Travis Kelce', prop_type: 'receiving_yards', line: 75.5, over_odds: -110, under_odds: -110 }
-          ]
-        },
-        last_updated: new Date().toISOString(),
-        source: 'the_odds_api'
-      }
-    ]
+  private async fetchNFLData(oddsAPI: TheOddsAPIService): Promise<OddsData[]> {
+    try {
+      const events = await oddsAPI.getOdds(
+        'americanfootball_nfl',
+        ['us'],
+        ['h2h', 'spreads', 'totals', 'player_pass_tds', 'player_rush_yards', 'player_receiving_yards']
+      )
+      
+      return events.map(event => oddsAPI.convertToInternalFormat(event))
+    } catch (error) {
+      console.error('Error fetching NFL data:', error)
+      return []
+    }
   }
 
-  private async fetchNBAData(): Promise<OddsData[]> {
-    // TODO: Integrate with NBA odds API
-    return []
+  private async fetchNBAData(oddsAPI: TheOddsAPIService): Promise<OddsData[]> {
+    try {
+      const events = await oddsAPI.getOdds(
+        'basketball_nba',
+        ['us'],
+        ['h2h', 'spreads', 'totals', 'player_points', 'player_assists', 'player_rebounds']
+      )
+      
+      return events.map(event => oddsAPI.convertToInternalFormat(event))
+    } catch (error) {
+      console.error('Error fetching NBA data:', error)
+      return []
+    }
   }
 
-  private async fetchMLBData(): Promise<OddsData[]> {
-    // TODO: Integrate with MLB odds API
-    return []
+  private async fetchMLBData(oddsAPI: TheOddsAPIService): Promise<OddsData[]> {
+    try {
+      const events = await oddsAPI.getOdds(
+        'baseball_mlb',
+        ['us'],
+        ['h2h', 'spreads', 'totals']
+      )
+      
+      return events.map(event => oddsAPI.convertToInternalFormat(event))
+    } catch (error) {
+      console.error('Error fetching MLB data:', error)
+      return []
+    }
   }
 
   private async storeOddsData(oddsData: OddsData[]): Promise<void> {
