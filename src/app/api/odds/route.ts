@@ -8,9 +8,14 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50')
     const offset = parseInt(searchParams.get('offset') || '0')
 
+    // Only get games that haven't started yet
+    const now = new Date().toISOString()
+    
     let query = supabase
       .from('games')
       .select('*')
+      .gte('game_date', new Date().toISOString().split('T')[0]) // Only today and future dates
+      .in('status', ['scheduled', 'live']) // Only scheduled or live games
       .order('game_date', { ascending: true })
       .range(offset, offset + limit - 1)
 
@@ -78,7 +83,8 @@ function getTimeUntilGame(gameDate: string, gameTime: string): string {
   
   if (days > 0) return `${days}d ${hours}h`
   if (hours > 0) return `${hours}h ${minutes}m`
-  return `${minutes}m`
+  if (minutes > 0) return `${minutes}m`
+  return 'Starting soon'
 }
 
 function getOddsSummary(odds: any): string {

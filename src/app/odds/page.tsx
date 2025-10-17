@@ -146,6 +146,29 @@ export default function OddsPage() {
               <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Refresh Now
             </Button>
+            
+            <Button
+              onClick={async () => {
+                try {
+                  const response = await fetch('/api/ingest-odds', { method: 'POST' })
+                  const result = await response.json()
+                  if (result.success) {
+                    alert('Odds ingestion triggered successfully!')
+                    fetchOdds() // Refresh the display
+                  } else {
+                    alert('Failed to trigger odds ingestion: ' + result.error)
+                  }
+                } catch (error) {
+                  alert('Error triggering odds ingestion: ' + error)
+                }
+              }}
+              disabled={loading}
+              variant="outline"
+              className="border-neon-green text-neon-green hover:bg-neon-green/20"
+            >
+              <Zap className="w-4 h-4 mr-2" />
+              Ingest Fresh Odds
+            </Button>
           </div>
         </div>
 

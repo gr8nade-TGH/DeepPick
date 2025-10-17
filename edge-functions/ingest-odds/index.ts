@@ -71,14 +71,16 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Fetch odds from The Odds API
+    // Fetch odds from The Odds API - only upcoming games
     const sports = ['americanfootball_nfl', 'basketball_nba', 'baseball_mlb']
     const allOddsData: InternalOddsData[] = []
+    const today = new Date().toISOString().split('T')[0]
 
     for (const sport of sports) {
       try {
+        // Only fetch games for today and the next 7 days
         const response = await fetch(
-          `https://api.the-odds-api.com/v4/sports/${sport}/odds?apiKey=${oddsApiKey}&regions=us&markets=h2h,spreads,totals&oddsFormat=american&dateFormat=iso`
+          `https://api.the-odds-api.com/v4/sports/${sport}/odds?apiKey=${oddsApiKey}&regions=us&markets=h2h,spreads,totals&oddsFormat=american&dateFormat=iso&commenceTimeFrom=${today}T00:00:00Z&commenceTimeTo=${new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}T23:59:59Z`
         )
 
         if (!response.ok) {
