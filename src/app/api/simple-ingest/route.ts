@@ -1,6 +1,18 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase/server'
 
+// Map API sport keys to database enum values
+function mapSportKey(apiSportKey: string): string {
+  const sportMap: Record<string, string> = {
+    'americanfootball_nfl': 'nfl',
+    'basketball_nba': 'nba',
+    'baseball_mlb': 'mlb',
+    'icehockey_nhl': 'nhl',
+    'soccer_epl': 'soccer',
+  }
+  return sportMap[apiSportKey] || apiSportKey
+}
+
 export async function GET() {
   try {
     console.log('🚀 Simple odds ingestion starting...')

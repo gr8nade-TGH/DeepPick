@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase/server'
 
+// Map API sport keys to database enum values
+function mapSportKey(apiSportKey: string): string {
+  const sportMap: Record<string, string> = {
+    'americanfootball_nfl': 'nfl',
+    'basketball_nba': 'nba',
+    'baseball_mlb': 'mlb',
+    'icehockey_nhl': 'nhl',
+    'soccer_epl': 'soccer',
+  }
+  return sportMap[apiSportKey] || apiSportKey
+}
+
 export async function POST(request: NextRequest) {
   try {
     console.log('🚀 Starting odds ingestion directly...')
@@ -80,8 +92,8 @@ export async function POST(request: NextRequest) {
           const { error: gameError } = await supabase
             .from('games')
             .upsert({
-              id: event.id,
-              sport: event.sport_key,
+              id: crypto.randomUUID(),
+              sport: mapSportKey(event.sport_key),
               league: event.sport_title,
               home_team: { 
                 name: event.home_team, 
