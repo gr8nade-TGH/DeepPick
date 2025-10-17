@@ -33,33 +33,38 @@ export async function GET() {
     for (const event of events.slice(0, 3)) { // Just store first 3 for testing
       console.log(`Storing: ${event.home_team} vs ${event.away_team}`)
       
-      const { error } = await supabase
-        .from('games')
-        .upsert({
-          id: event.id,
-          sport: 'americanfootball_nfl',
-          league: 'NFL',
-          home_team: { 
-            name: event.home_team, 
-            abbreviation: event.home_team.substring(0, 3).toUpperCase() 
-          },
-          away_team: { 
-            name: event.away_team, 
-            abbreviation: event.away_team.substring(0, 3).toUpperCase() 
-          },
-          game_date: event.commence_time.split('T')[0],
-          game_time: event.commence_time.split('T')[1].substring(0, 8),
-          status: 'scheduled',
-          odds: { test: 'data' },
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'id' })
+      try {
+        const { error } = await supabase
+          .from('games')
+          .upsert({
+            id: event.id,
+            sport: 'americanfootball_nfl',
+            league: 'NFL',
+            home_team: { 
+              name: event.home_team, 
+              abbreviation: event.home_team.substring(0, 3).toUpperCase() 
+            },
+            away_team: { 
+              name: event.away_team, 
+              abbreviation: event.away_team.substring(0, 3).toUpperCase() 
+            },
+            game_date: event.commence_time.split('T')[0],
+            game_time: event.commence_time.split('T')[1].substring(0, 8),
+            status: 'scheduled',
+            odds: { test: 'data' },
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'id' })
 
-      if (error) {
-        console.error(`Error storing ${event.id}:`, error.message)
-      } else {
-        storedCount++
-        console.log(`✅ Stored ${event.id}`)
+        if (error) {
+          console.error(`❌ Error storing ${event.id}:`, error.message)
+          console.error(`❌ Full error:`, error)
+        } else {
+          storedCount++
+          console.log(`✅ Stored ${event.id}`)
+        }
+      } catch (err) {
+        console.error(`❌ Exception storing ${event.id}:`, err)
       }
     }
     
