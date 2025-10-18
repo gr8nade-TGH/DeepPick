@@ -1,11 +1,10 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase/server'
 
 // GET /api/performance - Get performance metrics
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const url = new URL(request.url)
-    const searchParams = url.searchParams
+    const { searchParams } = request.nextUrl
     const period = searchParams.get('period') || 'all_time'
     const userId = searchParams.get('user_id') || '00000000-0000-0000-0000-000000000000' // Mock user for now
 

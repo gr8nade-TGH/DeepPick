@@ -3,10 +3,10 @@ import { supabase } from '@/lib/supabase/server'
 
 export async function GET(request: NextRequest) {
   try {
-    const url = new URL(request.url)
-    const sport = url.searchParams.get('sport')
-    const limit = parseInt(url.searchParams.get('limit') || '50')
-    const offset = parseInt(url.searchParams.get('offset') || '0')
+    const { searchParams } = request.nextUrl
+    const sport = searchParams.get('sport')
+    const limit = parseInt(searchParams.get('limit') || '50')
+    const offset = parseInt(searchParams.get('offset') || '0')
 
     // Only get games that haven't started yet
     const now = new Date().toISOString()

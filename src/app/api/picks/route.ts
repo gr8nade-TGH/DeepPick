@@ -1,11 +1,10 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase/server'
 
 // GET /api/picks - Get all picks
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const url = new URL(request.url)
-    const searchParams = url.searchParams
+    const { searchParams } = request.nextUrl
     const limit = parseInt(searchParams.get('limit') || '50')
     const offset = parseInt(searchParams.get('offset') || '0')
     const status = searchParams.get('status')
