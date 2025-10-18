@@ -303,8 +303,9 @@ export default function MonitoringPage() {
         }
       })
       
-      // Detect anomalies
+      // Detect anomalies WITH DETAILED CONTEXT
       const anomalies: string[] = []
+      const detailedAnomalies: any[] = [] // Store full context for top anomalies
       const recentLogs = ingestionLogs.slice(0, 5)
       recentLogs.forEach(log => {
         const gameDetails = log.game_details as any[] | undefined
@@ -312,6 +313,21 @@ export default function MonitoringPage() {
           gameDetails.forEach(game => {
             if (game.oddsChangesSummary?.largestSwing && game.oddsChangesSummary.largestSwing > 200) {
               anomalies.push(`⚠️ ${game.matchup}: ${game.oddsChangesSummary.largestSwing}pt swing`)
+              
+              // Store detailed context for top 3 anomalies
+              if (detailedAnomalies.length < 3) {
+                detailedAnomalies.push({
+                  matchup: game.matchup,
+                  sport: game.sport,
+                  swing: game.oddsChangesSummary.largestSwing,
+                  action: game.action,
+                  bookmakersBefore: game.bookmakersBefore,
+                  bookmakersAfter: game.bookmakersAfter,
+                  beforeSnapshot: game.beforeSnapshot,
+                  afterSnapshot: game.afterSnapshot,
+                  timestamp: log.created_at
+                })
+              }
             }
             if (game.bookmakersAfter && game.bookmakersAfter.length < 2) {
               anomalies.push(`⚠️ ${game.matchup}: Only ${game.bookmakersAfter.length} bookmaker(s)`)
@@ -342,6 +358,18 @@ export default function MonitoringPage() {
           sportCoverage[sport].avgBookmakers = Math.round(sportCoverage[sport].avgBookmakers / sportCoverage[sport].games)
         }
       })
+      
+      // Fetch current game data for timing validation
+      let currentGames: any[] = []
+      try {
+        const gamesRes = await fetch('/api/odds')
+        const gamesData = await gamesRes.json()
+        if (gamesData.success) {
+          currentGames = gamesData.games || []
+        }
+      } catch (e) {
+        console.warn('Could not fetch current games for validation')
+      }
       
       // Generate formatted report
       const report = `
@@ -389,6 +417,34 @@ ${Object.entries(bookmakerStats)
 ${anomalies.length > 0 ? anomalies.slice(0, 10).join('\n') : '✓ No anomalies detected'}
 ${anomalies.length > 10 ? `\n... and ${anomalies.length - 10} more` : ''}
 
+🔬 DETAILED ANOMALY ANALYSIS (Top 3)
+──────────────────────────────────────────────────────────
+${detailedAnomalies.length > 0 ? detailedAnomalies.map((anom, idx) => `
+[${idx + 1}] ${anom.matchup} (${anom.sport.toUpperCase()})
+    Timestamp: ${new Date(anom.timestamp).toLocaleString()}
+    Action: ${anom.action}
+    Swing: ${anom.swing} points
+    
+    Bookmakers BEFORE: ${anom.bookmakersBefore?.join(', ') || 'N/A (new game)'}
+    Bookmakers AFTER:  ${anom.bookmakersAfter?.join(', ')}
+    
+    BEFORE Odds Sample (DraftKings):
+      Moneyline: ${JSON.stringify(anom.beforeSnapshot?.draftkings?.moneyline || 'N/A')}
+      Spread: ${JSON.stringify(anom.beforeSnapshot?.draftkings?.spread || 'N/A')}
+      Total: ${JSON.stringify(anom.beforeSnapshot?.draftkings?.total || 'N/A')}
+    
+    AFTER Odds Sample (DraftKings):
+      Moneyline: ${JSON.stringify(anom.afterSnapshot?.draftkings?.moneyline || 'N/A')}
+      Spread: ${JSON.stringify(anom.afterSnapshot?.draftkings?.spread || 'N/A')}
+      Total: ${JSON.stringify(anom.afterSnapshot?.draftkings?.total || 'N/A')}
+    
+    🔍 DIAGNOSIS:
+    ${anom.bookmakersBefore && anom.bookmakersBefore.length !== anom.bookmakersAfter.length 
+      ? '⚠️ Bookmaker count changed - likely cause of swing' 
+      : '⚠️ Same bookmakers - genuine odds movement or data corruption'}
+    ${!anom.beforeSnapshot ? '⚠️ No BEFORE snapshot - this is a NEW game, not an update' : ''}
+`).join('\n──────────────────────────────────────────────────────────\n') : '✓ No major anomalies to analyze'}
+
 📋 RECENT API CALLS (Last 10)
 ──────────────────────────────────────────────────────────
 ${apiCalls.slice(0, 10).map(call => 
@@ -400,6 +456,23 @@ ${apiCalls.slice(0, 10).map(call =>
 ${ingestionLogs.slice(0, 5).map(log => 
   `${new Date(log.created_at).toLocaleTimeString()} | +${log.games_added} added, ~${log.games_updated} updated | ${log.odds_history_records_created} odds records | ${log.processing_time_ms}ms`
 ).join('\n')}
+
+⏰ GAME TIMING VALIDATION (Current Games in DB)
+──────────────────────────────────────────────────────────
+${currentGames.length > 0 ? currentGames.slice(0, 5).map(game => {
+  const now = new Date()
+  const gameDateTime = new Date(`${game.game_date}T${game.game_time}`)
+  const hoursUntilStart = (gameDateTime.getTime() - now.getTime()) / (1000 * 60 * 60)
+  const statusEmoji = game.status === 'live' ? '🔴' : game.status === 'final' ? '✅' : '⏳'
+  
+  return `${statusEmoji} ${game.away_team.name} @ ${game.home_team.name}
+    DB Status: ${game.status}
+    Game Date: ${game.game_date} ${game.game_time}
+    Hours Until Start: ${hoursUntilStart.toFixed(1)}h
+    ${hoursUntilStart < 0 && game.status === 'scheduled' ? '⚠️ Game started but status still "scheduled"' : ''}
+    ${game.status === 'final' && !game.final_score ? '⚠️ Status is "final" but no score stored' : ''}
+    ${game.final_score ? `Final Score: ${JSON.stringify(game.final_score)}` : ''}`
+}).join('\n\n') : 'No games currently in database'}
 
 🔧 RECOMMENDED ACTIONS
 ──────────────────────────────────────────────────────────
