@@ -192,7 +192,22 @@ function analyzeGame(
   log.confidenceBreakdown.selectedBet = bestBet.type
   log.confidenceBreakdown.finalConfidence = confidence
   
-  const avgOdds = getAverageOdds(game, selection)
+  // Determine market and side from bet type and selection
+  let market: 'moneyline' | 'spread' | 'total'
+  let side: 'home' | 'away' | 'over' | 'under'
+  
+  if (bestBet.type === 'total') {
+    market = 'total'
+    side = selection.includes('OVER') ? 'over' : 'under'
+  } else if (bestBet.type === 'spread') {
+    market = 'spread'
+    side = selection.includes(game.home_team.abbreviation) ? 'home' : 'away'
+  } else {
+    market = 'moneyline'
+    side = selection === game.home_team.abbreviation ? 'home' : 'away'
+  }
+  
+  const avgOdds = getAverageOdds(game, market, side) || -110
   const passedFavoriteRule = isValidFavoriteOdds(avgOdds, confidence)
   
   log.decisionFactors.passedFavoriteRule = passedFavoriteRule
