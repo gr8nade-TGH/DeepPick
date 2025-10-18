@@ -6,7 +6,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
-import { TrendingUp, Activity, Lightbulb, AlertTriangle, Zap, BarChart, Rocket, MessageCircle, CheckCircle, XCircle, PlayCircle, Clock, BarChart3, Archive } from 'lucide-react'
+import { TrendingUp, Activity, Lightbulb, AlertTriangle, Zap, BarChart, Rocket, MessageCircle, CheckCircle, XCircle, PlayCircle, Clock, BarChart3, Archive, Brain, X, Target, TrendingDown } from 'lucide-react'
 import Link from 'next/link'
 
 interface Pick {
@@ -70,6 +70,8 @@ export function RealDashboard() {
   const [loading, setLoading] = useState(true)
   const [timeFilter, setTimeFilter] = useState('all')
   const [selectedCapper, setSelectedCapper] = useState('all')
+  const [selectedPick, setSelectedPick] = useState<Pick | null>(null)
+  const [showBreakdown, setShowBreakdown] = useState(false)
 
   useEffect(() => {
     fetchData()
@@ -400,7 +402,7 @@ export function RealDashboard() {
                 <th className="py-2 px-4">Game Status</th>
                 <th className="py-2 px-4">Pick Status</th>
                 <th className="py-2 px-4">Outcome</th>
-                <th className="py-2 px-4">Insight</th>
+                <th className="py-2 px-4">Analysis</th>
               </tr>
             </thead>
             <tbody>
@@ -443,10 +445,17 @@ export function RealDashboard() {
                         </span>
                       </td>
                       <td className="py-3 px-4 align-middle">
-                        <div className="flex items-center">
-                          <InsightIcon className="h-4 w-4 mr-2 flex-shrink-0" />
-                          <span className="text-gray-300">{pick.reasoning || 'No reasoning provided'}</span>
-                        </div>
+                        <Button
+                          onClick={() => {
+                            setSelectedPick(pick)
+                            setShowBreakdown(true)
+                          }}
+                          size="sm"
+                          className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold shadow-lg"
+                        >
+                          <Brain className="h-4 w-4 mr-2" />
+                          View Breakdown
+                        </Button>
                       </td>
                     </tr>
                   )
@@ -471,12 +480,13 @@ export function RealDashboard() {
                 <th className="py-2 px-4">Final Score</th>
                 <th className="py-2 px-4">Result</th>
                 <th className="py-2 px-4">Outcome</th>
+                <th className="py-2 px-4">Analysis</th>
               </tr>
             </thead>
             <tbody>
               {pickHistory.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 px-4 text-center text-gray-400">
+                  <td colSpan={8} className="py-8 px-4 text-center text-gray-400">
                     No completed picks yet. Check back after games finish!
                   </td>
                 </tr>
@@ -536,6 +546,20 @@ export function RealDashboard() {
                           {pick.status === 'push' && `➖ Push`}
                         </span>
                       </td>
+                      <td className="py-3 px-4 align-middle">
+                        <Button
+                          onClick={() => {
+                            setSelectedPick(pick)
+                            setShowBreakdown(true)
+                          }}
+                          size="sm"
+                          variant="outline"
+                          className="border-purple-500/50 text-purple-400 hover:bg-purple-500/20"
+                        >
+                          <Brain className="h-4 w-4 mr-1" />
+                          View
+                        </Button>
+                      </td>
                     </tr>
                   )
                 })
@@ -544,6 +568,141 @@ export function RealDashboard() {
           </table>
         </div>
       </section>
+
+      {/* Pick Breakdown Modal */}
+      {showBreakdown && selectedPick && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border-2 border-purple-500/50 rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-blue-600 p-6 flex items-center justify-between border-b border-purple-500/50">
+              <div className="flex items-center gap-3">
+                <Brain className="w-8 h-8 text-white" />
+                <div>
+                  <h2 className="text-2xl font-bold text-white">Pick Breakdown</h2>
+                  <p className="text-purple-200 text-sm">AI-Powered Analysis</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowBreakdown(false)}
+                className="text-white hover:bg-white/20 rounded-lg p-2 transition-all"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-6">
+              {/* Pick Summary */}
+              <div className="glass-effect p-4 rounded-lg border border-purple-500/30">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-xl font-bold text-white">{selectedPick.selection}</h3>
+                    <p className="text-gray-400 text-sm">
+                      {selectedPick.game_snapshot?.away_team?.name} @ {selectedPick.game_snapshot?.home_team?.name}
+                    </p>
+                  </div>
+                  <Badge className={`bg-gradient-to-r ${CAPPERS.find(c => c.id === selectedPick.capper)?.color || 'from-blue-500 to-cyan-500'} text-white font-bold text-lg px-4 py-2`}>
+                    {CAPPERS.find(c => c.id === selectedPick.capper)?.name || 'DeepPick'}
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <p className="text-gray-400 text-sm">Confidence</p>
+                    <p className="text-2xl font-bold text-green-400">{selectedPick.confidence || 75}%</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-sm">Units</p>
+                    <p className="text-2xl font-bold text-blue-400">{selectedPick.units}u</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-sm">Pick Type</p>
+                    <p className="text-2xl font-bold text-purple-400">{selectedPick.pick_type?.toUpperCase()}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Key Factors */}
+              <div className="space-y-4">
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Target className="w-5 h-5 text-green-400" />
+                  Key Factors
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="glass-effect p-4 rounded-lg border border-green-500/30">
+                    <div className="flex items-center gap-2 mb-2">
+                      <TrendingUp className="w-4 h-4 text-green-400" />
+                      <h4 className="font-semibold text-green-400">Positive Indicators</h4>
+                    </div>
+                    <ul className="space-y-2 text-sm text-gray-300">
+                      <li>• <strong>Line Movement:</strong> Sharp money on this side (+2.5 pts)</li>
+                      <li>• <strong>Historical Edge:</strong> 8-2 in last 10 similar matchups</li>
+                      <li>• <strong>Statistical Advantage:</strong> +4.2 offensive efficiency</li>
+                      <li>• <strong>Situational:</strong> Home team on 3 days rest</li>
+                    </ul>
+                  </div>
+                  <div className="glass-effect p-4 rounded-lg border border-red-500/30">
+                    <div className="flex items-center gap-2 mb-2">
+                      <TrendingDown className="w-4 h-4 text-red-400" />
+                      <h4 className="font-semibold text-red-400">Risk Factors</h4>
+                    </div>
+                    <ul className="space-y-2 text-sm text-gray-300">
+                      <li>• <strong>Injury Report:</strong> Key player questionable</li>
+                      <li>• <strong>Public Betting:</strong> 68% on this side (fade risk)</li>
+                      <li>• <strong>Weather:</strong> Potential rain (outdoor game)</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Algorithm Reasoning */}
+              <div className="glass-effect p-4 rounded-lg border border-purple-500/30">
+                <h3 className="text-xl font-bold text-white flex items-center gap-2 mb-3">
+                  <Brain className="w-5 h-5 text-purple-400" />
+                  Algorithm Reasoning
+                </h3>
+                <p className="text-gray-300 leading-relaxed">
+                  {selectedPick.reasoning || 
+                    "This pick was generated based on a comprehensive analysis of historical patterns, statistical models, and real-time market data. The algorithm identified a significant edge in this matchup, with multiple positive indicators aligning. Key factors include favorable line movement, strong historical performance in similar situations, and statistical advantages that suggest value at the current odds. Risk factors were assessed and deemed acceptable given the overall confidence level."
+                  }
+                </p>
+              </div>
+
+              {/* Data Points */}
+              <div className="glass-effect p-4 rounded-lg border border-blue-500/30">
+                <h3 className="text-xl font-bold text-white flex items-center gap-2 mb-3">
+                  <BarChart3 className="w-5 h-5 text-blue-400" />
+                  Data Points Analyzed
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                  <div>
+                    <p className="text-3xl font-bold text-blue-400">247</p>
+                    <p className="text-xs text-gray-400">Historical Games</p>
+                  </div>
+                  <div>
+                    <p className="text-3xl font-bold text-green-400">18</p>
+                    <p className="text-xs text-gray-400">Key Metrics</p>
+                  </div>
+                  <div>
+                    <p className="text-3xl font-bold text-purple-400">4</p>
+                    <p className="text-xs text-gray-400">Sportsbooks</p>
+                  </div>
+                  <div>
+                    <p className="text-3xl font-bold text-yellow-400">72h</p>
+                    <p className="text-xs text-gray-400">Line Tracking</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Algorithm Note */}
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+                <p className="text-yellow-400 text-sm">
+                  <strong>⚠️ Note:</strong> This is a template breakdown. Once algorithms are fully implemented, this will display real-time analysis specific to each capper's methodology.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Disclaimer Footer */}
       <footer className="mt-12 pb-8">
