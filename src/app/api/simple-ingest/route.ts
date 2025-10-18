@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { logApiCall, logIngestion, GameChangeDetail } from '@/lib/monitoring/api-logger'
+import { getTeamAbbreviation } from '@/lib/team-abbreviations'
 
 // Map API sport keys to database enum values
 function mapSportKey(apiSportKey: string): string {
@@ -323,11 +324,11 @@ export async function GET() {
               league: sport.name,
               home_team: { 
                 name: event.home_team, 
-                abbreviation: event.home_team.substring(0, 3).toUpperCase() 
+                abbreviation: getTeamAbbreviation(event.home_team)
               },
               away_team: { 
                 name: event.away_team, 
-                abbreviation: event.away_team.substring(0, 3).toUpperCase() 
+                abbreviation: getTeamAbbreviation(event.away_team)
               },
               game_date: gameDate,
               game_time: gameTime,

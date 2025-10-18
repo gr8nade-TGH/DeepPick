@@ -521,7 +521,7 @@ export function RealDashboard() {
                               const hoursUntil = (gameTime.getTime() - now.getTime()) / (1000 * 60 * 60)
                               if (hoursUntil < 0) return 'text-red-400'
                               if (hoursUntil < 3) return 'text-orange-400'
-                              return 'text-gray-400'
+                              return 'text-cyan-400'
                             })()}`}>
                               {(() => {
                                 const gameTime = new Date(`${pick.game_snapshot.game_date}T${pick.game_snapshot.game_time}`)
