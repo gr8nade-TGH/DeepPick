@@ -43,7 +43,7 @@ export async function GET() {
       console.log(`Fetching ${sport.name} odds...`)
       
       const response = await fetch(
-        `https://api.the-odds-api.com/v4/sports/${sport.key}/odds?apiKey=${oddsApiKey}&regions=us&markets=h2h,spreads,totals&oddsFormat=american&dateFormat=iso&commenceTimeFrom=${today}T00:00:00Z&commenceTimeTo=${nextWeek}T23:59:59Z&bookmakers=draftkings,fanduel,caesars,betmgm`
+        `https://api.the-odds-api.com/v4/sports/${sport.key}/odds?apiKey=${oddsApiKey}&regions=us&markets=h2h,spreads,totals&oddsFormat=american&dateFormat=iso&commenceTimeFrom=${today}T00:00:00Z&commenceTimeTo=${nextWeek}T23:59:59Z&bookmakers=draftkings,fanduel,williamhill_us,betmgm`
       )
 
       if (!response.ok) {
