@@ -150,7 +150,7 @@ export async function getApiUsageSummary(provider: string, periodType: 'daily' |
  */
 export async function getRecentApiCalls(provider?: string, limit: number = 50) {
   try {
-    let query = supabase
+    let query = getSupabaseAdmin()
       .from('api_calls')
       .select('*')
       .order('request_timestamp', { ascending: false })
