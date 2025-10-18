@@ -491,9 +491,10 @@ export function RealDashboard() {
               <tr className="border-b border-gray-700 text-gray-400">
                 <th className="py-2 px-4">Capper</th>
                 <th className="py-2 px-4">Pick</th>
+                <th className="py-2 px-4">Units</th>
+                <th className="py-2 px-4">Matchup</th>
                 <th className="py-2 px-4">Game Start</th>
                 <th className="py-2 px-4">Posted</th>
-                <th className="py-2 px-4">Units</th>
                 <th className="py-2 px-4">Sport</th>
                 <th className="py-2 px-4">Game Status</th>
                 <th className="py-2 px-4">Pick Status</th>
@@ -504,7 +505,7 @@ export function RealDashboard() {
             <tbody>
               {picks.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="py-8 px-4 text-center text-gray-400">
+                  <td colSpan={11} className="py-8 px-4 text-center text-gray-400">
                     No picks found. Add some picks to see them here!
                   </td>
                 </tr>
@@ -520,6 +521,18 @@ export function RealDashboard() {
                         </Badge>
                       </td>
                       <td className="py-3 px-4 align-middle font-bold text-gray-100">{pick.selection}</td>
+                      <td className="py-3 px-4 align-middle">
+                        <span className="text-green-400 font-bold text-lg">{pick.units}</span>
+                      </td>
+                      <td className="py-3 px-4 align-middle">
+                        {pick.game_snapshot?.away_team && pick.game_snapshot?.home_team ? (
+                          <span className="text-gray-300 font-mono text-sm">
+                            {pick.game_snapshot.away_team.abbreviation}@{pick.game_snapshot.home_team.abbreviation}
+                          </span>
+                        ) : (
+                          <span className="text-gray-500 text-xs">N/A</span>
+                        )}
+                      </td>
                       <td className="py-3 px-4 align-middle">
                         {pick.game_snapshot?.game_date && pick.game_snapshot?.game_time ? (
                           <div className="text-sm">
@@ -562,7 +575,6 @@ export function RealDashboard() {
                           minute: '2-digit'
                         })}
                       </td>
-                      <td className="py-3 px-4 align-middle text-gray-300">{pick.units}</td>
                       <td className="py-3 px-4 align-middle text-gray-300">
                         {pick.game_snapshot?.sport?.toUpperCase() || 'N/A'}
                       </td>

@@ -149,7 +149,7 @@ export async function GET() {
         continue
       }
 
-      for (const event of events.slice(0, 5)) { // Store first 5 per sport
+      for (const event of events) { // Process ALL events
       console.log(`Processing: ${event.home_team} vs ${event.away_team}`)
       
       try {
