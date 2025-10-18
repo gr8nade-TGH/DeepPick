@@ -1,0 +1,16 @@
+import { Suspense } from 'react'
+import { Dashboard } from '@/components/dashboard'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
+
+// Deep Pick - Data-driven sports predictions
+// Testing GitHub webhook deployment
+// Trigger redeploy for environment variables
+export default function HomePage() {
+  return (
+    <main className="min-h-screen">
+      <Suspense fallback={<LoadingSpinner />}>
+        <Dashboard />
+      </Suspense>
+    </main>
+  )
+}
