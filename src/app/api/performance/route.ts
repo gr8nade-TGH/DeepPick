@@ -23,7 +23,12 @@ export async function GET(request: NextRequest) {
     const { data: picks, error: picksError } = await query
 
     if (picksError) {
-      return NextResponse.json({ error: picksError.message }, { status: 500 })
+      console.error('❌ Performance query error:', picksError)
+      return NextResponse.json({ 
+        error: picksError.message,
+        details: picksError,
+        capper: capper
+      }, { status: 500 })
     }
 
     // Calculate metrics from picks
