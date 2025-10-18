@@ -19,7 +19,11 @@ import {
   RefreshCw,
   Server,
   Wifi,
-  WifiOff
+  WifiOff,
+  FileText,
+  Copy,
+  CheckCheck,
+  XCircle
 } from 'lucide-react'
 
 interface ApiCall {
@@ -232,6 +236,12 @@ export default function MonitoringPage() {
   const [ingestionLogs, setIngestionLogs] = useState<IngestionLog[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
+  
+  // Debug Report State
+  const [showDebugModal, setShowDebugModal] = useState(false)
+  const [debugReport, setDebugReport] = useState<string>('')
+  const [generatingReport, setGeneratingReport] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     fetchMonitoringData()
@@ -263,6 +273,163 @@ export default function MonitoringPage() {
     }
   }
 
+  const generateDebugReport = async () => {
+    setGeneratingReport(true)
+    setCopied(false)
+    
+    try {
+      // Run data quality checks
+      const checks = {
+        totalCalls: apiCalls.length,
+        successRate: apiCalls.length > 0 ? (apiCalls.filter(c => c.success).length / apiCalls.length * 100).toFixed(1) : 0,
+        avgResponseTime: apiCalls.length > 0 ? (apiCalls.reduce((sum, c) => sum + c.response_time_ms, 0) / apiCalls.length).toFixed(0) : 0,
+        totalIngestions: ingestionLogs.length,
+        ingestionSuccessRate: ingestionLogs.length > 0 ? (ingestionLogs.filter(l => l.success).length / ingestionLogs.length * 100).toFixed(1) : 0,
+      }
+      
+      // Analyze bookmaker reliability
+      const bookmakerStats: Record<string, { appearances: number, totalGames: number }> = {}
+      ingestionLogs.forEach(log => {
+        const gameDetails = log.game_details as any[] | undefined
+        if (gameDetails) {
+          gameDetails.forEach(game => {
+            game.bookmakersAfter?.forEach((book: string) => {
+              if (!bookmakerStats[book]) bookmakerStats[book] = { appearances: 0, totalGames: 0 }
+              bookmakerStats[book].appearances++
+            })
+            bookmakerStats[game.sport] = bookmakerStats[game.sport] || { appearances: 0, totalGames: 0 }
+            bookmakerStats[game.sport].totalGames++
+          })
+        }
+      })
+      
+      // Detect anomalies
+      const anomalies: string[] = []
+      const recentLogs = ingestionLogs.slice(0, 5)
+      recentLogs.forEach(log => {
+        const gameDetails = log.game_details as any[] | undefined
+        if (gameDetails) {
+          gameDetails.forEach(game => {
+            if (game.oddsChangesSummary?.largestSwing && game.oddsChangesSummary.largestSwing > 200) {
+              anomalies.push(`⚠️ ${game.matchup}: ${game.oddsChangesSummary.largestSwing}pt swing`)
+            }
+            if (game.bookmakersAfter && game.bookmakersAfter.length < 2) {
+              anomalies.push(`⚠️ ${game.matchup}: Only ${game.bookmakersAfter.length} bookmaker(s)`)
+            }
+            if (game.warnings && game.warnings.length > 0) {
+              game.warnings.forEach((w: string) => anomalies.push(`⚠️ ${game.matchup}: ${w}`))
+            }
+          })
+        }
+      })
+      
+      // Calculate sport coverage
+      const sportCoverage: Record<string, { games: number, avgBookmakers: number }> = {}
+      recentLogs.forEach(log => {
+        const gameDetails = log.game_details as any[] | undefined
+        if (gameDetails) {
+          gameDetails.forEach(game => {
+            if (!sportCoverage[game.sport]) {
+              sportCoverage[game.sport] = { games: 0, avgBookmakers: 0 }
+            }
+            sportCoverage[game.sport].games++
+            sportCoverage[game.sport].avgBookmakers += game.bookmakersAfter?.length || 0
+          })
+        }
+      })
+      Object.keys(sportCoverage).forEach(sport => {
+        if (sportCoverage[sport].games > 0) {
+          sportCoverage[sport].avgBookmakers = Math.round(sportCoverage[sport].avgBookmakers / sportCoverage[sport].games)
+        }
+      })
+      
+      // Generate formatted report
+      const report = `
+═══════════════════════════════════════════════════════════
+🔍 DEEPPICK DATA FEED DEBUG REPORT
+═══════════════════════════════════════════════════════════
+Generated: ${new Date().toLocaleString()}
+
+📊 OVERALL HEALTH CHECK
+──────────────────────────────────────────────────────────
+✓ API Calls (Last 50):        ${checks.totalCalls}
+✓ Success Rate:               ${checks.successRate}%
+✓ Avg Response Time:          ${checks.avgResponseTime}ms
+✓ Data Ingestions (Last 20):  ${checks.totalIngestions}
+✓ Ingestion Success Rate:     ${checks.ingestionSuccessRate}%
+
+📡 API QUOTA STATUS
+──────────────────────────────────────────────────────────
+Daily Quota:
+  • Used: ${dailyQuota?.quota_used_percentage || 0}%
+  • Remaining: ${dailyQuota?.quota_remaining || 0}
+  • Total Calls: ${dailyQuota?.total_calls || 0}
+  • Events Received: ${dailyQuota?.total_events_received || 0}
+
+Monthly Quota:
+  • Used: ${monthlyQuota?.quota_used_percentage || 0}%
+  • Remaining: ${monthlyQuota?.quota_remaining || 0}
+
+🏈 SPORT COVERAGE (Last 5 Ingestions)
+──────────────────────────────────────────────────────────
+${Object.entries(sportCoverage).map(([sport, data]) => 
+  `${sport.toUpperCase()}: ${data.games} games, avg ${data.avgBookmakers} bookmakers/game`
+).join('\n')}
+
+📚 BOOKMAKER RELIABILITY
+──────────────────────────────────────────────────────────
+${Object.entries(bookmakerStats)
+  .filter(([key]) => !['nfl', 'nba', 'mlb'].includes(key))
+  .sort((a, b) => b[1].appearances - a[1].appearances)
+  .map(([book, stats]) => `${book}: ${stats.appearances} appearances`)
+  .join('\n') || 'No bookmaker data available'}
+
+⚠️ ANOMALIES DETECTED (Last 5 Ingestions)
+──────────────────────────────────────────────────────────
+${anomalies.length > 0 ? anomalies.slice(0, 10).join('\n') : '✓ No anomalies detected'}
+${anomalies.length > 10 ? `\n... and ${anomalies.length - 10} more` : ''}
+
+📋 RECENT API CALLS (Last 10)
+──────────────────────────────────────────────────────────
+${apiCalls.slice(0, 10).map(call => 
+  `${new Date(call.request_timestamp).toLocaleTimeString()} | ${call.endpoint} | ${call.response_status} | ${call.events_received} events | ${call.response_time_ms}ms`
+).join('\n')}
+
+📥 RECENT INGESTIONS (Last 5)
+──────────────────────────────────────────────────────────
+${ingestionLogs.slice(0, 5).map(log => 
+  `${new Date(log.created_at).toLocaleTimeString()} | +${log.games_added} added, ~${log.games_updated} updated | ${log.odds_history_records_created} odds records | ${log.processing_time_ms}ms`
+).join('\n')}
+
+🔧 RECOMMENDED ACTIONS
+──────────────────────────────────────────────────────────
+${anomalies.length > 5 ? '⚠️ HIGH ANOMALY COUNT: Review game matching logic' : '✓ Anomaly count normal'}
+${parseFloat(checks.successRate as string) < 95 ? '⚠️ LOW SUCCESS RATE: Check API connectivity' : '✓ Success rate healthy'}
+${parseFloat(checks.avgResponseTime as string) > 200 ? '⚠️ SLOW RESPONSES: API may be under load' : '✓ Response times normal'}
+${(dailyQuota?.quota_used_percentage || 0) > 80 ? '⚠️ QUOTA WARNING: Approaching daily limit' : '✓ Quota usage healthy'}
+
+═══════════════════════════════════════════════════════════
+📋 Copy this report and paste to Cursor for troubleshooting
+═══════════════════════════════════════════════════════════
+      `.trim()
+      
+      setDebugReport(report)
+      setShowDebugModal(true)
+    } catch (error) {
+      console.error('Error generating debug report:', error)
+      setDebugReport('Error generating report. Please try again.')
+      setShowDebugModal(true)
+    } finally {
+      setGeneratingReport(false)
+    }
+  }
+  
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(debugReport)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
   const getStatusColor = (success: boolean) => {
     return success ? 'text-green-400' : 'text-red-400'
   }
@@ -290,6 +457,14 @@ export default function MonitoringPage() {
             </div>
           </div>
           <div className="flex gap-2">
+            <Button 
+              onClick={generateDebugReport} 
+              disabled={generatingReport}
+              className="gap-2 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+            >
+              <FileText className={`w-4 h-4 ${generatingReport ? 'animate-pulse' : ''}`} />
+              {generatingReport ? 'Generating...' : 'Debug Report'}
+            </Button>
             <Link href="/">
               <Button variant="outline" className="gap-2">
                 <Home className="w-4 h-4" />
@@ -552,6 +727,68 @@ export default function MonitoringPage() {
             </Card>
           </TabsContent>
         </Tabs>
+        
+        {/* Debug Report Modal */}
+        {showDebugModal && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-gray-900 border border-gray-700 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
+              {/* Modal Header */}
+              <div className="p-6 border-b border-gray-700 flex items-center justify-between bg-gradient-to-r from-purple-900/30 to-blue-900/30">
+                <div className="flex items-center gap-3">
+                  <FileText className="w-6 h-6 text-purple-400" />
+                  <div>
+                    <h2 className="text-2xl font-bold text-white">Debug Report</h2>
+                    <p className="text-sm text-gray-400">Comprehensive data feed analysis</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowDebugModal(false)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <XCircle className="w-6 h-6" />
+                </button>
+              </div>
+              
+              {/* Modal Content */}
+              <div className="p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
+                <pre className="bg-gray-950 border border-gray-800 rounded-lg p-6 text-sm text-gray-300 font-mono whitespace-pre-wrap overflow-x-auto">
+                  {debugReport}
+                </pre>
+              </div>
+              
+              {/* Modal Footer */}
+              <div className="p-6 border-t border-gray-700 flex items-center justify-between bg-gray-900/50">
+                <div className="text-sm text-gray-400">
+                  <p>💡 Copy this report and paste it into Cursor chat for AI-powered troubleshooting</p>
+                </div>
+                <div className="flex gap-3">
+                  <Button 
+                    onClick={() => setShowDebugModal(false)} 
+                    variant="outline"
+                  >
+                    Close
+                  </Button>
+                  <Button 
+                    onClick={copyToClipboard}
+                    className="gap-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                  >
+                    {copied ? (
+                      <>
+                        <CheckCheck className="w-4 h-4" />
+                        Copied!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4" />
+                        Copy Report
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
