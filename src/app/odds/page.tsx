@@ -313,13 +313,38 @@ export default function OddsPage() {
                           Sportsbooks: {game.sportsbooks?.join(', ') || 'None'}
                         </div>
                         
-                        <div className="bg-dark-300 p-3 rounded-lg">
-                          <div className="text-xs text-muted-foreground mb-1">Odds Data</div>
-                          <div className="text-sm">
-                            <pre className="text-xs overflow-auto">
-                              {JSON.stringify(game.odds, null, 2)}
-                            </pre>
-                          </div>
+                        <div className="space-y-2">
+                          {game.sportsbooks?.map((bookmaker) => {
+                            const bookmakerOdds = game.odds[bookmaker]
+                            if (!bookmakerOdds) return null
+                            
+                            return (
+                              <div key={bookmaker} className="bg-dark-300 p-3 rounded-lg">
+                                <div className="text-xs font-semibold text-neon-green mb-2 capitalize">
+                                  {bookmaker.replace('_', ' ')}
+                                </div>
+                                {bookmakerOdds.moneyline && (
+                                  <div className="text-sm space-y-1">
+                                    <div className="flex justify-between">
+                                      <span className="text-muted-foreground">{game.away_team.abbreviation}:</span>
+                                      <span className="text-neon-blue font-semibold">
+                                        {bookmakerOdds.moneyline.away > 0 ? '+' : ''}{bookmakerOdds.moneyline.away}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span className="text-muted-foreground">{game.home_team.abbreviation}:</span>
+                                      <span className="text-neon-blue font-semibold">
+                                        {bookmakerOdds.moneyline.home > 0 ? '+' : ''}{bookmakerOdds.moneyline.home}
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
+                                {!bookmakerOdds.moneyline && (
+                                  <div className="text-xs text-muted-foreground">No odds available</div>
+                                )}
+                              </div>
+                            )
+                          })}
                         </div>
                       </div>
                     </div>
