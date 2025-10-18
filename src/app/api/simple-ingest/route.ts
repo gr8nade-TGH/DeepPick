@@ -26,6 +26,19 @@ export async function GET() {
       })
     }
 
+    // Delete all old scheduled games before inserting new ones
+    console.log('🗑️ Clearing old scheduled games...')
+    const { error: deleteError } = await supabase
+      .from('games')
+      .delete()
+      .eq('status', 'scheduled')
+    
+    if (deleteError) {
+      console.error('Error clearing old games:', deleteError)
+    } else {
+      console.log('✅ Old games cleared')
+    }
+
     // Fetch all sports (NFL, NBA, MLB)
     const sports = [
       { key: 'americanfootball_nfl', name: 'NFL' },
@@ -107,7 +120,7 @@ export async function GET() {
         
         const { error } = await supabase
           .from('games')
-          .upsert({
+          .insert({
             id: crypto.randomUUID(), // Generate proper UUID
             sport: mapSportKey(sport.key),
             league: sport.name,
@@ -125,7 +138,7 @@ export async function GET() {
             odds: sportsbooks,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
-          }, { onConflict: 'id' })
+          })
 
         if (error) {
           console.error(`❌ Error storing ${event.id}:`, error.message)
