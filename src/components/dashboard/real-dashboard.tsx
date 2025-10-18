@@ -310,8 +310,26 @@ export function RealDashboard() {
                     <Tooltip
                       contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '4px' }}
                       labelStyle={{ color: '#E5E7EB' }}
+                      formatter={(value: number) => {
+                        const color = value >= 0 ? '#10B981' : '#EF4444'
+                        return [`$${value.toFixed(2)}`, 'Profit']
+                      }}
                       itemStyle={{ color: '#10B981' }}
-                      formatter={(value: number) => [`$${value.toFixed(2)}`, 'Profit']}
+                      content={({ active, payload, label }) => {
+                        if (active && payload && payload.length) {
+                          const value = payload[0].value as number
+                          const color = value >= 0 ? '#10B981' : '#EF4444'
+                          return (
+                            <div style={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '4px', padding: '8px' }}>
+                              <p style={{ color: '#E5E7EB', marginBottom: '4px' }}>{label}</p>
+                              <p style={{ color: color, fontWeight: 'bold' }}>
+                                Profit: ${value.toFixed(2)}
+                              </p>
+                            </div>
+                          )
+                        }
+                        return null
+                      }}
                     />
                     <Area type="monotone" dataKey="cumulative_profit" stroke="#10B981" fillOpacity={1} fill="url(#colorProfit)" />
                   </AreaChart>
@@ -321,13 +339,15 @@ export function RealDashboard() {
           </Card>
 
           <div className="space-y-4">
-            <Card className="bg-gray-800 border border-blue-500 shadow-blue-glow">
+            <Card className={`bg-gray-800 border ${(performance?.metrics?.net_units || 0) >= 0 ? 'border-green-500 shadow-green-glow' : 'border-red-500 shadow-red-glow'}`}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-blue-400">Total Profit</CardTitle>
-                <TrendingUp className="h-4 w-4 text-blue-400" />
+                <CardTitle className={`text-sm font-medium ${(performance?.metrics?.net_units || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  Total Profit
+                </CardTitle>
+                <TrendingUp className={`h-4 w-4 ${(performance?.metrics?.net_units || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`} />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-blue-300">
+                <div className={`text-2xl font-bold ${(performance?.metrics?.net_units || 0) >= 0 ? 'text-green-300' : 'text-red-300'}`}>
                   ${performance?.metrics?.net_units?.toFixed(2) || '0.00'}
                 </div>
                 <p className="text-xs text-gray-400">
@@ -385,35 +405,37 @@ export function RealDashboard() {
                   const capperInfo = CAPPERS.find(c => c.id === pick.capper) || CAPPERS[1] // Default to DeepPick
                   return (
                     <tr key={pick.id} className="border-b border-gray-800 hover:bg-gray-800 transition-colors">
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-4 align-middle">
                         <Badge className={`bg-gradient-to-r ${capperInfo.color} text-white font-bold`}>
                           {capperInfo.name}
                         </Badge>
                       </td>
-                      <td className="py-3 px-4 font-bold text-gray-100">{pick.selection}</td>
-                      <td className="py-3 px-4 text-gray-300">
+                      <td className="py-3 px-4 align-middle font-bold text-gray-100">{pick.selection}</td>
+                      <td className="py-3 px-4 align-middle text-gray-300">
                         {new Date(pick.created_at).toLocaleString()}
                       </td>
-                      <td className="py-3 px-4 text-gray-300">{pick.units}</td>
-                      <td className="py-3 px-4 text-gray-300">
+                      <td className="py-3 px-4 align-middle text-gray-300">{pick.units}</td>
+                      <td className="py-3 px-4 align-middle text-gray-300">
                         {pick.game_snapshot?.sport?.toUpperCase() || 'N/A'}
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-4 align-middle">
                         {getGameStatusDisplay(pick)}
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-4 align-middle">
                         <Badge variant={pick.status === 'won' ? 'default' : pick.status === 'lost' ? 'destructive' : 'secondary'}>
                           {pick.status}
                         </Badge>
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-4 align-middle">
                         <span className={getOutcomeText(pick).includes('✅') ? 'text-green-400' : getOutcomeText(pick).includes('❌') ? 'text-red-400' : 'text-gray-400'}>
                           {getOutcomeText(pick)}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-gray-300 flex items-center">
-                        <InsightIcon className="h-4 w-4 mr-2" />
-                        {pick.reasoning || 'No reasoning provided'}
+                      <td className="py-3 px-4 align-middle">
+                        <div className="flex items-center">
+                          <InsightIcon className="h-4 w-4 mr-2 flex-shrink-0" />
+                          <span className="text-gray-300">{pick.reasoning || 'No reasoning provided'}</span>
+                        </div>
                       </td>
                     </tr>
                   )
