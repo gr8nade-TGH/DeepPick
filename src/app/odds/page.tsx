@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { OddsChart } from '@/components/odds/odds-chart'
+import { CountdownTimer } from '@/components/odds/countdown-timer'
 import { 
   RefreshCw, 
   Clock, 
@@ -270,28 +271,44 @@ export default function OddsPage() {
                 <Card key={game.id} className="glass-effect hover:neon-glow transition-all duration-300">
                   <CardContent className="p-6">
                     {/* Game Header */}
-                    <div className="flex items-center gap-3 mb-4">
-                      <SportIcon className="w-5 h-5 text-neon-blue" />
-                      <Badge variant="outline" className="text-xs">
-                        {game.league}
-                      </Badge>
-                      <Badge className={getStatusColor(game.status)}>
-                        {game.status}
-                      </Badge>
-                      <div className="flex-1" />
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Calendar className="w-3 h-3" />
-                        {new Date(game.game_date).toLocaleDateString()}
-                        <Clock className="w-3 h-3 ml-2" />
-                        {game.time_until_game}
+                    <div className="flex items-center justify-between gap-3 mb-4">
+                      <div className="flex items-center gap-3">
+                        <SportIcon className="w-5 h-5 text-neon-blue" />
+                        <Badge variant="outline" className="text-xs">
+                          {game.league}
+                        </Badge>
+                        <Badge className={getStatusColor(game.status)}>
+                          {game.status}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Calendar className="w-3 h-3" />
+                          {new Date(game.game_date).toLocaleDateString('en-US', { 
+                            month: 'short', 
+                            day: 'numeric',
+                            year: 'numeric'
+                          })}
+                        </div>
+                        <CountdownTimer gameDate={game.game_date} gameTime={game.game_time} />
                       </div>
                     </div>
 
                     <div className="grid lg:grid-cols-[1fr,auto] gap-6">
                       {/* Left: Odds Table */}
                       <div>
-                        <div className="text-lg font-semibold mb-3">
-                          {game.away_team.name} @ {game.home_team.name}
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="text-lg font-semibold">
+                            {game.away_team.name} @ {game.home_team.name}
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <RefreshCw className="w-3 h-3" />
+                            <span>Last updated: {new Date(game.updated_at).toLocaleTimeString('en-US', {
+                              hour: 'numeric',
+                              minute: '2-digit',
+                              second: '2-digit'
+                            })}</span>
+                          </div>
                         </div>
                         
                         <div className="overflow-x-auto">
