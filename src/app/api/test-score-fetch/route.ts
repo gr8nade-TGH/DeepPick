@@ -23,11 +23,14 @@ export async function GET() {
     
     const scoresResult = await scoresResponse.json()
     
+    console.log('📋 Full scores result:', JSON.stringify(scoresResult, null, 2))
+    
     return NextResponse.json({
       success: true,
       message: 'Test score fetch completed',
       baseUrl,
       scoresResult,
+      responseStatus: scoresResponse.status,
       timestamp: new Date().toISOString()
     })
     

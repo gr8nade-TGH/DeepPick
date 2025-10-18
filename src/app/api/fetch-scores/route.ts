@@ -26,10 +26,12 @@ export async function POST() {
       }, { status: 500 })
     }
 
+    // Only fetch scores for sports that are currently in season
+    // MLB season typically ends in October, NBA starts in October, NFL runs Sep-Feb
     const sports = [
-      { key: 'americanfootball_nfl', name: 'NFL' },
+      { key: 'baseball_mlb', name: 'MLB' },
       { key: 'basketball_nba', name: 'NBA' },
-      { key: 'baseball_mlb', name: 'MLB' }
+      { key: 'americanfootball_nfl', name: 'NFL' }
     ]
 
     let updatedCount = 0
@@ -47,13 +49,24 @@ export async function POST() {
         const response = await fetch(url)
 
         if (!response.ok) {
-          const errorText = await response.text()
+          let errorText = ''
+          try {
+            errorText = await response.text()
+          } catch (e) {
+            errorText = 'Could not read error response'
+          }
           console.error(`❌ ${sport.name} error:`, response.status, errorText)
           errors.push(`Failed to fetch ${sport.name} scores: ${response.status} - ${errorText}`)
           continue
         }
 
-        const scores = await response.json()
+        let scores
+        try {
+          scores = await response.json()
+        } catch (e) {
+          errors.push(`Failed to parse ${sport.name} scores JSON`)
+          continue
+        }
         console.log(`Found ${scores.length} ${sport.name} score records`)
         totalScores += scores.length
 
