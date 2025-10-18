@@ -8,42 +8,34 @@ export async function GET(request: NextRequest) {
     const period = searchParams.get('period') || 'all_time'
     const userId = searchParams.get('user_id') || '00000000-0000-0000-0000-000000000000' // Mock user for now
 
-    // Get performance metrics
-    const { data: metrics, error: metricsError } = await supabase
-      .from('performance_metrics')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('period', period)
-      .single()
-
-    if (metricsError && metricsError.code !== 'PGRST116') {
-      return NextResponse.json({ error: metricsError.message }, { status: 500 })
-    }
-
-    // Get recent picks for chart data
+    // Get all picks to calculate metrics
     const { data: picks, error: picksError } = await supabase
       .from('picks')
-      .select(`
-        created_at,
-        units,
-        status,
-        pick_results(net_units)
-      `)
-      .eq('user_id', userId)
+      .select('*')
       .order('created_at', { ascending: true })
 
     if (picksError) {
       return NextResponse.json({ error: picksError.message }, { status: 500 })
     }
 
+    // Calculate metrics from picks
+    const totalPicks = picks?.length || 0
+    const wins = picks?.filter(p => p.status === 'won').length || 0
+    const losses = picks?.filter(p => p.status === 'lost').length || 0
+    const pushes = picks?.filter(p => p.status === 'push').length || 0
+    const unitsBet = picks?.reduce((sum, p) => sum + (parseFloat(p.units.toString()) || 0), 0) || 0
+    const netUnits = picks?.reduce((sum, p) => sum + (parseFloat(p.net_units?.toString() || '0') || 0), 0) || 0
+    const roi = unitsBet > 0 ? (netUnits / unitsBet) * 100 : 0
+    const winRate = totalPicks > 0 ? (wins / totalPicks) * 100 : 0
+
     // Calculate cumulative profit for chart
     let cumulativeProfit = 0
     const chartData = picks?.map(pick => {
-      const netUnits = pick.pick_results?.[0]?.net_units || 0
-      cumulativeProfit += netUnits
+      const netUnitsValue = parseFloat(pick.net_units?.toString() || '0') || 0
+      cumulativeProfit += netUnitsValue
       return {
         date: pick.created_at.split('T')[0],
-        profit: netUnits,
+        profit: netUnitsValue,
         cumulative_profit: cumulativeProfit
       }
     }) || []
@@ -51,17 +43,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        metrics: metrics || {
-          total_picks: 0,
-          wins: 0,
-          losses: 0,
-          pushes: 0,
-          win_rate: 0,
-          units_bet: 0,
-          units_won: 0,
-          units_lost: 0,
-          net_units: 0,
-          roi: 0
+        metrics: {
+          total_picks: totalPicks,
+          wins,
+          losses,
+          pushes,
+          win_rate: winRate,
+          units_bet: unitsBet,
+          units_won: netUnits > 0 ? netUnits : 0,
+          units_lost: netUnits < 0 ? Math.abs(netUnits) : 0,
+          net_units: netUnits,
+          roi
         },
         chartData
       }

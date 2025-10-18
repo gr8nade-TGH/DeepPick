@@ -12,16 +12,7 @@ export async function GET(request: NextRequest) {
 
     let query = supabase
       .from('picks')
-      .select(`
-        *,
-        pick_results(*),
-        games(
-          home_team,
-          away_team,
-          game_date,
-          game_time
-        )
-      `)
+      .select('*')
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
 
@@ -66,17 +57,16 @@ export async function POST(request: Request) {
     const { data, error } = await supabase
       .from('picks')
       .insert([{
-        user_id: body.user_id || '00000000-0000-0000-0000-000000000000', // Mock user for now
         game_id: body.game_id,
-        sport: body.sport,
-        bet_type: body.bet_type,
+        pick_type: body.pick_type,
         selection: body.selection,
         odds: body.odds,
-        confidence: body.confidence,
         units: body.units,
-        potential_payout: body.potential_payout,
+        game_snapshot: body.game_snapshot,
+        is_system_pick: body.is_system_pick ?? true,
+        confidence: body.confidence,
         reasoning: body.reasoning,
-        data_points: body.data_points || []
+        algorithm_version: body.algorithm_version
       }])
       .select()
 

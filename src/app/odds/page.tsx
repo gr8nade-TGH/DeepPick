@@ -146,7 +146,7 @@ export default function OddsPage() {
             </Link>
           </div>
           
-          <h1 className="text-4xl font-bold text-gradient bg-gradient-to-r from-neon-blue via-neon-purple to-neon-green bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold text-neon-green animate-pulse drop-shadow-[0_0_20px_rgba(16,185,129,0.8)]">
             Live Odds Dashboard
           </h1>
           
