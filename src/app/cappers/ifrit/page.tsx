@@ -1,23 +1,49 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
-import { Home, Flame } from 'lucide-react'
+import { Home, Flame, Target, TrendingUp, Zap } from 'lucide-react'
 
 export default function IfritCapperPage() {
+  const [games, setGames] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    fetchGames()
+  }, [])
+
+  const fetchGames = async () => {
+    setLoading(true)
+    try {
+      const response = await fetch('/api/odds')
+      const data = await response.json()
+      if (data.success) {
+        setGames(data.data || [])
+      }
+    } catch (error) {
+      console.error('Error fetching games:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-8">
-      <div className="max-w-6xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-yellow-500 to-red-500 flex items-center justify-center">
-              <Flame className="w-6 h-6 text-white" />
+            <div className="w-16 h-16 rounded-xl bg-gradient-to-r from-yellow-500 to-red-500 flex items-center justify-center shadow-lg shadow-yellow-500/50 animate-pulse">
+              <Flame className="w-8 h-8 text-white" />
             </div>
             <div>
-              <h1 className="text-4xl font-bold text-white">IFRIT</h1>
-              <p className="text-gray-400">Aggressive Value Hunter</p>
+              <h1 className="text-5xl font-bold bg-gradient-to-r from-yellow-400 to-red-400 bg-clip-text text-transparent">
+                IFRIT
+              </h1>
+              <p className="text-gray-400 text-lg">Aggressive Value Hunter</p>
             </div>
           </div>
           <Link href="/">
@@ -28,48 +54,168 @@ export default function IfritCapperPage() {
           </Link>
         </div>
 
-        {/* Strategy Card */}
+        {/* Strategy Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="glass-effect border-yellow-500/30">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3 mb-2">
+                <Target className="w-5 h-5 text-yellow-400" />
+                <h3 className="font-semibold text-white">Underdog Hunter</h3>
+              </div>
+              <p className="text-sm text-gray-400">Targets high-value underdogs with upside</p>
+            </CardContent>
+          </Card>
+
+          <Card className="glass-effect border-yellow-500/30">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3 mb-2">
+                <TrendingUp className="w-5 h-5 text-red-400" />
+                <h3 className="font-semibold text-white">Market Overreaction</h3>
+              </div>
+              <p className="text-sm text-gray-400">Identifies when public overvalues favorites</p>
+            </CardContent>
+          </Card>
+
+          <Card className="glass-effect border-yellow-500/30">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3 mb-2">
+                <Zap className="w-5 h-5 text-yellow-400" />
+                <h3 className="font-semibold text-white">Contrarian Edge</h3>
+              </div>
+              <p className="text-sm text-gray-400">Fades public, follows sharp money</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Algorithm Strategy */}
         <Card className="glass-effect border-yellow-500/30">
           <CardHeader>
-            <CardTitle className="text-2xl text-yellow-400">Algorithm Strategy</CardTitle>
+            <CardTitle className="text-2xl text-yellow-400">How Ifrit Picks Games</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-gray-300">
-            <div>
-              <h3 className="text-lg font-semibold text-white mb-2">Core Philosophy</h3>
-              <p>"High risk, high reward. Attack market inefficiencies."</p>
-            </div>
-            
-            <div>
-              <h3 className="text-lg font-semibold text-white mb-2">Key Factors</h3>
-              <ul className="list-disc list-inside space-y-2">
-                <li>Underdog value identification</li>
-                <li>Market overreaction detection</li>
-                <li>High-odds opportunities</li>
-                <li>Contrarian positioning</li>
-                <li>Public fade opportunities</li>
-              </ul>
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-3">Core Philosophy</h3>
+                <p className="text-gray-400 italic mb-4">"High risk, high reward. Attack market inefficiencies."</p>
+                
+                <h4 className="font-semibold text-white mb-2">Risk Profile:</h4>
+                <ul className="space-y-2 text-sm">
+                  <li className="flex items-start gap-2">
+                    <span className="text-yellow-400 mt-1">▸</span>
+                    <span><strong>Lower Win Rate:</strong> ~45-50% (vs 55% for others)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-yellow-400 mt-1">▸</span>
+                    <span><strong>Higher Payouts:</strong> Targets +150 to +300 odds</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-yellow-400 mt-1">▸</span>
+                    <span><strong>High Variance:</strong> Boom or bust approach</span>
+                  </li>
+                </ul>
 
-            <div>
-              <h3 className="text-lg font-semibold text-white mb-2">Risk Profile</h3>
-              <p className="text-orange-400">⚡ HIGH VARIANCE - Lower win rate, higher payouts</p>
-            </div>
+                <div className="mt-4 p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg">
+                  <div className="font-semibold text-orange-400 mb-1">⚡ HIGH VARIANCE WARNING</div>
+                  <div className="text-xs text-gray-400">
+                    Ifrit is designed for aggressive bankroll management. Expect swings.
+                  </div>
+                </div>
+              </div>
 
-            <div>
-              <h3 className="text-lg font-semibold text-white mb-2">Status</h3>
-              <p className="text-yellow-400">⚠️ Algorithm logic not yet implemented</p>
-              <p className="text-sm text-gray-400 mt-2">
-                This page is ready for algorithm development. Implement value hunting and contrarian logic.
-              </p>
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-3">Value Indicators</h3>
+                <div className="space-y-3">
+                  <div className="p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
+                    <div className="font-semibold text-white mb-1">🎯 Underdog Value</div>
+                    <div className="text-sm text-gray-400">Public fade opportunities, inflated lines</div>
+                  </div>
+                  <div className="p-3 bg-red-500/10 rounded-lg border border-red-500/20">
+                    <div className="font-semibold text-white mb-1">📊 Market Sentiment</div>
+                    <div className="text-sm text-gray-400">Betting percentages vs line movement</div>
+                  </div>
+                  <div className="p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
+                    <div className="font-semibold text-white mb-1">⚡ Sharp Action</div>
+                    <div className="text-sm text-gray-400">Reverse line movement indicators</div>
+                  </div>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Coming Soon */}
-        <Card className="glass-effect border-gray-700">
-          <CardContent className="py-12 text-center">
-            <p className="text-2xl text-gray-400">Algorithm Development In Progress</p>
-            <p className="text-gray-500 mt-2">Check back soon for live picks and analysis</p>
+        {/* Live Game Analysis */}
+        <Card className="glass-effect border-yellow-500/30">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-2xl text-white">Live Game Analysis</CardTitle>
+            <Button onClick={fetchGames} disabled={loading} size="sm">
+              {loading ? 'Loading...' : 'Refresh Games'}
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="text-center py-12 text-gray-400">Loading games...</div>
+            ) : games.length === 0 ? (
+              <div className="text-center py-12 text-gray-400">No upcoming games available</div>
+            ) : (
+              <div className="space-y-4">
+                {games.slice(0, 5).map((game) => (
+                  <div key={game.id} className="p-4 bg-gray-800/50 rounded-lg border border-gray-700 hover:border-yellow-500/50 transition-all">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <div className="text-lg font-semibold text-white">
+                          {game.away_team?.name} @ {game.home_team?.name}
+                        </div>
+                        <div className="text-sm text-gray-400">
+                          {new Date(game.game_date).toLocaleDateString()} • {game.sport?.toUpperCase()}
+                        </div>
+                      </div>
+                      <Badge className="bg-yellow-500/20 text-yellow-300 border-yellow-500/30">
+                        {game.status}
+                      </Badge>
+                    </div>
+
+                    {/* Mock Analysis Display */}
+                    <div className="grid grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-700">
+                      <div>
+                        <div className="text-xs text-gray-500 mb-1">Value Score</div>
+                        <div className="text-lg font-bold text-yellow-400">--/100</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-500 mb-1">Public %</div>
+                        <div className="text-lg font-bold text-red-400">--%</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-500 mb-1">Expected Odds</div>
+                        <div className="text-lg font-bold text-yellow-400">+---</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-500 mb-1">Suggested Pick</div>
+                        <div className="text-lg font-bold text-gray-400">Analyzing...</div>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 text-xs text-gray-500 italic">
+                      ⚠️ Algorithm not yet active - Analysis coming soon
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Status */}
+        <Card className="glass-effect border-yellow-500/30 bg-yellow-500/5">
+          <CardContent className="py-6">
+            <div className="flex items-center gap-3">
+              <div className="text-3xl">⚠️</div>
+              <div>
+                <div className="font-semibold text-yellow-400 text-lg">Algorithm Development In Progress</div>
+                <div className="text-gray-400 text-sm mt-1">
+                  UI is ready. Value hunting logic will be implemented step-by-step.
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
