@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
 import { Home, Brain, TrendingUp, Target, Zap } from 'lucide-react'
+import AlgorithmDebugLogs from '@/components/cappers/algorithm-debug-logs'
 
 export default function NexusCapperPage() {
   const [games, setGames] = useState<any[]>([])
@@ -207,6 +208,9 @@ export default function NexusCapperPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Algorithm Debugging Section */}
+        <AlgorithmDebugLogs capper="nexus" capperName="Nexus" />
       </div>
     </div>
   )

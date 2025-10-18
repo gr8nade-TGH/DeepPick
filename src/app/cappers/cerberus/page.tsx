@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
 import { Home, Shield, Flame, Droplet, Wind } from 'lucide-react'
+import AlgorithmDebugLogs from '@/components/cappers/algorithm-debug-logs'
 
 export default function CerberusCapperPage() {
   const [games, setGames] = useState<any[]>([])
@@ -222,6 +223,8 @@ export default function CerberusCapperPage() {
             </div>
           </CardContent>
         </Card>
+        {/* Algorithm Debugging Section */}
+        <AlgorithmDebugLogs capper="cerberus" capperName="Cerberus" />
       </div>
     </div>
   )
