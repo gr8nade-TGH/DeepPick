@@ -6,7 +6,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
-import { TrendingUp, Activity, Lightbulb, AlertTriangle, Zap, BarChart, Rocket, MessageCircle, CheckCircle, XCircle, PlayCircle, Clock, BarChart3, Archive, Brain, X, Target, TrendingDown } from 'lucide-react'
+import { TrendingUp, Activity, Lightbulb, AlertTriangle, Zap, BarChart, Rocket, MessageCircle, CheckCircle, XCircle, PlayCircle, Clock, BarChart3, Archive, Brain, X, Target, TrendingDown, Trophy } from 'lucide-react'
 import Link from 'next/link'
 
 interface PredictionLog {
@@ -279,6 +279,13 @@ export function RealDashboard() {
           >
             <BarChart3 className="w-4 h-4" />
             <span className="font-semibold">Live Odds</span>
+          </Link>
+          <Link 
+            href="/leaderboard"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-yellow-500/30 hover:bg-yellow-500/10 transition-all text-yellow-400 hover:border-yellow-500"
+          >
+            <Trophy className="w-4 h-4" />
+            <span className="font-semibold">Leaderboard</span>
           </Link>
           <Link 
             href="/history"

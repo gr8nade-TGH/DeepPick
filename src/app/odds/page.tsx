@@ -16,7 +16,8 @@ import {
   MapPin,
   Target,
   TrendingUp,
-  Home
+  Home,
+  Trophy
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -138,6 +139,13 @@ export default function OddsPage() {
             >
               <Home className="w-4 h-4" />
               <span className="font-semibold">Dashboard</span>
+            </Link>
+            <Link 
+              href="/leaderboard"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-yellow-500/30 hover:bg-yellow-500/10 transition-all text-yellow-400 hover:border-yellow-500"
+            >
+              <Trophy className="w-4 h-4" />
+              <span className="font-semibold">Leaderboard</span>
             </Link>
             <Link 
               href="/history"
