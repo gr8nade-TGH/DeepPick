@@ -200,9 +200,6 @@ function analyzeGame(
   }
   
   // Step 4: Generate pick selections based on prediction
-  const vegasTotal = getTotalLine(game)
-  const vegasSpread = getSpreadLine(game)
-  
   const totalPick = vegasTotal && scorePrediction.totalPoints > vegasTotal ? `OVER ${vegasTotal}` : 
                     vegasTotal ? `UNDER ${vegasTotal}` : null
   const spreadPick = vegasSpread ? `${game.home_team.abbreviation} ${vegasSpread > 0 ? '+' : ''}${vegasSpread}` : null
