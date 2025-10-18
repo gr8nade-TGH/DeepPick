@@ -327,7 +327,7 @@ export default function OddsPage() {
                             year: 'numeric'
                           })}
                         </div>
-                        <CountdownTimer gameDate={game.game_date} gameTime={game.game_time} />
+                        <CountdownTimer gameDate={game.game_date} gameTime={game.game_time} status={game.status} />
                       </div>
                     </div>
 

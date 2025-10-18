@@ -6,20 +6,31 @@ import { Clock, AlertCircle } from 'lucide-react'
 interface CountdownTimerProps {
   gameDate: string
   gameTime: string
+  status?: string
 }
 
-export function CountdownTimer({ gameDate, gameTime }: CountdownTimerProps) {
+export function CountdownTimer({ gameDate, gameTime, status }: CountdownTimerProps) {
   const [timeLeft, setTimeLeft] = useState('')
   const [isUrgent, setIsUrgent] = useState(false)
+  const [isLive, setIsLive] = useState(false)
 
   useEffect(() => {
+    // If game is live, show LIVE NOW
+    if (status === 'live') {
+      setTimeLeft('LIVE NOW')
+      setIsLive(true)
+      setIsUrgent(false)
+      return
+    }
+
     const calculateTimeLeft = () => {
       const gameDateTime = new Date(`${gameDate}T${gameTime}`)
       const now = new Date()
       const diff = gameDateTime.getTime() - now.getTime()
 
       if (diff <= 0) {
-        setTimeLeft('Game Started')
+        setTimeLeft('LIVE NOW')
+        setIsLive(true)
         setIsUrgent(false)
         return
       }
@@ -44,20 +55,25 @@ export function CountdownTimer({ gameDate, gameTime }: CountdownTimerProps) {
     }
 
     calculateTimeLeft()
-    const interval = setInterval(calculateTimeLeft, 1000)
-
-    return () => clearInterval(interval)
-  }, [gameDate, gameTime])
+    
+    // Don't set interval if game is live
+    if (status !== 'live') {
+      const interval = setInterval(calculateTimeLeft, 1000)
+      return () => clearInterval(interval)
+    }
+  }, [gameDate, gameTime, status])
 
   return (
     <div 
       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-sm transition-all ${
-        isUrgent 
+        isLive
+          ? 'bg-red-500/20 text-red-400 border border-red-500/50 animate-pulse'
+          : isUrgent 
           ? 'bg-red-500/20 text-red-400 border border-red-500/50 animate-pulse' 
           : 'bg-blue-500/10 text-blue-400 border border-blue-500/30'
       }`}
     >
-      {isUrgent ? (
+      {isLive || isUrgent ? (
         <AlertCircle className="w-4 h-4" />
       ) : (
         <Clock className="w-4 h-4" />
