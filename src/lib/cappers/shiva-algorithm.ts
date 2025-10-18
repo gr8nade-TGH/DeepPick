@@ -187,7 +187,7 @@ function analyzeGame(
     spreadGap: vegasSpread ? scorePrediction.marginOfVictory - vegasSpread : null
   }
   
-  const confidences = calculateConfidenceFromPrediction(scorePrediction, game, log)
+  const confidences = calculateConfidenceFromPrediction(scorePrediction, game)
   
   log.confidenceBreakdown = {
     totalConfidence: confidences.totalConfidence,

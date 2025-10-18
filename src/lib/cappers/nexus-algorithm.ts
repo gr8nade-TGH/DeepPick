@@ -189,7 +189,7 @@ function analyzeGame(
   }
   
   // Step 3: Calculate confidence for each bet type
-  const confidences = calculateConfidenceFromPrediction(scorePrediction, game, log)
+  const confidences = calculateConfidenceFromPrediction(scorePrediction, game)
   
   log.confidenceBreakdown = {
     totalConfidence: confidences.totalConfidence,
