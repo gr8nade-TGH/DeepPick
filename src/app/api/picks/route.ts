@@ -12,7 +12,13 @@ export async function GET(request: NextRequest) {
 
     let query = supabase
       .from('picks')
-      .select('*')
+      .select(`
+        *,
+        games (
+          status,
+          final_score
+        )
+      `)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
 

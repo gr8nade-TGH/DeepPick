@@ -26,6 +26,14 @@ interface Pick {
     game_date: string
     game_time: string
   }
+  games?: {
+    status: string
+    final_score?: {
+      home: number
+      away: number
+      winner?: string
+    }
+  }
 }
 
 interface PerformanceData {
@@ -107,6 +115,53 @@ export function RealDashboard() {
     if (pick.status === 'won') return Lightbulb
     if (pick.status === 'lost') return AlertTriangle
     return BarChart
+  }
+
+  const getGameStatusDisplay = (pick: Pick) => {
+    const gameStatus = pick.games?.status
+    const finalScore = pick.games?.final_score
+    const homeTeam = pick.game_snapshot?.home_team
+    const awayTeam = pick.game_snapshot?.away_team
+
+    if (gameStatus === 'live') {
+      return (
+        <div className="space-y-1">
+          <Badge className="bg-red-500 text-white animate-pulse">
+            🔴 LIVE
+          </Badge>
+          {finalScore && (
+            <div className="text-xs text-gray-300 mt-1">
+              <div>{awayTeam?.abbreviation || 'Away'}: {finalScore.away || 0}</div>
+              <div>{homeTeam?.abbreviation || 'Home'}: {finalScore.home || 0}</div>
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    if (gameStatus === 'final' && finalScore) {
+      return (
+        <div className="space-y-1">
+          <Badge className="bg-gray-500 text-white">
+            FINAL
+          </Badge>
+          <div className="text-xs text-gray-300 mt-1">
+            <div className={finalScore.winner === 'away' ? 'font-bold text-green-400' : ''}>
+              {awayTeam?.abbreviation || 'Away'}: {finalScore.away || 0}
+            </div>
+            <div className={finalScore.winner === 'home' ? 'font-bold text-green-400' : ''}>
+              {homeTeam?.abbreviation || 'Home'}: {finalScore.home || 0}
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <Badge variant="secondary">
+        Scheduled
+      </Badge>
+    )
   }
 
   if (loading) {
@@ -232,7 +287,8 @@ export function RealDashboard() {
                 <th className="py-2 px-4">Posted</th>
                 <th className="py-2 px-4">Units</th>
                 <th className="py-2 px-4">Sport</th>
-                <th className="py-2 px-4">Status</th>
+                <th className="py-2 px-4">Game Status</th>
+                <th className="py-2 px-4">Pick Status</th>
                 <th className="py-2 px-4">Outcome</th>
                 <th className="py-2 px-4">Insight</th>
               </tr>
@@ -240,7 +296,7 @@ export function RealDashboard() {
             <tbody>
               {picks.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 px-4 text-center text-gray-400">
+                  <td colSpan={8} className="py-8 px-4 text-center text-gray-400">
                     No picks found. Add some picks to see them here!
                   </td>
                 </tr>
@@ -256,6 +312,9 @@ export function RealDashboard() {
                       <td className="py-3 px-4 text-gray-300">{pick.units}</td>
                       <td className="py-3 px-4 text-gray-300">
                         {pick.game_snapshot?.sport?.toUpperCase() || 'N/A'}
+                      </td>
+                      <td className="py-3 px-4">
+                        {getGameStatusDisplay(pick)}
                       </td>
                       <td className="py-3 px-4">
                         <Badge variant={pick.status === 'won' ? 'default' : pick.status === 'lost' ? 'destructive' : 'secondary'}>
@@ -280,38 +339,14 @@ export function RealDashboard() {
         </div>
       </section>
 
-      {/* Quick Actions */}
-      <section className="mt-8">
-        <Card className="glass-effect neon-glow-purple">
-          <CardHeader>
-            <CardTitle className="text-gradient">Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-4">
-              <Button variant="neon" className="h-20 flex-col space-y-2">
-                <Rocket className="h-6 w-6" />
-                <div>Create Pick</div>
-              </Button>
-              <Button variant="outline" className="h-20 flex-col space-y-2" asChild>
-                <a href="/odds">
-                  <BarChart className="h-6 w-6" />
-                  <div>Live Odds</div>
-                </a>
-              </Button>
-              <Button variant="outline" className="h-20 flex-col space-y-2" asChild>
-                <a href="/deploy">
-                  <Zap className="h-6 w-6" />
-                  <div>Deploy Functions</div>
-                </a>
-              </Button>
-              <Button variant="outline" className="h-20 flex-col space-y-2">
-                <MessageCircle className="h-6 w-6" />
-                <div>Notifications</div>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </section>
+      {/* Disclaimer Footer */}
+      <footer className="mt-12 pb-8">
+        <div className="glass-effect p-6 rounded-lg border-2 border-yellow-500/50 bg-yellow-500/5">
+          <p className="text-center text-yellow-400 font-bold text-lg">
+            ⚠️ For entertainment purposes only. Not financial or gambling advice. ⚠️
+          </p>
+        </div>
+      </footer>
     </main>
   )
 }
