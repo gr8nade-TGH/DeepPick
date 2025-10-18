@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase/server'
+import { getSupabaseAdmin } from '@/lib/supabase/server'
 
 export async function POST() {
   try {
@@ -10,7 +10,7 @@ export async function POST() {
     // Find games that should be archived:
     // 1. Final games that completed > 2 hours ago
     // 2. Live games that started > 5 hours ago
-    const { data: gamesToArchive, error: fetchError } = await supabaseAdmin
+    const { data: gamesToArchive, error: fetchError } = await getSupabaseAdmin()
       .from('games')
       .select('*')
       .or('status.eq.final,status.eq.live')
@@ -59,7 +59,7 @@ export async function POST() {
     for (const game of toArchive) {
       try {
         // Insert into games_history
-        const { error: insertError } = await supabaseAdmin
+        const { error: insertError } = await getSupabaseAdmin()
           .from('games_history')
           .insert({
             id: game.id,
@@ -85,7 +85,7 @@ export async function POST() {
         }
 
         // Delete from games table
-        const { error: deleteError } = await supabaseAdmin
+        const { error: deleteError } = await getSupabaseAdmin()
           .from('games')
           .delete()
           .eq('id', game.id)

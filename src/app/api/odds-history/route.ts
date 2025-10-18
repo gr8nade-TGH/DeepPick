@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase/server'
+import { getSupabase } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch odds history for this game, ordered by time
-    const { data: history, error } = await supabase
+    const { data: history, error } = await getSupabase()
       .from('odds_history')
       .select('*')
       .eq('game_id', gameId)

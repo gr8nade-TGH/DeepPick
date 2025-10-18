@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase/server'
+import { getSupabase } from '@/lib/supabase/server'
 
 // Mark this route as dynamic (uses request parameters)
 export const dynamic = 'force-dynamic'
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     const sport = searchParams.get('sport')
     const capper = searchParams.get('capper')
 
-    let query = supabase
+    let query = getSupabase()
       .from('picks')
       .select(`
         *,

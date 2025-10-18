@@ -1,3 +1,0 @@
-Deployment trigger file - timestamp: 2025-10-18T05:15:00Z
-This file is used to force Vercel deployments.
-

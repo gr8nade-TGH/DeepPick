@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase/server'
+import { getSupabase } from '@/lib/supabase/server'
 
 // Mark this route as dynamic (uses request parameters)
 export const dynamic = 'force-dynamic'
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     const capper = searchParams.get('capper')
 
     // Get all picks to calculate metrics
-    let query = supabase
+    let query = getSupabase()
       .from('picks')
       .select('*')
       .order('created_at', { ascending: true })

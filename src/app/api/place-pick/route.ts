@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase/server'
+import { getSupabaseAdmin } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch the game to create snapshot
-    const { data: game, error: gameError } = await supabaseAdmin
+    const { data: game, error: gameError } = await getSupabaseAdmin()
       .from('games')
       .select('*')
       .eq('id', game_id)
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Insert the pick
-    const { data: pick, error: pickError } = await supabaseAdmin
+    const { data: pick, error: pickError } = await getSupabaseAdmin()
       .from('picks')
       .insert({
         game_id,

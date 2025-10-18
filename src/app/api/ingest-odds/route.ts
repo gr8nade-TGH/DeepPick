@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase/server'
+import { getSupabase } from '@/lib/supabase/server'
 
 // Map API sport keys to database enum values
 function mapSportKey(apiSportKey: string): string {
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
           // Store in Supabase
           console.log(`💾 Storing game: ${event.home_team} vs ${event.away_team} on ${event.commence_time.split('T')[0]}`)
           
-          const { error: gameError } = await supabase
+          const { error: gameError } = await getSupabase()
             .from('games')
             .upsert({
               id: crypto.randomUUID(),

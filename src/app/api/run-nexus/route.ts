@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase/server'
+import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { analyzeBatch } from '@/lib/cappers/nexus-algorithm'
 import type { CapperGame } from '@/lib/cappers/shared-logic'
 import { getExistingPicksByGame } from '@/lib/cappers/duplicate-checker'
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   try {
     console.log(`🔷 Running Nexus algorithm...${runId ? ` (Run ID: ${runId})` : ''}`)
     
-    const { data: games, error: gamesError } = await supabaseAdmin
+    const { data: games, error: gamesError } = await getSupabaseAdmin()
       .from('games')
       .select('*')
       .eq('status', 'scheduled')
@@ -108,7 +108,7 @@ export async function POST(request: Request) {
         )
       ].join('\n')
 
-      const { data: insertedPick, error: insertError } = await supabaseAdmin
+      const { data: insertedPick, error: insertError } = await getSupabaseAdmin()
         .from('picks')
         .insert({
           game_id: pick.gameId,

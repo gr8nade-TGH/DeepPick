@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase/server'
+import { getSupabaseAdmin } from '@/lib/supabase/server'
 
 // Map API sport keys to database enum values
 function mapSportKey(apiSportKey: string): string {
@@ -77,7 +77,7 @@ export async function POST() {
             const awayTeamName = scoreData.away_team
 
             // Find matching game in our database
-            const { data: games, error: findError } = await supabaseAdmin
+            const { data: games, error: findError } = await getSupabaseAdmin()
               .from('games')
               .select('*')
               .eq('sport', mapSportKey(sport.key))
@@ -125,7 +125,7 @@ export async function POST() {
             const gameStatus = scoreData.completed ? 'final' : 'live'
 
             // Update game with score and status
-            const { error: updateError } = await supabaseAdmin
+            const { error: updateError } = await getSupabaseAdmin()
               .from('games')
               .update({
                 final_score: {

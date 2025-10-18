@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase/server'
+import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { analyzeBatch } from '@/lib/cappers/ifrit-algorithm'
 import type { CapperGame } from '@/lib/cappers/shared-logic'
 import { getExistingPicksByGame } from '@/lib/cappers/duplicate-checker'
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     console.log(`🔥 Running Ifrit algorithm...${runId ? ` (Run ID: ${runId})` : ''}`)
     
     // 1. Fetch scheduled games
-    const { data: games, error: gamesError } = await supabaseAdmin
+    const { data: games, error: gamesError } = await getSupabaseAdmin()
       .from('games')
       .select('*')
       .eq('status', 'scheduled')
@@ -119,7 +119,7 @@ export async function POST(request: Request) {
       ].join('\n')
 
       // Insert pick with prediction log in result field
-      const { data: insertedPick, error: insertError } = await supabaseAdmin
+      const { data: insertedPick, error: insertError } = await getSupabaseAdmin()
         .from('picks')
         .insert({
           game_id: pick.gameId,

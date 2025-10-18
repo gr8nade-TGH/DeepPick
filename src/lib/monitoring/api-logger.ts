@@ -1,8 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-const supabase = createClient(supabaseUrl, supabaseKey)
+import { getSupabaseAdmin } from '@/lib/supabase/server'
 
 export interface ApiCallLog {
   apiProvider: string
@@ -47,7 +43,7 @@ export interface IngestionLog {
  */
 export async function logApiCall(log: ApiCallLog): Promise<string | null> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseAdmin()
       .from('api_calls')
       .insert({
         api_provider: log.apiProvider,
@@ -90,7 +86,7 @@ export async function logApiCall(log: ApiCallLog): Promise<string | null> {
  */
 export async function logIngestion(log: IngestionLog): Promise<void> {
   try {
-    const { error } = await supabase
+    const { error } = await getSupabaseAdmin()
       .from('data_ingestion_logs')
       .insert({
         api_call_id: log.apiCallId,
@@ -129,7 +125,7 @@ export async function getApiUsageSummary(provider: string, periodType: 'daily' |
       ? new Date().toISOString().split('T')[0]
       : new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]
 
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseAdmin()
       .from('api_quota_tracking')
       .select('*')
       .eq('api_provider', provider)

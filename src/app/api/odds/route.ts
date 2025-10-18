@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase/server'
+import { getSupabase } from '@/lib/supabase/server'
 
 // Mark this route as dynamic (uses request parameters)
 export const dynamic = 'force-dynamic'
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0')
 
     // Get all games, then filter in post-processing for complex logic
-    let query = supabase
+    let query = getSupabase()
       .from('games')
       .select('*')
       .gte('game_date', new Date().toISOString().split('T')[0]) // Only today and future dates

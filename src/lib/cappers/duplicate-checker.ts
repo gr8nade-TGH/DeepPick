@@ -10,7 +10,7 @@
  *    - ✅ HOU -3 in one game, HOU -4 in different game (different games)
  */
 
-import { supabaseAdmin } from '@/lib/supabase/server'
+import { getSupabaseAdmin } from '@/lib/supabase/server'
 
 export interface ExistingPick {
   id: string
@@ -83,7 +83,7 @@ export async function isDuplicatePick(
 export async function getExistingPicksByGame(
   capper: string
 ): Promise<Map<string, Set<string>>> {
-  const { data: picks, error } = await supabaseAdmin
+  const { data: picks, error } = await getSupabaseAdmin()
     .from('picks')
     .select('game_id, pick_type')
     .eq('capper', capper)
@@ -147,7 +147,7 @@ export async function getAvailablePickTypes(
   canBetMoneyline: boolean
   existingTypes: string[]
 }> {
-  const { data: picks, error } = await supabaseAdmin
+  const { data: picks, error } = await getSupabaseAdmin()
     .from('picks')
     .select('pick_type')
     .eq('game_id', gameId)

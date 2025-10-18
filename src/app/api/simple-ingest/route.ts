@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase/server'
+import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { logApiCall, logIngestion } from '@/lib/monitoring/api-logger'
 
 // Map API sport keys to database enum values
@@ -165,7 +165,7 @@ export async function GET() {
         }
         
         // Check if game already exists (match by home/away teams and date)
-        const { data: existingGames } = await supabaseAdmin
+        const { data: existingGames } = await getSupabaseAdmin()
           .from('games')
           .select('id, status')
           .eq('sport', mapSportKey(sport.key))
@@ -182,7 +182,7 @@ export async function GET() {
         if (existingGame) {
           // Update existing game
           gameId = existingGame.id
-          const { error: updateError } = await supabaseAdmin
+          const { error: updateError } = await getSupabaseAdmin()
             .from('games')
             .update({
               odds: sportsbooks,
@@ -200,7 +200,7 @@ export async function GET() {
         } else {
           // Insert new game
           gameId = crypto.randomUUID()
-          const { error: insertError } = await supabaseAdmin
+          const { error: insertError } = await getSupabaseAdmin()
             .from('games')
             .insert({
               id: gameId,
@@ -232,7 +232,7 @@ export async function GET() {
         
         // Add odds history record ONLY if game is scheduled (not live)
         if (gameId && gameStatus === 'scheduled') {
-          const { error: historyError } = await supabaseAdmin
+          const { error: historyError } = await getSupabaseAdmin()
             .from('odds_history')
             .insert({
               game_id: gameId,

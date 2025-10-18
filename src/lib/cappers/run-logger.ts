@@ -4,7 +4,7 @@
  * Logs every algorithm execution for debugging and monitoring
  */
 
-import { supabaseAdmin } from '@/lib/supabase/server'
+import { getSupabaseAdmin } from '@/lib/supabase/server'
 
 export interface AlgorithmRunLog {
   id?: string
@@ -49,7 +49,7 @@ export async function startRunLog(
   capper: string,
   triggerType: 'manual' | 'cron' | 'api'
 ): Promise<string> {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await getSupabaseAdmin()
     .from('algorithm_runs')
     .insert({
       capper,
@@ -85,7 +85,7 @@ export async function completeRunLog(
 ): Promise<void> {
   const completedAt = new Date().toISOString()
   
-  const { error } = await supabaseAdmin
+  const { error } = await getSupabaseAdmin()
     .from('algorithm_runs')
     .update({
       completed_at: completedAt,
@@ -149,7 +149,7 @@ export async function getRecentRunLogs(
   capper: string,
   limit: number = 50
 ): Promise<AlgorithmRunLog[]> {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await getSupabaseAdmin()
     .from('algorithm_runs')
     .select('*')
     .eq('capper', capper)
@@ -182,7 +182,7 @@ export async function getRecentRunLogs(
  * Calculate duration and update
  */
 export async function calculateDuration(runId: string): Promise<void> {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await getSupabaseAdmin()
     .from('algorithm_runs')
     .select('started_at, completed_at')
     .eq('id', runId)
