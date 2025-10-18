@@ -40,13 +40,16 @@ export async function POST() {
       try {
         console.log(`📊 Fetching scores for ${sport.name}...`)
         
-        // Fetch scores from last 7 days
-        const response = await fetch(
-          `https://api.the-odds-api.com/v4/sports/${sport.key}/scores?apiKey=${oddsApiKey}&daysFrom=7&dateFormat=iso`
-        )
+        // Fetch scores from last 3 days (daysFrom=3 is the max)
+        const url = `https://api.the-odds-api.com/v4/sports/${sport.key}/scores?apiKey=${oddsApiKey}&daysFrom=3`
+        console.log(`🔗 Calling: ${url.replace(oddsApiKey, 'API_KEY')}`)
+        
+        const response = await fetch(url)
 
         if (!response.ok) {
-          errors.push(`Failed to fetch ${sport.name} scores: ${response.statusText}`)
+          const errorText = await response.text()
+          console.error(`❌ ${sport.name} error:`, response.status, errorText)
+          errors.push(`Failed to fetch ${sport.name} scores: ${response.status} - ${errorText}`)
           continue
         }
 
