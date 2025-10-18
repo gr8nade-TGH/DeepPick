@@ -261,8 +261,7 @@ export async function GET() {
         gamesUpdated: updatedCount,
         oddsHistoryRecordsCreated: historyCount,
         processingTimeMs: Date.now() - Date.now(), // Will be calculated properly in next iteration
-        success: true,
-        notes: `Processed ${totalEvents} events across ${sports.length} sports`
+        success: true
       })
     } catch (logError) {
       console.warn('⚠️ Could not log ingestion (table may not exist yet):', logError)
