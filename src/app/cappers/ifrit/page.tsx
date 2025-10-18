@@ -10,6 +10,8 @@ import { Home, Flame, Target, TrendingUp, Zap } from 'lucide-react'
 export default function IfritCapperPage() {
   const [games, setGames] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
+  const [running, setRunning] = useState(false)
+  const [result, setResult] = useState<any>(null)
 
   useEffect(() => {
     fetchGames()
@@ -27,6 +29,29 @@ export default function IfritCapperPage() {
       console.error('Error fetching games:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const runAlgorithm = async () => {
+    setRunning(true)
+    setResult(null)
+    try {
+      const response = await fetch('/api/run-ifrit', {
+        method: 'POST',
+      })
+      const data = await response.json()
+      setResult(data)
+      
+      if (data.success) {
+        alert(`✅ Ifrit generated ${data.picks?.length || 0} picks! Check the dashboard.`)
+      } else {
+        alert(`❌ Error: ${data.error}`)
+      }
+    } catch (error) {
+      console.error('Error running algorithm:', error)
+      alert('❌ Error running algorithm')
+    } finally {
+      setRunning(false)
     }
   }
 
@@ -204,17 +229,41 @@ export default function IfritCapperPage() {
           </CardContent>
         </Card>
 
-        {/* Status */}
-        <Card className="glass-effect border-yellow-500/30 bg-yellow-500/5">
-          <CardContent className="py-6">
-            <div className="flex items-center gap-3">
-              <div className="text-3xl">⚠️</div>
-              <div>
-                <div className="font-semibold text-yellow-400 text-lg">Algorithm Development In Progress</div>
-                <div className="text-gray-400 text-sm mt-1">
-                  UI is ready. Value hunting logic will be implemented step-by-step.
+        {/* Run Algorithm */}
+        <Card className="glass-effect border-yellow-500/50 bg-gradient-to-r from-yellow-500/10 to-red-500/10">
+          <CardContent className="py-8">
+            <div className="text-center space-y-4">
+              <div className="text-5xl">🔥</div>
+              <h3 className="text-2xl font-bold text-white">Ready to Generate Picks</h3>
+              <p className="text-gray-300">
+                Ifrit will analyze all scheduled games and generate high-scoring OVER picks
+              </p>
+              <Button
+                onClick={runAlgorithm}
+                disabled={running}
+                size="lg"
+                className="bg-gradient-to-r from-yellow-500 to-red-500 hover:from-yellow-600 hover:to-red-600 text-white font-bold text-lg px-8 py-6 shadow-lg"
+              >
+                <Flame className="w-6 h-6 mr-2" />
+                {running ? 'Running Algorithm...' : 'Run Ifrit Algorithm'}
+              </Button>
+              
+              {result && result.success && (
+                <div className="mt-4 p-4 bg-green-500/20 border border-green-500/50 rounded-lg">
+                  <p className="text-green-400 font-semibold">
+                    ✅ Generated {result.picks?.length || 0} picks!
+                  </p>
+                  {result.analysis && result.analysis.length > 0 && (
+                    <div className="mt-3 text-left space-y-2">
+                      {result.analysis.map((pick: any, i: number) => (
+                        <div key={i} className="text-sm text-gray-300">
+                          <strong>{pick.selection}</strong> - {pick.confidence}% confidence ({pick.units}u)
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              </div>
+              )}
             </div>
           </CardContent>
         </Card>
