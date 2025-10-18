@@ -50,6 +50,24 @@ interface QuotaTracking {
   last_updated: string
 }
 
+interface GameChangeDetail {
+  gameId: string
+  matchup: string
+  sport: string
+  action: 'added' | 'updated' | 'skipped'
+  bookmakersBefore?: string[]
+  bookmakersAfter: string[]
+  oddsChangesSummary?: {
+    moneylineChanged: boolean
+    spreadChanged: boolean
+    totalChanged: boolean
+    largestSwing?: number
+  }
+  beforeSnapshot?: any
+  afterSnapshot?: any
+  warnings?: string[]
+}
+
 interface IngestionLog {
   id: string
   games_added: number
@@ -63,6 +81,7 @@ interface IngestionLog {
   processing_time_ms: number
   success: boolean
   created_at: string
+  game_details?: GameChangeDetail[] // NEW: Detailed per-game changes
 }
 
 export default function MonitoringPage() {
