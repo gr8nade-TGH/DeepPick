@@ -20,6 +20,7 @@ import {
   getTotalLine,
   getSpreadLine,
 } from './shared-logic'
+import { validateGameTiming } from './game-time-validator'
 
 /**
  * Detailed prediction log for analysis
@@ -632,6 +633,13 @@ export function analyzeBatch(
   const results: Array<{ pick: CapperPick; log: PredictionLog }> = []
   
   for (const game of games) {
+    // CRITICAL: Validate game timing before analysis
+    const timeValidation = validateGameTiming(game, 15)
+    if (!timeValidation.isValid) {
+      console.log(`[IFRIT] Skipping ${game.away_team?.name} @ ${game.home_team?.name}: ${timeValidation.reason}`)
+      continue
+    }
+    
     // Check if we already have a pick on this game for the same bet type
     if (existingPicksByGame) {
       const existingTypes = existingPicksByGame.get(game.id) || new Set<string>()

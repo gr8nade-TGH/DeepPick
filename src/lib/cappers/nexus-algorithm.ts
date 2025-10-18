@@ -20,6 +20,7 @@ import {
   getTotalLine,
   getSpreadLine,
 } from './shared-logic'
+import { validateGameTiming, logGameValidation } from './game-time-validator'
 
 export interface PredictionLog {
   timestamp: string
@@ -323,6 +324,14 @@ export function analyzeBatch(
   const results: Array<{ pick: CapperPick; log: PredictionLog }> = []
   
   for (const game of games) {
+    // CRITICAL: Validate game timing before analysis
+    const timeValidation = validateGameTiming(game, 15) // 15-minute buffer
+    
+    if (!timeValidation.isValid) {
+      console.log(`[NEXUS] Skipping ${game.away_team?.name} @ ${game.home_team?.name}: ${timeValidation.reason}`)
+      continue // Skip games that have started or are starting too soon
+    }
+    
     const existingPickTypes = existingPicksByGame.get(game.id) || new Set()
     const result = analyzeGame(game, existingPickTypes)
     

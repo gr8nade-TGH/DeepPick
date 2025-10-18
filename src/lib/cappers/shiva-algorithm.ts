@@ -20,6 +20,7 @@ import {
   getTotalLine,
   getSpreadLine,
 } from './shared-logic'
+import { validateGameTiming } from './game-time-validator'
 
 export interface PredictionLog {
   timestamp: string
@@ -318,6 +319,13 @@ export function analyzeBatch(
   const results: Array<{ pick: CapperPick; log: PredictionLog }> = []
   
   for (const game of games) {
+    // CRITICAL: Validate game timing before analysis
+    const timeValidation = validateGameTiming(game, 15)
+    if (!timeValidation.isValid) {
+      console.log(`[SHIVA] Skipping ${game.away_team?.name} @ ${game.home_team?.name}: ${timeValidation.reason}`)
+      continue
+    }
+    
     const existingPickTypes = existingPicksByGame.get(game.id) || new Set()
     const result = analyzeGame(game, existingPickTypes)
     
