@@ -361,6 +361,7 @@ export default function MonitoringPage() {
       
       // Fetch current game data for timing validation
       let currentGames: any[] = []
+      let dbGames: any[] = []
       try {
         const gamesRes = await fetch('/api/odds')
         const gamesData = await gamesRes.json()
@@ -369,6 +370,17 @@ export default function MonitoringPage() {
         }
       } catch (e) {
         console.warn('Could not fetch current games for validation')
+      }
+      
+      // Fetch raw database contents
+      try {
+        const dbRes = await fetch('/api/debug-db')
+        const dbData = await dbRes.json()
+        if (dbData.success) {
+          dbGames = dbData.games || []
+        }
+      } catch (e) {
+        console.warn('Could not fetch database games')
       }
       
       // Generate formatted report
@@ -457,22 +469,97 @@ ${ingestionLogs.slice(0, 5).map(log =>
   `${new Date(log.created_at).toLocaleTimeString()} | +${log.games_added} added, ~${log.games_updated} updated | ${log.odds_history_records_created} odds records | ${log.processing_time_ms}ms`
 ).join('\n')}
 
-⏰ GAME TIMING VALIDATION (Current Games in DB)
+💾 DATABASE CONTENTS (Raw - Last 50 Games)
 ──────────────────────────────────────────────────────────
-${currentGames.length > 0 ? currentGames.slice(0, 5).map(game => {
+Total Games in DB: ${dbGames.length}
+
+${dbGames.length > 0 ? dbGames.slice(0, 15).map((g, idx) => 
+  `${idx + 1}. [${g.id}] ${g.matchup}
+     Sport: ${g.sport.toUpperCase()} | Status: ${g.status}
+     Date: ${g.date} ${g.time}
+     Created: ${g.created} | Updated: ${g.updated}`
+).join('\n\n') : 'No games in database'}
+${dbGames.length > 15 ? `\n... and ${dbGames.length - 15} more games` : ''}
+
+🔍 GAME ID STABILITY CHECK
+──────────────────────────────────────────────────────────
+${dbGames.length > 0 ? (() => {
+  // Check for duplicate matchups (would indicate ID generation issues)
+  const matchupCounts: Record<string, number> = {}
+  dbGames.forEach(g => {
+    matchupCounts[g.matchup] = (matchupCounts[g.matchup] || 0) + 1
+  })
+  
+  const duplicates = Object.entries(matchupCounts).filter(([_, count]) => count > 1)
+  
+  // Check if game IDs are stable by looking at recent ingestion logs
+  const recentGameIds = new Set<string>()
+  ingestionLogs.slice(0, 3).forEach(log => {
+    const gameDetails = log.game_details as any[] | undefined
+    gameDetails?.forEach(game => {
+      recentGameIds.add(game.gameId)
+    })
+  })
+  
+  const stableIds = dbGames.filter(g => {
+    const fullId = dbGames.find(db => db.id === g.id.substring(0, 8))?.id
+    return fullId && recentGameIds.has(fullId)
+  }).length
+  
+  return `✓ Unique game IDs: ${dbGames.length}
+✓ Duplicate matchups: ${duplicates.length > 0 ? `⚠️ ${duplicates.length} found - ${duplicates.map(([m, c]) => `${m} (${c}x)`).join(', ')}` : 'None (good!)'}
+✓ ID stability: ${stableIds}/${recentGameIds.size} games from recent ingestions still in DB
+${duplicates.length > 0 ? '\n⚠️ WARNING: Duplicate matchups indicate game matching is broken!' : ''}
+${recentGameIds.size > dbGames.length ? `\n⚠️ WARNING: ${recentGameIds.size - dbGames.length} games from ingestion logs are missing from DB!` : ''}`
+})() : 'No games to analyze'}
+
+⏰ GAME TIMING VALIDATION
+──────────────────────────────────────────────────────────
+${dbGames.length > 0 ? dbGames.slice(0, 5).map(game => {
   const now = new Date()
-  const gameDateTime = new Date(`${game.game_date}T${game.game_time}`)
+  const gameDateTime = new Date(`${game.date}T${game.time}`)
   const hoursUntilStart = (gameDateTime.getTime() - now.getTime()) / (1000 * 60 * 60)
   const statusEmoji = game.status === 'live' ? '🔴' : game.status === 'final' ? '✅' : '⏳'
   
-  return `${statusEmoji} ${game.away_team.name} @ ${game.home_team.name}
+  return `${statusEmoji} ${game.matchup}
     DB Status: ${game.status}
-    Game Date: ${game.game_date} ${game.game_time}
+    Game Date: ${game.date} ${game.time}
     Hours Until Start: ${hoursUntilStart.toFixed(1)}h
     ${hoursUntilStart < 0 && game.status === 'scheduled' ? '⚠️ Game started but status still "scheduled"' : ''}
-    ${game.status === 'final' && !game.final_score ? '⚠️ Status is "final" but no score stored' : ''}
-    ${game.final_score ? `Final Score: ${JSON.stringify(game.final_score)}` : ''}`
-}).join('\n\n') : 'No games currently in database'}
+    ${hoursUntilStart < -5 && game.status !== 'final' ? '⚠️ Game started >5h ago but not marked final' : ''}`
+}).join('\n\n') : 'No games in database'}
+
+📊 DATA FLOW ANALYSIS
+──────────────────────────────────────────────────────────
+${(() => {
+  const lastIngestion = ingestionLogs[0]
+  const lastApiCall = apiCalls[0]
+  
+  if (!lastIngestion || !lastApiCall) return 'No recent data to analyze'
+  
+  const totalEventsFromApi = apiCalls.slice(0, 3).reduce((sum, call) => sum + (call.events_received || 0), 0)
+  const totalGamesProcessed = lastIngestion.games_added + lastIngestion.games_updated
+  const gamesInDb = dbGames.length
+  
+  return `Last API Call: ${lastApiCall.events_received} events received
+Last Ingestion: ${totalGamesProcessed} games processed (${lastIngestion.games_added} new, ${lastIngestion.games_updated} updated)
+Current DB: ${gamesInDb} games stored
+
+${totalEventsFromApi > totalGamesProcessed ? `⚠️ DATA LOSS: API returned ${totalEventsFromApi} events but only ${totalGamesProcessed} were processed!
+   Possible causes:
+   - Games are being filtered out (date/status filters)
+   - Duplicate detection is too aggressive
+   - Processing errors (check Vercel logs)` : '✓ All API events are being processed'}
+
+${totalGamesProcessed > gamesInDb && gamesInDb < 20 ? `⚠️ GAMES DISAPPEARING: Processed ${totalGamesProcessed} games but only ${gamesInDb} in DB
+   Possible causes:
+   - Archive cron running too aggressively
+   - Games being deleted instead of updated
+   - Database RLS policies blocking reads` : ''}
+
+${gamesInDb > 0 && totalGamesProcessed === 0 ? `⚠️ NO UPDATES: ${gamesInDb} games in DB but last ingestion processed 0 games
+   Possible cause: All games failed matching logic` : ''}`
+})()}
 
 🔧 RECOMMENDED ACTIONS
 ──────────────────────────────────────────────────────────
@@ -480,6 +567,7 @@ ${anomalies.length > 5 ? '⚠️ HIGH ANOMALY COUNT: Review game matching logic'
 ${parseFloat(checks.successRate as string) < 95 ? '⚠️ LOW SUCCESS RATE: Check API connectivity' : '✓ Success rate healthy'}
 ${parseFloat(checks.avgResponseTime as string) > 200 ? '⚠️ SLOW RESPONSES: API may be under load' : '✓ Response times normal'}
 ${(dailyQuota?.quota_used_percentage || 0) > 80 ? '⚠️ QUOTA WARNING: Approaching daily limit' : '✓ Quota usage healthy'}
+${dbGames.length < 10 && apiCalls.length > 0 ? '⚠️ LOW GAME COUNT: Check simple-ingest logic and Vercel logs' : ''}
 
 ═══════════════════════════════════════════════════════════
 📋 Copy this report and paste to Cursor for troubleshooting
