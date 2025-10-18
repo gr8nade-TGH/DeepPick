@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { TrendingUp, Activity, Lightbulb, AlertTriangle, Zap, BarChart, Rocket, MessageCircle, CheckCircle, XCircle, PlayCircle, Clock, BarChart3, Archive, Brain, X, Target, TrendingDown, Trophy } from 'lucide-react'
 import { NavBar } from '@/components/navigation/nav-bar'
+import Link from 'next/link'
 
 interface PredictionLog {
   timestamp: string
