@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
-import { logApiCall, logIngestion } from '@/lib/monitoring/api-logger'
+import { logApiCall, logIngestion, GameChangeDetail } from '@/lib/monitoring/api-logger'
 
 // Map API sport keys to database enum values
 function mapSportKey(apiSportKey: string): string {
@@ -12,6 +12,46 @@ function mapSportKey(apiSportKey: string): string {
     'soccer_epl': 'soccer',
   }
   return sportMap[apiSportKey] || apiSportKey
+}
+
+// Helper: Calculate largest odds swing between before/after
+function calculateLargestSwing(beforeOdds: any, afterOdds: any): number {
+  if (!beforeOdds || !afterOdds) return 0
+  
+  let maxSwing = 0
+  const bookmakers = Object.keys(afterOdds)
+  
+  for (const book of bookmakers) {
+    const before = beforeOdds[book]
+    const after = afterOdds[book]
+    
+    if (!before || !after) continue
+    
+    // Check moneyline swings
+    if (before.moneyline && after.moneyline) {
+      const homeSwing = Math.abs((after.moneyline.home || 0) - (before.moneyline.home || 0))
+      const awaySwing = Math.abs((after.moneyline.away || 0) - (before.moneyline.away || 0))
+      maxSwing = Math.max(maxSwing, homeSwing, awaySwing)
+    }
+  }
+  
+  return Math.round(maxSwing)
+}
+
+// Helper: Check if odds changed
+function hasOddsChanged(beforeOdds: any, afterOdds: any, market: 'moneyline' | 'spread' | 'total'): boolean {
+  if (!beforeOdds || !afterOdds) return true
+  
+  const bookmakers = Object.keys(afterOdds)
+  for (const book of bookmakers) {
+    const before = beforeOdds[book]?.[market]
+    const after = afterOdds[book]?.[market]
+    
+    if (JSON.stringify(before) !== JSON.stringify(after)) {
+      return true
+    }
+  }
+  return false
 }
 
 export async function GET() {
@@ -41,6 +81,8 @@ export async function GET() {
     let updatedCount = 0
     let historyCount = 0
     let totalEvents = 0
+    const gameDetails: GameChangeDetail[] = [] // NEW: Track detailed changes
+    const processingStart = Date.now() // Track processing time
     
     for (const sport of sports) {
       console.log(`Fetching ${sport.name} odds...`)
@@ -167,7 +209,7 @@ export async function GET() {
         // Check if game already exists (match by home/away teams and date)
         const { data: existingGames } = await getSupabaseAdmin()
           .from('games')
-          .select('id, status')
+          .select('id, status, odds')
           .eq('sport', mapSportKey(sport.key))
           .eq('game_date', gameDate)
         
@@ -178,6 +220,43 @@ export async function GET() {
           // This is a simplified check - in production you'd want more robust matching
           return true // For now, just take the first match per sport/date
         })
+        
+        // NEW: Track bookmakers for detailed logging
+        const bookmakersBefore = existingGame?.odds ? Object.keys(existingGame.odds) : undefined
+        const bookmakersAfter = Object.keys(sportsbooks)
+        const matchup = `${event.away_team} @ ${event.home_team}`
+        
+        // NEW: Detect changes and warnings
+        const warnings: string[] = []
+        let largestSwing = 0
+        
+        if (existingGame) {
+          largestSwing = calculateLargestSwing(existingGame.odds, sportsbooks)
+          
+          if (largestSwing > 100) {
+            warnings.push(`Large odds swing: ${largestSwing} points`)
+          }
+          
+          if (bookmakersBefore && bookmakersBefore.length !== bookmakersAfter.length) {
+            const missing = bookmakersBefore.filter(b => !bookmakersAfter.includes(b))
+            const added = bookmakersAfter.filter(b => !bookmakersBefore.includes(b))
+            
+            if (missing.length > 0) {
+              warnings.push(`Bookmakers dropped: ${missing.join(', ')}`)
+            }
+            if (added.length > 0) {
+              warnings.push(`Bookmakers added: ${added.join(', ')}`)
+            }
+          }
+        }
+        
+        // Check for missing odds data
+        if (bookmakersAfter.length === 0) {
+          warnings.push('No bookmakers returned odds for this game')
+        }
+        if (bookmakersAfter.length < 3) {
+          warnings.push(`Only ${bookmakersAfter.length} bookmaker(s) available`)
+        }
         
         if (existingGame) {
           // Update existing game
@@ -196,6 +275,25 @@ export async function GET() {
           } else {
             updatedCount++
             console.log(`🔄 Updated existing game (status: ${gameStatus})`)
+            
+            // NEW: Add detailed tracking for updated game
+            gameDetails.push({
+              gameId: gameId!,
+              matchup,
+              sport: mapSportKey(sport.key),
+              action: 'updated',
+              bookmakersBefore,
+              bookmakersAfter,
+              oddsChangesSummary: {
+                moneylineChanged: hasOddsChanged(existingGame.odds, sportsbooks, 'moneyline'),
+                spreadChanged: hasOddsChanged(existingGame.odds, sportsbooks, 'spread'),
+                totalChanged: hasOddsChanged(existingGame.odds, sportsbooks, 'total'),
+                largestSwing
+              },
+              beforeSnapshot: existingGame.odds,
+              afterSnapshot: sportsbooks,
+              warnings: warnings.length > 0 ? warnings : undefined
+            })
           }
         } else {
           // Insert new game
@@ -227,6 +325,23 @@ export async function GET() {
           } else {
             storedCount++
             console.log(`✅ Inserted new game (status: ${gameStatus})`)
+            
+            // NEW: Add detailed tracking for new game
+            gameDetails.push({
+              gameId,
+              matchup,
+              sport: mapSportKey(sport.key),
+              action: 'added',
+              bookmakersAfter,
+              oddsChangesSummary: {
+                moneylineChanged: false,
+                spreadChanged: false,
+                totalChanged: false,
+                largestSwing: 0
+              },
+              afterSnapshot: sportsbooks,
+              warnings: warnings.length > 0 ? warnings : undefined
+            })
           }
         }
         
@@ -256,13 +371,18 @@ export async function GET() {
     
     // Log ingestion results (optional - won't crash if table doesn't exist)
     try {
+      const processingTimeMs = Date.now() - processingStart
+      
       await logIngestion({
         gamesAdded: storedCount,
         gamesUpdated: updatedCount,
         oddsHistoryRecordsCreated: historyCount,
-        processingTimeMs: Date.now() - Date.now(), // Will be calculated properly in next iteration
-        success: true
+        processingTimeMs,
+        success: true,
+        gameDetails // NEW: Include detailed game-by-game tracking
       })
+      
+      console.log(`📊 Logged ingestion with ${gameDetails.length} game details`)
     } catch (logError) {
       console.warn('⚠️ Could not log ingestion (table may not exist yet):', logError)
     }
