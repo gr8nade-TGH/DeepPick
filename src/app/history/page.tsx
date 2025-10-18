@@ -240,10 +240,21 @@ export default function HistoryPage() {
                       
                       {game.final_score && (
                         <div className="text-right">
-                          <div className="text-2xl font-bold text-neon-green">
-                            {game.final_score.away} - {game.final_score.home}
+                          <div className="text-2xl font-bold">
+                            <span className={game.final_score.winner === 'away' ? 'text-neon-green' : 'text-gray-400'}>
+                              {game.away_team.abbreviation} {game.final_score.away}
+                            </span>
+                            <span className="text-gray-500 mx-2">-</span>
+                            <span className={game.final_score.winner === 'home' ? 'text-neon-green' : 'text-gray-400'}>
+                              {game.final_score.home} {game.home_team.abbreviation}
+                            </span>
                           </div>
-                          <div className="text-xs text-muted-foreground">Final Score</div>
+                          <div className="text-xs text-muted-foreground">
+                            {game.final_score.winner === 'tie' ? 'Tie Game' : 
+                             game.final_score.winner === 'home' ? `${game.home_team.name} Won` :
+                             `${game.away_team.name} Won`}
+                            {game.final_score.margin && ` by ${game.final_score.margin}`}
+                          </div>
                         </div>
                       )}
                     </div>

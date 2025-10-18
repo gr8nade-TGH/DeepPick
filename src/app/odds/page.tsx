@@ -178,30 +178,43 @@ export default function OddsPage() {
               <Button
                 onClick={async () => {
                   try {
-                    console.log('🚀 Triggering odds ingestion...')
+                    console.log('🚀 Starting full refresh...')
                     
-                    // First, archive old games
+                    // 1. Fetch scores for completed games
+                    console.log('🏆 Fetching scores...')
+                    const scoresResponse = await fetch('/api/fetch-scores', { method: 'POST' })
+                    const scoresResult = await scoresResponse.json()
+                    console.log('📊 Scores result:', scoresResult)
+                    
+                    // 2. Archive old games
                     console.log('🗄️ Archiving old games...')
                     const archiveResponse = await fetch('/api/archive-games', { method: 'POST' })
                     const archiveResult = await archiveResponse.json()
                     console.log('📦 Archive result:', archiveResult)
                     
-                    // Then, ingest fresh odds
+                    // 3. Ingest fresh odds
+                    console.log('📈 Ingesting fresh odds...')
                     const response = await fetch('/api/simple-ingest', { method: 'GET' })
                     const result = await response.json()
-                    console.log('📊 Ingestion result:', result)
+                    console.log('✅ Ingestion result:', result)
                     
                     if (result.success) {
-                      const message = archiveResult.archivedCount > 0 
-                        ? `✅ Archived ${archiveResult.archivedCount} games\n${result.message}`
-                        : `✅ ${result.message}`
-                      alert(message)
+                      const messages = []
+                      if (scoresResult.updatedCount > 0) {
+                        messages.push(`Scored: ${scoresResult.updatedCount} games`)
+                      }
+                      if (archiveResult.archivedCount > 0) {
+                        messages.push(`Archived: ${archiveResult.archivedCount} games`)
+                      }
+                      messages.push(result.message)
+                      
+                      alert(`✅ ${messages.join('\n')}`)
                       fetchOdds() // Refresh the display
                     } else {
                       alert(`❌ Failed: ${result.error}`)
                     }
                   } catch (error) {
-                    console.error('❌ Ingestion error:', error)
+                    console.error('❌ Error:', error)
                     alert(`❌ Error: ${error}`)
                   }
                 }}
