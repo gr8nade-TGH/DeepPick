@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { NavBar } from '@/components/navigation/nav-bar'
+import Link from 'next/link'
 import { Trophy, TrendingUp, Award, Medal, Crown, ExternalLink, Home } from 'lucide-react'
 
 interface CapperStats {
