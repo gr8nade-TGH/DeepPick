@@ -78,11 +78,11 @@ export async function isDuplicatePick(
  * Get all existing picks for a capper to filter out games
  * 
  * @param capper - The capper name
- * @returns Map of game_id -> array of pick types already bet
+ * @returns Map of game_id -> Set of pick types already bet
  */
 export async function getExistingPicksByGame(
   capper: string
-): Promise<Map<string, string[]>> {
+): Promise<Map<string, Set<string>>> {
   const { data: picks, error } = await supabaseAdmin
     .from('picks')
     .select('game_id, pick_type')
@@ -94,16 +94,16 @@ export async function getExistingPicksByGame(
     return new Map()
   }
   
-  const picksByGame = new Map<string, string[]>()
+  const picksByGame = new Map<string, Set<string>>()
   
   for (const pick of picks || []) {
     const baseType = pick.pick_type.startsWith('total_') ? 'total' : pick.pick_type
     
     if (!picksByGame.has(pick.game_id)) {
-      picksByGame.set(pick.game_id, [])
+      picksByGame.set(pick.game_id, new Set())
     }
     
-    picksByGame.get(pick.game_id)!.push(baseType)
+    picksByGame.get(pick.game_id)!.add(baseType)
   }
   
   return picksByGame
@@ -126,8 +126,8 @@ export async function filterAvailableGames(
   const basePickType = pickType.startsWith('total_') ? 'total' : pickType
   
   return games.filter(game => {
-    const gamePicks = existingPicks.get(game.id) || []
-    return !gamePicks.includes(basePickType)
+    const gamePicks = existingPicks.get(game.id) || new Set()
+    return !gamePicks.has(basePickType)
   })
 }
 

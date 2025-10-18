@@ -250,20 +250,6 @@ export default function CerberusCapperPage() {
           </CardContent>
         </Card>
 
-        {/* Status */}
-        <Card className="glass-effect border-yellow-500/30 bg-yellow-500/5">
-          <CardContent className="py-6">
-            <div className="flex items-center gap-3">
-              <div className="text-3xl">⚠️</div>
-              <div>
-                <div className="font-semibold text-yellow-400 text-lg">Algorithm Development In Progress</div>
-                <div className="text-gray-400 text-sm mt-1">
-                  UI is ready. Three-model consensus logic will be implemented step-by-step.
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
         {/* Algorithm Debugging Section */}
         <AlgorithmDebugLogs capper="cerberus" capperName="Cerberus" />
       </div>
