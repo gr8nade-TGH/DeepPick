@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import Link from 'next/link'
+import { NavBar } from '@/components/navigation/nav-bar'
 import { Home, Brain, TrendingUp, Target, Zap } from 'lucide-react'
 import AlgorithmDebugLogs from '@/components/cappers/algorithm-debug-logs'
 
@@ -70,12 +70,7 @@ export default function NexusCapperPage() {
               <p className="text-gray-400 text-lg">Pattern Recognition Specialist</p>
             </div>
           </div>
-          <Link href="/">
-            <Button variant="outline" className="gap-2">
-              <Home className="w-4 h-4" />
-              Dashboard
-            </Button>
-          </Link>
+          <NavBar />
         </div>
 
         {/* Strategy Overview */}
