@@ -26,13 +26,42 @@ export async function POST() {
       }, { status: 500 })
     }
 
-    // Only fetch scores for sports that are currently in season
-    // MLB season typically ends in October, NBA starts in October, NFL runs Sep-Feb
-    const sports = [
-      { key: 'baseball_mlb', name: 'MLB' },
-      { key: 'basketball_nba', name: 'NBA' },
-      { key: 'americanfootball_nfl', name: 'NFL' }
-    ]
+    // OPTIMIZATION: First check which games need scores
+    const supabase = getSupabaseAdmin()
+    const { data: gamesNeedingScores } = await supabase
+      .from('games')
+      .select('id, sport, game_date, game_start_timestamp, status')
+      .in('status', ['live', 'final']) // Only live or final games
+      .is('home_score', null) // No score recorded yet
+      .order('game_date', { ascending: false })
+      .limit(100) // Reasonable limit
+    
+    if (!gamesNeedingScores || gamesNeedingScores.length === 0) {
+      console.log('✅ No games need score updates')
+      return NextResponse.json({
+        success: true,
+        message: 'No games need score updates',
+        updatedCount: 0,
+        totalScoresFound: 0
+      })
+    }
+    
+    console.log(`📊 Found ${gamesNeedingScores.length} games needing scores`)
+    
+    // Group by sport to minimize API calls
+    const sportsThatNeedScores = Array.from(new Set(gamesNeedingScores.map(g => g.sport)))
+    const sportsMap: Record<string, string> = {
+      'nfl': 'americanfootball_nfl',
+      'nba': 'basketball_nba',
+      'mlb': 'baseball_mlb',
+      'nhl': 'icehockey_nhl'
+    }
+    
+    const sports = sportsThatNeedScores
+      .map(sport => ({ key: sportsMap[sport], name: sport.toUpperCase() }))
+      .filter(s => s.key) // Only sports we have API keys for
+
+    console.log(`🎯 Fetching scores for: ${sports.map(s => s.name).join(', ')}`)
 
     let updatedCount = 0
     let totalScores = 0
