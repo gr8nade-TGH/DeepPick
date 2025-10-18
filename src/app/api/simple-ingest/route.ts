@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase/server'
 
 // Map API sport keys to database enum values
 function mapSportKey(apiSportKey: string): string {
@@ -111,7 +111,7 @@ export async function GET() {
         const gameTime = event.commence_time.split('T')[1].substring(0, 8)
         
         // Check if game already exists (match by home/away teams and date)
-        const { data: existingGames } = await supabase
+        const { data: existingGames } = await supabaseAdmin
           .from('games')
           .select('id')
           .eq('sport', mapSportKey(sport.key))
@@ -129,7 +129,7 @@ export async function GET() {
         if (existingGame) {
           // Update existing game
           gameId = existingGame.id
-          const { error: updateError } = await supabase
+          const { error: updateError } = await supabaseAdmin
             .from('games')
             .update({
               odds: sportsbooks,
@@ -146,7 +146,7 @@ export async function GET() {
         } else {
           // Insert new game
           gameId = crypto.randomUUID()
-          const { error: insertError } = await supabase
+          const { error: insertError } = await supabaseAdmin
             .from('games')
             .insert({
               id: gameId,
@@ -178,7 +178,7 @@ export async function GET() {
         
         // Add odds history record
         if (gameId) {
-          const { error: historyError } = await supabase
+          const { error: historyError } = await supabaseAdmin
             .from('odds_history')
             .insert({
               game_id: gameId,

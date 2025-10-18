@@ -15,8 +15,10 @@ import {
   Calendar,
   MapPin,
   Target,
-  TrendingUp
+  TrendingUp,
+  Home
 } from 'lucide-react'
+import Link from 'next/link'
 
 interface Game {
   id: string
@@ -118,13 +120,20 @@ export default function OddsPage() {
     <div className="min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="text-center space-y-4">
+        <div className="flex items-center justify-between">
+          <Link 
+            href="/"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-neon-blue/30 hover:bg-neon-blue/10 transition-all text-neon-blue hover:border-neon-blue"
+          >
+            <Home className="w-4 h-4" />
+            <span className="font-semibold">Dashboard</span>
+          </Link>
+          
           <h1 className="text-4xl font-bold text-gradient bg-gradient-to-r from-neon-blue via-neon-purple to-neon-green bg-clip-text text-transparent">
             Live Odds Dashboard
           </h1>
-          <p className="text-muted-foreground text-lg">
-            Real-time sports odds from The Odds API
-          </p>
+          
+          <div className="w-[120px]" /> {/* Spacer for centering */}
         </div>
 
         {/* Controls */}
