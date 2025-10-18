@@ -70,13 +70,13 @@ export default function DeepPickCapperPage() {
     
     const analysis = {
       confidence: 0,
-      pick: null as any,
+      pick: null as string | null,
       reasoning: [] as string[],
       capperVotes: {
-        nexus: { pick: null, confidence: 0 },
-        shiva: { pick: null, confidence: 0 },
-        cerberus: { pick: null, confidence: 0 },
-        ifrit: { pick: null, confidence: 0 }
+        nexus: { pick: null as string | null, confidence: 0 },
+        shiva: { pick: null as string | null, confidence: 0 },
+        cerberus: { pick: null as string | null, confidence: 0 },
+        ifrit: { pick: null as string | null, confidence: 0 }
       },
       consensus: 0
     }
