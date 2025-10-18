@@ -55,12 +55,12 @@ interface PerformanceData {
 }
 
 const CAPPERS = [
-  { id: 'all', name: 'All Cappers', color: 'from-neon-blue via-neon-purple to-neon-green' },
-  { id: 'deeppick', name: 'DeepPick', color: 'from-neon-blue to-neon-cyan' },
-  { id: 'nexus', name: 'Nexus', color: 'from-purple-500 to-pink-500' },
-  { id: 'shiva', name: 'Shiva', color: 'from-blue-500 to-cyan-500' },
-  { id: 'cerberus', name: 'Cerberus', color: 'from-red-500 to-orange-500' },
-  { id: 'ifrit', name: 'Ifrit', color: 'from-yellow-500 to-red-500' },
+  { id: 'all', name: 'All Cappers', color: 'from-neon-blue via-neon-purple to-neon-green', path: null },
+  { id: 'deeppick', name: 'DeepPick', color: 'from-neon-blue to-neon-cyan', path: '/cappers/deeppick' },
+  { id: 'nexus', name: 'Nexus', color: 'from-purple-500 to-pink-500', path: '/cappers/nexus' },
+  { id: 'shiva', name: 'Shiva', color: 'from-blue-500 to-cyan-500', path: '/cappers/shiva' },
+  { id: 'cerberus', name: 'Cerberus', color: 'from-red-500 to-orange-500', path: '/cappers/cerberus' },
+  { id: 'ifrit', name: 'Ifrit', color: 'from-yellow-500 to-red-500', path: '/cappers/ifrit' },
 ]
 
 export function RealDashboard() {
@@ -239,18 +239,28 @@ export function RealDashboard() {
           <span className="text-sm font-semibold text-gray-400">SELECT CAPPER:</span>
           <div className="flex flex-wrap gap-2">
             {CAPPERS.map((capper) => (
-              <Button
-                key={capper.id}
-                onClick={() => setSelectedCapper(capper.id)}
-                variant={selectedCapper === capper.id ? 'default' : 'outline'}
-                className={`${
-                  selectedCapper === capper.id
-                    ? `bg-gradient-to-r ${capper.color} text-white font-bold`
-                    : 'border-gray-600 text-gray-300 hover:bg-gray-700'
-                }`}
-              >
-                {capper.name}
-              </Button>
+              <div key={capper.id} className="flex items-center gap-1">
+                <Button
+                  onClick={() => setSelectedCapper(capper.id)}
+                  variant={selectedCapper === capper.id ? 'default' : 'outline'}
+                  className={`${
+                    selectedCapper === capper.id
+                      ? `bg-gradient-to-r ${capper.color} text-white font-bold`
+                      : 'border-gray-600 text-gray-300 hover:bg-gray-700'
+                  }`}
+                >
+                  {capper.name}
+                </Button>
+                {capper.path && (
+                  <Link 
+                    href={capper.path}
+                    className="p-2 rounded-lg border border-gray-600 hover:bg-gray-700 transition-all"
+                    title={`Go to ${capper.name} Algorithm Page`}
+                  >
+                    <TrendingUp className="w-4 h-4 text-gray-400" />
+                  </Link>
+                )}
+              </div>
             ))}
           </div>
         </div>
