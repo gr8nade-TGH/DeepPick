@@ -117,9 +117,9 @@ INSERT INTO data_feed_settings (source_name, source_type, api_provider, enabled,
 ON CONFLICT (source_name) DO NOTHING;
 
 -- Insert default cron job statuses
-INSERT INTO cron_job_status (job_name, job_path, schedule, expected_interval_minutes, notes) VALUES
-  ('auto-refresh-odds', '/api/auto-refresh-odds', '*/15 * * * *', 15, 'Fetches scores, archives games, ingests fresh odds'),
-  ('auto-run-cappers', '/api/auto-run-cappers', '*/20 * * * *', 20, 'Runs all capper algorithms to generate picks')
+INSERT INTO cron_job_status (job_name, job_path, schedule, expected_interval_minutes) VALUES
+  ('auto-refresh-odds', '/api/auto-refresh-odds', '*/15 * * * *', 15),
+  ('auto-run-cappers', '/api/auto-run-cappers', '*/20 * * * *', 20)
 ON CONFLICT (job_name) DO NOTHING;
 
 -- Function to check cron job health

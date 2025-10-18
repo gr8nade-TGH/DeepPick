@@ -279,9 +279,9 @@ INSERT INTO data_feed_settings (source_name, source_type, api_provider, enabled,
   ('scores', 'scores', 'the_odds_api', true, 15, 9, NULL, NULL, '/v4/sports/{sport}/scores', NULL, NULL, 'Fetch scores for all active sports')
 ON CONFLICT (source_name) DO NOTHING;
 
-INSERT INTO cron_job_status (job_name, job_path, schedule, expected_interval_minutes, notes) VALUES
-  ('auto-refresh-odds', '/api/auto-refresh-odds', '*/15 * * * *', 15, 'Fetches scores, archives games, ingests fresh odds'),
-  ('auto-run-cappers', '/api/auto-run-cappers', '*/20 * * * *', 20, 'Runs all capper algorithms to generate picks')
+INSERT INTO cron_job_status (job_name, job_path, schedule, expected_interval_minutes) VALUES
+  ('auto-refresh-odds', '/api/auto-refresh-odds', '*/15 * * * *', 15),
+  ('auto-run-cappers', '/api/auto-run-cappers', '*/20 * * * *', 20)
 ON CONFLICT (job_name) DO NOTHING;
 
 -- Indexes for Part 2
