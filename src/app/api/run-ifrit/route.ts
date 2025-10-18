@@ -15,11 +15,16 @@ export async function POST(request: Request) {
   const url = new URL(request.url)
   const triggerType = url.searchParams.get('trigger') as 'manual' | 'cron' | 'api' || 'manual'
   
-  // Start run log
-  const runId = await startRunLog('ifrit', triggerType)
+  // Start run log (optional - won't crash if table doesn't exist)
+  let runId: string | null = null
+  try {
+    runId = await startRunLog('ifrit', triggerType)
+  } catch (logError) {
+    console.warn('⚠️ Could not create run log (table may not exist yet):', logError)
+  }
   
   try {
-    console.log(`🔥 Running Ifrit algorithm... (Run ID: ${runId})`)
+    console.log(`🔥 Running Ifrit algorithm...${runId ? ` (Run ID: ${runId})` : ''}`)
     
     // 1. Fetch scheduled games
     const { data: games, error: gamesError } = await supabaseAdmin
@@ -31,7 +36,9 @@ export async function POST(request: Request) {
       .limit(50)
 
     if (gamesError) {
-      await errorRunLog(runId, gamesError.message)
+      if (runId) {
+        try { await errorRunLog(runId, gamesError.message) } catch (e) { console.warn('Log error:', e) }
+      }
       return NextResponse.json({
         success: false,
         error: gamesError.message,
@@ -40,8 +47,12 @@ export async function POST(request: Request) {
     }
 
     if (!games || games.length === 0) {
-      await noGamesRunLog(runId)
-      await calculateDuration(runId)
+      if (runId) {
+        try { 
+          await noGamesRunLog(runId)
+          await calculateDuration(runId)
+        } catch (e) { console.warn('Log error:', e) }
+      }
       return NextResponse.json({
         success: true,
         message: 'No scheduled games available',
@@ -146,22 +157,25 @@ export async function POST(request: Request) {
     const picksSkipped = games.length - results.length
 
     // Complete run log with summary
-    await completeRunLog(runId, {
-      gamesAnalyzed: games.length,
-      picksGenerated: storedPicks.length,
-      picksSkipped,
-      summary: {
-        gamesWithOdds,
-        gamesWithoutOdds,
-        existingPicksFound: existingPicks.size,
-        passedGames,
-        generatedPicks,
-        skippedGames,
-        errors
-      }
-    })
-
-    await calculateDuration(runId)
+    if (runId) {
+      try {
+        await completeRunLog(runId, {
+          gamesAnalyzed: games.length,
+          picksGenerated: storedPicks.length,
+          picksSkipped,
+          summary: {
+            gamesWithOdds,
+            gamesWithoutOdds,
+            existingPicksFound: existingPicks.size,
+            passedGames,
+            generatedPicks,
+            skippedGames,
+            errors
+          }
+        })
+        await calculateDuration(runId)
+      } catch (e) { console.warn('Log error:', e) }
+    }
 
     return NextResponse.json({
       success: true,
@@ -179,8 +193,12 @@ export async function POST(request: Request) {
 
   } catch (error) {
     console.error('❌ Error running Ifrit:', error)
-    await errorRunLog(runId, error instanceof Error ? error : new Error(String(error)))
-    await calculateDuration(runId)
+    if (runId) {
+      try {
+        await errorRunLog(runId, error instanceof Error ? error : new Error(String(error)))
+        await calculateDuration(runId)
+      } catch (e) { console.warn('Log error:', e) }
+    }
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
