@@ -70,15 +70,31 @@ export function OddsChart({ gameId, sportsbooks }: OddsChartProps) {
     )
   }
 
+  // Determine smart time interval based on data points
+  const getTimeInterval = (dataPointCount: number) => {
+    if (dataPointCount <= 12) return 5 // Show all if <= 12 points (5 min intervals for 1 hour)
+    if (dataPointCount <= 24) return 2 // Every other point
+    if (dataPointCount <= 48) return 4 // Every 4th point (20 min intervals)
+    return 6 // Every 6th point (30 min intervals)
+  }
+
   // Transform history data for the chart
   // We'll track home team moneyline odds over time
-  const chartData = history.map((record) => {
+  const chartData = history.map((record, index) => {
+    const capturedTime = new Date(record.captured_at)
     const dataPoint: any = {
-      time: new Date(record.captured_at).toLocaleTimeString('en-US', {
+      time: capturedTime.toLocaleTimeString('en-US', {
         hour: 'numeric',
         minute: '2-digit'
       }),
-      timestamp: new Date(record.captured_at).getTime(),
+      fullTime: capturedTime.toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+      }),
+      timestamp: capturedTime.getTime(),
+      index: index,
     }
 
     // Add each sportsbook's odds
@@ -92,6 +108,8 @@ export function OddsChart({ gameId, sportsbooks }: OddsChartProps) {
     return dataPoint
   })
 
+  const interval = getTimeInterval(chartData.length)
+
   return (
     <div className="w-full h-48">
       <ResponsiveContainer width="100%" height="100%">
@@ -100,11 +118,13 @@ export function OddsChart({ gameId, sportsbooks }: OddsChartProps) {
             dataKey="time" 
             tick={{ fontSize: 10, fill: '#888' }}
             stroke="#333"
+            interval={interval}
           />
           <YAxis 
             tick={{ fontSize: 10, fill: '#888' }}
             stroke="#333"
             domain={['dataMin - 20', 'dataMax + 20']}
+            reversed={true}
           />
           <Tooltip 
             contentStyle={{ 
@@ -114,6 +134,12 @@ export function OddsChart({ gameId, sportsbooks }: OddsChartProps) {
               fontSize: '12px'
             }}
             labelStyle={{ color: '#888' }}
+            labelFormatter={(value, payload) => {
+              if (payload && payload[0]) {
+                return payload[0].payload.fullTime
+              }
+              return value
+            }}
           />
           <Legend 
             wrapperStyle={{ fontSize: '10px' }}
