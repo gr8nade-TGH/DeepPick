@@ -7,6 +7,13 @@
 -- ───────────────────────────────────────────────────────────
 -- 1. DATA FEED SETTINGS TABLE
 -- ───────────────────────────────────────────────────────────
+-- First, check if sport_type enum exists, if not create it
+DO $$ BEGIN
+    CREATE TYPE sport_type AS ENUM ('nfl', 'nba', 'mlb', 'nhl', 'soccer');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
 CREATE TABLE IF NOT EXISTS data_feed_settings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   sport sport_type NOT NULL UNIQUE,
@@ -25,13 +32,13 @@ CREATE TABLE IF NOT EXISTS data_feed_settings (
   )
 );
 
--- Insert default settings for each sport
+-- Insert default settings for each sport (cast to sport_type enum)
 INSERT INTO data_feed_settings (sport, enabled, fetch_interval_minutes, seasonal_start_month, seasonal_end_month)
 VALUES 
-  ('nfl', true, 15, 9, 2),    -- September to February
-  ('nba', true, 15, 10, 6),   -- October to June
-  ('mlb', true, 15, 3, 10),   -- March to October
-  ('nhl', true, 15, 10, 6)    -- October to June
+  ('nfl'::sport_type, true, 15, 9, 2),    -- September to February
+  ('nba'::sport_type, true, 15, 10, 6),   -- October to June
+  ('mlb'::sport_type, true, 15, 3, 10),   -- March to October
+  ('nhl'::sport_type, true, 15, 10, 6)    -- October to June
 ON CONFLICT (sport) DO NOTHING;
 
 -- ───────────────────────────────────────────────────────────
