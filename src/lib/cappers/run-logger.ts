@@ -113,7 +113,7 @@ export async function errorRunLog(
   const errorMessage = error instanceof Error ? error.message : error
   const errorStack = error instanceof Error ? error.stack : undefined
 
-  await supabaseAdmin
+  await getSupabaseAdmin()
     .from('algorithm_runs')
     .update({
       completed_at: completedAt,
@@ -130,7 +130,7 @@ export async function errorRunLog(
 export async function noGamesRunLog(runId: string): Promise<void> {
   const completedAt = new Date().toISOString()
 
-  await supabaseAdmin
+  await getSupabaseAdmin()
     .from('algorithm_runs')
     .update({
       completed_at: completedAt,
@@ -192,7 +192,7 @@ export async function calculateDuration(runId: string): Promise<void> {
 
   const duration = new Date(data.completed_at).getTime() - new Date(data.started_at).getTime()
 
-  await supabaseAdmin
+  await getSupabaseAdmin()
     .from('algorithm_runs')
     .update({ duration_ms: duration })
     .eq('id', runId)

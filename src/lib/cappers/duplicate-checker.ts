@@ -40,7 +40,7 @@ export async function isDuplicatePick(
   const basePickType = pickType.startsWith('total_') ? 'total' : pickType
   
   // Query for existing picks on this game by this capper
-  const { data: existingPicks, error } = await supabaseAdmin
+  const { data: existingPicks, error } = await getSupabaseAdmin()
     .from('picks')
     .select('id, game_id, pick_type, selection, capper, status')
     .eq('game_id', gameId)
