@@ -90,7 +90,7 @@ export default function DeepPickCapperPage() {
     // Count votes
     const votes = Object.values(analysis.capperVotes)
       .filter(v => v.pick !== null)
-      .map(v => v.pick)
+      .map(v => v.pick as string)
 
     if (votes.length === 0) {
       analysis.reasoning.push('No cappers have picks for this game')
@@ -98,7 +98,7 @@ export default function DeepPickCapperPage() {
     }
 
     // Find consensus
-    const voteCounts = votes.reduce((acc: any, vote) => {
+    const voteCounts = votes.reduce((acc: Record<string, number>, vote) => {
       acc[vote] = (acc[vote] || 0) + 1
       return acc
     }, {})
