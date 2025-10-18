@@ -333,15 +333,18 @@ export default function OddsPage() {
                             <thead>
                               <tr className="border-b border-white/10">
                                 <th className="text-left p-2 text-xs text-muted-foreground">Team</th>
-                                {game.sportsbooks?.map((bookmaker) => (
-                                  <th 
-                                    key={bookmaker} 
-                                    className="text-center p-2 text-xs capitalize font-semibold"
-                                    style={{ color: SPORTSBOOK_COLORS[bookmaker] || '#10b981' }}
-                                  >
-                                    {bookmaker.replace('_', ' ')}
-                                  </th>
-                                ))}
+                                {game.sportsbooks?.map((bookmaker) => {
+                                  const displayName = bookmaker === 'williamhill_us' ? 'Caesars' : bookmaker.replace('_', ' ')
+                                  return (
+                                    <th 
+                                      key={bookmaker} 
+                                      className="text-center p-2 text-xs capitalize font-semibold"
+                                      style={{ color: SPORTSBOOK_COLORS[bookmaker] || '#10b981' }}
+                                    >
+                                      {displayName}
+                                    </th>
+                                  )
+                                })}
                                 <th className="text-center p-2 text-xs text-neon-cyan font-bold">Avg</th>
                               </tr>
                             </thead>

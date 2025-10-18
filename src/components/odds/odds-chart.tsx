@@ -145,19 +145,22 @@ export function OddsChart({ gameId, sportsbooks }: OddsChartProps) {
             wrapperStyle={{ fontSize: '10px' }}
             iconType="line"
           />
-          {sportsbooks.map((bookmaker) => (
-            <Line
-              key={bookmaker}
-              type="monotone"
-              dataKey={bookmaker}
-              stroke={SPORTSBOOK_COLORS[bookmaker] || '#888'}
-              strokeWidth={2}
-              dot={{ r: 3 }}
-              activeDot={{ r: 5 }}
-              name={bookmaker.replace('_', ' ').toUpperCase()}
-              connectNulls
-            />
-          ))}
+          {sportsbooks.map((bookmaker) => {
+            const displayName = bookmaker === 'williamhill_us' ? 'CAESARS' : bookmaker.replace('_', ' ').toUpperCase()
+            return (
+              <Line
+                key={bookmaker}
+                type="monotone"
+                dataKey={bookmaker}
+                stroke={SPORTSBOOK_COLORS[bookmaker] || '#888'}
+                strokeWidth={2}
+                dot={{ r: 3 }}
+                activeDot={{ r: 5 }}
+                name={displayName}
+                connectNulls
+              />
+            )
+          })}
         </LineChart>
       </ResponsiveContainer>
     </div>
