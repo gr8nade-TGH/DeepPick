@@ -21,6 +21,24 @@ export interface ApiCallLog {
   notes?: string
 }
 
+export interface GameChangeDetail {
+  gameId: string
+  matchup: string
+  sport: string
+  action: 'added' | 'updated' | 'skipped'
+  bookmakersBefore?: string[]
+  bookmakersAfter: string[]
+  oddsChangesSummary?: {
+    moneylineChanged: boolean
+    spreadChanged: boolean
+    totalChanged: boolean
+    largestSwing?: number
+  }
+  beforeSnapshot?: any
+  afterSnapshot?: any
+  warnings?: string[]
+}
+
 export interface IngestionLog {
   apiCallId?: string
   gamesAdded?: number
@@ -36,6 +54,7 @@ export interface IngestionLog {
   success: boolean
   errorMessage?: string
   warnings?: string[]
+  gameDetails?: GameChangeDetail[] // NEW: Detailed per-game changes
 }
 
 /**
@@ -103,6 +122,7 @@ export async function logIngestion(log: IngestionLog): Promise<void> {
         success: log.success,
         error_message: log.errorMessage,
         warnings: log.warnings,
+        game_details: log.gameDetails, // NEW: Store detailed changes
       })
 
     if (error) {
@@ -110,7 +130,7 @@ export async function logIngestion(log: IngestionLog): Promise<void> {
       return
     }
 
-    console.log(`📊 [API-LOGGER] Logged ingestion: +${log.gamesAdded} games, ~${log.gamesUpdated} updated`)
+    console.log(`📊 [API-LOGGER] Logged ingestion: +${log.gamesAdded} games, ~${log.gamesUpdated} updated, ${log.gameDetails?.length || 0} details`)
   } catch (error) {
     console.error('❌ [API-LOGGER] Error logging ingestion:', error)
   }
