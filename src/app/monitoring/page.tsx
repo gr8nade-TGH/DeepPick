@@ -84,6 +84,147 @@ interface IngestionLog {
   game_details?: GameChangeDetail[] // NEW: Detailed per-game changes
 }
 
+// Separate component for each log entry to properly use hooks
+function IngestionLogEntry({ log }: { log: IngestionLog }) {
+  const [expanded, setExpanded] = useState(false)
+  const gameDetails = log.game_details as any[] | undefined
+
+  return (
+    <div className="border border-gray-700 rounded-lg overflow-hidden">
+      {/* Summary Header */}
+      <div 
+        className="p-4 bg-gray-800/50 cursor-pointer hover:bg-gray-800/70 transition-colors"
+        onClick={() => setExpanded(!expanded)}
+      >
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-gray-400">
+              {new Date(log.created_at).toLocaleString()}
+            </span>
+            <Badge className={log.success ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}>
+              {log.success ? 'Success' : 'Failed'}
+            </Badge>
+          </div>
+          <button className="text-gray-400 hover:text-white">
+            {expanded ? '▼' : '▶'} {gameDetails ? `${gameDetails.length} games` : 'Details'}
+          </button>
+        </div>
+        
+        <div className="grid grid-cols-4 gap-4 text-sm">
+          <div>
+            <p className="text-gray-500">Added</p>
+            <p className="text-green-400 font-semibold">+{log.games_added}</p>
+          </div>
+          <div>
+            <p className="text-gray-500">Updated</p>
+            <p className="text-blue-400 font-semibold">~{log.games_updated}</p>
+          </div>
+          <div>
+            <p className="text-gray-500">Odds Records</p>
+            <p className="text-purple-400 font-semibold">{log.odds_history_records_created}</p>
+          </div>
+          <div>
+            <p className="text-gray-500">Processing Time</p>
+            <p className="text-gray-400">{log.processing_time_ms}ms</p>
+          </div>
+        </div>
+        
+        {log.sport_breakdown && (
+          <div className="mt-3 flex gap-2">
+            {Object.entries(log.sport_breakdown).map(([sport, count]) => (
+              <Badge key={sport} variant="outline" className="text-xs">
+                {sport.toUpperCase()}: {count}
+              </Badge>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Expanded Details */}
+      {expanded && gameDetails && gameDetails.length > 0 && (
+        <div className="p-4 bg-gray-900/50 border-t border-gray-700 space-y-3">
+          <h4 className="text-sm font-semibold text-gray-300 mb-3">Game-by-Game Details</h4>
+          {gameDetails.map((game: any, idx: number) => (
+            <div key={idx} className="p-3 bg-gray-800/30 rounded border border-gray-700/50">
+              {/* Game Header */}
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs">
+                    {game.sport?.toUpperCase()}
+                  </Badge>
+                  <span className="text-sm font-medium text-white">{game.matchup}</span>
+                </div>
+                <Badge className={
+                  game.action === 'added' ? 'bg-green-500/20 text-green-400' :
+                  game.action === 'updated' ? 'bg-blue-500/20 text-blue-400' :
+                  'bg-gray-500/20 text-gray-400'
+                }>
+                  {game.action}
+                </Badge>
+              </div>
+
+              {/* Bookmaker Presence */}
+              <div className="mb-2">
+                <p className="text-xs text-gray-500 mb-1">Bookmakers:</p>
+                <div className="flex gap-1 flex-wrap">
+                  {game.bookmakersAfter?.map((book: string) => (
+                    <Badge key={book} variant="outline" className="text-xs">
+                      {book === 'williamhill_us' ? 'Caesars' : book}
+                    </Badge>
+                  ))}
+                  {game.bookmakersBefore && game.bookmakersBefore.length !== game.bookmakersAfter?.length && (
+                    <Badge className="bg-yellow-500/20 text-yellow-400 text-xs">
+                      ⚠️ Count changed: {game.bookmakersBefore.length} → {game.bookmakersAfter?.length}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              {/* Odds Changes Summary */}
+              {game.oddsChangesSummary && (
+                <div className="text-xs space-y-1">
+                  {game.oddsChangesSummary.moneylineChanged && (
+                    <p className="text-blue-400">💰 Moneyline changed</p>
+                  )}
+                  {game.oddsChangesSummary.spreadChanged && (
+                    <p className="text-purple-400">📊 Spread changed</p>
+                  )}
+                  {game.oddsChangesSummary.totalChanged && (
+                    <p className="text-green-400">🎯 Total changed</p>
+                  )}
+                  {game.oddsChangesSummary.largestSwing && game.oddsChangesSummary.largestSwing > 100 && (
+                    <p className="text-red-400 font-semibold">
+                      ⚠️ Large swing detected: {game.oddsChangesSummary.largestSwing} points
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Warnings */}
+              {game.warnings && game.warnings.length > 0 && (
+                <div className="mt-2 p-2 bg-yellow-500/10 border border-yellow-500/30 rounded">
+                  {game.warnings.map((warning: string, wIdx: number) => (
+                    <p key={wIdx} className="text-xs text-yellow-400">⚠️ {warning}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* No Details Available */}
+      {expanded && (!gameDetails || gameDetails.length === 0) && (
+        <div className="p-4 bg-gray-900/50 border-t border-gray-700 text-center text-gray-500 text-sm">
+          No detailed game data available for this ingestion.
+          <br />
+          <span className="text-xs">This feature was added recently - new ingestions will include details.</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function MonitoringPage() {
   const [apiCalls, setApiCalls] = useState<ApiCall[]>([])
   const [dailyQuota, setDailyQuota] = useState<QuotaTracking | null>(null)
@@ -403,145 +544,9 @@ export default function MonitoringPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {ingestionLogs.map((log) => {
-                    const [expanded, setExpanded] = React.useState(false)
-                    const gameDetails = log.game_details as any[] | undefined
-                    
-                    return (
-                      <div key={log.id} className="border border-gray-700 rounded-lg overflow-hidden">
-                        {/* Summary Header */}
-                        <div 
-                          className="p-4 bg-gray-800/50 cursor-pointer hover:bg-gray-800/70 transition-colors"
-                          onClick={() => setExpanded(!expanded)}
-                        >
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-3">
-                              <span className="text-sm text-gray-400">
-                                {new Date(log.created_at).toLocaleString()}
-                              </span>
-                              <Badge className={log.success ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}>
-                                {log.success ? 'Success' : 'Failed'}
-                              </Badge>
-                            </div>
-                            <button className="text-gray-400 hover:text-white">
-                              {expanded ? '▼' : '▶'} {gameDetails ? `${gameDetails.length} games` : 'Details'}
-                            </button>
-                          </div>
-                          
-                          <div className="grid grid-cols-4 gap-4 text-sm">
-                            <div>
-                              <p className="text-gray-500">Added</p>
-                              <p className="text-green-400 font-semibold">+{log.games_added}</p>
-                            </div>
-                            <div>
-                              <p className="text-gray-500">Updated</p>
-                              <p className="text-blue-400 font-semibold">~{log.games_updated}</p>
-                            </div>
-                            <div>
-                              <p className="text-gray-500">Odds Records</p>
-                              <p className="text-purple-400 font-semibold">{log.odds_history_records_created}</p>
-                            </div>
-                            <div>
-                              <p className="text-gray-500">Processing Time</p>
-                              <p className="text-gray-400">{log.processing_time_ms}ms</p>
-                            </div>
-                          </div>
-                          
-                          {log.sport_breakdown && (
-                            <div className="mt-3 flex gap-2">
-                              {Object.entries(log.sport_breakdown).map(([sport, count]) => (
-                                <Badge key={sport} variant="outline" className="text-xs">
-                                  {sport.toUpperCase()}: {count}
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Expanded Details */}
-                        {expanded && gameDetails && gameDetails.length > 0 && (
-                          <div className="p-4 bg-gray-900/50 border-t border-gray-700 space-y-3">
-                            <h4 className="text-sm font-semibold text-gray-300 mb-3">Game-by-Game Details</h4>
-                            {gameDetails.map((game: any, idx: number) => (
-                              <div key={idx} className="p-3 bg-gray-800/30 rounded border border-gray-700/50">
-                                {/* Game Header */}
-                                <div className="flex items-center justify-between mb-2">
-                                  <div className="flex items-center gap-2">
-                                    <Badge variant="outline" className="text-xs">
-                                      {game.sport?.toUpperCase()}
-                                    </Badge>
-                                    <span className="text-sm font-medium text-white">{game.matchup}</span>
-                                  </div>
-                                  <Badge className={
-                                    game.action === 'added' ? 'bg-green-500/20 text-green-400' :
-                                    game.action === 'updated' ? 'bg-blue-500/20 text-blue-400' :
-                                    'bg-gray-500/20 text-gray-400'
-                                  }>
-                                    {game.action}
-                                  </Badge>
-                                </div>
-
-                                {/* Bookmaker Presence */}
-                                <div className="mb-2">
-                                  <p className="text-xs text-gray-500 mb-1">Bookmakers:</p>
-                                  <div className="flex gap-1 flex-wrap">
-                                    {game.bookmakersAfter?.map((book: string) => (
-                                      <Badge key={book} variant="outline" className="text-xs">
-                                        {book === 'williamhill_us' ? 'Caesars' : book}
-                                      </Badge>
-                                    ))}
-                                    {game.bookmakersBefore && game.bookmakersBefore.length !== game.bookmakersAfter?.length && (
-                                      <Badge className="bg-yellow-500/20 text-yellow-400 text-xs">
-                                        ⚠️ Count changed: {game.bookmakersBefore.length} → {game.bookmakersAfter?.length}
-                                      </Badge>
-                                    )}
-                                  </div>
-                                </div>
-
-                                {/* Odds Changes Summary */}
-                                {game.oddsChangesSummary && (
-                                  <div className="text-xs space-y-1">
-                                    {game.oddsChangesSummary.moneylineChanged && (
-                                      <p className="text-blue-400">💰 Moneyline changed</p>
-                                    )}
-                                    {game.oddsChangesSummary.spreadChanged && (
-                                      <p className="text-purple-400">📊 Spread changed</p>
-                                    )}
-                                    {game.oddsChangesSummary.totalChanged && (
-                                      <p className="text-green-400">🎯 Total changed</p>
-                                    )}
-                                    {game.oddsChangesSummary.largestSwing && game.oddsChangesSummary.largestSwing > 100 && (
-                                      <p className="text-red-400 font-semibold">
-                                        ⚠️ Large swing detected: {game.oddsChangesSummary.largestSwing} points
-                                      </p>
-                                    )}
-                                  </div>
-                                )}
-
-                                {/* Warnings */}
-                                {game.warnings && game.warnings.length > 0 && (
-                                  <div className="mt-2 p-2 bg-yellow-500/10 border border-yellow-500/30 rounded">
-                                    {game.warnings.map((warning: string, wIdx: number) => (
-                                      <p key={wIdx} className="text-xs text-yellow-400">⚠️ {warning}</p>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* No Details Available */}
-                        {expanded && (!gameDetails || gameDetails.length === 0) && (
-                          <div className="p-4 bg-gray-900/50 border-t border-gray-700 text-center text-gray-500 text-sm">
-                            No detailed game data available for this ingestion.
-                            <br />
-                            <span className="text-xs">This feature was added recently - new ingestions will include details.</span>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
+                  {ingestionLogs.map((log) => (
+                    <IngestionLogEntry key={log.id} log={log} />
+                  ))}
                 </div>
               </CardContent>
             </Card>
