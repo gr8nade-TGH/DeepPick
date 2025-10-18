@@ -196,35 +196,49 @@ export async function GET() {
         
         const gameDate = event.commence_time.split('T')[0]
         const gameTime = event.commence_time.split('T')[1].substring(0, 8)
+        const apiEventId = event.id // Store API's unique event ID
         
         // Determine game status based on commence time
         const commenceTime = new Date(event.commence_time)
         const now = new Date()
         let gameStatus = 'scheduled'
         
-        if (now >= commenceTime) {
+        // Game is live if current time is past commence time but within ~4 hours
+        const hoursSinceStart = (now.getTime() - commenceTime.getTime()) / (1000 * 60 * 60)
+        if (hoursSinceStart > 0 && hoursSinceStart < 4) {
           gameStatus = 'live'
+        } else if (hoursSinceStart >= 4) {
+          // Game likely completed - will be updated by score fetch
+          gameStatus = 'scheduled' // Keep as scheduled until score fetch confirms
         }
+        
+        const matchup = `${event.away_team} @ ${event.home_team}`
         
         // Check if game already exists (match by home/away teams and date)
         const { data: existingGames } = await getSupabaseAdmin()
           .from('games')
-          .select('id, status, odds')
+          .select('id, status, odds, home_team, away_team')
           .eq('sport', mapSportKey(sport.key))
           .eq('game_date', gameDate)
         
         let gameId: string | null = null
         
-        // Find exact match by team names
+        // Find exact match by team names - FIXED: Actually match teams!
         const existingGame = existingGames?.find((g: any) => {
-          // This is a simplified check - in production you'd want more robust matching
-          return true // For now, just take the first match per sport/date
+          const homeMatch = g.home_team?.name === event.home_team
+          const awayMatch = g.away_team?.name === event.away_team
+          return homeMatch && awayMatch
         })
+        
+        // Debug logging
+        if (existingGames && existingGames.length > 0 && !existingGame) {
+          console.log(`⚠️ No match found for ${matchup}. Existing games on ${gameDate}:`, 
+            existingGames.map((g: any) => `${g.away_team?.name} @ ${g.home_team?.name}`))
+        }
         
         // NEW: Track bookmakers for detailed logging
         const bookmakersBefore = existingGame?.odds ? Object.keys(existingGame.odds) : undefined
         const bookmakersAfter = Object.keys(sportsbooks)
-        const matchup = `${event.away_team} @ ${event.home_team}`
         
         // NEW: Detect changes and warnings
         const warnings: string[] = []
@@ -298,6 +312,9 @@ export async function GET() {
         } else {
           // Insert new game
           gameId = crypto.randomUUID()
+          
+          console.log(`➕ Creating NEW game: ${matchup} (${gameDate} ${gameTime}) - API ID: ${apiEventId}`)
+          
           const { error: insertError } = await getSupabaseAdmin()
             .from('games')
             .insert({
@@ -322,9 +339,10 @@ export async function GET() {
 
           if (insertError) {
             console.error(`❌ Error inserting game:`, insertError.message)
+            warnings.push(`Failed to insert: ${insertError.message}`)
           } else {
             storedCount++
-            console.log(`✅ Inserted new game (status: ${gameStatus})`)
+            console.log(`✅ Inserted new game (status: ${gameStatus}, bookmakers: ${bookmakersAfter.length})`)
             
             // NEW: Add detailed tracking for new game
             gameDetails.push({
