@@ -8,6 +8,11 @@ import { NextResponse } from 'next/server'
  * 3. Ingest fresh odds
  */
 export async function GET() {
+  const executionTime = new Date().toISOString()
+  console.log(`\n${'='.repeat(80)}`)
+  console.log(`🤖 [AUTO-REFRESH CRON] EXECUTION START: ${executionTime}`)
+  console.log(`${'='.repeat(80)}\n`)
+  
   try {
     console.log('🤖 [AUTO-REFRESH] Starting automated refresh cycle...')
     const startTime = Date.now()
@@ -49,6 +54,10 @@ export async function GET() {
     console.log('✅ [AUTO-REFRESH] Ingest result:', ingestResult)
 
     const duration = Date.now() - startTime
+    
+    console.log(`\n${'='.repeat(80)}`)
+    console.log(`✅ [AUTO-REFRESH CRON] EXECUTION COMPLETE: ${duration}ms`)
+    console.log(`${'='.repeat(80)}\n`)
 
     return NextResponse.json({
       success: true,

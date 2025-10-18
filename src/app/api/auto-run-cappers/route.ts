@@ -15,15 +15,29 @@ export const dynamic = 'force-dynamic'
  * 4. Store picks in database
  */
 export async function GET(request: Request) {
+  const executionTime = new Date().toISOString()
+  console.log(`\n${'='.repeat(80)}`)
+  console.log(`🤖 [AUTO-RUN-CAPPERS CRON] EXECUTION START: ${executionTime}`)
+  console.log(`${'='.repeat(80)}\n`)
+  
   try {
     // Verify this is called by Vercel Cron (security)
     const authHeader = request.headers.get('authorization')
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    const expectedAuth = `Bearer ${process.env.CRON_SECRET}`
+    
+    console.log('🔐 [CRON AUTH] Checking authorization...')
+    console.log(`   Expected: Bearer ${process.env.CRON_SECRET ? '[SET]' : '[NOT SET]'}`)
+    console.log(`   Received: ${authHeader ? authHeader.substring(0, 20) + '...' : '[NONE]'}`)
+    
+    if (authHeader !== expectedAuth) {
+      console.error('❌ [CRON AUTH] Unauthorized access attempt!')
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
+        { success: false, error: 'Unauthorized - Invalid CRON_SECRET' },
         { status: 401 }
       )
     }
+    
+    console.log('✅ [CRON AUTH] Authorization successful')
 
     console.log('🤖 Auto-running all cappers...')
     const startTime = Date.now()
@@ -94,6 +108,12 @@ export async function GET(request: Request) {
     const successCount = Object.values(results).filter(r => r.success).length
 
     console.log(`✅ Auto-run complete: ${successCount}/${cappers.length} cappers succeeded, ${totalPicks} total picks in ${duration}ms`)
+    
+    console.log(`\n${'='.repeat(80)}`)
+    console.log(`✅ [AUTO-RUN-CAPPERS CRON] EXECUTION COMPLETE: ${duration}ms`)
+    console.log(`   Total Picks Generated: ${totalPicks}`)
+    console.log(`   Successful Cappers: ${successCount}/${cappers.length}`)
+    console.log(`${'='.repeat(80)}\n`)
 
     return NextResponse.json({
       success: true,
