@@ -129,19 +129,28 @@ export default function OddsPage() {
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <Link 
-            href="/"
-            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-neon-blue/30 hover:bg-neon-blue/10 transition-all text-neon-blue hover:border-neon-blue"
-          >
-            <Home className="w-4 h-4" />
-            <span className="font-semibold">Dashboard</span>
-          </Link>
+          <div className="flex gap-2">
+            <Link 
+              href="/"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-neon-blue/30 hover:bg-neon-blue/10 transition-all text-neon-blue hover:border-neon-blue"
+            >
+              <Home className="w-4 h-4" />
+              <span className="font-semibold">Dashboard</span>
+            </Link>
+            <Link 
+              href="/history"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-neon-purple/30 hover:bg-neon-purple/10 transition-all text-neon-purple hover:border-neon-purple"
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span className="font-semibold">History</span>
+            </Link>
+          </div>
           
           <h1 className="text-4xl font-bold text-gradient bg-gradient-to-r from-neon-blue via-neon-purple to-neon-green bg-clip-text text-transparent">
             Live Odds Dashboard
           </h1>
           
-          <div className="w-[120px]" /> {/* Spacer for centering */}
+          <div className="w-[240px]" /> {/* Spacer for centering */}
         </div>
 
         {/* Controls */}
@@ -170,12 +179,23 @@ export default function OddsPage() {
                 onClick={async () => {
                   try {
                     console.log('🚀 Triggering odds ingestion...')
+                    
+                    // First, archive old games
+                    console.log('🗄️ Archiving old games...')
+                    const archiveResponse = await fetch('/api/archive-games', { method: 'POST' })
+                    const archiveResult = await archiveResponse.json()
+                    console.log('📦 Archive result:', archiveResult)
+                    
+                    // Then, ingest fresh odds
                     const response = await fetch('/api/simple-ingest', { method: 'GET' })
                     const result = await response.json()
                     console.log('📊 Ingestion result:', result)
                     
                     if (result.success) {
-                      alert(`✅ ${result.message}\nStored ${result.storedCount} games`)
+                      const message = archiveResult.archivedCount > 0 
+                        ? `✅ Archived ${archiveResult.archivedCount} games\n${result.message}`
+                        : `✅ ${result.message}`
+                      alert(message)
                       fetchOdds() // Refresh the display
                     } else {
                       alert(`❌ Failed: ${result.error}`)
