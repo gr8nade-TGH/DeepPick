@@ -235,11 +235,11 @@ export function RealDashboard() {
 
       {/* Capper Selector */}
       <section className="glass-effect p-4 rounded-lg shadow-lg border border-gray-800">
-        <div className="flex items-center gap-3">
+        <div className="space-y-3">
           <span className="text-sm font-semibold text-gray-400">SELECT CAPPER:</span>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-3">
             {CAPPERS.map((capper) => (
-              <div key={capper.id} className="flex items-center gap-1">
+              <div key={capper.id} className="flex flex-col gap-2">
                 <Button
                   onClick={() => setSelectedCapper(capper.id)}
                   variant={selectedCapper === capper.id ? 'default' : 'outline'}
@@ -254,10 +254,10 @@ export function RealDashboard() {
                 {capper.path && (
                   <Link 
                     href={capper.path}
-                    className="p-2 rounded-lg border border-gray-600 hover:bg-gray-700 transition-all"
-                    title={`Go to ${capper.name} Algorithm Page`}
+                    className="flex items-center justify-center gap-1 px-3 py-1 rounded-lg border border-neon-blue/50 hover:bg-neon-blue/20 transition-all text-xs text-neon-blue hover:border-neon-blue"
                   >
-                    <TrendingUp className="w-4 h-4 text-gray-400" />
+                    <TrendingUp className="w-3 h-3" />
+                    <span>Algorithm</span>
                   </Link>
                 )}
               </div>
