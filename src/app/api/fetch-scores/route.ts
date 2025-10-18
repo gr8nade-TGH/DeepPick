@@ -55,11 +55,6 @@ export async function POST() {
         totalScores += scores.length
 
         for (const scoreData of scores) {
-          // Only process completed games
-          if (!scoreData.completed) {
-            continue
-          }
-
           try {
             const gameDate = scoreData.commence_time.split('T')[0]
             const homeTeamName = scoreData.home_team
@@ -93,22 +88,27 @@ export async function POST() {
             const awayScore = scoreData.scores?.find((s: any) => s.name === awayTeamName)
 
             if (!homeScore || !awayScore) {
-              errors.push(`Missing scores for ${awayTeamName} @ ${homeTeamName}`)
+              // No scores available yet, skip
               continue
             }
 
-            // Determine winner
+            // Determine winner (only for completed games)
             const homePoints = parseInt(homeScore.score)
             const awayPoints = parseInt(awayScore.score)
             let winner = 'tie'
             
-            if (homePoints > awayPoints) {
-              winner = 'home'
-            } else if (awayPoints > homePoints) {
-              winner = 'away'
+            if (scoreData.completed) {
+              if (homePoints > awayPoints) {
+                winner = 'home'
+              } else if (awayPoints > homePoints) {
+                winner = 'away'
+              }
             }
 
-            // Update game with final score
+            // Determine game status
+            const gameStatus = scoreData.completed ? 'final' : 'live'
+
+            // Update game with score and status
             const { error: updateError } = await supabaseAdmin
               .from('games')
               .update({
@@ -118,8 +118,8 @@ export async function POST() {
                   winner: winner,
                   margin: Math.abs(homePoints - awayPoints)
                 },
-                status: 'final',
-                completed_at: new Date().toISOString(),
+                status: gameStatus,
+                completed_at: scoreData.completed ? new Date().toISOString() : null,
                 updated_at: new Date().toISOString()
               })
               .eq('id', matchingGame.id)
@@ -128,7 +128,8 @@ export async function POST() {
               errors.push(`Error updating game ${matchingGame.id}: ${updateError.message}`)
             } else {
               updatedCount++
-              console.log(`✅ Updated: ${awayTeamName} ${awayPoints} @ ${homeTeamName} ${homePoints}`)
+              const statusEmoji = gameStatus === 'live' ? '🔴' : '✅'
+              console.log(`${statusEmoji} Updated: ${awayTeamName} ${awayPoints} @ ${homeTeamName} ${homePoints} (${gameStatus})`)
             }
           } catch (err) {
             errors.push(`Exception processing score: ${err}`)
