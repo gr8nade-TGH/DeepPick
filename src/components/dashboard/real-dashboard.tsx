@@ -288,6 +288,13 @@ export function RealDashboard() {
             <span className="font-semibold">Leaderboard</span>
           </Link>
           <Link 
+            href="/monitoring"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-cyan-500/30 hover:bg-cyan-500/10 transition-all text-cyan-400 hover:border-cyan-500"
+          >
+            <Activity className="w-4 h-4" />
+            <span className="font-semibold">Monitoring</span>
+          </Link>
+          <Link 
             href="/history"
             className="flex items-center gap-2 px-4 py-2 rounded-lg border border-neon-purple/30 hover:bg-neon-purple/10 transition-all text-neon-purple hover:border-neon-purple"
           >
