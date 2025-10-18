@@ -294,8 +294,14 @@ function analyzeGame(
     confidence,
     units,
     pickType: bestBet.type as any,
+    odds: avgOdds,
     reasoning: [`Three-model consensus`, `Multiple perspectives aligned`],
-    scorePrediction
+    scorePrediction,
+    dataPoints: {
+      avgOdds,
+      totalLine: vegasTotal ?? undefined,
+      spreadLine: vegasSpread ?? undefined,
+    }
   }
   
   return { pick, log }

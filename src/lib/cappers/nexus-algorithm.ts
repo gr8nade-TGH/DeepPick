@@ -299,8 +299,14 @@ function analyzeGame(
     confidence,
     units,
     pickType: bestBet.type as any,
+    odds: avgOdds,
     reasoning: [`Statistical edge detected`, `Market inefficiency identified`],
-    scorePrediction
+    scorePrediction,
+    dataPoints: {
+      avgOdds,
+      totalLine: vegasTotal ?? undefined,
+      spreadLine: vegasSpread ?? undefined,
+    }
   }
   
   return { pick, log }
