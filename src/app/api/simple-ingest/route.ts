@@ -68,12 +68,40 @@ export async function GET() {
       })
     }
 
-    // Fetch all sports (NFL, NBA, MLB)
-    const sports = [
-      { key: 'americanfootball_nfl', name: 'NFL' },
-      { key: 'basketball_nba', name: 'NBA' },
-      { key: 'baseball_mlb', name: 'MLB' }
+    // Fetch sport settings from database
+    const supabase = getSupabaseAdmin()
+    const { data: sportSettings, error: settingsError } = await supabase
+      .from('data_feed_settings')
+      .select('*')
+    
+    // If settings table doesn't exist yet, use defaults
+    const enabledSports = sportSettings && !settingsError
+      ? sportSettings.filter(s => s.enabled).map(s => s.sport)
+      : ['nfl', 'nba', 'mlb'] // Default to all enabled
+    
+    console.log('📊 Enabled sports from settings:', enabledSports)
+
+    // Fetch all sports (NFL, NBA, MLB) - filtered by settings
+    const allSports = [
+      { key: 'americanfootball_nfl', name: 'NFL', dbKey: 'nfl' },
+      { key: 'basketball_nba', name: 'NBA', dbKey: 'nba' },
+      { key: 'baseball_mlb', name: 'MLB', dbKey: 'mlb' }
     ]
+    
+    // Filter sports based on settings
+    const sports = allSports.filter(sport => enabledSports.includes(sport.dbKey))
+    
+    if (sports.length === 0) {
+      console.log('⚠️ No sports enabled in settings - skipping ingestion')
+      return NextResponse.json({
+        success: true,
+        message: 'No sports enabled in settings',
+        totalEvents: 0,
+        storedCount: 0,
+        updatedCount: 0,
+        historyCount: 0
+      })
+    }
     
     const today = new Date().toISOString().split('T')[0]
     const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]

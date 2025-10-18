@@ -23,7 +23,11 @@ import {
   FileText,
   Copy,
   CheckCheck,
-  XCircle
+  XCircle,
+  Settings,
+  ToggleLeft,
+  ToggleRight,
+  Timer
 } from 'lucide-react'
 
 interface ApiCall {
@@ -86,6 +90,32 @@ interface IngestionLog {
   success: boolean
   created_at: string
   game_details?: GameChangeDetail[] // NEW: Detailed per-game changes
+}
+
+interface DataFeedSetting {
+  id: string
+  sport: string
+  enabled: boolean
+  fetch_interval_minutes: number
+  active_hours_start: string
+  active_hours_end: string
+  seasonal_start_month: number | null
+  seasonal_end_month: number | null
+  last_updated: string
+}
+
+interface CronJobStatus {
+  id: string
+  job_name: string
+  job_type: string
+  last_run_timestamp: string | null
+  last_run_status: string | null
+  last_run_duration_ms: number | null
+  next_scheduled_run: string | null
+  total_runs: number
+  successful_runs: number
+  failed_runs: number
+  enabled: boolean
 }
 
 // Separate component for each log entry to properly use hooks
@@ -242,6 +272,11 @@ export default function MonitoringPage() {
   const [debugReport, setDebugReport] = useState<string>('')
   const [generatingReport, setGeneratingReport] = useState(false)
   const [copied, setCopied] = useState(false)
+  
+  // Settings State
+  const [dataFeedSettings, setDataFeedSettings] = useState<DataFeedSetting[]>([])
+  const [cronJobStatuses, setCronJobStatuses] = useState<CronJobStatus[]>([])
+  const [savingSettings, setSavingSettings] = useState(false)
 
   useEffect(() => {
     fetchMonitoringData()
@@ -250,15 +285,19 @@ export default function MonitoringPage() {
   const fetchMonitoringData = async () => {
     setLoading(true)
     try {
-      const [callsRes, quotaRes, logsRes] = await Promise.all([
+      const [callsRes, quotaRes, logsRes, settingsRes, cronRes] = await Promise.all([
         fetch('/api/monitoring/api-calls?limit=50'),
         fetch('/api/monitoring/quota'),
-        fetch('/api/monitoring/ingestion-logs?limit=20')
+        fetch('/api/monitoring/ingestion-logs?limit=20'),
+        fetch('/api/monitoring/settings'),
+        fetch('/api/monitoring/cron-status')
       ])
 
       const callsData = await callsRes.json()
       const quotaData = await quotaRes.json()
       const logsData = await logsRes.json()
+      const settingsData = await settingsRes.json()
+      const cronData = await cronRes.json()
 
       if (callsData.success) setApiCalls(callsData.data)
       if (quotaData.success) {
@@ -266,10 +305,35 @@ export default function MonitoringPage() {
         setMonthlyQuota(quotaData.data.monthly)
       }
       if (logsData.success) setIngestionLogs(logsData.data)
+      if (settingsData.success) setDataFeedSettings(settingsData.settings)
+      if (cronData.success) setCronJobStatuses(cronData.cronJobs)
     } catch (error) {
       console.error('Error fetching monitoring data:', error)
     } finally {
       setLoading(false)
+    }
+  }
+  
+  const updateSportSetting = async (sport: string, updates: Partial<DataFeedSetting>) => {
+    setSavingSettings(true)
+    try {
+      const res = await fetch('/api/monitoring/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sport, ...updates })
+      })
+      
+      const data = await res.json()
+      if (data.success) {
+        // Update local state
+        setDataFeedSettings(prev => 
+          prev.map(s => s.sport === sport ? { ...s, ...updates } : s)
+        )
+      }
+    } catch (error) {
+      console.error('Error updating sport setting:', error)
+    } finally {
+      setSavingSettings(false)
     }
   }
 
@@ -621,6 +685,45 @@ ${gamesInDb > 0 && totalGamesProcessed === 0 ? `⚠️ NO UPDATES: ${gamesInDb} 
    Possible cause: All games failed matching logic` : ''}`
 })()}
 
+⚙️ SETTINGS VALIDATION
+──────────────────────────────────────────────────────────
+${(() => {
+  if (dataFeedSettings.length === 0) return '⚠️ No settings found - database table may not exist'
+  
+  const enabled = dataFeedSettings.filter(s => s.enabled)
+  const disabled = dataFeedSettings.filter(s => !s.enabled)
+  
+  return `✓ Total Sports Configured: ${dataFeedSettings.length}
+✓ Enabled: ${enabled.map(s => s.sport.toUpperCase()).join(', ')}
+${disabled.length > 0 ? `⚠️ Disabled: ${disabled.map(s => s.sport.toUpperCase()).join(', ')}` : ''}
+
+Fetch Intervals:
+${dataFeedSettings.map(s => `  ${s.sport.toUpperCase()}: ${s.fetch_interval_minutes} min ${s.enabled ? '✓' : '(disabled)'}`).join('\n')}
+
+${dataFeedSettings.some(s => s.fetch_interval_minutes < 10) ? '⚠️ WARNING: Some sports set to <10min intervals (high API usage)' : '✓ All intervals are reasonable'}
+${enabled.length === 0 ? '⚠️ CRITICAL: All sports are disabled! No data will be fetched.' : ''}`
+})()}
+
+🤖 CRON JOB HEALTH
+──────────────────────────────────────────────────────────
+${(() => {
+  if (cronJobStatuses.length === 0) return '⚠️ No cron jobs found - monitoring table may not exist'
+  
+  const healthy = cronJobStatuses.filter(j => j.last_run_status === 'success')
+  const failed = cronJobStatuses.filter(j => j.last_run_status === 'failed')
+  const neverRun = cronJobStatuses.filter(j => !j.last_run_timestamp)
+  
+  return `Total Jobs: ${cronJobStatuses.length}
+✓ Healthy: ${healthy.length}
+${failed.length > 0 ? `⚠️ Failed: ${failed.length} (${failed.map(j => j.job_name).join(', ')})` : ''}
+${neverRun.length > 0 ? `⚠️ Never Run: ${neverRun.length} (${neverRun.map(j => j.job_name).join(', ')})` : ''}
+
+${cronJobStatuses.map(j => {
+  const successRate = j.total_runs > 0 ? ((j.successful_runs / j.total_runs) * 100).toFixed(1) : 'N/A'
+  return `  ${j.job_name}: ${successRate}% success (${j.total_runs} runs)`
+}).join('\n')}`
+})()}
+
 🔧 RECOMMENDED ACTIONS
 ──────────────────────────────────────────────────────────
 ${anomalies.length > 5 ? '⚠️ HIGH ANOMALY COUNT: Review game matching logic' : '✓ Anomaly count normal'}
@@ -628,6 +731,8 @@ ${parseFloat(checks.successRate as string) < 95 ? '⚠️ LOW SUCCESS RATE: Chec
 ${parseFloat(checks.avgResponseTime as string) > 200 ? '⚠️ SLOW RESPONSES: API may be under load' : '✓ Response times normal'}
 ${(dailyQuota?.quota_used_percentage || 0) > 80 ? '⚠️ QUOTA WARNING: Approaching daily limit' : '✓ Quota usage healthy'}
 ${dbGames.length < 10 && apiCalls.length > 0 ? '⚠️ LOW GAME COUNT: Check simple-ingest logic and Vercel logs' : ''}
+${dataFeedSettings.filter(s => s.enabled).length === 0 ? '🚨 CRITICAL: All sports disabled in settings!' : ''}
+${cronJobStatuses.filter(j => j.last_run_status === 'failed').length > 2 ? '⚠️ MULTIPLE CRON FAILURES: Check Vercel logs' : ''}
 
 ═══════════════════════════════════════════════════════════
 📋 Copy this report and paste to Cursor for troubleshooting
@@ -760,10 +865,14 @@ ${dbGames.length < 10 && apiCalls.length > 0 ? '⚠️ LOW GAME COUNT: Check sim
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3 bg-gray-800">
+          <TabsList className="grid w-full grid-cols-4 bg-gray-800">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="api-calls">API Calls</TabsTrigger>
             <TabsTrigger value="ingestion">Ingestion Logs</TabsTrigger>
+            <TabsTrigger value="settings">
+              <Settings className="w-4 h-4 mr-2" />
+              Settings
+            </TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -942,6 +1051,180 @@ ${dbGames.length < 10 && apiCalls.length > 0 ? '⚠️ LOW GAME COUNT: Check sim
                 <div className="space-y-4">
                   {ingestionLogs.map((log) => (
                     <IngestionLogEntry key={log.id} log={log} />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          {/* Settings Tab */}
+          <TabsContent value="settings" className="space-y-6">
+            {/* Data Feed Settings */}
+            <Card className="glass-effect border-gray-700">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="w-5 h-5" />
+                  Data Feed Settings
+                </CardTitle>
+                <p className="text-sm text-gray-400 mt-2">
+                  Control how frequently we fetch odds data for each sport
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {dataFeedSettings.map((setting) => (
+                    <div 
+                      key={setting.sport} 
+                      className="p-4 bg-gray-800/50 rounded-lg border border-gray-700 hover:border-gray-600 transition-colors"
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <h3 className="text-lg font-bold text-white uppercase">
+                            {setting.sport}
+                          </h3>
+                          <Badge 
+                            variant={setting.enabled ? 'default' : 'secondary'}
+                            className={setting.enabled ? 'bg-green-600' : 'bg-gray-600'}
+                          >
+                            {setting.enabled ? 'Active' : 'Disabled'}
+                          </Badge>
+                        </div>
+                        <button
+                          onClick={() => updateSportSetting(setting.sport, { enabled: !setting.enabled })}
+                          disabled={savingSettings}
+                          className="flex items-center gap-2 text-sm"
+                        >
+                          {setting.enabled ? (
+                            <ToggleRight className="w-6 h-6 text-green-500" />
+                          ) : (
+                            <ToggleLeft className="w-6 h-6 text-gray-500" />
+                          )}
+                        </button>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* Fetch Interval */}
+                        <div>
+                          <label className="text-xs text-gray-400 mb-1 block">
+                            <Timer className="w-3 h-3 inline mr-1" />
+                            Fetch Interval (minutes)
+                          </label>
+                          <select
+                            value={setting.fetch_interval_minutes}
+                            onChange={(e) => updateSportSetting(setting.sport, { 
+                              fetch_interval_minutes: parseInt(e.target.value) 
+                            })}
+                            disabled={!setting.enabled || savingSettings}
+                            className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm disabled:opacity-50"
+                          >
+                            <option value="5">5 min (High API usage)</option>
+                            <option value="10">10 min</option>
+                            <option value="15">15 min (Recommended)</option>
+                            <option value="20">20 min</option>
+                            <option value="30">30 min</option>
+                            <option value="60">60 min (Low API usage)</option>
+                          </select>
+                        </div>
+                        
+                        {/* Active Hours */}
+                        <div>
+                          <label className="text-xs text-gray-400 mb-1 block">
+                            <Clock className="w-3 h-3 inline mr-1" />
+                            Active Hours (Start)
+                          </label>
+                          <input
+                            type="time"
+                            value={setting.active_hours_start}
+                            onChange={(e) => updateSportSetting(setting.sport, { 
+                              active_hours_start: e.target.value 
+                            })}
+                            disabled={!setting.enabled || savingSettings}
+                            className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm disabled:opacity-50"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="text-xs text-gray-400 mb-1 block">
+                            <Clock className="w-3 h-3 inline mr-1" />
+                            Active Hours (End)
+                          </label>
+                          <input
+                            type="time"
+                            value={setting.active_hours_end}
+                            onChange={(e) => updateSportSetting(setting.sport, { 
+                              active_hours_end: e.target.value 
+                            })}
+                            disabled={!setting.enabled || savingSettings}
+                            className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm disabled:opacity-50"
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Season Info */}
+                      {setting.seasonal_start_month && setting.seasonal_end_month && (
+                        <div className="mt-3 text-xs text-gray-500">
+                          Season: Month {setting.seasonal_start_month} - {setting.seasonal_end_month}
+                        </div>
+                      )}
+                      
+                      <div className="mt-2 text-xs text-gray-500">
+                        Last updated: {new Date(setting.last_updated).toLocaleString()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Cron Job Status */}
+            <Card className="glass-effect border-gray-700">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="w-5 h-5" />
+                  Automated Jobs Status
+                </CardTitle>
+                <p className="text-sm text-gray-400 mt-2">
+                  Monitor the health of scheduled background tasks
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {cronJobStatuses.map((job) => (
+                    <div 
+                      key={job.job_name}
+                      className="p-4 bg-gray-800/50 rounded-lg border border-gray-700"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-semibold text-white">{job.job_name}</h4>
+                        <Badge 
+                          variant={job.last_run_status === 'success' ? 'default' : 'destructive'}
+                          className={
+                            job.last_run_status === 'success' 
+                              ? 'bg-green-600' 
+                              : job.last_run_status === 'failed' 
+                              ? 'bg-red-600' 
+                              : 'bg-gray-600'
+                          }
+                        >
+                          {job.last_run_status || 'Never Run'}
+                        </Badge>
+                      </div>
+                      
+                      <div className="space-y-1 text-xs text-gray-400">
+                        <div>Type: {job.job_type}</div>
+                        {job.last_run_timestamp && (
+                          <div>
+                            Last Run: {new Date(job.last_run_timestamp).toLocaleString()}
+                          </div>
+                        )}
+                        {job.last_run_duration_ms && (
+                          <div>Duration: {job.last_run_duration_ms}ms</div>
+                        )}
+                        <div className="mt-2 pt-2 border-t border-gray-700">
+                          Total: {job.total_runs} | Success: {job.successful_runs} | Failed: {job.failed_runs}
+                        </div>
+                      </div>
+                    </div>
                   ))}
                 </div>
               </CardContent>
