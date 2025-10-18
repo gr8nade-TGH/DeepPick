@@ -25,7 +25,7 @@ import {
   CheckCircle,
   Info
 } from 'lucide-react'
-import Link from 'next/link'
+import { NavBar } from '@/components/navigation/nav-bar'
 
 interface Game {
   id: string
@@ -176,31 +176,7 @@ export default function OddsPage() {
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="flex gap-2">
-            <Link 
-              href="/"
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-neon-blue/30 hover:bg-neon-blue/10 transition-all text-neon-blue hover:border-neon-blue"
-            >
-              <Home className="w-4 h-4" />
-              <span className="font-semibold">Dashboard</span>
-            </Link>
-            <Link 
-              href="/leaderboard"
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-yellow-500/30 hover:bg-yellow-500/10 transition-all text-yellow-400 hover:border-yellow-500"
-            >
-              <Trophy className="w-4 h-4" />
-              <span className="font-semibold">Leaderboard</span>
-            </Link>
-            <Link 
-              href="/history"
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-neon-purple/30 hover:bg-neon-purple/10 transition-all text-neon-purple hover:border-neon-purple"
-            >
-              <BarChart3 className="w-4 h-4" />
-              <span className="font-semibold">History</span>
-            </Link>
-          </div>
-          
-          <div className="text-center">
+          <div className="text-center flex-1">
             <h1 className="text-4xl font-bold text-neon-green animate-pulse drop-shadow-[0_0_20px_rgba(16,185,129,0.8)]">
               Odds & Factors
             </h1>
@@ -211,7 +187,7 @@ export default function OddsPage() {
             )}
           </div>
           
-          <div className="w-[240px]" /> {/* Spacer for centering */}
+          <NavBar />
         </div>
 
         {/* Controls */}

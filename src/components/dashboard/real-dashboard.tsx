@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { TrendingUp, Activity, Lightbulb, AlertTriangle, Zap, BarChart, Rocket, MessageCircle, CheckCircle, XCircle, PlayCircle, Clock, BarChart3, Archive, Brain, X, Target, TrendingDown, Trophy } from 'lucide-react'
-import Link from 'next/link'
+import { NavBar } from '@/components/navigation/nav-bar'
 
 interface PredictionLog {
   timestamp: string
@@ -272,36 +272,7 @@ export function RealDashboard() {
       {/* Header */}
       <header className="flex justify-between items-center mb-8">
         <h1 className="text-4xl font-bold text-green-400 tracking-wider">DEEP PICKS</h1>
-        <div className="flex items-center gap-3">
-          <Link 
-            href="/odds"
-            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-neon-blue/30 hover:bg-neon-blue/10 transition-all text-neon-blue hover:border-neon-blue"
-          >
-            <BarChart3 className="w-4 h-4" />
-            <span className="font-semibold">Live Odds</span>
-          </Link>
-          <Link 
-            href="/leaderboard"
-            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-yellow-500/30 hover:bg-yellow-500/10 transition-all text-yellow-400 hover:border-yellow-500"
-          >
-            <Trophy className="w-4 h-4" />
-            <span className="font-semibold">Leaderboard</span>
-          </Link>
-          <Link 
-            href="/monitoring"
-            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-cyan-500/30 hover:bg-cyan-500/10 transition-all text-cyan-400 hover:border-cyan-500"
-          >
-            <Activity className="w-4 h-4" />
-            <span className="font-semibold">Monitoring</span>
-          </Link>
-          <Link 
-            href="/history"
-            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-neon-purple/30 hover:bg-neon-purple/10 transition-all text-neon-purple hover:border-neon-purple"
-          >
-            <Archive className="w-4 h-4" />
-            <span className="font-semibold">History</span>
-          </Link>
-        </div>
+        <NavBar />
       </header>
 
       {/* Capper Selector */}

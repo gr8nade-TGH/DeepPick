@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import Link from 'next/link'
+import { NavBar } from '@/components/navigation/nav-bar'
 import { Trophy, TrendingUp, Award, Medal, Crown, ExternalLink, Home } from 'lucide-react'
 
 interface CapperStats {
@@ -122,12 +122,7 @@ export default function LeaderboardPage() {
               <p className="text-gray-400 text-lg">Top Performing Cappers</p>
             </div>
           </div>
-          <Link href="/">
-            <Button variant="outline" className="gap-2">
-              <Home className="w-4 h-4" />
-              Dashboard
-            </Button>
-          </Link>
+          <NavBar />
         </div>
 
         {/* Timeframe Selector */}
