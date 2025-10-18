@@ -491,6 +491,7 @@ export function RealDashboard() {
               <tr className="border-b border-gray-700 text-gray-400">
                 <th className="py-2 px-4">Capper</th>
                 <th className="py-2 px-4">Pick</th>
+                <th className="py-2 px-4">Game Start</th>
                 <th className="py-2 px-4">Posted</th>
                 <th className="py-2 px-4">Units</th>
                 <th className="py-2 px-4">Sport</th>
@@ -503,7 +504,7 @@ export function RealDashboard() {
             <tbody>
               {picks.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-8 px-4 text-center text-gray-400">
+                  <td colSpan={10} className="py-8 px-4 text-center text-gray-400">
                     No picks found. Add some picks to see them here!
                   </td>
                 </tr>
@@ -519,8 +520,47 @@ export function RealDashboard() {
                         </Badge>
                       </td>
                       <td className="py-3 px-4 align-middle font-bold text-gray-100">{pick.selection}</td>
-                      <td className="py-3 px-4 align-middle text-gray-300">
-                        {new Date(pick.created_at).toLocaleString()}
+                      <td className="py-3 px-4 align-middle">
+                        {pick.game_snapshot?.game_date && pick.game_snapshot?.game_time ? (
+                          <div className="text-sm">
+                            <div className="text-gray-300 font-semibold">
+                              {new Date(`${pick.game_snapshot.game_date}T${pick.game_snapshot.game_time}`).toLocaleDateString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric',
+                                hour: 'numeric',
+                                minute: '2-digit'
+                              })}
+                            </div>
+                            <div className={`text-xs font-mono ${(() => {
+                              const gameTime = new Date(`${pick.game_snapshot.game_date}T${pick.game_snapshot.game_time}`)
+                              const now = new Date()
+                              const hoursUntil = (gameTime.getTime() - now.getTime()) / (1000 * 60 * 60)
+                              if (hoursUntil < 0) return 'text-red-400'
+                              if (hoursUntil < 3) return 'text-orange-400'
+                              return 'text-gray-400'
+                            })()}`}>
+                              {(() => {
+                                const gameTime = new Date(`${pick.game_snapshot.game_date}T${pick.game_snapshot.game_time}`)
+                                const now = new Date()
+                                const diff = gameTime.getTime() - now.getTime()
+                                if (diff < 0) return 'STARTED'
+                                const hours = Math.floor(diff / (1000 * 60 * 60))
+                                const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+                                return `${hours}h ${mins}m`
+                              })()}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-gray-500 text-xs">No game time</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 align-middle text-gray-300 text-sm">
+                        {new Date(pick.created_at).toLocaleDateString('en-US', { 
+                          month: 'short', 
+                          day: 'numeric',
+                          hour: 'numeric',
+                          minute: '2-digit'
+                        })}
                       </td>
                       <td className="py-3 px-4 align-middle text-gray-300">{pick.units}</td>
                       <td className="py-3 px-4 align-middle text-gray-300">

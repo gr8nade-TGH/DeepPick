@@ -278,6 +278,15 @@ export default function MonitoringPage() {
     setCopied(false)
     
     try {
+      // Trigger fresh data fetch first
+      await fetch('/api/simple-ingest')
+      
+      // Wait a moment for data to process
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
+      // Refresh monitoring data
+      await fetchMonitoringData()
+      
       // Run data quality checks
       const checks = {
         totalCalls: apiCalls.length,
@@ -381,6 +390,18 @@ export default function MonitoringPage() {
         }
       } catch (e) {
         console.warn('Could not fetch database games')
+      }
+      
+      // Fetch current picks to validate game timing
+      let currentPicks: any[] = []
+      try {
+        const picksRes = await fetch('/api/picks?status=pending')
+        const picksData = await picksRes.json()
+        if (picksData.success) {
+          currentPicks = picksData.data || []
+        }
+      } catch (e) {
+        console.warn('Could not fetch current picks')
       }
       
       // Generate formatted report
@@ -513,7 +534,7 @@ ${duplicates.length > 0 ? '\n⚠️ WARNING: Duplicate matchups indicate game ma
 ${recentGameIds.size > dbGames.length ? `\n⚠️ WARNING: ${recentGameIds.size - dbGames.length} games from ingestion logs are missing from DB!` : ''}`
 })() : 'No games to analyze'}
 
-⏰ GAME TIMING VALIDATION
+⏰ GAME TIMING VALIDATION (Database Games)
 ──────────────────────────────────────────────────────────
 ${dbGames.length > 0 ? dbGames.slice(0, 5).map(game => {
   const now = new Date()
@@ -528,6 +549,45 @@ ${dbGames.length > 0 ? dbGames.slice(0, 5).map(game => {
     ${hoursUntilStart < 0 && game.status === 'scheduled' ? '⚠️ Game started but status still "scheduled"' : ''}
     ${hoursUntilStart < -5 && game.status !== 'final' ? '⚠️ Game started >5h ago but not marked final' : ''}`
 }).join('\n\n') : 'No games in database'}
+
+🎯 PICKS TIMING VALIDATION (Current Picks)
+──────────────────────────────────────────────────────────
+${currentPicks.length > 0 ? (() => {
+  const now = new Date()
+  const pickTimingIssues: string[] = []
+  
+  return currentPicks.slice(0, 5).map((pick, idx) => {
+    const gameSnapshot = pick.game_snapshot
+    if (!gameSnapshot || !gameSnapshot.game_date || !gameSnapshot.game_time) {
+      pickTimingIssues.push(`Pick ${idx + 1}: Missing game timing data`)
+      return `${idx + 1}. ${pick.selection} (${pick.capper})
+    ⚠️ CRITICAL: No game_date or game_time in snapshot!
+    Pick Created: ${new Date(pick.created_at).toLocaleString()}
+    This pick cannot show countdown timer on dashboard!`
+    }
+    
+    const gameDateTime = new Date(`${gameSnapshot.game_date}T${gameSnapshot.game_time}`)
+    const hoursUntil = (gameDateTime.getTime() - now.getTime()) / (1000 * 60 * 60)
+    const pickCreated = new Date(pick.created_at)
+    const hoursBeforeGame = (gameDateTime.getTime() - pickCreated.getTime()) / (1000 * 60 * 60)
+    
+    if (hoursUntil < 0) {
+      pickTimingIssues.push(`Pick ${idx + 1}: Game already started but pick still pending`)
+    }
+    if (hoursBeforeGame < 0) {
+      pickTimingIssues.push(`Pick ${idx + 1}: Pick created AFTER game started!`)
+    }
+    
+    return `${idx + 1}. ${pick.selection} (${pick.capper})
+    Game: ${gameSnapshot.away_team?.name} @ ${gameSnapshot.home_team?.name}
+    Game Time: ${gameSnapshot.game_date} ${gameSnapshot.game_time}
+    Pick Created: ${new Date(pick.created_at).toLocaleString()}
+    Hours Until Game: ${hoursUntil.toFixed(1)}h
+    Pick Made: ${hoursBeforeGame.toFixed(1)}h before game
+    ${hoursUntil < 0 ? '⚠️ Game already started!' : hoursUntil < 1 ? '⚠️ Game starting soon!' : '✓ Timing OK'}
+    ${hoursBeforeGame < 0 ? '⚠️ CRITICAL: Pick made after game started!' : ''}`
+  }).join('\n\n') + (pickTimingIssues.length > 0 ? `\n\n⚠️ TIMING ISSUES FOUND:\n${pickTimingIssues.join('\n')}` : '\n\n✓ All pick timings are valid')
+})() : 'No current picks to validate'}
 
 📊 DATA FLOW ANALYSIS
 ──────────────────────────────────────────────────────────
