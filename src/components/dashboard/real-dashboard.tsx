@@ -15,13 +15,17 @@ interface Pick {
   created_at: string
   units: number
   status: string
-  sport: string
-  bet_type: string
-  reasoning: string
-  pick_results?: Array<{
-    outcome: string
-    net_units: number
-  }>
+  pick_type: string
+  reasoning?: string
+  net_units?: number
+  game_snapshot?: {
+    sport: string
+    league: string
+    home_team: any
+    away_team: any
+    game_date: string
+    game_time: string
+  }
 }
 
 interface PerformanceData {
@@ -88,13 +92,15 @@ export function RealDashboard() {
 
   const getOutcomeText = (pick: Pick) => {
     if (pick.status === 'won') {
-      const netUnits = pick.pick_results?.[0]?.net_units || 0
+      const netUnits = pick.net_units || 0
       return `✅ +${netUnits.toFixed(2)}u`
     } else if (pick.status === 'lost') {
-      const netUnits = pick.pick_results?.[0]?.net_units || 0
+      const netUnits = pick.net_units || 0
       return `❌ ${netUnits.toFixed(2)}u`
+    } else if (pick.status === 'push') {
+      return `🟡 Push (0u)`
     }
-    return 'TBD'
+    return '⏳ Pending'
   }
 
   const getInsightIcon = (pick: Pick) => {
@@ -248,7 +254,9 @@ export function RealDashboard() {
                         {new Date(pick.created_at).toLocaleString()}
                       </td>
                       <td className="py-3 px-4 text-gray-300">{pick.units}</td>
-                      <td className="py-3 px-4 text-gray-300">{pick.sport.toUpperCase()}</td>
+                      <td className="py-3 px-4 text-gray-300">
+                        {pick.game_snapshot?.sport?.toUpperCase() || 'N/A'}
+                      </td>
                       <td className="py-3 px-4">
                         <Badge variant={pick.status === 'won' ? 'default' : pick.status === 'lost' ? 'destructive' : 'secondary'}>
                           {pick.status}
@@ -261,7 +269,7 @@ export function RealDashboard() {
                       </td>
                       <td className="py-3 px-4 text-gray-300 flex items-center">
                         <InsightIcon className="h-4 w-4 mr-2" />
-                        {pick.reasoning}
+                        {pick.reasoning || 'No reasoning provided'}
                       </td>
                     </tr>
                   )
