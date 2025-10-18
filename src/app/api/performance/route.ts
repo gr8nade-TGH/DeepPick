@@ -44,17 +44,32 @@ export async function GET(request: NextRequest) {
     const roi = unitsBet > 0 ? (netUnits / unitsBet) * 100 : 0
     const winRate = totalPicks > 0 ? (wins / totalPicks) * 100 : 0
 
-    // Calculate cumulative profit for chart
-    let cumulativeProfit = 0
-    const chartData = picks?.map(pick => {
-      const netUnitsValue = parseFloat(pick.net_units?.toString() || '0') || 0
-      cumulativeProfit += netUnitsValue
-      return {
-        date: pick.created_at.split('T')[0],
-        profit: netUnitsValue,
-        cumulative_profit: cumulativeProfit
+    // Calculate cumulative profit for chart - GROUP BY DATE
+    // ONLY include completed picks (won/lost/push) that have actual results
+    const profitByDate = new Map<string, number>()
+    
+    // Group COMPLETED picks by date and sum profits
+    picks?.forEach(pick => {
+      // Only include picks that have been graded (won, lost, or push)
+      if (pick.status === 'won' || pick.status === 'lost' || pick.status === 'push') {
+        const date = pick.created_at.split('T')[0]
+        const netUnitsValue = parseFloat(pick.net_units?.toString() || '0') || 0
+        profitByDate.set(date, (profitByDate.get(date) || 0) + netUnitsValue)
       }
-    }) || []
+    })
+    
+    // Convert to array and calculate cumulative profit
+    let cumulativeProfit = 0
+    const chartData = Array.from(profitByDate.entries())
+      .sort((a, b) => a[0].localeCompare(b[0])) // Sort by date
+      .map(([date, profit]) => {
+        cumulativeProfit += profit
+        return {
+          date,
+          profit,
+          cumulative_profit: cumulativeProfit
+        }
+      })
 
     return NextResponse.json({
       success: true,
