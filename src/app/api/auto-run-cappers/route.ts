@@ -47,6 +47,7 @@ export async function GET(request: Request) {
       nexus: { success: false, picks: 0, error: null as string | null },
       shiva: { success: false, picks: 0, error: null as string | null },
       cerberus: { success: false, picks: 0, error: null as string | null },
+      oracle: { success: false, picks: 0, error: null as string | null },
       deeppick: { success: false, picks: 0, error: null as string | null },
     }
 
@@ -59,6 +60,9 @@ export async function GET(request: Request) {
       { name: 'nexus', endpoint: '/api/run-nexus' },
       { name: 'shiva', endpoint: '/api/run-shiva' },
       { name: 'cerberus', endpoint: '/api/run-cerberus' },
+      // Oracle is AI-powered and costs ~$0.02-0.05 per pick
+      // Uncomment to enable AI-powered picks in cron runs
+      // { name: 'oracle', endpoint: '/api/run-oracle' },
       // DeepPick is a meta-algorithm that runs after the others
       // { name: 'deeppick', endpoint: '/api/run-deeppick' },
     ]

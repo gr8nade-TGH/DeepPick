@@ -223,17 +223,21 @@ export async function GET() {
           sportsbooks[bookmaker.key] = bookmakerOdds
         }
         
-        const gameDate = event.commence_time.split('T')[0]
-        const gameTime = event.commence_time.split('T')[1].substring(0, 8)
+        // CRITICAL FIX: Convert UTC to EST
+        const commenceTimeUTC = new Date(event.commence_time)
+        const commenceTimeEST = new Date(commenceTimeUTC.toLocaleString('en-US', { timeZone: 'America/New_York' }))
+        
+        const gameDate = commenceTimeEST.toISOString().split('T')[0]
+        const gameTime = commenceTimeEST.toTimeString().split(' ')[0]
+        const gameStartTimestamp = commenceTimeEST.toISOString() // Full timestamp
         const apiEventId = event.id // Store API's unique event ID
         
         // Determine game status based on commence time
-        const commenceTime = new Date(event.commence_time)
         const now = new Date()
         let gameStatus = 'scheduled'
         
         // Game is live if current time is past commence time but within ~4 hours
-        const hoursSinceStart = (now.getTime() - commenceTime.getTime()) / (1000 * 60 * 60)
+        const hoursSinceStart = (now.getTime() - commenceTimeEST.getTime()) / (1000 * 60 * 60)
         if (hoursSinceStart > 0 && hoursSinceStart < 4) {
           gameStatus = 'live'
         } else if (hoursSinceStart >= 4) {
@@ -243,21 +247,16 @@ export async function GET() {
         
         const matchup = `${event.away_team} @ ${event.home_team}`
         
-        // Check if game already exists (match by home/away teams and date)
+        // CRITICAL FIX: Match by API event ID (most reliable)
         const { data: existingGames } = await getSupabaseAdmin()
           .from('games')
-          .select('id, status, odds, home_team, away_team')
-          .eq('sport', mapSportKey(sport.key))
-          .eq('game_date', gameDate)
+          .select('id, status, odds, home_team, away_team, api_event_id')
+          .eq('api_event_id', apiEventId)
         
         let gameId: string | null = null
         
-        // Find exact match by team names - FIXED: Actually match teams!
-        const existingGame = existingGames?.find((g: any) => {
-          const homeMatch = g.home_team?.name === event.home_team
-          const awayMatch = g.away_team?.name === event.away_team
-          return homeMatch && awayMatch
-        })
+        // Use API event ID for matching (prevents duplicates)
+        const existingGame = existingGames && existingGames.length > 0 ? existingGames[0] : null
         
         // Debug logging
         if (existingGames && existingGames.length > 0 && !existingGame) {
@@ -309,6 +308,8 @@ export async function GET() {
             .update({
               odds: sportsbooks,
               status: gameStatus,
+              game_start_timestamp: gameStartTimestamp,
+              api_event_id: apiEventId,
               updated_at: new Date().toISOString(),
             })
             .eq('id', gameId)
@@ -360,6 +361,9 @@ export async function GET() {
               },
               game_date: gameDate,
               game_time: gameTime,
+              game_start_timestamp: gameStartTimestamp,
+              api_event_id: apiEventId,
+              timezone: 'America/New_York',
               status: gameStatus,
               odds: sportsbooks,
               created_at: new Date().toISOString(),
