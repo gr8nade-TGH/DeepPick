@@ -353,6 +353,16 @@ export function RealDashboard() {
               <CardTitle className="text-xl text-green-400">Profit Over Time</CardTitle>
             </CardHeader>
             <CardContent>
+              {(() => {
+                console.log('📊 CHART DEBUG:', {
+                  hasPerformance: !!performance,
+                  hasChartData: !!performance?.chartData,
+                  chartDataLength: performance?.chartData?.length,
+                  chartData: performance?.chartData,
+                  firstDataPoint: performance?.chartData?.[0]
+                })
+                return null
+              })()}
               {!performance?.chartData || performance.chartData.length === 0 ? (
                 <div className="h-[250px] flex items-center justify-center text-gray-400">
                   <div className="text-center">
