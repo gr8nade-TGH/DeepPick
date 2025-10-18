@@ -118,10 +118,33 @@ export function RealDashboard() {
   }
 
   const getGameStatusDisplay = (pick: Pick) => {
+    // Check if game still exists in games table (not archived)
     const gameStatus = pick.games?.status
     const finalScore = pick.games?.final_score
     const homeTeam = pick.game_snapshot?.home_team
     const awayTeam = pick.game_snapshot?.away_team
+
+    // If game is archived (games is null), check pick status
+    if (!pick.games) {
+      // Game was archived, show based on pick status
+      if (pick.status === 'won' || pick.status === 'lost' || pick.status === 'push') {
+        return (
+          <div className="space-y-1">
+            <Badge className="bg-gray-600 text-white">
+              COMPLETED
+            </Badge>
+            <div className="text-xs text-gray-400 mt-1">
+              Game archived
+            </div>
+          </div>
+        )
+      }
+      return (
+        <Badge variant="secondary">
+          Scheduled
+        </Badge>
+      )
+    }
 
     if (gameStatus === 'live') {
       return (
