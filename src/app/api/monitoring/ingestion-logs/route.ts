@@ -1,18 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
 export async function GET(request: NextRequest) {
   try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-    const supabase = createClient(supabaseUrl, supabaseKey)
     
     const limit = parseInt(request.nextUrl.searchParams.get('limit') || '20')
 
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseAdmin()
       .from('data_ingestion_logs')
       .select('*')
       .order('created_at', { ascending: false })

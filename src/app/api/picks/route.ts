@@ -78,7 +78,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json()
     
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('picks')
       .insert([{
         game_id: body.game_id,

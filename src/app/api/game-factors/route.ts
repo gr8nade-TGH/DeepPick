@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -15,9 +15,6 @@ interface Factor {
 
 export async function GET(request: NextRequest) {
   try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-    const supabase = createClient(supabaseUrl, supabaseKey)
     
     const gameId = request.nextUrl.searchParams.get('gameId')
     
@@ -26,7 +23,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch game data
-    const { data: game, error: gameError } = await supabase
+    const { data: game, error: gameError } = await getSupabaseAdmin()
       .from('games')
       .select('*')
       .eq('id', gameId)
@@ -37,7 +34,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch odds history for line movement analysis
-    const { data: oddsHistory, error: historyError } = await supabase
+    const { data: oddsHistory, error: historyError } = await getSupabaseAdmin()
       .from('odds_history')
       .select('*')
       .eq('game_id', gameId)
