@@ -321,6 +321,7 @@ export default function OddsPage() {
                                     {bookmaker.replace('_', ' ')}
                                   </th>
                                 ))}
+                                <th className="text-center p-2 text-xs text-neon-cyan font-bold">Avg</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -348,6 +349,35 @@ export default function OddsPage() {
                                     </td>
                                   )
                                 })}
+                                {/* Average Column for Away Team */}
+                                <td className="p-2 text-center bg-white/5">
+                                  {(() => {
+                                    const moneylines = game.sportsbooks
+                                      ?.map(book => game.odds[book]?.moneyline?.away)
+                                      .filter(val => val !== undefined && val !== null) || []
+                                    const avg = moneylines.length > 0 
+                                      ? Math.round(moneylines.reduce((a, b) => a + b, 0) / moneylines.length)
+                                      : null
+                                    return avg !== null ? (
+                                      <div className="text-neon-cyan font-bold">
+                                        {avg > 0 ? '+' : ''}{avg}
+                                      </div>
+                                    ) : <span className="text-muted-foreground">-</span>
+                                  })()}
+                                  {(() => {
+                                    const spreads = game.sportsbooks
+                                      ?.map(book => game.odds[book]?.spread?.line)
+                                      .filter(val => val !== undefined && val !== null) || []
+                                    const avg = spreads.length > 0 
+                                      ? (spreads.reduce((a, b) => a + b, 0) / spreads.length).toFixed(1)
+                                      : null
+                                    return avg !== null ? (
+                                      <div className="text-xs text-neon-purple">
+                                        {parseFloat(avg) > 0 ? '+' : ''}{avg}
+                                      </div>
+                                    ) : null
+                                  })()}
+                                </td>
                               </tr>
                               
                               {/* Home Team Row */}
@@ -374,6 +404,35 @@ export default function OddsPage() {
                                     </td>
                                   )
                                 })}
+                                {/* Average Column for Home Team */}
+                                <td className="p-2 text-center bg-white/5">
+                                  {(() => {
+                                    const moneylines = game.sportsbooks
+                                      ?.map(book => game.odds[book]?.moneyline?.home)
+                                      .filter(val => val !== undefined && val !== null) || []
+                                    const avg = moneylines.length > 0 
+                                      ? Math.round(moneylines.reduce((a, b) => a + b, 0) / moneylines.length)
+                                      : null
+                                    return avg !== null ? (
+                                      <div className="text-neon-cyan font-bold">
+                                        {avg > 0 ? '+' : ''}{avg}
+                                      </div>
+                                    ) : <span className="text-muted-foreground">-</span>
+                                  })()}
+                                  {(() => {
+                                    const spreads = game.sportsbooks
+                                      ?.map(book => game.odds[book]?.spread?.line)
+                                      .filter(val => val !== undefined && val !== null) || []
+                                    const avg = spreads.length > 0 
+                                      ? (spreads.reduce((a, b) => a + b, 0) / spreads.length).toFixed(1)
+                                      : null
+                                    return avg !== null ? (
+                                      <div className="text-xs text-neon-purple">
+                                        {parseFloat(avg) > 0 ? '-' : '+'}{Math.abs(parseFloat(avg))}
+                                      </div>
+                                    ) : null
+                                  })()}
+                                </td>
                               </tr>
                               
                               {/* Totals Row */}
@@ -400,6 +459,22 @@ export default function OddsPage() {
                                     </td>
                                   )
                                 })}
+                                {/* Average Column for Totals */}
+                                <td className="p-2 text-center bg-white/5">
+                                  {(() => {
+                                    const totals = game.sportsbooks
+                                      ?.map(book => game.odds[book]?.total?.line)
+                                      .filter(val => val !== undefined && val !== null) || []
+                                    const avg = totals.length > 0 
+                                      ? (totals.reduce((a, b) => a + b, 0) / totals.length).toFixed(1)
+                                      : null
+                                    return avg !== null ? (
+                                      <div className="text-xs text-neon-yellow">
+                                        O/U {avg}
+                                      </div>
+                                    ) : <span className="text-muted-foreground">-</span>
+                                  })()}
+                                </td>
                               </tr>
                             </tbody>
                           </table>
