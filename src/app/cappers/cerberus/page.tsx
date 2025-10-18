@@ -58,7 +58,7 @@ export default function CerberusCapperPage() {
 
     // Count agreements
     const picks = [modelA.pick, modelB.pick, modelC.pick].filter(p => p !== null)
-    const uniquePicks = [...new Set(picks)]
+    const uniquePicks = Array.from(new Set(picks))
     
     if (uniquePicks.length === 1 && picks.length === 3) {
       // All 3 models agree - STRONG SIGNAL
