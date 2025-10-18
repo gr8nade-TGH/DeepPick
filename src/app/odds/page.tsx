@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { OddsChart } from '@/components/odds/odds-chart'
 import { 
   RefreshCw, 
   Clock, 
@@ -12,7 +13,8 @@ import {
   BarChart3,
   Calendar,
   MapPin,
-  Target
+  Target,
+  TrendingUp
 } from 'lucide-react'
 
 interface Game {
@@ -267,139 +269,133 @@ export default function OddsPage() {
               return (
                 <Card key={game.id} className="glass-effect hover:neon-glow transition-all duration-300">
                   <CardContent className="p-6">
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                      {/* Game Info */}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <SportIcon className="w-5 h-5 text-neon-blue" />
-                          <Badge variant="outline" className="text-xs">
-                            {game.league}
-                          </Badge>
-                          <Badge className={getStatusColor(game.status)}>
-                            {game.status}
-                          </Badge>
+                    {/* Game Header */}
+                    <div className="flex items-center gap-3 mb-4">
+                      <SportIcon className="w-5 h-5 text-neon-blue" />
+                      <Badge variant="outline" className="text-xs">
+                        {game.league}
+                      </Badge>
+                      <Badge className={getStatusColor(game.status)}>
+                        {game.status}
+                      </Badge>
+                      <div className="flex-1" />
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Calendar className="w-3 h-3" />
+                        {new Date(game.game_date).toLocaleDateString()}
+                        <Clock className="w-3 h-3 ml-2" />
+                        {game.time_until_game}
+                      </div>
+                    </div>
+
+                    <div className="grid lg:grid-cols-[1fr,auto] gap-6">
+                      {/* Left: Odds Table */}
+                      <div>
+                        <div className="text-lg font-semibold mb-3">
+                          {game.away_team.name} @ {game.home_team.name}
                         </div>
                         
-                        <div className="flex items-center gap-4 mb-2">
-                          <div className="text-lg font-semibold">
-                            {game.away_team.name} @ {game.home_team.name}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {game.away_team.abbreviation} @ {game.home_team.abbreviation}
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
-                            {new Date(game.game_date).toLocaleDateString()}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Clock className="w-4 h-4" />
-                            {game.time_until_game}
-                          </div>
-                          {game.venue && (
-                            <div className="flex items-center gap-1">
-                              <MapPin className="w-4 h-4" />
-                              {game.venue}
-                            </div>
-                          )}
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-white/10">
+                                <th className="text-left p-2 text-xs text-muted-foreground">Team</th>
+                                {game.sportsbooks?.map((bookmaker) => (
+                                  <th key={bookmaker} className="text-center p-2 text-xs text-neon-green capitalize">
+                                    {bookmaker.replace('_', ' ')}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {/* Away Team Row */}
+                              <tr className="border-b border-white/5">
+                                <td className="p-2 font-semibold">
+                                  <div>{game.away_team.abbreviation}</div>
+                                  <div className="text-xs text-muted-foreground">(Away)</div>
+                                </td>
+                                {game.sportsbooks?.map((bookmaker) => {
+                                  const odds = game.odds[bookmaker]
+                                  return (
+                                    <td key={bookmaker} className="p-2 text-center">
+                                      {odds?.moneyline && (
+                                        <div className="text-neon-blue font-semibold">
+                                          {odds.moneyline.away > 0 ? '+' : ''}{odds.moneyline.away}
+                                        </div>
+                                      )}
+                                      {odds?.spread && (
+                                        <div className="text-xs text-neon-purple">
+                                          {odds.spread.line > 0 ? '+' : ''}{odds.spread.line}
+                                        </div>
+                                      )}
+                                      {!odds?.moneyline && <span className="text-muted-foreground">-</span>}
+                                    </td>
+                                  )
+                                })}
+                              </tr>
+                              
+                              {/* Home Team Row */}
+                              <tr className="border-b border-white/5">
+                                <td className="p-2 font-semibold">
+                                  <div>{game.home_team.abbreviation}</div>
+                                  <div className="text-xs text-muted-foreground">(Home)</div>
+                                </td>
+                                {game.sportsbooks?.map((bookmaker) => {
+                                  const odds = game.odds[bookmaker]
+                                  return (
+                                    <td key={bookmaker} className="p-2 text-center">
+                                      {odds?.moneyline && (
+                                        <div className="text-neon-blue font-semibold">
+                                          {odds.moneyline.home > 0 ? '+' : ''}{odds.moneyline.home}
+                                        </div>
+                                      )}
+                                      {odds?.spread && (
+                                        <div className="text-xs text-neon-purple">
+                                          {odds.spread.line > 0 ? '-' : '+'}{Math.abs(odds.spread.line)}
+                                        </div>
+                                      )}
+                                      {!odds?.moneyline && <span className="text-muted-foreground">-</span>}
+                                    </td>
+                                  )
+                                })}
+                              </tr>
+                              
+                              {/* Totals Row */}
+                              <tr>
+                                <td className="p-2 font-semibold">
+                                  <div>O/U</div>
+                                  <div className="text-xs text-muted-foreground">(Total)</div>
+                                </td>
+                                {game.sportsbooks?.map((bookmaker) => {
+                                  const odds = game.odds[bookmaker]
+                                  return (
+                                    <td key={bookmaker} className="p-2 text-center">
+                                      {odds?.total && (
+                                        <div>
+                                          <div className="text-xs text-neon-yellow">
+                                            O {odds.total.line}
+                                          </div>
+                                          <div className="text-xs text-neon-yellow">
+                                            U {odds.total.line}
+                                          </div>
+                                        </div>
+                                      )}
+                                      {!odds?.total && <span className="text-muted-foreground">-</span>}
+                                    </td>
+                                  )
+                                })}
+                              </tr>
+                            </tbody>
+                          </table>
                         </div>
                       </div>
 
-                      {/* Odds Table */}
-                      <div className="flex-1 overflow-x-auto">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="border-b border-white/10">
-                              <th className="text-left p-2 text-xs text-muted-foreground">Team</th>
-                              {game.sportsbooks?.map((bookmaker) => (
-                                <th key={bookmaker} className="text-center p-2 text-xs text-neon-green capitalize">
-                                  {bookmaker.replace('_', ' ')}
-                                </th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {/* Away Team Row */}
-                            <tr className="border-b border-white/5">
-                              <td className="p-2 font-semibold">
-                                <div>{game.away_team.abbreviation}</div>
-                                <div className="text-xs text-muted-foreground">(Away)</div>
-                              </td>
-                              {game.sportsbooks?.map((bookmaker) => {
-                                const odds = game.odds[bookmaker]
-                                return (
-                                  <td key={bookmaker} className="p-2 text-center">
-                                    {odds?.moneyline && (
-                                      <div className="text-neon-blue font-semibold">
-                                        {odds.moneyline.away > 0 ? '+' : ''}{odds.moneyline.away}
-                                      </div>
-                                    )}
-                                    {odds?.spread && (
-                                      <div className="text-xs text-neon-purple">
-                                        {odds.spread.line > 0 ? '+' : ''}{odds.spread.line}
-                                      </div>
-                                    )}
-                                    {!odds?.moneyline && <span className="text-muted-foreground">-</span>}
-                                  </td>
-                                )
-                              })}
-                            </tr>
-                            
-                            {/* Home Team Row */}
-                            <tr className="border-b border-white/5">
-                              <td className="p-2 font-semibold">
-                                <div>{game.home_team.abbreviation}</div>
-                                <div className="text-xs text-muted-foreground">(Home)</div>
-                              </td>
-                              {game.sportsbooks?.map((bookmaker) => {
-                                const odds = game.odds[bookmaker]
-                                return (
-                                  <td key={bookmaker} className="p-2 text-center">
-                                    {odds?.moneyline && (
-                                      <div className="text-neon-blue font-semibold">
-                                        {odds.moneyline.home > 0 ? '+' : ''}{odds.moneyline.home}
-                                      </div>
-                                    )}
-                                    {odds?.spread && (
-                                      <div className="text-xs text-neon-purple">
-                                        {odds.spread.line > 0 ? '-' : '+'}{Math.abs(odds.spread.line)}
-                                      </div>
-                                    )}
-                                    {!odds?.moneyline && <span className="text-muted-foreground">-</span>}
-                                  </td>
-                                )
-                              })}
-                            </tr>
-                            
-                            {/* Totals Row */}
-                            <tr>
-                              <td className="p-2 font-semibold">
-                                <div>O/U</div>
-                                <div className="text-xs text-muted-foreground">(Total)</div>
-                              </td>
-                              {game.sportsbooks?.map((bookmaker) => {
-                                const odds = game.odds[bookmaker]
-                                return (
-                                  <td key={bookmaker} className="p-2 text-center">
-                                    {odds?.total && (
-                                      <div>
-                                        <div className="text-xs text-neon-yellow">
-                                          O {odds.total.line}
-                                        </div>
-                                        <div className="text-xs text-neon-yellow">
-                                          U {odds.total.line}
-                                        </div>
-                                      </div>
-                                    )}
-                                    {!odds?.total && <span className="text-muted-foreground">-</span>}
-                                  </td>
-                                )
-                              })}
-                            </tr>
-                          </tbody>
-                        </table>
+                      {/* Right: Odds Movement Chart */}
+                      <div className="lg:w-[400px] border-l border-white/10 pl-6">
+                        <div className="flex items-center gap-2 mb-3">
+                          <TrendingUp className="w-4 h-4 text-neon-green" />
+                          <span className="text-sm font-semibold text-neon-green">Odds Movement</span>
+                        </div>
+                        <OddsChart gameId={game.id} sportsbooks={game.sportsbooks || []} />
                       </div>
                     </div>
                   </CardContent>
