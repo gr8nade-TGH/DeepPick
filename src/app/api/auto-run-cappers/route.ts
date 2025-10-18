@@ -42,10 +42,10 @@ export async function GET(request: Request) {
     // Run each capper
     const cappers = [
       { name: 'ifrit', endpoint: '/api/run-ifrit' },
-      // Add other cappers as they're implemented
-      // { name: 'nexus', endpoint: '/api/run-nexus' },
-      // { name: 'shiva', endpoint: '/api/run-shiva' },
-      // { name: 'cerberus', endpoint: '/api/run-cerberus' },
+      { name: 'nexus', endpoint: '/api/run-nexus' },
+      { name: 'shiva', endpoint: '/api/run-shiva' },
+      { name: 'cerberus', endpoint: '/api/run-cerberus' },
+      // DeepPick is a meta-algorithm that runs after the others
       // { name: 'deeppick', endpoint: '/api/run-deeppick' },
     ]
 

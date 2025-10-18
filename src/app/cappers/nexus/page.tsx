@@ -11,6 +11,7 @@ import AlgorithmDebugLogs from '@/components/cappers/algorithm-debug-logs'
 export default function NexusCapperPage() {
   const [games, setGames] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
+  const [running, setRunning] = useState(false)
 
   useEffect(() => {
     fetchGames()
@@ -28,6 +29,28 @@ export default function NexusCapperPage() {
       console.error('Error fetching games:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const runAlgorithm = async () => {
+    setRunning(true)
+    try {
+      const response = await fetch('/api/run-nexus?trigger=manual', {
+        method: 'POST',
+      })
+      const result = await response.json()
+      if (result.success) {
+        alert(`✅ Nexus generated ${result.picks?.length || 0} picks!`)
+        // Refresh the page to show new logs
+        window.location.reload()
+      } else {
+        alert(`❌ Error: ${result.error}`)
+      }
+    } catch (error) {
+      console.error('Error running algorithm:', error)
+      alert('❌ Failed to run algorithm')
+    } finally {
+      setRunning(false)
     }
   }
 
@@ -87,6 +110,25 @@ export default function NexusCapperPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Run Algorithm */}
+        <Card className="glass-effect border-purple-500/30">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-semibold text-white mb-2">Algorithm Control</h3>
+                <p className="text-sm text-gray-400">Manually trigger Nexus to analyze current games and generate picks</p>
+              </div>
+              <Button 
+                onClick={runAlgorithm} 
+                disabled={running || loading}
+                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold px-8 py-6 text-lg shadow-lg shadow-purple-500/50"
+              >
+                {running ? '⏳ Running...' : '🔷 Run Nexus Algorithm'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Algorithm Strategy */}
         <Card className="glass-effect border-purple-500/30">
