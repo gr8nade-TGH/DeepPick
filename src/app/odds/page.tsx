@@ -17,7 +17,13 @@ import {
   Target,
   TrendingUp,
   Home,
-  Trophy
+  Trophy,
+  Brain,
+  X,
+  TrendingDown,
+  AlertCircle,
+  CheckCircle,
+  Info
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -36,6 +42,15 @@ interface Game {
   updated_at: string
   time_until_game: string
   sportsbooks: string[]
+}
+
+interface Factor {
+  id: string
+  name: string
+  value: string
+  impact: 'positive' | 'negative' | 'neutral'
+  confidence: 'high' | 'medium' | 'low'
+  description: string
 }
 
 const SPORTS = [
@@ -60,6 +75,9 @@ export default function OddsPage() {
   const [selectedSport, setSelectedSport] = useState('all')
   const [autoRefresh, setAutoRefresh] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [selectedGame, setSelectedGame] = useState<Game | null>(null)
+  const [factors, setFactors] = useState<Factor[]>([])
+  const [loadingFactors, setLoadingFactors] = useState(false)
 
   const fetchOdds = async () => {
     setLoading(true)
@@ -91,6 +109,32 @@ export default function OddsPage() {
 
   const toggleAutoRefresh = () => {
     setAutoRefresh(!autoRefresh)
+  }
+
+  const fetchFactors = async (game: Game) => {
+    setSelectedGame(game)
+    setLoadingFactors(true)
+    setFactors([])
+    
+    try {
+      const response = await fetch(`/api/game-factors?gameId=${game.id}`)
+      const data = await response.json()
+      
+      if (data.success) {
+        setFactors(data.data.factors || [])
+      } else {
+        console.error('Error fetching factors:', data.error)
+      }
+    } catch (error) {
+      console.error('Error fetching factors:', error)
+    } finally {
+      setLoadingFactors(false)
+    }
+  }
+
+  const closeFactorsModal = () => {
+    setSelectedGame(null)
+    setFactors([])
   }
 
   useEffect(() => {
@@ -158,7 +202,7 @@ export default function OddsPage() {
           
           <div className="text-center">
             <h1 className="text-4xl font-bold text-neon-green animate-pulse drop-shadow-[0_0_20px_rgba(16,185,129,0.8)]">
-              Live Odds Dashboard
+              Odds & Factors
             </h1>
             {lastUpdated && (
               <p className="text-sm text-gray-400 mt-2">
@@ -365,8 +409,22 @@ export default function OddsPage() {
                       {/* Left: Odds Table */}
                       <div>
                         <div className="flex items-center justify-between mb-3">
-                          <div className="text-lg font-semibold">
-                            {game.away_team.name} @ {game.home_team.name}
+                          <div className="flex items-center gap-3">
+                            <div className="text-lg font-semibold">
+                              {game.away_team.name} @ {game.home_team.name}
+                            </div>
+                            <Button
+                              size="sm"
+                              onClick={() => fetchFactors(game)}
+                              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold shadow-lg relative"
+                            >
+                              <Brain className="w-4 h-4 mr-2" />
+                              Factors
+                              <Badge className="ml-2 bg-white/20 text-white border-0">
+                                {/* Factor count will be dynamic later */}
+                                8
+                              </Badge>
+                            </Button>
                           </div>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <RefreshCw className="w-3 h-3" />
@@ -571,6 +629,140 @@ export default function OddsPage() {
           )}
         </div>
       </div>
+
+      {/* Factors Modal */}
+      {selectedGame && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-xl border border-purple-500/50 shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-6 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-lg bg-white/20 flex items-center justify-center">
+                  <Brain className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-white">Game Factors Analysis</h2>
+                  <p className="text-purple-100 text-sm">
+                    {selectedGame.away_team.name} @ {selectedGame.home_team.name}
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={closeFactorsModal}
+                variant="ghost"
+                size="icon"
+                className="text-white hover:bg-white/20"
+              >
+                <X className="w-6 h-6" />
+              </Button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+              {loadingFactors ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
+                  <p className="ml-4 text-gray-400">Analyzing game factors...</p>
+                </div>
+              ) : factors.length === 0 ? (
+                <div className="text-center py-12">
+                  <AlertCircle className="w-16 h-16 mx-auto mb-4 text-gray-600" />
+                  <p className="text-xl text-gray-400">No factors available yet</p>
+                  <p className="text-sm text-gray-500 mt-2">More data needed for analysis</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Summary Stats */}
+                  <div className="grid grid-cols-3 gap-4 mb-6">
+                    <Card className="glass-effect border-green-500/30">
+                      <CardContent className="p-4 text-center">
+                        <div className="text-2xl font-bold text-green-400">
+                          {factors.filter(f => f.impact === 'positive').length}
+                        </div>
+                        <div className="text-xs text-gray-400">Positive Factors</div>
+                      </CardContent>
+                    </Card>
+                    <Card className="glass-effect border-red-500/30">
+                      <CardContent className="p-4 text-center">
+                        <div className="text-2xl font-bold text-red-400">
+                          {factors.filter(f => f.impact === 'negative').length}
+                        </div>
+                        <div className="text-xs text-gray-400">Negative Factors</div>
+                      </CardContent>
+                    </Card>
+                    <Card className="glass-effect border-gray-500/30">
+                      <CardContent className="p-4 text-center">
+                        <div className="text-2xl font-bold text-gray-400">
+                          {factors.filter(f => f.impact === 'neutral').length}
+                        </div>
+                        <div className="text-xs text-gray-400">Neutral Factors</div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Factors List */}
+                  <div className="space-y-3">
+                    {factors.map((factor) => {
+                      const impactColor = 
+                        factor.impact === 'positive' ? 'border-green-500/50 bg-green-500/10' :
+                        factor.impact === 'negative' ? 'border-red-500/50 bg-red-500/10' :
+                        'border-gray-500/50 bg-gray-500/10'
+                      
+                      const impactIcon = 
+                        factor.impact === 'positive' ? <CheckCircle className="w-5 h-5 text-green-400" /> :
+                        factor.impact === 'negative' ? <AlertCircle className="w-5 h-5 text-red-400" /> :
+                        <Info className="w-5 h-5 text-gray-400" />
+                      
+                      const confidenceBadge = 
+                        factor.confidence === 'high' ? 'bg-green-500/20 text-green-400 border-green-500/50' :
+                        factor.confidence === 'medium' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50' :
+                        'bg-gray-500/20 text-gray-400 border-gray-500/50'
+
+                      return (
+                        <Card key={factor.id} className={`glass-effect ${impactColor} transition-all hover:scale-[1.02]`}>
+                          <CardContent className="p-4">
+                            <div className="flex items-start gap-3">
+                              <div className="mt-1">{impactIcon}</div>
+                              <div className="flex-1">
+                                <div className="flex items-center justify-between mb-2">
+                                  <h3 className="font-semibold text-white">{factor.name}</h3>
+                                  <Badge className={`${confidenceBadge} border text-xs`}>
+                                    {factor.confidence.toUpperCase()}
+                                  </Badge>
+                                </div>
+                                <p className="text-sm font-medium text-gray-300 mb-2">
+                                  {factor.value}
+                                </p>
+                                <p className="text-xs text-gray-400 leading-relaxed">
+                                  {factor.description}
+                                </p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )
+                    })}
+                  </div>
+
+                  {/* Footer Note */}
+                  <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <Info className="w-5 h-5 text-blue-400 mt-0.5" />
+                      <div>
+                        <p className="text-sm text-blue-300 font-semibold">How to use these factors</p>
+                        <p className="text-xs text-blue-200/70 mt-1">
+                          These factors are derived from odds movement, market consensus, and timing analysis. 
+                          Use them to inform your betting decisions, but always do your own research.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
