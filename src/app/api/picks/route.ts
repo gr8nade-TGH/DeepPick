@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase/server'
 
+// Mark this route as dynamic (uses request parameters)
+export const dynamic = 'force-dynamic'
+
 // GET /api/picks - Get all picks
 export async function GET(request: NextRequest) {
   try {
@@ -24,7 +27,12 @@ export async function GET(request: NextRequest) {
       .range(offset, offset + limit - 1)
 
     if (status) {
-      query = query.eq('status', status)
+      if (status === 'completed') {
+        // Completed = won, lost, or push
+        query = query.in('status', ['won', 'lost', 'push'])
+      } else {
+        query = query.eq('status', status)
+      }
     }
 
     if (sport) {

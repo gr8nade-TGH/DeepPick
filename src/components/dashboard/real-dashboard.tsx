@@ -65,6 +65,7 @@ const CAPPERS = [
 
 export function RealDashboard() {
   const [picks, setPicks] = useState<Pick[]>([])
+  const [pickHistory, setPickHistory] = useState<Pick[]>([])
   const [performance, setPerformance] = useState<PerformanceData | null>(null)
   const [loading, setLoading] = useState(true)
   const [timeFilter, setTimeFilter] = useState('all')
@@ -80,11 +81,21 @@ export function RealDashboard() {
       
       // Fetch picks with capper filter
       const capperParam = selectedCapper !== 'all' ? `&capper=${selectedCapper}` : ''
-      const picksResponse = await fetch(`/api/picks?${capperParam}`)
+      
+      // Fetch current picks (pending/live)
+      const picksResponse = await fetch(`/api/picks?status=pending${capperParam}`)
       const picksData = await picksResponse.json()
       
       if (picksData.success) {
         setPicks(picksData.data)
+      }
+
+      // Fetch pick history (completed picks - last 10)
+      const historyResponse = await fetch(`/api/picks?status=completed&limit=10${capperParam}`)
+      const historyData = await historyResponse.json()
+      
+      if (historyData.success) {
+        setPickHistory(historyData.data)
       }
 
       // Fetch performance data with capper filter
@@ -436,6 +447,94 @@ export function RealDashboard() {
                           <InsightIcon className="h-4 w-4 mr-2 flex-shrink-0" />
                           <span className="text-gray-300">{pick.reasoning || 'No reasoning provided'}</span>
                         </div>
+                      </td>
+                    </tr>
+                  )
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* Pick History Section */}
+      <section className="glass-effect p-6 rounded-lg shadow-lg border border-gray-800">
+        <h2 className="text-2xl font-semibold text-gray-200 mb-4">PICK HISTORY (Last 10)</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left table-auto">
+            <thead>
+              <tr className="border-b border-gray-700 text-gray-400">
+                <th className="py-2 px-4">Capper</th>
+                <th className="py-2 px-4">Pick</th>
+                <th className="py-2 px-4">Posted</th>
+                <th className="py-2 px-4">Sport</th>
+                <th className="py-2 px-4">Final Score</th>
+                <th className="py-2 px-4">Result</th>
+                <th className="py-2 px-4">Outcome</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pickHistory.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-8 px-4 text-center text-gray-400">
+                    No completed picks yet. Check back after games finish!
+                  </td>
+                </tr>
+              ) : (
+                pickHistory.map((pick) => {
+                  const capperInfo = CAPPERS.find(c => c.id === pick.capper) || CAPPERS[1]
+                  const finalScore = pick.games?.final_score
+                  
+                  return (
+                    <tr key={pick.id} className="border-b border-gray-800 hover:bg-gray-800 transition-colors">
+                      <td className="py-3 px-4 align-middle">
+                        <Badge className={`bg-gradient-to-r ${capperInfo.color} text-white font-bold`}>
+                          {capperInfo.name}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-4 align-middle font-bold text-gray-100">{pick.selection}</td>
+                      <td className="py-3 px-4 align-middle text-gray-300 text-sm">
+                        {new Date(pick.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="py-3 px-4 align-middle text-gray-300">
+                        {pick.game_snapshot?.sport?.toUpperCase() || 'N/A'}
+                      </td>
+                      <td className="py-3 px-4 align-middle">
+                        {finalScore ? (
+                          <div className="text-sm">
+                            <div className="text-gray-300">
+                              {pick.game_snapshot?.away_team?.abbreviation || 'AWAY'}: <span className={finalScore.winner === 'away' ? 'text-green-400 font-bold' : ''}>{finalScore.away}</span>
+                            </div>
+                            <div className="text-gray-300">
+                              {pick.game_snapshot?.home_team?.abbreviation || 'HOME'}: <span className={finalScore.winner === 'home' ? 'text-green-400 font-bold' : ''}>{finalScore.home}</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-gray-500 text-sm">No score</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 align-middle">
+                        <Badge 
+                          variant={pick.status === 'won' ? 'default' : pick.status === 'lost' ? 'destructive' : 'secondary'}
+                          className={
+                            pick.status === 'won' ? 'bg-green-600 hover:bg-green-700' :
+                            pick.status === 'lost' ? 'bg-red-600 hover:bg-red-700' :
+                            'bg-gray-600 hover:bg-gray-700'
+                          }
+                        >
+                          {pick.status.toUpperCase()}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-4 align-middle">
+                        <span className={
+                          pick.status === 'won' ? 'text-green-400 font-bold' :
+                          pick.status === 'lost' ? 'text-red-400 font-bold' :
+                          'text-gray-400'
+                        }>
+                          {pick.status === 'won' && `✅ +${pick.net_units?.toFixed(2)}u`}
+                          {pick.status === 'lost' && `❌ ${pick.net_units?.toFixed(2)}u`}
+                          {pick.status === 'push' && `➖ Push`}
+                        </span>
                       </td>
                     </tr>
                   )
