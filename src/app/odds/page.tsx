@@ -34,9 +34,9 @@ interface Game {
 
 const SPORTS = [
   { key: 'all', label: 'All Sports', icon: BarChart3 },
-  { key: 'americanfootball_nfl', label: 'NFL', icon: Target },
-  { key: 'basketball_nba', label: 'NBA', icon: Target },
-  { key: 'baseball_mlb', label: 'MLB', icon: Target },
+  { key: 'nfl', label: 'NFL', icon: Target },
+  { key: 'nba', label: 'NBA', icon: Target },
+  { key: 'mlb', label: 'MLB', icon: Target },
 ]
 
 export default function OddsPage() {
