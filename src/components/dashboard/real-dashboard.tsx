@@ -9,6 +9,46 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'rec
 import { TrendingUp, Activity, Lightbulb, AlertTriangle, Zap, BarChart, Rocket, MessageCircle, CheckCircle, XCircle, PlayCircle, Clock, BarChart3, Archive, Brain, X, Target, TrendingDown } from 'lucide-react'
 import Link from 'next/link'
 
+interface PredictionLog {
+  timestamp: string
+  capper: string
+  game: string
+  steps: Array<{
+    step: number
+    title: string
+    description: string
+    calculation?: string
+    result: string
+    impact: 'positive' | 'negative' | 'neutral'
+  }>
+  finalPrediction: {
+    homeScore: number
+    awayScore: number
+    total: number
+    margin: number
+    winner: string
+  }
+  vegasComparison: {
+    totalLine: number | null
+    spreadLine: number | null
+    totalGap: number | null
+    spreadGap: number | null
+  }
+  confidenceBreakdown: {
+    totalConfidence: number | null
+    spreadConfidence: number | null
+    moneylineConfidence: number | null
+    selectedBet: string
+    finalConfidence: number
+  }
+  decisionFactors: {
+    passedFavoriteRule: boolean
+    passedMinConfidence: boolean
+    bestOddsAvailable: number
+    unitsAllocated: number
+  }
+}
+
 interface Pick {
   id: string
   selection: string
@@ -20,6 +60,9 @@ interface Pick {
   net_units?: number
   capper?: string
   confidence?: number
+  result?: {
+    prediction_log?: PredictionLog
+  }
   game_snapshot?: {
     sport: string
     league: string
@@ -655,51 +698,177 @@ export function RealDashboard() {
                 </div>
               </div>
 
-              {/* Algorithm Reasoning */}
-              <div className="glass-effect p-4 rounded-lg border border-purple-500/30">
-                <h3 className="text-xl font-bold text-white flex items-center gap-2 mb-3">
-                  <Brain className="w-5 h-5 text-purple-400" />
-                  Algorithm Reasoning
-                </h3>
-                <p className="text-gray-300 leading-relaxed">
-                  {selectedPick.reasoning || 
-                    "This pick was generated based on a comprehensive analysis of historical patterns, statistical models, and real-time market data. The algorithm identified a significant edge in this matchup, with multiple positive indicators aligning. Key factors include favorable line movement, strong historical performance in similar situations, and statistical advantages that suggest value at the current odds. Risk factors were assessed and deemed acceptable given the overall confidence level."
-                  }
-                </p>
-              </div>
+              {/* Detailed Prediction Log */}
+              {selectedPick.result?.prediction_log ? (
+                <>
+                  {/* Prediction Summary */}
+                  <div className="glass-effect p-4 rounded-lg border border-green-500/30">
+                    <h3 className="text-xl font-bold text-white flex items-center gap-2 mb-3">
+                      <Target className="w-5 h-5 text-green-400" />
+                      Score Prediction
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center">
+                        <p className="text-gray-400 text-sm">Predicted Score</p>
+                        <p className="text-3xl font-bold text-white">
+                          {selectedPick.result.prediction_log.finalPrediction.homeScore} - {selectedPick.result.prediction_log.finalPrediction.awayScore}
+                        </p>
+                        <p className="text-sm text-gray-400">Total: {selectedPick.result.prediction_log.finalPrediction.total}</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-gray-400 text-sm">Vegas Lines</p>
+                        <p className="text-2xl font-bold text-blue-400">
+                          O/U {selectedPick.result.prediction_log.vegasComparison.totalLine?.toFixed(1)}
+                        </p>
+                        <p className="text-sm text-gray-400">
+                          Spread: {selectedPick.result.prediction_log.vegasComparison.spreadLine && selectedPick.result.prediction_log.vegasComparison.spreadLine > 0 ? '+' : ''}{selectedPick.result.prediction_log.vegasComparison.spreadLine?.toFixed(1)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-4 grid grid-cols-2 gap-4 text-center">
+                      <div className="bg-purple-500/10 rounded p-2">
+                        <p className="text-xs text-gray-400">Total Gap</p>
+                        <p className={`text-xl font-bold ${(selectedPick.result.prediction_log.vegasComparison.totalGap || 0) > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {selectedPick.result.prediction_log.vegasComparison.totalGap && selectedPick.result.prediction_log.vegasComparison.totalGap > 0 ? '+' : ''}{selectedPick.result.prediction_log.vegasComparison.totalGap?.toFixed(1)} pts
+                        </p>
+                      </div>
+                      <div className="bg-purple-500/10 rounded p-2">
+                        <p className="text-xs text-gray-400">Spread Gap</p>
+                        <p className={`text-xl font-bold ${(selectedPick.result.prediction_log.vegasComparison.spreadGap || 0) > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {selectedPick.result.prediction_log.vegasComparison.spreadGap && selectedPick.result.prediction_log.vegasComparison.spreadGap > 0 ? '+' : ''}{selectedPick.result.prediction_log.vegasComparison.spreadGap?.toFixed(1)} pts
+                        </p>
+                      </div>
+                    </div>
+                  </div>
 
-              {/* Data Points */}
-              <div className="glass-effect p-4 rounded-lg border border-blue-500/30">
-                <h3 className="text-xl font-bold text-white flex items-center gap-2 mb-3">
-                  <BarChart3 className="w-5 h-5 text-blue-400" />
-                  Data Points Analyzed
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                  <div>
-                    <p className="text-3xl font-bold text-blue-400">247</p>
-                    <p className="text-xs text-gray-400">Historical Games</p>
+                  {/* Confidence Breakdown */}
+                  <div className="glass-effect p-4 rounded-lg border border-blue-500/30">
+                    <h3 className="text-xl font-bold text-white flex items-center gap-2 mb-3">
+                      <BarChart3 className="w-5 h-5 text-blue-400" />
+                      Confidence Analysis
+                    </h3>
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      <div>
+                        <p className="text-gray-400 text-sm">Total</p>
+                        <p className="text-2xl font-bold text-blue-400">{selectedPick.result.prediction_log.confidenceBreakdown.totalConfidence || 'N/A'}%</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-400 text-sm">Spread</p>
+                        <p className="text-2xl font-bold text-purple-400">{selectedPick.result.prediction_log.confidenceBreakdown.spreadConfidence || 'N/A'}%</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-400 text-sm">Moneyline</p>
+                        <p className="text-2xl font-bold text-green-400">{selectedPick.result.prediction_log.confidenceBreakdown.moneylineConfidence || 'N/A'}%</p>
+                      </div>
+                    </div>
+                    <div className="mt-4 text-center">
+                      <p className="text-sm text-gray-400">Selected Bet</p>
+                      <p className="text-xl font-bold text-yellow-400">{selectedPick.result.prediction_log.confidenceBreakdown.selectedBet.toUpperCase()} ({selectedPick.result.prediction_log.confidenceBreakdown.finalConfidence}%)</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-3xl font-bold text-green-400">18</p>
-                    <p className="text-xs text-gray-400">Key Metrics</p>
-                  </div>
-                  <div>
-                    <p className="text-3xl font-bold text-purple-400">4</p>
-                    <p className="text-xs text-gray-400">Sportsbooks</p>
-                  </div>
-                  <div>
-                    <p className="text-3xl font-bold text-yellow-400">72h</p>
-                    <p className="text-xs text-gray-400">Line Tracking</p>
-                  </div>
-                </div>
-              </div>
 
-              {/* Algorithm Note */}
-              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
-                <p className="text-yellow-400 text-sm">
-                  <strong>⚠️ Note:</strong> This is a template breakdown. Once algorithms are fully implemented, this will display real-time analysis specific to each capper's methodology.
-                </p>
-              </div>
+                  {/* Step-by-Step Analysis */}
+                  <div className="glass-effect p-4 rounded-lg border border-purple-500/30">
+                    <h3 className="text-xl font-bold text-white flex items-center gap-2 mb-3">
+                      <Brain className="w-5 h-5 text-purple-400" />
+                      Detailed Prediction Process
+                    </h3>
+                    <div className="space-y-3 max-h-96 overflow-y-auto">
+                      {selectedPick.result.prediction_log.steps.map((step, idx) => (
+                        <div 
+                          key={idx} 
+                          className={`p-3 rounded-lg border ${
+                            step.impact === 'positive' ? 'bg-green-500/5 border-green-500/30' :
+                            step.impact === 'negative' ? 'bg-red-500/5 border-red-500/30' :
+                            'bg-gray-500/5 border-gray-500/30'
+                          }`}
+                        >
+                          <div className="flex items-start gap-2">
+                            <span className={`text-xs font-bold px-2 py-1 rounded ${
+                              step.impact === 'positive' ? 'bg-green-500/20 text-green-400' :
+                              step.impact === 'negative' ? 'bg-red-500/20 text-red-400' :
+                              'bg-gray-500/20 text-gray-400'
+                            }`}>
+                              {step.step}
+                            </span>
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-white text-sm">{step.title}</h4>
+                              <p className="text-xs text-gray-400 mt-1">{step.description}</p>
+                              {step.calculation && (
+                                <p className="text-xs text-blue-300 mt-1 font-mono bg-blue-500/10 p-2 rounded">
+                                  {step.calculation}
+                                </p>
+                              )}
+                              <p className={`text-sm mt-1 font-medium ${
+                                step.impact === 'positive' ? 'text-green-400' :
+                                step.impact === 'negative' ? 'text-red-400' :
+                                'text-gray-300'
+                              }`}>
+                                → {step.result}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Decision Factors */}
+                  <div className="glass-effect p-4 rounded-lg border border-yellow-500/30">
+                    <h3 className="text-xl font-bold text-white flex items-center gap-2 mb-3">
+                      <CheckCircle className="w-5 h-5 text-yellow-400" />
+                      Final Decision Factors
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex items-center gap-2">
+                        {selectedPick.result.prediction_log.decisionFactors.passedMinConfidence ? 
+                          <CheckCircle className="w-5 h-5 text-green-400" /> : 
+                          <XCircle className="w-5 h-5 text-red-400" />
+                        }
+                        <span className="text-sm text-gray-300">Min Confidence (60%)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {selectedPick.result.prediction_log.decisionFactors.passedFavoriteRule ? 
+                          <CheckCircle className="w-5 h-5 text-green-400" /> : 
+                          <XCircle className="w-5 h-5 text-red-400" />
+                        }
+                        <span className="text-sm text-gray-300">Favorite Rule (-250)</span>
+                      </div>
+                      <div className="col-span-2">
+                        <p className="text-xs text-gray-400">Best Odds Available</p>
+                        <p className="text-lg font-bold text-blue-400">
+                          {selectedPick.result.prediction_log.decisionFactors.bestOddsAvailable > 0 ? '+' : ''}{selectedPick.result.prediction_log.decisionFactors.bestOddsAvailable}
+                        </p>
+                      </div>
+                      <div className="col-span-2">
+                        <p className="text-xs text-gray-400">Units Allocated</p>
+                        <p className="text-lg font-bold text-green-400">{selectedPick.result.prediction_log.decisionFactors.unitsAllocated} unit{selectedPick.result.prediction_log.decisionFactors.unitsAllocated > 1 ? 's' : ''}</p>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Fallback if no prediction log */}
+                  <div className="glass-effect p-4 rounded-lg border border-purple-500/30">
+                    <h3 className="text-xl font-bold text-white flex items-center gap-2 mb-3">
+                      <Brain className="w-5 h-5 text-purple-400" />
+                      Algorithm Reasoning
+                    </h3>
+                    <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+                      {selectedPick.reasoning || 
+                        "This pick was generated based on a comprehensive analysis of historical patterns, statistical models, and real-time market data."
+                      }
+                    </p>
+                  </div>
+
+                  <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+                    <p className="text-yellow-400 text-sm">
+                      <strong>⚠️ Note:</strong> Detailed prediction log not available for this pick. Run the algorithm again to generate detailed logs.
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
