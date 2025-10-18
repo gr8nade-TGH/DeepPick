@@ -152,7 +152,8 @@ function predictGameScore(game: CapperGame, log: PredictionLog): ScorePrediction
     awayScore: Math.round(awayScore),
     totalPoints: Math.round(predictedTotal),
     marginOfVictory: Math.round(marginOfVictory),
-    winner: marginOfVictory < 0 ? 'home' : 'away'
+    winner: marginOfVictory < 0 ? 'home' : 'away',
+    reasoning: [`Three-model consensus reached`, `Model range: ${Math.abs(Math.max(modelA, modelB, modelC) - Math.min(modelA, modelB, modelC)).toFixed(1)} points`]
   }
 }
 

@@ -151,7 +151,8 @@ function predictGameScore(game: CapperGame, log: PredictionLog): ScorePrediction
     awayScore: Math.round(awayScore),
     totalPoints: Math.round(predictedTotal),
     marginOfVictory: Math.round(marginOfVictory),
-    winner: marginOfVictory < 0 ? 'home' : 'away'
+    winner: marginOfVictory < 0 ? 'home' : 'away',
+    reasoning: [`Statistical analysis complete`, `Market baseline: ${vegasTotal.toFixed(1)} total`]
   }
 }
 

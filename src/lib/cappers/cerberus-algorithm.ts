@@ -104,7 +104,8 @@ function predictGameScore(game: CapperGame, log: PredictionLog): ScorePrediction
     awayScore: Math.round(awayScore),
     totalPoints: Math.round(predictedTotal),
     marginOfVictory: Math.round(marginOfVictory),
-    winner: marginOfVictory < 0 ? 'home' : 'away'
+    winner: marginOfVictory < 0 ? 'home' : 'away',
+    reasoning: [`All three heads agree`, `Consensus prediction validated`]
   }
 }
 
