@@ -44,6 +44,14 @@ const SPORTS = [
   { key: 'mlb', label: 'MLB', icon: Target },
 ]
 
+// Sportsbook colors matching the chart
+const SPORTSBOOK_COLORS: Record<string, string> = {
+  'draftkings': '#53D337',
+  'fanduel': '#1E88E5',
+  'williamhill_us': '#C41E3A',
+  'betmgm': '#F1C400',
+}
+
 export default function OddsPage() {
   const [games, setGames] = useState<Game[]>([])
   const [loading, setLoading] = useState(false)
@@ -326,7 +334,11 @@ export default function OddsPage() {
                               <tr className="border-b border-white/10">
                                 <th className="text-left p-2 text-xs text-muted-foreground">Team</th>
                                 {game.sportsbooks?.map((bookmaker) => (
-                                  <th key={bookmaker} className="text-center p-2 text-xs text-neon-green capitalize">
+                                  <th 
+                                    key={bookmaker} 
+                                    className="text-center p-2 text-xs capitalize font-semibold"
+                                    style={{ color: SPORTSBOOK_COLORS[bookmaker] || '#10b981' }}
+                                  >
                                     {bookmaker.replace('_', ' ')}
                                   </th>
                                 ))}

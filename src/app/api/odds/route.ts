@@ -8,14 +8,11 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50')
     const offset = parseInt(searchParams.get('offset') || '0')
 
-    // Only get games that haven't started yet
-    const now = new Date().toISOString()
-    
+    // Get all games, then filter in post-processing for complex logic
     let query = supabase
       .from('games')
       .select('*')
       .gte('game_date', new Date().toISOString().split('T')[0]) // Only today and future dates
-      .in('status', ['scheduled', 'live']) // Only scheduled or live games
       .order('game_date', { ascending: true })
       .range(offset, offset + limit - 1)
 
@@ -29,8 +26,27 @@ export async function GET(request: NextRequest) {
       throw new Error(`Supabase error: ${error.message}`)
     }
 
-    // Transform the data for better display
-    const transformedGames = games?.map(game => ({
+    // Filter and transform the data
+    const now = new Date()
+    const filteredGames = games?.filter(game => {
+      const gameDateTime = new Date(`${game.game_date}T${game.game_time}`)
+      const timeSinceStart = now.getTime() - gameDateTime.getTime()
+      const hoursSinceStart = timeSinceStart / (1000 * 60 * 60)
+      
+      // Remove games based on status and time
+      if (game.status === 'final') {
+        // Remove final games after 2 hours
+        return hoursSinceStart <= 2
+      } else if (game.status === 'live' || (game.status === 'scheduled' && hoursSinceStart > 0)) {
+        // Remove games 5 hours after they start
+        return hoursSinceStart <= 5
+      }
+      
+      // Keep all scheduled games that haven't started
+      return true
+    }) || []
+
+    const transformedGames = filteredGames.map(game => ({
       id: game.id,
       sport: game.sport,
       league: game.league,
@@ -46,7 +62,7 @@ export async function GET(request: NextRequest) {
       // Add computed fields
       time_until_game: getTimeUntilGame(game.game_date, game.game_time),
       sportsbooks: game.odds ? Object.keys(game.odds) : []
-    })) || []
+    }))
 
     return NextResponse.json({
       success: true,

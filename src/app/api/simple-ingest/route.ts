@@ -110,13 +110,21 @@ export async function GET() {
         const gameDate = event.commence_time.split('T')[0]
         const gameTime = event.commence_time.split('T')[1].substring(0, 8)
         
+        // Determine game status based on commence time
+        const commenceTime = new Date(event.commence_time)
+        const now = new Date()
+        let gameStatus = 'scheduled'
+        
+        if (now >= commenceTime) {
+          gameStatus = 'live'
+        }
+        
         // Check if game already exists (match by home/away teams and date)
         const { data: existingGames } = await supabaseAdmin
           .from('games')
-          .select('id')
+          .select('id, status')
           .eq('sport', mapSportKey(sport.key))
           .eq('game_date', gameDate)
-          .eq('status', 'scheduled')
         
         let gameId: string | null = null
         
@@ -133,6 +141,7 @@ export async function GET() {
             .from('games')
             .update({
               odds: sportsbooks,
+              status: gameStatus,
               updated_at: new Date().toISOString(),
             })
             .eq('id', gameId)
@@ -141,7 +150,7 @@ export async function GET() {
             console.error(`❌ Error updating game:`, updateError.message)
           } else {
             updatedCount++
-            console.log(`🔄 Updated existing game`)
+            console.log(`🔄 Updated existing game (status: ${gameStatus})`)
           }
         } else {
           // Insert new game
@@ -162,7 +171,7 @@ export async function GET() {
               },
               game_date: gameDate,
               game_time: gameTime,
-              status: 'scheduled',
+              status: gameStatus,
               odds: sportsbooks,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
@@ -172,12 +181,12 @@ export async function GET() {
             console.error(`❌ Error inserting game:`, insertError.message)
           } else {
             storedCount++
-            console.log(`✅ Inserted new game`)
+            console.log(`✅ Inserted new game (status: ${gameStatus})`)
           }
         }
         
-        // Add odds history record
-        if (gameId) {
+        // Add odds history record ONLY if game is scheduled (not live)
+        if (gameId && gameStatus === 'scheduled') {
           const { error: historyError } = await supabaseAdmin
             .from('odds_history')
             .insert({
@@ -191,6 +200,8 @@ export async function GET() {
           } else {
             historyCount++
           }
+        } else if (gameId && gameStatus === 'live') {
+          console.log(`⏩ Skipping history for live game`)
         }
       } catch (err) {
         console.error(`❌ Exception processing ${event.id}:`, err)
