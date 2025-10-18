@@ -58,6 +58,7 @@ export default function OddsPage() {
   const [error, setError] = useState<string | null>(null)
   const [selectedSport, setSelectedSport] = useState('all')
   const [autoRefresh, setAutoRefresh] = useState(false)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
   const fetchOdds = async () => {
     setLoading(true)
@@ -72,6 +73,7 @@ export default function OddsPage() {
       
       if (data.success) {
         setGames(data.data || [])
+        setLastUpdated(new Date())
         console.log(`✅ Loaded ${data.data?.length || 0} games`)
       } else {
         setError(data.error || 'Failed to fetch odds')
@@ -96,7 +98,7 @@ export default function OddsPage() {
 
   useEffect(() => {
     if (autoRefresh) {
-      const interval = setInterval(fetchOdds, 30000) // Refresh every 30 seconds
+      const interval = setInterval(fetchOdds, 900000) // Refresh every 15 minutes (900,000ms)
       return () => clearInterval(interval)
     }
   }, [autoRefresh, selectedSport])
@@ -146,9 +148,16 @@ export default function OddsPage() {
             </Link>
           </div>
           
-          <h1 className="text-4xl font-bold text-neon-green animate-pulse drop-shadow-[0_0_20px_rgba(16,185,129,0.8)]">
-            Live Odds Dashboard
-          </h1>
+          <div className="text-center">
+            <h1 className="text-4xl font-bold text-neon-green animate-pulse drop-shadow-[0_0_20px_rgba(16,185,129,0.8)]">
+              Live Odds Dashboard
+            </h1>
+            {lastUpdated && (
+              <p className="text-sm text-gray-400 mt-2">
+                Last updated: {lastUpdated.toLocaleTimeString()}
+              </p>
+            )}
+          </div>
           
           <div className="w-[240px]" /> {/* Spacer for centering */}
         </div>
