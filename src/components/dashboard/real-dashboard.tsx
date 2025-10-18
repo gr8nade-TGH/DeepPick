@@ -6,7 +6,8 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
-import { TrendingUp, Activity, Lightbulb, AlertTriangle, Zap, BarChart, Rocket, MessageCircle, CheckCircle, XCircle, PlayCircle, Clock } from 'lucide-react'
+import { TrendingUp, Activity, Lightbulb, AlertTriangle, Zap, BarChart, Rocket, MessageCircle, CheckCircle, XCircle, PlayCircle, Clock, BarChart3, Archive } from 'lucide-react'
+import Link from 'next/link'
 
 interface Pick {
   id: string
@@ -118,8 +119,21 @@ export function RealDashboard() {
       {/* Header */}
       <header className="flex justify-between items-center mb-8">
         <h1 className="text-4xl font-bold text-green-400 tracking-wider">DEEP PICKS</h1>
-        <div className="flex items-center space-x-4">
-          <span className="text-sm text-gray-400">Live Data</span>
+        <div className="flex items-center gap-3">
+          <Link 
+            href="/odds"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-neon-blue/30 hover:bg-neon-blue/10 transition-all text-neon-blue hover:border-neon-blue"
+          >
+            <BarChart3 className="w-4 h-4" />
+            <span className="font-semibold">Live Odds</span>
+          </Link>
+          <Link 
+            href="/history"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-neon-purple/30 hover:bg-neon-purple/10 transition-all text-neon-purple hover:border-neon-purple"
+          >
+            <Archive className="w-4 h-4" />
+            <span className="font-semibold">History</span>
+          </Link>
         </div>
       </header>
 
