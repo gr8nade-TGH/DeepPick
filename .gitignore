@@ -113,6 +113,9 @@ public
 tmp/
 temp/
 
+# Checkpoint backups
+checkpoints/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
