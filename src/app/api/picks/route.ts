@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0')
     const status = searchParams.get('status')
     const sport = searchParams.get('sport')
+    const capper = searchParams.get('capper')
 
     let query = supabase
       .from('picks')
@@ -28,6 +29,10 @@ export async function GET(request: NextRequest) {
 
     if (sport) {
       query = query.eq('sport', sport)
+    }
+
+    if (capper && capper !== 'all') {
+      query = query.eq('capper', capper)
     }
 
     const { data, error, count } = await query

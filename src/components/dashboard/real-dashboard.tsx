@@ -18,6 +18,7 @@ interface Pick {
   pick_type: string
   reasoning?: string
   net_units?: number
+  capper?: string
   game_snapshot?: {
     sport: string
     league: string
@@ -53,30 +54,41 @@ interface PerformanceData {
   }>
 }
 
+const CAPPERS = [
+  { id: 'all', name: 'All Cappers', color: 'from-neon-blue via-neon-purple to-neon-green' },
+  { id: 'deeppick', name: 'DeepPick', color: 'from-neon-blue to-neon-cyan' },
+  { id: 'nexus', name: 'Nexus', color: 'from-purple-500 to-pink-500' },
+  { id: 'shiva', name: 'Shiva', color: 'from-blue-500 to-cyan-500' },
+  { id: 'cerberus', name: 'Cerberus', color: 'from-red-500 to-orange-500' },
+  { id: 'ifrit', name: 'Ifrit', color: 'from-yellow-500 to-red-500' },
+]
+
 export function RealDashboard() {
   const [picks, setPicks] = useState<Pick[]>([])
   const [performance, setPerformance] = useState<PerformanceData | null>(null)
   const [loading, setLoading] = useState(true)
   const [timeFilter, setTimeFilter] = useState('all')
+  const [selectedCapper, setSelectedCapper] = useState('all')
 
   useEffect(() => {
     fetchData()
-  }, [timeFilter])
+  }, [timeFilter, selectedCapper])
 
   const fetchData = async () => {
     try {
       setLoading(true)
       
-      // Fetch picks
-      const picksResponse = await fetch('/api/picks')
+      // Fetch picks with capper filter
+      const capperParam = selectedCapper !== 'all' ? `&capper=${selectedCapper}` : ''
+      const picksResponse = await fetch(`/api/picks?${capperParam}`)
       const picksData = await picksResponse.json()
       
       if (picksData.success) {
         setPicks(picksData.data)
       }
 
-      // Fetch performance data
-      const performanceResponse = await fetch(`/api/performance?period=${timeFilter}`)
+      // Fetch performance data with capper filter
+      const performanceResponse = await fetch(`/api/performance?period=${timeFilter}${capperParam}`)
       const performanceData = await performanceResponse.json()
       
       if (performanceData.success) {
@@ -221,10 +233,35 @@ export function RealDashboard() {
         </div>
       </header>
 
+      {/* Capper Selector */}
+      <section className="glass-effect p-4 rounded-lg shadow-lg border border-gray-800">
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-semibold text-gray-400">SELECT CAPPER:</span>
+          <div className="flex flex-wrap gap-2">
+            {CAPPERS.map((capper) => (
+              <Button
+                key={capper.id}
+                onClick={() => setSelectedCapper(capper.id)}
+                variant={selectedCapper === capper.id ? 'default' : 'outline'}
+                className={`${
+                  selectedCapper === capper.id
+                    ? `bg-gradient-to-r ${capper.color} text-white font-bold`
+                    : 'border-gray-600 text-gray-300 hover:bg-gray-700'
+                }`}
+              >
+                {capper.name}
+              </Button>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Summary Graph Section */}
       <section className="glass-effect p-6 rounded-lg shadow-lg border border-gray-800">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-semibold text-gray-200">Performance Overview</h2>
+          <h2 className="text-2xl font-semibold text-gray-200">
+            Performance Overview {selectedCapper !== 'all' && `- ${CAPPERS.find(c => c.id === selectedCapper)?.name}`}
+          </h2>
           <Tabs value={timeFilter} onValueChange={setTimeFilter}>
             <TabsList className="bg-gray-800 border border-gray-700">
               <TabsTrigger value="week" className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-gray-300">Week</TabsTrigger>
@@ -306,6 +343,7 @@ export function RealDashboard() {
           <table className="w-full text-left table-auto">
             <thead>
               <tr className="border-b border-gray-700 text-gray-400">
+                <th className="py-2 px-4">Capper</th>
                 <th className="py-2 px-4">Pick</th>
                 <th className="py-2 px-4">Posted</th>
                 <th className="py-2 px-4">Units</th>
@@ -319,15 +357,21 @@ export function RealDashboard() {
             <tbody>
               {picks.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-8 px-4 text-center text-gray-400">
+                  <td colSpan={9} className="py-8 px-4 text-center text-gray-400">
                     No picks found. Add some picks to see them here!
                   </td>
                 </tr>
               ) : (
                 picks.map((pick) => {
                   const InsightIcon = getInsightIcon(pick)
+                  const capperInfo = CAPPERS.find(c => c.id === pick.capper) || CAPPERS[1] // Default to DeepPick
                   return (
                     <tr key={pick.id} className="border-b border-gray-800 hover:bg-gray-800 transition-colors">
+                      <td className="py-3 px-4">
+                        <Badge className={`bg-gradient-to-r ${capperInfo.color} text-white font-bold`}>
+                          {capperInfo.name}
+                        </Badge>
+                      </td>
                       <td className="py-3 px-4 font-bold text-gray-100">{pick.selection}</td>
                       <td className="py-3 px-4 text-gray-300">
                         {new Date(pick.created_at).toLocaleString()}

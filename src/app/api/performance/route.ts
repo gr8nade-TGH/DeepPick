@@ -7,12 +7,20 @@ export async function GET(request: NextRequest) {
     const { searchParams } = request.nextUrl
     const period = searchParams.get('period') || 'all_time'
     const userId = searchParams.get('user_id') || '00000000-0000-0000-0000-000000000000' // Mock user for now
+    const capper = searchParams.get('capper')
 
     // Get all picks to calculate metrics
-    const { data: picks, error: picksError } = await supabase
+    let query = supabase
       .from('picks')
       .select('*')
       .order('created_at', { ascending: true })
+
+    // Filter by capper if specified
+    if (capper && capper !== 'all') {
+      query = query.eq('capper', capper)
+    }
+
+    const { data: picks, error: picksError } = await query
 
     if (picksError) {
       return NextResponse.json({ error: picksError.message }, { status: 500 })
