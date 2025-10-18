@@ -625,7 +625,7 @@ export function analyzeGame(game: CapperGame): { pick: CapperPick | null; log: P
 export function analyzeBatch(
   games: CapperGame[], 
   maxPicks: number = 3,
-  existingPicksByGame?: Map<string, string[]>
+  existingPicksByGame?: Map<string, Set<string>>
 ): Array<{ pick: CapperPick; log: PredictionLog }> {
   console.log(`\n🔥 IFRIT analyzing ${games.length} games...`)
   
@@ -634,7 +634,7 @@ export function analyzeBatch(
   for (const game of games) {
     // Check if we already have a pick on this game for the same bet type
     if (existingPicksByGame) {
-      const existingTypes = existingPicksByGame.get(game.id) || []
+      const existingTypes = existingPicksByGame.get(game.id) || new Set<string>()
       
       const result = analyzeGame(game)
       
@@ -642,7 +642,7 @@ export function analyzeBatch(
         // Normalize pick type (total_over/total_under -> total)
         const basePickType = result.pick.pickType.startsWith('total_') ? 'total' : result.pick.pickType
         
-        if (existingTypes.includes(basePickType)) {
+        if (existingTypes.has(basePickType)) {
           console.log(`⏭️ Skipping ${result.log.game} - already have ${basePickType} pick on this game`)
           result.log.steps.push({
             step: result.log.steps.length + 1,
