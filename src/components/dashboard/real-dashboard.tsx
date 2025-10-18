@@ -19,6 +19,7 @@ interface Pick {
   reasoning?: string
   net_units?: number
   capper?: string
+  confidence?: number
   game_snapshot?: {
     sport: string
     league: string
