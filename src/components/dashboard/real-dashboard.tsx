@@ -235,12 +235,13 @@ export function RealDashboard() {
 
       {/* Capper Selector */}
       <section className="glass-effect p-4 rounded-lg shadow-lg border border-gray-800">
-        <div className="space-y-3">
-          <span className="text-sm font-semibold text-gray-400">SELECT CAPPER:</span>
-          <div className="flex flex-wrap gap-3">
-            {CAPPERS.map((capper) => (
-              <div key={capper.id} className="flex flex-col gap-2">
+        <div className="space-y-4">
+          <div>
+            <span className="text-sm font-semibold text-gray-400">SELECT CAPPER:</span>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {CAPPERS.map((capper) => (
                 <Button
+                  key={capper.id}
                   onClick={() => setSelectedCapper(capper.id)}
                   variant={selectedCapper === capper.id ? 'default' : 'outline'}
                   className={`${
@@ -251,17 +252,24 @@ export function RealDashboard() {
                 >
                   {capper.name}
                 </Button>
-                {capper.path && (
-                  <Link 
-                    href={capper.path}
-                    className="flex items-center justify-center gap-1 px-3 py-1 rounded-lg border border-neon-blue/50 hover:bg-neon-blue/20 transition-all text-xs text-neon-blue hover:border-neon-blue"
-                  >
-                    <TrendingUp className="w-3 h-3" />
-                    <span>Algorithm</span>
-                  </Link>
-                )}
-              </div>
-            ))}
+              ))}
+            </div>
+          </div>
+          
+          <div className="border-t border-gray-700 pt-3">
+            <span className="text-sm font-semibold text-gray-400">ALGORITHM PAGES:</span>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {CAPPERS.filter(c => c.path).map((capper) => (
+                <Link 
+                  key={capper.id}
+                  href={capper.path!}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-neon-blue/50 bg-neon-blue/10 hover:bg-neon-blue/20 hover:border-neon-blue transition-all text-sm text-neon-blue font-semibold"
+                >
+                  <TrendingUp className="w-4 h-4" />
+                  <span>{capper.name} Algorithm</span>
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       </section>
