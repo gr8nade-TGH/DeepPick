@@ -146,10 +146,19 @@ function analyzeGame(
     finalConfidence: 0
   }
   
+  // Generate pick selections based on prediction
+  const vegasTotal = getTotalLine(game)
+  const vegasSpread = getSpreadLine(game)
+  
+  const totalPick = vegasTotal && scorePrediction.totalPoints > vegasTotal ? `OVER ${vegasTotal}` : 
+                    vegasTotal ? `UNDER ${vegasTotal}` : null
+  const spreadPick = vegasSpread ? `${game.home_team.abbreviation} ${vegasSpread > 0 ? '+' : ''}${vegasSpread}` : null
+  const moneylinePick = scorePrediction.winner === 'home' ? game.home_team.abbreviation : game.away_team.abbreviation
+  
   const availableBets = [
-    { type: 'total', confidence: confidences.totalConfidence, pick: confidences.totalPick },
-    { type: 'spread', confidence: confidences.spreadConfidence, pick: confidences.spreadPick },
-    { type: 'moneyline', confidence: confidences.moneylineConfidence, pick: confidences.moneylinePick }
+    { type: 'total', confidence: confidences.totalConfidence, pick: totalPick },
+    { type: 'spread', confidence: confidences.spreadConfidence, pick: spreadPick },
+    { type: 'moneyline', confidence: confidences.moneylineConfidence, pick: moneylinePick }
   ]
     .filter(bet => bet.confidence !== null && bet.pick !== null)
     .filter(bet => !existingPickTypes.has(bet.type))
