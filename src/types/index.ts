@@ -266,3 +266,58 @@ export interface Environment {
   REDIS_URL?: string
   SENTRY_DSN?: string
 }
+
+// AI Capper types
+export interface CapperSettings {
+  id?: string
+  capper_name: string
+  ai_provider_run1: 'perplexity' | 'openai' | 'local'
+  ai_provider_run2: 'perplexity' | 'openai' | 'local'
+  ai_model_run1?: string
+  ai_model_run2?: string
+  timing_offset_hours: number
+  timing_offset_nfl_hours: number
+  min_confidence_to_pick: number
+  weed_out_filters: any[]
+  factor_weights: Record<string, number>
+  max_statmuse_questions_run1: number
+  max_statmuse_questions_run2: number
+  created_at?: string
+  updated_at?: string
+}
+
+export interface AIRunFactors {
+  [factorName: string]: {
+    description: string
+    value: string | number
+    confidence: 'low' | 'medium' | 'high' | 'critical'
+    impact?: number // Points impact (e.g., +2.5 for home team)
+  }
+}
+
+export interface AIRunResult {
+  id?: string
+  game_id: string
+  capper: string
+  run_number: number
+  run_type: 'analytical' | 'strategic_validation' | 'realtime_validation'
+  factors: AIRunFactors
+  statmuse_queries?: string[]
+  statmuse_results?: Array<{ question: string; answer: string | null }>
+  validation_result?: any
+  odds_at_run: any
+  timestamp: string
+  duration_ms?: number
+}
+
+export interface AIInsight {
+  summary: string
+  key_factors: Array<{
+    name: string
+    description: string
+    impact: number
+    confidence: string
+  }>
+  bold_prediction: string
+  writeup: string
+}

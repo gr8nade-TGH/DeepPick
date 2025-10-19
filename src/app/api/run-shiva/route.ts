@@ -63,7 +63,7 @@ export async function POST(request: Request) {
     const existingPicks = await getExistingPicksByGame('shiva')
     console.log(`🔍 Found existing picks on ${existingPicks.size} games`)
 
-    const results = analyzeBatch(games as CapperGame[], 5, existingPicks)
+    const results = await analyzeBatch(games as CapperGame[], 5, existingPicks)
 
     console.log(`✅ Shiva generated ${results.length} picks`)
 
