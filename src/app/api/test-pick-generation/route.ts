@@ -160,11 +160,15 @@ export async function POST() {
     // 8. Pick was generated!
     const pickResult = results[0]
     const pick = pickResult.pick
+    const log = pickResult.log
+    
     testSteps.push('✅ Pick generated!')
-    testSteps.push(`  - Prediction: ${pick.prediction}`)
+    testSteps.push(`  - Pick Type: ${pick.pickType}`)
+    testSteps.push(`  - Selection: ${pick.selection}`)
     testSteps.push(`  - Confidence: ${pick.confidence}/10`)
     testSteps.push(`  - Units: ${pick.units}`)
     testSteps.push(`  - Odds: ${pick.odds}`)
+    testSteps.push(`  - Score Prediction: ${log.finalPrediction.awayScore}-${log.finalPrediction.homeScore}`)
     
     // 9. Check if it was saved to database
     const { data: savedPick } = await supabase
@@ -194,13 +198,19 @@ export async function POST() {
         time: gameToAnalyze.game_time
       },
       pick: {
-        prediction: pick.prediction,
+        pickType: pick.pickType,
+        selection: pick.selection,
         confidence: pick.confidence,
         units: pick.units,
         odds: pick.odds,
-        ai_insight: pick.ai_insight,
-        ai_research_summary: pick.ai_research,
-        factors: pick.factors_analyzed
+        scorePrediction: {
+          away: log.finalPrediction.awayScore,
+          home: log.finalPrediction.homeScore,
+          total: log.finalPrediction.total,
+          winner: log.finalPrediction.winner
+        },
+        reasoning: pick.reasoning,
+        vegasComparison: log.vegasComparison
       },
       database: {
         saved: !!savedPick,

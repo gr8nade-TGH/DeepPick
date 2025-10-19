@@ -1663,8 +1663,12 @@ ${cronJobStatuses.filter(j => j.last_run_status === 'failed').length > 2 ? 'âš ï
                         <CardContent className="space-y-4">
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <div className="p-4 bg-gray-800/50 rounded">
-                              <p className="text-xs text-gray-500 mb-1">Prediction</p>
-                              <p className="text-lg font-bold text-white">{pickTestResult.pick.prediction}</p>
+                              <p className="text-xs text-gray-500 mb-1">Pick Type</p>
+                              <p className="text-lg font-bold text-white">{pickTestResult.pick.pickType}</p>
+                            </div>
+                            <div className="p-4 bg-gray-800/50 rounded">
+                              <p className="text-xs text-gray-500 mb-1">Selection</p>
+                              <p className="text-lg font-bold text-purple-400">{pickTestResult.pick.selection}</p>
                             </div>
                             <div className="p-4 bg-gray-800/50 rounded">
                               <p className="text-xs text-gray-500 mb-1">Confidence</p>
@@ -1674,16 +1678,46 @@ ${cronJobStatuses.filter(j => j.last_run_status === 'failed').length > 2 ? 'âš ï
                               <p className="text-xs text-gray-500 mb-1">Units</p>
                               <p className="text-lg font-bold text-yellow-400">{pickTestResult.pick.units}U</p>
                             </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-4">
                             <div className="p-4 bg-gray-800/50 rounded">
                               <p className="text-xs text-gray-500 mb-1">Odds</p>
                               <p className="text-lg font-bold text-blue-400">{pickTestResult.pick.odds}</p>
                             </div>
+                            {pickTestResult.pick.scorePrediction && (
+                              <div className="p-4 bg-gray-800/50 rounded">
+                                <p className="text-xs text-gray-500 mb-1">Score Prediction</p>
+                                <p className="text-lg font-bold text-cyan-400">
+                                  {pickTestResult.pick.scorePrediction.away} - {pickTestResult.pick.scorePrediction.home}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">Winner: {pickTestResult.pick.scorePrediction.winner}</p>
+                              </div>
+                            )}
                           </div>
                           
-                          {pickTestResult.pick.ai_insight && (
+                          {pickTestResult.pick.reasoning && pickTestResult.pick.reasoning.length > 0 && (
                             <div className="p-4 bg-purple-900/20 border border-purple-500/30 rounded">
-                              <p className="text-xs text-gray-500 mb-2">AI Insight</p>
-                              <p className="text-sm text-gray-300">{pickTestResult.pick.ai_insight}</p>
+                              <p className="text-xs text-gray-500 mb-2">Reasoning</p>
+                              <ul className="text-sm text-gray-300 space-y-1">
+                                {pickTestResult.pick.reasoning.map((reason: string, idx: number) => (
+                                  <li key={idx}>â€¢ {reason}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          
+                          {pickTestResult.pick.vegasComparison && (
+                            <div className="p-4 bg-orange-900/20 border border-orange-500/30 rounded">
+                              <p className="text-xs text-gray-500 mb-2">Vegas Comparison</p>
+                              <div className="grid grid-cols-2 gap-2 text-sm text-gray-300">
+                                {pickTestResult.pick.vegasComparison.totalLine && (
+                                  <p>Total Line: {pickTestResult.pick.vegasComparison.totalLine}</p>
+                                )}
+                                {pickTestResult.pick.vegasComparison.spread && (
+                                  <p>Spread: {pickTestResult.pick.vegasComparison.spread}</p>
+                                )}
+                              </div>
                             </div>
                           )}
                         </CardContent>
