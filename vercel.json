@@ -7,6 +7,14 @@
     {
       "path": "/api/fetch-scores",
       "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/auto-run-cappers",
+      "schedule": "*/20 * * * *"
+    },
+    {
+      "path": "/api/archive-games",
+      "schedule": "0 */6 * * *"
     }
   ]
 }
