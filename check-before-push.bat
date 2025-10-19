@@ -1,24 +1,21 @@
 @echo off
+echo.
 echo ========================================
 echo 🔍 PRE-DEPLOYMENT CHECK
 echo ========================================
 echo.
 
-echo 1️⃣ Running TypeScript type check...
-call npm run type-check
+call npm run check
+
 if %errorlevel% neq 0 (
     echo.
-    echo ❌ TypeScript errors found! Fix them before pushing.
+    echo ========================================
+    echo ❌ CHECKS FAILED!
+    echo ========================================
+    echo Fix the errors above before pushing.
+    echo Note: Errors in checkpoints/ folder can be ignored.
     pause
     exit /b 1
-)
-
-echo.
-echo 2️⃣ Running linter...
-call npx next lint
-if %errorlevel% neq 0 (
-    echo.
-    echo ⚠️ Linter warnings found (not blocking)
 )
 
 echo.
@@ -26,5 +23,6 @@ echo ========================================
 echo ✅ ALL CHECKS PASSED!
 echo ========================================
 echo Safe to push to Git.
+echo.
 pause
 
