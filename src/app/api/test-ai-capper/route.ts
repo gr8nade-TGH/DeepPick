@@ -189,11 +189,26 @@ export async function POST() {
     
   } catch (error) {
     console.error('❌ AI Capper test failed:', error)
-    return NextResponse.json({
+    
+    // Detailed error logging
+    const errorDetails = {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined
-    }, { status: 500 })
+      errorType: error?.constructor?.name || 'Unknown',
+      stack: error instanceof Error ? error.stack : undefined,
+      rawError: JSON.stringify(error, Object.getOwnPropertyNames(error)),
+      timestamp: new Date().toISOString(),
+      environment: {
+        hasPerplexityKey: !!process.env.PERPLEXITY_API_KEY,
+        hasOpenAIKey: !!process.env.OPENAI_API_KEY,
+        nodeEnv: process.env.NODE_ENV,
+        runtime: 'nodejs'
+      }
+    }
+    
+    console.error('Full error details:', errorDetails)
+    
+    return NextResponse.json(errorDetails, { status: 500 })
   }
 }
 

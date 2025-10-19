@@ -773,16 +773,23 @@ ${cronJobStatuses.filter(j => j.last_run_status === 'failed').length > 2 ? '⚠�
       })
       
       const data = await response.json()
+      console.log('📥 Response data:', data)
       
       if (!response.ok || !data.success) {
-        setAiTestError(data.error || 'Test failed')
+        // Store the entire error object for detailed debugging
+        setAiTestError(data)
+        console.error('❌ Test failed with data:', data)
       } else {
         setAiTestResult(data)
         console.log('✅ AI test completed:', data)
       }
     } catch (error) {
-      console.error('Error running AI test:', error)
-      setAiTestError(error instanceof Error ? error.message : 'Unknown error')
+      console.error('❌ Error running AI test:', error)
+      setAiTestError({
+        error: error instanceof Error ? error.message : 'Unknown error',
+        errorType: 'FetchException',
+        timestamp: new Date().toISOString()
+      })
     } finally {
       setAiTestRunning(false)
     }
@@ -1187,13 +1194,46 @@ ${cronJobStatuses.filter(j => j.last_run_status === 'failed').length > 2 ? '⚠�
                       <AlertCircle className="w-6 h-6 text-red-400 flex-shrink-0 mt-1" />
                       <div className="flex-1">
                         <h4 className="text-lg font-semibold text-red-400 mb-2">Test Failed</h4>
-                        <p className="text-sm text-gray-300 mb-3">{aiTestError}</p>
-                        <div className="text-xs text-gray-400 space-y-1">
+                        <p className="text-sm text-gray-300 mb-3 font-mono">{typeof aiTestError === 'string' ? aiTestError : aiTestError?.error || 'Unknown error'}</p>
+                        
+                        {/* Show detailed error info if available */}
+                        {typeof aiTestError === 'object' && aiTestError !== null && (
+                          <div className="mt-4 p-4 bg-black/30 rounded border border-red-500/20">
+                            <p className="text-xs font-semibold text-red-300 mb-2">Debug Information:</p>
+                            <div className="text-xs text-gray-400 space-y-1 font-mono">
+                              {aiTestError.errorType && <p>Error Type: <span className="text-red-300">{aiTestError.errorType}</span></p>}
+                              {aiTestError.timestamp && <p>Time: {new Date(aiTestError.timestamp).toLocaleString()}</p>}
+                              {aiTestError.environment && (
+                                <div className="mt-2">
+                                  <p className="font-semibold text-gray-300">Environment:</p>
+                                  <p>Perplexity Key: {aiTestError.environment.hasPerplexityKey ? '✅ Set' : '❌ Missing'}</p>
+                                  <p>OpenAI Key: {aiTestError.environment.hasOpenAIKey ? '✅ Set' : '❌ Missing'}</p>
+                                  <p>Node ENV: {aiTestError.environment.nodeEnv}</p>
+                                </div>
+                              )}
+                              {aiTestError.stack && (
+                                <details className="mt-2">
+                                  <summary className="cursor-pointer text-gray-300 hover:text-white">Stack Trace</summary>
+                                  <pre className="mt-2 text-xs overflow-x-auto whitespace-pre-wrap">{aiTestError.stack}</pre>
+                                </details>
+                              )}
+                              {aiTestError.rawError && (
+                                <details className="mt-2">
+                                  <summary className="cursor-pointer text-gray-300 hover:text-white">Raw Error</summary>
+                                  <pre className="mt-2 text-xs overflow-x-auto whitespace-pre-wrap">{aiTestError.rawError}</pre>
+                                </details>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        
+                        <div className="mt-4 text-xs text-gray-400 space-y-1">
                           <p><strong>Common Issues:</strong></p>
                           <ul className="list-disc list-inside space-y-1">
-                            <li>API keys not set in .env.local file</li>
+                            <li>API keys not set in Vercel environment variables</li>
+                            <li>OpenAI account out of credits (check billing)</li>
                             <li>Database migration not run</li>
-                            <li>Dev server needs restart after adding env vars</li>
+                            <li>Perplexity or OpenAI API down</li>
                           </ul>
                         </div>
                       </div>
