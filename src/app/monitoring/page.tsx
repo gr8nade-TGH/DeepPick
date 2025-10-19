@@ -11,7 +11,8 @@ import {
   Database, 
   TrendingUp, 
   AlertCircle, 
-  CheckCircle, 
+  CheckCircle,
+  CheckCircle2,
   Clock,
   BarChart3,
   Zap,
@@ -27,7 +28,8 @@ import {
   Settings,
   ToggleLeft,
   ToggleRight,
-  Timer
+  Timer,
+  Target
 } from 'lucide-react'
 
 interface ApiCall {
