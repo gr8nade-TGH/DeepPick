@@ -76,17 +76,33 @@ export class AICapperOrchestrator {
     const statMuseAnswers: Array<{ question: string; answer: string | null }> = []
 
     try {
-      // 1. Generate StatMuse questions using Perplexity
+      // 1. Generate StatMuse questions using Perplexity (EDGE DETECTION FOCUS)
       const gameContext = this.getGameContextForAI()
-      const questionsPrompt = `You are ${this.capperName}, a sports analyst. Generate ${this.capperSettings.max_statmuse_questions_run1} clever and specific statistical questions about this matchup that could be answered by StatMuse. Focus on recent team/player performance, head-to-head history, and key matchup factors. Format each question as a single line, prefixed with "Q: ".
+      const questionsPrompt = `You are ${this.capperName}, a professional sports bettor analyzing this matchup.
+
+CRITICAL: Your job is to find EDGE, not just predict a winner. Focus on COMPARATIVE analysis between both teams.
 
 Game Context:
 ${gameContext}
 
-Examples:
-Q: ${this.game.home_team.name} record last 10 games
-Q: ${this.game.away_team.name} scoring average vs ${this.game.home_team.name}
-`
+Generate ${this.capperSettings.max_statmuse_questions_run1} clever, specific COMPARATIVE questions that reveal matchup advantages/disadvantages.
+
+Requirements:
+- Each question MUST compare BOTH teams (not just one team)
+- Focus on exploitable edges (offensive vs defensive matchups, pace, recent form)
+- Be specific (use team names, recent games, this season)
+- Format: "Q: [comparative question]"
+
+Good Examples:
+Q: Compare ${this.game.away_team.name} offensive rating to ${this.game.home_team.name} defensive rating this season
+Q: ${this.game.away_team.name} scoring average last 5 games vs ${this.game.home_team.name} points allowed at home
+Q: ${this.game.home_team.name} record as underdog vs ${this.game.away_team.name} record as favorite
+
+Bad Examples (DON'T DO THIS):
+X: ${this.game.home_team.name} record last 10 games (not comparative)
+X: How good is ${this.game.away_team.name}? (too vague)
+
+Generate ${this.capperSettings.max_statmuse_questions_run1} questions NOW:`
 
       const questionsResponse = await this.perplexityClient.chat({
         model: this.capperSettings.ai_model_run1 || 'sonar-medium-online',
@@ -449,6 +465,50 @@ Current Odds (averaged across ${bookmakers.length} bookmaker${bookmakers.length 
 Moneyline: Home ${avgMoneylineHome}, Away ${avgMoneylineAway}
 Spread: ${avgSpreadLine} (odds: ${avgSpreadHome})
 Total: ${avgTotalLine} (over odds: ${avgTotalOver})`
+  }
+
+  /**
+   * Query StatMuse with retry logic
+   * If query fails or returns no data, rephrase and try again
+   */
+  private async queryStatMuseWithRetry(
+    question: string,
+    maxRetries: number = 1
+  ): Promise<{ text: string | null; failed: boolean }> {
+    try {
+      // First attempt
+      const answer = await this.statMuseClient.query(this.game.sport, question)
+      
+      // Check if answer is valid
+      if (answer && !answer.toLowerCase().includes('no data') && !answer.toLowerCase().includes('not found')) {
+        return { text: answer, failed: false }
+      }
+      
+      // If no valid answer and we have retries left, try rephrasing
+      if (maxRetries > 0) {
+        console.log(`[${this.capperName}] StatMuse query unclear, rephrasing: "${question}"`)
+        
+        // Simple rephrase: make it more specific or simpler
+        const rephrased = question
+          .replace('Compare', 'What is the difference between')
+          .replace(' vs ', ' versus ')
+          .replace(' last 5', ' recent')
+        
+        // Try again with rephrased question
+        const retryAnswer = await this.statMuseClient.query(this.game.sport, rephrased)
+        
+        if (retryAnswer && !retryAnswer.toLowerCase().includes('no data')) {
+          return { text: retryAnswer, failed: false }
+        }
+      }
+      
+      // Failed after retries
+      return { text: null, failed: true }
+      
+    } catch (error) {
+      console.error(`[${this.capperName}] StatMuse error:`, error)
+      return { text: null, failed: true }
+    }
   }
 
   /**
