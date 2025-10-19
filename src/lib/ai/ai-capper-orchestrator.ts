@@ -35,10 +35,7 @@ export class AICapperOrchestrator {
       throw new Error('OPENAI_API_KEY is not set for AI Orchestrator.')
     }
 
-    this.perplexityClient = new PerplexityClient({
-      model: this.capperSettings.ai_model_run1,
-      useProSearch: true,
-    })
+    this.perplexityClient = new PerplexityClient(env.PERPLEXITY_API_KEY)
     this.openaiClient = new OpenAI({ apiKey: env.OPENAI_API_KEY })
     this.statMuseClient = new StatMuseClient()
   }
@@ -90,18 +87,18 @@ Q: ${this.game.home_team.name} record last 10 games
 Q: ${this.game.away_team.name} scoring average vs ${this.game.home_team.name}
 `
 
-      const questionsResponse = await this.perplexityClient.chatCompletion(
-        [{ role: 'user', content: questionsPrompt }],
-        {
-          systemPrompt: `You are ${this.capperName}, a sports analyst. Generate insightful StatMuse questions.`,
-          model: this.capperSettings.ai_model_run1,
-          max_tokens: 500,
-          temperature: 0.8,
-        }
-      )
+      const questionsResponse = await this.perplexityClient.chat({
+        model: this.capperSettings.ai_model_run1 || 'sonar-medium-online',
+        messages: [
+          { role: 'system', content: `You are ${this.capperName}, a sports analyst. Generate insightful StatMuse questions.` },
+          { role: 'user', content: questionsPrompt }
+        ],
+        max_tokens: 500,
+        temperature: 0.8,
+      })
 
-      if (questionsResponse) {
-        const questions = questionsResponse
+      if (questionsResponse?.choices?.[0]?.message?.content) {
+        const questions = questionsResponse.choices[0].message.content
           .split('\n')
           .filter((line) => line.trim().startsWith('Q:'))
           .map((line) => line.substring(3).trim())
@@ -137,25 +134,25 @@ Format your output as a JSON object with factor names as keys. Example:
   }
 }`
 
-      const perplexityAnalysis = await this.perplexityClient.chatCompletion(
-        [{ role: 'user', content: analysisPrompt }],
-        {
-          systemPrompt: `You are ${this.capperName}, a sports analyst. Focus on analytical factors. Always respond with valid JSON.`,
-          model: this.capperSettings.ai_model_run1,
-          max_tokens: 700,
-          temperature: 0.5,
-        }
-      )
+      const perplexityAnalysis = await this.perplexityClient.chat({
+        model: this.capperSettings.ai_model_run1 || 'sonar-medium-online',
+        messages: [
+          { role: 'system', content: `You are ${this.capperName}, a sports analyst. Focus on analytical factors. Always respond with valid JSON.` },
+          { role: 'user', content: analysisPrompt }
+        ],
+        max_tokens: 700,
+        temperature: 0.5,
+      })
 
-      if (perplexityAnalysis) {
+      if (perplexityAnalysis?.choices?.[0]?.message?.content) {
         try {
-          const parsedFactors = JSON.parse(perplexityAnalysis)
+          const parsedFactors = JSON.parse(perplexityAnalysis.choices[0].message.content)
           Object.assign(factors, parsedFactors)
         } catch (e) {
           console.error('Failed to parse Perplexity analysis JSON:', e)
           factors.perplexity_raw_analysis = {
             description: 'Raw Perplexity analysis due to JSON parse error',
-            value: perplexityAnalysis,
+            value: perplexityAnalysis.choices[0].message.content,
             confidence: 'low',
           }
         }
