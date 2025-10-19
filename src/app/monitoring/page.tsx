@@ -1805,7 +1805,151 @@ ${cronJobStatuses.filter(j => j.last_run_status === 'failed').length > 2 ? '⚠�
                               <p className="text-xs text-gray-500">Confidence Score: {pickTestResult.pick.confidence}/10</p>
                             </div>
 
-                            {pickTestResult.pick.analysisSteps && pickTestResult.pick.analysisSteps.length > 0 ? (
+                            {/* Display factors from FactorEngine */}
+                            {pickTestResult.pick.factors && pickTestResult.pick.factors.length > 0 ? (
+                              pickTestResult.pick.factors
+                                .sort((a: any, b: any) => Math.abs(b.weightedScore) - Math.abs(a.weightedScore)) // Sort by impact
+                                .map((factor: any, idx: number) => {
+                                const isNegative = factor.weightedScore < 0
+                                const isNeutral = Math.abs(factor.weightedScore) < 0.1
+                                
+                                // Icon selection based on category
+                                const categoryIcons: any = {
+                                  vegas: '🎰',
+                                  ai_research: '🤖',
+                                  form: '📈',
+                                  matchup: '⚔️',
+                                  context: '🌍'
+                                }
+                                const icon = categoryIcons[factor.category] || '📊'
+                                
+                                return (
+                                  <div key={idx} className={`p-4 rounded-lg border transition-all duration-300 hover:shadow-lg ${
+                                    isNegative ? 'bg-red-900/10 border-red-500/30 hover:border-red-500/50' :
+                                    isNeutral ? 'bg-gray-800/50 border-gray-700 hover:border-gray-600' :
+                                    'bg-green-900/10 border-green-500/30 hover:border-green-500/50'
+                                  }`}>
+                                    <div className="flex items-start gap-3 mb-3">
+                                      <span className="text-3xl">{icon}</span>
+                                      <div className="flex-1">
+                                        {/* Factor Name & Score */}
+                                        <div className="flex items-center justify-between mb-2">
+                                          <div>
+                                            <p className="text-sm font-bold text-white">{factor.name}</p>
+                                            <p className="text-xs text-gray-500 uppercase tracking-wide">{factor.category}</p>
+                                          </div>
+                                          <div className="text-right">
+                                            <div className="flex items-center gap-2">
+                                              <span className={`text-lg font-mono font-bold ${
+                                                isNegative ? 'text-red-400' : isNeutral ? 'text-gray-400' : 'text-green-400'
+                                              }`}>
+                                                {factor.weightedScore >= 0 ? '+' : ''}{factor.weightedScore.toFixed(2)}
+                                              </span>
+                                              <span className="text-xs text-gray-500">/ {factor.weight.toFixed(2)}</span>
+                                            </div>
+                                            <p className="text-xs text-gray-500 mt-0.5">
+                                              {((Math.abs(factor.weightedScore) / factor.weight) * 100).toFixed(0)}% of max
+                                            </p>
+                                          </div>
+                                        </div>
+                                        
+                                        {/* Reasoning */}
+                                        <p className="text-sm text-gray-300 leading-relaxed mb-3">
+                                          {factor.reasoning}
+                                        </p>
+                                        
+                                        {/* Raw Data Display */}
+                                        {(factor.data.teamA || factor.data.teamB || factor.data.context) && (
+                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3 text-xs">
+                                            {factor.data.teamA && Object.keys(factor.data.teamA).length > 0 && (
+                                              <div className="p-2 bg-blue-900/20 border border-blue-500/30 rounded">
+                                                <p className="font-semibold text-blue-300 mb-1">Your Pick:</p>
+                                                {Object.entries(factor.data.teamA).map(([key, value]: [string, any]) => (
+                                                  <p key={key} className="text-gray-300">
+                                                    {key}: <span className="font-mono text-blue-400">{JSON.stringify(value)}</span>
+                                                  </p>
+                                                ))}
+                                              </div>
+                                            )}
+                                            {factor.data.teamB && Object.keys(factor.data.teamB).length > 0 && (
+                                              <div className="p-2 bg-orange-900/20 border border-orange-500/30 rounded">
+                                                <p className="font-semibold text-orange-300 mb-1">Opponent:</p>
+                                                {Object.entries(factor.data.teamB).map(([key, value]: [string, any]) => (
+                                                  <p key={key} className="text-gray-300">
+                                                    {key}: <span className="font-mono text-orange-400">{JSON.stringify(value)}</span>
+                                                  </p>
+                                                ))}
+                                              </div>
+                                            )}
+                                            {factor.data.context && Object.keys(factor.data.context).length > 0 && (
+                                              <div className="col-span-full p-2 bg-purple-900/20 border border-purple-500/30 rounded">
+                                                <p className="font-semibold text-purple-300 mb-1">Context:</p>
+                                                {Object.entries(factor.data.context).map(([key, value]: [string, any]) => (
+                                                  <p key={key} className="text-gray-300">
+                                                    {key}: <span className="font-mono text-purple-400">{JSON.stringify(value)}</span>
+                                                  </p>
+                                                ))}
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
+                                        
+                                        {/* Advanced Stats Research Q&A (if available) */}
+                                        {(factor.statmuseQuery || factor.statmuseResponse) && (
+                                          <div className="p-3 bg-indigo-900/20 border border-indigo-500/30 rounded mb-3">
+                                            <p className="text-xs font-semibold text-indigo-300 mb-2">📊 Advanced Stats Research</p>
+                                            {factor.statmuseQuery && (
+                                              <div className="mb-2">
+                                                <p className="text-xs text-gray-400">Q:</p>
+                                                <p className="text-xs text-gray-200 italic">"{factor.statmuseQuery}"</p>
+                                              </div>
+                                            )}
+                                            {factor.statmuseResponse && (
+                                              <div>
+                                                <p className="text-xs text-gray-400">A:</p>
+                                                <p className="text-xs text-indigo-200">{factor.statmuseResponse}</p>
+                                              </div>
+                                            )}
+                                            {factor.statmuseFailed && (
+                                              <p className="text-xs text-red-400">⚠️ Query failed - used alternative data</p>
+                                            )}
+                                          </div>
+                                        )}
+                                        
+                                        {/* Data Sources */}
+                                        {factor.sources && factor.sources.length > 0 && (
+                                          <div className="flex flex-wrap gap-1">
+                                            {factor.sources.map((source: string, i: number) => (
+                                              <span key={i} className="px-2 py-0.5 bg-gray-800 text-xs text-gray-400 rounded">
+                                                {source}
+                                              </span>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Power Bar */}
+                                    <div className="relative w-full h-3 bg-gray-900 rounded-full overflow-hidden">
+                                      <div 
+                                        className={`absolute top-0 left-0 h-full rounded-full transition-all duration-700 ${
+                                          isNegative ? 'bg-gradient-to-r from-red-600 via-red-500 to-orange-500' :
+                                          isNeutral ? 'bg-gradient-to-r from-gray-600 to-gray-500' :
+                                          'bg-gradient-to-r from-green-600 via-green-500 to-emerald-400'
+                                        }`}
+                                        style={{ width: `${Math.min((Math.abs(factor.weightedScore) / factor.weight) * 100, 100)}%` }}
+                                      />
+                                      {/* Percentage label on bar */}
+                                      <div className="absolute inset-0 flex items-center justify-center">
+                                        <span className="text-xs font-bold text-white drop-shadow-lg">
+                                          {((Math.abs(factor.weightedScore) / factor.weight) * 100).toFixed(0)}%
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )
+                              })
+                            ) : pickTestResult.pick.analysisSteps && pickTestResult.pick.analysisSteps.length > 0 ? (
                               pickTestResult.pick.analysisSteps.map((step: any, idx: number) => {
                                 // Calculate score contribution (approximation based on impact)
                                 const impactScore = step.impact === 'positive' ? 1.5 : step.impact === 'negative' ? -0.5 : 0.5
@@ -1910,9 +2054,10 @@ ${cronJobStatuses.filter(j => j.last_run_status === 'failed').length > 2 ? '⚠�
                             <p className="mb-1 font-semibold text-gray-400">📚 Data Sources:</p>
                             <div className="flex flex-wrap gap-2">
                               <span className="px-2 py-1 bg-gray-800 rounded">The Odds API</span>
-                              <span className="px-2 py-1 bg-gray-800 rounded">StatMuse</span>
-                              <span className="px-2 py-1 bg-gray-800 rounded">Perplexity Web Search</span>
-                              <span className="px-2 py-1 bg-gray-800 rounded">Historical Data</span>
+                              <span className="px-2 py-1 bg-gray-800 rounded">Advanced Stats Database</span>
+                              <span className="px-2 py-1 bg-gray-800 rounded">Perplexity Web Research</span>
+                              <span className="px-2 py-1 bg-gray-800 rounded">ChatGPT Analysis</span>
+                              <span className="px-2 py-1 bg-gray-800 rounded">Historical Performance Data</span>
                             </div>
                           </div>
                         </CardContent>

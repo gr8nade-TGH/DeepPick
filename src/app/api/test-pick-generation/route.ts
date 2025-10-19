@@ -287,7 +287,9 @@ export async function POST() {
         // AI Research details for transparency
         aiResearch: log.aiResearch || null,
         // All factors and analysis steps
-        analysisSteps: log.steps || []
+        analysisSteps: log.steps || [],
+        // NEW: Factor breakdown from FactorEngine
+        factors: log.factors || []
       },
       database: {
         saved: !!savedPick,
