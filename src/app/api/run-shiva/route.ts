@@ -174,13 +174,15 @@ export async function POST(request: Request) {
       message: `Shiva generated ${results.length} picks`,
       picks: storedPicks,
       runId,
-      analysis: results.map(r => ({
-        selection: r.pick.selection,
-        confidence: r.pick.confidence,
-        units: r.pick.units,
-        reasoning: r.pick.reasoning,
-        predictionLog: r.log,
-      })),
+      analysis: results
+        .filter(r => r.pick !== null) // Only include results with actual picks
+        .map(r => ({
+          selection: r.pick!.selection,
+          confidence: r.pick!.confidence,
+          units: r.pick!.units,
+          reasoning: r.pick!.reasoning,
+          predictionLog: r.log,
+        })),
     })
 
   } catch (error) {
