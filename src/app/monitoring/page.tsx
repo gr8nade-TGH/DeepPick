@@ -281,7 +281,7 @@ export default function MonitoringPage() {
   // AI Testing State
   const [aiTestRunning, setAiTestRunning] = useState(false)
   const [aiTestResult, setAiTestResult] = useState<any>(null)
-  const [aiTestError, setAiTestError] = useState<string | null>(null)
+  const [aiTestError, setAiTestError] = useState<string | { error?: string; errorType?: string; timestamp?: string; environment?: any; stack?: string; rawError?: string } | null>(null)
 
   useEffect(() => {
     fetchMonitoringData()
