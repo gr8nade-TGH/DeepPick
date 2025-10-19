@@ -281,7 +281,7 @@ export default function MonitoringPage() {
   // AI Testing State
   const [aiTestRunning, setAiTestRunning] = useState(false)
   const [aiTestResult, setAiTestResult] = useState<any>(null)
-  const [aiTestError, setAiTestError] = useState<string | { error?: string; errorType?: string; timestamp?: string; environment?: any; stack?: string; rawError?: string } | null>(null)
+  const [aiTestError, setAiTestError] = useState<string | { error?: string; errorType?: string; timestamp?: string; environment?: any; stack?: string; rawError?: string; testSteps?: string[] } | null>(null)
 
   useEffect(() => {
     fetchMonitoringData()
@@ -1203,6 +1203,16 @@ ${cronJobStatuses.filter(j => j.last_run_status === 'failed').length > 2 ? 'тЪая
                             <div className="text-xs text-gray-400 space-y-1 font-mono">
                               {aiTestError.errorType && <p>Error Type: <span className="text-red-300">{aiTestError.errorType}</span></p>}
                               {aiTestError.timestamp && <p>Time: {new Date(aiTestError.timestamp).toLocaleString()}</p>}
+                              {aiTestError.testSteps && Array.isArray(aiTestError.testSteps) && (
+                                <div className="mt-2">
+                                  <p className="font-semibold text-gray-300">Test Progress:</p>
+                                  <ul className="mt-1 space-y-0.5">
+                                    {aiTestError.testSteps.map((step: string, idx: number) => (
+                                      <li key={idx} className="text-xs">{step}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
                               {aiTestError.environment && (
                                 <div className="mt-2">
                                   <p className="font-semibold text-gray-300">Environment:</p>

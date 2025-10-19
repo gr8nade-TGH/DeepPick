@@ -18,15 +18,20 @@ export const maxDuration = 300 // 5 minutes for AI processing
  * Usage: POST http://localhost:3000/api/test-ai-capper
  */
 export async function POST() {
+  const testSteps: string[] = []
+  
   try {
     console.log('🧪 Testing AI-Enhanced Shiva...')
+    testSteps.push('Started test')
     
     // 1. Check API keys
+    testSteps.push('Checking API keys...')
     if (!process.env.PERPLEXITY_API_KEY) {
       return NextResponse.json({
         success: false,
         error: 'PERPLEXITY_API_KEY not set in environment',
-        hint: 'Add it to your .env.local file'
+        hint: 'Add it to your .env.local file',
+        testSteps
       }, { status: 500 })
     }
     
@@ -34,13 +39,16 @@ export async function POST() {
       return NextResponse.json({
         success: false,
         error: 'OPENAI_API_KEY not set in environment',
-        hint: 'Add it to your .env.local file'
+        hint: 'Add it to your .env.local file',
+        testSteps
       }, { status: 500 })
     }
     
     console.log('✅ API keys found')
+    testSteps.push('✅ API keys verified')
     
     // 2. Fetch or create a real scheduled game from database
+    testSteps.push('Fetching game data...')
     const supabase = getSupabaseAdmin()
     let { data: game, error: gameError } = await supabase
       .from('games')
@@ -123,29 +131,52 @@ export async function POST() {
     }
     
     console.log('⚙️ Using settings:', capperSettings)
+    testSteps.push('✅ Settings loaded')
     
-    // 4. Initialize AI Orchestrator
+    // 4. Clean up any existing test data for this game
+    testSteps.push('Cleaning up old test data...')
+    await supabase
+      .from('ai_research_runs')
+      .delete()
+      .eq('game_id', game.id)
+      .eq('capper', 'shiva')
+    
+    console.log('🧹 Cleaned up existing research runs')
+    testSteps.push('✅ Old test data cleared')
+    
+    // 5. Initialize AI Orchestrator
+    testSteps.push('Initializing AI orchestrator...')
     const orchestrator = new AICapperOrchestrator({
       capperName: 'shiva',
       game: game as CapperGame,
       capperSettings: capperSettings as CapperSettings,
     })
+    testSteps.push('✅ Orchestrator ready')
     
-    // 5. Run the full AI research pipeline
+    // 6. Run the full AI research pipeline
     console.log('🤖 Starting AI research pipeline...')
+    testSteps.push('🤖 Running AI research (Run 1: Perplexity)...')
     const startTime = Date.now()
     const aiRuns = await orchestrator.runResearchPipeline()
     const duration = Date.now() - startTime
     
     console.log(`✅ AI research complete! (${(duration / 1000).toFixed(2)}s)`)
+    testSteps.push(`✅ AI research complete (${(duration / 1000).toFixed(2)}s)`)
+    testSteps.push('  - Run 1 (Perplexity): ' + Object.keys(aiRuns[0].factors).length + ' factors')
+    testSteps.push('  - Run 2 (ChatGPT): ' + Object.keys(aiRuns[1].factors).length + ' factors')
     
-    // 6. Generate AI insight
+    // 7. Generate AI insight
     console.log('📝 Generating AI insight...')
+    testSteps.push('📝 Generating AI insight...')
     const aiInsight = await orchestrator.generateAIInsight(aiRuns)
+    testSteps.push('✅ AI insight generated')
+    
+    testSteps.push('✅ Test complete!')
     
     return NextResponse.json({
       success: true,
       message: `AI-enhanced Shiva test complete for ${game.away_team.name} @ ${game.home_team.name}`,
+      testSteps,
       game: {
         id: game.id,
         matchup: `${game.away_team.name} @ ${game.home_team.name}`,
@@ -189,6 +220,7 @@ export async function POST() {
     
   } catch (error) {
     console.error('❌ AI Capper test failed:', error)
+    testSteps.push('❌ Error occurred: ' + (error instanceof Error ? error.message : 'Unknown error'))
     
     // Detailed error logging
     const errorDetails = {
@@ -198,6 +230,7 @@ export async function POST() {
       stack: error instanceof Error ? error.stack : undefined,
       rawError: JSON.stringify(error, Object.getOwnPropertyNames(error)),
       timestamp: new Date().toISOString(),
+      testSteps, // Include test steps to see where it failed
       environment: {
         hasPerplexityKey: !!process.env.PERPLEXITY_API_KEY,
         hasOpenAIKey: !!process.env.OPENAI_API_KEY,
