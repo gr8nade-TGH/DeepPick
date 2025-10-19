@@ -1,133 +1,200 @@
 import { NextResponse } from 'next/server'
-import { getAICapperOrchestrator } from '@/lib/ai/ai-capper-orchestrator'
-import type { CapperGame } from '@/lib/cappers/shared-logic'
+import { AICapperOrchestrator } from '@/lib/ai/ai-capper-orchestrator'
+import { CapperGame } from '@/lib/cappers/shared-logic'
+import { getSupabaseAdmin } from '@/lib/supabase/server'
+import { CapperSettings } from '@/types'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300 // 5 minutes for AI processing
 
 /**
- * Test endpoint for AI Capper system
+ * Test endpoint for AI-enhanced Shiva
  * 
- * Tests the complete 2-run flow:
- * - Run 1: Perplexity + 2 StatMuse questions
- * - Run 2: ChatGPT + 2 StatMuse questions
+ * Tests the complete 2-run AI research pipeline:
+ * - Run 1: Perplexity + StatMuse (analytical factors)
+ * - Run 2: ChatGPT + StatMuse (strategic validation)
+ * 
+ * Usage: POST http://localhost:3000/api/test-ai-capper
  */
-export async function POST(request: Request) {
+export async function POST() {
   try {
-    console.log('🧪 Testing AI Capper system...')
+    console.log('🧪 Testing AI-Enhanced Shiva...')
     
-    // Check API keys
+    // 1. Check API keys
     if (!process.env.PERPLEXITY_API_KEY) {
       return NextResponse.json({
         success: false,
-        error: 'PERPLEXITY_API_KEY not set',
-        setup_url: 'https://www.perplexity.ai/settings/api'
+        error: 'PERPLEXITY_API_KEY not set in environment',
+        hint: 'Add it to your .env.local file'
       }, { status: 500 })
     }
     
     if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json({
         success: false,
-        error: 'OPENAI_API_KEY not set',
-        setup_url: 'https://platform.openai.com/api-keys'
+        error: 'OPENAI_API_KEY not set in environment',
+        hint: 'Add it to your .env.local file'
       }, { status: 500 })
     }
     
-    // Create a mock game for testing
-    const mockGame: CapperGame = {
-      id: 'test-game-123',
-      sport: 'nba',
-      league: 'NBA',
-      home_team: {
-        id: 'lal',
-        name: 'Lakers',
-        abbreviation: 'LAL',
-        city: 'Los Angeles'
-      },
-      away_team: {
-        id: 'bos',
-        name: 'Celtics',
-        abbreviation: 'BOS',
-        city: 'Boston'
-      },
-      game_date: new Date().toISOString().split('T')[0],
-      game_time: '19:30:00',
-      status: 'scheduled',
-      odds: {
-        moneyline: { home: -150, away: +130 },
-        spread: { 
-          home: -3.5, 
-          away: +3.5,
-          home_line: -110,
-          away_line: -110
+    console.log('✅ API keys found')
+    
+    // 2. Fetch or create a real scheduled game from database
+    const supabase = getSupabaseAdmin()
+    let { data: game, error: gameError } = await supabase
+      .from('games')
+      .select('*')
+      .eq('status', 'scheduled')
+      .gte('game_date', new Date().toISOString().split('T')[0])
+      .order('game_date', { ascending: true })
+      .limit(1)
+      .single()
+
+    if (gameError || !game) {
+      console.warn('No scheduled games found, using mock game for test')
+      
+      // Create a mock game for testing
+      const mockGame: CapperGame = {
+        id: 'test-game-' + Date.now(),
+        sport: 'nba',
+        league: 'NBA',
+        home_team: {
+          id: 'lal',
+          name: 'Los Angeles Lakers',
+          abbreviation: 'LAL',
+          city: 'Los Angeles'
         },
-        total: { 
-          line: 225.5, 
-          over: -110, 
-          under: -110 
-        }
-      },
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+        away_team: {
+          id: 'bos',
+          name: 'Boston Celtics',
+          abbreviation: 'BOS',
+          city: 'Boston'
+        },
+        game_date: new Date().toISOString().split('T')[0],
+        game_time: '19:30:00',
+        status: 'scheduled',
+        venue: 'Crypto.com Arena',
+        odds: {
+          moneyline: { home: -150, away: +130 },
+          spread: { 
+            home: -3.5, 
+            away: +3.5,
+            home_line: -110,
+            away_line: -110
+          },
+          total: { 
+            line: 225.5, 
+            over: -110, 
+            under: -110 
+          },
+          last_updated: new Date().toISOString()
+        },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+      
+      // Upsert mock game to DB
+      const { error: upsertError } = await supabase
+        .from('games')
+        .upsert(mockGame, { onConflict: 'id' })
+      
+      if (upsertError) {
+        console.error('Failed to create mock game:', upsertError)
+      }
+      
+      game = mockGame
     }
     
-    const shivaPersonality = {
-      name: 'SHIVA',
-      style: 'Multi-model destroyer',
-      run1_focus: [
-        'Recent form and momentum',
-        'Head-to-head history',
-        'Scoring trends and matchup efficiency'
-      ],
-      run2_focus: [
-        'Latest injuries and lineup changes',
-        'Betting market trends',
-        'Score prediction validation'
-      ]
+    console.log(`📊 Testing with game: ${game.away_team.name} @ ${game.home_team.name}`)
+    
+    // 3. Fetch Shiva's capper settings
+    let { data: capperSettings, error: settingsError } = await supabase
+      .from('capper_settings')
+      .select('*')
+      .eq('capper_name', 'shiva')
+      .single()
+
+    if (settingsError || !capperSettings) {
+      console.warn('No settings found for Shiva, using defaults')
+      capperSettings = {
+        capper_name: 'shiva',
+        ai_provider_run1: 'perplexity',
+        ai_provider_run2: 'openai',
+        ai_model_run1: 'sonar-medium-online',
+        ai_model_run2: 'gpt-4o-mini',
+        timing_offset_hours: 4,
+        timing_offset_nfl_hours: 24,
+        min_confidence_to_pick: 7.0,
+        weed_out_filters: [],
+        factor_weights: {},
+        max_statmuse_questions_run1: 2,
+        max_statmuse_questions_run2: 2,
+      }
     }
     
-    console.log('📊 Running AI research...')
-    const orchestrator = getAICapperOrchestrator()
-    const result = await orchestrator.researchGame(mockGame, shivaPersonality)
+    console.log('⚙️ Using settings:', capperSettings)
     
-    console.log('✅ AI research complete!')
-    console.log(`💰 Total cost: $${result.totalCost.toFixed(4)}`)
+    // 4. Initialize AI Orchestrator
+    const orchestrator = new AICapperOrchestrator({
+      capperName: 'shiva',
+      game: game as CapperGame,
+      capperSettings: capperSettings as CapperSettings,
+    })
+    
+    // 5. Run the full AI research pipeline
+    console.log('🤖 Starting AI research pipeline...')
+    const startTime = Date.now()
+    const aiRuns = await orchestrator.runResearchPipeline()
+    const duration = Date.now() - startTime
+    
+    console.log(`✅ AI research complete! (${(duration / 1000).toFixed(2)}s)`)
+    
+    // 6. Generate AI insight
+    console.log('📝 Generating AI insight...')
+    const aiInsight = await orchestrator.generateAIInsight(aiRuns)
     
     return NextResponse.json({
       success: true,
-      message: 'AI Capper test successful',
-      test_game: {
-        matchup: `${mockGame.away_team.name} @ ${mockGame.home_team.name}`,
-        sport: mockGame.sport
+      message: `AI-enhanced Shiva test complete for ${game.away_team.name} @ ${game.home_team.name}`,
+      game: {
+        id: game.id,
+        matchup: `${game.away_team.name} @ ${game.home_team.name}`,
+        sport: game.sport,
+        date: game.game_date,
+        time: game.game_time
       },
-      results: {
+      ai_research: {
         run1: {
-          provider: result.run1.aiProvider,
-          statmuse_questions: result.run1.statmuseQuestions,
-          statmuse_answers: result.run1.statmuseAnswers.map(a => ({
-            question: a.question,
-            answer: a.answer,
-            confidence: a.confidence
-          })),
-          factors_found: Object.keys(result.run1.aiAnalysis.factors || {}).length,
-          cost: result.run1.cost
+          provider: 'Perplexity',
+          model: capperSettings.ai_model_run1,
+          type: aiRuns[0].run_type,
+          factors_found: Object.keys(aiRuns[0].factors).length,
+          statmuse_queries: aiRuns[0].statmuse_queries?.length || 0,
+          duration_ms: aiRuns[0].duration_ms,
+          factors: aiRuns[0].factors
         },
         run2: {
-          provider: result.run2.aiProvider,
-          statmuse_questions: result.run2.statmuseQuestions,
-          statmuse_answers: result.run2.statmuseAnswers.map(a => ({
-            question: a.question,
-            answer: a.answer,
-            confidence: a.confidence
-          })),
-          factors_found: Object.keys(result.run2.aiAnalysis.factors || {}).length,
-          score_prediction: result.scorePrediction,
-          cost: result.run2.cost
+          provider: 'ChatGPT',
+          model: capperSettings.ai_model_run2,
+          type: aiRuns[1].run_type,
+          factors_found: Object.keys(aiRuns[1].factors).length,
+          statmuse_queries: aiRuns[1].statmuse_queries?.length || 0,
+          validation_result: aiRuns[1].validation_result,
+          duration_ms: aiRuns[1].duration_ms,
+          factors: aiRuns[1].factors
         },
-        total_cost: result.totalCost,
-        writeup_preview: result.writeup?.substring(0, 200) + '...',
-        bold_prediction: result.boldPrediction
-      }
+        total_duration_ms: duration
+      },
+      ai_insight: aiInsight,
+      performance: {
+        total_duration_seconds: (duration / 1000).toFixed(2),
+        estimated_cost_usd: 0.007 // Rough estimate
+      },
+      next_steps: [
+        'Check the ai_research_runs table in your database to see the stored data',
+        'Run POST /api/run-shiva to generate actual picks with AI enhancement',
+        'Check the picks table to see AI insights stored with picks'
+      ]
     })
     
   } catch (error) {
