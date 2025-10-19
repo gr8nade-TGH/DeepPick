@@ -1805,7 +1805,47 @@ ${cronJobStatuses.filter(j => j.last_run_status === 'failed').length > 2 ? '⚠�
                               <p className="text-xs text-gray-500">Confidence Score: {pickTestResult.pick.confidence}/10</p>
                             </div>
 
-                            {pickTestResult.pick.reasoning && pickTestResult.pick.reasoning.length > 0 ? (
+                            {pickTestResult.pick.analysisSteps && pickTestResult.pick.analysisSteps.length > 0 ? (
+                              pickTestResult.pick.analysisSteps.map((step: any, idx: number) => {
+                                // Calculate score contribution (approximation based on impact)
+                                const impactScore = step.impact === 'positive' ? 1.5 : step.impact === 'negative' ? -0.5 : 0.5
+                                const score = Math.abs(impactScore)
+                                const percentage = ((score / pickTestResult.pick.confidence) * 100).toFixed(0)
+                                const icons = ['🏈', '📊', '🎯', '⚡', '🔥', '💪', '🌟', '⚙️', '📈', '🎲']
+                                const isNegative = step.impact === 'negative'
+                                
+                                return (
+                                  <div key={idx} className="p-3 bg-gray-800/50 rounded-lg border border-gray-700 hover:border-gray-600 transition-colors">
+                                    <div className="flex items-start gap-3 mb-2">
+                                      <span className="text-2xl">{icons[idx % icons.length]}</span>
+                                      <div className="flex-1">
+                                        <div className="flex items-center justify-between mb-1">
+                                          <p className="text-sm font-semibold text-white">{step.title}</p>
+                                          <div className="flex items-center gap-2">
+                                            <span className={`text-xs font-mono ${isNegative ? 'text-red-400' : 'text-green-400'}`}>
+                                              {isNegative ? '-' : '+'}{score.toFixed(1)}
+                                            </span>
+                                            <span className="text-xs text-gray-500">({percentage}%)</span>
+                                          </div>
+                                        </div>
+                                        <p className="text-xs text-gray-400">{step.description}</p>
+                                        {step.result && (
+                                          <p className="text-xs text-blue-400 mt-1">→ {step.result}</p>
+                                        )}
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Power Bar */}
+                                    <div className="relative w-full h-2 bg-gray-900 rounded-full overflow-hidden">
+                                      <div 
+                                        className={`absolute top-0 left-0 h-full ${isNegative ? 'bg-gradient-to-r from-red-500 to-orange-400' : 'bg-gradient-to-r from-green-500 to-emerald-400'} rounded-full transition-all duration-500`}
+                                        style={{ width: `${Math.min(Math.abs(score) * 10, 100)}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                )
+                              })
+                            ) : pickTestResult.pick.reasoning && pickTestResult.pick.reasoning.length > 0 ? (
                               pickTestResult.pick.reasoning.map((reason: string, idx: number) => {
                                 const mockScores = [3.5, 2.8, 2.2, 1.5]
                                 const score = mockScores[idx] || 1.0

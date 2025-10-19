@@ -109,12 +109,40 @@ export async function POST() {
       testSteps.push(`✅ Found ${oddsHistory.length} odds records`)
     }
     
-    // 6. Run Shiva algorithm
+    // 6. Check if Shiva has AI settings configured
+    testSteps.push('🔍 Checking Shiva AI configuration...')
+    const { data: shivaSettings, error: settingsError } = await supabase
+      .from('capper_settings')
+      .select('*')
+      .eq('capper_name', 'shiva')
+      .single()
+    
+    if (settingsError || !shivaSettings) {
+      testSteps.push('❌ WARNING: No capper_settings found for Shiva!')
+      testSteps.push('   AI research will be SKIPPED')
+      testSteps.push('   Algorithm will run with baseline factors only')
+      testSteps.push('   To fix: Run migration 012_ai_capper_system.sql')
+      return NextResponse.json({
+        success: false,
+        error: 'Shiva capper_settings not configured in database',
+        testSteps,
+        hint: 'Run: supabase/migrations/012_ai_capper_system.sql'
+      }, { status: 500 })
+    }
+    
+    testSteps.push(`✅ Shiva AI settings found:`)
+    testSteps.push(`   - AI Run 1: ${shivaSettings.ai_provider_run1} (${shivaSettings.ai_model_run1})`)
+    testSteps.push(`   - AI Run 2: ${shivaSettings.ai_provider_run2} (${shivaSettings.ai_model_run2})`)
+    testSteps.push(`   - Min Confidence: ${shivaSettings.min_confidence_to_pick}/10`)
+    testSteps.push(`   - StatMuse Questions: ${shivaSettings.max_statmuse_questions_run1} + ${shivaSettings.max_statmuse_questions_run2}`)
+    
+    // 7. Run Shiva algorithm
     testSteps.push('🤖 Running Shiva algorithm (with AI enhancement)...')
     testSteps.push('  - Phase 1: Baseline factor analysis')
     testSteps.push('  - Phase 2: AI research (Perplexity + ChatGPT)')
     testSteps.push('  - Phase 3: Vegas comparison')
     testSteps.push('  - Phase 4: Confidence calculation')
+    testSteps.push('  ⏳ This may take 30-60 seconds for AI calls...')
     
     // Prepare arguments for analyzeBatch
     const maxPicks = 1 // Only generate 1 pick for testing
@@ -184,18 +212,28 @@ export async function POST() {
       })
     }
     
-    // 8. Pick was generated!
-    const pickResult = results[0]
-    const pick = pickResult.pick
-    const log = pickResult.log
-    
-    testSteps.push('✅ Pick generated!')
-    testSteps.push(`  - Pick Type: ${pick.pickType}`)
-    testSteps.push(`  - Selection: ${pick.selection}`)
-    testSteps.push(`  - Confidence: ${pick.confidence}/10`)
-    testSteps.push(`  - Units: ${pick.units}`)
-    testSteps.push(`  - Odds: ${pick.odds}`)
-    testSteps.push(`  - Score Prediction: ${log.finalPrediction.awayScore}-${log.finalPrediction.homeScore}`)
+        // 8. Pick was generated!
+        const pickResult = results[0]
+        const pick = pickResult.pick
+        const log = pickResult.log
+        
+        testSteps.push('✅ Pick generated!')
+        testSteps.push(`  - Pick Type: ${pick.pickType}`)
+        testSteps.push(`  - Selection: ${pick.selection}`)
+        testSteps.push(`  - Confidence: ${pick.confidence}/10`)
+        testSteps.push(`  - Units: ${pick.units}`)
+        testSteps.push(`  - Odds: ${pick.odds}`)
+        testSteps.push(`  - Score Prediction: ${log.finalPrediction.awayScore}-${log.finalPrediction.homeScore}`)
+        
+        // Show AI research details
+        if (log.aiResearch && log.aiResearch.runs > 0) {
+          testSteps.push(`📊 AI Research:`)
+          testSteps.push(`   - AI Runs: ${log.aiResearch.runs}`)
+          testSteps.push(`   - Factors Found: ${log.aiResearch.factorCount}`)
+          testSteps.push(`   - Confidence Boost: +${log.aiResearch.confidenceBoost.toFixed(2)}`)
+        } else {
+          testSteps.push(`⚠️  AI Research: No AI runs (settings missing or error)`)
+        }
     
     // 9. Check if it was saved to database
     const { data: savedPick } = await supabase
@@ -240,7 +278,11 @@ export async function POST() {
           winner: log.finalPrediction.winner
         },
         reasoning: pick.reasoning,
-        vegasComparison: log.vegasComparison
+        vegasComparison: log.vegasComparison,
+        // AI Research details for transparency
+        aiResearch: log.aiResearch || null,
+        // All factors and analysis steps
+        analysisSteps: log.steps || []
       },
       database: {
         saved: !!savedPick,
