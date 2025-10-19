@@ -506,16 +506,21 @@ async function analyzeGame(
 export async function analyzeBatch(
   games: CapperGame[],
   maxPicks: number,
-  existingPicksByGame: Map<string, Set<string>>
+  existingPicksByGame: Map<string, Set<string>>,
+  options?: { skipTimeValidation?: boolean }
 ): Promise<Array<{ pick: CapperPick; log: PredictionLog }>> {
   const results: Array<{ pick: CapperPick; log: PredictionLog }> = []
   
   for (const game of games) {
-    // CRITICAL: Validate game timing before analysis
-    const timeValidation = validateGameTiming(game, 15)
-    if (!timeValidation.isValid) {
-      console.log(`[SHIVA] Skipping ${game.away_team?.name} @ ${game.home_team?.name}: ${timeValidation.reason}`)
-      continue
+    // CRITICAL: Validate game timing before analysis (unless testing)
+    if (!options?.skipTimeValidation) {
+      const timeValidation = validateGameTiming(game, 15)
+      if (!timeValidation.isValid) {
+        console.log(`[SHIVA] Skipping ${game.away_team?.name} @ ${game.home_team?.name}: ${timeValidation.reason}`)
+        continue
+      }
+    } else {
+      console.log(`[SHIVA TEST MODE] Bypassing timing validation for ${game.away_team?.name} @ ${game.home_team?.name}`)
     }
     
     const existingPickTypes = existingPicksByGame.get(game.id) || new Set()

@@ -5,6 +5,7 @@ import OpenAI from 'openai'
 import { env } from '@/lib/env'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { CapperSettings, AIRunResult, AIRunFactors, AIInsight } from '@/types'
+import { logApiCall } from '@/lib/monitoring/api-logger'
 
 interface OrchestratorOptions {
   capperName: string

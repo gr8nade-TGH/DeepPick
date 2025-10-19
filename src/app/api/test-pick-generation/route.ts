@@ -122,20 +122,31 @@ export async function POST() {
     
     console.log('🎯 About to run analyzeBatch for game:', gameToAnalyze.id)
     testSteps.push(`🎯 Running algorithm for game ID: ${gameToAnalyze.id}`)
+    testSteps.push(`⚠️  TEST MODE: Bypassing 15-hour timing validation`)
+    testSteps.push(`📅 Game time: ${gameToAnalyze.game_date} ${gameToAnalyze.game_time}`)
     
     const startTime = Date.now()
     let results
     let duration = 0
     
     try {
-      results = await analyzeBatch([gameToAnalyze], maxPicks, existingPicksByGame)
+      testSteps.push(`🔍 Starting detailed game analysis...`)
+      
+      // Use skipTimeValidation flag for testing
+      results = await analyzeBatch([gameToAnalyze], maxPicks, existingPicksByGame, { skipTimeValidation: true })
       duration = Date.now() - startTime
-      testSteps.push(`✅ Algorithm complete (${(duration / 1000).toFixed(2)}s)`)
-      console.log('✅ analyzeBatch returned:', results)
+      
+      if (results && results.length > 0) {
+        testSteps.push(`✅ Algorithm complete - Pick generated! (${(duration / 1000).toFixed(2)}s)`)
+      } else {
+        testSteps.push(`✅ Algorithm complete - No pick (confidence too low) (${(duration / 1000).toFixed(2)}s)`)
+      }
+      
+      console.log('✅ Algorithm returned:', results)
     } catch (algoError) {
       duration = Date.now() - startTime
       testSteps.push(`❌ Algorithm error: ${algoError instanceof Error ? algoError.message : String(algoError)}`)
-      console.error('❌ analyzeBatch error:', algoError)
+      console.error('❌ Algorithm error:', algoError)
       throw algoError
     }
     
