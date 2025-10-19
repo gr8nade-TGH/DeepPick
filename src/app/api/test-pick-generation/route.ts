@@ -109,7 +109,21 @@ export async function POST() {
       testSteps.push(`✅ Found ${oddsHistory.length} odds records`)
     }
     
-    // 6. Check if Shiva has AI settings configured
+    // 6. CRITICAL: Delete old AI research runs for this game
+    testSteps.push('🧹 Cleaning up old AI research runs...')
+    const { error: deleteError } = await supabase
+      .from('ai_research_runs')
+      .delete()
+      .eq('game_id', gameToAnalyze.id)
+      .eq('capper', 'shiva')
+    
+    if (deleteError) {
+      console.warn('⚠️ Could not delete old AI runs:', deleteError)
+    } else {
+      testSteps.push('✅ Old AI runs deleted - will run fresh research')
+    }
+    
+    // 7. Check if Shiva has AI settings configured
     testSteps.push('🔍 Checking Shiva AI configuration...')
     const { data: shivaSettings, error: settingsError } = await supabase
       .from('capper_settings')
