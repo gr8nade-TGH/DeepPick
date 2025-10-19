@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { shivaAlgorithm } from '@/lib/cappers/shiva-algorithm'
+import { analyzeBatch } from '@/lib/cappers/shiva-algorithm'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
@@ -114,7 +114,7 @@ export async function POST() {
     testSteps.push('  - Phase 4: Confidence calculation')
     
     const startTime = Date.now()
-    const result = await shivaAlgorithm.analyzeBatch([gameToAnalyze])
+    const result = await analyzeBatch([gameToAnalyze])
     const duration = Date.now() - startTime
     
     testSteps.push(`✅ Algorithm complete (${(duration / 1000).toFixed(2)}s)`)
