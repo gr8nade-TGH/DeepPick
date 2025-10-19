@@ -1,12 +1,12 @@
 {
   "crons": [
     {
-      "path": "/api/auto-refresh-odds",
-      "schedule": "*/15 * * * *"
+      "path": "/api/simple-ingest",
+      "schedule": "*/5 * * * *"
     },
     {
-      "path": "/api/auto-run-cappers",
-      "schedule": "*/20 * * * *"
+      "path": "/api/fetch-scores",
+      "schedule": "*/15 * * * *"
     }
   ]
 }
