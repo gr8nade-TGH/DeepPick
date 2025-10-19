@@ -1,19 +1,41 @@
-### ai_research_runs table (NEW)
-```sql
-CREATE TABLE ai_research_runs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  game_id UUID REFERENCES games(id),
-  capper TEXT, -- 'shiva', 'ifrit', etc.
-  run_number INTEGER, -- 1, 2, or 3
-  run_type TEXT, -- 'analytical', 'strategic', 'realtime_validation'
-  factors JSONB, -- 2 factors per run
-  validation_result JSONB, -- Only for run 3
-  odds_at_run JSONB, -- Snapshot of odds when run executed
-  timestamp TIMESTAMPTZ DEFAULT NOW(),
-  
-  UNIQUE(game_id, capper, run_number)
-);
+# AI-Enhanced Capper System - Complete Implementation Guide
 
-CREATE INDEX idx_ai_runs_game ON ai_research_runs(game_id);
-CREATE INDEX idx_ai_runs_capper ON ai_research_runs(capper);
-```
+## Overview
+This document outlines the complete pick generation process for AI-enhanced cappers. Each capper (Shiva, Ifrit, Cerberus, Nexus, DeepPick) follows this framework but with unique personality and factor preferences.
+
+**Priority:** Best possible predictions (accuracy over speed/cost)
+
+---
+
+## System Architecture
+
+### Cappers
+1. **SHIVA** - Multi-Model Destroyer (Phase 1 implementation)
+2. **IFRIT** - Aggressive Value Hunter
+3. **CERBERUS** - Three-Headed Guardian
+4. **NEXUS** - Pattern Recognition
+5. **DEEPPICK** - Meta-Capper (weighs all other cappers' picks)
+
+### AI Providers (Future: Named cappers by AI used)
+- **Phase 1:** Perplexity (understand costs first)
+- **Future:** GPT-4 Capper, Claude Capper, Gemini Capper (compare which AI is best at betting)
+
+### Budget
+- **Target:** $40/month
+- **Maximum:** $100/month
+- **Current:** Shiva only (scale after validation)
+- **At Scale (5 cappers):** Need cost optimization
+
+---
+
+## APPENDIX A: Pro Bettor Research Task
+
+**Task:** AI research on successful professional sports bettors and their methodologies to inform capper personalities.
+
+**To be completed next...**
+
+---
+
+*Full template continues with all 5 phases, database schemas, implementation checklist, etc.*
+
+*See complete version in our conversation history - will be fully written during implementation.*
