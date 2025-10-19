@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { logApiCall, logIngestion, GameChangeDetail } from '@/lib/monitoring/api-logger'
 import { getTeamAbbreviation } from '@/lib/team-abbreviations'
+import { logCronJobExecution } from '@/lib/monitoring/cron-logger'
 
 // Map API sport keys to database enum values
 function mapSportKey(apiSportKey: string): string {
@@ -56,15 +57,21 @@ function hasOddsChanged(beforeOdds: any, afterOdds: any, market: 'moneyline' | '
 }
 
 export async function GET() {
+  const cronStartTime = Date.now()
+  let cronSuccess = false
+  let cronError: string | undefined
+  
   try {
     console.log('🚀 Simple odds ingestion starting...')
     
     const oddsApiKey = process.env.THE_ODDS_API_KEY
 
     if (!oddsApiKey) {
+      cronError = 'THE_ODDS_API_KEY not found'
+      await logCronJobExecution('odds_ingestion', false, Date.now() - cronStartTime, cronError)
       return NextResponse.json({
         success: false,
-        error: 'THE_ODDS_API_KEY not found'
+        error: cronError
       })
     }
 
@@ -438,6 +445,10 @@ export async function GET() {
       console.warn('⚠️ Could not log ingestion (table may not exist yet):', logError)
     }
     
+    // Log successful cron execution
+    cronSuccess = true
+    await logCronJobExecution('odds_ingestion', true, Date.now() - cronStartTime)
+    
     return NextResponse.json({
       success: true,
       message: `Processed ${totalEvents} events: ${storedCount} new, ${updatedCount} updated, ${historyCount} history records`,
@@ -449,9 +460,11 @@ export async function GET() {
 
   } catch (error) {
     console.error('❌ Error:', error)
+    cronError = error instanceof Error ? error.message : 'Unknown error'
+    await logCronJobExecution('odds_ingestion', false, Date.now() - cronStartTime, cronError)
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: cronError
     })
   }
 }

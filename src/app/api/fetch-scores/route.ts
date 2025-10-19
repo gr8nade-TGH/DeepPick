@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
+import { logCronJobExecution } from '@/lib/monitoring/cron-logger'
 
 // Map API sport keys to database enum values
 function mapSportKey(apiSportKey: string): string {
@@ -14,15 +15,21 @@ function mapSportKey(apiSportKey: string): string {
 }
 
 async function fetchScoresHandler() {
+  const cronStartTime = Date.now()
+  let cronSuccess = false
+  let cronError: string | undefined
+  
   try {
     console.log('🏆 Starting score fetch process...')
     
     const oddsApiKey = process.env.THE_ODDS_API_KEY
 
     if (!oddsApiKey) {
+      cronError = 'THE_ODDS_API_KEY not found'
+      await logCronJobExecution('score_fetching', false, Date.now() - cronStartTime, cronError)
       return NextResponse.json({
         success: false,
-        error: 'THE_ODDS_API_KEY not found'
+        error: cronError
       }, { status: 500 })
     }
 
@@ -185,6 +192,10 @@ async function fetchScoresHandler() {
       }
     }
 
+    // Log successful cron execution
+    cronSuccess = true
+    await logCronJobExecution('score_fetching', true, Date.now() - cronStartTime)
+    
     return NextResponse.json({
       success: true,
       message: `Updated ${updatedCount} games with final scores`,
@@ -195,9 +206,11 @@ async function fetchScoresHandler() {
 
   } catch (error) {
     console.error('❌ Error:', error)
+    cronError = error instanceof Error ? error.message : 'Unknown error'
+    await logCronJobExecution('score_fetching', false, Date.now() - cronStartTime, cronError)
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: cronError
     }, { status: 500 })
   }
 }
