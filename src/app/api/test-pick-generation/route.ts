@@ -250,6 +250,15 @@ export async function POST() {
         const pick = pickResult.pick
         const log = pickResult.log
         
+        // TypeScript null safety check
+        if (!pick) {
+          return NextResponse.json({
+            success: false,
+            error: 'Pick object is null despite being in results array',
+            testSteps
+          }, { status: 500 })
+        }
+        
         testSteps.push('✅ Pick generated!')
         testSteps.push(`  - Pick Type: ${pick.pickType}`)
         testSteps.push(`  - Selection: ${pick.selection}`)
