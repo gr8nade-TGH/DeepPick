@@ -611,8 +611,8 @@ export async function analyzeBatch(
   maxPicks: number,
   existingPicksByGame: Map<string, Set<string>>,
   options?: { skipTimeValidation?: boolean }
-): Promise<Array<{ pick: CapperPick; log: PredictionLog }>> {
-  const results: Array<{ pick: CapperPick; log: PredictionLog }> = []
+): Promise<Array<{ pick: CapperPick | null; log: PredictionLog }>> {
+  const results: Array<{ pick: CapperPick | null; log: PredictionLog }> = []
   
   for (const game of games) {
     // CRITICAL: Validate game timing before analysis (unless testing)
@@ -629,13 +629,23 @@ export async function analyzeBatch(
     const existingPickTypes = existingPicksByGame.get(game.id) || new Set()
     const result = await analyzeGame(game, existingPickTypes)
     
-    if (result.pick) {
-      results.push({ pick: result.pick, log: result.log })
-    }
+    // ALWAYS push the result, even if no pick was generated
+    // This allows us to see factors and analysis even when confidence is too low
+    results.push({ pick: result.pick, log: result.log })
   }
   
-  return results
-    .sort((a, b) => b.pick.confidence - a.pick.confidence)
+  // Only sort and limit picks that were actually generated
+  const picksOnly = results
+    .filter(r => r.pick !== null)
+    .sort((a, b) => b.pick!.confidence - a.pick!.confidence)
     .slice(0, maxPicks)
+  
+  // For testing, return all results (including non-picks) so we can see analysis
+  // In production (run-shiva), we only return actual picks
+  if (options?.skipTimeValidation) {
+    return results // Return everything for testing
+  }
+  
+  return picksOnly
 }
 

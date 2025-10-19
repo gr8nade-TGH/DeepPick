@@ -2064,12 +2064,25 @@ ${cronJobStatuses.filter(j => j.last_run_status === 'failed').length > 2 ? '⚠�
                       </Card>
                       </>
                     ) : (
+                      <>
                       <Card className="glass-effect border-yellow-500/30">
                         <CardHeader>
-                          <CardTitle className="text-yellow-400">⚠️ No Pick Generated</CardTitle>
+                          <CardTitle className="text-yellow-400">⚠️ No Pick Generated (But Factors Analyzed!)</CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <p className="text-gray-300">{pickTestResult.result?.reason || 'Confidence below threshold'}</p>
+                          <p className="text-gray-300 mb-4">{pickTestResult.result?.reason || 'Confidence below threshold'}</p>
+                          
+                          {/* Show why no pick was made */}
+                          <div className="p-4 bg-yellow-900/20 border border-yellow-500/30 rounded-lg mb-4">
+                            <p className="text-sm text-yellow-200 mb-2">
+                              <strong>The algorithm analyzed the game but confidence was too low to generate a pick.</strong>
+                            </p>
+                            <p className="text-xs text-gray-400">
+                              This is GOOD - Shiva is being selective and only picks when there's a strong edge.
+                              See the factor breakdown below to understand why confidence was low.
+                            </p>
+                          </div>
+                          
                           {pickTestResult.result && (
                             <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
                               <div>
@@ -2084,6 +2097,66 @@ ${cronJobStatuses.filter(j => j.last_run_status === 'failed').length > 2 ? '⚠�
                           )}
                         </CardContent>
                       </Card>
+                      
+                      {/* Factor Analysis for No Pick */}
+                      {pickTestResult.result?.factors && pickTestResult.result.factors.length > 0 && (
+                        <Card className="glass-effect border-purple-500/30">
+                          <CardHeader>
+                            <CardTitle className="text-purple-400">💡 Factor Breakdown (Why No Pick)</CardTitle>
+                            <p className="text-sm text-gray-400 mt-2">
+                              Final Confidence: {pickTestResult.result.confidence?.toFixed(2) || '0'}/10 (need 7.0+)
+                            </p>
+                          </CardHeader>
+                          <CardContent className="space-y-3">
+                            {pickTestResult.result.factors
+                              .sort((a: any, b: any) => Math.abs(b.weightedScore) - Math.abs(a.weightedScore))
+                              .map((factor: any, idx: number) => {
+                                const isNegative = factor.weightedScore < 0
+                                const isNeutral = Math.abs(factor.weightedScore) < 0.1
+                                const categoryIcons: any = {
+                                  vegas: '🎰',
+                                  ai_research: '🤖',
+                                  form: '📈',
+                                  matchup: '⚔️',
+                                  context: '🌍'
+                                }
+                                const icon = categoryIcons[factor.category] || '📊'
+                                
+                                return (
+                                  <div key={idx} className={`p-3 rounded-lg border ${
+                                    isNegative ? 'bg-red-900/10 border-red-500/30' :
+                                    isNeutral ? 'bg-gray-800/50 border-gray-700' :
+                                    'bg-green-900/10 border-green-500/30'
+                                  }`}>
+                                    <div className="flex items-start gap-2 mb-2">
+                                      <span className="text-2xl">{icon}</span>
+                                      <div className="flex-1">
+                                        <div className="flex items-center justify-between mb-1">
+                                          <p className="text-sm font-bold text-white">{factor.name}</p>
+                                          <span className={`text-sm font-mono ${isNegative ? 'text-red-400' : isNeutral ? 'text-gray-400' : 'text-green-400'}`}>
+                                            {factor.weightedScore >= 0 ? '+' : ''}{factor.weightedScore.toFixed(2)}
+                                          </span>
+                                        </div>
+                                        <p className="text-xs text-gray-400">{factor.reasoning}</p>
+                                      </div>
+                                    </div>
+                                    <div className="relative w-full h-2 bg-gray-900 rounded-full overflow-hidden">
+                                      <div 
+                                        className={`absolute top-0 left-0 h-full rounded-full ${
+                                          isNegative ? 'bg-gradient-to-r from-red-600 to-orange-500' :
+                                          isNeutral ? 'bg-gray-600' :
+                                          'bg-gradient-to-r from-green-600 to-emerald-400'
+                                        }`}
+                                        style={{ width: `${Math.min((Math.abs(factor.weightedScore) / factor.weight) * 100, 100)}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                          </CardContent>
+                        </Card>
+                      )}
+                      </>
                     )}
 
                     {/* Performance */}

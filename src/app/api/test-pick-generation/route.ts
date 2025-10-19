@@ -159,13 +159,24 @@ export async function POST() {
     
     try {
       testSteps.push(`🔍 Starting detailed game analysis...`)
+      testSteps.push(`   ⏳ Phase 1: Baseline prediction (3-model consensus)`)
+      testSteps.push(`   ⏳ Phase 2: AI Research (Perplexity + ChatGPT) - 30-60s`)
+      testSteps.push(`   ⏳ Phase 3: Factor scoring & confidence calculation`)
+      testSteps.push(`   ⏳ Phase 4: Threshold check (need 7.0+ to pick)`)
       
       // Use skipTimeValidation flag for testing
       results = await analyzeBatch([gameToAnalyze], maxPicks, existingPicksByGame, { skipTimeValidation: true })
       duration = Date.now() - startTime
       
+      // Check if we got results
       if (results && results.length > 0) {
-        testSteps.push(`✅ Algorithm complete - Pick generated! (${(duration / 1000).toFixed(2)}s)`)
+        const result = results[0]
+        if (result.pick) {
+          testSteps.push(`✅ Algorithm complete - Pick generated! (${(duration / 1000).toFixed(2)}s)`)
+        } else {
+          testSteps.push(`✅ Algorithm complete - No pick (confidence too low) (${(duration / 1000).toFixed(2)}s)`)
+          testSteps.push(`   📊 But factors were still analyzed - see below!`)
+        }
       } else {
         testSteps.push(`✅ Algorithm complete - No pick (confidence too low) (${(duration / 1000).toFixed(2)}s)`)
       }
@@ -179,8 +190,23 @@ export async function POST() {
     }
     
     // 7. Check result
-    if (!results || results.length === 0) {
-      testSteps.push('📊 Result: No pick generated (confidence below threshold or game filtered out)')
+    const result = results && results.length > 0 ? results[0] : null
+    
+    if (!result || !result.pick) {
+      // No pick was generated, BUT we have the log with all the factors!
+      const log = result?.log
+      
+      testSteps.push('📊 Result: No pick generated (confidence below threshold)')
+      
+      if (log) {
+        const totalConfidence = log.confidenceBreakdown.finalConfidence
+        const factorCount = log.factors?.length || 0
+        const aiRunCount = log.aiResearch ? 2 : 0
+        
+        testSteps.push(`   📈 Confidence Score: ${totalConfidence.toFixed(2)}/10 (need 7.0+)`)
+        testSteps.push(`   📊 Factors Analyzed: ${factorCount}`)
+        testSteps.push(`   🤖 AI Research Runs: ${aiRunCount}`)
+      }
       
       return NextResponse.json({
         success: true,
@@ -195,19 +221,26 @@ export async function POST() {
         },
         result: {
           pick_generated: false,
-          reason: 'Confidence below minimum threshold (< 7.0)',
-          factors_analyzed: 0,
-          ai_research_runs: 0,
+          reason: `Confidence below minimum threshold (${log?.confidenceBreakdown.finalConfidence.toFixed(2) || '0'}/10, need 7.0+)`,
+          confidence: log?.confidenceBreakdown.finalConfidence || 0,
+          factors_analyzed: log?.factors?.length || 0,
+          ai_research_runs: log?.aiResearch ? 2 : 0,
+          // Include the factors for display!
+          factors: log?.factors || [],
+          analysisSteps: log?.steps || [],
+          aiResearch: log?.aiResearch || null,
+          vegasComparison: log?.vegasComparison || null
         },
         performance: {
           duration_seconds: (duration / 1000).toFixed(2),
           estimated_cost_usd: 0.007
         },
         next_steps: [
-          'The algorithm worked correctly but confidence was too low',
-          'Try running on a different game with more favorable conditions',
-          'Check the ai_research_runs table to see AI analysis data',
-          'Adjust min_confidence_to_pick in capper_settings if needed'
+          '✅ The algorithm worked correctly - it\'s just being selective!',
+          `📊 Analyzed ${log?.factors?.length || 0} factors with final confidence: ${log?.confidenceBreakdown.finalConfidence.toFixed(2) || '0'}/10`,
+          '🎯 This is GOOD - we only want high-confidence picks (7.0+)',
+          '💡 Check the factors below to see what contributed to the score',
+          '📋 Negative factors (red) hurt the pick, positive factors (green) helped'
         ]
       })
     }
