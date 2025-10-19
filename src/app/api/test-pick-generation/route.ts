@@ -77,6 +77,9 @@ export async function POST() {
     const gameToAnalyze = unanalyzedGames[0] || games[0]
     const isReanalysis = analyzedGameIds.has(gameToAnalyze.id)
     
+    const awayTeam = typeof gameToAnalyze.away_team === 'string' ? gameToAnalyze.away_team : gameToAnalyze.away_team?.name || 'Away Team'
+    const homeTeam = typeof gameToAnalyze.home_team === 'string' ? gameToAnalyze.home_team : gameToAnalyze.home_team?.name || 'Home Team'
+    
     if (isReanalysis) {
       testSteps.push('⚠️  Testing with already-analyzed game (for demo purposes)')
       // Clean up old pick for testing
@@ -89,7 +92,7 @@ export async function POST() {
       testSteps.push('🧹 Cleaned up old pick for testing')
     }
     
-    testSteps.push(`📊 Selected game: ${gameToAnalyze.away_team} @ ${gameToAnalyze.home_team}`)
+    testSteps.push(`📊 Selected game: ${awayTeam} @ ${homeTeam}`)
     
     // 5. Fetch current odds for this game
     testSteps.push('Fetching current odds...')
@@ -117,15 +120,28 @@ export async function POST() {
     const maxPicks = 1 // Only generate 1 pick for testing
     const existingPicksByGame = new Map<string, Set<string>>()
     
-    const startTime = Date.now()
-    const results = await analyzeBatch([gameToAnalyze], maxPicks, existingPicksByGame)
-    const duration = Date.now() - startTime
+    console.log('🎯 About to run analyzeBatch for game:', gameToAnalyze.id)
+    testSteps.push(`🎯 Running algorithm for game ID: ${gameToAnalyze.id}`)
     
-    testSteps.push(`✅ Algorithm complete (${(duration / 1000).toFixed(2)}s)`)
+    const startTime = Date.now()
+    let results
+    let duration = 0
+    
+    try {
+      results = await analyzeBatch([gameToAnalyze], maxPicks, existingPicksByGame)
+      duration = Date.now() - startTime
+      testSteps.push(`✅ Algorithm complete (${(duration / 1000).toFixed(2)}s)`)
+      console.log('✅ analyzeBatch returned:', results)
+    } catch (algoError) {
+      duration = Date.now() - startTime
+      testSteps.push(`❌ Algorithm error: ${algoError instanceof Error ? algoError.message : String(algoError)}`)
+      console.error('❌ analyzeBatch error:', algoError)
+      throw algoError
+    }
     
     // 7. Check result
     if (!results || results.length === 0) {
-      testSteps.push('📊 Result: No pick generated (confidence below threshold)')
+      testSteps.push('📊 Result: No pick generated (confidence below threshold or game filtered out)')
       
       return NextResponse.json({
         success: true,
@@ -133,7 +149,7 @@ export async function POST() {
         testSteps,
         game: {
           id: gameToAnalyze.id,
-          matchup: `${gameToAnalyze.away_team} @ ${gameToAnalyze.home_team}`,
+          matchup: `${typeof gameToAnalyze.away_team === 'string' ? gameToAnalyze.away_team : gameToAnalyze.away_team?.name || 'Away Team'} @ ${typeof gameToAnalyze.home_team === 'string' ? gameToAnalyze.home_team : gameToAnalyze.home_team?.name || 'Home Team'}`,
           sport: gameToAnalyze.sport,
           date: gameToAnalyze.game_date,
           time: gameToAnalyze.game_time
@@ -186,13 +202,16 @@ export async function POST() {
     
     testSteps.push('✅ Test complete!')
     
+    const awayTeamName = typeof gameToAnalyze.away_team === 'string' ? gameToAnalyze.away_team : gameToAnalyze.away_team?.name || 'Away Team'
+    const homeTeamName = typeof gameToAnalyze.home_team === 'string' ? gameToAnalyze.home_team : gameToAnalyze.home_team?.name || 'Home Team'
+    
     return NextResponse.json({
       success: true,
-      message: `Shiva generated a pick for ${gameToAnalyze.away_team} @ ${gameToAnalyze.home_team}`,
+      message: `Shiva generated a pick for ${awayTeamName} @ ${homeTeamName}`,
       testSteps,
       game: {
         id: gameToAnalyze.id,
-        matchup: `${gameToAnalyze.away_team} @ ${gameToAnalyze.home_team}`,
+        matchup: `${awayTeamName} @ ${homeTeamName}`,
         sport: gameToAnalyze.sport,
         date: gameToAnalyze.game_date,
         time: gameToAnalyze.game_time

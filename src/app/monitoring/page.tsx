@@ -947,7 +947,10 @@ ${cronJobStatuses.filter(j => j.last_run_status === 'failed').length > 2 ? 'тЪая
                 <div>
                   <p className="text-xs text-gray-400">Perplexity AI</p>
                   <p className="text-2xl font-bold text-pink-400">
-                    0
+                    {apiCalls.filter(call => 
+                      call.api_provider?.toLowerCase() === 'perplexity' &&
+                      new Date(call.created_at).toDateString() === new Date().toDateString()
+                    ).length}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">runs today</p>
                 </div>
@@ -962,7 +965,10 @@ ${cronJobStatuses.filter(j => j.last_run_status === 'failed').length > 2 ? 'тЪая
                 <div>
                   <p className="text-xs text-gray-400">OpenAI GPT</p>
                   <p className="text-2xl font-bold text-cyan-400">
-                    0
+                    {apiCalls.filter(call => 
+                      call.api_provider?.toLowerCase() === 'openai' &&
+                      new Date(call.created_at).toDateString() === new Date().toDateString()
+                    ).length}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">runs today</p>
                 </div>
