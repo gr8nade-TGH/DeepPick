@@ -58,40 +58,29 @@ export async function POST() {
       const mockGame: CapperGame = {
         id: 'test-game-' + Date.now(),
         sport: 'nba',
-        league: 'NBA',
         home_team: {
-          id: 'lal',
           name: 'Los Angeles Lakers',
-          abbreviation: 'LAL',
-          city: 'Los Angeles'
+          abbreviation: 'LAL'
         },
         away_team: {
-          id: 'bos',
           name: 'Boston Celtics',
-          abbreviation: 'BOS',
-          city: 'Boston'
+          abbreviation: 'BOS'
         },
         game_date: new Date().toISOString().split('T')[0],
         game_time: '19:30:00',
         status: 'scheduled',
-        venue: 'Crypto.com Arena',
         odds: {
-          moneyline: { home: -150, away: +130 },
-          spread: { 
-            home: -3.5, 
-            away: +3.5,
-            home_line: -110,
-            away_line: -110
+          draftkings: {
+            moneyline: { home: -150, away: +130 },
+            spread: { home: -110, away: -110, line: -3.5 },
+            total: { over: -110, under: -110, line: 225.5 }
           },
-          total: { 
-            line: 225.5, 
-            over: -110, 
-            under: -110 
-          },
-          last_updated: new Date().toISOString()
-        },
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+          fanduel: {
+            moneyline: { home: -145, away: +125 },
+            spread: { home: -110, away: -110, line: -3.5 },
+            total: { over: -110, under: -110, line: 225.5 }
+          }
+        }
       }
       
       // Upsert mock game to DB

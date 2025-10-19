@@ -400,17 +400,57 @@ Make it engaging, professional, and data-driven. Example:
    * Generates a rich context string for the AI to analyze
    */
   private getGameContextForAI(): string {
+    // Get average odds from all bookmakers
+    const bookmakers = Object.keys(this.game.odds || {})
+    let avgMoneylineHome = 'N/A'
+    let avgMoneylineAway = 'N/A'
+    let avgSpreadLine = 'N/A'
+    let avgSpreadHome = 'N/A'
+    let avgTotalLine = 'N/A'
+    let avgTotalOver = 'N/A'
+
+    if (bookmakers.length > 0) {
+      const mlHome: number[] = []
+      const mlAway: number[] = []
+      const spreadLines: number[] = []
+      const spreadOdds: number[] = []
+      const totalLines: number[] = []
+      const totalOdds: number[] = []
+
+      bookmakers.forEach(book => {
+        const odds = this.game.odds[book]
+        if (odds.moneyline) {
+          mlHome.push(odds.moneyline.home)
+          mlAway.push(odds.moneyline.away)
+        }
+        if (odds.spread) {
+          spreadLines.push(Math.abs(odds.spread.line))
+          spreadOdds.push(odds.spread.home)
+        }
+        if (odds.total) {
+          totalLines.push(odds.total.line)
+          totalOdds.push(odds.total.over)
+        }
+      })
+
+      if (mlHome.length) avgMoneylineHome = Math.round(mlHome.reduce((a, b) => a + b) / mlHome.length).toString()
+      if (mlAway.length) avgMoneylineAway = Math.round(mlAway.reduce((a, b) => a + b) / mlAway.length).toString()
+      if (spreadLines.length) avgSpreadLine = (spreadLines.reduce((a, b) => a + b) / spreadLines.length).toFixed(1)
+      if (spreadOdds.length) avgSpreadHome = Math.round(spreadOdds.reduce((a, b) => a + b) / spreadOdds.length).toString()
+      if (totalLines.length) avgTotalLine = (totalLines.reduce((a, b) => a + b) / totalLines.length).toFixed(1)
+      if (totalOdds.length) avgTotalOver = Math.round(totalOdds.reduce((a, b) => a + b) / totalOdds.length).toString()
+    }
+
     return `Game: ${this.game.away_team.name} (${this.game.away_team.abbreviation}) @ ${this.game.home_team.name} (${this.game.home_team.abbreviation})
 Sport: ${this.game.sport.toUpperCase()}
-League: ${this.game.league}
 Date: ${this.game.game_date}
 Time: ${this.game.game_time}
-Venue: ${this.game.venue || 'TBD'}
+Status: ${this.game.status}
 
-Current Odds (average):
-Moneyline: Home ${this.game.odds?.moneyline?.home || 'N/A'}, Away ${this.game.odds?.moneyline?.away || 'N/A'}
-Spread: Home ${this.game.odds?.spread?.home_line || 'N/A'} (${this.game.odds?.spread?.home || 'N/A'}), Away ${this.game.odds?.spread?.away_line || 'N/A'} (${this.game.odds?.spread?.away || 'N/A'})
-Total: Over ${this.game.odds?.total?.line || 'N/A'} (${this.game.odds?.total?.over || 'N/A'}), Under ${this.game.odds?.total?.line || 'N/A'} (${this.game.odds?.total?.under || 'N/A'})`
+Current Odds (averaged across ${bookmakers.length} bookmaker${bookmakers.length !== 1 ? 's' : ''}):
+Moneyline: Home ${avgMoneylineHome}, Away ${avgMoneylineAway}
+Spread: ${avgSpreadLine} (odds: ${avgSpreadHome})
+Total: ${avgTotalLine} (over odds: ${avgTotalOver})`
   }
 
   /**
