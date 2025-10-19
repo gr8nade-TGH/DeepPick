@@ -12,9 +12,22 @@
 // CORE SHARP BETTING TYPES
 // ============================================================================
 
-export type BetUnit = 'points' | 'log_odds'
+/**
+ * THREE-UNIT SYSTEM (per spec)
+ * - points_spread: Effect on margin (home - away)
+ * - points_total: Effect on sum of points
+ * - logodds_win: Effect on log-odds of win (for moneyline)
+ */
+export type FactorUnit = 'points_spread' | 'points_total' | 'logodds_win'
 export type BetType = 'spread' | 'total' | 'moneyline'
-export type FactorCategory = 'vegas' | 'form' | 'matchup' | 'context' | 'ai_research' | 'weather' | 'injuries'
+export type FactorCategory = 
+  | 'lineup'      // Lineup synergy, on/off, personnel
+  | 'matchup'     // Style, scheme, personnel mismatches
+  | 'context'     // Rest, travel, altitude, schedule
+  | 'officials'   // Ref crew, umpire zone
+  | 'environment' // Weather, park, surface
+  | 'market'      // Line movement, closing line value
+  | 'ai_research' // AI-discovered narrative factors
 
 /**
  * Sharp Factor - Effect-based factor representation
@@ -26,8 +39,8 @@ export interface SharpFactor {
   category: FactorCategory
   
   // Effect size (core of sharp betting)
-  effectSize: number  // Deviation from market in points or log-odds
-  unit: BetUnit  // What unit the effect is measured in
+  effectSize: number  // Deviation from market in points_spread, points_total, or logodds_win
+  unit: FactorUnit  // What unit the effect is measured in
   marketBaseline: number  // The market line this compares against
   
   // Reliability components
@@ -329,5 +342,147 @@ export interface SharpBettingConfig {
   maxAiRetries: number
   retryDelaySeconds: number
   leagueParams: LeagueParameters
+}
+
+// ============================================================================
+// SPORT-AGNOSTIC INTERFACES (for multi-sport extensibility)
+// ============================================================================
+
+/**
+ * Score Prediction Output (pre-market)
+ * Sport-specific models must produce this
+ */
+export interface ScorePrediction {
+  homeScore: number  // Expected points/goals for home team
+  awayScore: number  // Expected points/goals for away team
+  trueSpread: number  // homeScore - awayScore
+  trueTotal: number  // homeScore + awayScore
+  winProbTrue: number  // Probability home team wins (0-1)
+  
+  // Variance estimates (for probability calculations)
+  sigmaSpread: number  // Std dev of margin
+  sigmaTotal: number  // Std dev of total
+  
+  // Context used
+  homePace?: number  // Possessions/plays/pace metric
+  awayPace?: number
+  gameContext?: Record<string, any>  // B2B, altitude, weather, etc.
+}
+
+/**
+ * Sport-Specific Score Model Interface
+ * Each sport implements this
+ */
+export interface IScoreModel {
+  sport: string
+  league: string
+  
+  /**
+   * Predict game score BEFORE seeing market odds
+   */
+  predictScore(game: GameInput): Promise<ScorePrediction>
+  
+  /**
+   * Estimate variance parameters based on context
+   */
+  estimateVariance(context: Record<string, any>): { sigmaSpread: number; sigmaTotal: number }
+}
+
+/**
+ * Sport-Specific Factor Catalog Interface
+ * Each sport implements different "clever" factors
+ */
+export interface IFactorCatalog {
+  sport: string
+  league: string
+  
+  /**
+   * Generate all sport-specific factors
+   */
+  generateFactors(game: GameInput, scorePrediction: ScorePrediction): Promise<SharpFactor[]>
+  
+  /**
+   * List of available factor types
+   */
+  getFactorTypes(): FactorType[]
+}
+
+/**
+ * Factor Type Definition
+ */
+export interface FactorType {
+  key: string  // Unique identifier
+  name: string  // Display name
+  category: FactorCategory
+  unit: FactorUnit  // Which head it contributes to
+  defaultCap: number  // Default soft cap
+  defaultWeight: number  // Default learned weight
+  shrinkageK: number  // Shrinkage parameter for this factor
+  description: string
+}
+
+/**
+ * Game Input (standardized across sports)
+ */
+export interface GameInput {
+  id: string
+  sport: string
+  league: string
+  homeTeam: TeamInfo
+  awayTeam: TeamInfo
+  gameDate: string
+  gameTime: string
+  
+  // Market data (average across books)
+  spread?: number  // Negative means home favored
+  total?: number
+  homeMoneyline?: number  // American odds
+  awayMoneyline?: number  // American odds
+  
+  // Context
+  venue?: string
+  weather?: WeatherInfo
+  injuries?: InjuryInfo[]
+  
+  // Historical data for residualization
+  recentGames?: any[]
+}
+
+export interface TeamInfo {
+  id: string
+  name: string
+  abbreviation: string
+  
+  // Recent performance
+  record?: string
+  recentForm?: number[]  // Last N game results
+  
+  // Ratings/stats (sport-specific)
+  stats?: Record<string, any>
+}
+
+export interface WeatherInfo {
+  temp?: number
+  wind?: number
+  precipitation?: number
+  conditions?: string
+}
+
+export interface InjuryInfo {
+  player: string
+  position: string
+  status: 'out' | 'questionable' | 'doubtful' | 'probable'
+  impact?: number  // Estimated impact in minutes/plays
+}
+
+/**
+ * Edge Attribution Breakdown
+ */
+export interface EdgeAttribution {
+  totalDelta: number
+  structuralDelta: number  // From non-price factors
+  priceDelta: number  // From line movement
+  structuralPercentage: number  // Must be 40-60% per spec
+  passesAttributionRule: boolean
 }
 
