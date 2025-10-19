@@ -282,6 +282,11 @@ export default function MonitoringPage() {
   const [aiTestRunning, setAiTestRunning] = useState(false)
   const [aiTestResult, setAiTestResult] = useState<any>(null)
   const [aiTestError, setAiTestError] = useState<string | { error?: string; errorType?: string; timestamp?: string; environment?: any; stack?: string; rawError?: string; testSteps?: string[] } | null>(null)
+  
+  // Pick Generation Testing State
+  const [pickTestRunning, setPickTestRunning] = useState(false)
+  const [pickTestResult, setPickTestResult] = useState<any>(null)
+  const [pickTestError, setPickTestError] = useState<string | { error?: string; errorType?: string; timestamp?: string; environment?: any; stack?: string; rawError?: string; testSteps?: string[] } | null>(null)
 
   useEffect(() => {
     fetchMonitoringData()
@@ -792,6 +797,39 @@ ${cronJobStatuses.filter(j => j.last_run_status === 'failed').length > 2 ? '⚠�
       })
     } finally {
       setAiTestRunning(false)
+    }
+  }
+  
+  const runPickGenerationTest = async () => {
+    setPickTestRunning(true)
+    setPickTestError(null)
+    setPickTestResult(null)
+    
+    try {
+      console.log('🎯 Starting pick generation test...')
+      const response = await fetch('/api/test-pick-generation', {
+        method: 'POST',
+      })
+      
+      const data = await response.json()
+      console.log('📥 Response data:', data)
+      
+      if (!response.ok || !data.success) {
+        setPickTestError(data)
+        console.error('❌ Test failed with data:', data)
+      } else {
+        setPickTestResult(data)
+        console.log('✅ Pick generation test completed:', data)
+      }
+    } catch (error) {
+      console.error('❌ Error running pick generation test:', error)
+      setPickTestError({
+        error: error instanceof Error ? error.message : 'Unknown error',
+        errorType: 'FetchException',
+        timestamp: new Date().toISOString()
+      })
+    } finally {
+      setPickTestRunning(false)
     }
   }
 
@@ -1471,6 +1509,235 @@ ${cronJobStatuses.filter(j => j.last_run_status === 'failed').length > 2 ? '⚠�
                         <h4 className="text-sm font-semibold text-blue-400 mb-2">✅ Next Steps</h4>
                         <ul className="text-sm text-gray-300 space-y-1">
                           {aiTestResult.next_steps.map((step: string, idx: number) => (
+                            <li key={idx}>• {step}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            
+            {/* Pick Generation Testing Card */}
+            <Card className="glass-effect border-green-500/30">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-green-400">
+                  <Target className="w-6 h-6" />
+                  Pick Generation Testing
+                </CardTitle>
+                <p className="text-sm text-gray-400 mt-2">
+                  Test the complete pick generation flow: Find games → AI research → Calculate confidence → Generate pick
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Test Button */}
+                <div className="flex items-center gap-4 p-6 bg-gray-800/50 rounded-lg border border-gray-700">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-white mb-2">Run Pick Generation Test</h3>
+                    <p className="text-sm text-gray-400">
+                      This will test the full pick generation algorithm (30-90 seconds):
+                    </p>
+                    <ul className="text-sm text-gray-500 mt-2 space-y-1">
+                      <li>• Fetch available games with odds</li>
+                      <li>• Check which games Shiva has already analyzed</li>
+                      <li>• Run baseline factor analysis</li>
+                      <li>• Run 2-phase AI research (Perplexity + ChatGPT)</li>
+                      <li>• Calculate Vegas comparison factor</li>
+                      <li>• Compute confidence score</li>
+                      <li>• Generate pick if confidence ≥ 7.0</li>
+                      <li>• Save to database</li>
+                    </ul>
+                  </div>
+                  <Button
+                    onClick={runPickGenerationTest}
+                    disabled={pickTestRunning}
+                    className="gap-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 px-8 py-6 text-lg"
+                  >
+                    {pickTestRunning ? (
+                      <>
+                        <RefreshCw className="w-5 h-5 animate-spin" />
+                        Testing...
+                      </>
+                    ) : (
+                      <>
+                        <Target className="w-5 h-5" />
+                        Run Test
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                {/* Loading State */}
+                {pickTestRunning && (
+                  <div className="p-8 bg-green-900/20 border border-green-500/30 rounded-lg text-center">
+                    <RefreshCw className="w-12 h-12 text-green-400 animate-spin mx-auto mb-4" />
+                    <p className="text-lg font-semibold text-white mb-2">Generating Pick...</p>
+                    <p className="text-sm text-gray-400">
+                      Running full algorithm with AI enhancement. This may take 30-90 seconds.
+                    </p>
+                  </div>
+                )}
+
+                {/* Error State */}
+                {pickTestError && (
+                  <div className="p-6 bg-red-900/20 border border-red-500/30 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="w-6 h-6 text-red-400 flex-shrink-0 mt-1" />
+                      <div className="flex-1">
+                        <h4 className="text-lg font-semibold text-red-400 mb-2">Test Failed</h4>
+                        <p className="text-sm text-gray-300 mb-3 font-mono">{typeof pickTestError === 'string' ? pickTestError : pickTestError?.error || 'Unknown error'}</p>
+                        
+                        {typeof pickTestError === 'object' && pickTestError !== null && pickTestError.testSteps && Array.isArray(pickTestError.testSteps) && (
+                          <div className="mt-4 p-4 bg-black/30 rounded border border-red-500/20">
+                            <p className="text-xs font-semibold text-red-300 mb-2">Test Progress:</p>
+                            <ul className="text-xs text-gray-400 space-y-0.5 font-mono">
+                              {pickTestError.testSteps.map((step: string, idx: number) => (
+                                <li key={idx}>{step}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Success State */}
+                {pickTestResult && !pickTestRunning && (
+                  <div className="space-y-4">
+                    {/* Success Header */}
+                    <div className="p-6 bg-green-900/20 border border-green-500/30 rounded-lg">
+                      <div className="flex items-start gap-3">
+                        <CheckCircle2 className="w-6 h-6 text-green-400 flex-shrink-0 mt-1" />
+                        <div className="flex-1">
+                          <h4 className="text-lg font-semibold text-green-400 mb-2">✅ {pickTestResult.message}</h4>
+                          
+                          {pickTestResult.testSteps && (
+                            <details className="mt-4">
+                              <summary className="cursor-pointer text-sm text-gray-400 hover:text-white">View Test Steps</summary>
+                              <ul className="text-xs text-gray-400 space-y-0.5 font-mono mt-2">
+                                {pickTestResult.testSteps.map((step: string, idx: number) => (
+                                  <li key={idx}>{step}</li>
+                                ))}
+                              </ul>
+                            </details>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Game Info */}
+                    <Card className="glass-effect border-gray-700">
+                      <CardHeader>
+                        <CardTitle className="text-gray-300">Game Details</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-sm text-gray-500">Matchup</p>
+                            <p className="text-lg font-bold text-white">{pickTestResult.game.matchup}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-500">Sport</p>
+                            <p className="text-lg font-bold text-white uppercase">{pickTestResult.game.sport}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-500">Date</p>
+                            <p className="text-white">{pickTestResult.game.date}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-500">Time</p>
+                            <p className="text-white">{pickTestResult.game.time}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Pick Details */}
+                    {pickTestResult.pick ? (
+                      <Card className="glass-effect border-green-500/30">
+                        <CardHeader>
+                          <CardTitle className="text-green-400">🎯 Generated Pick</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="p-4 bg-gray-800/50 rounded">
+                              <p className="text-xs text-gray-500 mb-1">Prediction</p>
+                              <p className="text-lg font-bold text-white">{pickTestResult.pick.prediction}</p>
+                            </div>
+                            <div className="p-4 bg-gray-800/50 rounded">
+                              <p className="text-xs text-gray-500 mb-1">Confidence</p>
+                              <p className="text-lg font-bold text-green-400">{pickTestResult.pick.confidence}/10</p>
+                            </div>
+                            <div className="p-4 bg-gray-800/50 rounded">
+                              <p className="text-xs text-gray-500 mb-1">Units</p>
+                              <p className="text-lg font-bold text-yellow-400">{pickTestResult.pick.units}U</p>
+                            </div>
+                            <div className="p-4 bg-gray-800/50 rounded">
+                              <p className="text-xs text-gray-500 mb-1">Odds</p>
+                              <p className="text-lg font-bold text-blue-400">{pickTestResult.pick.odds}</p>
+                            </div>
+                          </div>
+                          
+                          {pickTestResult.pick.ai_insight && (
+                            <div className="p-4 bg-purple-900/20 border border-purple-500/30 rounded">
+                              <p className="text-xs text-gray-500 mb-2">AI Insight</p>
+                              <p className="text-sm text-gray-300">{pickTestResult.pick.ai_insight}</p>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ) : (
+                      <Card className="glass-effect border-yellow-500/30">
+                        <CardHeader>
+                          <CardTitle className="text-yellow-400">⚠️ No Pick Generated</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-gray-300">{pickTestResult.result?.reason || 'Confidence below threshold'}</p>
+                          {pickTestResult.result && (
+                            <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+                              <div>
+                                <p className="text-gray-500">Factors Analyzed</p>
+                                <p className="text-white font-semibold">{pickTestResult.result.factors_analyzed || 0}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-500">AI Research Runs</p>
+                                <p className="text-white font-semibold">{pickTestResult.result.ai_research_runs || 0}</p>
+                              </div>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Performance */}
+                    {pickTestResult.performance && (
+                      <Card className="glass-effect border-gray-700">
+                        <CardHeader>
+                          <CardTitle className="text-gray-300">Performance</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-sm text-gray-500">Total Duration</p>
+                              <p className="text-2xl font-bold text-white">{pickTestResult.performance.duration_seconds}s</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500">Estimated Cost</p>
+                              <p className="text-2xl font-bold text-green-400">${pickTestResult.performance.estimated_cost_usd.toFixed(4)}</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Next Steps */}
+                    {pickTestResult.next_steps && (
+                      <div className="p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+                        <h4 className="text-sm font-semibold text-blue-400 mb-2">✅ Next Steps</h4>
+                        <ul className="text-sm text-gray-300 space-y-1">
+                          {pickTestResult.next_steps.map((step: string, idx: number) => (
                             <li key={idx}>• {step}</li>
                           ))}
                         </ul>
