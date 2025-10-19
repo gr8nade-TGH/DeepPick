@@ -1703,6 +1703,7 @@ ${cronJobStatuses.filter(j => j.last_run_status === 'failed').length > 2 ? 'âš ï
 
                     {/* Pick Details */}
                     {pickTestResult.pick ? (
+                      <>
                       <Card className="glass-effect border-green-500/30">
                         <CardHeader>
                           <CardTitle className="text-green-400">ðŸŽ¯ Generated Pick</CardTitle>
@@ -1876,6 +1877,7 @@ ${cronJobStatuses.filter(j => j.last_run_status === 'failed').length > 2 ? 'âš ï
                           </div>
                         </CardContent>
                       </Card>
+                      </>
                     ) : (
                       <Card className="glass-effect border-yellow-500/30">
                         <CardHeader>
