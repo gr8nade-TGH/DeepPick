@@ -210,7 +210,7 @@ export type CalculateReliabilityFn = (
  */
 export type EffectToProbabilityFn = (
   effectSize: number,
-  unit: BetUnit,
+  unit: FactorUnit,
   sigma: number
 ) => number
 
@@ -263,7 +263,7 @@ export type ResidualizeFn = (
 export interface SharpFactorBuilder {
   withName(name: string): this
   withCategory(category: FactorCategory): this
-  withEffect(size: number, unit: BetUnit): this
+  withEffect(size: number, unit: FactorUnit): this
   withMarketBaseline(baseline: number): this
   withSampleSize(size: number): this
   withRecency(recency: number): this

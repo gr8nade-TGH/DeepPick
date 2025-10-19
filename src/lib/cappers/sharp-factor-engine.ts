@@ -10,7 +10,7 @@
 
 import type {
   SharpFactor,
-  BetUnit,
+  FactorUnit,
   FactorCategory,
   LeagueParameters,
 } from '@/types/sharp-betting'
@@ -33,8 +33,8 @@ export class SharpFactorEngine {
   addFactor(config: {
     name: string
     category: FactorCategory
-    effectSize: number  // Points or log-odds deviation from market
-    unit: BetUnit
+    effectSize: number  // Points_spread, points_total, or logodds_win
+    unit: FactorUnit
     marketBaseline: number
     sampleSize: number
     recency: number  // 0-1
@@ -113,9 +113,9 @@ export class SharpFactorEngine {
   }
 
   /**
-   * Get factors for a specific bet type
+   * Get factors for a specific unit type
    */
-  getFactorsByBetType(unit: BetUnit): SharpFactor[] {
+  getFactorsByUnit(unit: FactorUnit): SharpFactor[] {
     return this.factors.filter(f => f.unit === unit)
   }
 
@@ -124,14 +124,18 @@ export class SharpFactorEngine {
    */
   private getShrinkageK(category: FactorCategory): number {
     switch (category) {
-      case 'form':
-        return this.leagueParams.shrinkageKRecentForm
-      case 'injuries':
-        return this.leagueParams.shrinkageKInjuries
-      case 'weather':
-        return this.leagueParams.shrinkageKWeather
+      case 'lineup':
+        return this.leagueParams.shrinkageKRecentForm  // Use form shrinkage for lineup
       case 'matchup':
         return this.leagueParams.shrinkageKMatchup
+      case 'context':
+        return 30  // Rest/travel
+      case 'officials':
+        return 50  // Ref crew
+      case 'environment':
+        return this.leagueParams.shrinkageKWeather
+      case 'market':
+        return 20  // Line movement
       case 'ai_research':
         return this.leagueParams.shrinkageKAiResearch
       default:
@@ -140,44 +144,49 @@ export class SharpFactorEngine {
   }
 
   /**
-   * Get default soft cap for a category
+   * Get default soft cap for a category and unit
    */
-  private getDefaultSoftCap(category: FactorCategory, unit: BetUnit): number {
-    if (unit === 'points') {
+  private getDefaultSoftCap(category: FactorCategory, unit: FactorUnit): number {
+    // Per spec NBA defaults
+    if (unit === 'points_spread' || unit === 'points_total') {
       // Points-based caps
       switch (category) {
-        case 'vegas':
-          return 5.0  // Vegas comparison can shift up to 5 points
-        case 'form':
-          return 3.0  // Recent form up to 3 points
-        case 'injuries':
-          return 4.0  // Major injuries up to 4 points
+        case 'lineup':
+          return 2.0  // Lineup synergy ±2.0
         case 'matchup':
-          return 3.0  // Matchup advantages up to 3 points
-        case 'weather':
-          return 2.0  // Weather up to 2 points
+          return 1.5  // Shot profile, scheme ±1.2-1.5
+        case 'officials':
+          return 3.0  // Ref crew ±3.0 (total)
+        case 'context':
+          return 1.0  // Rest/travel ±1.0
+        case 'environment':
+          return 0.5  // Weather (indoor sport)
+        case 'market':
+          return 0.3  // Line movement ±0.3
         case 'ai_research':
-          return 2.0  // AI narrative factors capped at 2 points
+          return 2.0  // AI narrative factors capped
         default:
-          return 2.5
+          return 2.0
       }
     } else {
-      // Log-odds caps
+      // Log-odds caps (for moneyline)
       switch (category) {
-        case 'vegas':
-          return 0.5  // Vegas can shift log-odds by 0.5
-        case 'form':
-          return 0.3
-        case 'injuries':
-          return 0.4
-        case 'matchup':
-          return 0.3
-        case 'weather':
-          return 0.2
-        case 'ai_research':
-          return 0.2  // Narrative capped lower
-        default:
+        case 'lineup':
           return 0.25
+        case 'matchup':
+          return 0.20
+        case 'officials':
+          return 0.15
+        case 'context':
+          return 0.15
+        case 'environment':
+          return 0.10
+        case 'market':
+          return 0.15
+        case 'ai_research':
+          return 0.20
+        default:
+          return 0.20
       }
     }
   }
@@ -220,10 +229,10 @@ export function calculateReliability(
  */
 export function effectToProbability(
   effectSize: number,
-  unit: BetUnit,
+  unit: FactorUnit,
   sigma: number
 ): number {
-  if (unit === 'points') {
+  if (unit === 'points_spread' || unit === 'points_total') {
     // Normal CDF: Φ(Δ / σ)
     return normalCDF(effectSize / sigma)
   } else {

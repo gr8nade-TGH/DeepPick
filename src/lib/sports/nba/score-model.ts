@@ -107,7 +107,7 @@ export class NBAScoreModel implements IScoreModel {
   /**
    * Predict game pace (possessions per 48 minutes)
    */
-  private predictPace(game: GameInput): number => {
+  private predictPace(game: GameInput): number {
     // Get team pace preferences
     const homePace = game.homeTeam.stats?.pace ?? 100  // Default NBA average
     const awayPace = game.awayTeam.stats?.pace ?? 100
@@ -136,7 +136,7 @@ export class NBAScoreModel implements IScoreModel {
   /**
    * Get offensive rating (points per 100 possessions)
    */
-  private getOffensiveRating(team: any): number => {
+  private getOffensiveRating(team: any): number {
     // Try to get from recent stats
     if (team.stats?.offensiveRating) {
       return team.stats.offensiveRating
@@ -155,7 +155,7 @@ export class NBAScoreModel implements IScoreModel {
   /**
    * Get defensive rating (points allowed per 100 possessions)
    */
-  private getDefensiveRating(team: any): number => {
+  private getDefensiveRating(team: any): number {
     // Try to get from recent stats
     if (team.stats?.defensiveRating) {
       return team.stats.defensiveRating
