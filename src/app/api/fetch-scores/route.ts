@@ -13,7 +13,7 @@ function mapSportKey(apiSportKey: string): string {
   return sportMap[apiSportKey] || apiSportKey
 }
 
-export async function POST() {
+async function fetchScoresHandler() {
   try {
     console.log('🏆 Starting score fetch process...')
     
@@ -200,5 +200,14 @@ export async function POST() {
       error: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 })
   }
+}
+
+// Support both GET (Vercel Cron) and POST (manual trigger)
+export async function GET() {
+  return fetchScoresHandler()
+}
+
+export async function POST() {
+  return fetchScoresHandler()
 }
 
