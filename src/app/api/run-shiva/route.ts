@@ -79,6 +79,12 @@ export async function POST(request: Request) {
       const pick = result.pick
       const log = result.log
       
+      // Skip if no pick was generated (confidence too low)
+      if (!pick) {
+        console.log(`⚠️ Shiva analyzed a game but confidence was too low - no pick generated`)
+        continue
+      }
+      
       const game = games.find(g => g.id === pick.gameId)
       if (!game) continue
 
