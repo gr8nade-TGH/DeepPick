@@ -277,6 +277,11 @@ export default function MonitoringPage() {
   const [dataFeedSettings, setDataFeedSettings] = useState<DataFeedSetting[]>([])
   const [cronJobStatuses, setCronJobStatuses] = useState<CronJobStatus[]>([])
   const [savingSettings, setSavingSettings] = useState(false)
+  
+  // AI Testing State
+  const [aiTestRunning, setAiTestRunning] = useState(false)
+  const [aiTestResult, setAiTestResult] = useState<any>(null)
+  const [aiTestError, setAiTestError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchMonitoringData()
@@ -755,6 +760,33 @@ ${cronJobStatuses.filter(j => j.last_run_status === 'failed').length > 2 ? '⚠�
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
+  
+  const runAITest = async () => {
+    setAiTestRunning(true)
+    setAiTestError(null)
+    setAiTestResult(null)
+    
+    try {
+      console.log('🧪 Starting AI test...')
+      const response = await fetch('/api/test-ai-capper', {
+        method: 'POST',
+      })
+      
+      const data = await response.json()
+      
+      if (!response.ok || !data.success) {
+        setAiTestError(data.error || 'Test failed')
+      } else {
+        setAiTestResult(data)
+        console.log('✅ AI test completed:', data)
+      }
+    } catch (error) {
+      console.error('Error running AI test:', error)
+      setAiTestError(error instanceof Error ? error.message : 'Unknown error')
+    } finally {
+      setAiTestRunning(false)
+    }
+  }
 
   const getStatusColor = (success: boolean) => {
     return success ? 'text-green-400' : 'text-red-400'
@@ -865,10 +897,14 @@ ${cronJobStatuses.filter(j => j.last_run_status === 'failed').length > 2 ? '⚠�
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4 bg-gray-800">
+          <TabsList className="grid w-full grid-cols-5 bg-gray-800">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="api-calls">API Calls</TabsTrigger>
             <TabsTrigger value="ingestion">Ingestion Logs</TabsTrigger>
+            <TabsTrigger value="ai-testing">
+              <Zap className="w-4 h-4 mr-2" />
+              AI Testing
+            </TabsTrigger>
             <TabsTrigger value="settings">
               <Settings className="w-4 h-4 mr-2" />
               Settings
@@ -1053,6 +1089,315 @@ ${cronJobStatuses.filter(j => j.last_run_status === 'failed').length > 2 ? '⚠�
                     <IngestionLogEntry key={log.id} log={log} />
                   ))}
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          {/* AI Testing Tab */}
+          <TabsContent value="ai-testing" className="space-y-6">
+            <Card className="glass-effect border-purple-500/30">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-purple-400">
+                  <Zap className="w-6 h-6" />
+                  AI-Enhanced Shiva Testing
+                </CardTitle>
+                <p className="text-sm text-gray-400 mt-2">
+                  Test the complete 2-run AI research pipeline with Perplexity and ChatGPT
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Test Button */}
+                <div className="flex items-center gap-4 p-6 bg-gray-800/50 rounded-lg border border-gray-700">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-white mb-2">Run AI Test</h3>
+                    <p className="text-sm text-gray-400">
+                      This will test the full AI research pipeline (30-60 seconds):
+                    </p>
+                    <ul className="text-sm text-gray-500 mt-2 space-y-1">
+                      <li>• Run 1: Perplexity + 2 StatMuse queries (analytical factors)</li>
+                      <li>• Run 2: ChatGPT + 2 StatMuse queries (strategic validation)</li>
+                      <li>• Generate AI insight writeup</li>
+                      <li>• Save results to database</li>
+                    </ul>
+                  </div>
+                  <Button
+                    onClick={runAITest}
+                    disabled={aiTestRunning}
+                    className="gap-2 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 px-8 py-6 text-lg"
+                  >
+                    {aiTestRunning ? (
+                      <>
+                        <RefreshCw className="w-5 h-5 animate-spin" />
+                        Testing...
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="w-5 h-5" />
+                        Run Test
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                {/* Loading State */}
+                {aiTestRunning && (
+                  <div className="p-8 bg-purple-900/20 border border-purple-500/30 rounded-lg text-center">
+                    <RefreshCw className="w-12 h-12 text-purple-400 animate-spin mx-auto mb-4" />
+                    <p className="text-lg font-semibold text-white mb-2">AI Research In Progress...</p>
+                    <p className="text-sm text-gray-400">
+                      This may take 30-60 seconds. The AI is querying StatMuse, Perplexity, and ChatGPT.
+                    </p>
+                  </div>
+                )}
+
+                {/* Error State */}
+                {aiTestError && (
+                  <div className="p-6 bg-red-900/20 border border-red-500/30 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="w-6 h-6 text-red-400 flex-shrink-0 mt-1" />
+                      <div className="flex-1">
+                        <h4 className="text-lg font-semibold text-red-400 mb-2">Test Failed</h4>
+                        <p className="text-sm text-gray-300 mb-3">{aiTestError}</p>
+                        <div className="text-xs text-gray-400 space-y-1">
+                          <p><strong>Common Issues:</strong></p>
+                          <ul className="list-disc list-inside space-y-1">
+                            <li>API keys not set in .env.local file</li>
+                            <li>Database migration not run</li>
+                            <li>Dev server needs restart after adding env vars</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Success State */}
+                {aiTestResult && !aiTestRunning && (
+                  <div className="space-y-4">
+                    {/* Success Header */}
+                    <div className="p-4 bg-green-900/20 border border-green-500/30 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <CheckCircle className="w-6 h-6 text-green-400" />
+                        <div>
+                          <h4 className="text-lg font-semibold text-green-400">✅ Test Successful!</h4>
+                          <p className="text-sm text-gray-400">{aiTestResult.message}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Game Info */}
+                    {aiTestResult.game && (
+                      <Card className="glass-effect border-blue-500/30">
+                        <CardHeader>
+                          <CardTitle className="text-blue-400">Game Details</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-sm text-gray-500">Matchup</p>
+                              <p className="text-white font-semibold">{aiTestResult.game.matchup}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500">Sport</p>
+                              <p className="text-white font-semibold uppercase">{aiTestResult.game.sport}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500">Date</p>
+                              <p className="text-white">{aiTestResult.game.date}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500">Time</p>
+                              <p className="text-white">{aiTestResult.game.time}</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* AI Research Results */}
+                    {aiTestResult.ai_research && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Run 1 Results */}
+                        <Card className="glass-effect border-purple-500/30">
+                          <CardHeader>
+                            <CardTitle className="text-purple-400 flex items-center gap-2">
+                              <span className="text-2xl">1</span> Perplexity Analysis
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-3">
+                            <div>
+                              <p className="text-xs text-gray-500">Model</p>
+                              <p className="text-sm text-white">{aiTestResult.ai_research.run1.model}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Type</p>
+                              <p className="text-sm text-white">{aiTestResult.ai_research.run1.type}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Factors Found</p>
+                              <p className="text-sm text-green-400 font-semibold">{aiTestResult.ai_research.run1.factors_found}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">StatMuse Queries</p>
+                              <p className="text-sm text-blue-400">{aiTestResult.ai_research.run1.statmuse_queries}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Duration</p>
+                              <p className="text-sm text-gray-400">{(aiTestResult.ai_research.run1.duration_ms / 1000).toFixed(2)}s</p>
+                            </div>
+                            
+                            {/* Show factors */}
+                            {aiTestResult.ai_research.run1.factors && Object.keys(aiTestResult.ai_research.run1.factors).length > 0 && (
+                              <div className="mt-4 pt-4 border-t border-gray-700">
+                                <p className="text-xs text-gray-500 mb-2">Factors:</p>
+                                <div className="space-y-2">
+                                  {Object.entries(aiTestResult.ai_research.run1.factors).map(([key, factor]: [string, any]) => (
+                                    <div key={key} className="p-2 bg-gray-800/50 rounded text-xs">
+                                      <p className="text-purple-400 font-semibold">{key}</p>
+                                      <p className="text-gray-300">{factor.description}</p>
+                                      <p className="text-gray-500 mt-1">
+                                        Impact: {factor.impact} | Confidence: {factor.confidence}
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+
+                        {/* Run 2 Results */}
+                        <Card className="glass-effect border-blue-500/30">
+                          <CardHeader>
+                            <CardTitle className="text-blue-400 flex items-center gap-2">
+                              <span className="text-2xl">2</span> ChatGPT Validation
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-3">
+                            <div>
+                              <p className="text-xs text-gray-500">Model</p>
+                              <p className="text-sm text-white">{aiTestResult.ai_research.run2.model}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Type</p>
+                              <p className="text-sm text-white">{aiTestResult.ai_research.run2.type}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Factors Found</p>
+                              <p className="text-sm text-green-400 font-semibold">{aiTestResult.ai_research.run2.factors_found}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">StatMuse Queries</p>
+                              <p className="text-sm text-blue-400">{aiTestResult.ai_research.run2.statmuse_queries}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Duration</p>
+                              <p className="text-sm text-gray-400">{(aiTestResult.ai_research.run2.duration_ms / 1000).toFixed(2)}s</p>
+                            </div>
+                            
+                            {/* Show factors */}
+                            {aiTestResult.ai_research.run2.factors && Object.keys(aiTestResult.ai_research.run2.factors).length > 0 && (
+                              <div className="mt-4 pt-4 border-t border-gray-700">
+                                <p className="text-xs text-gray-500 mb-2">Factors:</p>
+                                <div className="space-y-2">
+                                  {Object.entries(aiTestResult.ai_research.run2.factors).map(([key, factor]: [string, any]) => (
+                                    <div key={key} className="p-2 bg-gray-800/50 rounded text-xs">
+                                      <p className="text-blue-400 font-semibold">{key}</p>
+                                      <p className="text-gray-300">{factor.description}</p>
+                                      <p className="text-gray-500 mt-1">
+                                        Impact: {factor.impact} | Confidence: {factor.confidence}
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      </div>
+                    )}
+
+                    {/* AI Insight */}
+                    {aiTestResult.ai_insight && (
+                      <Card className="glass-effect border-green-500/30">
+                        <CardHeader>
+                          <CardTitle className="text-green-400">AI Generated Insight</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">Summary</p>
+                            <p className="text-white">{aiTestResult.ai_insight.summary}</p>
+                          </div>
+                          
+                          {aiTestResult.ai_insight.bold_prediction && (
+                            <div>
+                              <p className="text-xs text-gray-500 mb-1">Bold Prediction</p>
+                              <p className="text-yellow-400 font-semibold">⚡ {aiTestResult.ai_insight.bold_prediction}</p>
+                            </div>
+                          )}
+                          
+                          {aiTestResult.ai_insight.writeup && (
+                            <div>
+                              <p className="text-xs text-gray-500 mb-1">Full Writeup</p>
+                              <p className="text-sm text-gray-300 leading-relaxed">{aiTestResult.ai_insight.writeup}</p>
+                            </div>
+                          )}
+                          
+                          {aiTestResult.ai_insight.key_factors && aiTestResult.ai_insight.key_factors.length > 0 && (
+                            <div>
+                              <p className="text-xs text-gray-500 mb-2">Key Factors</p>
+                              <div className="space-y-2">
+                                {aiTestResult.ai_insight.key_factors.map((factor: any, idx: number) => (
+                                  <div key={idx} className="p-3 bg-gray-800/50 rounded">
+                                    <p className="text-white font-semibold mb-1">{factor.name}</p>
+                                    <p className="text-sm text-gray-300 mb-2">{factor.description}</p>
+                                    <div className="flex gap-4 text-xs">
+                                      <span className="text-green-400">Impact: {factor.impact}</span>
+                                      <span className="text-blue-400">Confidence: {factor.confidence}</span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Performance */}
+                    {aiTestResult.performance && (
+                      <Card className="glass-effect border-gray-700">
+                        <CardHeader>
+                          <CardTitle className="text-gray-300">Performance</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-sm text-gray-500">Total Duration</p>
+                              <p className="text-2xl font-bold text-white">{aiTestResult.performance.total_duration_seconds}s</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500">Estimated Cost</p>
+                              <p className="text-2xl font-bold text-green-400">${aiTestResult.performance.estimated_cost_usd.toFixed(4)}</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Next Steps */}
+                    {aiTestResult.next_steps && (
+                      <div className="p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+                        <h4 className="text-sm font-semibold text-blue-400 mb-2">✅ Next Steps</h4>
+                        <ul className="text-sm text-gray-300 space-y-1">
+                          {aiTestResult.next_steps.map((step: string, idx: number) => (
+                            <li key={idx}>• {step}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
