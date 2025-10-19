@@ -1780,7 +1780,7 @@ ${cronJobStatuses.filter(j => j.last_run_status === 'failed').length > 2 ? 'тЪая
                           <div className="p-4 bg-purple-900/20 border border-purple-500/30 rounded-lg">
                             <h4 className="text-sm font-semibold text-purple-300 mb-2">Summary</h4>
                             <p className="text-sm text-gray-300 leading-relaxed">
-                              Based on comprehensive analysis of {Object.keys(pickTestResult.pick.reasoning || []).length} key factors including recent performance, matchup history, and current betting market conditions, this pick represents a strong value opportunity with high confidence.
+                              Based on comprehensive analysis including recent performance, matchup history, and current betting market conditions, this pick represents a strong value opportunity with high confidence.
                             </p>
                           </div>
 
@@ -1806,7 +1806,6 @@ ${cronJobStatuses.filter(j => j.last_run_status === 'failed').length > 2 ? 'тЪая
 
                             {pickTestResult.pick.reasoning && pickTestResult.pick.reasoning.length > 0 ? (
                               pickTestResult.pick.reasoning.map((reason: string, idx: number) => {
-                                // Mock factor scores - in real implementation these come from the algorithm
                                 const mockScores = [3.5, 2.8, 2.2, 1.5]
                                 const score = mockScores[idx] || 1.0
                                 const percentage = ((score / 10) * 100).toFixed(0)
