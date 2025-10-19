@@ -47,4 +47,3 @@ JOIN games g ON p.game_id = g.id
 WHERE p.capper = 'oracle' OR p.ai_model_version IS NOT NULL;
 
 COMMENT ON VIEW ai_picks_with_insights IS 'All picks made by AI cappers with their research and insights';
-
