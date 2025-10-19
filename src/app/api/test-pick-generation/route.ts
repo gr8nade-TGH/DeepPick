@@ -226,11 +226,16 @@ export async function POST() {
         testSteps.push(`  - Score Prediction: ${log.finalPrediction.awayScore}-${log.finalPrediction.homeScore}`)
         
         // Show AI research details
-        if (log.aiResearch && log.aiResearch.runs > 0) {
+        if (log.aiResearch) {
+          const run1Count = Object.keys(log.aiResearch.run1Factors || {}).length
+          const run2Count = Object.keys(log.aiResearch.run2Factors || {}).length
+          const totalFactors = run1Count + run2Count
+          
           testSteps.push(`📊 AI Research:`)
-          testSteps.push(`   - AI Runs: ${log.aiResearch.runs}`)
-          testSteps.push(`   - Factors Found: ${log.aiResearch.factorCount}`)
-          testSteps.push(`   - Confidence Boost: +${log.aiResearch.confidenceBoost.toFixed(2)}`)
+          testSteps.push(`   - AI Runs: 2 (Perplexity + ChatGPT)`)
+          testSteps.push(`   - Factors Found: ${totalFactors} (Run1: ${run1Count}, Run2: ${run2Count})`)
+          testSteps.push(`   - Total Impact: ${log.aiResearch.totalImpact.toFixed(2)}`)
+          testSteps.push(`   - AI Confidence Boost: +${log.confidenceBreakdown.aiBoost?.toFixed(2) || '0.00'}`)
         } else {
           testSteps.push(`⚠️  AI Research: No AI runs (settings missing or error)`)
         }
