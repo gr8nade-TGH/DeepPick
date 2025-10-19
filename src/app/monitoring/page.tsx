@@ -837,7 +837,7 @@ ${cronJobStatuses.filter(j => j.last_run_status === 'failed').length > 2 ? 'тЪая
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <Card className="glass-effect border-blue-500/30">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -890,6 +890,36 @@ ${cronJobStatuses.filter(j => j.last_run_status === 'failed').length > 2 ? 'тЪая
                   </p>
                 </div>
                 <TrendingUp className="w-8 h-8 text-yellow-400" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="glass-effect border-pink-500/30">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-400">Perplexity AI</p>
+                  <p className="text-2xl font-bold text-pink-400">
+                    0
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">runs today</p>
+                </div>
+                <Zap className="w-6 h-6 text-pink-400" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="glass-effect border-cyan-500/30">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-400">OpenAI GPT</p>
+                  <p className="text-2xl font-bold text-cyan-400">
+                    0
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">runs today</p>
+                </div>
+                <Zap className="w-6 h-6 text-cyan-400" />
               </div>
             </CardContent>
           </Card>
