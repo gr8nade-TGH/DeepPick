@@ -29,6 +29,24 @@ Total per game: ~$0-0.03
 
 ---
 
+## Hybrid 2-Run AI System
+
+**Run 1: Perplexity + 2 StatMuse Questions**
+- Perplexity generates 2 clever StatMuse questions
+- Scrape StatMuse for free answers
+- Perplexity analyzes + does own research
+- Cost: ~$0.025
+
+**Run 2: ChatGPT + 2 StatMuse Questions**
+- ChatGPT generates 2 DIFFERENT clever questions
+- Scrape StatMuse for free answers  
+- ChatGPT validates Run 1 + searches for injuries + predicts
+- Cost: ~$0.01
+
+**Total: $0.035 per game = $1.05/month for 30 games!**
+
+---
+
 ## Simplified 2-Phase System
 
 ### Phase 1: Baseline (The Odds API only)
