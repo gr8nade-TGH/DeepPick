@@ -5,7 +5,9 @@ import type { CapperGame } from '@/lib/cappers/shared-logic'
 import { getExistingPicksByGame } from '@/lib/cappers/duplicate-checker'
 import { startRunLog, completeRunLog, errorRunLog, noGamesRunLog, calculateDuration } from '@/lib/cappers/run-logger'
 
+export const runtime = 'nodejs' // Force Node.js runtime for AI processing
 export const dynamic = 'force-dynamic'
+export const maxDuration = 300 // 5 minutes for AI research
 
 export async function POST(request: Request) {
   const url = new URL(request.url)

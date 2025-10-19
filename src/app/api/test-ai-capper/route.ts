@@ -4,6 +4,7 @@ import { CapperGame } from '@/lib/cappers/shared-logic'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { CapperSettings } from '@/types'
 
+export const runtime = 'nodejs' // Force Node.js runtime (not Edge)
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300 // 5 minutes for AI processing
 
