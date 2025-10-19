@@ -113,14 +113,18 @@ export async function POST() {
     testSteps.push('  - Phase 3: Vegas comparison')
     testSteps.push('  - Phase 4: Confidence calculation')
     
+    // Prepare arguments for analyzeBatch
+    const maxPicks = 1 // Only generate 1 pick for testing
+    const existingPicksByGame = new Map<string, Set<string>>()
+    
     const startTime = Date.now()
-    const result = await analyzeBatch([gameToAnalyze])
+    const results = await analyzeBatch([gameToAnalyze], maxPicks, existingPicksByGame)
     const duration = Date.now() - startTime
     
     testSteps.push(`✅ Algorithm complete (${(duration / 1000).toFixed(2)}s)`)
     
     // 7. Check result
-    if (!result.picks || result.picks.length === 0) {
+    if (!results || results.length === 0) {
       testSteps.push('📊 Result: No pick generated (confidence below threshold)')
       
       return NextResponse.json({
@@ -137,8 +141,8 @@ export async function POST() {
         result: {
           pick_generated: false,
           reason: 'Confidence below minimum threshold (< 7.0)',
-          factors_analyzed: result.metadata?.factors_analyzed || 0,
-          ai_research_runs: result.metadata?.ai_runs || 0,
+          factors_analyzed: 0,
+          ai_research_runs: 0,
         },
         performance: {
           duration_seconds: (duration / 1000).toFixed(2),
@@ -154,7 +158,8 @@ export async function POST() {
     }
     
     // 8. Pick was generated!
-    const pick = result.picks[0]
+    const pickResult = results[0]
+    const pick = pickResult.pick
     testSteps.push('✅ Pick generated!')
     testSteps.push(`  - Prediction: ${pick.prediction}`)
     testSteps.push(`  - Confidence: ${pick.confidence}/10`)
