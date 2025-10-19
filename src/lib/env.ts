@@ -13,6 +13,10 @@ const envSchema = z.object({
   VERCEL_ANALYTICS_ID: z.string().min(1).optional(),
   NEXT_PUBLIC_APP_URL: z.string().url().default('http://localhost:3000'),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
+  // AI APIs for enhanced cappers
+  PERPLEXITY_API_KEY: z.string().min(1).optional(),
+  OPENAI_API_KEY: z.string().min(1).optional(),
+  OPENWEATHER_API_KEY: z.string().min(1).optional(),
 })
 
 export const env = envSchema.parse(process.env)
