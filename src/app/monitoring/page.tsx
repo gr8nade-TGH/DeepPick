@@ -978,6 +978,45 @@ ${cronJobStatuses.filter(j => j.last_run_status === 'failed').length > 2 ? '⚠�
           </Card>
         </div>
 
+        {/* AI Cost Tracking */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <Card className="glass-effect border-pink-500/30">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-400">Perplexity Cost Today</p>
+                  <p className="text-2xl font-bold text-pink-400">
+                    ${(apiCalls.filter(call => 
+                      call.api_provider?.toLowerCase() === 'perplexity' &&
+                      new Date(call.request_timestamp).toDateString() === new Date().toDateString()
+                    ).length * 0.001).toFixed(4)}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">~$0.001 per call</p>
+                </div>
+                <TrendingUp className="w-6 h-6 text-pink-400" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="glass-effect border-cyan-500/30">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-400">OpenAI Cost Today</p>
+                  <p className="text-2xl font-bold text-cyan-400">
+                    ${(apiCalls.filter(call => 
+                      call.api_provider?.toLowerCase() === 'openai' &&
+                      new Date(call.request_timestamp).toDateString() === new Date().toDateString()
+                    ).length * 0.002).toFixed(4)}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">~$0.002 per call</p>
+                </div>
+                <TrendingUp className="w-6 h-6 text-cyan-400" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-5 bg-gray-800">
@@ -1906,6 +1945,117 @@ ${cronJobStatuses.filter(j => j.last_run_status === 'failed').length > 2 ? '⚠�
                       </div>
                     </div>
                   ))}
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* AI Model Settings */}
+            <Card className="glass-effect border-purple-500/30">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-purple-400" />
+                  AI Model Configuration (Shiva)
+                </CardTitle>
+                <p className="text-sm text-gray-400 mt-2">
+                  Configure which AI models and providers to use for pick generation
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {/* Current Configuration */}
+                  <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                    <h4 className="font-semibold text-white mb-4">Current Configuration</h4>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Run 1 Configuration */}
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-2 h-2 bg-pink-500 rounded-full"></div>
+                          <h5 className="font-semibold text-pink-400">Run 1: Analytical Research</h5>
+                        </div>
+                        
+                        <div>
+                          <label className="text-xs text-gray-400 mb-1 block">AI Provider</label>
+                          <div className="p-2 bg-gray-900 border border-gray-700 rounded text-white text-sm">
+                            Perplexity AI
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <label className="text-xs text-gray-400 mb-1 block">Model</label>
+                          <div className="p-2 bg-gray-900 border border-gray-700 rounded text-white text-sm font-mono">
+                            sonar-medium-online
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">~$0.001 per request</p>
+                        </div>
+                        
+                        <div>
+                          <label className="text-xs text-gray-400 mb-1 block">Max StatMuse Questions</label>
+                          <div className="p-2 bg-gray-900 border border-gray-700 rounded text-white text-sm">
+                            2 questions
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Run 2 Configuration */}
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-2 h-2 bg-cyan-500 rounded-full"></div>
+                          <h5 className="font-semibold text-cyan-400">Run 2: Strategic Validation</h5>
+                        </div>
+                        
+                        <div>
+                          <label className="text-xs text-gray-400 mb-1 block">AI Provider</label>
+                          <div className="p-2 bg-gray-900 border border-gray-700 rounded text-white text-sm">
+                            OpenAI ChatGPT
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <label className="text-xs text-gray-400 mb-1 block">Model</label>
+                          <div className="p-2 bg-gray-900 border border-gray-700 rounded text-white text-sm font-mono">
+                            gpt-4o-mini
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">~$0.002 per request</p>
+                        </div>
+                        
+                        <div>
+                          <label className="text-xs text-gray-400 mb-1 block">Max StatMuse Questions</label>
+                          <div className="p-2 bg-gray-900 border border-gray-700 rounded text-white text-sm">
+                            2 questions
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Available Models Info */}
+                  <div className="p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+                    <h4 className="text-sm font-semibold text-blue-400 mb-2">💡 Available Models</h4>
+                    <div className="text-xs text-gray-300 space-y-2">
+                      <div>
+                        <span className="font-semibold text-pink-400">Perplexity:</span>
+                        <ul className="ml-4 mt-1 space-y-0.5">
+                          <li>• <code className="text-xs bg-gray-800 px-1 rounded">sonar-medium-online</code> - Web search enabled (current)</li>
+                          <li>• <code className="text-xs bg-gray-800 px-1 rounded">sonar-pro</code> - Advanced reasoning (higher cost)</li>
+                          <li>• <code className="text-xs bg-gray-800 px-1 rounded">sonar-deep-search</code> - Deep research mode (slow, expensive)</li>
+                        </ul>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-cyan-400">OpenAI:</span>
+                        <ul className="ml-4 mt-1 space-y-0.5">
+                          <li>• <code className="text-xs bg-gray-800 px-1 rounded">gpt-4o-mini</code> - Fast, cost-effective (current)</li>
+                          <li>• <code className="text-xs bg-gray-800 px-1 rounded">gpt-4o</code> - Most capable, higher cost</li>
+                          <li>• <code className="text-xs bg-gray-800 px-1 rounded">o1-mini</code> - Reasoning model (experimental)</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="text-xs text-gray-500">
+                    ℹ️  To change AI models, update the <code className="bg-gray-800 px-1 rounded">capper_settings</code> table in Supabase.
+                    We'll add a UI editor once we validate which models work best for betting.
+                  </div>
                 </div>
               </CardContent>
             </Card>
