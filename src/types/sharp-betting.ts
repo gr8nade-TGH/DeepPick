@@ -323,9 +323,7 @@ export interface SharpPickResponse {
  * Sharp betting configuration
  */
 export interface SharpBettingConfig {
-  enableResid
-
-ualization: boolean
+  enableResidualization: boolean
   enableDeepSearch: boolean
   minFactorsRequired: number
   maxAiRetries: number
