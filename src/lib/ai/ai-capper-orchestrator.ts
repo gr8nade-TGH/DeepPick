@@ -122,10 +122,15 @@ Generate ${this.capperSettings.max_statmuse_questions_run1} questions NOW:`
         statMuseQuestions.push(...questions)
       }
 
-      // 2. Query StatMuse for answers
+      // 2. Query StatMuse for answers (with retry logic)
       for (const q of statMuseQuestions) {
-        const answer = await this.statMuseClient.query(this.game.sport, q)
-        statMuseAnswers.push({ question: q, answer })
+        const result = await this.queryStatMuseWithRetry(q)
+        statMuseAnswers.push({ question: q, answer: result.text })
+        
+        // Log if question failed
+        if (result.failed) {
+          console.warn(`[${this.capperName}] StatMuse query failed: "${q}"`)
+        }
       }
 
       // 3. Perplexity analyzes StatMuse answers and generates analytical factors
@@ -245,10 +250,15 @@ Q: ${this.game.home_team.name} defensive rating last 5 games`
           .map((line) => line.substring(3).trim()) || []
       statMuseQuestions.push(...questions)
 
-      // 2. Query StatMuse for answers
+      // 2. Query StatMuse for answers (with retry logic)
       for (const q of statMuseQuestions) {
-        const answer = await this.statMuseClient.query(this.game.sport, q)
-        statMuseAnswers.push({ question: q, answer })
+        const result = await this.queryStatMuseWithRetry(q)
+        statMuseAnswers.push({ question: q, answer: result.text })
+        
+        // Log if question failed
+        if (result.failed) {
+          console.warn(`[${this.capperName}] StatMuse query failed: "${q}"`)
+        }
       }
 
       // 3. ChatGPT analyzes StatMuse answers, previous run, and performs validation
