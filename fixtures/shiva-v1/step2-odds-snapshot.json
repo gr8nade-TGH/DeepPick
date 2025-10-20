@@ -1,0 +1,24 @@
+{
+  "run_id": "run_01HZYKQ8G2R9S0",
+  "snapshot": {
+    "game_id": "nba_2025_10_21_okc_hou",
+    "sport": "NBA",
+    "home_team": "Oklahoma City Thunder",
+    "away_team": "Houston Rockets",
+    "start_time_utc": "2025-10-21T01:30:00Z",
+    "captured_at_utc": "2025-10-20T17:05:12Z",
+    "books_considered": 11,
+    "moneyline": { "home_avg": -152, "away_avg": 135 },
+    "spread": { "fav_team": "Oklahoma City Thunder", "line": -3.5, "odds": -110 },
+    "total": { "line": 227.5, "over_odds": -108, "under_odds": -112 },
+    "raw_payload": {
+      "source": "internal-odds-api",
+      "version": "v3",
+      "books": [
+        { "name": "DK", "ml_home": -150, "ml_away": 130, "spr": -3.5, "spr_odds": -110, "tot": 227.5, "ov": -110, "un": -110 }
+      ]
+    }
+  }
+}
+
+

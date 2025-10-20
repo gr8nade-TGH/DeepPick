@@ -1,0 +1,27 @@
+{
+  "run_id": "run_01HZYKQ8G2R9S0",
+  "inputs": {
+    "conf_final": 2.72,
+    "edge_dominant": "total",
+    "side_data": { "pick_team": "Oklahoma City Thunder", "spread_pred": 2.19, "market_spread": -3.5 },
+    "total_data": { "total_pred": 230.1, "market_total": 227.5 }
+  },
+  "results": {
+    "decision": { "pick_type": "TOTAL", "pick_side": "OVER", "line": 227.5, "units": 1, "reason": "Conf_final 2.72 → 1u; total edge dominates." },
+    "persistence": {
+      "picks_row": {
+        "id": "pick_01HZYN5H6NV0E3",
+        "run_id": "run_01HZYKQ8G2R9S0",
+        "sport": "NBA",
+        "matchup": "Rockets @ Thunder",
+        "confidence": 2.72,
+        "units": 1,
+        "pick_type": "TOTAL",
+        "selection": "OVER 227.5",
+        "created_at_utc": "2025-10-20T17:12:43Z"
+      }
+    }
+  }
+}
+
+

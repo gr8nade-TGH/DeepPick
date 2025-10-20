@@ -1,0 +1,43 @@
+{
+  "run_id": "run_01HZYKQ8G2R9S0",
+  "inputs": {
+    "teams": { "home": "Oklahoma City Thunder", "away": "Houston Rockets" },
+    "ai_provider": "perplexity",
+    "news_window_hours": 48
+  },
+  "results": {
+    "factors": [
+      {
+        "factor_no": 1,
+        "name": "Season Net Rating",
+        "weight_total_pct": 21.0,
+        "raw_values_json": {
+          "okc": {
+            "statmuse_queries": [
+              "Oklahoma City Thunder net rating this season",
+              "Oklahoma City Thunder offensive rating this season",
+              "Oklahoma City Thunder defensive rating this season"
+            ],
+            "responses": { "net_rating": 6.8, "offensive_rating": 116.2, "defensive_rating": 109.4 }
+          },
+          "hou": {
+            "statmuse_queries": [
+              "Houston Rockets net rating this season",
+              "Houston Rockets offensive rating this season",
+              "Houston Rockets defensive rating this season"
+            ],
+            "responses": { "net_rating": 3.1, "offensive_rating": 114.0, "defensive_rating": 110.9 }
+          }
+        },
+        "parsed_values_json": { "okc_NR": 6.8, "hou_NR": 3.1, "delta_100": 3.7 },
+        "normalized_value": 3.7,
+        "caps_applied": false,
+        "cap_reason": null,
+        "notes": "NR_A - NR_B = 6.8 - 3.1"
+      }
+    ],
+    "meta": { "provider_latency_ms": { "statmuse": 624, "web_search": 812 }, "ai_provider": "perplexity" }
+  }
+}
+
+

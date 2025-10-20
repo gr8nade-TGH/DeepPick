@@ -17,6 +17,11 @@ const envSchema = z.object({
   PERPLEXITY_API_KEY: z.string().min(1).optional(),
   OPENAI_API_KEY: z.string().min(1).optional(),
   OPENWEATHER_API_KEY: z.string().min(1).optional(),
+  // Feature flags for SHIVA v1
+  SHIVA_V1_ENABLED: z.string().optional(),
+  SHIVA_V1_UI_ENABLED: z.string().optional(),
+  SHIVA_V1_API_ENABLED: z.string().optional(),
+  SHIVA_V1_WRITE_ENABLED: z.string().optional(),
 })
 
 export const env = envSchema.parse(process.env)
