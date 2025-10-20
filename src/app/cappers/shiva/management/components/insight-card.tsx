@@ -154,7 +154,14 @@ export function InsightCard(props: InsightCardProps) {
 
       {/* Confidence Factors Grid (Two-Column Layout) */}
       <div className="p-4 border-b">
-        <div className="text-sm font-semibold text-gray-700 mb-3">Confidence Factors</div>
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-sm font-semibold text-gray-700">Confidence Factors</div>
+          {sortedFactors.length > 0 && (
+            <div className="text-xs px-2 py-1 bg-purple-100 text-purple-800 rounded">
+              Dominant: {sortedFactors[0].name}
+            </div>
+          )}
+        </div>
         
         {/* Header Row */}
         <div className="grid grid-cols-[40px_1fr_1fr] gap-2 mb-2 text-xs font-semibold text-gray-600">
@@ -238,7 +245,7 @@ export function InsightCard(props: InsightCardProps) {
 
       {/* Market Summary Strip */}
       <div className="p-4 border-b bg-gray-50">
-        <div className="grid grid-cols-4 gap-4 text-center text-sm">
+        <div className="grid grid-cols-4 gap-4 text-center text-sm mb-3">
           <div>
             <div className="text-xs text-gray-500 uppercase mb-1">Conf7</div>
             <div className="font-mono font-bold">{props.marketMismatch.conf7.toFixed(2)}</div>
@@ -267,6 +274,34 @@ export function InsightCard(props: InsightCardProps) {
               <br />
               Total: {props.marketMismatch.edgeTotal.toFixed(1)}pts
             </div>
+          </div>
+        </div>
+        
+        {/* Market Influence Mini-Bar (±30% scale) */}
+        <div className="mt-2">
+          <div className="text-xs text-gray-500 text-center mb-1">
+            Market Influence (max ±30%)
+          </div>
+          <div className="relative h-3 bg-gray-200 rounded-full overflow-hidden">
+            {/* Center line */}
+            <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gray-400" />
+            
+            {/* Market adjustment bar */}
+            <div
+              className={`absolute top-0 bottom-0 ${
+                props.marketMismatch.confMarketAdj > 0 ? 'bg-green-500' : 'bg-red-500'
+              }`}
+              style={{
+                left: props.marketMismatch.confMarketAdj >= 0 ? '50%' : 
+                      `${50 + (props.marketMismatch.confMarketAdj / 1.2) * 50}%`,
+                width: `${Math.abs(props.marketMismatch.confMarketAdj / 1.2) * 50}%`,
+              }}
+            />
+          </div>
+          <div className="flex justify-between text-xs text-gray-500 mt-1">
+            <span>-30%</span>
+            <span>0</span>
+            <span>+30%</span>
           </div>
         </div>
       </div>
