@@ -76,38 +76,41 @@ export class AICapperOrchestrator {
     const statMuseAnswers: Array<{ question: string; answer: string | null }> = []
 
     try {
-      // 1. Generate StatMuse questions using Perplexity (EDGE DETECTION FOCUS)
+      // 1. Generate StatMuse questions using Perplexity (PROPER STATMUSE FORMAT)
       const gameContext = this.getGameContextForAI()
       const questionsPrompt = `You are ${this.capperName}, a professional sports bettor analyzing this matchup.
 
-CRITICAL: Your job is to find EDGE, not just predict a winner. Focus on COMPARATIVE analysis between both teams.
+CRITICAL: Generate StatMuse queries using the EXACT format StatMuse requires.
 
 Game Context:
 ${gameContext}
 
-Generate ${this.capperSettings.max_statmuse_questions_run1} clever, specific COMPARATIVE questions that reveal matchup advantages/disadvantages.
+StatMuse Format Rules:
+- Ask short, specific questions: [subject] + [stat] + [timeframe] (+ optional "vs [opponent]")
+- Use supported stat names: ORtg, DRtg, eFG%, PPG, APG, RPG, etc.
+- Keep contexts simple: team/player + season/this season + optional single opponent
+- NO lineup/on-off combos (e.g., "Durant + Capela starting lineup")
+- NO complex analytical requests
 
-Requirements:
-- Each question MUST compare BOTH teams (not just one team)
-- Focus on exploitable edges (offensive vs defensive matchups, pace, recent form)
-- Be specific (use team names, recent games, this season)
-- Format: "Q: [comparative question]"
+Generate ${this.capperSettings.max_statmuse_questions_run1} StatMuse queries using this EXACT format:
 
-Good Examples:
-Q: Compare ${this.game.away_team.name} offensive rating to ${this.game.home_team.name} defensive rating this season
-Q: ${this.game.away_team.name} scoring average last 5 games vs ${this.game.home_team.name} points allowed at home
-Q: ${this.game.home_team.name} record as underdog vs ${this.game.away_team.name} record as favorite
+Good Examples (COPY THIS FORMAT):
+Q: ${this.game.home_team.name} offensive rating this season
+Q: ${this.game.away_team.name} defensive rating vs ${this.game.home_team.name} this season
+Q: ${this.game.home_team.name} points per game at home
+Q: ${this.game.away_team.name} points allowed per game on the road
 
 Bad Examples (DON'T DO THIS):
-X: ${this.game.home_team.name} record last 10 games (not comparative)
-X: How good is ${this.game.away_team.name}? (too vague)
+X: Compare ${this.game.home_team.name} offensive rating to ${this.game.away_team.name} defensive rating (too complex)
+X: How does ${this.game.home_team.name} starting lineup compare... (lineup combos not supported)
+X: What is the impact of injuries on... (analytical request, not a stat)
 
-Generate ${this.capperSettings.max_statmuse_questions_run1} questions NOW:`
+Generate ${this.capperSettings.max_statmuse_questions_run1} simple StatMuse queries NOW:`
 
       const questionsResponse = await this.perplexityClient.chat({
         model: this.capperSettings.ai_model_run1 || 'sonar-medium-online',
         messages: [
-          { role: 'system', content: `You are ${this.capperName}, a sports analyst. Generate insightful StatMuse questions.` },
+          { role: 'system', content: `You are ${this.capperName}, a sports analyst. Generate ONLY simple StatMuse queries using the exact format: [team] + [stat] + [timeframe]. NO complex comparisons or analytical requests.` },
           { role: 'user', content: questionsPrompt }
         ],
         max_tokens: 500,
