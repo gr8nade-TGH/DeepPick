@@ -446,7 +446,7 @@ export function deduplicateFactors(factors: SharpFactor[]): SharpFactor[] {
   
   // Keep best from each group
   const deduplicated: SharpFactor[] = []
-  for (const [key, group] of groups.entries()) {
+  for (const [key, group] of Array.from(groups.entries())) {
     if (group.length === 1) {
       deduplicated.push(group[0])
     } else {
