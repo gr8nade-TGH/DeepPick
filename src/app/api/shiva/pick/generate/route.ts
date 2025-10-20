@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     exec: async () => {
       const admin = getSupabaseAdmin()
       if (!results.persistence?.picks_row) {
-        return { body: { run_id, decision: 'PASS', confidence: parse.data.inputs.conf_final }, status: 200 }
+        return { body: { run_id, decision: 'PASS', confidence: parse.data.inputs.conf_final, pick: null }, status: 200 }
       }
       const r = results.persistence.picks_row
       const ins = await admin.from('picks').insert({
