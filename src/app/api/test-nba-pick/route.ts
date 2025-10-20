@@ -68,10 +68,25 @@ export async function POST() {
     
     // 4. Convert to GameInput format
     testSteps.push('🔄 Converting game data to sharp betting format...')
+    
+    // Debug: Log the raw game data structure
+    console.log('🔍 Raw game data:', JSON.stringify(gameData, null, 2))
+    testSteps.push(`🔍 Raw game data logged to console`)
+    
     const gameInput = adaptCapperGameToGameInput(gameData)
+    
+    // Debug: Log the extracted odds
+    console.log('💰 Extracted odds:', {
+      spread: gameInput.spread,
+      total: gameInput.total,
+      homeMoneyline: gameInput.homeMoneyline,
+      awayMoneyline: gameInput.awayMoneyline
+    })
+    testSteps.push(`💰 Extracted odds: Spread=${gameInput.spread}, Total=${gameInput.total}, ML=${gameInput.homeMoneyline}/${gameInput.awayMoneyline}`)
     
     if (!gameInput.spread || !gameInput.total) {
       testSteps.push('⚠️  No market odds available for this game')
+      testSteps.push(`🔍 Debug: Raw odds structure: ${JSON.stringify(gameData.odds, null, 2)}`)
       return NextResponse.json({
         success: false,
         message: 'Game has no odds data',
@@ -81,6 +96,15 @@ export async function POST() {
           matchup: `${gameInput.awayTeam.name} @ ${gameInput.homeTeam.name}`,
           sport: gameInput.sport,
         },
+        debug: {
+          rawOdds: gameData.odds,
+          extractedOdds: {
+            spread: gameInput.spread,
+            total: gameInput.total,
+            homeMoneyline: gameInput.homeMoneyline,
+            awayMoneyline: gameInput.awayMoneyline
+          }
+        }
       }, { status: 400 })
     }
     

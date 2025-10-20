@@ -39,6 +39,15 @@ export function adaptCapperGameToGameInput(game: CapperGame): GameInput {
 
   // Extract average odds from bookmakers
   const { spread, total, homeMoneyline, awayMoneyline } = extractAverageOdds(game)
+  
+  // Debug logging
+  console.log('🔍 Game adapter debug:', {
+    gameId: game.id,
+    hasOdds: !!game.odds,
+    oddsType: typeof game.odds,
+    oddsKeys: game.odds ? Object.keys(game.odds) : [],
+    extracted: { spread, total, homeMoneyline, awayMoneyline }
+  })
 
   return {
     id: game.id,
