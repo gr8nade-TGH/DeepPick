@@ -76,57 +76,64 @@ export class AICapperOrchestrator {
     const statMuseAnswers: Array<{ question: string; answer: string | null }> = []
 
     try {
-      // 1. Generate StatMuse questions using Perplexity (PROPER STATMUSE FORMAT)
-      const gameContext = this.getGameContextForAI()
-      const questionsPrompt = `Generate ${this.capperSettings.max_statmuse_questions_run1} SIMPLE StatMuse queries for ${this.game.home_team.name} vs ${this.game.away_team.name}.
+      // 1. Execute predefined StatMuse queries (Run 1: First 4 factors)
+      const statMuseQueriesRun1 = [
+        // Factor 1: Head-to-Head Scoring
+        `${this.game.home_team.name} average points per game vs ${this.game.away_team.name} this season`,
+        `${this.game.away_team.name} average points per game vs ${this.game.home_team.name} this season`,
+        
+        // Factor 2: Opponent Defensive Quality  
+        `${this.game.home_team.name} defensive rating this season`,
+        `${this.game.away_team.name} defensive rating this season`,
+        
+        // Factor 3: Pace
+        `${this.game.home_team.name} pace this season`,
+        `${this.game.away_team.name} pace this season`,
+        
+        // Factor 4: Recent Form
+        `${this.game.home_team.name} net rating last 10 games`,
+        `${this.game.away_team.name} net rating last 10 games`
+      ]
 
-STRICT RULES - FOLLOW EXACTLY:
-1. Format: Q: [Team] [Stat] [Timeframe]
-2. Stats: offensive rating, defensive rating, points per game, points allowed per game, field goal percentage, three point percentage
-3. Timeframes: this season, last 10 games, at home, on the road
-4. NO comparisons, NO analysis, NO "impact" or "effect" words
-
-EXAMPLES TO COPY:
-Q: ${this.game.home_team.name} offensive rating this season
-Q: ${this.game.away_team.name} defensive rating this season  
-Q: ${this.game.home_team.name} points per game at home
-Q: ${this.game.away_team.name} points allowed per game on the road
-Q: ${this.game.home_team.name} field goal percentage last 10 games
-Q: ${this.game.away_team.name} three point percentage this season
-
-Generate ${this.capperSettings.max_statmuse_questions_run1} queries NOW:`
-
-      const questionsResponse = await this.perplexityClient.chat({
-        model: this.capperSettings.ai_model_run1 || 'sonar-medium-online',
-        messages: [
-          { role: 'system', content: `Generate ONLY simple StatMuse queries. Format: Q: [Team] [Stat] [Timeframe]. NO complex comparisons or analytical requests.` },
-          { role: 'user', content: questionsPrompt }
-        ],
-        max_tokens: 500,
-        temperature: 0.8,
-      })
-
-      if (questionsResponse?.choices?.[0]?.message?.content) {
-        const questions = questionsResponse.choices[0].message.content
-          .split('\n')
-          .filter((line) => line.trim().startsWith('Q:'))
-          .map((line) => line.substring(3).trim())
-        statMuseQuestions.push(...questions)
-      }
-
-      // 2. Query StatMuse for answers (with retry logic)
-      for (const q of statMuseQuestions) {
-        const result = await this.queryStatMuseWithRetry(q)
-        statMuseAnswers.push({ question: q, answer: result.text })
+      // Execute StatMuse queries for Run 1
+      for (const query of statMuseQueriesRun1) {
+        const result = await this.queryStatMuseWithRetry(query)
+        statMuseQuestions.push(query)
+        statMuseAnswers.push({ question: query, answer: result.text })
         
         // Log if question failed
         if (result.failed) {
-          console.warn(`[${this.capperName}] StatMuse query failed: "${q}"`)
+          console.warn(`[${this.capperName}] StatMuse query failed: "${query}"`)
         }
       }
 
-      // 3. Perplexity analyzes StatMuse answers and generates analytical factors
-      const analysisPrompt = `Analyze the following game context and StatMuse data. Identify 2 key analytical factors that could influence the game outcome. For each factor, provide:
+      // 2. Perplexity web search for injury information
+      const injurySearchPrompt = `Search for current injury information for ${this.game.home_team.name} vs ${this.game.away_team.name} NBA game. Look for:
+- Key player injuries (starters, important role players)
+- Injury status (out, questionable, doubtful, probable)
+- Recent injury updates
+- Impact on team performance
+
+Focus on injuries that could significantly affect the game outcome.`
+
+      const injuryResponse = await this.perplexityClient.chat({
+        model: this.capperSettings.ai_model_run1 || 'sonar-medium-online',
+        messages: [
+          { role: 'system', content: `You are a sports injury analyst. Search for current injury information and provide detailed analysis.` },
+          { role: 'user', content: injurySearchPrompt }
+        ],
+        max_tokens: 800,
+        temperature: 0.7,
+      })
+
+      let injuryAnalysis = ''
+      if (injuryResponse?.choices?.[0]?.message?.content) {
+        injuryAnalysis = injuryResponse.choices[0].message.content
+        console.log(`[${this.capperName}] Injury analysis completed`)
+      }
+
+      // 3. Perplexity analyzes StatMuse answers and injury data to generate analytical factors
+      const analysisPrompt = `Analyze the following game context, StatMuse data, and injury information. Identify 3 key analytical factors that could influence the game outcome. For each factor, provide:
 - description: Brief explanation
 - value: Numerical or descriptive value
 - confidence: low, medium, or high
@@ -136,7 +143,12 @@ Game Context:
 ${gameContext}
 
 StatMuse Data:
-${JSON.stringify(statMuseAnswers, null, 2)}
+${statMuseAnswers.map(qa => `Q: ${qa.question}\nA: ${qa.answer}`).join('\n\n')}
+
+Injury Analysis:
+${injuryAnalysis}
+
+Generate 3 factors including at least 1 injury-related factor.
 
 Format your output as a JSON object with factor names as keys. Example:
 {
@@ -145,6 +157,12 @@ Format your output as a JSON object with factor names as keys. Example:
     "value": "8-2 in last 10",
     "confidence": "high",
     "impact": 2.5
+  },
+  "injury_impact": {
+    "description": "Key player out for away team",
+    "value": "Starting PG questionable",
+    "confidence": "medium",
+    "impact": -1.5
   }
 }`
 
@@ -208,52 +226,30 @@ Format your output as a JSON object with factor names as keys. Example:
     let validationResult: any = null
 
     try {
-      // 1. Generate StatMuse questions using ChatGPT
-      const gameContext = this.getGameContextForAI()
-      const chatGptQuestionsPrompt = `Generate ${this.capperSettings.max_statmuse_questions_run2} SIMPLE StatMuse queries for ${this.game.home_team.name} vs ${this.game.away_team.name}.
+      // 1. Execute predefined StatMuse queries (Run 2: Last 3 factors)
+      const statMuseQueriesRun2 = [
+        // Factor 5: Rest / 0 Days Rest
+        `${this.game.home_team.name} record on 0 days rest this season`,
+        `${this.game.away_team.name} record on 0 days rest this season`,
+        
+        // Factor 6: Role Split (Favorites/Underdogs)
+        `${this.game.home_team.name} record this season as favorites`,
+        `${this.game.away_team.name} record this season as underdogs`,
+        
+        // Factor 7: 3-Point Environment Allowed
+        `${this.game.home_team.name} opponent 3 point attempts per game this season`,
+        `${this.game.away_team.name} opponent 3 point attempts per game this season`
+      ]
 
-STRICT RULES - FOLLOW EXACTLY:
-1. Format: Q: [Team] [Stat] [Timeframe]
-2. Stats: offensive rating, defensive rating, points per game, points allowed per game, field goal percentage, three point percentage
-3. Timeframes: this season, last 10 games, at home, on the road
-4. NO comparisons, NO analysis, NO "impact" or "effect" words
-
-EXAMPLES TO COPY:
-Q: ${this.game.home_team.name} offensive rating this season
-Q: ${this.game.away_team.name} defensive rating this season  
-Q: ${this.game.home_team.name} points per game at home
-Q: ${this.game.away_team.name} points allowed per game on the road
-
-Generate ${this.capperSettings.max_statmuse_questions_run2} queries NOW:`
-
-      const chatGptQuestionsResponse = await this.openaiClient.chat.completions.create({
-        model: this.capperSettings.ai_model_run2 || 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: `Generate ONLY simple StatMuse queries. Format: Q: [Team] [Stat] [Timeframe]. NO complex comparisons or analytical requests.`,
-          },
-          { role: 'user', content: chatGptQuestionsPrompt },
-        ],
-        max_tokens: 500,
-        temperature: 0.8,
-      })
-
-      const questions =
-        chatGptQuestionsResponse.choices[0]?.message?.content
-          ?.split('\n')
-          .filter((line) => line.trim().startsWith('Q:'))
-          .map((line) => line.substring(3).trim()) || []
-      statMuseQuestions.push(...questions)
-
-      // 2. Query StatMuse for answers (with retry logic)
-      for (const q of statMuseQuestions) {
-        const result = await this.queryStatMuseWithRetry(q)
-        statMuseAnswers.push({ question: q, answer: result.text })
+      // Execute StatMuse queries for Run 2
+      for (const query of statMuseQueriesRun2) {
+        const result = await this.queryStatMuseWithRetry(query)
+        statMuseQuestions.push(query)
+        statMuseAnswers.push({ question: query, answer: result.text })
         
         // Log if question failed
         if (result.failed) {
-          console.warn(`[${this.capperName}] StatMuse query failed: "${q}"`)
+          console.warn(`[${this.capperName}] StatMuse query failed: "${query}"`)
         }
       }
 
