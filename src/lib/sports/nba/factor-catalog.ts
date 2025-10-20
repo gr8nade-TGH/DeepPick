@@ -501,8 +501,8 @@ export class NBAFactorCatalog implements IFactorCatalog {
     const homeRecentForm = game.homeTeam.stats?.recentForm ?? [1, 1, 0, 1, 1]
     const awayRecentForm = game.awayTeam.stats?.recentForm ?? [1, 0, 1, 0, 1]
     
-    const homeWinRate = homeRecentForm.reduce((sum, win) => sum + win, 0) / homeRecentForm.length
-    const awayWinRate = awayRecentForm.reduce((sum, win) => sum + win, 0) / awayRecentForm.length
+    const homeWinRate = homeRecentForm.reduce((sum: number, win: number) => sum + win, 0) / homeRecentForm.length
+    const awayWinRate = awayRecentForm.reduce((sum: number, win: number) => sum + win, 0) / awayRecentForm.length
     
     // Effect based on recent form difference
     const effect = (homeWinRate - awayWinRate) * 2.0 // 2 points per 100% win rate difference
@@ -524,8 +524,8 @@ export class NBAFactorCatalog implements IFactorCatalog {
       residualized: false,
       reasoning: `Home team recent form: ${(homeWinRate * 100).toFixed(0)}% vs Away: ${(awayWinRate * 100).toFixed(0)}%`,
       rawData: {
-        homeTeam: { recentForm: homeRecentForm, winRate: homeWinRate },
-        awayTeam: { recentForm: awayRecentForm, winRate: awayWinRate },
+        teamA: { recentForm: homeRecentForm, winRate: homeWinRate },
+        teamB: { recentForm: awayRecentForm, winRate: awayWinRate },
       },
       sources: ['NBA Game Results'],
       impactType: effect > 0.1 ? 'positive' : effect < -0.1 ? 'negative' : 'neutral',
@@ -562,9 +562,9 @@ export class NBAFactorCatalog implements IFactorCatalog {
       residualized: false,
       reasoning: `Home pace: ${homePace} vs Away pace: ${awayPace}. Pace difference affects total points.`,
       rawData: {
-        homeTeam: { pace: homePace },
-        awayTeam: { pace: awayPace },
-        paceDifference,
+        teamA: { pace: homePace },
+        teamB: { pace: awayPace },
+        context: { paceDifference },
       },
       sources: ['NBA Advanced Stats'],
       impactType: effect > 0.1 ? 'positive' : effect < -0.1 ? 'negative' : 'neutral',
@@ -603,8 +603,8 @@ export class NBAFactorCatalog implements IFactorCatalog {
       residualized: false,
       reasoning: `Home injuries: ${homeInjuries.length}, Away injuries: ${awayInjuries.length}`,
       rawData: {
-        homeTeam: { injuries: homeInjuries, impact: homeImpact },
-        awayTeam: { injuries: awayInjuries, impact: awayImpact },
+        teamA: { injuries: homeInjuries, impact: homeImpact },
+        teamB: { injuries: awayInjuries, impact: awayImpact },
       },
       sources: ['NBA Injury Reports'],
       impactType: effect > 0.1 ? 'positive' : effect < -0.1 ? 'negative' : 'neutral',
@@ -637,8 +637,7 @@ export class NBAFactorCatalog implements IFactorCatalog {
       residualized: false,
       reasoning: `Standard NBA home court advantage of 2.5 points`,
       rawData: {
-        homeCourtAdvantage: effect,
-        venue: game.venue,
+        context: { homeCourtAdvantage: effect, venue: game.venue },
       },
       sources: ['NBA Historical Data'],
       impactType: 'positive',
