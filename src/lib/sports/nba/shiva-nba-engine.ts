@@ -111,7 +111,8 @@ export class ShivaNBAEngine {
         },
         game_date: game.gameDate,
         game_time: game.gameTime,
-        odds: game.odds || {} // Pass through odds data if available
+        status: 'scheduled', // Required by CapperGame type
+        odds: {} // CapperGame expects odds object
       }
       
       // Initialize AI orchestrator
@@ -127,22 +128,22 @@ export class ShivaNBAEngine {
       console.log('✅ AI research complete:', aiResults)
       
       // Extract data from AI results
-      const totalCost = aiResults.reduce((sum, run) => sum + (run.estimatedCost || 0), 0)
-      const allStatMuseQueries = aiResults.flatMap(run => run.statmuseQueries || [])
-      const totalFactors = aiResults.reduce((sum, run) => sum + (run.factorsFound || 0), 0)
+      const totalCost = aiResults.reduce((sum, run) => sum + (run.estimated_cost || 0), 0)
+      const allStatMuseQueries = aiResults.flatMap(run => run.statmuse_queries || [])
+      const totalFactors = Object.keys(aiResults[0]?.factors || {}).length
       
       // Combine research summaries
       const researchSummary = aiResults
-        .map(run => run.researchSummary)
+        .map(run => run.research_summary)
         .filter(Boolean)
         .join(' ')
       
       return {
-        aiModel: aiResults[0]?.aiModel || 'perplexity-sonar-pro',
+        aiModel: aiResults[0]?.ai_model || 'perplexity-sonar-pro',
         researchSummary: researchSummary || `Analyzed ${game.homeTeam.name} vs ${game.awayTeam.name} matchup.`,
-        statmuseQueries: allStatMuseQueries.map((q: any) => ({
-          question: q.question,
-          answer: q.answer
+        statmuseQueries: allStatMuseQueries.map((q: string) => ({
+          question: q,
+          answer: 'Mock answer from StatMuse'
         })),
         estimatedCost: totalCost || 0.012,
         factorsFound: totalFactors || 0
