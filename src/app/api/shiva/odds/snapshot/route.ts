@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { ensureApiEnabled, ensureWritesEnabled, jsonError, jsonOk, requireIdempotencyKey } from '@/lib/api/shiva-v1/route-helpers'
+import { withIdempotency } from '@/lib/api/shiva-v1/idempotency'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 
 const SnapshotSchema = z.object({
@@ -31,14 +32,21 @@ export async function POST(request: Request) {
   const parse = SnapshotSchema.safeParse(body)
   if (!parse.success) return jsonError('INVALID_BODY', 'Invalid request body', 400, { issues: parse.error.issues })
 
-  const admin = getSupabaseAdmin()
   const runId = parse.data.run_id
-  // Deactivate previous, insert new snapshot (transactional is ideal via RPC; inline here as sequential ops)
-  const deact = await admin.from('odds_snapshots').update({ is_active: false }).eq('run_id', runId).eq('is_active', true)
-  if (deact.error) return jsonError('DB_ERROR', deact.error.message, 500)
-  const ins = await admin.from('odds_snapshots').insert({ run_id: runId, payload_json: parse.data.snapshot, is_active: true }).select('snapshot_id, is_active').single()
-  if (ins.error) return jsonError('DB_ERROR', ins.error.message, 500)
-  return jsonOk({ snapshot_id: ins.data.snapshot_id, is_active: ins.data.is_active })
+  return withIdempotency({
+    runId,
+    step: 'snapshot',
+    idempotencyKey: key,
+    writeAllowed: true,
+    exec: async () => {
+      const admin = getSupabaseAdmin()
+      const deact = await admin.from('odds_snapshots').update({ is_active: false }).eq('run_id', runId).eq('is_active', true)
+      if (deact.error) throw new Error(deact.error.message)
+      const ins = await admin.from('odds_snapshots').insert({ run_id: runId, payload_json: parse.data.snapshot, is_active: true }).select('snapshot_id, is_active').single()
+      if (ins.error) throw new Error(ins.error.message)
+      return { body: { snapshot_id: ins.data.snapshot_id, is_active: ins.data.is_active }, status: 200 }
+    }
+  })
 }
 
 

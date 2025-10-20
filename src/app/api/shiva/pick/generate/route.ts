@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { ensureApiEnabled, ensureWritesEnabled, jsonError, jsonOk, requireIdempotencyKey } from '@/lib/api/shiva-v1/route-helpers'
+import { withIdempotency } from '@/lib/api/shiva-v1/idempotency'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 
 const PickSchema = z.object({
@@ -28,34 +29,37 @@ export async function POST(request: Request) {
   const parse = PickSchema.safeParse(body)
   if (!parse.success) return jsonError('INVALID_BODY', 'Invalid request body', 400, { issues: parse.error.issues })
 
-  const admin = getSupabaseAdmin()
   const { run_id, results } = parse.data
-
-  // Pass decision: don't write to picks
-  if (!results.persistence?.picks_row) {
-    return jsonOk({ run_id, decision: 'PASS', confidence: parse.data.inputs.conf_final })
-  }
-
-  // Persist pick with run_id FK
-  const r = results.persistence.picks_row
-  const ins = await admin.from('picks').insert({
-    id: r.id,
-    game_id: null,
-    pick_type: results.decision.pick_type.toLowerCase(),
-    selection: r.selection,
-    odds: 0,
-    units: r.units,
-    game_snapshot: {},
-    status: 'pending',
-    is_system_pick: true,
-    confidence: r.confidence,
-    reasoning: results.decision.reason,
-    algorithm_version: 'shiva_v1',
-    run_id,
+  return withIdempotency({
+    runId: run_id,
+    step: 'pick',
+    idempotencyKey: key,
+    writeAllowed: true,
+    exec: async () => {
+      const admin = getSupabaseAdmin()
+      if (!results.persistence?.picks_row) {
+        return { body: { run_id, decision: 'PASS', confidence: parse.data.inputs.conf_final }, status: 200 }
+      }
+      const r = results.persistence.picks_row
+      const ins = await admin.from('picks').insert({
+        id: r.id,
+        game_id: null,
+        pick_type: results.decision.pick_type.toLowerCase(),
+        selection: r.selection,
+        odds: 0,
+        units: r.units,
+        game_snapshot: {},
+        status: 'pending',
+        is_system_pick: true,
+        confidence: r.confidence,
+        reasoning: results.decision.reason,
+        algorithm_version: 'shiva_v1',
+        run_id,
+      })
+      if (ins.error) throw new Error(ins.error.message)
+      return { body: { pick: { id: r.id, run_id, pick_type: results.decision.pick_type, selection: r.selection, units: r.units, confidence: r.confidence } }, status: 200 }
+    }
   })
-  if (ins.error) return jsonError('DB_ERROR', ins.error.message, 500)
-
-  return jsonOk({ pick: { id: r.id, run_id, pick_type: results.decision.pick_type, selection: r.selection, units: r.units, confidence: r.confidence } })
 }
 
 

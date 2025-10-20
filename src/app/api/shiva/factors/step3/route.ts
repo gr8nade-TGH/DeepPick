@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { ensureApiEnabled, ensureWritesEnabled, jsonError, jsonOk, requireIdempotencyKey } from '@/lib/api/shiva-v1/route-helpers'
+import { withIdempotency } from '@/lib/api/shiva-v1/idempotency'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 
 const Step3Schema = z.object({
@@ -37,25 +38,31 @@ export async function POST(request: Request) {
   const parse = Step3Schema.safeParse(body)
   if (!parse.success) return jsonError('INVALID_BODY', 'Invalid request body', 400, { issues: parse.error.issues })
 
-  const admin = getSupabaseAdmin()
   const { run_id, results } = parse.data
-
-  for (const f of results.factors) {
-    const ins = await admin.from('factors').insert({
-      run_id,
-      factor_no: f.factor_no,
-      raw_values_json: f.raw_values_json,
-      parsed_values_json: f.parsed_values_json,
-      normalized_value: f.normalized_value,
-      weight_applied: f.weight_total_pct,
-      caps_applied: f.caps_applied,
-      cap_reason: f.cap_reason ?? null,
-      notes: f.notes ?? null,
-    })
-    if (ins.error) return jsonError('DB_ERROR', ins.error.message, 500)
-  }
-
-  return jsonOk({ run_id, factor_count: results.factors.length })
+  return withIdempotency({
+    runId: run_id,
+    step: 'step3',
+    idempotencyKey: key,
+    writeAllowed: true,
+    exec: async () => {
+      const admin = getSupabaseAdmin()
+      for (const f of results.factors) {
+        const ins = await admin.from('factors').insert({
+          run_id,
+          factor_no: f.factor_no,
+          raw_values_json: f.raw_values_json,
+          parsed_values_json: f.parsed_values_json,
+          normalized_value: f.normalized_value,
+          weight_applied: f.weight_total_pct,
+          caps_applied: f.caps_applied,
+          cap_reason: f.cap_reason ?? null,
+          notes: f.notes ?? null,
+        })
+        if (ins.error) throw new Error(ins.error.message)
+      }
+      return { body: { run_id, factor_count: results.factors.length }, status: 200 }
+    }
+  })
 }
 
 

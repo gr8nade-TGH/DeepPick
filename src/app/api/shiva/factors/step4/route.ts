@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { ensureApiEnabled, ensureWritesEnabled, jsonError, jsonOk, requireIdempotencyKey } from '@/lib/api/shiva-v1/route-helpers'
+import { withIdempotency } from '@/lib/api/shiva-v1/idempotency'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 
 const Step4Schema = z.object({
@@ -46,37 +47,45 @@ export async function POST(request: Request) {
   const parse = Step4Schema.safeParse(body)
   if (!parse.success) return jsonError('INVALID_BODY', 'Invalid request body', 400, { issues: parse.error.issues })
 
-  const admin = getSupabaseAdmin()
   const { run_id, results } = parse.data
-
-  for (const f of results.factors) {
-    const ins = await admin.from('factors').insert({
-      run_id,
-      factor_no: f.factor_no,
-      raw_values_json: f.raw_values_json,
-      parsed_values_json: f.parsed_values_json,
-      normalized_value: f.normalized_value,
-      weight_applied: f.weight_total_pct,
-      caps_applied: f.caps_applied,
-      cap_reason: f.cap_reason ?? null,
-    })
-    if (ins.error) return jsonError('DB_ERROR', ins.error.message, 500)
-  }
-
-  const upd = await admin.from('runs').update({ conf7: results.pace_and_predictions.conf7_score_value }).eq('run_id', run_id)
-  if (upd.error) return jsonError('DB_ERROR', upd.error.message, 500)
-
-  return jsonOk({
-    run_id,
-    predictions: {
-      pace_exp: results.pace_and_predictions.pace_exp,
-      delta_100: results.pace_and_predictions.delta_100_value,
-      spread_pred_points: results.pace_and_predictions.spread_pred_points,
-      total_pred_points: results.pace_and_predictions.total_pred_points,
-      scores: { home: results.pace_and_predictions.scores.home_pts, away: results.pace_and_predictions.scores.away_pts },
-      winner: results.pace_and_predictions.winner,
-      conf7_score: results.pace_and_predictions.conf7_score_value,
-    },
+  return withIdempotency({
+    runId: run_id,
+    step: 'step4',
+    idempotencyKey: key,
+    writeAllowed: true,
+    exec: async () => {
+      const admin = getSupabaseAdmin()
+      for (const f of results.factors) {
+        const ins = await admin.from('factors').insert({
+          run_id,
+          factor_no: f.factor_no,
+          raw_values_json: f.raw_values_json,
+          parsed_values_json: f.parsed_values_json,
+          normalized_value: f.normalized_value,
+          weight_applied: f.weight_total_pct,
+          caps_applied: f.caps_applied,
+          cap_reason: f.cap_reason ?? null,
+        })
+        if (ins.error) throw new Error(ins.error.message)
+      }
+      const upd = await admin.from('runs').update({ conf7: results.pace_and_predictions.conf7_score_value }).eq('run_id', run_id)
+      if (upd.error) throw new Error(upd.error.message)
+      return {
+        body: {
+          run_id,
+          predictions: {
+            pace_exp: results.pace_and_predictions.pace_exp,
+            delta_100: results.pace_and_predictions.delta_100_value,
+            spread_pred_points: results.pace_and_predictions.spread_pred_points,
+            total_pred_points: results.pace_and_predictions.total_pred_points,
+            scores: { home: results.pace_and_predictions.scores.home_pts, away: results.pace_and_predictions.scores.away_pts },
+            winner: results.pace_and_predictions.winner,
+            conf7_score: results.pace_and_predictions.conf7_score_value,
+          },
+        },
+        status: 200,
+      }
+    }
   })
 }
 
