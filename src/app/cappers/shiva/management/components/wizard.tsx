@@ -117,6 +117,50 @@ export function SHIVAWizard() {
          step === 8 ? 'Click Next to generate debug report with all step responses.' :
          'Click Next to start (Step 1 creates run).'}
       </div>
+      {/* Step Logs Table */}
+      {Object.keys(stepLogs).length > 0 && (
+        <div className="mt-3">
+          <h4 className="text-sm font-semibold mb-2">Step Responses:</h4>
+          <div className="border rounded p-2 text-xs">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left p-1">Step</th>
+                  <th className="text-left p-1">Status</th>
+                  <th className="text-left p-1">Dry Run</th>
+                  <th className="text-left p-1">Response</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(stepLogs).map(([stepNum, response]: [string, any]) => (
+                  <tr key={stepNum} className="border-b">
+                    <td className="p-1">{stepNum}</td>
+                    <td className="p-1">
+                      <span className={`px-1 rounded text-xs ${
+                        response.status >= 200 && response.status < 300 ? 'bg-green-100 text-green-800' :
+                        response.status >= 400 ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {response.status}
+                      </span>
+                    </td>
+                    <td className="p-1">
+                      <span className={`px-1 rounded text-xs ${
+                        response.dryRun ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {response.dryRun ? 'Yes' : 'No'}
+                      </span>
+                    </td>
+                    <td className="p-1 font-mono text-xs max-w-xs truncate">
+                      {response.json ? JSON.stringify(response.json).substring(0, 50) + '...' : 'No data'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {step === 8 && log?.json && (
         <div className="mt-3">
           <button 
