@@ -72,7 +72,7 @@ export class NBAFactorCatalog implements IFactorCatalog {
         defaultCap: 2.0,
         defaultWeight: 1.0,
         shrinkageK: 800, // Requires lots of lineup minutes
-        description: 'On/off net rating impact of starting lineup and key rotations',
+        description: 'HUMAN EXPLANATION: Measures how well a team\'s starting lineup plays together. Some lineups have great chemistry and outscore opponents by 10+ points per 100 possessions. Others struggle and get outscored. We look at the net rating (offense - defense) when these 5 players are on the court together.',
       },
       {
         key: 'shot_profile_mismatch',
@@ -82,7 +82,7 @@ export class NBAFactorCatalog implements IFactorCatalog {
         defaultCap: 1.5,
         defaultWeight: 0.9,
         shrinkageK: 200,
-        description: '3-point rate & efficiency vs opponent 3-point defense, rim finishing vs rim protection',
+        description: 'HUMAN EXPLANATION: Analyzes shooting style mismatches. If Team A loves 3-pointers but Team B has weak 3-point defense, that\'s an advantage. If Team A finishes well at the rim but Team B has great rim protection, that\'s a disadvantage. We compare each team\'s shooting tendencies against the opponent\'s defensive strengths.',
       },
       {
         key: 'ref_crew_tendencies',
@@ -92,7 +92,7 @@ export class NBAFactorCatalog implements IFactorCatalog {
         defaultCap: 3.0,
         defaultWeight: 0.7,
         shrinkageK: 50, // Ref data stabilizes quickly
-        description: 'Ref crew pace and foul rate tendencies affect total points',
+        description: 'HUMAN EXPLANATION: Different referee crews call games differently. Some crews call more fouls, leading to more free throws and slower pace (lower totals). Others let players play more physically, leading to faster pace (higher totals). We track each crew\'s tendencies and adjust our total predictions accordingly.',
       },
       {
         key: 'schedule_impact',
@@ -102,7 +102,7 @@ export class NBAFactorCatalog implements IFactorCatalog {
         defaultCap: 1.0,
         defaultWeight: 0.8,
         shrinkageK: 30,
-        description: 'Rest days, back-to-back, travel distance, altitude',
+        description: 'HUMAN EXPLANATION: Tired teams play worse. Teams on back-to-back games, traveling long distances, or playing at high altitude (like Denver) often underperform. We factor in rest days, travel distance, and altitude to predict which team might be fatigued.',
       },
       {
         key: 'scheme_matchup',
@@ -112,7 +112,7 @@ export class NBAFactorCatalog implements IFactorCatalog {
         defaultCap: 1.2,
         defaultWeight: 0.7,
         shrinkageK: 150,
-        description: 'Switch defense vs non-shooting bigs, drop coverage vs pull-up shooters',
+        description: 'HUMAN EXPLANATION: Some defensive schemes work better against certain offensive styles. For example, teams that switch everything on defense struggle against big men who can\'t shoot (they get stuck in bad matchups). Teams that drop coverage struggle against guards who can pull up from mid-range. We analyze these scheme mismatches.',
       },
     ]
   }
