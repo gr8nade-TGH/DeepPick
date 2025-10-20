@@ -6,42 +6,42 @@ import { SHIVAManagementInbox } from './components/inbox'
 import { SHIVAWizard } from './components/wizard'
 import type { CapperProfile } from '@/lib/cappers/shiva-v1/profile'
 
-// Factor metadata for UI display
+// Factor metadata for UI display (from NBA_Factor_Library_v1.csv)
 const NBA_FACTOR_METADATA: Record<string, { name: string; description: string; dataSource: string }> = {
   seasonNet: {
-    name: 'Season Net Rating',
-    description: 'Net rating differential (home - away) for the full season',
-    dataSource: 'StatMuse: net rating queries',
+    name: 'Season Net Rating Differential',
+    description: 'Team Net Rating (ORtg-DRtg) differential between opponents. Core strength signal.',
+    dataSource: 'StatMuse: season ORtg/DRtg queries',
   },
   recentNet: {
     name: 'Recent Form (Last 10)',
-    description: 'Net rating differential over last 10 games',
-    dataSource: 'StatMuse: last 10 games queries',
-  },
-  h2hPpg: {
-    name: 'Head-to-Head PPG',
-    description: 'Points per game differential in H2H matchups this season',
-    dataSource: 'StatMuse: PPG vs opponent queries',
+    description: 'Net Rating over last 10 games; momentum indicator. Clamped to ±8 before weighting.',
+    dataSource: 'StatMuse: last 10 games net rating',
   },
   matchupORtgDRtg: {
-    name: 'ORtg Differential',
-    description: 'Offensive rating differential (home - away)',
-    dataSource: 'StatMuse: offensive rating queries',
+    name: 'Off/Def Rating Differential',
+    description: 'Offensive vs Defensive rating mismatch between teams. Matchup quality indicator.',
+    dataSource: 'StatMuse: ORtg and DRtg queries',
   },
-  newsEdge: {
-    name: 'News/Injury Edge',
-    description: 'Impact of injuries and news on game edge (capped ±3.0 per 100)',
-    dataSource: 'Web search: NBA.com, team sites, ESPN, The Athletic',
-  },
-  homeEdge: {
-    name: 'Home Court Advantage',
-    description: 'Fixed home court edge per 100 possessions',
-    dataSource: 'Constant: +1.5 per 100',
+  h2hPpg: {
+    name: 'Head-to-Head PPG (season)',
+    description: 'Season PPG by each team vs this opponent. Style/fit history. Capped at ±6.',
+    dataSource: 'StatMuse: PPG vs opponent queries',
   },
   threePoint: {
     name: '3-Point Environment',
-    description: '3PT attempt and efficiency differentials',
-    dataSource: 'StatMuse: 3PA, 3P%, opponent 3PA queries',
+    description: '3PA rate / 3P% / opponent 3PA context merged into shot profile edge. Variance lever.',
+    dataSource: 'StatMuse: 3PA, 3P%, opponent 3PA',
+  },
+  newsEdge: {
+    name: 'News/Injury Edge',
+    description: 'Injury/availability impact within last 48-72h. Capped at ±3 per 100 pre-aggregation.',
+    dataSource: 'News: NBA.com, team sites, ESPN, The Athletic',
+  },
+  homeEdge: {
+    name: 'Home Court Edge',
+    description: 'Generic home advantage adjustment. Default +1.5 per 100; can tune per team later.',
+    dataSource: 'Internal constant',
   },
 }
 

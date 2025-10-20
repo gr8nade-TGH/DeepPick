@@ -1,0 +1,8 @@
+key,name,description,unit,typical_range,data_source,normalization_notes,caps,weight_default,notes
+seasonNet,Season Net Rating Differential,Team Net Rating (ORtg-DRtg) differential between opponents.,per100,-10..+10,StatMuse,Use season ORtg/DRtg; contribution = home_net - away_net.,none,0.21,Core strength signal
+recentNet,Recent Form (Last 10),Net Rating over last 10 games; momentum indicator.,per100,-12..+12,StatMuse,Compute differential; clamp to ±8 before weighting.,clamp ±8,0.175,Momentum
+matchupORtgDRtg,Off/Def Rating Differential,Offensive vs Defensive rating mismatch between teams.,per100,-12..+12,StatMuse,ORtg_home-DRtg_away and ORtg_away-DRtg_home; combine.,cap side ±6,0.14,Matchup quality
+h2hPpg,Head-to-Head PPG (season),Season PPG by each team vs this opponent.,ppg,90..130,StatMuse,Convert to per-100 delta vs league baseline.,cap ±6,0.07,Style/fit history
+threePoint,3-Point Environment,3PA rate / 3P% / opp 3PA context merged into shot profile edge.,rate/percent,3PA:20..45; 3P%:30..40,StatMuse,Normalize components to per-100 composite.,cap ±4,0.021,Variance lever
+newsEdge,News/Injury Edge,Injury/availability impact within last 48–72h.,per100,-3..+3,News,Map statuses to per-100; cap at ±3 pre-aggregation.,cap ±3 pre,0.07,Availability
+homeEdge,Home Court Edge,Generic home advantage adjustment.,per100,0..+2,Internal,Default +1.5 for home; can tune per team later.,cap +1.5,0.035,Contextual
