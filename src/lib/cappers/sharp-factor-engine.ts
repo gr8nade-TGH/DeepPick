@@ -446,17 +446,17 @@ export function deduplicateFactors(factors: SharpFactor[]): SharpFactor[] {
   
   // Keep best from each group
   const deduplicated: SharpFactor[] = []
-  for (const [key, group] of groups) {
+  for (const [key, group] of groups.entries()) {
     if (group.length === 1) {
       deduplicated.push(group[0])
     } else {
       // Keep highest reliability
-      const best = group.reduce((prev, curr) =>
+      const best = group.reduce((prev: SharpFactor, curr: SharpFactor) =>
         curr.reliability > prev.reliability ? curr : prev
       )
       
       // Merge reasoning if multiple similar factors
-      const allReasoning = group.map(f => f.reasoning).join(' | ')
+      const allReasoning = group.map((f: SharpFactor) => f.reasoning).join(' | ')
       best.reasoning = allReasoning
       
       deduplicated.push(best)
