@@ -40,6 +40,19 @@ export async function POST(request: Request) {
   if (!parse.success) return jsonError('INVALID_BODY', 'Invalid request body', 400, { issues: parse.error.issues })
 
   const { run_id, results } = parse.data
+  // Precondition: require an active snapshot for this run
+  {
+    const admin = getSupabaseAdmin()
+    const snap = await admin
+      .from('odds_snapshots')
+      .select('snapshot_id')
+      .eq('run_id', run_id)
+      .eq('is_active', true)
+      .maybeSingle()
+    if (!snap.data) {
+      return jsonError('PRECONDITION_FAILED', 'No active odds snapshot for this run', 422)
+    }
+  }
   return withIdempotency({
     runId: run_id,
     step: 'step5',

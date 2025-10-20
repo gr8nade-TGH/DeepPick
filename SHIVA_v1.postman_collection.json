@@ -1,0 +1,302 @@
+{
+  "info": {
+    "_postman_id": "e9c470d9-fba9-41a1-b4e4-35c3338a7562",
+    "name": "SHIVA v1 Pick Generation API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Collection for SHIVA v1 routes. Set `baseUrl` env var, and toggle dry-run via server flags."
+  },
+  "item": [
+    {
+      "name": "Create Run",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "demo-e594345293e3"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/shiva/runs",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "shiva",
+            "runs"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"game_id\": \"nba_2025_10_21_okc_hou\",\n  \"sport\": \"NBA\",\n  \"capper\": \"SHIVA\",\n  \"home_team\": \"Oklahoma City Thunder\",\n  \"away_team\": \"Houston Rockets\",\n  \"start_time_utc\": \"2025-10-21T01:30:00Z\"\n}"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Run (replace run_id)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "demo-9b89aae5a5d2"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/shiva/runs/RUN_ID_REPLACE",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "shiva",
+            "runs",
+            "RUN_ID_REPLACE"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Set Run State (COMPLETE)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "demo-3f6d6e637f3a"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/shiva/runs/RUN_ID_REPLACE/state",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "shiva",
+            "runs",
+            "RUN_ID_REPLACE",
+            "state"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"state\": \"COMPLETE\"\n}"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Odds Snapshot",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "demo-b9a58fd9a525"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/shiva/odds/snapshot",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "shiva",
+            "odds",
+            "snapshot"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"run_id\": \"RUN_ID_REPLACE\",\n  \"snapshot\": {\n    \"game_id\": \"nba_2025_10_21_okc_hou\",\n    \"sport\": \"NBA\",\n    \"home_team\": \"Oklahoma City Thunder\",\n    \"away_team\": \"Houston Rockets\",\n    \"start_time_utc\": \"2025-10-21T01:30:00Z\",\n    \"captured_at_utc\": \"2025-10-20T17:05:12Z\",\n    \"books_considered\": 11,\n    \"moneyline\": {\n      \"home_avg\": -152,\n      \"away_avg\": 135\n    },\n    \"spread\": {\n      \"fav_team\": \"Oklahoma City Thunder\",\n      \"line\": -3.5,\n      \"odds\": -110\n    },\n    \"total\": {\n      \"line\": 227.5,\n      \"over_odds\": -108,\n      \"under_odds\": -112\n    },\n    \"raw_payload\": {\n      \"source\": \"internal-odds-api\",\n      \"version\": \"v3\"\n    }\n  }\n}"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Factors Step3",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "demo-61b7e1f98161"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/shiva/factors/step3",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "shiva",
+            "factors",
+            "step3"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"run_id\": \"RUN_ID_REPLACE\",\n  \"inputs\": {\n    \"teams\": {\n      \"home\": \"Oklahoma City Thunder\",\n      \"away\": \"Houston Rockets\"\n    },\n    \"ai_provider\": \"perplexity\",\n    \"news_window_hours\": 48\n  },\n  \"results\": {\n    \"factors\": [\n      {\n        \"factor_no\": 1,\n        \"name\": \"Season Net Rating\",\n        \"weight_total_pct\": 21.0,\n        \"raw_values_json\": {\n          \"okc\": {\n            \"responses\": {\n              \"net_rating\": 6.8,\n              \"offensive_rating\": 116.2,\n              \"defensive_rating\": 109.4\n            }\n          },\n          \"hou\": {\n            \"responses\": {\n              \"net_rating\": 3.1,\n              \"offensive_rating\": 114.0,\n              \"defensive_rating\": 110.9\n            }\n          }\n        },\n        \"parsed_values_json\": {\n          \"okc_NR\": 6.8,\n          \"hou_NR\": 3.1,\n          \"delta_100\": 3.7\n        },\n        \"normalized_value\": 3.7,\n        \"caps_applied\": false,\n        \"cap_reason\": null\n      },\n      {\n        \"factor_no\": 2,\n        \"name\": \"Recent Net Rating (last 10)\",\n        \"weight_total_pct\": 17.5,\n        \"raw_values_json\": {\n          \"okc\": {\n            \"response\": {\n              \"net_rating_last10\": 9.2\n            }\n          },\n          \"hou\": {\n            \"response\": {\n              \"net_rating_last10\": 4.4\n            }\n          }\n        },\n        \"parsed_values_json\": {\n          \"okc_NR10\": 9.2,\n          \"hou_NR10\": 4.4,\n          \"delta_100\": 4.8\n        },\n        \"normalized_value\": 4.8,\n        \"caps_applied\": false,\n        \"cap_reason\": null\n      },\n      {\n        \"factor_no\": 3,\n        \"name\": \"Offense vs Opponent Defense\",\n        \"weight_total_pct\": 14.0,\n        \"raw_values_json\": {\n          \"okc_ORtg\": 116.2,\n          \"hou_DRtg\": 110.9,\n          \"hou_ORtg\": 114.0,\n          \"okc_DRtg\": 109.4\n        },\n        \"parsed_values_json\": {\n          \"okc_vs_hou\": 5.3,\n          \"hou_vs_okc\": 4.6,\n          \"delta_100\": 0.7\n        },\n        \"normalized_value\": 0.7,\n        \"caps_applied\": false,\n        \"cap_reason\": null\n      },\n      {\n        \"factor_no\": 4,\n        \"name\": \"Head-to-Head PPG (this season)\",\n        \"weight_total_pct\": 7.0,\n        \"raw_values_json\": {\n          \"okc_ppg_vs_hou\": 118.0,\n          \"hou_ppg_vs_okc\": 112.5\n        },\n        \"parsed_values_json\": {\n          \"ppg_gap\": 5.5,\n          \"pace_expected_hint\": 99\n        },\n        \"normalized_value\": 5.56,\n        \"caps_applied\": true,\n        \"cap_reason\": \"Clamp \\u00b16 per 100\"\n      },\n      {\n        \"factor_no\": 5,\n        \"name\": \"Injury/News Edge\",\n        \"weight_total_pct\": 7.0,\n        \"raw_values_json\": {\n          \"findings\": [\n            {\n              \"team\": \"Houston Rockets\",\n              \"player\": \"J. Green\",\n              \"status\": \"Questionable\"\n            }\n          ]\n        },\n        \"parsed_values_json\": {\n          \"news_edge_100\": -1.0\n        },\n        \"normalized_value\": -1.0,\n        \"caps_applied\": true,\n        \"cap_reason\": \"Clamp [-3,+3]\"\n      }\n    ],\n    \"meta\": {\n      \"provider_latency_ms\": {\n        \"statmuse\": 600,\n        \"web_search\": 800\n      },\n      \"ai_provider\": \"perplexity\"\n    }\n  }\n}"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Factors Step4",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "demo-f3df519b424f"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/shiva/factors/step4",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "shiva",
+            "factors",
+            "step4"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"run_id\": \"RUN_ID_REPLACE\",\n  \"inputs\": {\n    \"ai_provider\": \"openai\",\n    \"home_team\": \"Oklahoma City Thunder\",\n    \"away_team\": \"Houston Rockets\"\n  },\n  \"results\": {\n    \"factors\": [\n      {\n        \"factor_no\": 6,\n        \"name\": \"Home-Court Edge\",\n        \"weight_total_pct\": 3.5,\n        \"raw_values_json\": {\n          \"home_team\": \"Oklahoma City Thunder\"\n        },\n        \"parsed_values_json\": {\n          \"home_edge_100\": 1.5\n        },\n        \"normalized_value\": 1.5,\n        \"caps_applied\": false,\n        \"cap_reason\": null\n      },\n      {\n        \"factor_no\": 7,\n        \"name\": \"3-Point Environment\",\n        \"weight_total_pct\": 2.1,\n        \"raw_values_json\": {\n          \"okc\": {\n            \"resp\": {\n              \"3pa\": 38.2,\n              \"3p_pct\": 37.0,\n              \"opp_3pa\": 34.0\n            }\n          },\n          \"hou\": {\n            \"resp\": {\n              \"3pa\": 40.1,\n              \"3p_pct\": 36.1,\n              \"opp_3pa\": 37.9\n            }\n          }\n        },\n        \"parsed_values_json\": {\n          \"three_point_edge_100\": 0.0,\n          \"explanation\": \"offsetting\"\n        },\n        \"normalized_value\": 0.0,\n        \"caps_applied\": false,\n        \"cap_reason\": null\n      }\n    ],\n    \"pace_and_predictions\": {\n      \"statmuse_pace\": {\n        \"okc_pace\": 100.5,\n        \"hou_pace\": 97.7\n      },\n      \"pace_exp\": 99.07,\n      \"delta_100_value\": 2.21,\n      \"spread_pred_points\": 2.19,\n      \"league_avg_ortg\": 114.0,\n      \"total_pred_points\": 230.1,\n      \"scores\": {\n        \"home_pts\": 116,\n        \"away_pts\": 114\n      },\n      \"winner\": \"Oklahoma City Thunder\",\n      \"conf7_score_value\": 2.46\n    },\n    \"meta\": {\n      \"ai_provider\": \"openai\"\n    }\n  }\n}"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Factors Step5",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "demo-7eff87145eff"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/shiva/factors/step5",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "shiva",
+            "factors",
+            "step5"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"run_id\": \"RUN_ID_REPLACE\",\n  \"inputs\": {\n    \"active_snapshot_id\": \"SNAP_ID_REPLACE\",\n    \"spread_pred_points\": 2.19,\n    \"total_pred_points\": 230.1,\n    \"pick_side_team\": \"Oklahoma City Thunder\",\n    \"snapshot\": {\n      \"spread\": {\n        \"fav_team\": \"Oklahoma City Thunder\",\n        \"line\": -3.5\n      },\n      \"total\": {\n        \"line\": 227.5\n      }\n    },\n    \"conf7_score\": 2.46\n  }\n}"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Pick Generate",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "demo-6b39b682fe27"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/shiva/pick/generate",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "shiva",
+            "pick",
+            "generate"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"run_id\": \"RUN_ID_REPLACE\",\n  \"inputs\": {\n    \"conf_final\": 2.72,\n    \"edge_dominant\": \"total\",\n    \"side_data\": {\n      \"pick_team\": \"Oklahoma City Thunder\",\n      \"spread_pred\": 2.19,\n      \"market_spread\": -3.5\n    },\n    \"total_data\": {\n      \"total_pred\": 230.1,\n      \"market_total\": 227.5\n    }\n  }\n}"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Insight Card",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "demo-cce5cbfee714"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/shiva/insight-card",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "shiva",
+            "insight-card"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"run_id\": \"RUN_ID_REPLACE\",\n  \"inputs\": {\n    \"final_pick\": {\n      \"pick_type\": \"TOTAL\",\n      \"selection\": \"OVER 227.5\",\n      \"units\": 1,\n      \"pred_score\": {\n        \"home\": 116,\n        \"away\": 114\n      },\n      \"conf_final\": 2.72\n    }\n  }\n}"
+        }
+      },
+      "response": []
+    }
+  ]
+}
