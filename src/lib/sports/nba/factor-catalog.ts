@@ -829,56 +829,6 @@ export class NBAFactorCatalog implements IFactorCatalog {
       sources: ['NBA Historical Data'],
       impactType: 'positive',
     }
-  /**
-   * Factor 8: Injury Impact (from AI research)
-   * What it is: Key player injuries affecting team performance
-   * Why it matters: Missing starters or key role players significantly impacts team performance
-   */
-  private calculateInjuryImpact(game: GameInput): SharpFactor | null {
-    // This would use AI research data from Perplexity injury search
-    const homeInjuries = game.injuries?.filter(i => i.player.includes(game.homeTeam.name)) ?? []
-    const awayInjuries = game.injuries?.filter(i => i.player.includes(game.awayTeam.name)) ?? []
-    
-    // Calculate injury impact based on player importance and status
-    const homeImpact = homeInjuries.reduce((sum, injury) => {
-      const severity = injury.status === 'out' ? 2.0 : 
-                     injury.status === 'doubtful' ? 1.5 :
-                     injury.status === 'questionable' ? 1.0 : 0.5
-      return sum + (injury.impact ?? severity)
-    }, 0)
-    
-    const awayImpact = awayInjuries.reduce((sum, injury) => {
-      const severity = injury.status === 'out' ? 2.0 : 
-                     injury.status === 'doubtful' ? 1.5 :
-                     injury.status === 'questionable' ? 1.0 : 0.5
-      return sum + (injury.impact ?? severity)
-    }, 0)
-    
-    const effect = awayImpact - homeImpact // Negative for home team injuries
-    
-    return {
-      name: 'Injury Impact',
-      category: 'context',
-      effectSize: effect,
-      unit: 'points_spread',
-      marketBaseline: game.spread ?? 0,
-      sampleSize: 1,
-      recency: 1.0,
-      dataQuality: 0.9,
-      reliability: 0,
-      shrinkageK: 5,
-      learnedWeight: 0.9,
-      softCap: 3.0,
-      contribution: 0,
-      residualized: false,
-      reasoning: `Injury impact: ${game.homeTeam.name} ${homeInjuries.length} injuries (${homeImpact.toFixed(1)} impact) vs ${game.awayTeam.name} ${awayInjuries.length} injuries (${awayImpact.toFixed(1)} impact)`,
-      rawData: {
-        teamA: { injuries: homeInjuries, impact: homeImpact },
-        teamB: { injuries: awayInjuries, impact: awayImpact },
-      },
-      sources: ['AI Injury Research', 'NBA Injury Reports'],
-      impactType: effect > 0.5 ? 'positive' : effect < -0.5 ? 'negative' : 'neutral',
-    }
   }
 }
 
