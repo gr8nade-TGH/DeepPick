@@ -47,22 +47,26 @@ export async function POST(request: Request) {
         return { body: { run_id, decision: 'PASS', confidence: parse.data.inputs.conf_final, pick: null }, status: 200 }
       }
       const r = results.persistence.picks_row
-      const ins = await admin.from('picks').insert({
-        id: r.id,
-        game_id: null,
-        pick_type: results.decision.pick_type.toLowerCase(),
-        selection: r.selection,
-        odds: 0,
-        units: r.units,
-        game_snapshot: {},
-        status: 'pending',
-        is_system_pick: true,
-        confidence: r.confidence,
-        reasoning: results.decision.reason,
-        algorithm_version: 'shiva_v1',
-        run_id,
-      })
-      if (ins.error) throw new Error(ins.error.message)
+      
+      if (writeAllowed) {
+        const ins = await admin.from('picks').insert({
+          id: r.id,
+          game_id: null,
+          pick_type: results.decision.pick_type.toLowerCase(),
+          selection: r.selection,
+          odds: 0,
+          units: r.units,
+          game_snapshot: {},
+          status: 'pending',
+          is_system_pick: true,
+          confidence: r.confidence,
+          reasoning: results.decision.reason,
+          algorithm_version: 'shiva_v1',
+          run_id,
+        })
+        if (ins.error) throw new Error(ins.error.message)
+      }
+      
       return { body: { run_id, decision: 'PICK', confidence: r.confidence, pick: { id: r.id, run_id, pick_type: results.decision.pick_type, selection: r.selection, units: r.units, confidence: r.confidence } }, status: 200 }
     }
   })

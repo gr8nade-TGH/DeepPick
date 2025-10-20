@@ -18,8 +18,7 @@
       "conf_market_adj": "1.2 * 0.22",
       "conf_market_adj_value": 0.26
     },
-    "confidence": { "conf7": 2.46, "conf_final": 2.72 },
-    "meta": { "note": "Total disagreement dominates; modest positive adjustment." }
+    "confidence": { "conf7": 2.46, "conf_final": 2.72 }
   }
 }
 

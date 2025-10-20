@@ -8,7 +8,8 @@ async function postJson(path: string, body: unknown, idempo: string) {
     body: JSON.stringify(body),
   })
   const json = await res.json().catch(() => ({}))
-  return { status: res.status, json, dryRun: res.headers.get('X-Dry-Run') === '1' }
+  const dryRunHeader = res.headers.get('X-Dry-Run')
+  return { status: res.status, json, dryRun: dryRunHeader === '1' }
 }
 
 function DryRunBanner() {

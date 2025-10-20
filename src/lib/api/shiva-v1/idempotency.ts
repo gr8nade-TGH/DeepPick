@@ -59,7 +59,11 @@ export async function withIdempotency<TBody>(args: IdempotencyExecArgs<TBody>): 
     const result = await args.exec()
     return new Response(JSON.stringify(result.body), {
       status: result.status,
-      headers: { 'Content-Type': 'application/json', 'X-Dry-Run': '1', 'Idempotency-Skip': 'true' }
+      headers: { 
+        'Content-Type': 'application/json', 
+        'X-Dry-Run': '1', 
+        'Idempotency-Skip': 'true' 
+      }
     })
   }
 
@@ -93,7 +97,13 @@ export async function withIdempotency<TBody>(args: IdempotencyExecArgs<TBody>): 
     }
   }
 
-  return jsonOk(result.body, result.status)
+  return new Response(JSON.stringify(result.body), {
+    status: result.status,
+    headers: { 
+      'Content-Type': 'application/json',
+      'X-Dry-Run': '0'
+    }
+  })
 }
 
 
