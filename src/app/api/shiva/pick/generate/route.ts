@@ -19,6 +19,7 @@ const PickSchema = z.object({
 }).strict()
 
 export async function POST(request: Request) {
+  const startTime = Date.now()
   const apiErr = ensureApiEnabled()
   if (apiErr) return apiErr
   const writeAllowed = isWriteAllowed()
@@ -27,7 +28,14 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => null)
   const parse = PickSchema.safeParse(body)
-  if (!parse.success) return jsonError('INVALID_BODY', 'Invalid request body', 400, { issues: parse.error.issues })
+  if (!parse.success) {
+    console.error('[SHIVA:PickGenerate]', {
+      error: 'INVALID_BODY',
+      issues: parse.error.issues,
+      latencyMs: Date.now() - startTime,
+    })
+    return jsonError('INVALID_BODY', 'Invalid request body', 400, { issues: parse.error.issues })
+  }
 
   const { run_id, results } = parse.data
   type PickBody = {
@@ -43,12 +51,24 @@ export async function POST(request: Request) {
     writeAllowed,
     exec: async () => {
       const admin = getSupabaseAdmin()
+      
       if (!results.persistence?.picks_row) {
+        // PASS decision
+        console.log('[SHIVA:PickGenerate]', {
+          run_id,
+          decision: 'PASS',
+          confidence: parse.data.inputs.conf_final,
+          writeAllowed,
+          latencyMs: Date.now() - startTime,
+          status: 200,
+        })
         return { body: { run_id, decision: 'PASS', confidence: parse.data.inputs.conf_final, pick: null }, status: 200 }
       }
+      
       const r = results.persistence.picks_row
       
       if (writeAllowed) {
+        // Single transaction: insert pick
         const ins = await admin.from('picks').insert({
           id: r.id,
           game_id: null,
@@ -67,7 +87,40 @@ export async function POST(request: Request) {
         if (ins.error) throw new Error(ins.error.message)
       }
       
-      return { body: { run_id, decision: 'PICK', confidence: r.confidence, pick: { id: r.id, run_id, pick_type: results.decision.pick_type, selection: r.selection, units: r.units, confidence: r.confidence } }, status: 200 }
+      const responseBody = { 
+        run_id, 
+        decision: 'PICK', 
+        confidence: r.confidence, 
+        pick: { 
+          id: r.id, 
+          run_id, 
+          pick_type: results.decision.pick_type, 
+          selection: r.selection, 
+          units: r.units, 
+          confidence: r.confidence 
+        } 
+      }
+      
+      // Structured logging
+      console.log('[SHIVA:PickGenerate]', {
+        run_id,
+        inputs: {
+          conf_final: parse.data.inputs.conf_final,
+          edge_dominant: parse.data.inputs.edge_dominant,
+        },
+        outputs: {
+          decision: 'PICK',
+          pick_type: results.decision.pick_type,
+          selection: r.selection,
+          units: r.units,
+          confidence: r.confidence,
+        },
+        writeAllowed,
+        latencyMs: Date.now() - startTime,
+        status: 200,
+      })
+      
+      return { body: responseBody, status: 200 }
     }
   })
 }

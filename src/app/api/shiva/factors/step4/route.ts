@@ -37,6 +37,7 @@ const Step4Schema = z.object({
 }).strict()
 
 export async function POST(request: Request) {
+  const startTime = Date.now()
   const apiErr = ensureApiEnabled()
   if (apiErr) return apiErr
   const writeAllowed = isWriteAllowed()
@@ -45,7 +46,14 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => null)
   const parse = Step4Schema.safeParse(body)
-  if (!parse.success) return jsonError('INVALID_BODY', 'Invalid request body', 400, { issues: parse.error.issues })
+  if (!parse.success) {
+    console.error('[SHIVA:Step4]', {
+      error: 'INVALID_BODY',
+      issues: parse.error.issues,
+      latencyMs: Date.now() - startTime,
+    })
+    return jsonError('INVALID_BODY', 'Invalid request body', 400, { issues: parse.error.issues })
+  }
 
   const { run_id, results } = parse.data
   return withIdempotency({
@@ -71,22 +79,43 @@ export async function POST(request: Request) {
         }
       }
       if (writeAllowed) {
+        // Single transaction: update conf7 on runs table
         const upd = await admin.from('runs').update({ conf7: results.pace_and_predictions.conf7_score_value }).eq('run_id', run_id)
         if (upd.error) throw new Error(upd.error.message)
       }
-      return {
-        body: {
-          run_id,
-          predictions: {
-            pace_exp: results.pace_and_predictions.pace_exp,
-            delta_100: results.pace_and_predictions.delta_100_value,
-            spread_pred_points: results.pace_and_predictions.spread_pred_points,
-            total_pred_points: results.pace_and_predictions.total_pred_points,
-            scores: { home: results.pace_and_predictions.scores.home_pts, away: results.pace_and_predictions.scores.away_pts },
-            winner: results.pace_and_predictions.winner,
-            conf7_score: results.pace_and_predictions.conf7_score_value,
-          },
+      
+      const responseBody = {
+        run_id,
+        predictions: {
+          pace_exp: results.pace_and_predictions.pace_exp,
+          delta_100: results.pace_and_predictions.delta_100_value,
+          spread_pred_points: results.pace_and_predictions.spread_pred_points,
+          total_pred_points: results.pace_and_predictions.total_pred_points,
+          scores: { home: results.pace_and_predictions.scores.home_pts, away: results.pace_and_predictions.scores.away_pts },
+          winner: results.pace_and_predictions.winner,
+          conf7_score: results.pace_and_predictions.conf7_score_value,
         },
+      }
+      
+      // Structured logging
+      console.log('[SHIVA:Step4]', {
+        run_id,
+        inputs: {
+          ai_provider: results.meta.ai_provider,
+        },
+        outputs: {
+          pace_exp: results.pace_and_predictions.pace_exp,
+          spread_pred: results.pace_and_predictions.spread_pred_points,
+          total_pred: results.pace_and_predictions.total_pred_points,
+          conf7: results.pace_and_predictions.conf7_score_value,
+        },
+        writeAllowed,
+        latencyMs: Date.now() - startTime,
+        status: 200,
+      })
+      
+      return {
+        body: responseBody,
         status: 200,
       }
     }

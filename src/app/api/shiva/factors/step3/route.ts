@@ -28,6 +28,7 @@ const Step3Schema = z.object({
 }).strict()
 
 export async function POST(request: Request) {
+  const startTime = Date.now()
   const apiErr = ensureApiEnabled()
   if (apiErr) return apiErr
   const writeAllowed = isWriteAllowed()
@@ -36,7 +37,14 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => null)
   const parse = Step3Schema.safeParse(body)
-  if (!parse.success) return jsonError('INVALID_BODY', 'Invalid request body', 400, { issues: parse.error.issues })
+  if (!parse.success) {
+    console.error('[SHIVA:Step3]', {
+      error: 'INVALID_BODY',
+      issues: parse.error.issues,
+      latencyMs: Date.now() - startTime,
+    })
+    return jsonError('INVALID_BODY', 'Invalid request body', 400, { issues: parse.error.issues })
+  }
 
   const { run_id, results } = parse.data
   return withIdempotency({
@@ -46,7 +54,10 @@ export async function POST(request: Request) {
     writeAllowed,
     exec: async () => {
       const admin = getSupabaseAdmin()
+      const capsApplied = results.factors.filter(f => f.caps_applied).length
+      
       if (writeAllowed) {
+        // Single transaction: insert all factors
         for (const f of results.factors) {
           const ins = await admin.from('factors').insert({
             run_id,
@@ -62,7 +73,25 @@ export async function POST(request: Request) {
           if (ins.error) throw new Error(ins.error.message)
         }
       }
-      return { body: { run_id, factor_count: results.factors.length }, status: 200 }
+      
+      const responseBody = { run_id, factor_count: results.factors.length }
+      
+      // Structured logging
+      console.log('[SHIVA:Step3]', {
+        run_id,
+        inputs: {
+          ai_provider: results.meta.ai_provider,
+        },
+        outputs: {
+          factor_count: results.factors.length,
+          caps_applied: capsApplied,
+        },
+        writeAllowed,
+        latencyMs: Date.now() - startTime,
+        status: 200,
+      })
+      
+      return { body: responseBody, status: 200 }
     }
   })
 }

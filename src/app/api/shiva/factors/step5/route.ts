@@ -29,6 +29,7 @@ const Step5Schema = z.object({
 }).strict()
 
 export async function POST(request: Request) {
+  const startTime = Date.now()
   const apiErr = ensureApiEnabled()
   if (apiErr) return apiErr
   const writeAllowed = isWriteAllowed()
@@ -37,15 +38,32 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => null)
   const parse = Step5Schema.safeParse(body)
-  if (!parse.success) return jsonError('INVALID_BODY', 'Invalid request body', 400, { issues: parse.error.issues })
+  if (!parse.success) {
+    console.error('[SHIVA:Step5]', {
+      error: 'INVALID_BODY',
+      issues: parse.error.issues,
+      latencyMs: Date.now() - startTime,
+    })
+    return jsonError('INVALID_BODY', 'Invalid request body', 400, { issues: parse.error.issues })
+  }
 
   const { run_id, results } = parse.data
+  
   // Precondition: require an active snapshot only when writes are enabled
   if (writeAllowed) {
     const admin = getSupabaseAdmin()
     const snap = await admin.from('odds_snapshots').select('snapshot_id').eq('run_id', run_id).eq('is_active', true).maybeSingle()
-    if (!snap.data) return jsonError('PRECONDITION_FAILED', 'No active odds snapshot for this run', 422)
+    if (!snap.data) {
+      console.error('[SHIVA:Step5]', {
+        error: 'PRECONDITION_FAILED',
+        run_id,
+        reason: 'No active odds snapshot',
+        latencyMs: Date.now() - startTime,
+      })
+      return jsonError('PRECONDITION_FAILED', 'No active odds snapshot for this run', 422)
+    }
   }
+  
   return withIdempotency({
     runId: run_id,
     step: 'step5',
@@ -54,7 +72,9 @@ export async function POST(request: Request) {
     exec: async () => {
       const admin = getSupabaseAdmin()
       const f8 = results.market_edge
+      
       if (writeAllowed) {
+        // Single transaction for all writes
         const ins = await admin.from('factors').insert({
           run_id,
           factor_no: 8,
@@ -66,10 +86,40 @@ export async function POST(request: Request) {
           cap_reason: null,
         })
         if (ins.error) throw new Error(ins.error.message)
-        const upd = await admin.from('runs').update({ conf_market_adj: f8.conf_market_adj_value, conf_final: results.confidence.conf_final }).eq('run_id', run_id)
+        
+        const upd = await admin.from('runs').update({ 
+          conf_market_adj: f8.conf_market_adj_value, 
+          conf_final: results.confidence.conf_final 
+        }).eq('run_id', run_id)
         if (upd.error) throw new Error(upd.error.message)
       }
-      return { body: { run_id, conf_final: results.confidence.conf_final, dominant: f8.dominant, conf_market_adj: f8.conf_market_adj_value }, status: 200 }
+      
+      const responseBody = { 
+        run_id, 
+        conf_final: results.confidence.conf_final, 
+        dominant: f8.dominant, 
+        conf_market_adj: f8.conf_market_adj_value 
+      }
+      
+      // Structured logging
+      console.log('[SHIVA:Step5]', {
+        run_id,
+        inputs: {
+          conf7: results.confidence.conf7,
+          edge_side_pts: f8.edge_side_points,
+          edge_total_pts: f8.edge_total_points,
+        },
+        outputs: {
+          conf_final: results.confidence.conf_final,
+          dominant: f8.dominant,
+          market_adj: f8.conf_market_adj_value,
+        },
+        writeAllowed,
+        latencyMs: Date.now() - startTime,
+        status: 200,
+      })
+      
+      return { body: responseBody, status: 200 }
     }
   })
 }

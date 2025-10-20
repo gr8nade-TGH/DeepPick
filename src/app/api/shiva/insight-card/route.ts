@@ -13,6 +13,7 @@ const CardSchema = z.object({
 }).strict()
 
 export async function POST(request: Request) {
+  const startTime = Date.now()
   const apiErr = ensureApiEnabled()
   if (apiErr) return apiErr
   const writeAllowed = isWriteAllowed()
@@ -21,7 +22,14 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => null)
   const parse = CardSchema.safeParse(body)
-  if (!parse.success) return jsonError('INVALID_BODY', 'Invalid request body', 400, { issues: parse.error.issues })
+  if (!parse.success) {
+    console.error('[SHIVA:InsightCard]', {
+      error: 'INVALID_BODY',
+      issues: parse.error.issues,
+      latencyMs: Date.now() - startTime,
+    })
+    return jsonError('INVALID_BODY', 'Invalid request body', 400, { issues: parse.error.issues })
+  }
 
   const runId = parse.data.run_id
   return withIdempotency({
@@ -31,11 +39,35 @@ export async function POST(request: Request) {
     writeAllowed,
     exec: async () => {
       const admin = getSupabaseAdmin()
+      
       if (writeAllowed) {
-        const ins = await admin.from('insight_cards').insert({ run_id: runId, rendered_json: parse.data.card }).select('run_id').single()
+        // Single transaction: insert insight card
+        const ins = await admin.from('insight_cards').insert({ 
+          run_id: runId, 
+          rendered_json: parse.data.card 
+        }).select('run_id').single()
         if (ins.error) throw new Error(ins.error.message)
       }
-      return { body: { run_id: runId, insight_card_id: `card_${runId}` }, status: 200 }
+      
+      const responseBody = { run_id: runId, insight_card_id: `card_${runId}` }
+      
+      // Structured logging
+      console.log('[SHIVA:InsightCard]', {
+        run_id: runId,
+        inputs: {
+          pick_type: parse.data.inputs.final_pick.pick_type,
+          units: parse.data.inputs.final_pick.units,
+          conf_final: parse.data.inputs.final_pick.conf_final,
+        },
+        outputs: {
+          insight_card_id: `card_${runId}`,
+        },
+        writeAllowed,
+        latencyMs: Date.now() - startTime,
+        status: 200,
+      })
+      
+      return { body: responseBody, status: 200 }
     }
   })
 }

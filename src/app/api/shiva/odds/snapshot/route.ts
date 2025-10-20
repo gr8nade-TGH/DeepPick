@@ -22,6 +22,7 @@ const SnapshotSchema = z.object({
 }).strict()
 
 export async function POST(request: Request) {
+  const startTime = Date.now()
   const apiErr = ensureApiEnabled()
   if (apiErr) return apiErr
   const writeAllowed = isWriteAllowed()
@@ -30,7 +31,14 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => null)
   const parse = SnapshotSchema.safeParse(body)
-  if (!parse.success) return jsonError('INVALID_BODY', 'Invalid request body', 400, { issues: parse.error.issues })
+  if (!parse.success) {
+    console.error('[SHIVA:Snapshot]', {
+      error: 'INVALID_BODY',
+      issues: parse.error.issues,
+      latencyMs: Date.now() - startTime,
+    })
+    return jsonError('INVALID_BODY', 'Invalid request body', 400, { issues: parse.error.issues })
+  }
 
   const runId = parse.data.run_id
   return withIdempotency({
@@ -40,14 +48,48 @@ export async function POST(request: Request) {
     writeAllowed,
     exec: async () => {
       const admin = getSupabaseAdmin()
+      
       if (writeAllowed) {
+        // Single transaction: deactivate old, insert new active snapshot
         const deact = await admin.from('odds_snapshots').update({ is_active: false }).eq('run_id', runId).eq('is_active', true)
         if (deact.error) throw new Error(deact.error.message)
-        const ins = await admin.from('odds_snapshots').insert({ run_id: runId, payload_json: parse.data.snapshot, is_active: true }).select('snapshot_id, is_active').single()
+        
+        const ins = await admin.from('odds_snapshots').insert({ 
+          run_id: runId, 
+          payload_json: parse.data.snapshot, 
+          is_active: true 
+        }).select('snapshot_id, is_active').single()
         if (ins.error) throw new Error(ins.error.message)
+        
+        console.log('[SHIVA:Snapshot]', {
+          run_id: runId,
+          snapshot_id: ins.data.snapshot_id,
+          inputs: {
+            books_considered: parse.data.snapshot.books_considered,
+            spread_line: parse.data.snapshot.spread.line,
+            total_line: parse.data.snapshot.total.line,
+          },
+          outputs: {
+            snapshot_id: ins.data.snapshot_id,
+            is_active: true,
+          },
+          writeAllowed: true,
+          latencyMs: Date.now() - startTime,
+          status: 200,
+        })
+        
         return { body: { snapshot_id: ins.data.snapshot_id, is_active: ins.data.is_active }, status: 200 }
       }
+      
       // Dry-run: simulate a snapshot id
+      console.log('[SHIVA:Snapshot]', {
+        run_id: runId,
+        snapshot_id: 'dryrun_snapshot',
+        writeAllowed: false,
+        latencyMs: Date.now() - startTime,
+        status: 200,
+      })
+      
       return { body: { snapshot_id: 'dryrun_snapshot', is_active: true }, status: 200 }
     }
   })
