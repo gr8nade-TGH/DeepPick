@@ -55,18 +55,20 @@ export async function POST(request: Request) {
     writeAllowed,
     exec: async () => {
       const admin = getSupabaseAdmin()
-      for (const f of results.factors) {
-        const ins = await admin.from('factors').insert({
-          run_id,
-          factor_no: f.factor_no,
-          raw_values_json: f.raw_values_json,
-          parsed_values_json: f.parsed_values_json,
-          normalized_value: f.normalized_value,
-          weight_applied: f.weight_total_pct,
-          caps_applied: f.caps_applied,
-          cap_reason: f.cap_reason ?? null,
-        })
-        if (ins.error) throw new Error(ins.error.message)
+      if (writeAllowed) {
+        for (const f of results.factors) {
+          const ins = await admin.from('factors').insert({
+            run_id,
+            factor_no: f.factor_no,
+            raw_values_json: f.raw_values_json,
+            parsed_values_json: f.parsed_values_json,
+            normalized_value: f.normalized_value,
+            weight_applied: f.weight_total_pct,
+            caps_applied: f.caps_applied,
+            cap_reason: f.cap_reason ?? null,
+          })
+          if (ins.error) throw new Error(ins.error.message)
+        }
       }
       if (writeAllowed) {
         const upd = await admin.from('runs').update({ conf7: results.pace_and_predictions.conf7_score_value }).eq('run_id', run_id)
