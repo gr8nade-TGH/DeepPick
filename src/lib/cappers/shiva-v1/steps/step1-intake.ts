@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { Game, Sport } from '@/lib/dto/game'
+// Removed unused imports; DTOs are defined per-step in this namespace
 
 export const Step1IntakeInput = z.object({
   gameId: z.string().uuid(),

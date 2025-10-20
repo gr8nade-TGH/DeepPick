@@ -171,6 +171,7 @@ Format your response to clearly separate:
       }
 
       // 3. Perplexity analyzes StatMuse answers and injury data to generate analytical factors
+      const gameContext = this.getGameContextForAI()
       const analysisPrompt = `Analyze the following game context, StatMuse data, and injury information. Identify 3 key analytical factors that could influence the game outcome. For each factor, provide:
 - description: Brief explanation
 - value: Numerical or descriptive value
@@ -294,6 +295,7 @@ Format your output as a JSON object with factor names as keys. Example:
       }
 
       // 3. ChatGPT analyzes StatMuse answers, previous run, and performs validation
+      const gameContext = this.getGameContextForAI()
       const chatGptAnalysisPrompt = `Analyze the following game context, StatMuse data, and previous AI research (Run 1).
 
 Your tasks:

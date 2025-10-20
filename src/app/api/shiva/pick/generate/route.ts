@@ -57,7 +57,7 @@ export async function POST(request: Request) {
         run_id,
       })
       if (ins.error) throw new Error(ins.error.message)
-      return { body: { pick: { id: r.id, run_id, pick_type: results.decision.pick_type, selection: r.selection, units: r.units, confidence: r.confidence } }, status: 200 }
+      return { body: { run_id, pick: { id: r.id, run_id, pick_type: results.decision.pick_type, selection: r.selection, units: r.units, confidence: r.confidence } }, status: 200 }
     }
   })
 }
