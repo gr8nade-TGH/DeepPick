@@ -85,11 +85,17 @@ export function SHIVAWizard() {
             SHIVA_V1_WRITE_ENABLED: process.env.NEXT_PUBLIC_SHIVA_V1_WRITE_ENABLED,
           },
           stepResponses: stepLogs,
+          currentLog: log, // Include the current step's response
           summary: {
             totalSteps: Object.keys(stepLogs).length,
             successfulSteps: Object.values(stepLogs).filter((r: any) => r.status >= 200 && r.status < 300).length,
             errorSteps: Object.values(stepLogs).filter((r: any) => r.status >= 400).length,
             dryRunSteps: Object.values(stepLogs).filter((r: any) => r.dryRun === true).length,
+          },
+          debugInfo: {
+            stepLogsKeys: Object.keys(stepLogs),
+            stepLogsValues: Object.values(stepLogs),
+            stepLogsEmpty: Object.keys(stepLogs).length === 0,
           }
         }
         setLog({ status: 200, json: debugReport, dryRun: false })
