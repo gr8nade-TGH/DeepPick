@@ -38,7 +38,7 @@ export async function POST() {
     const { data: games, error: gamesError } = await supabase
       .from('games')
       .select('*')
-      .eq('sport', 'basketball')
+      .eq('sport', 'nba')
       .eq('status', 'scheduled')
       .gte('game_date', now.toISOString().split('T')[0])
       .lte('game_date', tomorrow.toISOString().split('T')[0])
