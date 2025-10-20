@@ -128,24 +128,23 @@ export class ShivaNBAEngine {
       console.log('✅ AI research complete:', aiResults)
       
       // Extract data from AI results
-      const totalCost = aiResults.reduce((sum, run) => sum + (run.estimated_cost || 0), 0)
       const allStatMuseQueries = aiResults.flatMap(run => run.statmuse_queries || [])
-      const totalFactors = Object.keys(aiResults[0]?.factors || {}).length
+      const totalFactors = aiResults.reduce((sum, run) => sum + Object.keys(run.factors || {}).length, 0)
       
-      // Combine research summaries
+      // Create research summary from factors
       const researchSummary = aiResults
-        .map(run => run.research_summary)
+        .map(run => Object.keys(run.factors || {}).join(', '))
         .filter(Boolean)
-        .join(' ')
+        .join('; ')
       
       return {
-        aiModel: aiResults[0]?.ai_model || 'perplexity-sonar-pro',
+        aiModel: 'perplexity-sonar-pro',
         researchSummary: researchSummary || `Analyzed ${game.homeTeam.name} vs ${game.awayTeam.name} matchup.`,
         statmuseQueries: allStatMuseQueries.map((q: string) => ({
           question: q,
           answer: 'Mock answer from StatMuse'
         })),
-        estimatedCost: totalCost || 0.012,
+        estimatedCost: 0.012, // Fixed cost estimate
         factorsFound: totalFactors || 0
       }
       
