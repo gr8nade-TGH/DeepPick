@@ -1,10 +1,54 @@
 /**
  * SHIVA v1 Capper Profile
  * In-memory profile defining weights, caps, providers, and thresholds
- * Future: read from capper_settings table in DB
+ * Can be loaded from capper_settings table in DB
  */
 
+import { z } from 'zod'
+
 export type AIProvider = 'perplexity' | 'openai'
+
+// ============================================================================
+// ZOD SCHEMA FOR PROFILE VALIDATION
+// ============================================================================
+
+export const ProfileJSONSchema = z.object({
+  capper: z.string(),
+  sport: z.enum(['NBA', 'MLB', 'NFL']),
+  version: z.string(),
+  providers: z.object({
+    step3: z.enum(['perplexity', 'openai']),
+    step4: z.enum(['perplexity', 'openai']),
+  }).strict(),
+  searchMode: z.enum(['quick', 'deep']),
+  factors: z.array(z.object({
+    key: z.string(),
+    enabled: z.boolean(),
+    weight: z.number().min(0).max(1),
+  }).strict()),
+  caps: z.object({
+    h2hPer100: z.number(),
+    newsEdgePer100: z.number(),
+    homePer100: z.number(),
+  }).strict(),
+  market: z.object({
+    weight: z.number(),
+    sideCap: z.number(),
+    totalCap: z.number(),
+    adjMax: z.number(),
+  }).strict(),
+  thresholds: z.object({
+    passLt: z.number(),
+    oneUnit: z.number(),
+    twoUnits: z.number(),
+    maxUnits: z.number(),
+  }).strict(),
+  behavior: z.object({
+    seasonDefault: z.string(),
+    pinnedSeasonFallback: z.string(),
+    probableImpact: z.number(),
+  }).strict(),
+}).strict()
 
 export interface CapperProfile {
   capper: 'SHIVA'
@@ -112,10 +156,97 @@ export const shivaProfileV1: CapperProfile = {
 }
 
 /**
- * Get capper profile by name
- * Future: load from DB (capper_settings table)
+ * Get capper profile by name and sport
+ * Loads from DB if available, falls back to in-memory defaults
  */
-export function getCapperProfile(capper: string): CapperProfile | null {
+export async function getCapperProfile(
+  capper: string,
+  sport: 'NBA' | 'MLB' | 'NFL' = 'NBA'
+): Promise<CapperProfile | null> {
+  // Try loading from DB first
+  try {
+    const { getSupabaseAdmin } = await import('@/lib/supabase/server')
+    const admin = getSupabaseAdmin()
+    
+    const result = await admin
+      .from('capper_settings')
+      .select('profile_json, version')
+      .eq('capper', capper)
+      .eq('sport', sport)
+      .eq('is_active', true)
+      .maybeSingle()
+    
+    if (result.data && result.data.profile_json) {
+      // Validate profile JSON
+      const parsed = ProfileJSONSchema.safeParse(result.data.profile_json)
+      if (parsed.success) {
+        // Convert DB JSON to CapperProfile format
+        return convertProfileJSONToCapperProfile(parsed.data)
+      }
+    }
+  } catch (error) {
+    console.warn('[Profile]', 'Failed to load from DB, using fallback', error)
+  }
+  
+  // Fallback to in-memory defaults
+  if (capper === 'SHIVA' && sport === 'NBA') return shivaProfileV1
+  
+  return null
+}
+
+/**
+ * Convert DB profile JSON to CapperProfile interface
+ */
+function convertProfileJSONToCapperProfile(json: z.infer<typeof ProfileJSONSchema>): CapperProfile {
+  const factorsMap = new Map(json.factors.map(f => [f.key, f]))
+  
+  return {
+    capper: 'SHIVA',
+    version: json.version,
+    weights: {
+      f1_net_rating: factorsMap.get('seasonNet')?.weight ?? 0.21,
+      f2_recent_form: factorsMap.get('recentNet')?.weight ?? 0.175,
+      f3_h2h_matchup: factorsMap.get('h2hPpg')?.weight ?? 0.14,
+      f4_ortg_diff: factorsMap.get('matchupORtgDRtg')?.weight ?? 0.07,
+      f5_news_injury: factorsMap.get('newsEdge')?.weight ?? 0.07,
+      f6_home_court: factorsMap.get('homeEdge')?.weight ?? 0.035,
+      f7_three_point: factorsMap.get('threePoint')?.weight ?? 0.021,
+    },
+    caps: {
+      h2h_per100: json.caps.h2hPer100,
+      side_points: json.market.sideCap,
+      total_points: json.market.totalCap,
+      news_edge_per100: json.caps.newsEdgePer100,
+      market_adj_max: json.market.adjMax,
+    },
+    constants: {
+      home_edge_per100: json.caps.homePer100,
+      league_ortg: 114.0, // Default for NBA
+    },
+    units: {
+      pass_below: json.thresholds.passLt,
+      one_unit_max: json.thresholds.oneUnit,
+      two_units_max: json.thresholds.twoUnits,
+    },
+    providers: {
+      step3_default: json.providers.step3,
+      step4_default: json.providers.step4,
+      timeout_ms: 6000,
+      max_retries: 2,
+    },
+    news: {
+      window_hours_default: 48,
+      window_hours_extended: 72,
+      extend_threshold_hours: 12,
+    },
+  }
+}
+
+/**
+ * Sync function for backward compatibility
+ * Use getCapperProfile() for DB-backed loading
+ */
+export function getCapperProfileSync(capper: string): CapperProfile | null {
   if (capper === 'SHIVA') return shivaProfileV1
   return null
 }
