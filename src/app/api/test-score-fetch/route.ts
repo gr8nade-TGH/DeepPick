@@ -1,4 +1,7 @@
 import { NextResponse } from 'next/server'
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 /**
  * Test endpoint to manually trigger score fetching
@@ -6,6 +9,10 @@ import { NextResponse } from 'next/server'
  */
 export async function GET() {
   try {
+    const isBuild = process.env.NEXT_PHASE === 'phase-production-build' || process.env.VERCEL === '1'
+    if (isBuild) {
+      return NextResponse.json({ success: true, skipped: true, reason: 'Build-time skip' })
+    }
     console.log('🧪 TEST: Manually triggering score fetch...')
     
     // Get the base URL

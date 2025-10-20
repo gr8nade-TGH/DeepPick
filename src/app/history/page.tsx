@@ -1,4 +1,6 @@
 'use client'
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 import { useState, useEffect } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
@@ -47,7 +49,7 @@ export default function HistoryPage() {
     setError(null)
     
     try {
-      const response = await fetch(`/api/games-history?sport=${selectedSport}`)
+      const response = await fetch(`/api/games-history?sport=${selectedSport}`, { cache: 'no-store' })
       const data = await response.json()
       
       if (data.success) {

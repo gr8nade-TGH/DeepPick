@@ -1,4 +1,7 @@
 import { NextResponse } from 'next/server'
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { logApiCall, logIngestion, GameChangeDetail } from '@/lib/monitoring/api-logger'
 import { getTeamAbbreviation } from '@/lib/team-abbreviations'
