@@ -22,7 +22,13 @@ function DryRunBanner() {
   )
 }
 
-export function SHIVAWizard() {
+export interface SHIVAWizardProps {
+  effectiveProfile?: any
+  selectedGame?: any
+  mode?: 'dry-run' | 'write'
+}
+
+export function SHIVAWizard(props: SHIVAWizardProps = {}) {
   const [step, setStep] = useState<number>(1)
   const [log, setLog] = useState<any>(null)
   const [runId, setRunId] = useState<string>('')
