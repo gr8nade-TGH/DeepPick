@@ -108,29 +108,62 @@ function extractAverageOdds(game: CapperGame): {
   let awayMLCount = 0
 
   for (const book of bookmakers) {
-    // The Odds API structure: book.markets.spreads[0].outcomes[0].point
+    // Debug: Log the book structure
+    console.log('🔍 Book structure:', JSON.stringify(book, null, 2))
+    
+    // Try multiple possible structures
+    // Structure 1: The Odds API format
     if (book?.markets?.spreads?.[0]?.outcomes?.[0]?.point !== undefined) {
       spreadSum += book.markets.spreads[0].outcomes[0].point
       spreadCount++
+      console.log('✅ Found spread (structure 1):', book.markets.spreads[0].outcomes[0].point)
+    }
+    
+    // Structure 2: Alternative format
+    else if (book?.markets?.spreads?.home?.point !== undefined) {
+      spreadSum += book.markets.spreads.home.point
+      spreadCount++
+      console.log('✅ Found spread (structure 2):', book.markets.spreads.home.point)
     }
 
-    // The Odds API structure: book.markets.totals[0].outcomes[0].point
+    // Structure 1: The Odds API format
     if (book?.markets?.totals?.[0]?.outcomes?.[0]?.point !== undefined) {
       totalSum += book.markets.totals[0].outcomes[0].point
       totalCount++
+      console.log('✅ Found total (structure 1):', book.markets.totals[0].outcomes[0].point)
+    }
+    
+    // Structure 2: Alternative format
+    else if (book?.markets?.totals?.over?.point !== undefined) {
+      totalSum += book.markets.totals.over.point
+      totalCount++
+      console.log('✅ Found total (structure 2):', book.markets.totals.over.point)
     }
 
-    // The Odds API structure: book.markets.h2h[0].outcomes[0].price
+    // Structure 1: The Odds API format
     if (book?.markets?.h2h?.[0]?.outcomes?.[0]?.price !== undefined) {
-      // First outcome is usually home team
       homeMLSum += book.markets.h2h[0].outcomes[0].price
       homeMLCount++
+      console.log('✅ Found home ML (structure 1):', book.markets.h2h[0].outcomes[0].price)
+    }
+    
+    // Structure 2: Alternative format
+    else if (book?.markets?.h2h?.home?.price !== undefined) {
+      homeMLSum += book.markets.h2h.home.price
+      homeMLCount++
+      console.log('✅ Found home ML (structure 2):', book.markets.h2h.home.price)
     }
 
     if (book?.markets?.h2h?.[0]?.outcomes?.[1]?.price !== undefined) {
-      // Second outcome is usually away team
       awayMLSum += book.markets.h2h[0].outcomes[1].price
       awayMLCount++
+      console.log('✅ Found away ML (structure 1):', book.markets.h2h[0].outcomes[1].price)
+    }
+    
+    else if (book?.markets?.h2h?.away?.price !== undefined) {
+      awayMLSum += book.markets.h2h.away.price
+      awayMLCount++
+      console.log('✅ Found away ML (structure 2):', book.markets.h2h.away.price)
     }
   }
 
