@@ -27,6 +27,7 @@ export default function PickTestPage() {
   const [pickTestRunning, setPickTestRunning] = useState(false)
   const [pickTestResult, setPickTestResult] = useState<any>(null)
   const [pickTestError, setPickTestError] = useState<string | { error?: string; errorType?: string; timestamp?: string; environment?: any; stack?: string; rawError?: string; testSteps?: string[] } | null>(null)
+  const [currentStep, setCurrentStep] = useState<'step1' | 'step2' | 'complete'>('step1')
 
   const runPickGenerationTest = async () => {
     setPickTestRunning(true)
@@ -49,6 +50,13 @@ export default function PickTestPage() {
       } else {
         setPickTestResult(data)
         console.log('✅ NBA test complete:', data)
+        
+        // Update step based on response
+        if (data.nextStep === 'step2') {
+          setCurrentStep('step2')
+        } else if (data.pick || data.noPick) {
+          setCurrentStep('complete')
+        }
       }
     } catch (error) {
       console.error('❌ Error during NBA test:', error)
@@ -130,26 +138,64 @@ export default function PickTestPage() {
               </div>
             </div>
 
-            {/* Run Button */}
-            <div className="flex justify-center">
-              <Button
-                onClick={runPickGenerationTest}
-                disabled={pickTestRunning}
-                className="gap-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 px-8 py-6 text-lg"
-                size="lg"
-              >
-                {pickTestRunning ? (
-                  <>
-                    <RefreshCw className="w-5 h-5 animate-spin" />
-                    Testing...
-                  </>
-                ) : (
-                  <>
-                    <Target className="w-5 h-5" />
-                    Run Test
-                  </>
-                )}
-              </Button>
+            {/* Step Buttons */}
+            <div className="flex justify-center gap-4">
+              {currentStep === 'step1' && (
+                <Button
+                  onClick={runPickGenerationTest}
+                  disabled={pickTestRunning}
+                  className="gap-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 px-8 py-6 text-lg"
+                  size="lg"
+                >
+                  {pickTestRunning ? (
+                    <>
+                      <RefreshCw className="w-5 h-5 animate-spin" />
+                      Running Step 1...
+                    </>
+                  ) : (
+                    <>
+                      <Target className="w-5 h-5" />
+                      Run Step 1: AI Research
+                    </>
+                  )}
+                </Button>
+              )}
+              
+              {currentStep === 'step2' && (
+                <Button
+                  onClick={runPickGenerationTest}
+                  disabled={pickTestRunning}
+                  className="gap-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 px-8 py-6 text-lg"
+                  size="lg"
+                >
+                  {pickTestRunning ? (
+                    <>
+                      <RefreshCw className="w-5 h-5 animate-spin" />
+                      Running Step 2...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-5 h-5" />
+                      Run Step 2: Generate Pick
+                    </>
+                  )}
+                </Button>
+              )}
+              
+              {currentStep === 'complete' && (
+                <Button
+                  onClick={() => {
+                    setCurrentStep('step1')
+                    setPickTestResult(null)
+                    setPickTestError(null)
+                  }}
+                  className="gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 px-8 py-6 text-lg"
+                  size="lg"
+                >
+                  <RefreshCw className="w-5 h-5" />
+                  Run New Test
+                </Button>
+              )}
             </div>
 
             {/* Loading State */}
@@ -244,6 +290,55 @@ export default function PickTestPage() {
                           <p className="text-white">{pickTestResult.game.time}</p>
                         </div>
                       </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Step 1 Results */}
+                {pickTestResult.step1Results && (
+                  <Card className="glass-effect border-blue-500/30">
+                    <CardHeader>
+                      <CardTitle className="text-blue-400">🤖 Step 1: AI Research Results</CardTitle>
+                      <p className="text-sm text-gray-400 mt-2">AI model analysis and StatMuse data gathering</p>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-gray-500 text-xs">AI Model Used</p>
+                          <p className="text-white font-semibold">{pickTestResult.step1Results.aiModel}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 text-xs">Estimated Cost</p>
+                          <p className="text-white font-semibold">${pickTestResult.step1Results.estimatedCost.toFixed(4)}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 text-xs">StatMuse Queries</p>
+                          <p className="text-white font-semibold">{pickTestResult.step1Results.statmuseQueries.length}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 text-xs">Factors Found</p>
+                          <p className="text-white font-semibold">{pickTestResult.step1Results.factorsFound}</p>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <p className="text-gray-500 text-xs mb-2">Research Summary</p>
+                        <p className="text-gray-300 text-sm">{pickTestResult.step1Results.researchSummary}</p>
+                      </div>
+                      
+                      {pickTestResult.step1Results.statmuseQueries.length > 0 && (
+                        <div>
+                          <p className="text-gray-500 text-xs mb-2">StatMuse Queries & Answers</p>
+                          <div className="space-y-3">
+                            {pickTestResult.step1Results.statmuseQueries.map((query: any, idx: number) => (
+                              <div key={idx} className="p-3 bg-gray-800/50 rounded border border-gray-700">
+                                <p className="text-sm text-blue-300 font-semibold mb-1">Q: {query.question}</p>
+                                <p className="text-sm text-gray-300">A: {query.answer}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 )}

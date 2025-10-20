@@ -65,6 +65,47 @@ export class ShivaNBAEngine {
     this.bankroll = bankroll
   }
 
+  // ========================================================================
+  // STEP 1: AI RESEARCH & STATMUSE DATA GATHERING
+  // ========================================================================
+  
+  /**
+   * Step 1: Run AI research and StatMuse queries to gather initial data
+   */
+  async runStep1Research(game: GameInput): Promise<{
+    aiModel: string
+    researchSummary: string
+    statmuseQueries: Array<{ question: string; answer: string }>
+    estimatedCost: number
+    factorsFound: number
+  }> {
+    // TODO: Integrate with actual AI research system
+    // For now, return mock data to show the structure
+    
+    const mockStatmuseQueries = [
+      {
+        question: `What is ${game.homeTeam.name}'s starting lineup net rating this season?`,
+        answer: `${game.homeTeam.name} starting lineup has a +5.2 net rating in 200+ minutes together.`
+      },
+      {
+        question: `What is ${game.awayTeam.name}'s 3-point shooting percentage vs top-10 defenses?`,
+        answer: `${game.awayTeam.name} shoots 34.1% from 3 vs top-10 defenses (league avg: 35.8%).`
+      },
+      {
+        question: `How many back-to-back games has ${game.homeTeam.name} played this month?`,
+        answer: `${game.homeTeam.name} has played 2 back-to-back games this month, going 1-1.`
+      }
+    ]
+    
+    return {
+      aiModel: 'perplexity-sonar-pro',
+      researchSummary: `Analyzed ${game.homeTeam.name} vs ${game.awayTeam.name} matchup. Found key lineup synergies, shooting mismatches, and schedule factors.`,
+      statmuseQueries: mockStatmuseQueries,
+      estimatedCost: 0.012, // Estimated cost for Perplexity + StatMuse
+      factorsFound: 3
+    }
+  }
+
   /**
    * Main entry point: Analyze game and generate pick
    */
