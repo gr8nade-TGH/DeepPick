@@ -30,7 +30,13 @@ export async function POST(request: Request) {
   if (!parse.success) return jsonError('INVALID_BODY', 'Invalid request body', 400, { issues: parse.error.issues })
 
   const { run_id, results } = parse.data
-  return withIdempotency({
+  type PickBody = {
+    run_id: string
+    decision: string
+    confidence: number
+    pick: null | { id: string; run_id: string; pick_type: 'SPREAD' | 'MONEYLINE' | 'TOTAL'; selection: string; units: number; confidence: number }
+  }
+  return withIdempotency<PickBody>({
     runId: run_id,
     step: 'pick',
     idempotencyKey: key,
