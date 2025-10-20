@@ -309,7 +309,7 @@ export default function PickTestPage() {
                         </div>
                         <div>
                           <p className="text-gray-500 text-xs">Estimated Cost</p>
-                          <p className="text-white font-semibold">${pickTestResult.step1Results.estimatedCost.toFixed(4)}</p>
+                          <p className="text-white font-semibold">${Number(pickTestResult.step1Results.estimatedCost).toFixed(4)}</p>
                         </div>
                         <div>
                           <p className="text-gray-500 text-xs">StatMuse Queries</p>

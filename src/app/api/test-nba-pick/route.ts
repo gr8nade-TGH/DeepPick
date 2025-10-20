@@ -187,8 +187,8 @@ export async function POST() {
       },
       nextStep: 'step2',
       performance: {
-        duration_seconds: (step1Duration / 1000).toFixed(2),
-        estimated_cost_usd: step1Result.estimatedCost.toFixed(4),
+        duration_seconds: Number((step1Duration / 1000).toFixed(2)),
+        estimated_cost_usd: Number(step1Result.estimatedCost.toFixed(4)),
       },
     })
     
