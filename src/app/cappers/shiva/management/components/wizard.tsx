@@ -38,9 +38,21 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
   async function handleStepClick(current: number) {
     try {
       if (current === 1) {
+        // Use selected game or fallback to demo game
+        const gameData = props.selectedGame || {
+          id: 'nba_2025_10_21_okc_hou',
+          home_team: 'Oklahoma City Thunder',
+          away_team: 'Houston Rockets',
+          start_time: '2025-10-21T01:30:00Z',
+        }
+        
         const r = await postJson('/api/shiva/runs', {
-          game_id: 'nba_2025_10_21_okc_hou', sport: 'NBA', capper: 'SHIVA',
-          home_team: 'Oklahoma City Thunder', away_team: 'Houston Rockets', start_time_utc: '2025-10-21T01:30:00Z'
+          game_id: gameData.id || 'nba_2025_10_21_okc_hou',
+          sport: 'NBA',
+          capper: 'SHIVA',
+          home_team: gameData.home_team || 'Oklahoma City Thunder',
+          away_team: gameData.away_team || 'Houston Rockets',
+          start_time_utc: gameData.start_time || '2025-10-21T01:30:00Z'
         }, 'ui-demo-run')
         if (r.json?.run_id) setRunId(r.json.run_id)
         setLog(r)
@@ -87,6 +99,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           timestamp: new Date().toISOString(),
           runId,
           snapId,
+          effectiveProfile: props.effectiveProfile || null, // Include the profile snapshot used
           environment: {
             SHIVA_V1_API_ENABLED: process.env.NEXT_PUBLIC_SHIVA_V1_API_ENABLED,
             SHIVA_V1_UI_ENABLED: process.env.NEXT_PUBLIC_SHIVA_V1_UI_ENABLED,
