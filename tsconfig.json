@@ -29,6 +29,7 @@
     ".next",
     "checkpoints/**/*",
     "**/*.backup",
-    "**/*.old"
+    "**/*.old",
+    "edge-functions/**/*"
   ]
 }
