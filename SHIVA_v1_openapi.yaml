@@ -1,0 +1,551 @@
+openapi: 3.0.3
+info:
+  title: SHIVA v1 Pick Generation API
+  version: "1.0.0"
+  description: One-page spec for SHIVA Capper Management (NBA-first). All POST routes require Idempotency-Key.
+servers:
+  - url: https://your-domain.example.com
+paths:
+  /api/shiva/runs:
+    post:
+      summary: Create a new run (dedup by (game_id, capper) non-VOIDED)
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRunRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CreateRunResponse' }
+        '200':
+          description: Existing run returned
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CreateRunResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/FeatureOff' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /api/shiva/runs/{run_id}:
+    get:
+      summary: Load run with active snapshot and latest factors
+      parameters:
+        - in: path
+          name: run_id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GetRunResponse' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/shiva/runs/{run_id}/state:
+    patch:
+      summary: Transition run state
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string }
+        - in: path
+          name: run_id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RunStateRequest' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RunStateResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/FeatureOff' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/shiva/odds/snapshot:
+    post:
+      summary: Create active odds snapshot (deactivate previous)
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OddsSnapshotRequest' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OddsSnapshotResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/FeatureOff' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /api/shiva/factors/step3:
+    post:
+      summary: Insert Factors 1–5 (StatMuse + News)
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Step3FactorsRequest' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Step3FactorsResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/FeatureOff' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /api/shiva/factors/step4:
+    post:
+      summary: Insert Factors 6–7 and predictions; update conf7
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Step4PredictionRequest' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Step4PredictionResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/FeatureOff' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /api/shiva/factors/step5:
+    post:
+      summary: Insert market mismatch (Factor 8); update conf_final
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Step5MarketRequest' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Step5MarketResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/FeatureOff' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /api/shiva/pick/generate:
+    post:
+      summary: Generate pick or Pass
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PickGenerateRequest' }
+      responses:
+        '200':
+          description: OK (pick or pass)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PickGenerateResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/FeatureOff' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /api/shiva/insight-card:
+    post:
+      summary: Persist rendered insight card
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/InsightCardRequest' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InsightCardResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/FeatureOff' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+components:
+  responses:
+    BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    FeatureOff:
+      description: Feature disabled by flag
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Unprocessable:
+      description: Precondition failed / Unprocessable
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    CreateRunRequest:
+      type: object
+      additionalProperties: false
+      required: [game_id, sport, capper, home_team, away_team, start_time_utc]
+      properties:
+        game_id: { type: string }
+        sport: { type: string, enum: [NBA] }
+        capper: { type: string, enum: [SHIVA] }
+        home_team: { type: string }
+        away_team: { type: string }
+        start_time_utc: { type: string, format: date-time }
+    CreateRunResponse:
+      type: object
+      properties:
+        run_id: { type: string }
+        state: { type: string, enum: [NEW, IN-PROGRESS, COMPLETE, VOIDED] }
+
+    GetRunResponse:
+      type: object
+      properties:
+        run:
+          type: object
+          properties:
+            run_id: { type: string }
+            game_id: { type: string }
+            capper: { type: string }
+            sport: { type: string }
+            state: { type: string }
+            created_at: { type: string, format: date-time }
+        active_snapshot:
+          type: object
+          nullable: true
+        latest_factors:
+          type: array
+          items:
+            type: object
+            properties:
+              factor_no: { type: integer }
+              normalized_value: { type: number }
+              weight_applied: { type: number }
+              created_at: { type: string, format: date-time }
+
+    RunStateRequest:
+      type: object
+      additionalProperties: false
+      required: [state]
+      properties:
+        state: { type: string, enum: [IN-PROGRESS, COMPLETE, VOIDED] }
+    RunStateResponse:
+      type: object
+      properties:
+        run_id: { type: string }
+        state: { type: string }
+
+    OddsSnapshotRequest:
+      type: object
+      additionalProperties: false
+      required: [run_id, snapshot]
+      properties:
+        run_id: { type: string }
+        snapshot:
+          type: object
+          properties:
+            game_id: { type: string }
+            sport: { type: string, enum: [NBA] }
+            home_team: { type: string }
+            away_team: { type: string }
+            start_time_utc: { type: string, format: date-time }
+            captured_at_utc: { type: string, format: date-time }
+            books_considered: { type: integer }
+            moneyline:
+              type: object
+              properties:
+                home_avg: { type: number }
+                away_avg: { type: number }
+            spread:
+              type: object
+              properties:
+                fav_team: { type: string }
+                line: { type: number }
+                odds: { type: number }
+            total:
+              type: object
+              properties:
+                line: { type: number }
+                over_odds: { type: number }
+                under_odds: { type: number }
+            raw_payload:
+              type: object
+    OddsSnapshotResponse:
+      type: object
+      properties:
+        snapshot_id: { type: string }
+        is_active: { type: boolean }
+
+    Step3FactorsRequest:
+      type: object
+      additionalProperties: false
+      required: [run_id, inputs, results]
+      properties:
+        run_id: { type: string }
+        inputs:
+          type: object
+          properties:
+            teams:
+              type: object
+              properties:
+                home: { type: string }
+                away: { type: string }
+            ai_provider: { type: string, enum: [perplexity, openai] }
+            news_window_hours: { type: integer }
+        results:
+          type: object
+          properties:
+            factors:
+              type: array
+              items:
+                $ref: '#/components/schemas/FactorRow'
+            meta:
+              type: object
+              properties:
+                provider_latency_ms:
+                  type: object
+                  additionalProperties: { type: integer }
+                ai_provider: { type: string }
+    Step3FactorsResponse:
+      type: object
+      properties:
+        run_id: { type: string }
+        factor_count: { type: integer }
+
+    Step4PredictionRequest:
+      type: object
+      additionalProperties: false
+      required: [run_id, inputs, results]
+      properties:
+        run_id: { type: string }
+        inputs:
+          type: object
+          properties:
+            ai_provider: { type: string, enum: [openai, perplexity] }
+            home_team: { type: string }
+            away_team: { type: string }
+        results:
+          type: object
+          properties:
+            factors:
+              type: array
+              items: { $ref: '#/components/schemas/FactorRow' }
+            pace_and_predictions:
+              type: object
+              properties:
+                pace_exp: { type: number }
+                delta_100_value: { type: number }
+                spread_pred_points: { type: number }
+                total_pred_points: { type: number }
+                scores:
+                  type: object
+                  properties:
+                    home_pts: { type: integer }
+                    away_pts: { type: integer }
+                winner: { type: string }
+                conf7_score_value: { type: number }
+    Step4PredictionResponse:
+      type: object
+      properties:
+        run_id: { type: string }
+        predictions:
+          type: object
+          properties:
+            pace_exp: { type: number }
+            delta_100: { type: number }
+            spread_pred_points: { type: number }
+            total_pred_points: { type: number }
+            scores:
+              type: object
+              properties:
+                home: { type: integer }
+                away: { type: integer }
+            winner: { type: string }
+            conf7_score: { type: number }
+
+    Step5MarketRequest:
+      type: object
+      additionalProperties: false
+      required: [run_id, inputs]
+      properties:
+        run_id: { type: string }
+        inputs:
+          type: object
+          properties:
+            active_snapshot_id: { type: string }
+            spread_pred_points: { type: number }
+            total_pred_points: { type: number }
+            pick_side_team: { type: string }
+            snapshot:
+              type: object
+              properties:
+                spread:
+                  type: object
+                  properties:
+                    fav_team: { type: string }
+                    line: { type: number }
+                total:
+                  type: object
+                  properties:
+                    line: { type: number }
+            conf7_score: { type: number }
+    Step5MarketResponse:
+      type: object
+      properties:
+        run_id: { type: string }
+        conf_final: { type: number }
+        dominant: { type: string, enum: [side, total] }
+        conf_market_adj: { type: number }
+
+    PickGenerateRequest:
+      type: object
+      additionalProperties: false
+      required: [run_id, inputs]
+      properties:
+        run_id: { type: string }
+        inputs:
+          type: object
+          properties:
+            conf_final: { type: number }
+            edge_dominant: { type: string, enum: [side, total] }
+            side_data:
+              type: object
+              properties:
+                pick_team: { type: string }
+                spread_pred: { type: number }
+                market_spread: { type: number }
+            total_data:
+              type: object
+              properties:
+                total_pred: { type: number }
+                market_total: { type: number }
+    PickGenerateResponse:
+      type: object
+      properties:
+        pick:
+          type: object
+          nullable: true
+          properties:
+            id: { type: string }
+            run_id: { type: string }
+            pick_type: { type: string, enum: [SPREAD, MONEYLINE, TOTAL] }
+            selection: { type: string }
+            units: { type: integer }
+            confidence: { type: number }
+        decision:
+          type: string
+          nullable: true
+
+    InsightCardRequest:
+      type: object
+      additionalProperties: false
+      required: [run_id, inputs]
+      properties:
+        run_id: { type: string }
+        inputs:
+          type: object
+          properties:
+            final_pick:
+              type: object
+              properties:
+                pick_type: { type: string }
+                selection: { type: string }
+                units: { type: integer }
+                pred_score:
+                  type: object
+                  properties:
+                    home: { type: integer }
+                    away: { type: integer }
+                conf_final: { type: number }
+    InsightCardResponse:
+      type: object
+      properties:
+        run_id: { type: string }
+        insight_card_id: { type: string }
+
+    FactorRow:
+      type: object
+      properties:
+        factor_no: { type: integer }
+        name: { type: string }
+        weight_total_pct: { type: number }
+        raw_values_json: { type: object }
+        parsed_values_json: { type: object }
+        normalized_value: { type: number }
+        caps_applied: { type: boolean }
+        cap_reason: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code: { type: string }
+            message: { type: string }
+            details: { type: object }

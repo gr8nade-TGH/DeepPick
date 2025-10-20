@@ -22,6 +22,10 @@ const envSchema = z.object({
   SHIVA_V1_UI_ENABLED: z.string().optional(),
   SHIVA_V1_API_ENABLED: z.string().optional(),
   SHIVA_V1_WRITE_ENABLED: z.string().optional(),
+  // Client-exposed flags (optional)
+  NEXT_PUBLIC_SHIVA_V1_UI_ENABLED: z.string().optional(),
+  NEXT_PUBLIC_SHIVA_V1_API_ENABLED: z.string().optional(),
+  NEXT_PUBLIC_SHIVA_V1_WRITE_ENABLED: z.string().optional(),
 })
 
 export const env = envSchema.parse(process.env)
