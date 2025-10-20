@@ -8,12 +8,8 @@ export function ensureApiEnabled(): Response | null {
   return null
 }
 
-export function ensureWritesEnabled(): Response | null {
-  const enabled = (env.SHIVA_V1_WRITE_ENABLED || '').toLowerCase() === 'true'
-  if (!enabled) {
-    return jsonError('WRITES_DISABLED', 'Writes are disabled (read-only mode)', 409)
-  }
-  return null
+export function isWriteAllowed(): boolean {
+  return (env.SHIVA_V1_WRITE_ENABLED || '').toLowerCase() === 'true'
 }
 
 export function jsonError(code: string, message: string, status = 400, details: Record<string, unknown> = {}): Response {

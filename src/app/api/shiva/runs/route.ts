@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
-import { ensureApiEnabled, ensureWritesEnabled, jsonError, jsonOk, requireIdempotencyKey } from '@/lib/api/shiva-v1/route-helpers'
+import { ensureApiEnabled, isWriteAllowed, jsonError, jsonOk, requireIdempotencyKey } from '@/lib/api/shiva-v1/route-helpers'
+export const runtime = 'nodejs'
 
 const CreateRunSchema = z.object({
   game_id: z.string().min(1),
@@ -14,8 +15,7 @@ const CreateRunSchema = z.object({
 export async function POST(request: Request) {
   const apiErr = ensureApiEnabled()
   if (apiErr) return apiErr
-  const writeErr = ensureWritesEnabled()
-  if (writeErr) return writeErr
+  const writeAllowed = isWriteAllowed()
   const key = requireIdempotencyKey(request)
   if (typeof key !== 'string') return key
 
@@ -33,6 +33,10 @@ export async function POST(request: Request) {
   }
 
   // Create new run
+  if (!writeAllowed) {
+    // Dry-run: simulate new run id
+    return jsonOk({ run_id: 'dryrun_run', state: 'IN-PROGRESS' }, 201)
+  }
   const insert = await admin.from('runs').insert({ game_id, sport, capper, state: 'IN-PROGRESS' }).select('run_id, state').single()
   if (insert.error) return jsonError('DB_ERROR', insert.error.message, 500)
   return jsonOk({ run_id: insert.data.run_id, state: insert.data.state }, 201)

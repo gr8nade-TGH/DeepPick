@@ -1,6 +1,7 @@
 import { z } from 'zod'
-import { ensureApiEnabled, ensureWritesEnabled, jsonError, jsonOk, requireIdempotencyKey } from '@/lib/api/shiva-v1/route-helpers'
+import { ensureApiEnabled, isWriteAllowed, jsonError, jsonOk, requireIdempotencyKey } from '@/lib/api/shiva-v1/route-helpers'
 import { withIdempotency } from '@/lib/api/shiva-v1/idempotency'
+export const runtime = 'nodejs'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 
 const Step5Schema = z.object({
@@ -30,8 +31,7 @@ const Step5Schema = z.object({
 export async function POST(request: Request) {
   const apiErr = ensureApiEnabled()
   if (apiErr) return apiErr
-  const writeErr = ensureWritesEnabled()
-  if (writeErr) return writeErr
+  const writeAllowed = isWriteAllowed()
   const key = requireIdempotencyKey(request)
   if (typeof key !== 'string') return key
 
@@ -40,40 +40,35 @@ export async function POST(request: Request) {
   if (!parse.success) return jsonError('INVALID_BODY', 'Invalid request body', 400, { issues: parse.error.issues })
 
   const { run_id, results } = parse.data
-  // Precondition: require an active snapshot for this run
-  {
+  // Precondition: require an active snapshot only when writes are enabled
+  if (writeAllowed) {
     const admin = getSupabaseAdmin()
-    const snap = await admin
-      .from('odds_snapshots')
-      .select('snapshot_id')
-      .eq('run_id', run_id)
-      .eq('is_active', true)
-      .maybeSingle()
-    if (!snap.data) {
-      return jsonError('PRECONDITION_FAILED', 'No active odds snapshot for this run', 422)
-    }
+    const snap = await admin.from('odds_snapshots').select('snapshot_id').eq('run_id', run_id).eq('is_active', true).maybeSingle()
+    if (!snap.data) return jsonError('PRECONDITION_FAILED', 'No active odds snapshot for this run', 422)
   }
   return withIdempotency({
     runId: run_id,
     step: 'step5',
     idempotencyKey: key,
-    writeAllowed: true,
+    writeAllowed,
     exec: async () => {
       const admin = getSupabaseAdmin()
       const f8 = results.market_edge
-      const ins = await admin.from('factors').insert({
-        run_id,
-        factor_no: 8,
-        raw_values_json: results,
-        parsed_values_json: { dominant: f8.dominant },
-        normalized_value: 0,
-        weight_applied: 30.0,
-        caps_applied: false,
-        cap_reason: null,
-      })
-      if (ins.error) throw new Error(ins.error.message)
-      const upd = await admin.from('runs').update({ conf_market_adj: f8.conf_market_adj_value, conf_final: results.confidence.conf_final }).eq('run_id', run_id)
-      if (upd.error) throw new Error(upd.error.message)
+      if (writeAllowed) {
+        const ins = await admin.from('factors').insert({
+          run_id,
+          factor_no: 8,
+          raw_values_json: results,
+          parsed_values_json: { dominant: f8.dominant },
+          normalized_value: 0,
+          weight_applied: 30.0,
+          caps_applied: false,
+          cap_reason: null,
+        })
+        if (ins.error) throw new Error(ins.error.message)
+        const upd = await admin.from('runs').update({ conf_market_adj: f8.conf_market_adj_value, conf_final: results.confidence.conf_final }).eq('run_id', run_id)
+        if (upd.error) throw new Error(upd.error.message)
+      }
       return { body: { run_id, conf_final: results.confidence.conf_final, dominant: f8.dominant, conf_market_adj: f8.conf_market_adj_value }, status: 200 }
     }
   })

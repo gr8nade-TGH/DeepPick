@@ -1,6 +1,7 @@
 import { z } from 'zod'
-import { ensureApiEnabled, ensureWritesEnabled, jsonError, jsonOk, requireIdempotencyKey } from '@/lib/api/shiva-v1/route-helpers'
+import { ensureApiEnabled, isWriteAllowed, jsonError, jsonOk, requireIdempotencyKey } from '@/lib/api/shiva-v1/route-helpers'
 import { withIdempotency } from '@/lib/api/shiva-v1/idempotency'
+export const runtime = 'nodejs'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 
 const Step3Schema = z.object({
@@ -29,8 +30,7 @@ const Step3Schema = z.object({
 export async function POST(request: Request) {
   const apiErr = ensureApiEnabled()
   if (apiErr) return apiErr
-  const writeErr = ensureWritesEnabled()
-  if (writeErr) return writeErr
+  const writeAllowed = isWriteAllowed()
   const key = requireIdempotencyKey(request)
   if (typeof key !== 'string') return key
 
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     runId: run_id,
     step: 'step3',
     idempotencyKey: key,
-    writeAllowed: true,
+    writeAllowed,
     exec: async () => {
       const admin = getSupabaseAdmin()
       for (const f of results.factors) {

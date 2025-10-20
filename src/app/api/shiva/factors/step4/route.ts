@@ -1,7 +1,8 @@
 import { z } from 'zod'
-import { ensureApiEnabled, ensureWritesEnabled, jsonError, jsonOk, requireIdempotencyKey } from '@/lib/api/shiva-v1/route-helpers'
+import { ensureApiEnabled, isWriteAllowed, jsonError, jsonOk, requireIdempotencyKey } from '@/lib/api/shiva-v1/route-helpers'
 import { withIdempotency } from '@/lib/api/shiva-v1/idempotency'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
+export const runtime = 'nodejs'
 
 const Step4Schema = z.object({
   run_id: z.string().min(1),
@@ -38,8 +39,7 @@ const Step4Schema = z.object({
 export async function POST(request: Request) {
   const apiErr = ensureApiEnabled()
   if (apiErr) return apiErr
-  const writeErr = ensureWritesEnabled()
-  if (writeErr) return writeErr
+  const writeAllowed = isWriteAllowed()
   const key = requireIdempotencyKey(request)
   if (typeof key !== 'string') return key
 
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
     runId: run_id,
     step: 'step4',
     idempotencyKey: key,
-    writeAllowed: true,
+    writeAllowed,
     exec: async () => {
       const admin = getSupabaseAdmin()
       for (const f of results.factors) {
@@ -68,8 +68,10 @@ export async function POST(request: Request) {
         })
         if (ins.error) throw new Error(ins.error.message)
       }
-      const upd = await admin.from('runs').update({ conf7: results.pace_and_predictions.conf7_score_value }).eq('run_id', run_id)
-      if (upd.error) throw new Error(upd.error.message)
+      if (writeAllowed) {
+        const upd = await admin.from('runs').update({ conf7: results.pace_and_predictions.conf7_score_value }).eq('run_id', run_id)
+        if (upd.error) throw new Error(upd.error.message)
+      }
       return {
         body: {
           run_id,

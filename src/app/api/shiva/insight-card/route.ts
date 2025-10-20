@@ -1,6 +1,7 @@
 import { z } from 'zod'
-import { ensureApiEnabled, ensureWritesEnabled, jsonError, jsonOk, requireIdempotencyKey } from '@/lib/api/shiva-v1/route-helpers'
+import { ensureApiEnabled, isWriteAllowed, jsonError, jsonOk, requireIdempotencyKey } from '@/lib/api/shiva-v1/route-helpers'
 import { withIdempotency } from '@/lib/api/shiva-v1/idempotency'
+export const runtime = 'nodejs'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 
 const CardSchema = z.object({
@@ -14,8 +15,7 @@ const CardSchema = z.object({
 export async function POST(request: Request) {
   const apiErr = ensureApiEnabled()
   if (apiErr) return apiErr
-  const writeErr = ensureWritesEnabled()
-  if (writeErr) return writeErr
+  const writeAllowed = isWriteAllowed()
   const key = requireIdempotencyKey(request)
   if (typeof key !== 'string') return key
 
@@ -28,11 +28,13 @@ export async function POST(request: Request) {
     runId,
     step: 'card',
     idempotencyKey: key,
-    writeAllowed: true,
+    writeAllowed,
     exec: async () => {
       const admin = getSupabaseAdmin()
-      const ins = await admin.from('insight_cards').insert({ run_id: runId, rendered_json: parse.data.card }).select('run_id').single()
-      if (ins.error) throw new Error(ins.error.message)
+      if (writeAllowed) {
+        const ins = await admin.from('insight_cards').insert({ run_id: runId, rendered_json: parse.data.card }).select('run_id').single()
+        if (ins.error) throw new Error(ins.error.message)
+      }
       return { body: { run_id: runId, insight_card_id: `card_${runId}` }, status: 200 }
     }
   })

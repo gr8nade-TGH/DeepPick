@@ -1,6 +1,7 @@
 import { z } from 'zod'
-import { ensureApiEnabled, ensureWritesEnabled, jsonError, jsonOk, requireIdempotencyKey } from '@/lib/api/shiva-v1/route-helpers'
+import { ensureApiEnabled, isWriteAllowed, jsonError, jsonOk, requireIdempotencyKey } from '@/lib/api/shiva-v1/route-helpers'
 import { withIdempotency } from '@/lib/api/shiva-v1/idempotency'
+export const runtime = 'nodejs'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 
 const SnapshotSchema = z.object({
@@ -23,8 +24,7 @@ const SnapshotSchema = z.object({
 export async function POST(request: Request) {
   const apiErr = ensureApiEnabled()
   if (apiErr) return apiErr
-  const writeErr = ensureWritesEnabled()
-  if (writeErr) return writeErr
+  const writeAllowed = isWriteAllowed()
   const key = requireIdempotencyKey(request)
   if (typeof key !== 'string') return key
 
@@ -37,14 +37,18 @@ export async function POST(request: Request) {
     runId,
     step: 'snapshot',
     idempotencyKey: key,
-    writeAllowed: true,
+    writeAllowed,
     exec: async () => {
       const admin = getSupabaseAdmin()
-      const deact = await admin.from('odds_snapshots').update({ is_active: false }).eq('run_id', runId).eq('is_active', true)
-      if (deact.error) throw new Error(deact.error.message)
-      const ins = await admin.from('odds_snapshots').insert({ run_id: runId, payload_json: parse.data.snapshot, is_active: true }).select('snapshot_id, is_active').single()
-      if (ins.error) throw new Error(ins.error.message)
-      return { body: { snapshot_id: ins.data.snapshot_id, is_active: ins.data.is_active }, status: 200 }
+      if (writeAllowed) {
+        const deact = await admin.from('odds_snapshots').update({ is_active: false }).eq('run_id', runId).eq('is_active', true)
+        if (deact.error) throw new Error(deact.error.message)
+        const ins = await admin.from('odds_snapshots').insert({ run_id: runId, payload_json: parse.data.snapshot, is_active: true }).select('snapshot_id, is_active').single()
+        if (ins.error) throw new Error(ins.error.message)
+        return { body: { snapshot_id: ins.data.snapshot_id, is_active: ins.data.is_active }, status: 200 }
+      }
+      // Dry-run: simulate a snapshot id
+      return { body: { snapshot_id: 'dryrun_snapshot', is_active: true }, status: 200 }
     }
   })
 }
