@@ -108,13 +108,23 @@ export class AICapperOrchestrator {
       }
 
       // 2. Perplexity web search for injury information
-      const injurySearchPrompt = `Search for current injury information for ${this.game.home_team.name} vs ${this.game.away_team.name} NBA game. Look for:
-- Key player injuries (starters, important role players)
-- Injury status (out, questionable, doubtful, probable)
-- Recent injury updates
+      const injurySearchPrompt = `Search for current injury information specifically for the NBA game: ${this.game.home_team.name} vs ${this.game.away_team.name}.
+
+IMPORTANT: Only include injuries for these two teams:
+- ${this.game.home_team.name} (home team)
+- ${this.game.away_team.name} (away team)
+
+Look for:
+- Key player injuries (starters, important role players) for BOTH teams
+- Injury status (out, questionable, doubtful, probable) 
+- Recent injury updates (last 48 hours)
 - Impact on team performance
 
-Focus on injuries that could significantly affect the game outcome.`
+Focus on injuries that could significantly affect the game outcome. Ignore injuries for any other NBA teams.
+
+Format your response to clearly separate:
+1. ${this.game.home_team.name} injuries
+2. ${this.game.away_team.name} injuries`
 
       const injuryResponse = await this.perplexityClient.chat({
         model: this.capperSettings.ai_model_run1 || 'sonar-medium-online',
@@ -129,7 +139,35 @@ Focus on injuries that could significantly affect the game outcome.`
       let injuryAnalysis = ''
       if (injuryResponse?.choices?.[0]?.message?.content) {
         injuryAnalysis = injuryResponse.choices[0].message.content
-        console.log(`[${this.capperName}] Injury analysis completed`)
+        
+        // Validate that injury analysis contains only the correct teams
+        const homeTeamName = this.game.home_team.name.toLowerCase()
+        const awayTeamName = this.game.away_team.name.toLowerCase()
+        const analysisText = injuryAnalysis.toLowerCase()
+        
+        // Check if analysis mentions the correct teams
+        const mentionsHomeTeam = analysisText.includes(homeTeamName) || 
+                               analysisText.includes(this.game.home_team.abbreviation.toLowerCase())
+        const mentionsAwayTeam = analysisText.includes(awayTeamName) || 
+                               analysisText.includes(this.game.away_team.abbreviation.toLowerCase())
+        
+        if (mentionsHomeTeam && mentionsAwayTeam) {
+          console.log(`[${this.capperName}] Injury analysis validated for correct teams`)
+        } else {
+          console.warn(`[${this.capperName}] Injury analysis may not be for correct teams - filtering results`)
+          // Filter to only include relevant team mentions
+          const lines = injuryAnalysis.split('\n')
+          const filteredLines = lines.filter(line => {
+            const lowerLine = line.toLowerCase()
+            return lowerLine.includes(homeTeamName) || 
+                   lowerLine.includes(awayTeamName) ||
+                   lowerLine.includes(this.game.home_team.abbreviation.toLowerCase()) ||
+                   lowerLine.includes(this.game.away_team.abbreviation.toLowerCase()) ||
+                   lowerLine.includes('injury') || lowerLine.includes('out') || 
+                   lowerLine.includes('questionable') || lowerLine.includes('doubtful')
+          })
+          injuryAnalysis = filteredLines.join('\n')
+        }
       }
 
       // 3. Perplexity analyzes StatMuse answers and injury data to generate analytical factors
@@ -147,6 +185,8 @@ ${statMuseAnswers.map(qa => `Q: ${qa.question}\nA: ${qa.answer}`).join('\n\n')}
 
 Injury Analysis:
 ${injuryAnalysis}
+
+CRITICAL: Only analyze injuries for ${this.game.home_team.name} and ${this.game.away_team.name}. Ignore any other team injuries mentioned.
 
 Generate 3 factors including at least 1 injury-related factor.
 
