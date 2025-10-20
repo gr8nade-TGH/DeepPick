@@ -68,7 +68,7 @@ function extractAverageOdds(game: CapperGame): {
   homeMoneyline: number | undefined
   awayMoneyline: number | undefined
 } {
-  // Game has odds by bookmaker
+  // Game has odds by bookmaker (stored as sportsbooks from The Odds API)
   if (!game.odds || typeof game.odds !== 'object') {
     return {
       spread: undefined,
@@ -88,7 +88,7 @@ function extractAverageOdds(game: CapperGame): {
     }
   }
 
-  // Calculate averages
+  // Calculate averages from The Odds API structure
   let spreadSum = 0
   let spreadCount = 0
   let totalSum = 0
@@ -99,23 +99,28 @@ function extractAverageOdds(game: CapperGame): {
   let awayMLCount = 0
 
   for (const book of bookmakers) {
-    if (book?.markets?.spreads?.home?.point !== undefined) {
-      spreadSum += book.markets.spreads.home.point
+    // The Odds API structure: book.markets.spreads[0].outcomes[0].point
+    if (book?.markets?.spreads?.[0]?.outcomes?.[0]?.point !== undefined) {
+      spreadSum += book.markets.spreads[0].outcomes[0].point
       spreadCount++
     }
 
-    if (book?.markets?.totals?.over?.point !== undefined) {
-      totalSum += book.markets.totals.over.point
+    // The Odds API structure: book.markets.totals[0].outcomes[0].point
+    if (book?.markets?.totals?.[0]?.outcomes?.[0]?.point !== undefined) {
+      totalSum += book.markets.totals[0].outcomes[0].point
       totalCount++
     }
 
-    if (book?.markets?.h2h?.home?.price !== undefined) {
-      homeMLSum += book.markets.h2h.home.price
+    // The Odds API structure: book.markets.h2h[0].outcomes[0].price
+    if (book?.markets?.h2h?.[0]?.outcomes?.[0]?.price !== undefined) {
+      // First outcome is usually home team
+      homeMLSum += book.markets.h2h[0].outcomes[0].price
       homeMLCount++
     }
 
-    if (book?.markets?.h2h?.away?.price !== undefined) {
-      awayMLSum += book.markets.h2h.away.price
+    if (book?.markets?.h2h?.[0]?.outcomes?.[1]?.price !== undefined) {
+      // Second outcome is usually away team
+      awayMLSum += book.markets.h2h[0].outcomes[1].price
       awayMLCount++
     }
   }
