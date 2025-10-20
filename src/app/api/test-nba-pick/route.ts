@@ -162,16 +162,16 @@ export async function POST() {
     // 12. Final result
     const duration = Date.now() - startTime
     
-    if (result.pick) {
+    if (result.predictionHeads.recommendedBetType) {
+      const selectedHead = result.predictionHeads[`${result.predictionHeads.recommendedBetType}Head` as keyof typeof result.predictionHeads] as any
       testSteps.push('🎉 PICK GENERATED!')
-      testSteps.push(`   Bet Type: ${result.pick.betType.toUpperCase()}`)
-      testSteps.push(`   Selection: ${result.pick.selection}`)
-      testSteps.push(`   Expected Value: ${result.pick.evPercentage.toFixed(2)}%`)
-      testSteps.push(`   Win Probability: ${(result.pick.winProbability * 100).toFixed(1)}%`)
-      testSteps.push(`   Stake: $${result.pick.stake.toFixed(2)} (${result.pick.units}U)`)
-      testSteps.push(`   True Line: ${result.pick.trueLine.toFixed(2)}`)
-      testSteps.push(`   Market Line: ${result.pick.marketLine}`)
-      testSteps.push(`   Deviation: ${result.pick.deviation.toFixed(2)}`)
+      testSteps.push(`   Bet Type: ${result.predictionHeads.recommendedBetType.toUpperCase()}`)
+      testSteps.push(`   Expected Value: ${selectedHead.evPercentage.toFixed(2)}%`)
+      testSteps.push(`   Win Probability: ${(selectedHead.winProbability * 100).toFixed(1)}%`)
+      testSteps.push(`   True Line: ${selectedHead.trueLine.toFixed(2)}`)
+      testSteps.push(`   Market Line: ${selectedHead.marketLine}`)
+      testSteps.push(`   Deviation: ${selectedHead.predictedDeviation.toFixed(2)}`)
+      testSteps.push(`   Reasoning: ${selectedHead.thresholdReason}`)
       
       return NextResponse.json({
         success: true,
@@ -230,17 +230,17 @@ export async function POST() {
           highestEv: result.predictionHeads.highestEv,
         },
         pick: {
-          betType: result.pick.betType,
-          selection: result.pick.selection,
-          expectedValue: result.pick.expectedValue,
-          evPercentage: result.pick.evPercentage,
-          winProbability: result.pick.winProbability,
-          stake: result.pick.stake,
-          units: result.pick.units,
-          trueLine: result.pick.trueLine,
-          marketLine: result.pick.marketLine,
-          deviation: result.pick.deviation,
-          offeredOdds: result.pick.offeredOdds,
+          betType: result.predictionHeads.recommendedBetType,
+          selection: `${result.predictionHeads.recommendedBetType} bet`,
+          expectedValue: selectedHead.expectedValue,
+          evPercentage: selectedHead.evPercentage,
+          winProbability: selectedHead.winProbability,
+          stake: 0, // TODO: Implement Kelly sizing
+          units: 0, // TODO: Implement Kelly sizing
+          trueLine: selectedHead.trueLine,
+          marketLine: selectedHead.marketLine,
+          deviation: selectedHead.predictedDeviation,
+          offeredOdds: selectedHead.offeredOdds,
         },
         performance: {
           duration_seconds: (duration / 1000).toFixed(2),
