@@ -19,6 +19,8 @@ import { SharpFactorEngine, calculateReliability } from '@/lib/cappers/sharp-fac
 import { PredictionHeadsCalculator } from '@/lib/betting/prediction-heads'
 import { getDefaultLeagueParams } from '@/lib/cappers/sharp-factor-engine'
 import { calculateKellyStake, kellyToUnits } from '@/lib/odds/math'
+import { AICapperOrchestrator } from '@/lib/ai/ai-capper-orchestrator'
+import { getSupabaseAdmin } from '@/lib/supabase/server'
 
 // ============================================================================
 // SHIVA NBA ENGINE
@@ -79,31 +81,94 @@ export class ShivaNBAEngine {
     estimatedCost: number
     factorsFound: number
   }> {
-    // TODO: Integrate with actual AI research system
-    // For now, return mock data to show the structure
+    console.log('🤖 Starting real AI research for Step 1...')
     
-    const mockStatmuseQueries = [
-      {
-        question: `What is ${game.homeTeam.name}'s starting lineup net rating this season?`,
-        answer: `${game.homeTeam.name} starting lineup has a +5.2 net rating in 200+ minutes together.`
-      },
-      {
-        question: `What is ${game.awayTeam.name}'s 3-point shooting percentage vs top-10 defenses?`,
-        answer: `${game.awayTeam.name} shoots 34.1% from 3 vs top-10 defenses (league avg: 35.8%).`
-      },
-      {
-        question: `How many back-to-back games has ${game.homeTeam.name} played this month?`,
-        answer: `${game.homeTeam.name} has played 2 back-to-back games this month, going 1-1.`
+    try {
+      // Initialize AI orchestrator
+      const supabase = getSupabaseAdmin()
+      const orchestrator = new AICapperOrchestrator('shiva', supabase)
+      
+      // Convert GameInput to CapperGame format for AI orchestrator
+      const capperGame = {
+        id: game.id,
+        sport: game.sport,
+        league: game.league,
+        home_team: {
+          name: game.homeTeam.name,
+          abbreviation: game.homeTeam.abbreviation
+        },
+        away_team: {
+          name: game.awayTeam.name,
+          abbreviation: game.awayTeam.abbreviation
+        },
+        game_date: game.gameDate,
+        game_time: game.gameTime,
+        odds: game.odds // Pass through odds data
       }
-    ]
-    
-    return {
-      aiModel: 'perplexity-sonar-pro',
-      researchSummary: `Analyzed ${game.homeTeam.name} vs ${game.awayTeam.name} matchup. Found key lineup synergies, shooting mismatches, and schedule factors.`,
-      statmuseQueries: mockStatmuseQueries,
-      estimatedCost: 0.012, // Estimated cost for Perplexity + StatMuse
-      factorsFound: 3
+      
+      console.log('🔄 Running AI research orchestrator...')
+      const aiResult = await orchestrator.runAIResearch(capperGame)
+      
+      console.log('✅ AI research complete:', aiResult)
+      
+      // Extract StatMuse queries from the AI result
+      const statmuseQueries = aiResult.statmuseQueries || []
+      
+      return {
+        aiModel: aiResult.aiModel || 'perplexity-sonar-pro',
+        researchSummary: aiResult.researchSummary || `Analyzed ${game.homeTeam.name} vs ${game.awayTeam.name} matchup.`,
+        statmuseQueries: statmuseQueries.map((q: any) => ({
+          question: q.question,
+          answer: q.answer
+        })),
+        estimatedCost: aiResult.estimatedCost || 0.012,
+        factorsFound: aiResult.factorsFound || 0
+      }
+      
+    } catch (error) {
+      console.error('❌ AI research failed, falling back to mock data:', error)
+      
+      // Fallback to mock data if AI research fails
+      const mockStatmuseQueries = [
+        {
+          question: `What is ${game.homeTeam.name}'s starting lineup net rating this season?`,
+          answer: `${game.homeTeam.name} starting lineup has a +5.2 net rating in 200+ minutes together.`
+        },
+        {
+          question: `What is ${game.awayTeam.name}'s 3-point shooting percentage vs top-10 defenses?`,
+          answer: `${game.awayTeam.name} shoots 34.1% from 3 vs top-10 defenses (league avg: 35.8%).`
+        },
+        {
+          question: `How many back-to-back games has ${game.homeTeam.name} played this month?`,
+          answer: `${game.homeTeam.name} has played 2 back-to-back games this month, going 1-1.`
+        }
+      ]
+      
+      return {
+        aiModel: 'perplexity-sonar-pro (fallback)',
+        researchSummary: `Fallback analysis for ${game.homeTeam.name} vs ${game.awayTeam.name} matchup.`,
+        statmuseQueries: mockStatmuseQueries,
+        estimatedCost: 0.012,
+        factorsFound: 3
+      }
     }
+  }
+
+  // ========================================================================
+  // STEP 2: PICK GENERATION WITH AI ANALYSIS
+  // ========================================================================
+  
+  /**
+   * Step 2: Generate final pick using AI analysis and structural factors
+   */
+  async runStep2PickGeneration(game: GameInput): Promise<NBAEngineResult> {
+    console.log('🎯 Starting Step 2: Pick Generation...')
+    
+    // Run the full analysis (this includes AI research + pick generation)
+    const result = await this.analyzeGame(game)
+    
+    console.log('✅ Step 2 complete:', result)
+    return result
   }
 
   /**

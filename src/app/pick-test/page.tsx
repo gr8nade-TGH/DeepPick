@@ -37,9 +37,12 @@ export default function PickTestPage() {
     try {
       console.log('🏀 Starting NBA Sharp Betting test...')
       
+      const requestBody = currentStep === 'step2' ? { step: 'step2' } : {}
+      
       const response = await fetch('/api/test-nba-pick', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
       })
       
       const data = await response.json()
