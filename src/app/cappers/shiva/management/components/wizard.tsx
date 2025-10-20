@@ -75,6 +75,7 @@ export function SHIVAWizard() {
         setStepLogs(prev => ({ ...prev, 7: r }))
       } else if (current === 8) {
         // Debug Report - collect all step responses
+        console.log('Generating debug report for step 8, stepLogs:', stepLogs)
         const debugReport = {
           timestamp: new Date().toISOString(),
           runId,
@@ -98,6 +99,7 @@ export function SHIVAWizard() {
             stepLogsEmpty: Object.keys(stepLogs).length === 0,
           }
         }
+        console.log('Debug report generated:', debugReport)
         setLog({ status: 200, json: debugReport, dryRun: false })
         setStepLogs(prev => ({ ...prev, 8: debugReport }))
       }
@@ -116,6 +118,11 @@ export function SHIVAWizard() {
         {log ? JSON.stringify(log, null, 2) : 
          step === 8 ? 'Click Next to generate debug report with all step responses.' :
          'Click Next to start (Step 1 creates run).'}
+      </div>
+      
+      {/* Debug info */}
+      <div className="mt-2 text-xs text-gray-500">
+        Current step: {step}, Step logs count: {Object.keys(stepLogs).length}
       </div>
       {/* Step Logs Table */}
       {Object.keys(stepLogs).length > 0 && (
