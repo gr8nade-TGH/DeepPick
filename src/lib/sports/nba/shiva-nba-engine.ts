@@ -84,9 +84,17 @@ export class ShivaNBAEngine {
     console.log('🤖 Starting real AI research for Step 1...')
     
     try {
-      // Initialize AI orchestrator
+      // Get capper settings from database
       const supabase = getSupabaseAdmin()
-      const orchestrator = new AICapperOrchestrator('shiva', supabase)
+      const { data: capperSettings } = await supabase
+        .from('capper_settings')
+        .select('*')
+        .eq('capper_name', 'shiva')
+        .single()
+      
+      if (!capperSettings) {
+        throw new Error('Shiva capper settings not found')
+      }
       
       // Convert GameInput to CapperGame format for AI orchestrator
       const capperGame = {
@@ -103,26 +111,41 @@ export class ShivaNBAEngine {
         },
         game_date: game.gameDate,
         game_time: game.gameTime,
-        odds: game.odds // Pass through odds data
+        odds: game.odds || {} // Pass through odds data if available
       }
       
+      // Initialize AI orchestrator
+      const orchestrator = new AICapperOrchestrator({
+        capperName: 'shiva',
+        game: capperGame,
+        capperSettings: capperSettings
+      })
+      
       console.log('🔄 Running AI research orchestrator...')
-      const aiResult = await orchestrator.runAIResearch(capperGame)
+      const aiResults = await orchestrator.runResearchPipeline()
       
-      console.log('✅ AI research complete:', aiResult)
+      console.log('✅ AI research complete:', aiResults)
       
-      // Extract StatMuse queries from the AI result
-      const statmuseQueries = aiResult.statmuseQueries || []
+      // Extract data from AI results
+      const totalCost = aiResults.reduce((sum, run) => sum + (run.estimatedCost || 0), 0)
+      const allStatMuseQueries = aiResults.flatMap(run => run.statmuseQueries || [])
+      const totalFactors = aiResults.reduce((sum, run) => sum + (run.factorsFound || 0), 0)
+      
+      // Combine research summaries
+      const researchSummary = aiResults
+        .map(run => run.researchSummary)
+        .filter(Boolean)
+        .join(' ')
       
       return {
-        aiModel: aiResult.aiModel || 'perplexity-sonar-pro',
-        researchSummary: aiResult.researchSummary || `Analyzed ${game.homeTeam.name} vs ${game.awayTeam.name} matchup.`,
-        statmuseQueries: statmuseQueries.map((q: any) => ({
+        aiModel: aiResults[0]?.aiModel || 'perplexity-sonar-pro',
+        researchSummary: researchSummary || `Analyzed ${game.homeTeam.name} vs ${game.awayTeam.name} matchup.`,
+        statmuseQueries: allStatMuseQueries.map((q: any) => ({
           question: q.question,
           answer: q.answer
         })),
-        estimatedCost: aiResult.estimatedCost || 0.012,
-        factorsFound: aiResult.factorsFound || 0
+        estimatedCost: totalCost || 0.012,
+        factorsFound: totalFactors || 0
       }
       
     } catch (error) {
