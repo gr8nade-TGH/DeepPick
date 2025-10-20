@@ -51,8 +51,8 @@ export const ProfileJSONSchema = z.object({
 }).strict()
 
 export interface CapperProfile {
-  capper: 'SHIVA'
-  version: 'v1'
+  capper: string
+  version: string
   
   // Factor weights (decimals, must sum to ~1.0)
   weights: {
