@@ -78,39 +78,28 @@ export class AICapperOrchestrator {
     try {
       // 1. Generate StatMuse questions using Perplexity (PROPER STATMUSE FORMAT)
       const gameContext = this.getGameContextForAI()
-      const questionsPrompt = `You are ${this.capperName}, a professional sports bettor analyzing this matchup.
+      const questionsPrompt = `Generate ${this.capperSettings.max_statmuse_questions_run1} SIMPLE StatMuse queries for ${this.game.home_team.name} vs ${this.game.away_team.name}.
 
-CRITICAL: Generate StatMuse queries using the EXACT format StatMuse requires.
+STRICT RULES - FOLLOW EXACTLY:
+1. Format: Q: [Team] [Stat] [Timeframe]
+2. Stats: offensive rating, defensive rating, points per game, points allowed per game, field goal percentage, three point percentage
+3. Timeframes: this season, last 10 games, at home, on the road
+4. NO comparisons, NO analysis, NO "impact" or "effect" words
 
-Game Context:
-${gameContext}
-
-StatMuse Format Rules:
-- Ask short, specific questions: [subject] + [stat] + [timeframe] (+ optional "vs [opponent]")
-- Use supported stat names: ORtg, DRtg, eFG%, PPG, APG, RPG, etc.
-- Keep contexts simple: team/player + season/this season + optional single opponent
-- NO lineup/on-off combos (e.g., "Durant + Capela starting lineup")
-- NO complex analytical requests
-
-Generate ${this.capperSettings.max_statmuse_questions_run1} StatMuse queries using this EXACT format:
-
-Good Examples (COPY THIS FORMAT):
+EXAMPLES TO COPY:
 Q: ${this.game.home_team.name} offensive rating this season
-Q: ${this.game.away_team.name} defensive rating vs ${this.game.home_team.name} this season
+Q: ${this.game.away_team.name} defensive rating this season  
 Q: ${this.game.home_team.name} points per game at home
 Q: ${this.game.away_team.name} points allowed per game on the road
+Q: ${this.game.home_team.name} field goal percentage last 10 games
+Q: ${this.game.away_team.name} three point percentage this season
 
-Bad Examples (DON'T DO THIS):
-X: Compare ${this.game.home_team.name} offensive rating to ${this.game.away_team.name} defensive rating (too complex)
-X: How does ${this.game.home_team.name} starting lineup compare... (lineup combos not supported)
-X: What is the impact of injuries on... (analytical request, not a stat)
-
-Generate ${this.capperSettings.max_statmuse_questions_run1} simple StatMuse queries NOW:`
+Generate ${this.capperSettings.max_statmuse_questions_run1} queries NOW:`
 
       const questionsResponse = await this.perplexityClient.chat({
         model: this.capperSettings.ai_model_run1 || 'sonar-medium-online',
         messages: [
-          { role: 'system', content: `You are ${this.capperName}, a sports analyst. Generate ONLY simple StatMuse queries using the exact format: [team] + [stat] + [timeframe]. NO complex comparisons or analytical requests.` },
+          { role: 'system', content: `Generate ONLY simple StatMuse queries. Format: Q: [Team] [Stat] [Timeframe]. NO complex comparisons or analytical requests.` },
           { role: 'user', content: questionsPrompt }
         ],
         max_tokens: 500,
@@ -221,24 +210,28 @@ Format your output as a JSON object with factor names as keys. Example:
     try {
       // 1. Generate StatMuse questions using ChatGPT
       const gameContext = this.getGameContextForAI()
-      const chatGptQuestionsPrompt = `You are ${this.capperName}, a strategic sports analyst. Generate ${this.capperSettings.max_statmuse_questions_run2} clever and specific statistical questions for StatMuse. Focus on strategic factors, injury impacts, or validation of previous data. Format each question as a single line, prefixed with "Q: ".
+      const chatGptQuestionsPrompt = `Generate ${this.capperSettings.max_statmuse_questions_run2} SIMPLE StatMuse queries for ${this.game.home_team.name} vs ${this.game.away_team.name}.
 
-Game Context:
-${gameContext}
+STRICT RULES - FOLLOW EXACTLY:
+1. Format: Q: [Team] [Stat] [Timeframe]
+2. Stats: offensive rating, defensive rating, points per game, points allowed per game, field goal percentage, three point percentage
+3. Timeframes: this season, last 10 games, at home, on the road
+4. NO comparisons, NO analysis, NO "impact" or "effect" words
 
-Previous AI Research (Run 1):
-${JSON.stringify(previousRunResult.factors, null, 2)}
+EXAMPLES TO COPY:
+Q: ${this.game.home_team.name} offensive rating this season
+Q: ${this.game.away_team.name} defensive rating this season  
+Q: ${this.game.home_team.name} points per game at home
+Q: ${this.game.away_team.name} points allowed per game on the road
 
-Examples:
-Q: ${this.game.away_team.name} offensive efficiency without key players
-Q: ${this.game.home_team.name} defensive rating last 5 games`
+Generate ${this.capperSettings.max_statmuse_questions_run2} queries NOW:`
 
       const chatGptQuestionsResponse = await this.openaiClient.chat.completions.create({
         model: this.capperSettings.ai_model_run2 || 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
-            content: `You are ${this.capperName}, a strategic sports analyst. Generate insightful StatMuse questions.`,
+            content: `Generate ONLY simple StatMuse queries. Format: Q: [Team] [Stat] [Timeframe]. NO complex comparisons or analytical requests.`,
           },
           { role: 'user', content: chatGptQuestionsPrompt },
         ],
