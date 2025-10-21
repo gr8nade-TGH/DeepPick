@@ -15,6 +15,7 @@ export interface FactorControlsProps {
   onFactorsChange: (factors: FactorConfig[]) => void
   onRunClick: () => void
   hasSelectedGame?: boolean
+  selectedGameStatus?: string
 }
 
 export function FactorControls(props: FactorControlsProps) {
@@ -32,7 +33,8 @@ export function FactorControls(props: FactorControlsProps) {
     .reduce((sum, f) => sum + f.weight, 0)
   
   const isValidWeights = Math.abs(weightsSum - 0.70) < 0.005
-  const canRun = isValidWeights && (props.hasSelectedGame ?? true)
+  const isGameFinal = props.selectedGameStatus === 'final'
+  const canRun = isValidWeights && (props.hasSelectedGame ?? true) && !isGameFinal
 
   const handleToggle = (key: string) => {
     const updated = factors.map(f =>
@@ -138,6 +140,13 @@ export function FactorControls(props: FactorControlsProps) {
       {!props.hasSelectedGame && (
         <div className="mb-3 p-2 bg-blue-900 border border-blue-600 rounded text-xs text-blue-200 font-bold">
           ℹ️ Select a game to enable running
+        </div>
+      )}
+
+      {/* Final Game Hint */}
+      {props.hasSelectedGame && isGameFinal && (
+        <div className="mb-3 p-2 bg-red-900 border border-red-600 rounded text-xs text-red-200 font-bold">
+          ⚠️ Game is final - cannot run analysis
         </div>
       )}
 

@@ -50,18 +50,19 @@ export async function GET(request: NextRequest) {
 
     const transformed = (games || []).map((game: any) => ({
       game_id: game.id,
-      league: game.sport,
-      status: game.status,
+      sport: game.sport?.toUpperCase() || 'NBA',
+      status: game.status || 'scheduled',
       start_time_utc: `${game.game_date}T${game.game_time}`,
-      away: game.away_team?.name || 'Away Team',
       home: game.home_team?.name || 'Home Team',
+      away: game.away_team?.name || 'Away Team',
       odds: {
-        ml_away: game.odds?.away_ml || 0,
         ml_home: game.odds?.home_ml || 0,
+        ml_away: game.odds?.away_ml || 0,
         spread_team: game.odds?.spread_favorite === 'home' ? (game.home_team?.name || 'Home Team') : (game.away_team?.name || 'Away Team'),
         spread_line: game.odds?.spread_line || 0,
         total_line: game.odds?.total_line || 0,
       },
+      book_count: game.odds?.book_count || 0,
     }))
 
     return NextResponse.json(

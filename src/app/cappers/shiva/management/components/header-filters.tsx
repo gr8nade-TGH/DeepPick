@@ -4,18 +4,19 @@ import type { CapperProfile } from '@/lib/cappers/shiva-v1/profile'
 
 interface GameOption {
   game_id: string
-  league: string
+  sport: string
   status: string
   start_time_utc: string
   away: string
   home: string
   odds: {
-    ml_away: number
     ml_home: number
+    ml_away: number
     spread_team: string
     spread_line: number
     total_line: number
   }
+  book_count?: number
 }
 
 export interface HeaderFiltersProps {
@@ -337,16 +338,27 @@ export function HeaderFilters(props: HeaderFiltersProps) {
                                   {game.away} @ {game.home}
                                 </div>
                                 <div className="text-xs text-gray-300 mt-1">
-                                  ML {game.away.split(' ').pop()} {game.odds.ml_away > 0 ? '+' : ''}{game.odds.ml_away} • {game.home.split(' ').pop()} {game.odds.ml_home > 0 ? '+' : ''}{game.odds.ml_home} | 
-                                  Spread: {game.odds.spread_team.split(' ').pop()} {game.odds.spread_line > 0 ? '+' : ''}{game.odds.spread_line} | 
-                                  Total: {game.odds.total_line}
+                                  ML {game.away.split(' ').pop()} {game.odds.ml_away !== 0 ? (game.odds.ml_away > 0 ? '+' : '') + game.odds.ml_away : '—'} • {game.home.split(' ').pop()} {game.odds.ml_home !== 0 ? (game.odds.ml_home > 0 ? '+' : '') + game.odds.ml_home : '—'} | 
+                                  Spread: {game.odds.spread_team.split(' ').pop()} {game.odds.spread_line !== 0 ? (game.odds.spread_line > 0 ? '+' : '') + game.odds.spread_line : '—'} | 
+                                  Total: {game.odds.total_line !== 0 ? game.odds.total_line : '—'}
                                 </div>
                               </div>
-                              <div className="text-xs text-gray-400 ml-2">
-                                {formatLocalTime(game.start_time_utc)}
-                                {game.status === 'final' && (
-                                  <span className="ml-2 px-1 py-0.5 bg-gray-600 rounded text-xs">Final</span>
-                                )}
+                              <div className="text-xs text-gray-400 ml-2 flex flex-col items-end">
+                                <div>{formatLocalTime(game.start_time_utc)}</div>
+                                <div className="mt-1">
+                                  {game.status === 'scheduled' && (
+                                    <span className="px-1 py-0.5 bg-blue-600 rounded text-xs text-white">UPCOMING</span>
+                                  )}
+                                  {game.status === 'in_progress' && (
+                                    <span className="px-1 py-0.5 bg-green-600 rounded text-xs text-white">LIVE</span>
+                                  )}
+                                  {game.status === 'final' && (
+                                    <span className="px-1 py-0.5 bg-gray-600 rounded text-xs text-white">FINAL</span>
+                                  )}
+                                  {game.status === 'postponed' && (
+                                    <span className="px-1 py-0.5 bg-yellow-600 rounded text-xs text-white">POSTPONED</span>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </button>
@@ -371,9 +383,9 @@ export function HeaderFilters(props: HeaderFiltersProps) {
                                   {game.away} @ {game.home}
                                 </div>
                                 <div className="text-xs text-gray-300 mt-1">
-                                  ML {game.away.split(' ').pop()} {game.odds.ml_away > 0 ? '+' : ''}{game.odds.ml_away} • {game.home.split(' ').pop()} {game.odds.ml_home > 0 ? '+' : ''}{game.odds.ml_home} | 
-                                  Spread: {game.odds.spread_team.split(' ').pop()} {game.odds.spread_line > 0 ? '+' : ''}{game.odds.spread_line} | 
-                                  Total: {game.odds.total_line}
+                                  ML {game.away.split(' ').pop()} {game.odds.ml_away !== 0 ? (game.odds.ml_away > 0 ? '+' : '') + game.odds.ml_away : '—'} • {game.home.split(' ').pop()} {game.odds.ml_home !== 0 ? (game.odds.ml_home > 0 ? '+' : '') + game.odds.ml_home : '—'} | 
+                                  Spread: {game.odds.spread_team.split(' ').pop()} {game.odds.spread_line !== 0 ? (game.odds.spread_line > 0 ? '+' : '') + game.odds.spread_line : '—'} | 
+                                  Total: {game.odds.total_line !== 0 ? game.odds.total_line : '—'}
                                 </div>
                               </div>
                               <div className="text-xs text-gray-400 ml-2">
@@ -402,9 +414,9 @@ export function HeaderFilters(props: HeaderFiltersProps) {
                                   {game.away} @ {game.home}
                                 </div>
                                 <div className="text-xs text-gray-300 mt-1">
-                                  ML {game.away.split(' ').pop()} {game.odds.ml_away > 0 ? '+' : ''}{game.odds.ml_away} • {game.home.split(' ').pop()} {game.odds.ml_home > 0 ? '+' : ''}{game.odds.ml_home} | 
-                                  Spread: {game.odds.spread_team.split(' ').pop()} {game.odds.spread_line > 0 ? '+' : ''}{game.odds.spread_line} | 
-                                  Total: {game.odds.total_line}
+                                  ML {game.away.split(' ').pop()} {game.odds.ml_away !== 0 ? (game.odds.ml_away > 0 ? '+' : '') + game.odds.ml_away : '—'} • {game.home.split(' ').pop()} {game.odds.ml_home !== 0 ? (game.odds.ml_home > 0 ? '+' : '') + game.odds.ml_home : '—'} | 
+                                  Spread: {game.odds.spread_team.split(' ').pop()} {game.odds.spread_line !== 0 ? (game.odds.spread_line > 0 ? '+' : '') + game.odds.spread_line : '—'} | 
+                                  Total: {game.odds.total_line !== 0 ? game.odds.total_line : '—'}
                                 </div>
                               </div>
                               <div className="text-xs text-gray-400 ml-2">
@@ -425,14 +437,40 @@ export function HeaderFilters(props: HeaderFiltersProps) {
         {/* Selected Game Odds Snippet */}
         {selectedGame && (
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-bold text-white">Current Odds</label>
+            <label className="text-xs font-bold text-white">Selected Game</label>
             <div className="text-xs text-white px-2 py-1 bg-gray-800 rounded border border-gray-600 font-semibold">
-              ML: {selectedGame.odds.ml_home > 0 ? '+' : ''}{selectedGame.odds.ml_home} / {selectedGame.odds.ml_away > 0 ? '+' : ''}{selectedGame.odds.ml_away} • 
-              Spread: {selectedGame.odds.spread_line > 0 ? '+' : ''}{selectedGame.odds.spread_line} • 
-              Total: {selectedGame.odds.total_line}
-              {selectedGame.status === 'final' && (
-                <span className="ml-2 px-1 py-0.5 bg-red-700 rounded text-xs">Final</span>
-              )}
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Status Chip */}
+                <span className={`px-1 py-0.5 rounded text-xs ${
+                  selectedGame.status === 'scheduled' ? 'bg-blue-600 text-white' :
+                  selectedGame.status === 'in_progress' ? 'bg-green-600 text-white' :
+                  selectedGame.status === 'final' ? 'bg-gray-600 text-white' :
+                  'bg-yellow-600 text-white'
+                }`}>
+                  {selectedGame.status === 'scheduled' ? 'UPCOMING' :
+                   selectedGame.status === 'in_progress' ? 'LIVE' :
+                   selectedGame.status === 'final' ? 'FINAL' : 'POSTPONED'}
+                </span>
+                
+                {/* Date & Time */}
+                <span className="text-gray-300">
+                  {new Date(selectedGame.start_time_utc).toLocaleDateString()} {formatLocalTime(selectedGame.start_time_utc)}
+                </span>
+                
+                {/* Odds */}
+                <span className="text-gray-300">|</span>
+                <span>
+                  ML {selectedGame.away.split(' ').pop()} {selectedGame.odds.ml_away !== 0 ? (selectedGame.odds.ml_away > 0 ? '+' : '') + selectedGame.odds.ml_away : '—'} / {selectedGame.home.split(' ').pop()} {selectedGame.odds.ml_home !== 0 ? (selectedGame.odds.ml_home > 0 ? '+' : '') + selectedGame.odds.ml_home : '—'}
+                </span>
+                <span className="text-gray-300">•</span>
+                <span>
+                  Spread: {selectedGame.odds.spread_team.split(' ').pop()} {selectedGame.odds.spread_line !== 0 ? (selectedGame.odds.spread_line > 0 ? '+' : '') + selectedGame.odds.spread_line : '—'}
+                </span>
+                <span className="text-gray-300">•</span>
+                <span>
+                  Total: {selectedGame.odds.total_line !== 0 ? selectedGame.odds.total_line : '—'}
+                </span>
+              </div>
             </div>
           </div>
         )}
