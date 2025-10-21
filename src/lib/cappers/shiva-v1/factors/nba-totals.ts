@@ -538,8 +538,11 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<{
     factor_keys: string[]
   }
 }> {
+  console.debug('[totals:branch-used]', { sport: ctx.sport, betType: ctx.betType })
+  
   // Fetch StatMuse data bundle
   const bundle = await fetchStatMuseBundle(ctx)
+  console.debug('[totals:bundle]', bundle)
   
   // Fetch injury impact via LLM
   const injuryImpact = await summarizeAvailabilityWithLLM(ctx)
@@ -552,6 +555,12 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<{
     computeThreePointEnv(bundle, ctx),
     computeWhistleEnv(bundle, ctx),
   ]
+  
+  console.debug('[totals:rows:z-points]', factors.map(f => ({ 
+    key: f.key, 
+    z: f.normalized_value, 
+    pts: f.parsed_values_json?.points 
+  })))
   
   return {
     factors,

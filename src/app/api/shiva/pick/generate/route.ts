@@ -4,6 +4,19 @@ import { withIdempotency } from '@/lib/api/shiva-v1/idempotency'
 export const runtime = 'nodejs'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 
+// Helper to get active snapshot for locking odds
+async function getActiveSnapshot(runId: string) {
+  const admin = getSupabaseAdmin()
+  const { data } = await admin
+    .from('odds_snapshots')
+    .select('odds')
+    .eq('run_id', runId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  return data
+}
+
 const PickSchema = z.object({
   run_id: z.string().min(1),
   inputs: z.object({
@@ -74,8 +87,12 @@ export async function POST(request: Request) {
       
       const r = results.persistence.picks_row
       
+      // Lock odds at pick-time from active Step-2 snapshot
+      const activeSnapshot = await getActiveSnapshot(run_id)
+      const locked_odds = activeSnapshot?.odds ?? results.locked_odds ?? null
+      
       if (writeAllowed) {
-        // Single transaction: insert pick and update runs with locked odds
+        // Single transaction: insert pick with locked odds and update runs
         const ins = await admin.from('picks').insert({
           id: r.id,
           game_id: null,
@@ -90,14 +107,15 @@ export async function POST(request: Request) {
           reasoning: results.decision.reason,
           algorithm_version: 'shiva_v1',
           run_id,
+          locked_odds: locked_odds,
         })
         if (ins.error) throw new Error(ins.error.message)
 
         // Update runs table with locked odds
-        if (results.locked_odds) {
+        if (locked_odds) {
           const updateRun = await admin
             .from('runs')
-            .update({ locked_odds: results.locked_odds })
+            .update({ locked_odds: locked_odds })
             .eq('id', run_id)
           if (updateRun.error) throw new Error(updateRun.error.message)
         }
@@ -114,7 +132,7 @@ export async function POST(request: Request) {
           selection: r.selection, 
           units: r.units, 
           confidence: r.confidence,
-          locked_odds: results.locked_odds || null,
+          locked_odds: locked_odds,
           locked_at: new Date().toISOString()
         } 
       }
