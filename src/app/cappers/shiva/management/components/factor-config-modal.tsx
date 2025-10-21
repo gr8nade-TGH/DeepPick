@@ -87,6 +87,40 @@ export function FactorConfigModal({
     return logicMap[key] || { metric: "Unknown", formula: "Unknown", examples: [] }
   }
   
+  // Normalize factor weights to ensure they sum to 100%
+  const normalizeFactorWeights = (factors: FactorConfig[]): FactorConfig[] => {
+    const enabledFactors = factors.filter(f => f.enabled)
+    const disabledFactors = factors.filter(f => !f.enabled)
+    
+    if (enabledFactors.length === 0) {
+      // If no factors enabled, enable all with equal weights
+      return factors.map(f => ({ ...f, enabled: true, weight: 100 / factors.length }))
+    }
+    
+    // Calculate total weight of enabled factors
+    const totalWeight = enabledFactors.reduce((sum, f) => sum + f.weight, 0)
+    
+    if (totalWeight === 0) {
+      // If all enabled factors have 0 weight, distribute equally
+      const equalWeight = 100 / enabledFactors.length
+      return factors.map(f => 
+        f.enabled ? { ...f, weight: equalWeight } : { ...f, weight: 0 }
+      )
+    }
+    
+    // Normalize enabled factors to sum to 100%
+    const normalizedFactors = factors.map(f => {
+      if (f.enabled) {
+        const normalizedWeight = (f.weight / totalWeight) * 100
+        return { ...f, weight: Math.round(normalizedWeight * 100) / 100 }
+      } else {
+        return { ...f, weight: 0 }
+      }
+    })
+    
+    return normalizedFactors
+  }
+
   // Load factor configuration
   useEffect(() => {
     if (!isOpen) return
@@ -105,11 +139,13 @@ export function FactorConfigModal({
         const data = await response.json()
         setProfile(data.profile)
         
-        // Ensure factors have proper default weights if not loaded
+        // Ensure factors have proper default weights
         const loadedFactors = data.profile.factors || []
+        let factorsToSet: FactorConfig[]
+        
         if (loadedFactors.length === 0) {
           // Set default factors with equal weights (20% each = 100% total)
-          setFactors([
+          factorsToSet = [
             { 
               key: 'paceIndex', 
               name: 'Pace Index', 
@@ -180,12 +216,88 @@ export function FactorConfigModal({
               icon: '⛹️‍♂️',
               shortName: 'FT Env'
             },
-          ])
+          ]
         } else {
-          setFactors(loadedFactors)
+          // Normalize existing factors to ensure weights sum to 100%
+          factorsToSet = normalizeFactorWeights(loadedFactors)
         }
+        
+        setFactors(factorsToSet)
       } catch (error) {
         console.error('Error loading factor config:', error)
+        // Set default factors with proper weights on error
+        setFactors([
+          { 
+            key: 'paceIndex', 
+            name: 'Pace Index', 
+            description: 'Expected game pace vs league average',
+            enabled: true, 
+            weight: 20, 
+            dataSource: 'nba-stats-api',
+            maxPoints: 1.0,
+            sport: 'NBA',
+            betType: 'TOTAL',
+            scope: 'matchup',
+            icon: '⏱️',
+            shortName: 'Pace'
+          },
+          { 
+            key: 'offForm', 
+            name: 'Offensive Form', 
+            description: 'Recent offensive efficiency vs opponent defense',
+            enabled: true, 
+            weight: 20, 
+            dataSource: 'nba-stats-api',
+            maxPoints: 1.0,
+            sport: 'NBA',
+            betType: 'TOTAL',
+            scope: 'matchup',
+            icon: '🔥',
+            shortName: 'ORtg Form'
+          },
+          { 
+            key: 'defErosion', 
+            name: 'Defensive Erosion', 
+            description: 'Defensive rating decline + injury impact',
+            enabled: true, 
+            weight: 20, 
+            dataSource: 'nba-stats-api',
+            maxPoints: 1.0,
+            sport: 'NBA',
+            betType: 'TOTAL',
+            scope: 'team',
+            icon: '🛡️',
+            shortName: 'DRtg/Avail'
+          },
+          { 
+            key: 'threeEnv', 
+            name: '3P Environment', 
+            description: '3-point environment & volatility',
+            enabled: true, 
+            weight: 20, 
+            dataSource: 'nba-stats-api',
+            maxPoints: 1.0,
+            sport: 'NBA',
+            betType: 'TOTAL',
+            scope: 'matchup',
+            icon: '🏹',
+            shortName: '3P Env'
+          },
+          { 
+            key: 'whistleEnv', 
+            name: 'FT Environment', 
+            description: 'Free throw rate environment',
+            enabled: true, 
+            weight: 20, 
+            dataSource: 'nba-stats-api',
+            maxPoints: 1.0,
+            sport: 'NBA',
+            betType: 'TOTAL',
+            scope: 'matchup',
+            icon: '⛹️‍♂️',
+            shortName: 'FT Env'
+          },
+        ])
       } finally {
         setLoading(false)
       }
