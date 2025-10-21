@@ -3,7 +3,7 @@
  * Unit tests for F1-F5 factor computation
  */
 
-import { describe, it, expect, jest } from '@jest/globals'
+import { describe, it, expect, jest, beforeEach } from '@jest/globals'
 import { computeTotalsFactors, fetchStatMuseBundle, summarizeAvailabilityWithLLM } from '../nba-totals'
 import type { RunCtx, StatMuseBundle, InjuryImpact } from '../nba-totals'
 
@@ -134,8 +134,8 @@ describe('NBA Totals Factors', () => {
       searchInjuries.mockResolvedValue({
         ok: true,
         findings: [
-          { description: 'Chet Holmgren (rim protector) is OUT with ankle injury', status: 'OUT', impact: 0.3 },
-          { description: 'Jalen Green limited to 25 minutes due to knee soreness', status: 'LIMITED', impact: -0.1 }
+          { team: 'Houston Rockets', player: 'Chet Holmgren', status: 'OUT', minutesImpact: 0.3, sourceUrl: 'test.com' },
+          { team: 'Oklahoma City Thunder', player: 'Jalen Green', status: 'LIMITED', minutesImpact: -0.1, sourceUrl: 'test.com' }
         ],
         edgePer100: 0.1,
         windowHours: 48,

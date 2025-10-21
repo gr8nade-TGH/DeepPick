@@ -110,7 +110,7 @@ export async function fetchStatMuseBundle(ctx: RunCtx): Promise<StatMuseBundle> 
   ]
   
   const responses = await Promise.allSettled(
-    queries.map(query => askStatMuse(query))
+    queries.map(query => askStatMuse(query, 'per100'))
   )
   
   // Parse responses with fallbacks
@@ -191,8 +191,8 @@ export async function summarizeAvailabilityWithLLM(ctx: RunCtx): Promise<InjuryI
     
     // Combine news snippets from findings
     const combinedNews = [
-      ...(awayNews?.findings || []).map(f => `[${ctx.away}] ${f.description}`),
-      ...(homeNews?.findings || []).map(f => `[${ctx.home}] ${f.description}`)
+      ...(awayNews?.findings || []).map(f => `[${ctx.away}] ${f.player} (${f.status}) - ${f.minutesImpact} impact`),
+      ...(homeNews?.findings || []).map(f => `[${ctx.home}] ${f.player} (${f.status}) - ${f.minutesImpact} impact`)
     ].join('\n\n')
     
     if (!combinedNews.trim()) {
