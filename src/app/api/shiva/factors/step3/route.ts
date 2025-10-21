@@ -70,6 +70,8 @@ export async function POST(request: Request) {
       
       console.debug('[step3:branch]', { sport, betType, used: sport==='NBA'&&betType==='TOTAL'?'totals':'legacy' })
       
+      let totalsDebug: any = null
+      
       if (sport === 'NBA' && betType === 'TOTAL') {
         // Use new NBA totals factors
         const totalsResult = await computeTotalsFactors({
@@ -90,6 +92,7 @@ export async function POST(request: Request) {
         
         factorsToProcess = totalsResult.factors
         factorVersion = totalsResult.factor_version
+        totalsDebug = totalsResult.totals_debug
       } else {
         // Use legacy factors (existing logic)
         factorsToProcess = results.factors
@@ -120,7 +123,12 @@ export async function POST(request: Request) {
         run_id, 
         factors: factorsToProcess,
         factor_count: factorsToProcess.length,
-        factor_version: factorVersion
+        factor_version: factorVersion,
+        _debug: totalsDebug ? {
+          totals: totalsDebug,
+          ai_provider: inputs.ai_provider,
+          news_window_hours: inputs.news_window_hours
+        } : null
       }
       
       // Structured logging

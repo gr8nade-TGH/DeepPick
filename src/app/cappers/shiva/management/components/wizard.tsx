@@ -282,6 +282,20 @@ function assembleInsightCard({ runCtx, step4, step5, step6, step3, step2 }: any)
     state: {
       dryRun: true,
     },
+    // Debug information for troubleshooting
+    _debug: {
+      step3_totals: step3?.json?._debug || null,
+      step3_factors_raw: step3?.json?.factors || [],
+      step4_predictions_raw: step4?.json || null,
+      step5_confidence_raw: step5?.json || null,
+      step6_pick_raw: step6?.json?.pick || null,
+      odds_snapshot: step2?.json?.snapshot || null,
+      ai_usage: {
+        step3_provider: step3?.json?._debug?.ai_provider || 'unknown',
+        step3_news_window: step3?.json?._debug?.news_window_hours || 48,
+        step4_conf_source: step4?.json?.conf_source || 'unknown',
+      }
+    }
   }
 }
 
@@ -698,6 +712,30 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                         spread_line: stepLogs[2]?.json?.snapshot?.spread?.line || 0,
                         total_line: stepLogs[2]?.json?.snapshot?.total?.line || 0,
                       }
+                    },
+                    // Step-specific debug information
+                    step_debug: {
+                      step3_totals: stepLogs[3]?.json?._debug || null,
+                      step3_factors_detail: stepLogs[3]?.json?.factors?.map((f: any) => ({
+                        key: f.key,
+                        name: f.name,
+                        z: f.normalized_value,
+                        points: f.parsed_values_json?.points,
+                        awayContribution: f.parsed_values_json?.awayContribution,
+                        homeContribution: f.parsed_values_json?.homeContribution,
+                        capped: f.caps_applied,
+                        notes: f.notes
+                      })) || [],
+                      step4_predictions: stepLogs[4]?.json || null,
+                      step5_confidence: stepLogs[5]?.json || null,
+                      step6_pick: stepLogs[6]?.json?.pick || null,
+                    },
+                    // AI Usage Summary
+                    ai_usage: {
+                      step3_provider: stepLogs[3]?.json?._debug?.ai_provider || 'unknown',
+                      step3_news_window: stepLogs[3]?.json?._debug?.news_window_hours || 48,
+                      step4_used: stepLogs[4]?.json?.conf_source || 'unknown',
+                      step7_used: stepLogs[7]?.status === 200,
                     },
                     stepLogsRaw: stepLogs,
                   }

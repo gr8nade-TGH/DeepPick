@@ -536,9 +536,15 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<{
     }
     injury_impact: InjuryImpact
     factor_keys: string[]
+    console_logs: {
+      branch_used: { sport: string; betType: string }
+      bundle: StatMuseBundle
+      rows_z_points: Array<{ key: string; z: number; pts: number }>
+    }
   }
 }> {
-  console.debug('[totals:branch-used]', { sport: ctx.sport, betType: ctx.betType })
+  const branchLog = { sport: ctx.sport, betType: ctx.betType }
+  console.debug('[totals:branch-used]', branchLog)
   
   // Fetch StatMuse data bundle
   const bundle = await fetchStatMuseBundle(ctx)
@@ -556,11 +562,12 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<{
     computeWhistleEnv(bundle, ctx),
   ]
   
-  console.debug('[totals:rows:z-points]', factors.map(f => ({ 
+  const rowsLog = factors.map(f => ({ 
     key: f.key, 
     z: f.normalized_value, 
-    pts: f.parsed_values_json?.points 
-  })))
+    pts: f.parsed_values_json?.points ?? 0
+  }))
+  console.debug('[totals:rows:z-points]', rowsLog)
   
   return {
     factors,
@@ -576,6 +583,11 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<{
       },
       injury_impact: injuryImpact,
       factor_keys: factors.map(f => f.key),
+      console_logs: {
+        branch_used: branchLog,
+        bundle: bundle,
+        rows_z_points: rowsLog
+      }
     }
   }
 }
