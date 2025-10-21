@@ -198,7 +198,7 @@ function assembleInsightCard({ runCtx, step4, step5, step6, step3, step2 }: any)
   const delta = (lockedTotalLine && currentTotalLine) ? (currentTotalLine - lockedTotalLine).toFixed(1) : null
   
   const totalText = (typeof currentTotalLine === 'number') 
-    ? `Current O/U ${currentTotalLine}${delta ? ` (Δ ${delta > 0 ? '+' : ''}${delta})` : ''}` 
+    ? `Current O/U ${currentTotalLine}${delta ? ` (Δ ${Number(delta) > 0 ? '+' : ''}${delta})` : ''}` 
     : 'Current O/U —'
   const spreadText = (spreadTeam && typeof spreadLine === 'number')
     ? formatSpread(awayTeam, homeTeam, spreadTeam, spreadLine)

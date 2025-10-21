@@ -191,9 +191,9 @@ export function InsightCard(props: InsightCardProps) {
             <div className="text-2xl font-bold text-white mb-2">
               {safePick.units} {safePick.units === 1 ? 'UNIT' : 'UNITS'} on {safePick.selection}
             </div>
-            {safePick.locked_odds?.total_line && (
+            {(safePick as any).locked_odds?.total_line && (
               <div className="text-slate-400 text-xs mb-1">
-                (Locked at {safePick.locked_odds.total_line})
+                (Locked at {(safePick as any).locked_odds.total_line})
               </div>
             )}
             <div className="text-slate-300 text-sm">
