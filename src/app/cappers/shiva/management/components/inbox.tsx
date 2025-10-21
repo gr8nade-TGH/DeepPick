@@ -20,11 +20,12 @@ interface GameInboxItem {
 export function SHIVAManagementInbox() {
   const [games, setGames] = useState<GameInboxItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedSport, setSelectedSport] = useState('NBA')
 
   useEffect(() => {
     async function fetchGames() {
       try {
-        const response = await fetch('/api/games/current?league=NBA&limit=10')
+        const response = await fetch(`/api/games/current?league=${selectedSport}&limit=20`)
         if (response.ok) {
           const data = await response.json()
           setGames(data.games || [])
@@ -37,7 +38,7 @@ export function SHIVAManagementInbox() {
     }
     
     fetchGames()
-  }, [])
+  }, [selectedSport])
 
   const formatLocalTime = (utcTime: string) => {
     try {
@@ -63,9 +64,20 @@ export function SHIVAManagementInbox() {
 
   return (
     <div>
-      <div className="mb-2 flex items-center justify-between">
+      <div className="mb-3 flex items-center justify-between">
         <div className="font-bold text-white">Game Inbox</div>
-        <div className="text-xs text-gray-300 font-semibold">NBA • SHIVA</div>
+        <div className="flex items-center gap-2">
+          <select
+            value={selectedSport}
+            onChange={(e) => setSelectedSport(e.target.value)}
+            className="px-2 py-1 border border-gray-600 rounded text-xs bg-gray-800 text-white"
+          >
+            <option value="NBA">NBA</option>
+            <option value="NFL">NFL</option>
+            <option value="MLB">MLB</option>
+          </select>
+          <div className="text-xs text-gray-300 font-semibold">• SHIVA</div>
+        </div>
       </div>
       
       {loading ? (

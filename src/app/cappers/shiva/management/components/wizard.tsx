@@ -267,10 +267,12 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         setHasInsight(true)
         setInsightCardData(assembledCard)
       } else if (current === 8) {
-        // Debug Report - build flat structure (NO recursion)
+        // Debug Report - build comprehensive structure
         console.log('Generating debug report for step 8, stepLogs:', stepLogs)
+        console.log('stepLogs keys:', Object.keys(stepLogs))
+        console.log('effectiveProfileSnapshot:', effectiveProfileSnapshot)
         
-        // Build flat steps array (only 1-7, exclude 8)
+        // Build comprehensive steps array with actual response data
         const stepsArray = Object.entries(stepLogs)
           .filter(([stepNum]) => parseInt(stepNum) < 8) // Exclude step 8
           .map(([stepNum, response]: [string, any]) => ({
@@ -278,29 +280,30 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             status: response.status,
             dryRun: response.dryRun,
             latencyMs: response.latencyMs || 0,
-            // Only include top-level response keys, no nested objects
-            hasResponse: !!response.json,
+            response: response.json || null, // Include actual response data
+            error: response.error || null,
           }))
         
         const debugReport = {
           timestamp: new Date().toISOString(),
-          runId,
-          snapId,
-          effectiveProfile: effectiveProfileSnapshot || props.effectiveProfile || null, // Use snapshot
+          runId: runId || 'unknown',
+          snapId: snapId || 'unknown',
+          effectiveProfile: effectiveProfileSnapshot || props.effectiveProfile || null,
           environment: {
             SHIVA_V1_API_ENABLED: process.env.NEXT_PUBLIC_SHIVA_V1_API_ENABLED,
             SHIVA_V1_UI_ENABLED: process.env.NEXT_PUBLIC_SHIVA_V1_UI_ENABLED,
             SHIVA_V1_WRITE_ENABLED: process.env.NEXT_PUBLIC_SHIVA_V1_WRITE_ENABLED,
           },
-          steps: stepsArray, // Flat array, no nested objects
+          steps: stepsArray,
           summary: {
             totalSteps: stepsArray.length,
             successfulSteps: stepsArray.filter((s) => s.status >= 200 && s.status < 300).length,
             errorSteps: stepsArray.filter((s) => s.status >= 400).length,
             dryRunSteps: stepsArray.filter((s) => s.dryRun === true).length,
           },
+          stepLogsRaw: stepLogs, // Include raw step logs for debugging
         }
-        console.log('Debug report generated (flat):', debugReport)
+        console.log('Debug report generated (comprehensive):', debugReport)
         setLog({ status: 200, json: debugReport, dryRun: false })
         // DO NOT add to stepLogs to prevent recursion
       }
