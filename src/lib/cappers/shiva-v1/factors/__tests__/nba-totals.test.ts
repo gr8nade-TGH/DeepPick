@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, jest, beforeEach } from '@jest/globals'
-import { computeTotalsFactors, fetchStatMuseBundle, summarizeAvailabilityWithLLM, RunCtx, StatMuseBundle, InjuryImpact } from '../nba-totals'
+import { computeTotalsFactors, fetchNBAStatsBundle, summarizeAvailabilityWithLLM, RunCtx, StatMuseBundle, InjuryImpact } from '../nba-totals'
 
 // Mock StatMuse
 jest.mock('../../statmuse', () => ({
@@ -81,7 +81,7 @@ describe('NBA Totals Factors', () => {
     jest.clearAllMocks()
   })
 
-  describe('fetchStatMuseBundle', () => {
+  describe('fetchNBAStatsBundle', () => {
     it('should fetch and parse StatMuse data correctly', async () => {
       const { askStatMuse } = require('../../statmuse')
       
@@ -100,7 +100,7 @@ describe('NBA Totals Factors', () => {
         return Promise.resolve({ ok: true, data: '0' })
       })
 
-      const result = await fetchStatMuseBundle(mockCtx)
+      const result = await fetchNBAStatsBundle(mockCtx)
       
       expect(result.awayPaceSeason).toBe(98.5)
       expect(result.awayPaceLast10).toBe(101.2)
@@ -116,7 +116,7 @@ describe('NBA Totals Factors', () => {
       // Mock failed responses
       askStatMuse.mockResolvedValue({ ok: false, data: null })
       
-      const result = await fetchStatMuseBundle(mockCtx)
+      const result = await fetchNBAStatsBundle(mockCtx)
       
       // Should fall back to league averages
       expect(result.awayPaceSeason).toBe(100.0) // League average fallback

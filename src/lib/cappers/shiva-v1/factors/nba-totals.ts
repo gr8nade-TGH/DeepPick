@@ -160,9 +160,10 @@ export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<StatMuseBundle> 
 }
 
 // ============================================================================
-// STATMUSE BUNDLE FETCHER (DEPRECATED - keeping for reference)
+// STATMUSE BUNDLE FETCHER (DEPRECATED - commented out)
 // ============================================================================
 
+/*
 export async function fetchStatMuseBundle(ctx: RunCtx): Promise<StatMuseBundle> {
   console.log('[StatMuse:FETCH_START]', { away: ctx.away, home: ctx.home })
   
@@ -292,6 +293,7 @@ export async function fetchStatMuseBundle(ctx: RunCtx): Promise<StatMuseBundle> 
     league3Pstdev: 0.05, // Hardcoded for now
   }
 }
+*/
 
 // ============================================================================
 // LLM INJURY PARSER
