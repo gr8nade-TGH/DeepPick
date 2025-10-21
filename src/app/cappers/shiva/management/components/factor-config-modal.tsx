@@ -86,7 +86,7 @@ export function FactorConfigModal({
         formula: "expPace = (awayPace + homePace)/2, s = clamp((expPace - leaguePace)/6, -1, +1)",
         examples: [
           "Lakers(105) vs Grizzlies(95) → expPace=100 → s=0 → neutral",
-          "Warriors(108) vs Kings(106) → expPace=107 → s=+1.2 → +100% Over",
+          "Warriors(108) vs Kings(106) → expPace=107 → s=+1.0 → +100% Over",
           "Heat(96) vs Knicks(94) → expPace=95 → s=-0.8 → -80% Under"
         ]
       },

@@ -14,7 +14,7 @@ export const FACTOR_REGISTRY: FactorRegistry = {
     name: 'Matchup Pace Index',
     description: 'Expected game pace vs league average',
     defaultWeight: 20,
-    maxPoints: 1.0,
+    maxPoints: 1.5,
     supportedSports: ['NBA'],
     supportedBetTypes: ['TOTAL'],
     availableDataSources: ['nba-stats-api', 'manual'],
