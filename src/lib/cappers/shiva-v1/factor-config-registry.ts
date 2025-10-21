@@ -130,6 +130,20 @@ export const FACTOR_REGISTRY: FactorRegistry = {
   // GLOBAL FACTORS (All sports/bet types)
   // ========================================================================
   
+  newsEdge: {
+    name: 'News/Injury Edge',
+    description: 'Injury/availability impact within last 48-72h. Capped at ±3 per 100 pre-aggregation.',
+    defaultWeight: 7,
+    maxPoints: 0.3,
+    supportedSports: ['NBA', 'NFL', 'MLB'],
+    supportedBetTypes: ['SPREAD', 'MONEYLINE', 'TOTAL'],
+    availableDataSources: ['llm', 'news-api', 'manual'],
+    defaultDataSource: 'llm',
+    scope: 'team',
+    icon: '🏥',
+    shortName: 'News/Injury'
+  },
+  
   injuries: {
     name: 'Key Injuries & Availability',
     description: 'Impact of missing key players',

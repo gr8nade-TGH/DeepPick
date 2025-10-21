@@ -1,7 +1,6 @@
 "use client"
 import { useState } from 'react'
 import { HeaderFilters } from './components/header-filters'
-import { FactorControls, type FactorConfig } from './components/factor-controls'
 import { SHIVAManagementInbox } from './components/inbox'
 import { SHIVAWizard } from './components/wizard'
 import { FactorConfigModal } from './components/factor-config-modal'
@@ -55,7 +54,6 @@ export default function ShivaManagementPage() {
   const [mode, setMode] = useState<'dry-run' | 'write'>('dry-run')
   const [betType, setBetType] = useState<'SPREAD' | 'MONEYLINE' | 'TOTAL'>('TOTAL')
   const [providerOverrides, setProviderOverrides] = useState<{ step3?: string; step4?: string }>({})
-  const [factorConfigs, setFactorConfigs] = useState<FactorConfig[]>([])
   const [showFactorConfig, setShowFactorConfig] = useState(false)
 
   if (!uiEnabled) {
@@ -64,43 +62,6 @@ export default function ShivaManagementPage() {
 
   const handleProfileChange = (profile: CapperProfile | null, capper: string, sport: string) => {
     setCurrentProfile(profile)
-    
-    // Convert profile to factor configs for UI
-    if (profile) {
-      const configs: FactorConfig[] = []
-      
-      // Map profile factors to UI configs
-      const factorKeys = ['seasonNet', 'recentNet', 'h2hPpg', 'matchupORtgDRtg', 'newsEdge', 'homeEdge', 'threePoint']
-      const weights = [
-        profile.weights.f1_net_rating,
-        profile.weights.f2_recent_form,
-        profile.weights.f3_h2h_matchup,
-        profile.weights.f4_ortg_diff,
-        profile.weights.f5_news_injury,
-        profile.weights.f6_home_court,
-        profile.weights.f7_three_point,
-      ]
-      
-      factorKeys.forEach((key, idx) => {
-        const metadata = NBA_FACTOR_METADATA[key]
-        if (metadata) {
-          configs.push({
-            key,
-            enabled: true, // Default all enabled
-            weight: weights[idx],
-            name: metadata.name,
-            description: metadata.description,
-            dataSource: metadata.dataSource,
-          })
-        }
-      })
-      
-      setFactorConfigs(configs)
-    }
-  }
-
-  const handleFactorsChange = (updatedFactors: FactorConfig[]) => {
-    setFactorConfigs(updatedFactors)
   }
 
   const handleBetTypeChange = (newBetType: 'SPREAD' | 'MONEYLINE' | 'TOTAL') => {
@@ -113,15 +74,6 @@ export default function ShivaManagementPage() {
     
     const effective: CapperProfile = {
       ...currentProfile,
-      weights: {
-        f1_net_rating: factorConfigs.find(f => f.key === 'seasonNet')?.weight ?? 0.21,
-        f2_recent_form: factorConfigs.find(f => f.key === 'recentNet')?.weight ?? 0.175,
-        f3_h2h_matchup: factorConfigs.find(f => f.key === 'h2hPpg')?.weight ?? 0.14,
-        f4_ortg_diff: factorConfigs.find(f => f.key === 'matchupORtgDRtg')?.weight ?? 0.07,
-        f5_news_injury: factorConfigs.find(f => f.key === 'newsEdge')?.weight ?? 0.07,
-        f6_home_court: factorConfigs.find(f => f.key === 'homeEdge')?.weight ?? 0.035,
-        f7_three_point: factorConfigs.find(f => f.key === 'threePoint')?.weight ?? 0.021,
-      },
       providers: {
         ...currentProfile.providers,
         step3_default: (providerOverrides.step3 as any) || currentProfile.providers.step3_default,
@@ -130,7 +82,6 @@ export default function ShivaManagementPage() {
     }
     
     setEffectiveProfile(effective)
-    // Trigger Step 1 with this profile
   }
 
   return (
@@ -144,29 +95,17 @@ export default function ShivaManagementPage() {
       />
       
       <div className="p-4 grid grid-cols-12 gap-4">
-        {/* Left: Inbox + Factor Controls */}
+        {/* Left: Inbox */}
         <div className="col-span-4 space-y-4">
           <div className="border border-gray-700 rounded p-3 bg-gray-900">
             <SHIVAManagementInbox />
           </div>
-          
-          {factorConfigs.length > 0 && (
-            <FactorControls
-              factors={factorConfigs}
-              onFactorsChange={handleFactorsChange}
-              onRunClick={handleRunClick}
-              hasSelectedGame={!!selectedGame}
-              selectedGameStatus={selectedGame?.status}
-              sport="NBA"
-              betType={betType}
-            />
-          )}
         </div>
 
         {/* Right: Wizard */}
         <div className="col-span-8 border border-gray-700 rounded p-3 bg-gray-900">
           {/* Configure Factors Button */}
-          <div className="mb-4 flex justify-between items-center">
+          <div className="mb-4">
             <button
               onClick={() => setShowFactorConfig(true)}
               className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded font-medium transition flex items-center gap-2"
@@ -174,12 +113,6 @@ export default function ShivaManagementPage() {
               <span>⚙️</span>
               Configure Factors
             </button>
-            
-            {factorConfigs.length > 0 && (
-              <div className="text-sm text-gray-400">
-                {factorConfigs.filter(f => f.enabled).length} factors enabled
-              </div>
-            )}
           </div>
           
           <SHIVAWizard
@@ -200,7 +133,7 @@ export default function ShivaManagementPage() {
         betType={betType}
         onSave={(profile: FactorCapperProfile) => {
           console.log('Factor config saved:', profile)
-          // TODO: Apply saved configuration to factorConfigs
+          // TODO: Apply factor configuration to pick generation
         }}
       />
     </div>
