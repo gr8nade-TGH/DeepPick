@@ -104,7 +104,21 @@ export function FactorConfigModal({
         
         const data = await response.json()
         setProfile(data.profile)
-        setFactors(data.profile.factors || [])
+        
+        // Ensure factors have proper default weights if not loaded
+        const loadedFactors = data.profile.factors || []
+        if (loadedFactors.length === 0) {
+          // Set default factors with equal weights (20% each = 100% total)
+          setFactors([
+            { key: 'paceIndex', name: 'Pace Index', enabled: true, weight: 20, dataSource: 'nba-stats-api' },
+            { key: 'offForm', name: 'Offensive Form', enabled: true, weight: 20, dataSource: 'nba-stats-api' },
+            { key: 'defErosion', name: 'Defensive Erosion', enabled: true, weight: 20, dataSource: 'nba-stats-api' },
+            { key: 'threeEnv', name: '3P Environment', enabled: true, weight: 20, dataSource: 'nba-stats-api' },
+            { key: 'whistleEnv', name: 'FT Environment', enabled: true, weight: 20, dataSource: 'nba-stats-api' },
+          ])
+        } else {
+          setFactors(loadedFactors)
+        }
       } catch (error) {
         console.error('Error loading factor config:', error)
       } finally {
@@ -118,9 +132,17 @@ export function FactorConfigModal({
   // Toggle factor enabled/disabled
   const toggleFactor = (key: string) => {
     setFactors(prev =>
-      prev.map(f =>
-        f.key === key ? { ...f, enabled: !f.enabled } : f
-      )
+      prev.map(f => {
+        if (f.key === key) {
+          const newEnabled = !f.enabled
+          return { 
+            ...f, 
+            enabled: newEnabled,
+            weight: newEnabled ? f.weight : 0 // Set weight to 0 when disabled
+          }
+        }
+        return f
+      })
     )
   }
   
@@ -153,11 +175,15 @@ export function FactorConfigModal({
     )
   }
   
-  // Save configuration
+  // Save factor configuration
   const handleSave = async () => {
+    if (!isWeightValid) {
+      alert('Weights must sum to exactly 100% before saving')
+      return
+    }
+    
+    setSaving(true)
     try {
-      setSaving(true)
-      
       const response = await fetch('/api/factors/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -165,22 +191,23 @@ export function FactorConfigModal({
           capperId,
           sport,
           betType,
-          name: profile?.name || `${capperId} ${sport} ${betType}`,
-          description: profile?.description,
-          factors
+          profile: {
+            ...profile,
+            factors: factors
+          }
         })
       })
       
-      if (!response.ok) {
-        throw new Error('Failed to save configuration')
+      if (response.ok) {
+        console.log('Factor configuration saved successfully')
+        onSave(factors) // Notify parent component
+        onClose() // Close modal
+      } else {
+        throw new Error('Failed to save factor configuration')
       }
-      
-      const data = await response.json()
-      onSave(data.profile)
-      onClose()
     } catch (error) {
       console.error('Error saving factor config:', error)
-      alert('Failed to save configuration')
+      alert('Failed to save configuration. Please try again.')
     } finally {
       setSaving(false)
     }
