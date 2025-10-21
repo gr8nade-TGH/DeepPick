@@ -714,22 +714,35 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                       }
                     },
                     // Step-specific debug information
-                    step_debug: {
-                      step3_totals: stepLogs[3]?.json?._debug || null,
-                      step3_factors_detail: stepLogs[3]?.json?.factors?.map((f: any) => ({
-                        key: f.key,
-                        name: f.name,
-                        z: f.normalized_value,
-                        points: f.parsed_values_json?.points,
-                        awayContribution: f.parsed_values_json?.awayContribution,
-                        homeContribution: f.parsed_values_json?.homeContribution,
-                        capped: f.caps_applied,
-                        notes: f.notes
-                      })) || [],
-                      step4_predictions: stepLogs[4]?.json || null,
-                      step5_confidence: stepLogs[5]?.json || null,
-                      step6_pick: stepLogs[6]?.json?.pick || null,
-                    },
+      step_debug: {
+        step3_totals: stepLogs[3]?.json?._debug || null,
+        step3_factors_detail: stepLogs[3]?.json?.factors?.map((f: any) => ({
+          key: f.key,
+          name: f.name,
+          z: f.normalized_value,
+          points: f.parsed_values_json?.points,
+          awayContribution: f.parsed_values_json?.awayContribution,
+          homeContribution: f.parsed_values_json?.homeContribution,
+          weight: f.weight_total_pct,
+          capped: f.caps_applied,
+          notes: f.notes
+        })) || [],
+        step4_predictions: stepLogs[4]?.json || null,
+        step5_confidence: stepLogs[5]?.json || null,
+        step6_pick: stepLogs[6]?.json?.pick || null,
+        confidence_calculation: {
+          total_weighted_points: stepLogs[3]?.json?.factors?.reduce((sum: number, f: any) => 
+            sum + (f.parsed_values_json?.points || 0), 0) || 0,
+          max_possible_points: 5.0, // Sum of all max points when weights = 100%
+          weight_validation: {
+            total_weight: stepLogs[3]?.json?.factors?.reduce((sum: number, f: any) => 
+              sum + (f.weight_total_pct || 0), 0) || 0,
+            expected_weight: 100,
+            is_valid: Math.abs((stepLogs[3]?.json?.factors?.reduce((sum: number, f: any) => 
+              sum + (f.weight_total_pct || 0), 0) || 0) - 100) < 0.01
+          }
+        }
+      },
                     // AI Usage Summary
                     ai_usage: {
                       step3_provider: stepLogs[3]?.json?._debug?.ai_provider || 'unknown',

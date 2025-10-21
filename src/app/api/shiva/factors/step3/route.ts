@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { ensureApiEnabled, isWriteAllowed, jsonError, jsonOk, requireIdempotencyKey } from '@/lib/api/shiva-v1/route-helpers'
 import { withIdempotency } from '@/lib/api/shiva-v1/idempotency'
 import { computeTotalsFactors } from '@/lib/cappers/shiva-v1/factors/nba-totals'
+import { getFactorWeightsFromProfile } from '@/lib/cappers/shiva-v1/confidence-calculator'
 export const runtime = 'nodejs'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 
@@ -76,6 +77,54 @@ export async function POST(request: Request) {
         // Use new NBA totals factors
         try {
           console.log('[Step3:NBA-Totals] Starting computeTotalsFactors...')
+          
+          // Fetch capper profile to get factor weights
+          let factorWeights: Record<string, number> = {}
+          if (writeAllowed) {
+            try {
+              const profileRes = await admin
+                .from('capper_settings')
+                .select('profile_json')
+                .eq('capper_id', 'SHIVA')
+                .eq('sport', 'NBA')
+                .eq('bet_type', 'TOTAL')
+                .single()
+              
+              if (profileRes.data?.profile_json?.factors) {
+                factorWeights = getFactorWeightsFromProfile(profileRes.data.profile_json)
+                console.log('[Step3:NBA-Totals] Using factor weights from profile:', factorWeights)
+              } else {
+                console.log('[Step3:NBA-Totals] No profile found, using default weights')
+                // Default weights: 20% each for 5 factors
+                factorWeights = {
+                  paceIndex: 20,
+                  offForm: 20,
+                  defErosion: 20,
+                  threeEnv: 20,
+                  whistleEnv: 20
+                }
+              }
+            } catch (profileError) {
+              console.warn('[Step3:NBA-Totals] Could not fetch profile, using defaults:', profileError)
+              factorWeights = {
+                paceIndex: 20,
+                offForm: 20,
+                defErosion: 20,
+                threeEnv: 20,
+                whistleEnv: 20
+              }
+            }
+          } else {
+            // Dry run mode - use default weights
+            factorWeights = {
+              paceIndex: 20,
+              offForm: 20,
+              defErosion: 20,
+              threeEnv: 20,
+              whistleEnv: 20
+            }
+          }
+          
           const totalsResult = await computeTotalsFactors({
             game_id: run_id, // Use run_id as game_id for now
             away: inputs.teams.away,
@@ -89,7 +138,8 @@ export async function POST(request: Request) {
               threePAR: 0.39,
               FTr: 0.22,
               threePstdev: 0.036
-            }
+            },
+            factorWeights // Pass weights to factor computation
           })
           
           console.log('[Step3:NBA-Totals] Success:', { 

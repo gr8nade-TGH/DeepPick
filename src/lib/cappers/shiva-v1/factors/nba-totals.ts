@@ -29,6 +29,7 @@ export interface RunCtx {
     FTr: number
     threePstdev: number
   }
+  factorWeights?: Record<string, number> // weight percentages (0-100)
 }
 
 export interface StatMuseBundle {
@@ -388,7 +389,7 @@ export function computePaceIndex(bundle: StatMuseBundle, ctx: RunCtx): FactorCom
   
   // Normalize to z-score (±6 possessions ≈ big difference)
   const z = clamp(paceDelta / 6, -1, 1)
-  const points = normalizeToPoints(z, 0.6) // maxPoints = 0.6
+  const points = normalizeToPoints(z, 1.0) // maxPoints = 1.0
   const { away, home } = splitPointsEvenly(points)
   
   return {
@@ -441,7 +442,7 @@ export function computeOffensiveForm(bundle: StatMuseBundle, ctx: RunCtx): Facto
   
   // Normalize to z-score (±10 ORtg ≈ significant)
   const z = clamp(formDeltaPer100 / 10, -1, 1)
-  const points = normalizeToPoints(z, 0.6) // maxPoints = 0.6
+  const points = normalizeToPoints(z, 1.0) // maxPoints = 1.0
   const { away, home } = splitPointsEvenly(points)
   
   return {
@@ -496,7 +497,7 @@ export function computeDefensiveErosion(
   
   // Normalize to z-score
   const z = clamp(erosion, -1, 1)
-  const points = normalizeToPoints(z, 0.5) // maxPoints = 0.5
+  const points = normalizeToPoints(z, 1.0) // maxPoints = 1.0
   const { away, home } = splitPointsEvenly(points)
   
   return {
@@ -555,7 +556,7 @@ export function computeThreePointEnv(bundle: StatMuseBundle, ctx: RunCtx): Facto
   
   // Combined z-score (weight rate 2x more than variance)
   const z = clamp((2 * rateDelta + hotVar), -1, 1)
-  const points = normalizeToPoints(z, 0.4) // maxPoints = 0.4
+  const points = normalizeToPoints(z, 1.0) // maxPoints = 1.0
   const { away, home } = splitPointsEvenly(points)
   
   return {
@@ -602,7 +603,7 @@ export function computeWhistleEnv(bundle: StatMuseBundle, ctx: RunCtx): FactorCo
   
   // Normalize to z-score (±0.06 FTr ≈ significant)
   const z = clamp(ftrDelta / 0.06, -1, 1)
-  const points = normalizeToPoints(z, 0.3) // maxPoints = 0.3
+  const points = normalizeToPoints(z, 1.0) // maxPoints = 1.0
   const { away, home } = splitPointsEvenly(points)
   
   return {
@@ -682,15 +683,39 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<{
     computeWhistleEnv(bundle, ctx),
   ]
   
-  const rowsLog = factors.map(f => ({ 
+  // Apply factor weights if provided
+  const factorWeights = ctx.factorWeights || {}
+  const weightedFactors = factors.map(factor => {
+    const weight = factorWeights[factor.key] || 20 // Default 20% if not specified
+    const weightDecimal = weight / 100
+    
+    // Scale the points by the weight
+    const weightedPoints = factor.parsed_values_json.points * weightDecimal
+    const weightedAway = factor.parsed_values_json.awayContribution * weightDecimal
+    const weightedHome = factor.parsed_values_json.homeContribution * weightDecimal
+    
+    return {
+      ...factor,
+      weight_total_pct: weight,
+      parsed_values_json: {
+        ...factor.parsed_values_json,
+        points: weightedPoints,
+        awayContribution: weightedAway,
+        homeContribution: weightedHome
+      }
+    }
+  })
+  
+  const rowsLog = weightedFactors.map(f => ({ 
     key: f.key, 
     z: f.normalized_value, 
-    pts: f.parsed_values_json?.points ?? 0
+    pts: f.parsed_values_json?.points ?? 0,
+    weight: f.weight_total_pct
   }))
   console.debug('[totals:rows:z-points]', rowsLog)
   
   return {
-    factors,
+    factors: weightedFactors,
     factor_version: 'nba_totals_v1',
     totals_debug: {
       league_anchors: {
