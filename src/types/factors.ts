@@ -15,8 +15,8 @@ export interface FactorMeta {
   shortName: string;      // label next to the icon
   icon: string;           // emoji or icon key
   appliesTo: { 
-    sports: Sport[] | ['*']; 
-    betTypes: BetType[] | ['*']; 
+    sports: Sport[] | '*'; 
+    betTypes: BetType[] | '*'; 
     scope: Scope 
   };
   maxPoints: number;      // cap of absolute contribution in points
@@ -53,8 +53,8 @@ export type FactorApplicable = FactorMeta & {
 
 // Utility functions
 export function isFactorApplicable(factor: FactorMeta, filter: FactorFilter): boolean {
-  const sportMatch = factor.appliesTo.sports.includes('*') || factor.appliesTo.sports.includes(filter.sport);
-  const betTypeMatch = factor.appliesTo.betTypes.includes('*') || factor.appliesTo.betTypes.includes(filter.betType);
+  const sportMatch = factor.appliesTo.sports === '*' || (Array.isArray(factor.appliesTo.sports) && factor.appliesTo.sports.includes(filter.sport));
+  const betTypeMatch = factor.appliesTo.betTypes === '*' || (Array.isArray(factor.appliesTo.betTypes) && factor.appliesTo.betTypes.includes(filter.betType));
   return sportMatch && betTypeMatch;
 }
 

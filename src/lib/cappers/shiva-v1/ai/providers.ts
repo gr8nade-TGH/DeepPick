@@ -7,7 +7,6 @@ import * as statmuse from '../statmuse'
 import * as news from '../news'
 import * as math from '../math'
 import { shivaProfileV1, type CapperProfile } from '../profile'
-import { calculateDelta100FromProfile } from '../factor-registry'
 import type { PlayerRoster } from '../news'
 
 // ============================================================================
@@ -422,7 +421,7 @@ export async function runStep4(inputs: Step4Inputs, profile: CapperProfile = shi
 
     // Use profile-based calculation
     const factorValues = [f1, f2, f3, f4, f5, f6val, f7val]
-    const delta100Value = calculateDelta100FromProfile(factorValues, profile)
+    const delta100Value = math.deltaFromFactors(f1, f2, f3, f4, f5, f6val, f7val, profile.weights)
 
     // Calculate predictions
     const spreadPredPoints = math.spreadFromDelta(delta100Value, paceExp)

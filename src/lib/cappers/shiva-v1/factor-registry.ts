@@ -88,8 +88,8 @@ export const GLOBAL_FACTORS: FactorMeta[] = [
     shortName: 'News',
     icon: '🏥',
     appliesTo: {
-      sports: ['*'],
-      betTypes: ['*'],
+      sports: '*',
+      betTypes: '*',
       scope: 'GLOBAL'
     },
     maxPoints: 0.3,
@@ -165,20 +165,20 @@ export function getFactorMeta(key: string): FactorMeta | undefined {
 
 export function getFactorsBySport(sport: Sport): FactorMeta[] {
   return FACTOR_REGISTRY.filter(factor => 
-    factor.appliesTo.sports.includes('*') || factor.appliesTo.sports.includes(sport)
+    factor.appliesTo.sports === '*' || (Array.isArray(factor.appliesTo.sports) && factor.appliesTo.sports.includes(sport))
   );
 }
 
 export function getFactorsByBetType(betType: BetType): FactorMeta[] {
   return FACTOR_REGISTRY.filter(factor => 
-    factor.appliesTo.betTypes.includes('*') || factor.appliesTo.betTypes.includes(betType)
+    factor.appliesTo.betTypes === '*' || (Array.isArray(factor.appliesTo.betTypes) && factor.appliesTo.betTypes.includes(betType))
   );
 }
 
 export function getFactorsByContext(sport: Sport, betType: BetType): FactorMeta[] {
   return FACTOR_REGISTRY.filter(factor => {
-    const sportMatch = factor.appliesTo.sports.includes('*') || factor.appliesTo.sports.includes(sport);
-    const betTypeMatch = factor.appliesTo.betTypes.includes('*') || factor.appliesTo.betTypes.includes(betType);
+    const sportMatch = factor.appliesTo.sports === '*' || (Array.isArray(factor.appliesTo.sports) && factor.appliesTo.sports.includes(sport));
+    const betTypeMatch = factor.appliesTo.betTypes === '*' || (Array.isArray(factor.appliesTo.betTypes) && factor.appliesTo.betTypes.includes(betType));
     return sportMatch && betTypeMatch;
   });
 }
