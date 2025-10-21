@@ -16,7 +16,7 @@ function DryRunBanner() {
   const dryRun = (process.env.NEXT_PUBLIC_SHIVA_V1_WRITE_ENABLED || '').toLowerCase() !== 'true'
   if (!dryRun) return null
   return (
-    <div className="mb-3 rounded bg-yellow-50 border border-yellow-200 p-2 text-sm">
+    <div className="mb-3 rounded bg-yellow-900 border-2 border-yellow-600 p-3 text-sm font-bold text-yellow-200">
       Dry-Run (no writes). Responses may include X-Dry-Run header.
     </div>
   )
