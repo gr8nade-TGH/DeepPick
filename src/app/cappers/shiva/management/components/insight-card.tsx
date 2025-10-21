@@ -423,7 +423,7 @@ export function InsightCard(props: InsightCardProps) {
         <div className="p-6 bg-gradient-to-r from-slate-900 to-slate-800 rounded-b-2xl">
           <div className="flex justify-center gap-4">
             <button
-              onClick={onClose}
+              onClick={props.onClose}
               className="px-8 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg font-bold hover:from-red-700 hover:to-red-800 transition-all duration-200 border border-red-500"
             >
               Close
