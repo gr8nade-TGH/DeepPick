@@ -78,7 +78,7 @@ export async function POST(request: Request) {
           status: 200,
         })
         
-        return { body: { snapshot_id: ins.data.snapshot_id, is_active: ins.data.is_active }, status: 200 }
+        return { body: { snapshot_id: ins.data.snapshot_id, is_active: ins.data.is_active, snapshot: parse.data.snapshot }, status: 200 }
       }
       
       // Dry-run: simulate a snapshot id
