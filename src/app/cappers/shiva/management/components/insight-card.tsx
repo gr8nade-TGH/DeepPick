@@ -84,6 +84,7 @@ export interface InsightCardProps {
     finalScore?: { away: number; home: number }
     postMortem?: string
   }
+  onClose: () => void
 }
 
 export function InsightCard(props: InsightCardProps) {
