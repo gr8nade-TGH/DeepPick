@@ -152,7 +152,6 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         setLog({ status: 200, json: debugReport, dryRun: false })
         // DO NOT add to stepLogs to prevent recursion
       }
-      }
     } catch (e) {
       setLog({ status: 0, json: { error: { message: (e as Error).message } } })
     }
