@@ -121,14 +121,14 @@ export async function fetchStatMuseBundle(ctx: RunCtx): Promise<StatMuseBundle> 
   
   // Parse responses - NO FALLBACKS, let it fail
   const parseNumeric = (response: any, queryName: string = 'unknown'): number => {
-    if (!response?.ok || !response.data) {
-      console.log(`[StatMuse:FAIL] ${queryName}:`, { ok: response?.ok, data: response?.data, error: response?.error })
-      throw new Error(`StatMuse API call failed for ${queryName}: ${response?.error || 'No data'}`)
+    if (!response?.ok || response.value === undefined) {
+      console.log(`[StatMuse:FAIL] ${queryName}:`, { ok: response?.ok, value: response?.value, rawText: response?.rawText })
+      throw new Error(`StatMuse web scraping failed for ${queryName}: ${response?.rawText || 'No data'}`)
     }
-    const numeric = parseFloat(response.data.toString())
+    const numeric = parseFloat(response.value.toString())
     if (isNaN(numeric)) {
-      console.log(`[StatMuse:PARSE_FAIL] ${queryName}:`, { data: response.data, parsed: numeric })
-      throw new Error(`StatMuse API returned invalid data for ${queryName}: ${response.data}`)
+      console.log(`[StatMuse:PARSE_FAIL] ${queryName}:`, { value: response.value, rawText: response.rawText, parsed: numeric })
+      throw new Error(`StatMuse returned invalid data for ${queryName}: ${response.value} (raw: ${response.rawText})`)
     }
     console.log(`[StatMuse:SUCCESS] ${queryName}:`, numeric)
     return numeric
@@ -164,7 +164,8 @@ export async function fetchStatMuseBundle(ctx: RunCtx): Promise<StatMuseBundle> 
     index: i,
     status: r.status,
     ok: r.status === 'fulfilled' ? r.value?.ok : false,
-    data: r.status === 'fulfilled' ? (r.value as any)?.data : null,
+    value: r.status === 'fulfilled' ? (r.value as any)?.value : null,
+    rawText: r.status === 'fulfilled' ? (r.value as any)?.rawText : null,
     error: r.status === 'rejected' ? r.reason : null
   })))
   
