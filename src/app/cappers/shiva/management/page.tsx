@@ -4,7 +4,9 @@ import { HeaderFilters } from './components/header-filters'
 import { FactorControls, type FactorConfig } from './components/factor-controls'
 import { SHIVAManagementInbox } from './components/inbox'
 import { SHIVAWizard } from './components/wizard'
+import { FactorConfigModal } from './components/factor-config-modal'
 import type { CapperProfile } from '@/lib/cappers/shiva-v1/profile'
+import type { CapperProfile as FactorCapperProfile } from '@/types/factor-config'
 
 // Factor metadata for UI display (from NBA_Factor_Library_v1.csv)
 const NBA_FACTOR_METADATA: Record<string, { name: string; description: string; dataSource: string }> = {
@@ -54,6 +56,7 @@ export default function ShivaManagementPage() {
   const [betType, setBetType] = useState<'SPREAD' | 'MONEYLINE' | 'TOTAL'>('TOTAL')
   const [providerOverrides, setProviderOverrides] = useState<{ step3?: string; step4?: string }>({})
   const [factorConfigs, setFactorConfigs] = useState<FactorConfig[]>([])
+  const [showFactorConfig, setShowFactorConfig] = useState(false)
 
   if (!uiEnabled) {
     return <div className="p-6">SHIVA v1 UI is disabled.</div>
@@ -162,14 +165,44 @@ export default function ShivaManagementPage() {
 
         {/* Right: Wizard */}
         <div className="col-span-8 border border-gray-700 rounded p-3 bg-gray-900">
-        <SHIVAWizard
-          effectiveProfile={effectiveProfile}
-          selectedGame={selectedGame}
-          mode={mode}
-          betType={betType}
-        />
+          {/* Configure Factors Button */}
+          <div className="mb-4 flex justify-between items-center">
+            <button
+              onClick={() => setShowFactorConfig(true)}
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded font-medium transition flex items-center gap-2"
+            >
+              <span>⚙️</span>
+              Configure Factors
+            </button>
+            
+            {factorConfigs.length > 0 && (
+              <div className="text-sm text-gray-400">
+                {factorConfigs.filter(f => f.enabled).length} factors enabled
+              </div>
+            )}
+          </div>
+          
+          <SHIVAWizard
+            effectiveProfile={effectiveProfile}
+            selectedGame={selectedGame}
+            mode={mode}
+            betType={betType}
+          />
         </div>
       </div>
+      
+      {/* Factor Configuration Modal */}
+      <FactorConfigModal
+        isOpen={showFactorConfig}
+        onClose={() => setShowFactorConfig(false)}
+        capperId="SHIVA"
+        sport="NBA"
+        betType={betType}
+        onSave={(profile: FactorCapperProfile) => {
+          console.log('Factor config saved:', profile)
+          // TODO: Apply saved configuration to factorConfigs
+        }}
+      />
     </div>
   )
 }
