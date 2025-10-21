@@ -1,30 +1,32 @@
 import { z } from 'zod'
 import { ensureApiEnabled, isWriteAllowed, jsonError, jsonOk, requireIdempotencyKey } from '@/lib/api/shiva-v1/route-helpers'
 import { withIdempotency } from '@/lib/api/shiva-v1/idempotency'
-export const runtime = 'nodejs'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
+export const runtime = 'nodejs'
 
 const Step5Schema = z.object({
   run_id: z.string().min(1),
   inputs: z.object({
-    active_snapshot_id: z.string().min(1),
-    spread_pred_points: z.number(),
-    total_pred_points: z.number(),
-    pick_side_team: z.string().min(1),
-    snapshot: z.object({ spread: z.object({ fav_team: z.string(), line: z.number() }).strict(), total: z.object({ line: z.number() }).strict() }).strict(),
-    conf7_score: z.number(),
+    base_confidence: z.number().finite(),
+    predicted_total: z.number().finite(),
+    market_total_line: z.number().finite(),
+    pick_direction: z.enum(['OVER', 'UNDER']),
   }).strict(),
   results: z.object({
-    market_edge: z.object({
-      edge_side_points: z.number(),
-      edge_side_norm: z.number(),
-      edge_total_points: z.number(),
-      edge_total_norm: z.number(),
-      dominant: z.enum(['side', 'total']),
-      conf_market_adj: z.union([z.string(), z.number()]),
-      conf_market_adj_value: z.number(),
+    final_factor: z.object({
+      name: z.string(),
+      edge_pts: z.number(),
+      edge_factor: z.number(),
+      confidence_before: z.number(),
+      confidence_after: z.number(),
     }).strict(),
-    confidence: z.object({ conf7: z.number(), conf_final: z.number() }).strict(),
+    units: z.number().min(0).max(5),
+    final_pick: z.object({
+      type: z.literal('TOTAL'),
+      selection: z.string(),
+      units: z.number(),
+      confidence: z.number(),
+    }).strict(),
   }).strict(),
 }).strict()
 
@@ -47,22 +49,8 @@ export async function POST(request: Request) {
     return jsonError('INVALID_BODY', 'Invalid request body', 400, { issues: parse.error.issues })
   }
 
-  const { run_id, results } = parse.data
-  
-  // Precondition: require an active snapshot only when writes are enabled
-  if (writeAllowed) {
-    const admin = getSupabaseAdmin()
-    const snap = await admin.from('odds_snapshots').select('snapshot_id').eq('run_id', run_id).eq('is_active', true).maybeSingle()
-    if (!snap.data) {
-      console.error('[SHIVA:Step5]', {
-        error: 'PRECONDITION_FAILED',
-        run_id,
-        reason: 'No active odds snapshot',
-        latencyMs: Date.now() - startTime,
-      })
-      return jsonError('PRECONDITION_FAILED', 'No active odds snapshot for this run', 422)
-    }
-  }
+  const { run_id, inputs, results } = parse.data
+  const { base_confidence, predicted_total, market_total_line, pick_direction } = inputs
   
   return withIdempotency({
     runId: run_id,
@@ -71,57 +59,82 @@ export async function POST(request: Request) {
     writeAllowed,
     exec: async () => {
       const admin = getSupabaseAdmin()
-      const f8 = results.market_edge
+      
+      // Calculate market edge
+      const marketEdgePts = predicted_total - market_total_line
+      
+      // Calculate edge factor: clamp(edgePts / 10, -1, 1)
+      const edgeFactor = Math.max(-1, Math.min(1, marketEdgePts / 10))
+      
+      // Adjust confidence: clamp(base + (edgeFactor * 1.0), 0, 5)
+      const adjustedConfidence = Math.max(0, Math.min(5, base_confidence + (edgeFactor * 1.0)))
+      
+      // Calculate units based on final confidence
+      let units = 0
+      if (adjustedConfidence >= 4.5) units = 5
+      else if (adjustedConfidence >= 3.5) units = 3
+      else if (adjustedConfidence >= 2.5) units = 2
+      else if (adjustedConfidence >= 1.5) units = 1
+      
+      // Generate final pick
+      const line = market_total_line.toFixed(1)
+      const selection = `${pick_direction} ${line}`
+      
+      const finalPick = {
+        type: 'TOTAL' as const,
+        selection,
+        units,
+        confidence: adjustedConfidence
+      }
       
       if (writeAllowed) {
-        // Single transaction for all writes
-        const ins = await admin.from('factors').insert({
-          run_id,
-          factor_no: 8,
-          raw_values_json: results,
-          parsed_values_json: { dominant: f8.dominant },
-          normalized_value: 0,
-          weight_applied: 30.0,
-          caps_applied: false,
-          cap_reason: null,
-        })
-        if (ins.error) throw new Error(ins.error.message)
-        
+        // Store final confidence and pick
         const upd = await admin.from('runs').update({ 
-          conf_market_adj: f8.conf_market_adj_value, 
-          conf_final: results.confidence.conf_final 
+          conf_final: adjustedConfidence,
+          final_factor: results.final_factor.name,
+          edge_pts: marketEdgePts,
+          edge_factor: edgeFactor
         }).eq('run_id', run_id)
         if (upd.error) throw new Error(upd.error.message)
       }
       
-      const responseBody = { 
-        run_id, 
-        conf_final: results.confidence.conf_final, 
-        dominant: f8.dominant, 
-        conf_market_adj: f8.conf_market_adj_value 
+      const responseBody = {
+        run_id,
+        final_factor: {
+          name: 'Edge vs Market',
+          edge_pts: marketEdgePts,
+          edge_factor: edgeFactor,
+          confidence_before: base_confidence,
+          confidence_after: adjustedConfidence,
+        },
+        units,
+        final_pick: finalPick,
+        conf_final: adjustedConfidence,
+        dominant: 'total',
+        conf_market_adj: edgeFactor,
       }
       
       // Structured logging
-      console.log('[SHIVA:Step5]', {
+      console.log('[SHIVA:Step5Final]', {
         run_id,
         inputs: {
-          conf7: results.confidence.conf7,
-          edge_side_pts: f8.edge_side_points,
-          edge_total_pts: f8.edge_total_points,
+          base_confidence,
+          predicted_total,
+          market_total_line,
+          pick_direction,
         },
         outputs: {
-          conf_final: results.confidence.conf_final,
-          dominant: f8.dominant,
-          market_adj: f8.conf_market_adj_value,
+          edge_pts: marketEdgePts,
+          edge_factor: edgeFactor,
+          confidence_after: adjustedConfidence,
+          units,
         },
         writeAllowed,
         latencyMs: Date.now() - startTime,
         status: 200,
       })
       
-      return { body: responseBody, status: 200 }
+      return jsonOk(responseBody)
     }
   })
 }
-
-
