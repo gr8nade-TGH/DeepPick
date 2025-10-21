@@ -70,7 +70,8 @@ export async function POST(request: Request) {
         const confidenceResult = calculateConfidence({
           factors: results.factors.map(f => ({
             ...f,
-            raw_values_json: f.raw_values_json as Record<string, any>
+            raw_values_json: f.raw_values_json as Record<string, any>,
+            notes: f.notes || undefined
           })),
           factorWeights,
           confSource: 'nba_totals_v1'
