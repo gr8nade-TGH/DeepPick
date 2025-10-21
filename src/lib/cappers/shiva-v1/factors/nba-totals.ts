@@ -114,10 +114,18 @@ export async function fetchStatMuseBundle(ctx: RunCtx): Promise<StatMuseBundle> 
   )
   
   // Parse responses with fallbacks
-  const parseNumeric = (response: any, fallback: number = 0): number => {
-    if (!response?.ok || !response.data) return fallback
+  const parseNumeric = (response: any, fallback: number = 0, queryName: string = 'unknown'): number => {
+    if (!response?.ok || !response.data) {
+      console.debug(`[StatMuse:FAIL] ${queryName}:`, { ok: response?.ok, data: response?.data, error: response?.error })
+      return fallback
+    }
     const numeric = parseFloat(response.data.toString())
-    return isNaN(numeric) ? fallback : numeric
+    if (isNaN(numeric)) {
+      console.debug(`[StatMuse:PARSE_FAIL] ${queryName}:`, { data: response.data, parsed: numeric })
+      return fallback
+    }
+    console.debug(`[StatMuse:SUCCESS] ${queryName}:`, numeric)
+    return numeric
   }
   
   const [
@@ -142,35 +150,40 @@ export async function fetchStatMuseBundle(ctx: RunCtx): Promise<StatMuseBundle> 
     homeOppFTrRes,
   ] = responses
   
+  // Log StatMuse call summary
+  const successCount = responses.filter(r => r.status === 'fulfilled' && r.value?.ok).length
+  const failCount = responses.length - successCount
+  console.debug(`[StatMuse:SUMMARY] ${successCount}/${responses.length} calls succeeded, ${failCount} failed`)
+  
   return {
     // Team pace data
-    awayPaceSeason: parseNumeric(awayPaceSeasonRes, NBA_CONSTANTS.LEAGUE_PACE),
-    awayPaceLast10: parseNumeric(awayPaceLast10Res, NBA_CONSTANTS.LEAGUE_PACE),
-    homePaceSeason: parseNumeric(homePaceSeasonRes, NBA_CONSTANTS.LEAGUE_PACE),
-    homePaceLast10: parseNumeric(homePaceLast10Res, NBA_CONSTANTS.LEAGUE_PACE),
+    awayPaceSeason: parseNumeric(awayPaceSeasonRes, NBA_CONSTANTS.LEAGUE_PACE, 'awayPaceSeason'),
+    awayPaceLast10: parseNumeric(awayPaceLast10Res, NBA_CONSTANTS.LEAGUE_PACE, 'awayPaceLast10'),
+    homePaceSeason: parseNumeric(homePaceSeasonRes, NBA_CONSTANTS.LEAGUE_PACE, 'homePaceSeason'),
+    homePaceLast10: parseNumeric(homePaceLast10Res, NBA_CONSTANTS.LEAGUE_PACE, 'homePaceLast10'),
     
     // Offensive/Defensive ratings
-    awayORtgLast10: parseNumeric(awayORtgLast10Res, NBA_CONSTANTS.LEAGUE_ORTG),
-    homeORtgLast10: parseNumeric(homeORtgLast10Res, NBA_CONSTANTS.LEAGUE_ORTG),
-    awayDRtgSeason: parseNumeric(awayDRtgSeasonRes, NBA_CONSTANTS.LEAGUE_DRTG),
-    homeDRtgSeason: parseNumeric(homeDRtgSeasonRes, NBA_CONSTANTS.LEAGUE_DRTG),
+    awayORtgLast10: parseNumeric(awayORtgLast10Res, NBA_CONSTANTS.LEAGUE_ORTG, 'awayORtgLast10'),
+    homeORtgLast10: parseNumeric(homeORtgLast10Res, NBA_CONSTANTS.LEAGUE_ORTG, 'homeORtgLast10'),
+    awayDRtgSeason: parseNumeric(awayDRtgSeasonRes, NBA_CONSTANTS.LEAGUE_DRTG, 'awayDRtgSeason'),
+    homeDRtgSeason: parseNumeric(homeDRtgSeasonRes, NBA_CONSTANTS.LEAGUE_DRTG, 'homeDRtgSeason'),
     
     // 3-Point environment
-    away3PAR: parseNumeric(away3PARRes, NBA_CONSTANTS.LEAGUE_3PAR),
-    home3PAR: parseNumeric(home3PARRes, NBA_CONSTANTS.LEAGUE_3PAR),
-    awayOpp3PAR: parseNumeric(awayOpp3PARRes, NBA_CONSTANTS.LEAGUE_3PAR),
-    homeOpp3PAR: parseNumeric(homeOpp3PARRes, NBA_CONSTANTS.LEAGUE_3PAR),
-    away3PctLast10: parseNumeric(away3PctLast10Res, 0.35), // ~35% league average
-    home3PctLast10: parseNumeric(home3PctLast10Res, 0.35),
+    away3PAR: parseNumeric(away3PARRes, NBA_CONSTANTS.LEAGUE_3PAR, 'away3PAR'),
+    home3PAR: parseNumeric(home3PARRes, NBA_CONSTANTS.LEAGUE_3PAR, 'home3PAR'),
+    awayOpp3PAR: parseNumeric(awayOpp3PARRes, NBA_CONSTANTS.LEAGUE_3PAR, 'awayOpp3PAR'),
+    homeOpp3PAR: parseNumeric(homeOpp3PARRes, NBA_CONSTANTS.LEAGUE_3PAR, 'homeOpp3PAR'),
+    away3PctLast10: parseNumeric(away3PctLast10Res, 0.35, 'away3PctLast10'), // ~35% league average
+    home3PctLast10: parseNumeric(home3PctLast10Res, 0.35, 'home3PctLast10'),
     
     // Free throw environment
-    awayFTr: parseNumeric(awayFTrRes, NBA_CONSTANTS.LEAGUE_FTR),
-    homeFTr: parseNumeric(homeFTrRes, NBA_CONSTANTS.LEAGUE_FTR),
-    awayOppFTr: parseNumeric(awayOppFTrRes, NBA_CONSTANTS.LEAGUE_FTR),
-    homeOppFTr: parseNumeric(homeOppFTrRes, NBA_CONSTANTS.LEAGUE_FTR),
+    awayFTr: parseNumeric(awayFTrRes, NBA_CONSTANTS.LEAGUE_FTR, 'awayFTr'),
+    homeFTr: parseNumeric(homeFTrRes, NBA_CONSTANTS.LEAGUE_FTR, 'homeFTr'),
+    awayOppFTr: parseNumeric(awayOppFTrRes, NBA_CONSTANTS.LEAGUE_FTR, 'awayOppFTr'),
+    homeOppFTr: parseNumeric(homeOppFTrRes, NBA_CONSTANTS.LEAGUE_FTR, 'homeOppFTr'),
     
     // League anchors
-    leaguePace: parseNumeric(leaguePaceRes, NBA_CONSTANTS.LEAGUE_PACE),
+    leaguePace: parseNumeric(leaguePaceRes, NBA_CONSTANTS.LEAGUE_PACE, 'leaguePace'),
     leagueORtg: NBA_CONSTANTS.LEAGUE_ORTG,
     leagueDRtg: NBA_CONSTANTS.LEAGUE_DRTG,
     league3PAR: NBA_CONSTANTS.LEAGUE_3PAR,
