@@ -1,6 +1,22 @@
 "use client"
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { CapperProfile } from '@/lib/cappers/shiva-v1/profile'
+
+interface GameOption {
+  game_id: string
+  league: string
+  status: string
+  start_time_utc: string
+  away: string
+  home: string
+  odds: {
+    ml_away: number
+    ml_home: number
+    spread_team: string
+    spread_line: number
+    total_line: number
+  }
+}
 
 export interface HeaderFiltersProps {
   onProfileChange: (profile: CapperProfile | null, capper: string, sport: string) => void
@@ -16,8 +32,13 @@ export function HeaderFilters(props: HeaderFiltersProps) {
   const [step3Provider, setStep3Provider] = useState<string>('')
   const [step4Provider, setStep4Provider] = useState<string>('')
   const [profile, setProfile] = useState<CapperProfile | null>(null)
-  const [gameId, setGameId] = useState('')
-  const [oddsSnippet, setOddsSnippet] = useState<any>(null)
+  const [gameSearch, setGameSearch] = useState('')
+  const [selectedGame, setSelectedGame] = useState<GameOption | null>(null)
+  const [gameOptions, setGameOptions] = useState<GameOption[]>([])
+  const [showGameDropdown, setShowGameDropdown] = useState(false)
+  const [loadingGames, setLoadingGames] = useState(false)
+  const searchTimeoutRef = useRef<NodeJS.Timeout>()
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   // Fetch profile when capper/sport changes
   useEffect(() => {
@@ -49,24 +70,50 @@ export function HeaderFilters(props: HeaderFiltersProps) {
     loadProfile()
   }, [capper, sport])
 
-  // Fetch default game from odds API
+  // Fetch games (debounced typeahead)
   useEffect(() => {
-    async function loadDefaultGame() {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current)
+    }
+
+    searchTimeoutRef.current = setTimeout(async () => {
       if (sport !== 'NBA') return // Only NBA active for now
       
+      setLoadingGames(true)
       try {
-        const res = await fetch(`/api/odds?league=NBA`)
+        const query = gameSearch ? `&q=${encodeURIComponent(gameSearch)}` : ''
+        const res = await fetch(`/api/games/current?league=${sport}${query}&limit=50`)
+        if (res.ok) {
+          const data = await res.json()
+          setGameOptions(data.games || [])
+        }
+      } catch (error) {
+        console.error('Failed to load games:', error)
+      } finally {
+        setLoadingGames(false)
+      }
+    }, 250) // 250ms debounce
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current)
+      }
+    }
+  }, [gameSearch, sport])
+
+  // Load default game on mount
+  useEffect(() => {
+    async function loadDefaultGame() {
+      if (sport !== 'NBA') return
+      
+      try {
+        const res = await fetch(`/api/games/current?league=${sport}&limit=1`)
         if (res.ok) {
           const data = await res.json()
           if (data.games && data.games.length > 0) {
             const firstGame = data.games[0]
-            setGameId(firstGame.id || '')
-            setOddsSnippet({
-              spread: firstGame.spread_line || 0,
-              total: firstGame.total_line || 0,
-              ml_home: firstGame.home_ml || 0,
-              ml_away: firstGame.away_ml || 0,
-            })
+            setSelectedGame(firstGame)
+            setGameSearch(`${firstGame.away} @ ${firstGame.home}`)
             props.onGameChange(firstGame)
           }
         }
@@ -77,6 +124,18 @@ export function HeaderFilters(props: HeaderFiltersProps) {
     
     loadDefaultGame()
   }, [sport])
+
+  // Click outside to close dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowGameDropdown(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const handleCapperChange = (newCapper: string) => {
     setCapper(newCapper)
@@ -89,6 +148,47 @@ export function HeaderFilters(props: HeaderFiltersProps) {
   const handleModeChange = (newMode: 'dry-run' | 'write') => {
     setMode(newMode)
     props.onModeChange(newMode)
+  }
+
+  const handleGameSelect = (game: GameOption) => {
+    setSelectedGame(game)
+    setGameSearch(`${game.away} @ ${game.home}`)
+    setShowGameDropdown(false)
+    props.onGameChange(game)
+  }
+
+  const formatLocalTime = (utcTime: string) => {
+    try {
+      const date = new Date(utcTime)
+      return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+    } catch {
+      return ''
+    }
+  }
+
+  const groupGamesByDate = (games: GameOption[]) => {
+    const now = new Date()
+    const today = now.toDateString()
+    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000).toDateString()
+
+    const grouped: { today: GameOption[]; tomorrow: GameOption[]; later: GameOption[] } = {
+      today: [],
+      tomorrow: [],
+      later: [],
+    }
+
+    games.forEach((game) => {
+      const gameDate = new Date(game.start_time_utc).toDateString()
+      if (gameDate === today) {
+        grouped.today.push(game)
+      } else if (gameDate === tomorrow) {
+        grouped.tomorrow.push(game)
+      } else {
+        grouped.later.push(game)
+      }
+    })
+
+    return grouped
   }
 
   return (
@@ -188,26 +288,151 @@ export function HeaderFilters(props: HeaderFiltersProps) {
           </div>
         </div>
 
-        {/* Game Controls */}
-        <div className="flex flex-col gap-1 flex-1">
-          <label className="text-xs font-bold text-white">Game ID</label>
+        {/* Game Search Dropdown (Combobox) */}
+        <div className="flex flex-col gap-1 flex-1 relative" ref={dropdownRef}>
+          <label className="text-xs font-bold text-white">Game</label>
           <input
             type="text"
-            value={gameId}
-            onChange={(e) => setGameId(e.target.value)}
-            placeholder="Search game..."
+            value={gameSearch}
+            onChange={(e) => {
+              setGameSearch(e.target.value)
+              setShowGameDropdown(true)
+            }}
+            onFocus={() => setShowGameDropdown(true)}
+            placeholder="Search games..."
             className="px-3 py-1 border border-gray-600 rounded text-sm bg-gray-800 text-white placeholder-gray-400"
           />
+          
+          {/* Dropdown */}
+          {showGameDropdown && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded shadow-lg max-h-96 overflow-y-auto z-20">
+              {loadingGames && (
+                <div className="p-3 text-center text-gray-400 text-xs">Loading games...</div>
+              )}
+              
+              {!loadingGames && gameOptions.length === 0 && (
+                <div className="p-3 text-center text-gray-400 text-xs">
+                  No upcoming NBA games found. Try clearing your search.
+                </div>
+              )}
+
+              {!loadingGames && gameOptions.length > 0 && (() => {
+                const grouped = groupGamesByDate(gameOptions)
+                return (
+                  <>
+                    {grouped.today.length > 0 && (
+                      <div>
+                        <div className="px-3 py-1 bg-gray-700 text-white text-xs font-bold sticky top-0">
+                          Today
+                        </div>
+                        {grouped.today.map((game) => (
+                          <button
+                            key={game.game_id}
+                            onClick={() => handleGameSelect(game)}
+                            className="w-full px-3 py-2 text-left hover:bg-gray-700 border-b border-gray-700"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="text-sm font-bold text-white">
+                                  {game.away} @ {game.home}
+                                </div>
+                                <div className="text-xs text-gray-300 mt-1">
+                                  ML {game.away.split(' ').pop()} {game.odds.ml_away > 0 ? '+' : ''}{game.odds.ml_away} • {game.home.split(' ').pop()} {game.odds.ml_home > 0 ? '+' : ''}{game.odds.ml_home} | 
+                                  Spread: {game.odds.spread_team.split(' ').pop()} {game.odds.spread_line > 0 ? '+' : ''}{game.odds.spread_line} | 
+                                  Total: {game.odds.total_line}
+                                </div>
+                              </div>
+                              <div className="text-xs text-gray-400 ml-2">
+                                {formatLocalTime(game.start_time_utc)}
+                                {game.status === 'final' && (
+                                  <span className="ml-2 px-1 py-0.5 bg-gray-600 rounded text-xs">Final</span>
+                                )}
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {grouped.tomorrow.length > 0 && (
+                      <div>
+                        <div className="px-3 py-1 bg-gray-700 text-white text-xs font-bold sticky top-0">
+                          Tomorrow
+                        </div>
+                        {grouped.tomorrow.map((game) => (
+                          <button
+                            key={game.game_id}
+                            onClick={() => handleGameSelect(game)}
+                            className="w-full px-3 py-2 text-left hover:bg-gray-700 border-b border-gray-700"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="text-sm font-bold text-white">
+                                  {game.away} @ {game.home}
+                                </div>
+                                <div className="text-xs text-gray-300 mt-1">
+                                  ML {game.away.split(' ').pop()} {game.odds.ml_away > 0 ? '+' : ''}{game.odds.ml_away} • {game.home.split(' ').pop()} {game.odds.ml_home > 0 ? '+' : ''}{game.odds.ml_home} | 
+                                  Spread: {game.odds.spread_team.split(' ').pop()} {game.odds.spread_line > 0 ? '+' : ''}{game.odds.spread_line} | 
+                                  Total: {game.odds.total_line}
+                                </div>
+                              </div>
+                              <div className="text-xs text-gray-400 ml-2">
+                                {formatLocalTime(game.start_time_utc)}
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {grouped.later.length > 0 && (
+                      <div>
+                        <div className="px-3 py-1 bg-gray-700 text-white text-xs font-bold sticky top-0">
+                          Later
+                        </div>
+                        {grouped.later.map((game) => (
+                          <button
+                            key={game.game_id}
+                            onClick={() => handleGameSelect(game)}
+                            className="w-full px-3 py-2 text-left hover:bg-gray-700 border-b border-gray-700"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="text-sm font-bold text-white">
+                                  {game.away} @ {game.home}
+                                </div>
+                                <div className="text-xs text-gray-300 mt-1">
+                                  ML {game.away.split(' ').pop()} {game.odds.ml_away > 0 ? '+' : ''}{game.odds.ml_away} • {game.home.split(' ').pop()} {game.odds.ml_home > 0 ? '+' : ''}{game.odds.ml_home} | 
+                                  Spread: {game.odds.spread_team.split(' ').pop()} {game.odds.spread_line > 0 ? '+' : ''}{game.odds.spread_line} | 
+                                  Total: {game.odds.total_line}
+                                </div>
+                              </div>
+                              <div className="text-xs text-gray-400 ml-2">
+                                {formatLocalTime(game.start_time_utc)}
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )
+              })()}
+            </div>
+          )}
         </div>
 
-        {/* Odds Snippet */}
-        {oddsSnippet && (
+        {/* Selected Game Odds Snippet */}
+        {selectedGame && (
           <div className="flex flex-col gap-1">
             <label className="text-xs font-bold text-white">Current Odds</label>
             <div className="text-xs text-white px-2 py-1 bg-gray-800 rounded border border-gray-600 font-semibold">
-              ML: {oddsSnippet.ml_home}/{oddsSnippet.ml_away} • 
-              Spread: {oddsSnippet.spread} • 
-              Total: {oddsSnippet.total}
+              ML: {selectedGame.odds.ml_home > 0 ? '+' : ''}{selectedGame.odds.ml_home} / {selectedGame.odds.ml_away > 0 ? '+' : ''}{selectedGame.odds.ml_away} • 
+              Spread: {selectedGame.odds.spread_line > 0 ? '+' : ''}{selectedGame.odds.spread_line} • 
+              Total: {selectedGame.odds.total_line}
+              {selectedGame.status === 'final' && (
+                <span className="ml-2 px-1 py-0.5 bg-red-700 rounded text-xs">Final</span>
+              )}
             </div>
           </div>
         )}
