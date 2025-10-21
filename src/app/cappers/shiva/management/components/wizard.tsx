@@ -34,7 +34,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
   const [log, setLog] = useState<any>(null)
   const [runId, setRunId] = useState<string>('')
   const [snapId, setSnapId] = useState<string>('')
-  const [stepLogs, setStepLogs] = useState<Record<number, any>>({}))
+  const [stepLogs, setStepLogs] = useState<Record<number, any>>({})
   const [showInsightCard, setShowInsightCard] = useState<boolean>(false)
   const [insightCardData, setInsightCardData] = useState<any>(null)
 
