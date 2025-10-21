@@ -77,6 +77,8 @@ export interface InjuryImpact {
 // ============================================================================
 
 export async function fetchStatMuseBundle(ctx: RunCtx): Promise<StatMuseBundle> {
+  console.log('[StatMuse:FETCH_START]', { away: ctx.away, home: ctx.home })
+  
   const { away, home } = ctx
   
   // Fetch all queries in parallel for efficiency
@@ -109,9 +111,13 @@ export async function fetchStatMuseBundle(ctx: RunCtx): Promise<StatMuseBundle> 
     StatMuseQueries.oppFtr(home),                // home opp FTr
   ]
   
+  console.log('[StatMuse:QUERIES]', queries.length, 'queries built')
+  
   const responses = await Promise.allSettled(
     queries.map(query => askStatMuse(query, 'per100'))
   )
+  
+  console.log('[StatMuse:RESPONSES_RECEIVED]', responses.length, 'responses')
   
   // Parse responses with fallbacks
   const parseNumeric = (response: any, fallback: number = 0, queryName: string = 'unknown'): number => {
