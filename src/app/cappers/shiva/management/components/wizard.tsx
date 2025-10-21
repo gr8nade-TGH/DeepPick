@@ -36,11 +36,18 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
   const [snapId, setSnapId] = useState<string>('')
   const [stepLogs, setStepLogs] = useState<Record<number, any>>({})
   const [showInsightCard, setShowInsightCard] = useState<boolean>(false)
+  const [hasInsight, setHasInsight] = useState<boolean>(false)
   const [insightCardData, setInsightCardData] = useState<any>(null)
+  const [effectiveProfileSnapshot, setEffectiveProfileSnapshot] = useState<any>(null)
 
   async function handleStepClick(current: number) {
     try {
       if (current === 1) {
+        // Snapshot effectiveProfile on first step
+        if (props.effectiveProfile) {
+          setEffectiveProfileSnapshot(props.effectiveProfile)
+        }
+        
         // Use selected game or fallback to demo game
         const gameData = props.selectedGame || {
           id: 'nba_2025_10_21_okc_hou',
@@ -96,40 +103,55 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         setLog(r)
         setStepLogs(prev => ({ ...prev, 7: r }))
         
-        // Store insight card data for rendering
-        if (r.json?.card) {
-          setInsightCardData(r.json.card)
+        // Light up Insight pill when insight_card_id is present
+        if (r.json?.insight_card_id) {
+          setHasInsight(true)
+          // Store insight card data for rendering (use card from response or fixture)
+          if (r.json?.card) {
+            setInsightCardData(r.json.card)
+          } else {
+            // Fallback to fixture card if API doesn't return it
+            setInsightCardData(fx.card)
+          }
         }
       } else if (current === 8) {
-        // Debug Report - collect all step responses
+        // Debug Report - build flat structure (NO recursion)
         console.log('Generating debug report for step 8, stepLogs:', stepLogs)
+        
+        // Build flat steps array (only 1-7, exclude 8)
+        const stepsArray = Object.entries(stepLogs)
+          .filter(([stepNum]) => parseInt(stepNum) < 8) // Exclude step 8
+          .map(([stepNum, response]: [string, any]) => ({
+            step: parseInt(stepNum),
+            status: response.status,
+            dryRun: response.dryRun,
+            latencyMs: response.latencyMs || 0,
+            // Only include top-level response keys, no nested objects
+            hasResponse: !!response.json,
+          }))
+        
         const debugReport = {
           timestamp: new Date().toISOString(),
           runId,
           snapId,
-          effectiveProfile: props.effectiveProfile || null, // Include the profile snapshot used
+          effectiveProfile: effectiveProfileSnapshot || props.effectiveProfile || null, // Use snapshot
           environment: {
             SHIVA_V1_API_ENABLED: process.env.NEXT_PUBLIC_SHIVA_V1_API_ENABLED,
             SHIVA_V1_UI_ENABLED: process.env.NEXT_PUBLIC_SHIVA_V1_UI_ENABLED,
             SHIVA_V1_WRITE_ENABLED: process.env.NEXT_PUBLIC_SHIVA_V1_WRITE_ENABLED,
           },
-          stepResponses: stepLogs,
-          currentLog: log, // Include the current step's response
+          steps: stepsArray, // Flat array, no nested objects
           summary: {
-            totalSteps: Object.keys(stepLogs).length,
-            successfulSteps: Object.values(stepLogs).filter((r: any) => r.status >= 200 && r.status < 300).length,
-            errorSteps: Object.values(stepLogs).filter((r: any) => r.status >= 400).length,
-            dryRunSteps: Object.values(stepLogs).filter((r: any) => r.dryRun === true).length,
+            totalSteps: stepsArray.length,
+            successfulSteps: stepsArray.filter((s) => s.status >= 200 && s.status < 300).length,
+            errorSteps: stepsArray.filter((s) => s.status >= 400).length,
+            dryRunSteps: stepsArray.filter((s) => s.dryRun === true).length,
           },
-          debugInfo: {
-            stepLogsKeys: Object.keys(stepLogs),
-            stepLogsValues: Object.values(stepLogs),
-            stepLogsEmpty: Object.keys(stepLogs).length === 0,
-          }
         }
-        console.log('Debug report generated:', debugReport)
+        console.log('Debug report generated (flat):', debugReport)
         setLog({ status: 200, json: debugReport, dryRun: false })
-        setStepLogs(prev => ({ ...prev, 8: debugReport }))
+        // DO NOT add to stepLogs to prevent recursion
+      }
       }
     } catch (e) {
       setLog({ status: 0, json: { error: { message: (e as Error).message } } })
@@ -141,11 +163,11 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
           <div className="font-bold text-white text-lg">Pick Generator Wizard</div>
-          {/* Quick Access Insight Pill */}
-          {insightCardData && (
+          {/* Quick Access Insight Pill - only depends on hasInsight */}
+          {hasInsight && (
             <button
               onClick={() => setShowInsightCard(true)}
-              className="px-3 py-1 bg-green-700 text-white rounded-full text-xs font-bold hover:bg-green-600 border-2 border-green-500"
+              className="px-3 py-1 bg-green-700 text-white rounded-full text-xs font-bold hover:bg-green-600 border-2 border-green-500 animate-pulse"
               title="Open Insight Card"
             >
               👁️ Insight
@@ -209,11 +231,11 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       )}
 
       {/* Insight Card Button (Primary CTA after Step 7) */}
-      {step >= 7 && insightCardData && (
+      {step >= 7 && hasInsight && (
         <div className="mt-3 p-3 bg-green-900 border-2 border-green-600 rounded">
           <div className="flex items-center justify-between">
             <div className="text-white font-bold">
-              ✅ Insight Card Ready ({insightCardData.pick?.units || 0}u on {insightCardData.pick?.selection || 'N/A'})
+              ✅ Insight Card Ready ({insightCardData?.pick?.units || 0}u on {insightCardData?.pick?.selection || 'N/A'})
             </div>
             <button 
               className="px-4 py-2 bg-green-600 text-white rounded font-bold hover:bg-green-500 border-2 border-green-400"
@@ -239,8 +261,28 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         </div>
       )}
       <div className="flex gap-2 mt-3">
-        <button className="px-3 py-1 border-2 border-gray-600 rounded bg-gray-800 text-white hover:bg-gray-700 font-semibold" onClick={() => setStep(Math.max(1, step - 1))}>Back</button>
-        <button className="px-3 py-1 border-2 border-gray-600 rounded bg-gray-800 text-white hover:bg-gray-700 font-semibold" onClick={async () => { await handleStepClick(step); setStep(Math.min(8, step + 1)) }}>Next</button>
+        <button 
+          className="px-3 py-1 border-2 border-gray-600 rounded bg-gray-800 text-white hover:bg-gray-700 font-semibold"
+          onClick={() => setStep(Math.max(1, step - 1))}
+        >
+          Back
+        </button>
+        <button 
+          className={`px-3 py-1 border-2 border-gray-600 rounded font-semibold ${
+            step >= 8 
+              ? 'bg-gray-700 text-gray-500 cursor-not-allowed' 
+              : 'bg-gray-800 text-white hover:bg-gray-700'
+          }`}
+          onClick={async () => {
+            if (step >= 8) return // Clamp at Step 8
+            await handleStepClick(step)
+            setStep(Math.min(8, step + 1))
+          }}
+          disabled={step >= 8}
+          aria-disabled={step >= 8}
+        >
+          Next
+        </button>
       </div>
 
       {/* Insight Card Modal */}
