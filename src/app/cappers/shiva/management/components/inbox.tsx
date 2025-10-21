@@ -12,14 +12,14 @@ export function SHIVAManagementInbox() {
   return (
     <div>
       <div className="mb-2 flex items-center justify-between">
-        <div className="font-semibold">Game Inbox</div>
-        <div className="text-xs text-gray-500">NBA • SHIVA</div>
+        <div className="font-bold text-white">Game Inbox</div>
+        <div className="text-xs text-gray-300 font-semibold">NBA • SHIVA</div>
       </div>
-      <ul className="divide-y">
+      <ul className="divide-y divide-gray-700">
         {games.map((g) => (
           <li key={g.id} className="py-2 flex items-center justify-between">
-            <span>{g.label}</span>
-            <span className="text-xs bg-gray-100 px-2 py-1 rounded">{g.state}</span>
+            <span className="text-white font-semibold">{g.label}</span>
+            <span className="text-xs bg-gray-800 text-white px-2 py-1 rounded border border-gray-600">{g.state}</span>
           </li>
         ))}
       </ul>

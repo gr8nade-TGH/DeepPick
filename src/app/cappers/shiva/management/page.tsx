@@ -126,7 +126,7 @@ export default function ShivaManagementPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-black">
       <HeaderFilters
         onProfileChange={handleProfileChange}
         onGameChange={setSelectedGame}
@@ -137,7 +137,7 @@ export default function ShivaManagementPage() {
       <div className="p-4 grid grid-cols-12 gap-4">
         {/* Left: Inbox + Factor Controls */}
         <div className="col-span-4 space-y-4">
-          <div className="border rounded p-3 bg-white">
+          <div className="border border-gray-700 rounded p-3 bg-gray-900">
             <SHIVAManagementInbox />
           </div>
           
@@ -151,7 +151,7 @@ export default function ShivaManagementPage() {
         </div>
 
         {/* Right: Wizard */}
-        <div className="col-span-8 border rounded p-3 bg-white">
+        <div className="col-span-8 border border-gray-700 rounded p-3 bg-gray-900">
           <SHIVAWizard 
             effectiveProfile={effectiveProfile}
             selectedGame={selectedGame}

@@ -131,8 +131,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     <div>
       <DryRunBanner />
       <div className="flex items-center justify-between mb-3">
-        <div className="font-semibold">Pick Generator Wizard</div>
-        <div className="text-xs text-gray-500">Step {step} / 8</div>
+        <div className="font-bold text-white text-lg">Pick Generator Wizard</div>
+        <div className="text-sm text-white font-bold">Step {step} / 8</div>
       </div>
       <div className="border rounded p-3 text-xs font-mono whitespace-pre-wrap bg-gray-900 text-white">
         {log ? JSON.stringify(log, null, 2) : 

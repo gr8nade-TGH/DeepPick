@@ -49,11 +49,11 @@ export function FactorControls(props: FactorControlsProps) {
   }
 
   return (
-    <div className="border rounded p-4 bg-gray-50">
+    <div className="border border-gray-700 rounded p-4 bg-gray-900">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="font-semibold text-sm">Step 0: Factor Configuration</h3>
-        <div className={`text-xs px-2 py-1 rounded ${
-          isValidWeights ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+        <h3 className="font-bold text-sm text-white">Step 0: Factor Configuration</h3>
+        <div className={`text-xs px-2 py-1 rounded font-bold ${
+          isValidWeights ? 'bg-green-800 text-green-200 border border-green-600' : 'bg-yellow-800 text-yellow-200 border border-yellow-600'
         }`}>
           Weights sum: {weightsSum.toFixed(3)} {isValidWeights ? '✓' : '⚠'}
         </div>
@@ -61,7 +61,7 @@ export function FactorControls(props: FactorControlsProps) {
 
       <div className="space-y-3 mb-4 max-h-96 overflow-y-auto">
         {factors.map((factor) => (
-          <div key={factor.key} className="bg-white rounded p-3 border">
+          <div key={factor.key} className="bg-gray-800 rounded p-3 border border-gray-600">
             <div className="flex items-start gap-2 mb-2">
               <input
                 type="checkbox"
@@ -71,10 +71,10 @@ export function FactorControls(props: FactorControlsProps) {
               />
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">{factor.name}</span>
+                  <span className="text-sm font-bold text-white">{factor.name}</span>
                   <button
                     onClick={() => setShowDetails(showDetails === factor.key ? null : factor.key)}
-                    className="text-xs text-blue-500 hover:text-blue-700"
+                    className="text-xs text-blue-400 hover:text-blue-300 font-bold"
                     title="Show details"
                   >
                     ⓘ details
@@ -83,11 +83,11 @@ export function FactorControls(props: FactorControlsProps) {
                 
                 {/* Details Popover */}
                 {showDetails === factor.key && (
-                  <div className="mt-2 p-2 bg-blue-50 rounded text-xs">
-                    <p className="font-semibold">Description:</p>
-                    <p className="mb-2">{factor.description}</p>
-                    <p className="font-semibold">Data Source:</p>
-                    <p>{factor.dataSource}</p>
+                  <div className="mt-2 p-2 bg-blue-900 rounded text-xs border border-blue-700">
+                    <p className="font-bold text-blue-200">Description:</p>
+                    <p className="mb-2 text-white">{factor.description}</p>
+                    <p className="font-bold text-blue-200">Data Source:</p>
+                    <p className="text-white">{factor.dataSource}</p>
                   </div>
                 )}
               </div>
@@ -113,9 +113,9 @@ export function FactorControls(props: FactorControlsProps) {
                     step="0.001"
                     value={factor.weight}
                     onChange={(e) => handleWeightChange(factor.key, parseFloat(e.target.value))}
-                    className="w-20 px-2 py-1 border rounded text-xs text-right"
+                    className="w-20 px-2 py-1 border border-gray-600 rounded text-xs text-right bg-gray-900 text-white"
                   />
-                  <span className="text-xs text-gray-500 w-12">
+                  <span className="text-xs text-white font-bold w-12">
                     {(factor.weight * 100).toFixed(1)}%
                   </span>
                 </div>
@@ -127,7 +127,7 @@ export function FactorControls(props: FactorControlsProps) {
 
       {/* Validation Warning */}
       {!isValidWeights && (
-        <div className="mb-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
+        <div className="mb-3 p-2 bg-yellow-900 border border-yellow-600 rounded text-xs text-yellow-200 font-bold">
           ⚠ Weights sum should be ~0.70 (±0.005). Current: {weightsSum.toFixed(3)}
         </div>
       )}
