@@ -414,7 +414,7 @@ export function computePaceIndex(bundle: StatMuseBundle, ctx: RunCtx): FactorCom
       homePace,
       expPace,
       paceDelta,
-      z,
+      signal,
       points,
       awayContribution: away,
       homeContribution: home
@@ -466,7 +466,7 @@ export function computeOffensiveForm(bundle: StatMuseBundle, ctx: RunCtx): Facto
       awayORtgAdj,
       homeORtgAdj,
       formDeltaPer100,
-      z,
+      signal,
       points,
       awayContribution: away,
       homeContribution: home
@@ -525,7 +525,7 @@ export function computeDefensiveErosion(
       awayErosion,
       homeErosion,
       erosion,
-      z,
+      signal,
       points,
       awayContribution: away,
       homeContribution: home
@@ -588,7 +588,7 @@ export function computeThreePointEnv(bundle: StatMuseBundle, ctx: RunCtx): Facto
       rateDelta,
       recentStdev,
       hotVar,
-      z,
+      signal,
       points,
       awayContribution: away,
       homeContribution: home
@@ -632,7 +632,7 @@ export function computeWhistleEnv(bundle: StatMuseBundle, ctx: RunCtx): FactorCo
     parsed_values_json: {
       ftrEnv,
       ftrDelta,
-      z,
+      signal,
       points,
       awayContribution: away,
       homeContribution: home

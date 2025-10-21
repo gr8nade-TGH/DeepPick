@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { ensureApiEnabled, isWriteAllowed, jsonError, requireIdempotencyKey } from '@/lib/api/shiva-v1/route-helpers'
+import { ensureApiEnabled, isWriteAllowed, jsonError, jsonOk, requireIdempotencyKey } from '@/lib/api/shiva-v1/route-helpers'
 import { withIdempotency } from '@/lib/api/shiva-v1/idempotency'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 export const runtime = 'nodejs'
@@ -134,7 +134,7 @@ export async function POST(request: Request) {
         status: 200,
       })
       
-      return { body: responseBody, status: 200 }
+      return jsonOk(responseBody)
     }
   })
 }

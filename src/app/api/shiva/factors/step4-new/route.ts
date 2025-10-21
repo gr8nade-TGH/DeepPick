@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { ensureApiEnabled, isWriteAllowed, jsonError, requireIdempotencyKey } from '@/lib/api/shiva-v1/route-helpers'
+import { ensureApiEnabled, isWriteAllowed, jsonError, jsonOk, requireIdempotencyKey } from '@/lib/api/shiva-v1/route-helpers'
 import { withIdempotency } from '@/lib/api/shiva-v1/idempotency'
 import { calculateConfidence } from '@/lib/cappers/shiva-v1/confidence-calculator'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
@@ -68,7 +68,10 @@ export async function POST(request: Request) {
         
         // Calculate confidence using new system
         const confidenceResult = calculateConfidence({
-          factors: results.factors,
+          factors: results.factors.map(f => ({
+            ...f,
+            raw_values_json: f.raw_values_json as Record<string, any>
+          })),
           factorWeights,
           confSource: 'nba_totals_v1'
         })
@@ -123,7 +126,7 @@ export async function POST(request: Request) {
           status: 200,
         })
         
-        return { body: responseBody, status: 200 }
+        return jsonOk(responseBody)
       } else {
         // For non-NBA or non-TOTAL, return legacy response
         return jsonError('UNSUPPORTED', 'Only NBA TOTAL bets supported in new system', 400)
