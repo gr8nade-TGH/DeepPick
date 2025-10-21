@@ -238,7 +238,7 @@ export function FactorConfigModal({
               enabled: true, 
               weight: 100, // Always 100% (fixed)
               dataSource: 'manual',
-              maxPoints: 1.0,
+              maxPoints: 2.0,
               sport: 'NBA',
               betType: 'TOTAL',
               scope: 'global',
@@ -334,7 +334,7 @@ export function FactorConfigModal({
             enabled: true, 
             weight: 100, // Always 100% (fixed)
             dataSource: 'manual',
-            maxPoints: 1.0,
+            maxPoints: 2.0,
             sport: 'NBA',
             betType: 'TOTAL',
             scope: 'global',
@@ -741,7 +741,7 @@ export function FactorConfigModal({
                       <div className="text-right">
                         <div className="text-xs text-gray-400">Max ± Points</div>
                         <div className="text-white font-mono">
-                          {factor.key === 'edgeVsMarket' ? '1.0' : ((factor.maxPoints * factor.weight) / 100 * 5).toFixed(2)}
+                          {factor.key === 'edgeVsMarket' ? '2.0' : ((factor.maxPoints * factor.weight) / 100 * 5).toFixed(2)}
                         </div>
                         <div className="text-xs text-gray-500 mt-0.5">
                           {factor.key === 'edgeVsMarket' 

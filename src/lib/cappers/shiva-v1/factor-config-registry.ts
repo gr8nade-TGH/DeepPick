@@ -190,7 +190,7 @@ export const FACTOR_REGISTRY: FactorRegistry = {
     name: 'Edge vs Market - Totals',
     description: 'Final confidence adjustment based on predicted vs market line for totals',
     defaultWeight: 100, // Always 100% (fixed)
-    maxPoints: 1.0,
+    maxPoints: 2.0,
     supportedSports: ['NBA'],
     supportedBetTypes: ['TOTAL'],
     availableDataSources: ['manual'],
