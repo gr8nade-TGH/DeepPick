@@ -144,7 +144,7 @@ describe('NBA Totals Factors', () => {
       })
       
       // Mock OpenAI response
-      ;(global.fetch as jest.Mock).mockResolvedValue({
+      (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValue({
         ok: true,
         json: () => Promise.resolve({
           choices: [{
@@ -221,7 +221,7 @@ describe('NBA Totals Factors', () => {
       })
       
       // Mock OpenAI
-      ;(global.fetch as jest.Mock).mockResolvedValue({
+      (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValue({
         ok: true,
         json: () => Promise.resolve({
           choices: [{
