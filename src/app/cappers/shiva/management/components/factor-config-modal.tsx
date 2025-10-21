@@ -294,10 +294,10 @@ export function FactorConfigModal({
                       <div className="text-right">
                         <div className="text-xs text-gray-400">Max ± Points</div>
                         <div className="text-white font-mono">
-                          {((factor.maxPoints * factor.weight) / 100).toFixed(2)}
+                          {((factor.maxPoints * factor.weight) / 100 * 5).toFixed(2)}
                         </div>
                         <div className="text-xs text-gray-500 mt-0.5">
-                          ({factor.weight}% of {factor.maxPoints.toFixed(1)})
+                          ({factor.weight}% of {factor.maxPoints.toFixed(1)} × 5)
                         </div>
                       </div>
                     </div>

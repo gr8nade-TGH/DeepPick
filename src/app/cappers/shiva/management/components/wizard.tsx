@@ -733,7 +733,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         confidence_calculation: {
           total_weighted_points: stepLogs[3]?.json?.factors?.reduce((sum: number, f: any) => 
             sum + (f.parsed_values_json?.points || 0), 0) || 0,
-          max_possible_points: 5.0, // Sum of all max points when weights = 100%
+          max_possible_points: 5.0, // Sum of all max points when weights = 100% (1.0 × 5 = 5.0)
           weight_validation: {
             total_weight: stepLogs[3]?.json?.factors?.reduce((sum: number, f: any) => 
               sum + (f.weight_total_pct || 0), 0) || 0,

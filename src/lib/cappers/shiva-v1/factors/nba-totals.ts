@@ -689,10 +689,11 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<{
     const weight = factorWeights[factor.key] || 20 // Default 20% if not specified
     const weightDecimal = weight / 100
     
-    // Scale the points by the weight
-    const weightedPoints = factor.parsed_values_json.points * weightDecimal
-    const weightedAway = factor.parsed_values_json.awayContribution * weightDecimal
-    const weightedHome = factor.parsed_values_json.homeContribution * weightDecimal
+    // Scale the points by the weight (base max points = 1.0, so 100% weight = 1.0 points)
+    // But we want 100% weight to equal 5.0 total points, so multiply by 5
+    const weightedPoints = factor.parsed_values_json.points * weightDecimal * 5
+    const weightedAway = factor.parsed_values_json.awayContribution * weightDecimal * 5
+    const weightedHome = factor.parsed_values_json.homeContribution * weightDecimal * 5
     
     return {
       ...factor,
