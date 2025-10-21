@@ -82,12 +82,12 @@ export function FactorConfigModal({
   const getFactorLogic = (key: string) => {
     const logicMap: Record<string, { metric: string; formula: string; examples: string[] }> = {
       paceIndex: {
-        metric: "Expected pace vs league average",
-        formula: "s = clamp((expPace - leaguePace) / 6, -1, +1)",
+        metric: "Expected game pace based on both teams' pace interaction",
+        formula: "expPace = (awayPace + homePace)/2, s = clamp((expPace - leaguePace)/6, -1, +1)",
         examples: [
-          "+6 pace → s=+1 → 100% positive",
-          "+3 pace → s=+0.5 → 50% positive", 
-          "-3 pace → s=-0.5 → 50% negative"
+          "Lakers(105) vs Grizzlies(95) → expPace=100 → s=0 → neutral",
+          "Warriors(108) vs Kings(106) → expPace=107 → s=+1.2 → +100% Over",
+          "Heat(96) vs Knicks(94) → expPace=95 → s=-0.8 → -80% Under"
         ]
       },
       offForm: {
@@ -707,30 +707,37 @@ export function FactorConfigModal({
                             
                             {/* Factor Logic Drawer */}
                             <div className="p-3 bg-gray-900 rounded border border-gray-600">
-                              <div className="text-xs font-medium text-gray-300 mb-2">
+                              <div className="text-xs font-medium text-gray-300 mb-3">
                                 🧮 Logic & Examples
                               </div>
                               
-                              {/* Metric Definition */}
-                              <div className="text-xs text-gray-400 mb-2">
-                                <strong>Metric:</strong> {getFactorLogic(factor.key).metric}
-                              </div>
-                              
-                              {/* Cap/Scaling Formula */}
-                              <div className="text-xs text-gray-400 mb-2">
-                                <strong>Formula:</strong> {getFactorLogic(factor.key).formula}
-                              </div>
-                              
-                              {/* Examples */}
-                              <div className="text-xs text-gray-400">
-                                <strong>Examples:</strong>
-                                <ul className="mt-1 space-y-1">
-                                  {getFactorLogic(factor.key).examples.map((example, i) => (
-                                    <li key={i} className="text-gray-500">
-                                      {example}
-                                    </li>
-                                  ))}
-                                </ul>
+                              <div className="grid grid-cols-2 gap-4">
+                                {/* Left Column - Logic */}
+                                <div>
+                                  <div className="text-xs text-gray-400 mb-2">
+                                    <strong>Metric:</strong><br/>
+                                    <span className="text-gray-500">{getFactorLogic(factor.key).metric}</span>
+                                  </div>
+                                  
+                                  <div className="text-xs text-gray-400">
+                                    <strong>Formula:</strong><br/>
+                                    <span className="text-gray-500 font-mono">{getFactorLogic(factor.key).formula}</span>
+                                  </div>
+                                </div>
+                                
+                                {/* Right Column - Examples */}
+                                <div>
+                                  <div className="text-xs text-gray-400 mb-2">
+                                    <strong>Examples:</strong>
+                                  </div>
+                                  <ul className="space-y-1">
+                                    {getFactorLogic(factor.key).examples.map((example, i) => (
+                                      <li key={i} className="text-gray-500 text-xs">
+                                        {example}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
                               </div>
                             </div>
                           </div>
