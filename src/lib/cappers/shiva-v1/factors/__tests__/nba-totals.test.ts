@@ -4,8 +4,7 @@
  */
 
 import { describe, it, expect, jest, beforeEach } from '@jest/globals'
-import { computeTotalsFactors, fetchStatMuseBundle, summarizeAvailabilityWithLLM } from '../nba-totals'
-import type { RunCtx, StatMuseBundle, InjuryImpact } from '../nba-totals'
+import { computeTotalsFactors, fetchStatMuseBundle, summarizeAvailabilityWithLLM, RunCtx, StatMuseBundle, InjuryImpact } from '../nba-totals'
 
 // Mock StatMuse
 jest.mock('../../statmuse', () => ({
@@ -18,7 +17,7 @@ jest.mock('../../news', () => ({
 }))
 
 // Mock fetch for OpenAI
-global.fetch = jest.fn() as jest.MockedFunction<typeof fetch>
+global.fetch = jest.fn() as jest.MockedFunction<typeof fetch>;
 
 describe('NBA Totals Factors', () => {
   const mockCtx: RunCtx = {

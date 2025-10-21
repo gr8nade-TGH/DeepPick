@@ -14,6 +14,7 @@ export interface FactorMeta {
   name: string;
   shortName: string;      // label next to the icon
   icon: string;           // emoji or icon key
+  description?: string;   // tooltip description
   appliesTo: { 
     sports: Sport[] | '*'; 
     betTypes: BetType[] | '*'; 

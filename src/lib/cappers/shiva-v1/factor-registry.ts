@@ -18,6 +18,7 @@ export const NBA_TOTALS_FACTORS: FactorMeta[] = [
     name: 'Matchup Pace Index',
     shortName: 'Pace',
     icon: '⏱️',
+    description: 'Expected pace based on season + last-10 games. Higher pace = more possessions = higher totals.',
     appliesTo: {
       sports: ['NBA'],
       betTypes: ['TOTAL'],
@@ -31,6 +32,7 @@ export const NBA_TOTALS_FACTORS: FactorMeta[] = [
     name: 'Offensive Form vs Opp',
     shortName: 'ORtg Form',
     icon: '🔥',
+    description: 'Recent offensive efficiency adjusted for opponent defense. Hot offenses = higher totals.',
     appliesTo: {
       sports: ['NBA'],
       betTypes: ['TOTAL'],
@@ -44,6 +46,7 @@ export const NBA_TOTALS_FACTORS: FactorMeta[] = [
     name: 'Defensive Erosion',
     shortName: 'DRtg/Avail',
     icon: '🛡️',
+    description: 'Defensive decline from injuries/availability. Weaker defense = higher totals.',
     appliesTo: {
       sports: ['NBA'],
       betTypes: ['TOTAL'],
@@ -57,6 +60,7 @@ export const NBA_TOTALS_FACTORS: FactorMeta[] = [
     name: '3PT Environment',
     shortName: '3P Env',
     icon: '🏹',
+    description: '3PA rate + shooting variance. More 3s + hot shooting = higher totals.',
     appliesTo: {
       sports: ['NBA'],
       betTypes: ['TOTAL'],
@@ -70,6 +74,7 @@ export const NBA_TOTALS_FACTORS: FactorMeta[] = [
     name: 'FT/Whistle Env',
     shortName: 'FT Env',
     icon: '⛹️‍♂️',
+    description: 'Free throw rate environment. More FTs = more points + clock stops.',
     appliesTo: {
       sports: ['NBA'],
       betTypes: ['TOTAL'],
@@ -87,6 +92,7 @@ export const GLOBAL_FACTORS: FactorMeta[] = [
     name: 'News/Injury Edge',
     shortName: 'News',
     icon: '🏥',
+    description: 'General news and injury impact not captured by specific factors. Applies across all sports/bet types.',
     appliesTo: {
       sports: '*',
       betTypes: '*',
