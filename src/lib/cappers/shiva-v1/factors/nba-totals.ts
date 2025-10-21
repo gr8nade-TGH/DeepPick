@@ -158,7 +158,7 @@ export async function fetchStatMuseBundle(ctx: RunCtx): Promise<StatMuseBundle> 
     index: i,
     status: r.status,
     ok: r.status === 'fulfilled' ? r.value?.ok : false,
-    data: r.status === 'fulfilled' ? r.value?.data : null,
+    data: r.status === 'fulfilled' ? (r.value as any)?.data : null,
     error: r.status === 'rejected' ? r.reason : null
   })))
   
