@@ -30,11 +30,34 @@ export function FactorConfigModal({
   const [profile, setProfile] = useState<CapperProfile | null>(null)
   const [factors, setFactors] = useState<FactorConfig[]>([])
   
-  // Calculate weight budget
-  const totalWeight = factors.filter(f => f.enabled).reduce((sum, f) => sum + f.weight, 0)
-  const remainingWeight = 100 - totalWeight
-  const isWeightValid = totalWeight === 100
+  // Calculate weight budget (with proper rounding to avoid floating point precision issues)
+  // Edge vs Market doesn't count toward weight budget
+  const totalWeight = Math.round(factors.filter(f => f.enabled && f.key !== 'edgeVsMarket').reduce((sum, f) => sum + f.weight, 0) * 100) / 100
+  const remainingWeight = Math.round((100 - totalWeight) * 100) / 100
+  const isWeightValid = Math.abs(remainingWeight) < 0.01
   
+  // Get factor eligibility tags
+  const getFactorTags = (factor: FactorConfig) => {
+    const tags = []
+    
+    // Sport tags
+    if (factor.sport === 'NBA') tags.push('NBA')
+    if (factor.sport === 'NFL') tags.push('NFL')
+    if (factor.sport === 'MLB') tags.push('MLB')
+    
+    // Bet type tags
+    if (factor.betType === 'TOTAL') tags.push('O/U')
+    if (factor.betType === 'SPREAD') tags.push('SPREAD')
+    if (factor.betType === 'MONEYLINE') tags.push('ML')
+    
+    // Scope tags
+    if (factor.scope === 'global') tags.push('Global')
+    if (factor.scope === 'matchup') tags.push('Matchup')
+    if (factor.scope === 'team') tags.push('Team')
+    
+    return tags
+  }
+
   // Factor logic definitions for the Logic Drawer
   const getFactorLogic = (key: string) => {
     const logicMap: Record<string, { metric: string; formula: string; examples: string[] }> = {
@@ -81,6 +104,16 @@ export function FactorConfigModal({
           "+6% FTr → s=+1 → 100% positive",
           "+3% FTr → s=+0.5 → 50% positive",
           "-3% FTr → s=-0.5 → 50% negative"
+        ]
+      },
+      
+      edgeVsMarket: {
+        metric: "Final confidence adjustment based on predicted vs market line",
+        formula: "Edge factor = clamp((predicted - market) / 10, -1, 1)",
+        examples: [
+          "Predicted 225, Market 220: +0.5 edge (favor Over)",
+          "Predicted 220, Market 225: -0.5 edge (favor Under)",
+          "Predicted = Market: 0.0 edge (neutral)"
         ]
       }
     }
@@ -145,7 +178,23 @@ export function FactorConfigModal({
         
         if (loadedFactors.length === 0) {
           // Set default factors with equal weights (20% each = 100% total)
+          // Edge vs Market is always included but doesn't count toward weight budget
           factorsToSet = [
+            // Edge vs Market (locked, doesn't count toward weight budget)
+            { 
+              key: 'edgeVsMarket', 
+              name: 'Edge vs Market', 
+              description: 'Final confidence adjustment based on predicted vs market line',
+              enabled: true, 
+              weight: 0, // Doesn't count toward weight budget
+              dataSource: 'manual',
+              maxPoints: 1.0,
+              sport: 'NBA',
+              betType: 'TOTAL',
+              scope: 'global',
+              icon: '⚖️',
+              shortName: 'Edge vs Market'
+            },
             { 
               key: 'paceIndex', 
               name: 'Pace Index', 
@@ -227,6 +276,21 @@ export function FactorConfigModal({
         console.error('Error loading factor config:', error)
         // Set default factors with proper weights on error
         setFactors([
+          // Edge vs Market (locked, doesn't count toward weight budget)
+          { 
+            key: 'edgeVsMarket', 
+            name: 'Edge vs Market', 
+            description: 'Final confidence adjustment based on predicted vs market line',
+            enabled: true, 
+            weight: 0, // Doesn't count toward weight budget
+            dataSource: 'manual',
+            maxPoints: 1.0,
+            sport: 'NBA',
+            betType: 'TOTAL',
+            scope: 'global',
+            icon: '⚖️',
+            shortName: 'Edge vs Market'
+          },
           { 
             key: 'paceIndex', 
             name: 'Pace Index', 
@@ -500,10 +564,11 @@ export function FactorConfigModal({
                     <div className="flex items-start gap-4">
                       {/* Enable/Disable Toggle */}
                       <button
-                        onClick={() => toggleFactor(factor.key)}
+                        onClick={() => factor.key !== 'edgeVsMarket' && toggleFactor(factor.key)}
+                        disabled={factor.key === 'edgeVsMarket'}
                         className={`mt-1 w-12 h-6 rounded-full transition ${
                           factor.enabled ? 'bg-blue-600' : 'bg-gray-600'
-                        }`}
+                        } ${factor.key === 'edgeVsMarket' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                       >
                         <div
                           className={`w-5 h-5 bg-white rounded-full transition transform ${
@@ -516,8 +581,21 @@ export function FactorConfigModal({
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <span className="text-2xl">{factor.icon}</span>
-                          <div>
-                            <h3 className="text-white font-medium">{factor.name}</h3>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="text-white font-medium">{factor.name}</h3>
+                              {/* Factor Tags */}
+                              <div className="flex gap-1">
+                                {getFactorTags(factor).map((tag, i) => (
+                                  <span 
+                                    key={i}
+                                    className="px-1.5 py-0.5 text-xs rounded bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                                  >
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
                             <p className="text-sm text-gray-400">{factor.description}</p>
                           </div>
                         </div>
@@ -530,14 +608,16 @@ export function FactorConfigModal({
                               <div>
                                 <label className="block text-xs text-gray-400 mb-2">
                                   Weight: {factor.weight}%
+                                  {factor.key === 'edgeVsMarket' && ' (Fixed)'}
                                 </label>
                                 <input
                                   type="range"
                                   min="0"
-                                  max="100"
+                                  max={factor.key === 'edgeVsMarket' ? 0 : 100}
                                   value={factor.weight}
-                                  onChange={e => updateWeight(factor.key, parseInt(e.target.value))}
-                                  className="w-full"
+                                  onChange={e => factor.key !== 'edgeVsMarket' && updateWeight(factor.key, parseInt(e.target.value))}
+                                  disabled={factor.key === 'edgeVsMarket'}
+                                  className={`w-full ${factor.key === 'edgeVsMarket' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                                 />
                               </div>
                               
@@ -596,10 +676,13 @@ export function FactorConfigModal({
                       <div className="text-right">
                         <div className="text-xs text-gray-400">Max ± Points</div>
                         <div className="text-white font-mono">
-                          {((factor.maxPoints * factor.weight) / 100 * 5).toFixed(2)}
+                          {factor.key === 'edgeVsMarket' ? '1.0' : ((factor.maxPoints * factor.weight) / 100 * 5).toFixed(2)}
                         </div>
                         <div className="text-xs text-gray-500 mt-0.5">
-                          ({factor.weight}% of {factor.maxPoints.toFixed(1)} × 5)
+                          {factor.key === 'edgeVsMarket' 
+                            ? 'Fixed (Final Step)' 
+                            : `(${factor.weight}% of ${factor.maxPoints.toFixed(1)} × 5)`
+                          }
                         </div>
                       </div>
                     </div>

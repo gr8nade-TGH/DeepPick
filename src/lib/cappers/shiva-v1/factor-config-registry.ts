@@ -184,6 +184,20 @@ export const FACTOR_REGISTRY: FactorRegistry = {
     scope: 'global',
     icon: '🌦️',
     shortName: 'Weather'
+  },
+  
+  edgeVsMarket: {
+    name: 'Edge vs Market',
+    description: 'Final confidence adjustment based on predicted vs market line',
+    defaultWeight: 0, // Doesn't count toward weight budget
+    maxPoints: 1.0,
+    supportedSports: ['NBA', 'NFL', 'MLB'],
+    supportedBetTypes: ['SPREAD', 'MONEYLINE', 'TOTAL'],
+    availableDataSources: ['manual'],
+    defaultDataSource: 'manual',
+    scope: 'global',
+    icon: '⚖️',
+    shortName: 'Edge vs Market'
   }
 }
 
