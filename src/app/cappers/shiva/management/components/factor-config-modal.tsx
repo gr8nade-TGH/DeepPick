@@ -40,6 +40,11 @@ export function FactorConfigModal({
   const getFactorTags = (factor: FactorConfig) => {
     const tags = []
     
+    // Edge vs Market is special - only show Global
+    if (factor.key === 'edgeVsMarket') {
+      return ['Global']
+    }
+    
     // Sport tags
     if (factor.sport === 'NBA') tags.push('NBA')
     if (factor.sport === 'NFL') tags.push('NFL')
@@ -122,27 +127,40 @@ export function FactorConfigModal({
   
   // Normalize factor weights to ensure they sum to 100%
   const normalizeFactorWeights = (factors: FactorConfig[]): FactorConfig[] => {
-    const enabledFactors = factors.filter(f => f.enabled)
-    const disabledFactors = factors.filter(f => !f.enabled)
+    // Edge vs Market doesn't count toward weight budget
+    const weightFactors = factors.filter(f => f.key !== 'edgeVsMarket')
+    const enabledFactors = weightFactors.filter(f => f.enabled)
+    const disabledFactors = weightFactors.filter(f => !f.enabled)
     
     if (enabledFactors.length === 0) {
-      // If no factors enabled, enable all with equal weights
-      return factors.map(f => ({ ...f, enabled: true, weight: 100 / factors.length }))
+      // If no factors enabled, enable all with equal weights (excluding Edge vs Market)
+      return factors.map(f => {
+        if (f.key === 'edgeVsMarket') {
+          return { ...f, enabled: true, weight: 100 } // Edge vs Market is always 100%
+        }
+        return { ...f, enabled: true, weight: 100 / weightFactors.length }
+      })
     }
     
-    // Calculate total weight of enabled factors
+    // Calculate total weight of enabled factors (excluding Edge vs Market)
     const totalWeight = enabledFactors.reduce((sum, f) => sum + f.weight, 0)
     
     if (totalWeight === 0) {
       // If all enabled factors have 0 weight, distribute equally
       const equalWeight = 100 / enabledFactors.length
-      return factors.map(f => 
-        f.enabled ? { ...f, weight: equalWeight } : { ...f, weight: 0 }
-      )
+      return factors.map(f => {
+        if (f.key === 'edgeVsMarket') {
+          return { ...f, enabled: true, weight: 100 } // Edge vs Market is always 100%
+        }
+        return f.enabled ? { ...f, weight: equalWeight } : { ...f, weight: 0 }
+      })
     }
     
-    // Normalize enabled factors to sum to 100%
+    // Normalize enabled factors to sum to 100% (excluding Edge vs Market)
     const normalizedFactors = factors.map(f => {
+      if (f.key === 'edgeVsMarket') {
+        return { ...f, enabled: true, weight: 100 } // Edge vs Market is always 100%
+      }
       if (f.enabled) {
         const normalizedWeight = (f.weight / totalWeight) * 100
         return { ...f, weight: Math.round(normalizedWeight * 100) / 100 }
@@ -180,13 +198,13 @@ export function FactorConfigModal({
           // Set default factors with equal weights (20% each = 100% total)
           // Edge vs Market is always included but doesn't count toward weight budget
           factorsToSet = [
-            // Edge vs Market (locked, doesn't count toward weight budget)
+            // Edge vs Market - Totals (locked, doesn't count toward weight budget)
             { 
               key: 'edgeVsMarket', 
-              name: 'Edge vs Market', 
-              description: 'Final confidence adjustment based on predicted vs market line',
+              name: 'Edge vs Market - Totals', 
+              description: 'Final confidence adjustment based on predicted vs market line for totals',
               enabled: true, 
-              weight: 0, // Doesn't count toward weight budget
+              weight: 100, // Always 100% (fixed)
               dataSource: 'manual',
               maxPoints: 1.0,
               sport: 'NBA',
@@ -276,13 +294,13 @@ export function FactorConfigModal({
         console.error('Error loading factor config:', error)
         // Set default factors with proper weights on error
         setFactors([
-          // Edge vs Market (locked, doesn't count toward weight budget)
+          // Edge vs Market - Totals (locked, doesn't count toward weight budget)
           { 
             key: 'edgeVsMarket', 
-            name: 'Edge vs Market', 
-            description: 'Final confidence adjustment based on predicted vs market line',
+            name: 'Edge vs Market - Totals', 
+            description: 'Final confidence adjustment based on predicted vs market line for totals',
             enabled: true, 
-            weight: 0, // Doesn't count toward weight budget
+            weight: 100, // Always 100% (fixed)
             dataSource: 'manual',
             maxPoints: 1.0,
             sport: 'NBA',
@@ -482,12 +500,21 @@ export function FactorConfigModal({
                 {capperId} • {sport} • {betType}
               </p>
             </div>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-white transition"
-            >
-              ✕
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={handleSave}
+                disabled={saving || !isWeightValid}
+                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {saving ? 'Saving...' : 'Save Configuration'}
+              </button>
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-white transition"
+              >
+                ✕
+              </button>
+            </div>
           </div>
           
           {/* Weight Budget Display */}
@@ -552,7 +579,14 @@ export function FactorConfigModal({
                   No factors available for {sport} {betType}
                 </div>
               ) : (
-                factors.map(factor => (
+                factors
+                  .sort((a, b) => {
+                    // Edge vs Market always comes first
+                    if (a.key === 'edgeVsMarket') return -1
+                    if (b.key === 'edgeVsMarket') return 1
+                    return 0
+                  })
+                  .map(factor => (
                   <div
                     key={factor.key}
                     className={`border rounded-lg p-4 transition ${
@@ -607,8 +641,7 @@ export function FactorConfigModal({
                               {/* Weight Slider */}
                               <div>
                                 <label className="block text-xs text-gray-400 mb-2">
-                                  Weight: {factor.weight}%
-                                  {factor.key === 'edgeVsMarket' && ' (Fixed)'}
+                                  Weight: {factor.key === 'edgeVsMarket' ? '100% (Fixed)' : `${factor.weight}%`}
                                 </label>
                                 <input
                                   type="range"
@@ -702,21 +735,6 @@ export function FactorConfigModal({
                 ⚠ Weights must sum to 100%
               </span>
             )}
-          </div>
-          <div className="flex gap-3">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-gray-400 hover:text-white transition"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={saving || !isWeightValid}
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {saving ? 'Saving...' : 'Save Configuration'}
-            </button>
           </div>
         </div>
       </div>
