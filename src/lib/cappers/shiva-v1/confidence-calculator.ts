@@ -28,41 +28,46 @@ export interface ConfidenceOutput {
 }
 
 /**
- * Calculate confidence using sigmoid edge-percent model
+ * Calculate confidence using new weighted signal model
+ * 
+ * Formula: confidence = |Σ(wᵢ × sᵢ)| × 5
+ * Where: wᵢ = normalized weights (sum to 1.0), sᵢ = signals (-1 to +1)
  */
 export function calculateConfidence(input: ConfidenceInput): ConfidenceOutput {
   const { factors, factorWeights, confSource = 'nba_totals_v1' } = input
   
-  // Calculate raw edge: Σ(wᵢ × zᵢ)
-  let edgeRaw = 0
+  // Normalize weights to sum to 1.0
+  const totalWeight = Object.values(factorWeights).reduce((sum, w) => sum + w, 0)
+  const normalizedWeights = totalWeight > 0 
+    ? Object.fromEntries(Object.entries(factorWeights).map(([k, v]) => [k, v / totalWeight]))
+    : {}
+  
+  // Calculate signed sum: Σ(wᵢ × sᵢ)
+  let signedSum = 0
   const factorContributions: ConfidenceOutput['factorContributions'] = []
   
   for (const factor of factors) {
-    const weight = (factorWeights[factor.key] || 0) / 100 // Convert percentage to decimal
-    const z = factor.normalized_value || 0
-    const contribution = weight * z
+    const weight = normalizedWeights[factor.key] || 0
+    const signal = factor.normalized_value || 0 // This is our sᵢ signal
+    const contribution = weight * signal
     
-    edgeRaw += contribution
+    signedSum += contribution
     
     factorContributions.push({
       key: factor.key,
       name: factor.name,
-      z,
+      z: signal, // Rename to signal for clarity
       weight,
       contribution
     })
   }
   
-  // Apply sigmoid transformation: edgePct = sigmoid(edgeRaw * 2.5)
-  const sigmoidK = 2.5 // Scaling constant (can be calibrated)
-  const edgePct = sigmoid(edgeRaw * sigmoidK)
-  
-  // Scale to 0-5 confidence score
-  const confScore = 5 * edgePct
+  // Confidence = |signedSum| × 5
+  const confScore = Math.abs(signedSum) * 5
   
   return {
-    edgeRaw,
-    edgePct,
+    edgeRaw: signedSum, // Renamed from edgeRaw to signedSum
+    edgePct: Math.abs(signedSum), // Magnitude of the signal
     confScore,
     confSource,
     factorContributions

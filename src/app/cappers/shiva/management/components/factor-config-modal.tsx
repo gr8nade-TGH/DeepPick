@@ -35,6 +35,58 @@ export function FactorConfigModal({
   const remainingWeight = 100 - totalWeight
   const isWeightValid = totalWeight === 100
   
+  // Factor logic definitions for the Logic Drawer
+  const getFactorLogic = (key: string) => {
+    const logicMap: Record<string, { metric: string; formula: string; examples: string[] }> = {
+      paceIndex: {
+        metric: "Expected pace vs league average",
+        formula: "s = clamp((expPace - leaguePace) / 6, -1, +1)",
+        examples: [
+          "+6 pace → s=+1 → 100% positive",
+          "+3 pace → s=+0.5 → 50% positive", 
+          "-3 pace → s=-0.5 → 50% negative"
+        ]
+      },
+      offForm: {
+        metric: "Offensive form vs opponent defense",
+        formula: "s = clamp((teamORtg + oppDRtg - 2×leagueORtg) / 10, -1, +1)",
+        examples: [
+          "+10 ORtg → s=+1 → 100% positive",
+          "+5 ORtg → s=+0.5 → 50% positive",
+          "-5 ORtg → s=-0.5 → 50% negative"
+        ]
+      },
+      defErosion: {
+        metric: "Defensive erosion + injury impact",
+        formula: "s = clamp(0.7×DRtgDelta + 0.3×injuryImpact, -1, +1)",
+        examples: [
+          "Strong defense + no injuries → s=+1 → 100% positive",
+          "Weak defense + injuries → s=-1 → 100% negative",
+          "Mixed signals → s=0 → neutral"
+        ]
+      },
+      threeEnv: {
+        metric: "3-point environment & volatility",
+        formula: "s = clamp((team3PAR + opp3PAR - 2×league3PAR) / 0.08, -1, +1)",
+        examples: [
+          "+8% 3PAR → s=+1 → 100% positive",
+          "+4% 3PAR → s=+0.5 → 50% positive",
+          "-4% 3PAR → s=-0.5 → 50% negative"
+        ]
+      },
+      whistleEnv: {
+        metric: "Free throw rate environment",
+        formula: "s = clamp((teamFTr + oppFTr - 2×leagueFTr) / 0.06, -1, +1)",
+        examples: [
+          "+6% FTr → s=+1 → 100% positive",
+          "+3% FTr → s=+0.5 → 50% positive",
+          "-3% FTr → s=-0.5 → 50% negative"
+        ]
+      }
+    }
+    return logicMap[key] || { metric: "Unknown", formula: "Unknown", examples: [] }
+  }
+  
   // Load factor configuration
   useEffect(() => {
     if (!isOpen) return
@@ -253,38 +305,70 @@ export function FactorConfigModal({
                         </div>
                         
                         {factor.enabled && (
-                          <div className="mt-4 grid grid-cols-2 gap-4">
-                            {/* Weight Slider */}
-                            <div>
-                              <label className="block text-xs text-gray-400 mb-2">
-                                Weight: {factor.weight}%
-                              </label>
-                              <input
-                                type="range"
-                                min="0"
-                                max="100"
-                                value={factor.weight}
-                                onChange={e => updateWeight(factor.key, parseInt(e.target.value))}
-                                className="w-full"
-                              />
+                          <div className="mt-4 space-y-4">
+                            {/* Weight and Data Source */}
+                            <div className="grid grid-cols-2 gap-4">
+                              {/* Weight Slider */}
+                              <div>
+                                <label className="block text-xs text-gray-400 mb-2">
+                                  Weight: {factor.weight}%
+                                </label>
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max="100"
+                                  value={factor.weight}
+                                  onChange={e => updateWeight(factor.key, parseInt(e.target.value))}
+                                  className="w-full"
+                                />
+                              </div>
+                              
+                              {/* Data Source Selector */}
+                              <div>
+                                <label className="block text-xs text-gray-400 mb-2">
+                                  Data Source
+                                </label>
+                                <select
+                                  value={factor.dataSource}
+                                  onChange={e => updateDataSource(factor.key, e.target.value as DataSource)}
+                                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm"
+                                >
+                                  <option value="nba-stats-api">NBA Stats API</option>
+                                  <option value="statmuse">StatMuse (deprecated)</option>
+                                  <option value="llm">LLM (AI)</option>
+                                  <option value="news-api">News API</option>
+                                  <option value="manual">Manual Entry</option>
+                                </select>
+                              </div>
                             </div>
                             
-                            {/* Data Source Selector */}
-                            <div>
-                              <label className="block text-xs text-gray-400 mb-2">
-                                Data Source
-                              </label>
-                              <select
-                                value={factor.dataSource}
-                                onChange={e => updateDataSource(factor.key, e.target.value as DataSource)}
-                                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm"
-                              >
-                                <option value="nba-stats-api">NBA Stats API</option>
-                                <option value="statmuse">StatMuse (deprecated)</option>
-                                <option value="llm">LLM (AI)</option>
-                                <option value="news-api">News API</option>
-                                <option value="manual">Manual Entry</option>
-                              </select>
+                            {/* Factor Logic Drawer */}
+                            <div className="p-3 bg-gray-900 rounded border border-gray-600">
+                              <div className="text-xs font-medium text-gray-300 mb-2">
+                                🧮 Logic & Examples
+                              </div>
+                              
+                              {/* Metric Definition */}
+                              <div className="text-xs text-gray-400 mb-2">
+                                <strong>Metric:</strong> {getFactorLogic(factor.key).metric}
+                              </div>
+                              
+                              {/* Cap/Scaling Formula */}
+                              <div className="text-xs text-gray-400 mb-2">
+                                <strong>Formula:</strong> {getFactorLogic(factor.key).formula}
+                              </div>
+                              
+                              {/* Examples */}
+                              <div className="text-xs text-gray-400">
+                                <strong>Examples:</strong>
+                                <ul className="mt-1 space-y-1">
+                                  {getFactorLogic(factor.key).examples.map((example, i) => (
+                                    <li key={i} className="text-gray-500">
+                                      {example}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
                             </div>
                           </div>
                         )}

@@ -731,9 +731,18 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         step5_confidence: stepLogs[5]?.json || null,
         step6_pick: stepLogs[6]?.json?.pick || null,
         confidence_calculation: {
-          total_weighted_points: stepLogs[3]?.json?.factors?.reduce((sum: number, f: any) => 
-            sum + (f.parsed_values_json?.points || 0), 0) || 0,
-          max_possible_points: 5.0, // Sum of all max points when weights = 100% (1.0 × 5 = 5.0)
+          // New signal-based confidence calculation
+          factor_signals: stepLogs[3]?.json?.factors?.map((f: any) => ({
+            key: f.key,
+            name: f.name,
+            signal: f.normalized_value, // sᵢ ∈ [-1, +1]
+            weight: f.weight_total_pct,
+            contribution: (f.normalized_value || 0) * ((f.weight_total_pct || 0) / 100)
+          })) || [],
+          signed_sum: stepLogs[3]?.json?.factors?.reduce((sum: number, f: any) => 
+            sum + ((f.normalized_value || 0) * ((f.weight_total_pct || 0) / 100)), 0) || 0,
+          base_confidence: Math.abs(stepLogs[3]?.json?.factors?.reduce((sum: number, f: any) => 
+            sum + ((f.normalized_value || 0) * ((f.weight_total_pct || 0) / 100)), 0) || 0) * 5,
           weight_validation: {
             total_weight: stepLogs[3]?.json?.factors?.reduce((sum: number, f: any) => 
               sum + (f.weight_total_pct || 0), 0) || 0,

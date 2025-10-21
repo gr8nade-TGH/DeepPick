@@ -387,16 +387,19 @@ export function computePaceIndex(bundle: StatMuseBundle, ctx: RunCtx): FactorCom
   // Delta from league average
   const paceDelta = expPace - leaguePace
   
-  // Normalize to z-score (±6 possessions ≈ big difference)
-  const z = clamp(paceDelta / 6, -1, 1)
-  const points = normalizeToPoints(z, 1.0) // maxPoints = 1.0
+  // Normalize to signal s ∈ [-1, +1] (±6 possessions ≈ full signal)
+  const signal = clamp(paceDelta / 6, -1, 1)
+  
+  // For totals: signal is always relative to OVER
+  // +1 = strongest support for OVER, -1 = strongest support for UNDER
+  const points = Math.abs(signal) * 1.0 // Magnitude for points calculation
   const { away, home } = splitPointsEvenly(points)
   
   return {
     factor_no: 1,
     key: 'paceIndex',
     name: 'Matchup Pace Index',
-    normalized_value: z,
+    normalized_value: signal,
     raw_values_json: {
       awayPaceSeason,
       awayPaceLast10,
@@ -416,8 +419,8 @@ export function computePaceIndex(bundle: StatMuseBundle, ctx: RunCtx): FactorCom
       awayContribution: away,
       homeContribution: home
     },
-    caps_applied: Math.abs(z) >= 1,
-    cap_reason: Math.abs(z) >= 1 ? 'z-score clamped to ±1' : null,
+    caps_applied: Math.abs(signal) >= 1,
+    cap_reason: Math.abs(signal) >= 1 ? 'signal clamped to ±1' : null,
     notes: `Expected pace: ${expPace.toFixed(1)} vs league ${leaguePace.toFixed(1)}`
   }
 }
@@ -440,16 +443,18 @@ export function computeOffensiveForm(bundle: StatMuseBundle, ctx: RunCtx): Facto
   // Combined form delta vs league baseline
   const formDeltaPer100 = (awayORtgAdj + homeORtgAdj) - (2 * leagueORtg)
   
-  // Normalize to z-score (±10 ORtg ≈ significant)
-  const z = clamp(formDeltaPer100 / 10, -1, 1)
-  const points = normalizeToPoints(z, 1.0) // maxPoints = 1.0
+  // Normalize to signal s ∈ [-1, +1] (±10 ORtg ≈ full signal)
+  const signal = clamp(formDeltaPer100 / 10, -1, 1)
+  
+  // For totals: signal is always relative to OVER
+  const points = Math.abs(signal) * 1.0 // Magnitude for points calculation
   const { away, home } = splitPointsEvenly(points)
   
   return {
     factor_no: 2,
     key: 'offForm',
     name: 'Offensive Form vs Opp',
-    normalized_value: z,
+    normalized_value: signal,
     raw_values_json: {
       awayORtgLast10,
       homeORtgLast10,
@@ -466,8 +471,8 @@ export function computeOffensiveForm(bundle: StatMuseBundle, ctx: RunCtx): Facto
       awayContribution: away,
       homeContribution: home
     },
-    caps_applied: Math.abs(z) >= 1,
-    cap_reason: Math.abs(z) >= 1 ? 'z-score clamped to ±1' : null,
+    caps_applied: Math.abs(signal) >= 1,
+    cap_reason: Math.abs(signal) >= 1 ? 'signal clamped to ±1' : null,
     notes: `Combined ORtg: ${(awayORtgAdj + homeORtgAdj).toFixed(1)} vs league ${(2 * leagueORtg).toFixed(1)}`
   }
 }
@@ -495,16 +500,18 @@ export function computeDefensiveErosion(
   // Average erosion for both teams
   const erosion = (awayErosion + homeErosion) / 2
   
-  // Normalize to z-score
-  const z = clamp(erosion, -1, 1)
-  const points = normalizeToPoints(z, 1.0) // maxPoints = 1.0
+  // Normalize to signal s ∈ [-1, +1]
+  const signal = clamp(erosion, -1, 1)
+  
+  // For totals: signal is always relative to OVER
+  const points = Math.abs(signal) * 1.0 // Magnitude for points calculation
   const { away, home } = splitPointsEvenly(points)
   
   return {
     factor_no: 3,
     key: 'defErosion',
     name: 'Defensive Erosion',
-    normalized_value: z,
+    normalized_value: signal,
     raw_values_json: {
       awayDRtgSeason,
       homeDRtgSeason,
@@ -523,8 +530,8 @@ export function computeDefensiveErosion(
       awayContribution: away,
       homeContribution: home
     },
-    caps_applied: Math.abs(z) >= 1,
-    cap_reason: Math.abs(z) >= 1 ? 'z-score clamped to ±1' : null,
+    caps_applied: Math.abs(signal) >= 1,
+    cap_reason: Math.abs(signal) >= 1 ? 'signal clamped to ±1' : null,
     notes: `Erosion: ${erosion.toFixed(2)} (DRtg: ${awayDrDelta.toFixed(2)}/${homeDrDelta.toFixed(2)}, Injury: ${awayInjury.toFixed(2)}/${homeInjury.toFixed(2)})`
   }
 }
@@ -554,16 +561,18 @@ export function computeThreePointEnv(bundle: StatMuseBundle, ctx: RunCtx): Facto
   )
   const hotVar = Math.max(0, recentStdev - league3Pstdev)
   
-  // Combined z-score (weight rate 2x more than variance)
-  const z = clamp((2 * rateDelta + hotVar), -1, 1)
-  const points = normalizeToPoints(z, 1.0) // maxPoints = 1.0
+  // Combined signal s ∈ [-1, +1] (weight rate 2x more than variance)
+  const signal = clamp((2 * rateDelta + hotVar), -1, 1)
+  
+  // For totals: signal is always relative to OVER
+  const points = Math.abs(signal) * 1.0 // Magnitude for points calculation
   const { away, home } = splitPointsEvenly(points)
   
   return {
     factor_no: 4,
     key: 'threeEnv',
     name: '3PT Environment',
-    normalized_value: z,
+    normalized_value: signal,
     raw_values_json: {
       away3PAR,
       home3PAR,
@@ -584,8 +593,8 @@ export function computeThreePointEnv(bundle: StatMuseBundle, ctx: RunCtx): Facto
       awayContribution: away,
       homeContribution: home
     },
-    caps_applied: Math.abs(z) >= 1,
-    cap_reason: Math.abs(z) >= 1 ? 'z-score clamped to ±1' : null,
+    caps_applied: Math.abs(signal) >= 1,
+    cap_reason: Math.abs(signal) >= 1 ? 'signal clamped to ±1' : null,
     notes: `Env rate: ${envRate.toFixed(3)} vs league ${league3PAR.toFixed(3)}, Var: ${hotVar.toFixed(3)}`
   }
 }
@@ -601,16 +610,18 @@ export function computeWhistleEnv(bundle: StatMuseBundle, ctx: RunCtx): FactorCo
   const ftrEnv = (awayFTr + homeFTr + awayOppFTr + homeOppFTr) / 4
   const ftrDelta = ftrEnv - leagueFTr
   
-  // Normalize to z-score (±0.06 FTr ≈ significant)
-  const z = clamp(ftrDelta / 0.06, -1, 1)
-  const points = normalizeToPoints(z, 1.0) // maxPoints = 1.0
+  // Normalize to signal s ∈ [-1, +1] (±0.06 FTr ≈ full signal)
+  const signal = clamp(ftrDelta / 0.06, -1, 1)
+  
+  // For totals: signal is always relative to OVER
+  const points = Math.abs(signal) * 1.0 // Magnitude for points calculation
   const { away, home } = splitPointsEvenly(points)
   
   return {
     factor_no: 5,
     key: 'whistleEnv',
     name: 'FT/Whistle Env',
-    normalized_value: z,
+    normalized_value: signal,
     raw_values_json: {
       awayFTr,
       homeFTr,
@@ -626,8 +637,8 @@ export function computeWhistleEnv(bundle: StatMuseBundle, ctx: RunCtx): FactorCo
       awayContribution: away,
       homeContribution: home
     },
-    caps_applied: Math.abs(z) >= 1,
-    cap_reason: Math.abs(z) >= 1 ? 'z-score clamped to ±1' : null,
+    caps_applied: Math.abs(signal) >= 1,
+    cap_reason: Math.abs(signal) >= 1 ? 'signal clamped to ±1' : null,
     notes: `FTr env: ${ftrEnv.toFixed(3)} vs league ${leagueFTr.toFixed(3)}`
   }
 }
@@ -683,26 +694,18 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<{
     computeWhistleEnv(bundle, ctx),
   ]
   
-  // Apply factor weights if provided
+  // Apply factor weights for display purposes (confidence calculation happens separately)
   const factorWeights = ctx.factorWeights || {}
   const weightedFactors = factors.map(factor => {
     const weight = factorWeights[factor.key] || 20 // Default 20% if not specified
-    const weightDecimal = weight / 100
-    
-    // Scale the points by the weight (base max points = 1.0, so 100% weight = 1.0 points)
-    // But we want 100% weight to equal 5.0 total points, so multiply by 5
-    const weightedPoints = factor.parsed_values_json.points * weightDecimal * 5
-    const weightedAway = factor.parsed_values_json.awayContribution * weightDecimal * 5
-    const weightedHome = factor.parsed_values_json.homeContribution * weightDecimal * 5
     
     return {
       ...factor,
       weight_total_pct: weight,
+      // Keep original points for confidence calculation
       parsed_values_json: {
         ...factor.parsed_values_json,
-        points: weightedPoints,
-        awayContribution: weightedAway,
-        homeContribution: weightedHome
+        // Points are now just for display - confidence uses signals directly
       }
     }
   })
