@@ -210,7 +210,7 @@ function assembleInsightCard({ runCtx, step4, step5, step6, step3, step2 }: any)
 
   // Debug hooks (dev only)
   console.debug('[card.odds.used]', odds)
-  console.debug('[card.factor.rows]', factorRows.map(r => ({ key: r.key, away: r.awayContribution, home: r.homeContribution })))
+  console.debug('[card.factor.rows]', factorRows.map((r: any) => ({ key: r.key, away: r.awayContribution, home: r.homeContribution })))
 
   return {
     capper: 'SHIVA',
