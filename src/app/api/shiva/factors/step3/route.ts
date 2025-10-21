@@ -14,6 +14,7 @@ const Step3Schema = z.object({
   results: z.object({
     factors: z.array(z.object({
       factor_no: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]),
+      key: z.string().min(1),
       name: z.string().min(1),
       weight_total_pct: z.number().finite(),
       raw_values_json: z.unknown(),
@@ -74,7 +75,11 @@ export async function POST(request: Request) {
         }
       }
       
-      const responseBody = { run_id, factor_count: results.factors.length }
+      const responseBody = { 
+        run_id, 
+        factors: results.factors,
+        factor_count: results.factors.length 
+      }
       
       // Structured logging
       console.log('[SHIVA:Step3]', {

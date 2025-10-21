@@ -90,7 +90,49 @@ function getWeightPct(factorKey: string, profile: any): number {
   return weightKey ? (profile.weights[weightKey] || 0) : 0.1
 }
 
-function assembleInsightCard({ runCtx, step4, step5, step6, step3, snapshot }: any) {
+function generatePredictionWriteup(pick: any, predictedScore: any, totalLine: number, confFinal: number, factorRows: any[]): string {
+  if (!pick) return 'No pick generated.'
+  
+  const totalPred = predictedScore.home + predictedScore.away
+  const topFactor = factorRows[0]
+  
+  switch (pick.type) {
+    case 'TOTAL':
+      const overUnder = pick.selection?.includes('OVER') ? 'Over' : 'Under'
+      return `Model projects ${predictedScore.home}-${predictedScore.away} (total ${totalPred}), ${overUnder} line ${totalLine}. Key driver: ${topFactor?.label} (${topFactor?.rationale}). With confidence ${confFinal.toFixed(1)}/5, we lean ${overUnder}.`
+    
+    case 'SPREAD':
+      return `Model projects ${predictedScore.winner} covering by ${Math.abs(predictedScore.home - predictedScore.away)} points vs spread. Key driver: ${topFactor?.label} (${topFactor?.rationale}). With confidence ${confFinal.toFixed(1)}/5, we lean ${pick.selection}.`
+    
+    case 'MONEYLINE':
+      return `Model projects ${predictedScore.winner} winning outright ${predictedScore.home}-${predictedScore.away}. Key driver: ${topFactor?.label} (${topFactor?.rationale}). With confidence ${confFinal.toFixed(1)}/5, we lean ${pick.selection}.`
+    
+    default:
+      return `Model projects ${predictedScore.winner} ${predictedScore.home}-${predictedScore.away}. Key driver: ${topFactor?.label}. With confidence ${confFinal.toFixed(1)}/5, we lean ${pick.selection}.`
+  }
+}
+
+function generateBoldPrediction(pick: any, predictedScore: any, factorRows: any[]): string {
+  if (!pick) return 'No prediction available.'
+  
+  const topFactor = factorRows[0]
+  
+  switch (pick.type) {
+    case 'TOTAL':
+      return `${predictedScore.winner} hits ${pick.selection?.includes('OVER') ? 'high' : 'low'} total with ${topFactor?.label} edge.`
+    
+    case 'SPREAD':
+      return `${predictedScore.winner} covers by ${Math.abs(predictedScore.home - predictedScore.away)}+ points.`
+    
+    case 'MONEYLINE':
+      return `${predictedScore.winner} wins outright with ${topFactor?.label} advantage.`
+    
+    default:
+      return `${predictedScore.winner} dominates with ${topFactor?.label} edge.`
+  }
+}
+
+function assembleInsightCard({ runCtx, step4, step5, step6, step3, step2 }: any) {
   const g = runCtx?.game || {}
   const pick = step6?.json?.pick || null
   const conf7 = Number(step4?.json?.predictions?.conf7_score ?? 0)
@@ -106,8 +148,8 @@ function assembleInsightCard({ runCtx, step4, step5, step6, step3, snapshot }: a
   // Format matchup strings
   const awayTeam = g.away || 'Away'
   const homeTeam = g.home || 'Home'
-  const spreadLine = snapshot?.spread?.line || 0
-  const totalLine = snapshot?.total?.line || 0
+  const spreadLine = step2?.json?.snapshot?.spread?.line || 0
+  const totalLine = step2?.json?.snapshot?.total?.line || 0
   
   const spreadText = `${awayTeam} ${spreadLine > 0 ? '+' : ''}${spreadLine} @ ${homeTeam} ${spreadLine < 0 ? spreadLine : ''}`
   const totalText = `O/U ${totalLine}`
@@ -121,8 +163,8 @@ function assembleInsightCard({ runCtx, step4, step5, step6, step3, snapshot }: a
       const metadata = FACTOR_METADATA[f.key] || { label: f.name || f.key, icon: 'ℹ️', description: 'Factor' }
       
       // For delta factors, split symmetrically
-      const awayContribution = weighted > 0 ? weighted : -weighted
-      const homeContribution = weighted > 0 ? -weighted : weighted
+      const awayContribution = weighted / 2
+      const homeContribution = -weighted / 2
       
       return {
         key: f.key,
@@ -135,8 +177,8 @@ function assembleInsightCard({ runCtx, step4, step5, step6, step3, snapshot }: a
       }
     })
     .sort((a: any, b: any) => {
-      const absA = Math.abs(a.awayContribution + a.homeContribution)
-      const absB = Math.abs(b.awayContribution + b.homeContribution)
+      const absA = Math.abs(a.awayContribution - a.homeContribution)
+      const absB = Math.abs(b.awayContribution - b.homeContribution)
       return absB - absA
     })
 
@@ -166,9 +208,9 @@ function assembleInsightCard({ runCtx, step4, step5, step6, step3, snapshot }: a
     },
     predictedScore,
     writeups: {
-      prediction: `Based on our analysis, ${predictedScore.winner} should cover the spread with a predicted score of ${predictedScore.home}-${predictedScore.away}.`,
+      prediction: generatePredictionWriteup(pick, predictedScore, totalLine, confFinal, factorRows),
       gamePrediction: `${predictedScore.winner} ${Math.max(predictedScore.home, predictedScore.away)}–${Math.min(predictedScore.home, predictedScore.away)}`,
-      bold: `Look for ${predictedScore.winner} to dominate in the ${step5?.json?.dominant || 'side'} market.`,
+      bold: generateBoldPrediction(pick, predictedScore, factorRows),
     },
     factors: factorRows,
     market: {
@@ -427,6 +469,20 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             errorSteps: stepsArray.filter((s) => s.status >= 400).length,
             dryRunSteps: stepsArray.filter((s) => s.dryRun === true).length,
           },
+          // Enhanced debugging information
+          factor_count: stepLogs[3]?.json?.factor_count || 0,
+          factor_keys: stepLogs[3]?.json?.factors?.map((f: any) => f.key) || [],
+          assembler: {
+            factorRows: stepLogs[3]?.json?.factors?.length || 0,
+            topFactorKey: stepLogs[3]?.json?.factors?.[0]?.key || 'none',
+            oddsUsed: {
+              ml_home: stepLogs[2]?.json?.snapshot?.moneyline?.home_avg || 0,
+              ml_away: stepLogs[2]?.json?.snapshot?.moneyline?.away_avg || 0,
+              spread_team: stepLogs[2]?.json?.snapshot?.spread?.fav_team || 'unknown',
+              spread_line: stepLogs[2]?.json?.snapshot?.spread?.line || 0,
+              total_line: stepLogs[2]?.json?.snapshot?.total?.line || 0,
+            }
+          },
           stepLogsRaw: stepLogs, // Include raw step logs for debugging
         }
         console.log('Debug report generated (comprehensive):', debugReport)
@@ -495,6 +551,20 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                       successfulSteps: Object.values(stepLogs).filter((s: any) => s.status >= 200 && s.status < 300).length,
                       errorSteps: Object.values(stepLogs).filter((s: any) => s.status >= 400).length,
                       dryRunSteps: Object.values(stepLogs).filter((s: any) => s.dryRun === true).length,
+                    },
+                    // Enhanced debugging information
+                    factor_count: stepLogs[3]?.json?.factor_count || 0,
+                    factor_keys: stepLogs[3]?.json?.factors?.map((f: any) => f.key) || [],
+                    assembler: {
+                      factorRows: stepLogs[3]?.json?.factors?.length || 0,
+                      topFactorKey: stepLogs[3]?.json?.factors?.[0]?.key || 'none',
+                      oddsUsed: {
+                        ml_home: stepLogs[2]?.json?.snapshot?.moneyline?.home_avg || 0,
+                        ml_away: stepLogs[2]?.json?.snapshot?.moneyline?.away_avg || 0,
+                        spread_team: stepLogs[2]?.json?.snapshot?.spread?.fav_team || 'unknown',
+                        spread_line: stepLogs[2]?.json?.snapshot?.spread?.line || 0,
+                        total_line: stepLogs[2]?.json?.snapshot?.total?.line || 0,
+                      }
                     },
                     stepLogsRaw: stepLogs,
                   }

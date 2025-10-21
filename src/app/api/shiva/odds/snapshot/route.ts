@@ -90,7 +90,7 @@ export async function POST(request: Request) {
         status: 200,
       })
       
-      return { body: { snapshot_id: 'dryrun_snapshot', is_active: true }, status: 200 }
+      return { body: { snapshot_id: 'dryrun_snapshot', is_active: true, snapshot: parse.data.snapshot }, status: 200 }
     }
   })
 }

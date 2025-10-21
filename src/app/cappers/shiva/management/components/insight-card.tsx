@@ -241,8 +241,8 @@ export function InsightCard(props: InsightCardProps) {
         <div className="flex items-center justify-between mb-3">
           <div className="text-sm font-semibold text-gray-700">CONFIDENCE FACTORS:</div>
           {sortedFactors.length > 0 && (
-            <div className="text-xs px-2 py-1 bg-purple-100 text-purple-800 rounded">
-              Dominant: {sortedFactors[0].label}
+            <div className="text-xs px-3 py-1 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-800 rounded-full border border-purple-200 font-semibold">
+              🏆 Dominant: {sortedFactors[0].label}
             </div>
           )}
         </div>
@@ -250,7 +250,7 @@ export function InsightCard(props: InsightCardProps) {
         {/* Header Row with tiny labels */}
         <div className="grid grid-cols-[40px_1fr_1fr] gap-2 mb-2 text-xs font-semibold text-gray-600">
           <div className="text-center">FACTOR ICONS</div>
-          <div className="text-center">
+          <div className="text-center border-r border-gray-300">
             <div className="text-xs text-gray-400 mb-1">{props.matchup?.away?.split(' ').pop() || 'AWAY'}</div>
           </div>
           <div className="text-center">
@@ -282,7 +282,7 @@ export function InsightCard(props: InsightCardProps) {
                 </div>
 
                 {/* Away Contribution */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 border-r border-gray-300 pr-2">
                   <div className="flex-1 text-right">
                     <span className={`text-sm font-mono ${factor.awayContribution > 0 ? 'text-green-600' : factor.awayContribution < 0 ? 'text-red-600' : 'text-gray-500'}`}>
                       {factor.awayContribution > 0 ? '+' : ''}{factor.awayContribution.toFixed(1)}
