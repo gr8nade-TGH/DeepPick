@@ -73,12 +73,56 @@ export interface InsightCardProps {
 export function InsightCard(props: InsightCardProps) {
   const [hoveredFactor, setHoveredFactor] = useState<string | null>(null)
 
+  // Early return if no data
+  if (!props || !props.factors) {
+    return (
+      <div className="border rounded-lg shadow-lg bg-white max-w-4xl mx-auto p-4">
+        <div className="text-gray-500">No card data available</div>
+      </div>
+    )
+  }
+
+  console.debug('InsightCard props', { props })
+
+  // Safe defaults for all fields
+  const safeFactors = (props.factors ?? []).map(f => ({
+    ...f,
+    contributionHome: Number(f.contributionHome ?? 0),
+    contributionAway: Number(f.contributionAway ?? 0),
+    weight: Number(f.weight ?? 0),
+    rationale: f.rationale || 'No rationale provided',
+  }))
+
   // Sort factors by absolute contribution (sum of home + away impact)
-  const sortedFactors = [...props.factors].sort((a, b) => {
-    const absA = Math.abs(a.contributionHome - a.contributionAway)
-    const absB = Math.abs(b.contributionHome - b.contributionAway)
+  const sortedFactors = [...safeFactors].sort((a, b) => {
+    const absA = Math.abs((a.contributionHome ?? 0) - (a.contributionAway ?? 0))
+    const absB = Math.abs((b.contributionHome ?? 0) - (b.contributionAway ?? 0))
     return absB - absA
   })
+
+  // Safe defaults for required fields
+  const safePick = {
+    type: props.pick?.type || 'UNKNOWN',
+    selection: props.pick?.selection || 'N/A',
+    units: Number(props.pick?.units ?? 0),
+    confidence: Number(props.pick?.confidence ?? 0),
+    spread: props.pick?.spread,
+    total: props.pick?.total,
+  }
+
+  const safePredictedScore = {
+    home: Number(props.predictedScore?.home ?? 0),
+    away: Number(props.predictedScore?.away ?? 0),
+  }
+
+  const safeMarketMismatch = {
+    dominant: props.marketMismatch?.dominant || 'side',
+    edgeSide: Number(props.marketMismatch?.edgeSide ?? 0),
+    edgeTotal: Number(props.marketMismatch?.edgeTotal ?? 0),
+    conf7: Number(props.marketMismatch?.conf7 ?? 0),
+    confMarketAdj: Math.max(-1.2, Math.min(1.2, Number(props.marketMismatch?.confMarketAdj ?? 0))),
+    confFinal: Number(props.marketMismatch?.confFinal ?? 0),
+  }
 
   return (
     <div className="border rounded-lg shadow-lg bg-white max-w-4xl mx-auto">
@@ -86,10 +130,10 @@ export function InsightCard(props: InsightCardProps) {
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-t-lg">
         <div className="flex items-center justify-between">
           <div className="text-lg font-bold">
-            {props.awayTeam} {props.pick.spread && props.pick.spread > 0 ? `+${props.pick.spread}` : ''} @ {props.homeTeam} {props.pick.spread && props.pick.spread < 0 ? props.pick.spread : ''}
+            {props.awayTeam || 'Away'} {safePick.spread && safePick.spread > 0 ? `+${safePick.spread}` : ''} @ {props.homeTeam || 'Home'} {safePick.spread && safePick.spread < 0 ? safePick.spread : ''}
           </div>
           <div className="text-sm">
-            O/U {props.pick.total || '—'}
+            O/U {safePick.total || '—'}
           </div>
         </div>
       </div>
@@ -105,10 +149,10 @@ export function InsightCard(props: InsightCardProps) {
       <div className="bg-blue-50 border-b border-blue-200 p-4">
         <div className="text-center">
           <div className="text-2xl font-bold text-blue-900">
-            {props.pick.units} {props.pick.units === 1 ? 'UNIT' : 'UNITS'} on {props.pick.selection}
+            {safePick.units} {safePick.units === 1 ? 'UNIT' : 'UNITS'} on {safePick.selection}
           </div>
           <div className="text-sm text-gray-600 mt-1">
-            {props.capper} • {props.sport} • {props.pick.type}
+            {props.capper || 'SHIVA'} • {props.sport || 'NBA'} • {safePick.type}
           </div>
         </div>
       </div>
@@ -144,10 +188,10 @@ export function InsightCard(props: InsightCardProps) {
         <div className="text-center">
           <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Predicted Score</div>
           <div className="text-3xl font-mono font-bold text-gray-900">
-            {props.predictedScore.away} - {props.predictedScore.home}
+            {safePredictedScore.away} - {safePredictedScore.home}
           </div>
           <div className="text-xs text-gray-600 mt-1">
-            {props.awayTeam} @ {props.homeTeam}
+            {props.awayTeam || 'Away'} @ {props.homeTeam || 'Home'}
           </div>
         </div>
       </div>
@@ -173,9 +217,9 @@ export function InsightCard(props: InsightCardProps) {
         {/* Factor Rows (Sorted by absolute impact) */}
         <div className="space-y-2">
           {sortedFactors.map((factor) => {
-            const icon = FACTOR_ICONS[factor.key] || '•'
-            const tooltip = FACTOR_TOOLTIPS[factor.key] || factor.name
-            const differential = factor.contributionHome - factor.contributionAway
+            const icon = FACTOR_ICONS[factor.key] || 'ℹ️'
+            const tooltip = FACTOR_TOOLTIPS[factor.key] || factor.name || 'Factor'
+            const differential = (factor.contributionHome ?? 0) - (factor.contributionAway ?? 0)
             
             return (
               <div
@@ -238,7 +282,7 @@ export function InsightCard(props: InsightCardProps) {
         <div className="mt-3 text-xs text-gray-600">
           <div className="flex items-center gap-2">
             <span className="font-semibold">Weight applied:</span>
-            <span>{(props.factors.reduce((sum, f) => sum + f.weight, 0) * 100).toFixed(1)}%</span>
+            <span>{(safeFactors.reduce((sum, f) => sum + (f.weight ?? 0), 0) * 100).toFixed(1)}%</span>
           </div>
         </div>
       </div>
@@ -248,31 +292,31 @@ export function InsightCard(props: InsightCardProps) {
         <div className="grid grid-cols-4 gap-4 text-center text-sm mb-3">
           <div>
             <div className="text-xs text-gray-500 uppercase mb-1">Conf7</div>
-            <div className="font-mono font-bold">{props.marketMismatch.conf7.toFixed(2)}</div>
+            <div className="font-mono font-bold">{safeMarketMismatch.conf7.toFixed(2)}</div>
           </div>
           <div>
             <div className="text-xs text-gray-500 uppercase mb-1">Market Adj</div>
             <div className={`font-mono font-bold ${
-              props.marketMismatch.confMarketAdj > 0 ? 'text-green-600' : 
-              props.marketMismatch.confMarketAdj < 0 ? 'text-red-600' : 'text-gray-600'
+              safeMarketMismatch.confMarketAdj > 0 ? 'text-green-600' : 
+              safeMarketMismatch.confMarketAdj < 0 ? 'text-red-600' : 'text-gray-600'
             }`}>
-              {props.marketMismatch.confMarketAdj > 0 ? '+' : ''}
-              {props.marketMismatch.confMarketAdj.toFixed(2)}
+              {safeMarketMismatch.confMarketAdj > 0 ? '+' : ''}
+              {safeMarketMismatch.confMarketAdj.toFixed(2)}
             </div>
           </div>
           <div>
             <div className="text-xs text-gray-500 uppercase mb-1">Conf Final</div>
             <div className="font-mono font-bold text-blue-600 text-lg">
-              {props.marketMismatch.confFinal.toFixed(2)}
+              {safeMarketMismatch.confFinal.toFixed(2)}
             </div>
           </div>
           <div>
             <div className="text-xs text-gray-500 uppercase mb-1">Dominant Edge</div>
-            <div className="font-semibold">{props.marketMismatch.dominant.toUpperCase()}</div>
+            <div className="font-semibold">{safeMarketMismatch.dominant.toUpperCase()}</div>
             <div className="text-xs text-gray-600">
-              Side: {props.marketMismatch.edgeSide.toFixed(1)}pts
+              Side: {safeMarketMismatch.edgeSide.toFixed(1)}pts
               <br />
-              Total: {props.marketMismatch.edgeTotal.toFixed(1)}pts
+              Total: {safeMarketMismatch.edgeTotal.toFixed(1)}pts
             </div>
           </div>
         </div>
@@ -289,12 +333,12 @@ export function InsightCard(props: InsightCardProps) {
             {/* Market adjustment bar */}
             <div
               className={`absolute top-0 bottom-0 ${
-                props.marketMismatch.confMarketAdj > 0 ? 'bg-green-500' : 'bg-red-500'
+                safeMarketMismatch.confMarketAdj > 0 ? 'bg-green-500' : 'bg-red-500'
               }`}
               style={{
-                left: props.marketMismatch.confMarketAdj >= 0 ? '50%' : 
-                      `${50 + (props.marketMismatch.confMarketAdj / 1.2) * 50}%`,
-                width: `${Math.abs(props.marketMismatch.confMarketAdj / 1.2) * 50}%`,
+                left: safeMarketMismatch.confMarketAdj >= 0 ? '50%' : 
+                      `${50 + (safeMarketMismatch.confMarketAdj / 1.2) * 50}%`,
+                width: `${Math.abs(safeMarketMismatch.confMarketAdj / 1.2) * 50}%`,
               }}
             />
           </div>
@@ -311,13 +355,13 @@ export function InsightCard(props: InsightCardProps) {
         <div className="text-center">
           <div className="text-sm text-gray-600">Confidence Score</div>
           <div className="text-3xl font-bold text-blue-600">
-            {props.marketMismatch.confFinal.toFixed(2)} / 5.0
+            {safeMarketMismatch.confFinal.toFixed(2)} / 5.0
           </div>
           <div className="mt-2">
             <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-blue-400 to-blue-600"
-                style={{ width: `${(props.marketMismatch.confFinal / 5.0) * 100}%` }}
+                style={{ width: `${Math.min(100, Math.max(0, (safeMarketMismatch.confFinal / 5.0) * 100))}%` }}
               />
             </div>
           </div>

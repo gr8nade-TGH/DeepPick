@@ -165,7 +165,10 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           {/* Quick Access Insight Pill - only depends on hasInsight */}
           {hasInsight && (
             <button
-              onClick={() => setShowInsightCard(true)}
+              onClick={() => {
+                if (!insightCardData) return
+                setShowInsightCard(true)
+              }}
               className="px-3 py-1 bg-green-700 text-white rounded-full text-xs font-bold hover:bg-green-600 border-2 border-green-500 animate-pulse"
               title="Open Insight Card"
             >
@@ -238,7 +241,10 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             </div>
             <button 
               className="px-4 py-2 bg-green-600 text-white rounded font-bold hover:bg-green-500 border-2 border-green-400"
-              onClick={() => setShowInsightCard(true)}
+              onClick={() => {
+                if (!insightCardData) return
+                setShowInsightCard(true)
+              }}
             >
               👁️ Open Insight Card
             </button>
