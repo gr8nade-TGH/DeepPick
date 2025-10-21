@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { getSupabase } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const supabase = createClient()
+    const supabase = getSupabase()
 
     // Build query: games with status in (scheduled, in_progress)
     // and start_time >= now() - 12h
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform to API shape
-    const transformed = (games || []).map((game) => ({
+    const transformed = (games || []).map((game: any) => ({
       game_id: game.id,
       league: game.league,
       status: game.status,
