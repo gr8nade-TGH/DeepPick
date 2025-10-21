@@ -569,6 +569,8 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<{
     }
   }
 }> {
+  console.log('[TOTALS:COMPUTE_START]', { away: ctx.away, home: ctx.home, sport: ctx.sport, betType: ctx.betType })
+  
   const branchLog = { sport: ctx.sport, betType: ctx.betType }
   console.debug('[totals:branch-used]', branchLog)
   
