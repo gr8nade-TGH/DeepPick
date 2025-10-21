@@ -416,6 +416,8 @@ export function InsightCard(props: InsightCardProps) {
               </div>
             )}
           </div>
+        </div>
+
         {/* Close Button */}
         <div className="p-6 bg-gradient-to-r from-slate-900 to-slate-800 rounded-b-2xl">
           <div className="flex justify-center gap-4">
