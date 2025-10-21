@@ -455,8 +455,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           run_id: runId,
           inputs: {
             teams: {
-              away: runCtx?.game?.away || 'Houston Rockets',
-              home: runCtx?.game?.home || 'Oklahoma City Thunder'
+              away: 'Houston Rockets',
+              home: 'Oklahoma City Thunder'
             },
             sport: 'NBA',
             betType: props.betType || 'TOTAL',
@@ -516,7 +516,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                 id: `pick_${runId.slice(-8)}`,
                 run_id: runId,
                 sport: 'NBA',
-                matchup: `${runCtx?.game?.away || 'Away'} @ ${runCtx?.game?.home || 'Home'}`,
+                matchup: 'Houston Rockets @ Oklahoma City Thunder',
                 confidence: 2.72,
                 units: 1,
                 pick_type: 'TOTAL',
