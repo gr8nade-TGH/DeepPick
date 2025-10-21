@@ -15,6 +15,13 @@ const PickSchema = z.object({
   results: z.object({
     decision: z.object({ pick_type: z.enum(['SPREAD', 'MONEYLINE', 'TOTAL']), pick_side: z.string(), line: z.number(), units: z.number(), reason: z.string() }).strict(),
     persistence: z.object({ picks_row: z.object({ id: z.string(), run_id: z.string(), sport: z.literal('NBA'), matchup: z.string(), confidence: z.number(), units: z.number(), pick_type: z.enum(['SPREAD', 'MONEYLINE', 'TOTAL']), selection: z.string(), created_at_utc: z.string() }).strict() }).strict(),
+    locked_odds: z.object({
+      total_line: z.number().optional(),
+      spread_team: z.string().optional(),
+      spread_line: z.number().optional(),
+      ml_home: z.number().optional(),
+      ml_away: z.number().optional(),
+    }).optional(),
   }).strict()
 }).strict()
 
@@ -68,7 +75,7 @@ export async function POST(request: Request) {
       const r = results.persistence.picks_row
       
       if (writeAllowed) {
-        // Single transaction: insert pick
+        // Single transaction: insert pick and update runs with locked odds
         const ins = await admin.from('picks').insert({
           id: r.id,
           game_id: null,
@@ -85,6 +92,15 @@ export async function POST(request: Request) {
           run_id,
         })
         if (ins.error) throw new Error(ins.error.message)
+
+        // Update runs table with locked odds
+        if (results.locked_odds) {
+          const updateRun = await admin
+            .from('runs')
+            .update({ locked_odds: results.locked_odds })
+            .eq('id', run_id)
+          if (updateRun.error) throw new Error(updateRun.error.message)
+        }
       }
       
       const responseBody = { 
@@ -97,7 +113,9 @@ export async function POST(request: Request) {
           pick_type: results.decision.pick_type, 
           selection: r.selection, 
           units: r.units, 
-          confidence: r.confidence 
+          confidence: r.confidence,
+          locked_odds: results.locked_odds || null,
+          locked_at: new Date().toISOString()
         } 
       }
       

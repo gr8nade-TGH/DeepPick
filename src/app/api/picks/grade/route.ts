@@ -27,7 +27,8 @@ function gradePick(
   selection: string,
   units: number,
   finalScore: { home_score: number; away_score: number },
-  gameSnapshot: any
+  gameSnapshot: any,
+  lockedOdds?: any
 ): GradeResult {
   const { home_score, away_score } = finalScore
 
@@ -36,7 +37,7 @@ function gradePick(
   } else if (pickType === 'spread') {
     return gradeSpread(selection, units, home_score, away_score, gameSnapshot)
   } else if (pickType === 'total') {
-    return gradeTotal(selection, units, home_score, away_score, gameSnapshot)
+    return gradeTotal(selection, units, home_score, away_score, gameSnapshot, lockedOdds)
   }
 
   return {
@@ -126,19 +127,25 @@ function gradeTotal(
   units: number,
   homeScore: number,
   awayScore: number,
-  snapshot: any
+  snapshot: any,
+  lockedOdds?: any
 ): GradeResult {
-  // Parse total line from selection (e.g., "OVER 227.5" → 227.5)
-  const totalMatch = selection.match(/(\d+\.?\d*)/)
-  if (!totalMatch) {
-    return {
-      result: 'push',
-      units_delta: 0,
-      explanation: 'Could not parse total line from selection',
+  // Use locked odds total line if available, otherwise parse from selection
+  let line: number
+  if (lockedOdds?.total_line) {
+    line = lockedOdds.total_line
+  } else {
+    // Parse total line from selection (e.g., "OVER 227.5" → 227.5)
+    const totalMatch = selection.match(/(\d+\.?\d*)/)
+    if (!totalMatch) {
+      return {
+        result: 'push',
+        units_delta: 0,
+        explanation: 'Could not parse total line from selection or locked odds',
+      }
     }
+    line = parseFloat(totalMatch[1])
   }
-
-  const line = parseFloat(totalMatch[1])
   const finalTotal = homeScore + awayScore
   const isOver = selection.toUpperCase().includes('OVER')
 
@@ -246,7 +253,8 @@ export async function POST(request: Request) {
       )
     }
 
-    // Grade the pick
+    // Grade the pick using locked odds if available
+    const lockedOdds = pick.run?.locked_odds || null
     const gradeResult = gradePick(
       pick.pick_type,
       pick.selection,
@@ -255,7 +263,8 @@ export async function POST(request: Request) {
         home_score: game.home_score,
         away_score: game.away_score,
       },
-      pick.game_snapshot as any
+      pick.game_snapshot as any,
+      lockedOdds
     )
 
     // Write to pick_results

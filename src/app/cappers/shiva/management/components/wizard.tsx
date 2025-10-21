@@ -192,25 +192,26 @@ function assembleInsightCard({ runCtx, step4, step5, step6, step3, step2 }: any)
     return `${away} @ ${home}` // no spread available
   }
 
-  const totalText = (typeof totalLine === 'number') ? `O/U ${totalLine}` : 'O/U —'
+  // Show current O/U with delta if different from locked line
+  const lockedTotalLine = pick?.locked_odds?.total_line
+  const currentTotalLine = totalLine
+  const delta = (lockedTotalLine && currentTotalLine) ? (currentTotalLine - lockedTotalLine).toFixed(1) : null
+  
+  const totalText = (typeof currentTotalLine === 'number') 
+    ? `Current O/U ${currentTotalLine}${delta ? ` (Δ ${delta > 0 ? '+' : ''}${delta})` : ''}` 
+    : 'Current O/U —'
   const spreadText = (spreadTeam && typeof spreadLine === 'number')
     ? formatSpread(awayTeam, homeTeam, spreadTeam, spreadLine)
     : `${awayTeam} @ ${homeTeam}`
 
   // 2) Populate factor rows from Step-3 (not defaults)
-  console.debug('[card:step3.factors]',
-    (step3?.json?.factors ?? []).map((f: any) => ({
-      key: f.key,
-      z: f.normalized_value,
-      pv: f.parsed_values_json
-    }))
-  )
+  console.debug('[card:step3.factors.raw]', step3?.json?.factors)
 
   const factorRows = (step3?.json?.factors ?? [])
     .filter((f: any) => isEnabledInProfile(f.key, runCtx?.effectiveProfile))
     .map((f: any) => {
+      const pv = f.parsed_values_json ?? {}
       const meta = getFactorMeta(f.key)
-      const pv = f.parsed_values_json || {}
       const weightPct = getWeightPct(f.key, runCtx?.effectiveProfile)
 
       return {
@@ -230,6 +231,8 @@ function assembleInsightCard({ runCtx, step4, step5, step6, step3, step2 }: any)
       const absB = Math.abs(b.awayContribution - b.homeContribution)
       return absB - absA
     })
+
+  console.debug('[card:factor.rows]', factorRows)
 
   // Debug hooks (dev only)
   console.debug('[card.odds.used]', odds)
@@ -253,11 +256,15 @@ function assembleInsightCard({ runCtx, step4, step5, step6, step3, step2 }: any)
       selection: pick.selection || 'N/A',
       units: Number(pick.units ?? 0),
       confidence: Number(pick.confidence ?? confFinal),
+      locked_odds: pick.locked_odds || null,
+      locked_at: pick.locked_at || null,
     } : { 
       type: 'UNKNOWN' as const, 
       selection: 'N/A', 
       units: 0, 
-      confidence: confFinal 
+      confidence: confFinal,
+      locked_odds: null,
+      locked_at: null,
     },
     predictedScore,
     writeups: {

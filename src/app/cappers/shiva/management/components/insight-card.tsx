@@ -23,6 +23,14 @@ export interface InsightCardProps {
     edgeRaw?: number
     edgePct?: number
     confScore?: number
+    locked_odds?: {
+      total_line?: number
+      spread_team?: string
+      spread_line?: number
+      ml_home?: number
+      ml_away?: number
+    } | null
+    locked_at?: string | null
   }
   predictedScore: { 
     away: number
@@ -183,6 +191,11 @@ export function InsightCard(props: InsightCardProps) {
             <div className="text-2xl font-bold text-white mb-2">
               {safePick.units} {safePick.units === 1 ? 'UNIT' : 'UNITS'} on {safePick.selection}
             </div>
+            {safePick.locked_odds?.total_line && (
+              <div className="text-slate-400 text-xs mb-1">
+                (Locked at {safePick.locked_odds.total_line})
+              </div>
+            )}
             <div className="text-slate-300 text-sm">
               {props.capper || 'SHIVA'} • {props.sport || 'NBA'} • {safePick.type}
             </div>
