@@ -105,8 +105,8 @@ export async function POST(request: Request) {
   console.log('[SHIVA:CreateRun]', {
     game_id,
     run_id: insert.data.run_id,
-    home_team,
-    away_team,
+    home_team: game.home,
+    away_team: game.away,
     status: 'created',
     writeAllowed: true,
     latencyMs: Date.now() - startTime,
