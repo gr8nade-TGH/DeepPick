@@ -421,7 +421,7 @@ export async function runStep4(inputs: Step4Inputs, profile: CapperProfile = shi
 
     // Use profile-based calculation
     const factorValues = [f1, f2, f3, f4, f5, f6val, f7val]
-    const delta100Value = math.deltaFromFactors(f1, f2, f3, f4, f5, f6val, f7val, profile.weights)
+    const delta100Value = math.delta100(f1, f2, f3, f4, f5, f6val, f7val, profile.weights)
 
     // Calculate predictions
     const spreadPredPoints = math.spreadFromDelta(delta100Value, paceExp)
