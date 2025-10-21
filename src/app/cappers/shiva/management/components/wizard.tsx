@@ -451,6 +451,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           setStepLogs(prev => ({ ...prev, 2: r }))
       } else if (current === 3) {
         // Real API call for Step 3 - NBA Totals factors
+        // Note: For NBA TOTAL, the API will compute factors via computeTotalsFactors()
+        // The results object is required by schema but will be replaced by computed factors
         const step3Body = {
           run_id: runId,
           inputs: {
@@ -463,7 +465,12 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             ai_provider: 'perplexity',
             news_window_hours: 48
           },
-          results: {}
+          results: {
+            factors: [], // Will be computed by API for NBA TOTAL
+            meta: {
+              ai_provider: 'perplexity'
+            }
+          }
         }
         const r = await postJson('/api/shiva/factors/step3', step3Body, 'ui-demo-step3')
         setLog(r)
