@@ -85,8 +85,8 @@ function assembleInsightCard({ runCtx, step4, step5, step6, step3, snapshot }: a
 
   // Factors → row items (enabled only), sorted by |weighted contribution|
   const factorRows = (step3?.json?.factors ?? [])
-    .filter(f => isEnabledInProfile(f.key, runCtx?.effectiveProfile))
-    .map(f => {
+    .filter((f: any) => isEnabledInProfile(f.key, runCtx?.effectiveProfile))
+    .map((f: any) => {
       const weightPct = getWeightPct(f.key, runCtx?.effectiveProfile)
       const weighted = Number(f.normalized_value ?? 0) * weightPct
       const metadata = FACTOR_METADATA[f.key] || { label: f.name || f.key, icon: 'ℹ️', description: 'Factor' }
@@ -104,7 +104,7 @@ function assembleInsightCard({ runCtx, step4, step5, step6, step3, snapshot }: a
         rationale: f.notes || metadata.description
       }
     })
-    .sort((a, b) => {
+    .sort((a: any, b: any) => {
       const absA = Math.abs(a.contributionHome - a.contributionAway)
       const absB = Math.abs(b.contributionHome - b.contributionAway)
       return absB - absA
