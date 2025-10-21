@@ -134,14 +134,14 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         <div className="font-semibold">Pick Generator Wizard</div>
         <div className="text-xs text-gray-500">Step {step} / 8</div>
       </div>
-      <div className="border rounded p-3 text-xs font-mono whitespace-pre-wrap bg-gray-50 text-gray-900">
+      <div className="border rounded p-3 text-xs font-mono whitespace-pre-wrap bg-gray-900 text-white">
         {log ? JSON.stringify(log, null, 2) : 
          step === 8 ? 'Click Next to generate debug report with all step responses.' :
          'Click Next to start (Step 1 creates run).'}
       </div>
       
       {/* Debug info */}
-      <div className="mt-2 text-xs text-gray-500">
+      <div className="mt-2 text-xs text-gray-800 font-semibold">
         Current step: {step}, Step logs count: {Object.keys(stepLogs).length}
       </div>
       {/* Step Logs Table */}
@@ -202,8 +202,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         </div>
       )}
       <div className="flex gap-2 mt-3">
-        <button className="px-3 py-1 border border-gray-300 rounded bg-white text-gray-700 hover:bg-gray-50" onClick={() => setStep(Math.max(1, step - 1))}>Back</button>
-        <button className="px-3 py-1 border border-gray-300 rounded bg-white text-gray-700 hover:bg-gray-50" onClick={async () => { await handleStepClick(step); setStep(Math.min(8, step + 1)) }}>Next</button>
+        <button className="px-3 py-1 border-2 border-gray-600 rounded bg-gray-800 text-white hover:bg-gray-700 font-semibold" onClick={() => setStep(Math.max(1, step - 1))}>Back</button>
+        <button className="px-3 py-1 border-2 border-gray-600 rounded bg-gray-800 text-white hover:bg-gray-700 font-semibold" onClick={async () => { await handleStepClick(step); setStep(Math.min(8, step + 1)) }}>Next</button>
       </div>
     </div>
   )

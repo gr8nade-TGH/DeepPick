@@ -138,8 +138,8 @@ export function FactorControls(props: FactorControlsProps) {
         disabled={!isValidWeights}
         className={`w-full py-2 rounded font-semibold text-sm ${
           isValidWeights
-            ? 'bg-blue-500 text-white hover:bg-blue-600'
-            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            ? 'bg-blue-600 text-white hover:bg-blue-700 border-2 border-blue-800'
+            : 'bg-gray-400 text-gray-700 cursor-not-allowed border-2 border-gray-500'
         }`}
       >
         Run with these settings
