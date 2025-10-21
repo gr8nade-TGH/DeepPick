@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { ensureApiEnabled, isWriteAllowed, jsonError, jsonOk, requireIdempotencyKey } from '@/lib/api/shiva-v1/route-helpers'
 import { withIdempotency } from '@/lib/api/shiva-v1/idempotency'
+import { computeTotalsFactors } from '@/lib/cappers/shiva-v1/factors/nba-totals'
 export const runtime = 'nodejs'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 
@@ -8,6 +9,8 @@ const Step3Schema = z.object({
   run_id: z.string().min(1),
   inputs: z.object({
     teams: z.object({ home: z.string().min(1), away: z.string().min(1) }).strict(),
+    sport: z.enum(['NBA', 'NFL', 'MLB']).default('NBA'),
+    betType: z.enum(['SPREAD', 'MONEYLINE', 'TOTAL']).default('TOTAL'),
     ai_provider: z.enum(['perplexity', 'openai']),
     news_window_hours: z.number().finite(),
   }).strict(),
@@ -24,7 +27,10 @@ const Step3Schema = z.object({
       cap_reason: z.string().nullable(),
       notes: z.string().nullable().optional(),
     }).strict()),
-    meta: z.object({ ai_provider: z.enum(['perplexity', 'openai']) }).passthrough(),
+    meta: z.object({ 
+      ai_provider: z.enum(['perplexity', 'openai']),
+      factor_version: z.string().optional(),
+    }).passthrough(),
   }).strict(),
 }).strict()
 
@@ -47,7 +53,9 @@ export async function POST(request: Request) {
     return jsonError('INVALID_BODY', 'Invalid request body', 400, { issues: parse.error.issues })
   }
 
-  const { run_id, results } = parse.data
+  const { run_id, inputs, results } = parse.data
+  const { sport, betType } = inputs
+  
   return withIdempotency({
     runId: run_id,
     step: 'step3',
@@ -55,18 +63,49 @@ export async function POST(request: Request) {
     writeAllowed,
     exec: async () => {
       const admin = getSupabaseAdmin()
-      const capsApplied = results.factors.filter(f => f.caps_applied).length
+      
+      // Branch on NBA/TOTAL vs legacy factors
+      let factorsToProcess: any[]
+      let factorVersion: string
+      
+      if (sport === 'NBA' && betType === 'TOTAL') {
+        // Use new NBA totals factors
+        const totalsResult = await computeTotalsFactors({
+          game_id: run_id, // Use run_id as game_id for now
+          away: inputs.teams.away,
+          home: inputs.teams.home,
+          sport: 'NBA',
+          betType: 'TOTAL',
+          leagueAverages: {
+            pace: 100.1,
+            ORtg: 110.0,
+            DRtg: 110.0,
+            threePAR: 0.39,
+            FTr: 0.22,
+            threePstdev: 0.036
+          }
+        })
+        
+        factorsToProcess = totalsResult.factors
+        factorVersion = totalsResult.factor_version
+      } else {
+        // Use legacy factors (existing logic)
+        factorsToProcess = results.factors
+        factorVersion = 'legacy_v1'
+      }
+      
+      const capsApplied = factorsToProcess.filter(f => f.caps_applied).length
       
       if (writeAllowed) {
         // Single transaction: insert all factors
-        for (const f of results.factors) {
+        for (const f of factorsToProcess) {
           const ins = await admin.from('factors').insert({
             run_id,
             factor_no: f.factor_no,
             raw_values_json: f.raw_values_json,
             parsed_values_json: f.parsed_values_json,
             normalized_value: f.normalized_value,
-            weight_applied: f.weight_total_pct,
+            weight_applied: f.weight_total_pct || 0,
             caps_applied: f.caps_applied,
             cap_reason: f.cap_reason ?? null,
             notes: f.notes ?? null,
@@ -77,9 +116,9 @@ export async function POST(request: Request) {
       
       const responseBody = { 
         run_id, 
-        factors: results.factors,
-        factor_count: results.factors.length,
-        factor_version: 'nba_totals_v1'
+        factors: factorsToProcess,
+        factor_count: factorsToProcess.length,
+        factor_version: factorVersion
       }
       
       // Structured logging

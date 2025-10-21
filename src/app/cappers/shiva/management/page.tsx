@@ -154,17 +154,20 @@ export default function ShivaManagementPage() {
               onRunClick={handleRunClick}
               hasSelectedGame={!!selectedGame}
               selectedGameStatus={selectedGame?.status}
+              sport="NBA"
+              betType={betType}
             />
           )}
         </div>
 
         {/* Right: Wizard */}
         <div className="col-span-8 border border-gray-700 rounded p-3 bg-gray-900">
-          <SHIVAWizard 
-            effectiveProfile={effectiveProfile}
-            selectedGame={selectedGame}
-            mode={mode}
-          />
+        <SHIVAWizard
+          effectiveProfile={effectiveProfile}
+          selectedGame={selectedGame}
+          mode={mode}
+          betType={betType}
+        />
         </div>
       </div>
     </div>

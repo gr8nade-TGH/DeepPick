@@ -229,6 +229,7 @@ export interface SHIVAWizardProps {
   effectiveProfile?: any
   selectedGame?: any
   mode?: 'dry-run' | 'write'
+  betType?: 'SPREAD' | 'MONEYLINE' | 'TOTAL'
 }
 
 export function SHIVAWizard(props: SHIVAWizardProps = {}) {
@@ -390,12 +391,32 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           setStepLogs(prev => ({ ...prev, 2: r }))
       } else if (current === 3) {
         const fx = (await import('@/../fixtures/shiva-v1/step3-factors.json')).default
-        const r = await postJson('/api/shiva/factors/step3', { ...fx, run_id: runId }, 'ui-demo-step3')
+        const step3Body = {
+          ...fx,
+          run_id: runId,
+          inputs: {
+            ...fx.inputs,
+            sport: 'NBA',
+            betType: props.betType || 'TOTAL'
+          }
+        }
+        const r = await postJson('/api/shiva/factors/step3', step3Body, 'ui-demo-step3')
         setLog(r)
         setStepLogs(prev => ({ ...prev, 3: r }))
       } else if (current === 4) {
         const fx = (await import('@/../fixtures/shiva-v1/step4-prediction.json')).default
-        const r = await postJson('/api/shiva/factors/step4', { ...fx, run_id: runId }, 'ui-demo-step4')
+        const step4Body = {
+          ...fx,
+          run_id: runId,
+          results: {
+            ...fx.results,
+            meta: {
+              ...fx.results.meta,
+              conf_source: props.betType === 'TOTAL' ? 'nba_totals_v1' : 'legacy_v1'
+            }
+          }
+        }
+        const r = await postJson('/api/shiva/factors/step4', step4Body, 'ui-demo-step4')
         setLog(r)
         setStepLogs(prev => ({ ...prev, 4: r }))
       } else if (current === 5) {

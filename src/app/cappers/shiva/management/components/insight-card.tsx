@@ -1,36 +1,6 @@
 "use client"
 import { useState } from 'react'
-
-// Factor icon mapping (from spec)
-const FACTOR_ICONS: Record<string, string> = {
-  seasonNet: '📈',
-  recentNet: '🔥',
-  h2hPpg: '🤝',
-  matchupORtgDRtg: '🎯',
-  threePoint: '🏀',
-  newsEdge: '🏥',
-  homeEdge: '🏠',
-}
-
-const FACTOR_LABELS: Record<string, string> = {
-  seasonNet: 'Season Net',
-  recentNet: 'Recent 10',
-  h2hPpg: 'H2H',
-  matchupORtgDRtg: 'ORtg/DRtg',
-  threePoint: '3PT',
-  newsEdge: 'News',
-  homeEdge: 'Home',
-}
-
-const FACTOR_TOOLTIPS: Record<string, string> = {
-  seasonNet: 'Season Net Rating: Team Net Rating (ORtg-DRtg) differential. Core strength signal.',
-  recentNet: 'Recent Form: Net Rating over last 10 games. Momentum indicator.',
-  h2hPpg: 'Head-to-Head PPG: Season PPG by each team vs this opponent. Style/fit history.',
-  matchupORtgDRtg: 'Off/Def Rating Differential: Offensive vs Defensive rating mismatch. Matchup quality.',
-  threePoint: '3-Point Environment: 3PA rate / 3P% / opponent 3PA context. Variance lever.',
-  newsEdge: 'News/Injury Edge: Injury/availability impact within last 48-72h. Capped at ±3 per 100.',
-  homeEdge: 'Home Court Edge: Generic home advantage adjustment. Default +1.5 per 100.',
-}
+import { getFactorMeta } from '@/lib/cappers/shiva-v1/factor-registry'
 
 export interface InsightCardProps {
   capper: string
@@ -185,6 +155,13 @@ export function InsightCard(props: InsightCardProps) {
           </div>
         </div>
 
+        {/* Subtitle */}
+        <div className="px-6 py-2 bg-slate-800 border-b border-slate-700">
+          <div className="text-sm text-slate-300">
+            NBA Totals Model v1 — 5 factors weighted for Over/Under prediction
+          </div>
+        </div>
+
         {/* Matchup Line */}
         <div className="p-4 bg-slate-800 border-b border-slate-700">
           <div className="text-center">
@@ -247,8 +224,9 @@ export function InsightCard(props: InsightCardProps) {
           </div>
           
           {/* Header Row with tiny labels */}
-          <div className="grid grid-cols-[50px_1fr_1fr] gap-3 mb-3 text-xs font-semibold text-slate-400">
+          <div className="grid grid-cols-[50px_1fr_1fr_1fr] gap-3 mb-3 text-xs font-semibold text-slate-400">
             <div className="text-center">FACTOR ICONS</div>
+            <div className="text-center">FACTOR NAME</div>
             <div className="text-center border-r border-slate-600 pr-3">
               <div className="text-xs text-slate-500 mb-1">{props.matchup?.away?.split(' ').pop() || 'AWAY'}</div>
             </div>
@@ -260,13 +238,15 @@ export function InsightCard(props: InsightCardProps) {
           {/* Factor Rows (Sorted by absolute impact) */}
           <div className="space-y-1">
             {sortedFactors.map((factor) => {
-              const icon = factor.icon || FACTOR_ICONS[factor.key] || 'ℹ️'
-              const tooltip = FACTOR_TOOLTIPS[factor.key] || factor.rationale || 'Factor'
+              const factorMeta = getFactorMeta(factor.key)
+              const icon = factorMeta?.icon || 'ℹ️'
+              const shortName = factorMeta?.shortName || factor.label || factor.key
+              const tooltip = factorMeta?.description || factor.rationale || 'Factor'
               
               return (
                 <div
                   key={factor.key}
-                  className="grid grid-cols-[50px_1fr_1fr] gap-3 items-center py-2 bg-slate-700 rounded hover:bg-slate-600 transition-colors border border-slate-600"
+                  className="grid grid-cols-[50px_1fr_1fr_1fr] gap-3 items-center py-2 bg-slate-700 rounded hover:bg-slate-600 transition-colors border border-slate-600"
                   onMouseEnter={() => setHoveredFactor(factor.key)}
                   onMouseLeave={() => setHoveredFactor(null)}
                 >
@@ -278,6 +258,11 @@ export function InsightCard(props: InsightCardProps) {
                         {tooltip}
                       </div>
                     )}
+                  </div>
+
+                  {/* Factor Name */}
+                  <div className="text-sm font-bold text-white text-center">
+                    {shortName}
                   </div>
 
                   {/* Away Contribution */}

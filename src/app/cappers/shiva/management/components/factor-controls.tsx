@@ -1,5 +1,6 @@
 "use client"
 import { useState, useEffect } from 'react'
+import { getFactorsByContext } from '@/lib/cappers/shiva-v1/factor-registry'
 
 export interface FactorConfig {
   key: string
@@ -16,11 +17,22 @@ export interface FactorControlsProps {
   onRunClick: () => void
   hasSelectedGame?: boolean
   selectedGameStatus?: string
+  betType?: 'SPREAD' | 'MONEYLINE' | 'TOTAL'
+  sport?: 'NBA' | 'NFL' | 'MLB'
 }
 
 export function FactorControls(props: FactorControlsProps) {
   const [factors, setFactors] = useState<FactorConfig[]>(props.factors)
   const [showDetails, setShowDetails] = useState<string | null>(null)
+
+  // Filter factors based on sport and bet type
+  const filteredFactors = factors.filter(factor => {
+    if (!props.sport || !props.betType) return true // Show all if no filter
+    
+    // Get applicable factors from registry
+    const applicableFactors = getFactorsByContext(props.sport, props.betType)
+    return applicableFactors.some(meta => meta.key === factor.key)
+  })
 
   // Update local state when props change
   useEffect(() => {
@@ -28,7 +40,7 @@ export function FactorControls(props: FactorControlsProps) {
   }, [props.factors])
 
   // Calculate weights sum
-  const weightsSum = factors
+  const weightsSum = filteredFactors
     .filter(f => f.enabled)
     .reduce((sum, f) => sum + f.weight, 0)
   
@@ -63,8 +75,14 @@ export function FactorControls(props: FactorControlsProps) {
         </div>
       </div>
 
+      {props.sport && props.betType && (
+        <div className="text-xs text-gray-400 mb-3">
+          Showing {props.sport} {props.betType} factors ({filteredFactors.length} of {factors.length})
+        </div>
+      )}
+
       <div className="space-y-3 mb-4 max-h-96 overflow-y-auto">
-        {factors.map((factor) => (
+        {filteredFactors.map((factor) => (
           <div key={factor.key} className="bg-gray-800 rounded p-3 border border-gray-600">
             <div className="flex items-start gap-2 mb-2">
               <input

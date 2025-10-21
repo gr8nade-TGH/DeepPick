@@ -32,7 +32,10 @@ const Step4Schema = z.object({
       conf7_score: z.union([z.number(), z.string()]),
       conf7_score_value: z.number(),
     }).strict(),
-    meta: z.object({ ai_provider: z.enum(['openai', 'perplexity']) }).strict(),
+    meta: z.object({ 
+      ai_provider: z.enum(['openai', 'perplexity']),
+      conf_source: z.string().optional()
+    }).strict(),
   }).strict(),
 }).strict()
 
@@ -95,6 +98,7 @@ export async function POST(request: Request) {
           winner: results.pace_and_predictions.winner,
           conf7_score: results.pace_and_predictions.conf7_score_value,
         },
+        conf_source: results.meta.conf_source || 'legacy_v1',
       }
       
       // Structured logging
