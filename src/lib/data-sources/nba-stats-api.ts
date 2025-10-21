@@ -125,19 +125,24 @@ async function fetchWithRetry(
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), 10000) // 10s timeout
+      const timeout = setTimeout(() => controller.abort(), 30000) // 30s timeout (Vercel has 60s limit)
       
       const response = await fetch(url, {
         ...options,
-        signal: controller.signal
+        signal: controller.signal,
+        // Add connection keepalive for better performance
+        keepalive: true
       })
       
       clearTimeout(timeout)
       return response
     } catch (error) {
       lastError = error as Error
+      console.error(`[NBA-Stats-API] Attempt ${attempt + 1} failed:`, error)
       if (attempt < maxRetries) {
-        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)))
+        const backoff = 500 * (attempt + 1) // Shorter backoff: 500ms, 1s
+        console.log(`[NBA-Stats-API] Retrying in ${backoff}ms...`)
+        await new Promise(resolve => setTimeout(resolve, backoff))
       }
     }
   }
@@ -190,9 +195,11 @@ export async function fetchNBATeamStats(
     })
     
     if (!response.ok) {
+      const errorText = await response.text().catch(() => 'No response body')
+      console.error(`[NBA-Stats-API] HTTP ${response.status}:`, errorText.substring(0, 200))
       return {
         ok: false,
-        error: `NBA Stats API returned ${response.status}`,
+        error: `NBA Stats API returned ${response.status}: ${errorText.substring(0, 100)}`,
         cached: false,
         latencyMs: Date.now() - startTime
       }
@@ -288,9 +295,11 @@ export async function fetchNBATeamStatsLastN(
     })
     
     if (!response.ok) {
+      const errorText = await response.text().catch(() => 'No response body')
+      console.error(`[NBA-Stats-API] HTTP ${response.status}:`, errorText.substring(0, 200))
       return {
         ok: false,
-        error: `NBA Stats API returned ${response.status}`,
+        error: `NBA Stats API returned ${response.status}: ${errorText.substring(0, 100)}`,
         cached: false,
         latencyMs: Date.now() - startTime
       }
