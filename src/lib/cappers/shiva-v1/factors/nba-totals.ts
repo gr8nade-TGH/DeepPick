@@ -8,7 +8,7 @@
 import { FactorMeta, FactorComputation } from '@/types/factors'
 import { NBA_CONSTANTS, StatMuseQueries, clamp, normalizeToPoints, splitPointsEvenly } from '../factor-registry'
 import { getFactorsByContext } from '../factor-registry'
-import { askStatMuse } from '../statmuse'
+import { fetchNBATeamStats, fetchNBATeamStatsLastN } from '@/lib/data-sources/nba-stats-api'
 import { searchInjuries } from '../news'
 
 // ============================================================================
@@ -73,7 +73,94 @@ export interface InjuryImpact {
 }
 
 // ============================================================================
-// STATMUSE BUNDLE FETCHER
+// NBA STATS API BUNDLE FETCHER (PRIMARY)
+// ============================================================================
+
+export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<StatMuseBundle> {
+  console.log('[NBA-Stats:FETCH_START]', { away: ctx.away, home: ctx.home })
+  
+  try {
+    // Fetch all team stats in parallel
+    const [awaySeasonRes, awayLast10Res, homeSeasonRes, homeLast10Res] = await Promise.all([
+      fetchNBATeamStats(ctx.away),
+      fetchNBATeamStatsLastN(ctx.away, 10),
+      fetchNBATeamStats(ctx.home),
+      fetchNBATeamStatsLastN(ctx.home, 10)
+    ])
+    
+    // Check if all requests succeeded
+    if (!awaySeasonRes.ok || !awayLast10Res.ok || !homeSeasonRes.ok || !homeLast10Res.ok) {
+      const errors = [
+        awaySeasonRes.ok ? null : `away season: ${awaySeasonRes.error}`,
+        awayLast10Res.ok ? null : `away last10: ${awayLast10Res.error}`,
+        homeSeasonRes.ok ? null : `home season: ${homeSeasonRes.error}`,
+        homeLast10Res.ok ? null : `home last10: ${homeLast10Res.error}`
+      ].filter(Boolean).join(', ')
+      
+      throw new Error(`NBA Stats API failed: ${errors}`)
+    }
+    
+    const awaySeason = awaySeasonRes.data!
+    const awayLast10 = awayLast10Res.data!
+    const homeSeason = homeSeasonRes.data!
+    const homeLast10 = homeLast10Res.data!
+    
+    // Calculate league averages from the four teams (rough approximation)
+    const leaguePace = (awaySeason.pace + homeSeason.pace) / 2
+    const leagueORtg = (awaySeason.offensiveRating + homeSeason.offensiveRating) / 2
+    const leagueDRtg = (awaySeason.defensiveRating + homeSeason.defensiveRating) / 2
+    const league3PAR = (awaySeason.threePointAttemptRate + homeSeason.threePointAttemptRate) / 2
+    const leagueFTr = (awaySeason.freeThrowRate + homeSeason.freeThrowRate) / 2
+    
+    console.log('[NBA-Stats:SUCCESS]', {
+      away: ctx.away,
+      home: ctx.home,
+      latencyMs: awaySeasonRes.latencyMs + awayLast10Res.latencyMs + homeSeasonRes.latencyMs + homeLast10Res.latencyMs
+    })
+    
+    return {
+      // Team pace data
+      awayPaceSeason: awaySeason.pace,
+      awayPaceLast10: awayLast10.pace,
+      homePaceSeason: homeSeason.pace,
+      homePaceLast10: homeLast10.pace,
+      
+      // Offensive/Defensive ratings
+      awayORtgLast10: awayLast10.offensiveRating,
+      homeORtgLast10: homeLast10.offensiveRating,
+      awayDRtgSeason: awaySeason.defensiveRating,
+      homeDRtgSeason: homeSeason.defensiveRating,
+      
+      // 3-Point environment
+      away3PAR: awaySeason.threePointAttemptRate,
+      home3PAR: homeSeason.threePointAttemptRate,
+      awayOpp3PAR: awaySeason.threePointAttemptRate, // Approximation (opponent data not directly available)
+      homeOpp3PAR: homeSeason.threePointAttemptRate, // Approximation
+      away3PctLast10: awayLast10.threePointPercentage,
+      home3PctLast10: homeLast10.threePointPercentage,
+      
+      // Free throw environment
+      awayFTr: awaySeason.freeThrowRate,
+      homeFTr: homeSeason.freeThrowRate,
+      awayOppFTr: awaySeason.freeThrowRate, // Approximation
+      homeOppFTr: homeSeason.freeThrowRate, // Approximation
+      
+      // League anchors
+      leaguePace,
+      leagueORtg,
+      leagueDRtg,
+      league3PAR,
+      leagueFTr,
+      league3Pstdev: 0.05 // Hardcoded for now
+    }
+  } catch (error) {
+    console.error('[NBA-Stats:ERROR]', error)
+    throw new Error(`NBA Stats API failed: ${error instanceof Error ? error.message : String(error)}`)
+  }
+}
+
+// ============================================================================
+// STATMUSE BUNDLE FETCHER (DEPRECATED - keeping for reference)
 // ============================================================================
 
 export async function fetchStatMuseBundle(ctx: RunCtx): Promise<StatMuseBundle> {
@@ -575,10 +662,10 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<{
   const branchLog = { sport: ctx.sport, betType: ctx.betType }
   console.debug('[totals:branch-used]', branchLog)
   
-  // Fetch StatMuse data bundle
-  console.log('[TOTALS:ABOUT_TO_FETCH_STATMUSE]', 'Starting StatMuse fetch...')
-  const bundle = await fetchStatMuseBundle(ctx)
-  console.log('[TOTALS:STATMUSE_FETCHED]', 'StatMuse bundle received:', Object.keys(bundle))
+  // Fetch NBA Stats API data bundle
+  console.log('[TOTALS:ABOUT_TO_FETCH_NBA_STATS]', 'Starting NBA Stats API fetch...')
+  const bundle = await fetchNBAStatsBundle(ctx)
+  console.log('[TOTALS:NBA_STATS_FETCHED]', 'NBA Stats bundle received:', Object.keys(bundle))
   console.debug('[totals:bundle]', bundle)
   
   // Fetch injury impact via LLM
