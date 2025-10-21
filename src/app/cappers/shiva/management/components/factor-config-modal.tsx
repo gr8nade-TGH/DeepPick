@@ -110,11 +110,76 @@ export function FactorConfigModal({
         if (loadedFactors.length === 0) {
           // Set default factors with equal weights (20% each = 100% total)
           setFactors([
-            { key: 'paceIndex', name: 'Pace Index', enabled: true, weight: 20, dataSource: 'nba-stats-api' },
-            { key: 'offForm', name: 'Offensive Form', enabled: true, weight: 20, dataSource: 'nba-stats-api' },
-            { key: 'defErosion', name: 'Defensive Erosion', enabled: true, weight: 20, dataSource: 'nba-stats-api' },
-            { key: 'threeEnv', name: '3P Environment', enabled: true, weight: 20, dataSource: 'nba-stats-api' },
-            { key: 'whistleEnv', name: 'FT Environment', enabled: true, weight: 20, dataSource: 'nba-stats-api' },
+            { 
+              key: 'paceIndex', 
+              name: 'Pace Index', 
+              description: 'Expected game pace vs league average',
+              enabled: true, 
+              weight: 20, 
+              dataSource: 'nba-stats-api',
+              maxPoints: 1.0,
+              sport: 'NBA',
+              betType: 'TOTAL',
+              scope: 'matchup',
+              icon: '⏱️',
+              shortName: 'Pace'
+            },
+            { 
+              key: 'offForm', 
+              name: 'Offensive Form', 
+              description: 'Recent offensive efficiency vs opponent defense',
+              enabled: true, 
+              weight: 20, 
+              dataSource: 'nba-stats-api',
+              maxPoints: 1.0,
+              sport: 'NBA',
+              betType: 'TOTAL',
+              scope: 'matchup',
+              icon: '🔥',
+              shortName: 'ORtg Form'
+            },
+            { 
+              key: 'defErosion', 
+              name: 'Defensive Erosion', 
+              description: 'Defensive rating decline + injury impact',
+              enabled: true, 
+              weight: 20, 
+              dataSource: 'nba-stats-api',
+              maxPoints: 1.0,
+              sport: 'NBA',
+              betType: 'TOTAL',
+              scope: 'team',
+              icon: '🛡️',
+              shortName: 'DRtg/Avail'
+            },
+            { 
+              key: 'threeEnv', 
+              name: '3P Environment', 
+              description: '3-point environment & volatility',
+              enabled: true, 
+              weight: 20, 
+              dataSource: 'nba-stats-api',
+              maxPoints: 1.0,
+              sport: 'NBA',
+              betType: 'TOTAL',
+              scope: 'matchup',
+              icon: '🏹',
+              shortName: '3P Env'
+            },
+            { 
+              key: 'whistleEnv', 
+              name: 'FT Environment', 
+              description: 'Free throw rate environment',
+              enabled: true, 
+              weight: 20, 
+              dataSource: 'nba-stats-api',
+              maxPoints: 1.0,
+              sport: 'NBA',
+              betType: 'TOTAL',
+              scope: 'matchup',
+              icon: '⛹️‍♂️',
+              shortName: 'FT Env'
+            },
           ])
         } else {
           setFactors(loadedFactors)
@@ -200,7 +265,7 @@ export function FactorConfigModal({
       
       if (response.ok) {
         console.log('Factor configuration saved successfully')
-        onSave(factors) // Notify parent component
+        onSave({ ...profile, factors }) // Notify parent component with full profile
         onClose() // Close modal
       } else {
         throw new Error('Failed to save factor configuration')
