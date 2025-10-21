@@ -68,6 +68,8 @@ export async function POST(request: Request) {
       let factorsToProcess: any[]
       let factorVersion: string
       
+      console.debug('[step3:branch]', { sport, betType, used: sport==='NBA'&&betType==='TOTAL'?'totals':'legacy' })
+      
       if (sport === 'NBA' && betType === 'TOTAL') {
         // Use new NBA totals factors
         const totalsResult = await computeTotalsFactors({

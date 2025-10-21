@@ -99,13 +99,13 @@ function generatePredictionWriteup(pick: any, predictedScore: any, totalLine: nu
   
   switch (pick.type) {
     case 'TOTAL':
-      // 3) Writeups should respect pick type (TOTAL) and totals values
+      // 4) Writeup polish (now that totals show)
       const line = totalLine ?? null
-      const edge = line ? (totalPred - line).toFixed(1) : '0'
+      const edgePts = line ? (totalPred - line).toFixed(1) : null
       const overUnder = pick.selection?.includes('OVER') ? 'Over' : 'Under'
       
       return line
-        ? `Model projects ${homeTeam} ${predictedScore.home}-${awayTeam} ${predictedScore.away} (total ${totalPred}). With confidence ${confFinal.toFixed(1)}/5 and a +${edge}pt edge, we lean ${overUnder} ${line}. Key driver: ${topFactor?.label}.`
+        ? `Model projects ${homeTeam} ${predictedScore.home}-${awayTeam} ${predictedScore.away} (total ${totalPred}). With confidence ${confFinal.toFixed(1)}/5 and a +${edgePts}pt edge, we lean ${overUnder} ${line}. Key driver: ${topFactor?.label}.`
         : `Model projects ${homeTeam} ${predictedScore.home}-${awayTeam} ${predictedScore.away}. Key driver: ${topFactor?.label}.`
     
     case 'SPREAD':
@@ -152,11 +152,31 @@ function assembleInsightCard({ runCtx, step4, step5, step6, step3, step2 }: any)
     winner: String(step4?.json?.predictions?.winner ?? '')
   }
 
-  // 1) Use Step-2 snapshot odds in the card header
-  const odds = step2?.json?.snapshot?.odds ?? runCtx?.game?.odds ?? null
-  const spreadTeam = odds?.spread?.team
-  const spreadLine = odds?.spread?.line
-  const totalLine = odds?.total?.line
+  // 1) Use Step-2 snapshot odds in the card header (try multiple paths)
+  console.debug('[card:step2.snapshot]', step2?.json?.snapshot)
+  console.debug('[card:odds.keys]', Object.keys(step2?.json?.snapshot ?? {}))
+  
+  const odds = 
+    step2?.json?.snapshot?.odds ??
+    step2?.json?.odds ??
+    runCtx?.game?.odds ??
+    null
+
+  const totalLine = 
+    odds?.total?.line ??
+    odds?.total_line ??
+    (typeof odds?.totalLine === 'number' ? odds.totalLine : null)
+
+  const spreadTeam = 
+    odds?.spread?.team ??
+    odds?.spread_team ??
+    odds?.fav_team ??
+    null
+
+  const spreadLine = 
+    odds?.spread?.line ??
+    odds?.spread_line ??
+    (typeof odds?.spreadLine === 'number' ? odds.spreadLine : null)
 
   // Format matchup strings without injecting zeroes
   const awayTeam = g.away || 'Away'
@@ -172,34 +192,37 @@ function assembleInsightCard({ runCtx, step4, step5, step6, step3, step2 }: any)
     return `${away} @ ${home}` // no spread available
   }
 
-  const spreadText = formatSpread(awayTeam, homeTeam, spreadTeam, spreadLine)
-  const totalText = typeof totalLine === 'number' ? `O/U ${totalLine}` : 'O/U —'
+  const totalText = (typeof totalLine === 'number') ? `O/U ${totalLine}` : 'O/U —'
+  const spreadText = (spreadTeam && typeof spreadLine === 'number')
+    ? formatSpread(awayTeam, homeTeam, spreadTeam, spreadLine)
+    : `${awayTeam} @ ${homeTeam}`
 
   // 2) Populate factor rows from Step-3 (not defaults)
+  console.debug('[card:step3.factors]',
+    (step3?.json?.factors ?? []).map((f: any) => ({
+      key: f.key,
+      z: f.normalized_value,
+      pv: f.parsed_values_json
+    }))
+  )
+
   const factorRows = (step3?.json?.factors ?? [])
     .filter((f: any) => isEnabledInProfile(f.key, runCtx?.effectiveProfile))
     .map((f: any) => {
-      // Use Step-3 parsed_values_json instead of recomputing
-      const z = Number(f.normalized_value ?? 0)
-      const pv = f.parsed_values_json ?? {}
-      const away = Number(pv.awayContribution ?? 0)
-      const home = Number(pv.homeContribution ?? 0)
-      const points = Number(pv.points ?? 0)
-
-      const metadata = getFactorMeta(f.key) || { shortName: f.name || f.key, icon: 'ℹ️', description: 'Factor' }
+      const meta = getFactorMeta(f.key)
+      const pv = f.parsed_values_json || {}
       const weightPct = getWeightPct(f.key, runCtx?.effectiveProfile)
-      const weightAppliedPct = Math.round(weightPct * 100)
-      
+
       return {
         key: f.key,
-        label: metadata.shortName,
-        icon: metadata.icon,
-        awayContribution: away, // use Step-3 computed values
-        homeContribution: home,
-        weightAppliedPct,
-        rationale: f.notes ?? metadata.description,
-        z,
-        points
+        label: meta?.shortName || f.name || f.key,
+        icon: meta?.icon || 'ℹ️',
+        awayContribution: Number(pv.awayContribution ?? 0),
+        homeContribution: Number(pv.homeContribution ?? 0),
+        weightAppliedPct: Math.round(((weightPct ?? 0) * 100)),
+        rationale: f.notes ?? meta?.description ?? '',
+        z: Number(f.normalized_value ?? 0),
+        points: Number(pv.points ?? 0),
       }
     })
     .sort((a: any, b: any) => {
