@@ -8,7 +8,7 @@
 import { FactorMeta, FactorComputation } from '@/types/factors'
 import { NBA_CONSTANTS, StatMuseQueries, clamp, normalizeToPoints, splitPointsEvenly } from '../factor-registry'
 import { getFactorsByContext } from '../factor-registry'
-import { fetchNBATeamStats, fetchNBATeamStatsLastN } from '@/lib/data-sources/nba-stats-api'
+import { fetchNBATeamStats, fetchNBATeamStatsLastN } from '@/lib/data-sources/nba-stats-simple'
 import { searchInjuries } from '../news'
 
 // ============================================================================
