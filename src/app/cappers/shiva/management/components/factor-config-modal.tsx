@@ -319,6 +319,21 @@ export function FactorConfigModal({
         } else {
           // Normalize existing factors to ensure weights sum to 100%
           factorsToSet = normalizeFactorWeights(loadedFactors)
+          
+          // If normalization resulted in some factors having 0 weight, redistribute
+          const totalWeight = factorsToSet
+            .filter(f => f.enabled && f.key !== 'edgeVsMarket')
+            .reduce((sum, f) => sum + f.weight, 0)
+          
+          if (totalWeight < 90) { // If total is too low, redistribute equally
+            const enabledFactors = factorsToSet.filter(f => f.enabled && f.key !== 'edgeVsMarket')
+            const equalWeight = 100 / enabledFactors.length
+            
+            factorsToSet = factorsToSet.map(f => {
+              if (f.key === 'edgeVsMarket') return f
+              return f.enabled ? { ...f, weight: equalWeight } : f
+            })
+          }
         }
         
         setFactors(factorsToSet)
@@ -440,13 +455,16 @@ export function FactorConfigModal({
   // Update factor weight
   const updateWeight = (key: string, weight: number) => {
     setFactors(prev => {
-      // Calculate total weight of OTHER enabled factors
+      // Don't allow Edge vs Market to be adjusted
+      if (key === 'edgeVsMarket') return prev
+      
+      // Calculate total weight of OTHER enabled factors (excluding Edge vs Market)
       const otherEnabledWeight = prev
-        .filter(f => f.enabled && f.key !== key)
+        .filter(f => f.enabled && f.key !== key && f.key !== 'edgeVsMarket')
         .reduce((sum, f) => sum + f.weight, 0)
       
       // Calculate max weight this factor can have (can't exceed remaining budget)
-      const maxAllowed = 100 - otherEnabledWeight
+      const maxAllowed = Math.max(0, 100 - otherEnabledWeight)
       
       // Clamp weight to valid range
       const newWeight = Math.max(0, Math.min(maxAllowed, weight))
@@ -533,6 +551,20 @@ export function FactorConfigModal({
               </p>
             </div>
             <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  const enabledFactors = factors.filter(f => f.enabled && f.key !== 'edgeVsMarket')
+                  const equalWeight = 100 / enabledFactors.length
+                  
+                  setFactors(prev => prev.map(f => {
+                    if (f.key === 'edgeVsMarket') return f
+                    return f.enabled ? { ...f, weight: equalWeight } : f
+                  }))
+                }}
+                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded font-medium transition"
+              >
+                Reset to Equal
+              </button>
               <button
                 onClick={handleSave}
                 disabled={saving || !isWeightValid}
