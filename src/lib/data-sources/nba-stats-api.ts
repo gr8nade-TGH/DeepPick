@@ -125,7 +125,7 @@ async function fetchWithRetry(
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), 30000) // 30s timeout (Vercel has 60s limit)
+      const timeout = setTimeout(() => controller.abort(), 60000) // 60s timeout (max for Vercel)
       
       const response = await fetch(url, {
         ...options,
