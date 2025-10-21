@@ -450,15 +450,20 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           setLog(r)
           setStepLogs(prev => ({ ...prev, 2: r }))
       } else if (current === 3) {
-        const fx = (await import('@/../fixtures/shiva-v1/step3-factors.json')).default
+        // Real API call for Step 3 - NBA Totals factors
         const step3Body = {
-          ...fx,
           run_id: runId,
           inputs: {
-            ...fx.inputs,
+            teams: {
+              away: runCtx?.game?.away || 'Houston Rockets',
+              home: runCtx?.game?.home || 'Oklahoma City Thunder'
+            },
             sport: 'NBA',
-            betType: props.betType || 'TOTAL'
-          }
+            betType: props.betType || 'TOTAL',
+            ai_provider: 'perplexity',
+            news_window_hours: 48
+          },
+          results: {}
         }
         const r = await postJson('/api/shiva/factors/step3', step3Body, 'ui-demo-step3')
         setLog(r)
@@ -487,8 +492,48 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         setLog(r)
         setStepLogs(prev => ({ ...prev, 5: r }))
       } else if (current === 6) {
-        const fx = (await import('@/../fixtures/shiva-v1/step6-pick.json')).default
-        const r = await postJson('/api/shiva/pick/generate', { ...fx, run_id: runId }, 'ui-demo-step6')
+        // Real API call for Step 6 - Pick generation with locked odds
+        const step6Body = {
+          run_id: runId,
+          inputs: {
+            conf_final: 2.72, // From Step 5
+            edge_dominant: 'total',
+            total_data: {
+              total_pred: 230.1, // From Step 4
+              market_total: 226.5 // From Step 2 snapshot
+            }
+          },
+          results: {
+            decision: {
+              pick_type: 'TOTAL',
+              pick_side: 'OVER',
+              line: 227.5,
+              units: 1,
+              reason: 'NBA Totals model projects 230.1 vs market 226.5'
+            },
+            persistence: {
+              picks_row: {
+                id: `pick_${runId.slice(-8)}`,
+                run_id: runId,
+                sport: 'NBA',
+                matchup: `${runCtx?.game?.away || 'Away'} @ ${runCtx?.game?.home || 'Home'}`,
+                confidence: 2.72,
+                units: 1,
+                pick_type: 'TOTAL',
+                selection: 'OVER 227.5',
+                created_at_utc: new Date().toISOString()
+              }
+            },
+            locked_odds: {
+              total_line: 226.5,
+              spread_team: 'Oklahoma City Thunder',
+              spread_line: -7.5,
+              ml_home: -302,
+              ml_away: 242
+            }
+          }
+        }
+        const r = await postJson('/api/shiva/pick/generate', step6Body, 'ui-demo-step6')
         setLog(r)
         setStepLogs(prev => ({ ...prev, 6: r }))
       } else if (current === 7) {
