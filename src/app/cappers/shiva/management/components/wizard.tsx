@@ -1,5 +1,6 @@
 "use client"
 import { useMemo, useState } from 'react'
+import { InsightCard } from './insight-card'
 
 async function postJson(path: string, body: unknown, idempo: string) {
   const res = await fetch(path, {
@@ -33,7 +34,9 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
   const [log, setLog] = useState<any>(null)
   const [runId, setRunId] = useState<string>('')
   const [snapId, setSnapId] = useState<string>('')
-  const [stepLogs, setStepLogs] = useState<Record<number, any>>({})
+  const [stepLogs, setStepLogs] = useState<Record<number, any>>({}))
+  const [showInsightCard, setShowInsightCard] = useState<boolean>(false)
+  const [insightCardData, setInsightCardData] = useState<any>(null)
 
   async function handleStepClick(current: number) {
     try {
@@ -92,6 +95,11 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         const r = await postJson('/api/shiva/insight-card', { ...fx, run_id: runId }, 'ui-demo-step7')
         setLog(r)
         setStepLogs(prev => ({ ...prev, 7: r }))
+        
+        // Store insight card data for rendering
+        if (r.json?.card) {
+          setInsightCardData(r.json.card)
+        }
       } else if (current === 8) {
         // Debug Report - collect all step responses
         console.log('Generating debug report for step 8, stepLogs:', stepLogs)
@@ -131,7 +139,19 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     <div>
       <DryRunBanner />
       <div className="flex items-center justify-between mb-3">
-        <div className="font-bold text-white text-lg">Pick Generator Wizard</div>
+        <div className="flex items-center gap-3">
+          <div className="font-bold text-white text-lg">Pick Generator Wizard</div>
+          {/* Quick Access Insight Pill */}
+          {insightCardData && (
+            <button
+              onClick={() => setShowInsightCard(true)}
+              className="px-3 py-1 bg-green-700 text-white rounded-full text-xs font-bold hover:bg-green-600 border-2 border-green-500"
+              title="Open Insight Card"
+            >
+              👁️ Insight
+            </button>
+          )}
+        </div>
         <div className="text-sm text-white font-bold">Step {step} / 8</div>
       </div>
       <div className="border rounded p-3 text-xs font-mono whitespace-pre-wrap bg-gray-900 text-white">
@@ -188,10 +208,27 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         </div>
       )}
 
+      {/* Insight Card Button (Primary CTA after Step 7) */}
+      {step >= 7 && insightCardData && (
+        <div className="mt-3 p-3 bg-green-900 border-2 border-green-600 rounded">
+          <div className="flex items-center justify-between">
+            <div className="text-white font-bold">
+              ✅ Insight Card Ready ({insightCardData.pick?.units || 0}u on {insightCardData.pick?.selection || 'N/A'})
+            </div>
+            <button 
+              className="px-4 py-2 bg-green-600 text-white rounded font-bold hover:bg-green-500 border-2 border-green-400"
+              onClick={() => setShowInsightCard(true)}
+            >
+              👁️ Open Insight Card
+            </button>
+          </div>
+        </div>
+      )}
+
       {step === 8 && log?.json && (
         <div className="mt-3">
           <button 
-            className="px-3 py-1 bg-blue-500 text-white rounded text-sm"
+            className="px-3 py-1 bg-blue-500 text-white rounded text-sm font-bold"
             onClick={() => {
               navigator.clipboard.writeText(JSON.stringify(log.json, null, 2))
               alert('Debug report copied to clipboard!')
@@ -205,6 +242,47 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         <button className="px-3 py-1 border-2 border-gray-600 rounded bg-gray-800 text-white hover:bg-gray-700 font-semibold" onClick={() => setStep(Math.max(1, step - 1))}>Back</button>
         <button className="px-3 py-1 border-2 border-gray-600 rounded bg-gray-800 text-white hover:bg-gray-700 font-semibold" onClick={async () => { await handleStepClick(step); setStep(Math.min(8, step + 1)) }}>Next</button>
       </div>
+
+      {/* Insight Card Modal */}
+      {showInsightCard && insightCardData && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto relative">
+            {/* Close Button */}
+            <button
+              onClick={() => setShowInsightCard(false)}
+              className="absolute top-4 right-4 bg-gray-800 text-white px-3 py-1 rounded font-bold hover:bg-gray-700 z-10"
+            >
+              ✕ Close
+            </button>
+            
+            {/* Action Buttons */}
+            <div className="absolute top-4 left-4 flex gap-2 z-10">
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(JSON.stringify(insightCardData, null, 2))
+                  alert('Card JSON copied to clipboard!')
+                }}
+                className="bg-blue-600 text-white px-3 py-1 rounded text-sm font-bold hover:bg-blue-500"
+              >
+                📋 Copy Card JSON
+              </button>
+              <button
+                onClick={() => {
+                  alert('Export PNG not yet implemented - use browser screenshot for now')
+                }}
+                className="bg-green-600 text-white px-3 py-1 rounded text-sm font-bold hover:bg-green-500"
+              >
+                📸 Export PNG
+              </button>
+            </div>
+
+            {/* Render Insight Card */}
+            <div className="mt-16">
+              <InsightCard {...insightCardData} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
