@@ -265,7 +265,21 @@ export function FactorConfigModal({
       
       if (response.ok) {
         console.log('Factor configuration saved successfully')
-        onSave({ ...profile, factors }) // Notify parent component with full profile
+        // Create a complete profile with all required fields
+        const completeProfile: CapperProfile = {
+          id: profile?.id || `${capperId}-${sport}-${betType}`,
+          capperId,
+          sport,
+          betType,
+          name: profile?.name || `${capperId} ${sport} ${betType}`,
+          description: profile?.description || `Factor configuration for ${capperId} ${sport} ${betType}`,
+          factors,
+          createdAt: profile?.createdAt || new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          isActive: profile?.isActive ?? true,
+          isDefault: profile?.isDefault ?? false
+        }
+        onSave(completeProfile) // Notify parent component with full profile
         onClose() // Close modal
       } else {
         throw new Error('Failed to save factor configuration')
