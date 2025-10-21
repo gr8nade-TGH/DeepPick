@@ -166,8 +166,14 @@ export function calculateMarketMismatch(
 }
 
 // Legacy math functions for compatibility
-export function applyCap(value: number, cap: number): number {
-  return clamp(value, -cap, cap)
+export function applyCap(value: number, cap: number): { value: number; capped: boolean; reason: string | null } {
+  const capped = Math.abs(value) > cap
+  const result = clamp(value, -cap, cap)
+  return {
+    value: result,
+    capped,
+    reason: capped ? `Capped at ±${cap}` : null
+  }
 }
 
 export function paceHarmonic(homePace: number, awayPace: number): number {
@@ -182,10 +188,10 @@ export function totalFromORtgs(homeOrtg: number, awayOrtg: number, pace: number)
   return (homeOrtg + awayOrtg) * pace / 200
 }
 
-export function scoresFromSpreadTotal(spread: number, total: number): { home: number; away: number } {
+export function scoresFromSpreadTotal(spread: number, total: number): { home_pts: number; away_pts: number } {
   const home = (total + spread) / 2
   const away = (total - spread) / 2
-  return { home: Math.round(home), away: Math.round(away) }
+  return { home_pts: Math.round(home), away_pts: Math.round(away) }
 }
 
 export function conf7(spread: number): number {
