@@ -21,20 +21,21 @@ export async function GET(request: NextRequest) {
 
     const supabase = getSupabase()
 
-    // Query games from last 12h onwards (scheduled/in_progress)
-    const cutoff = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString()
+    // Query games from now onwards (scheduled/in_progress)
+    const cutoff = new Date().toISOString()
 
     let query = supabase
       .from('games')
       .select('*')
-      .eq('league', league)
-      .in('status', ['scheduled', 'in_progress'])
-      .gte('start_time', cutoff)
-      .order('start_time', { ascending: true })
+      .eq('sport', league.toLowerCase())
+      .in('status', ['scheduled', 'live'])
+      .gte('game_date', new Date().toISOString().split('T')[0]) // Today onwards
+      .order('game_date', { ascending: true })
+      .order('game_time', { ascending: true })
       .limit(limit)
 
     if (q) {
-      query = query.or(`home_team.ilike.%${q}%,away_team.ilike.%${q}%,id.ilike.%${q}%`)
+      query = query.or(`home_team->>name.ilike.%${q}%,away_team->>name.ilike.%${q}%,id.ilike.%${q}%`)
     }
 
     const { data: games, error } = await query
@@ -49,17 +50,17 @@ export async function GET(request: NextRequest) {
 
     const transformed = (games || []).map((game: any) => ({
       game_id: game.id,
-      league: game.league,
+      league: game.sport,
       status: game.status,
-      start_time_utc: game.start_time,
-      away: game.away_team,
-      home: game.home_team,
+      start_time_utc: `${game.game_date}T${game.game_time}`,
+      away: game.away_team?.name || 'Away Team',
+      home: game.home_team?.name || 'Home Team',
       odds: {
-        ml_away: game.away_ml,
-        ml_home: game.home_ml,
-        spread_team: game.spread_favorite === 'home' ? game.home_team : game.away_team,
-        spread_line: game.spread_line,
-        total_line: game.total_line,
+        ml_away: game.odds?.away_ml || 0,
+        ml_home: game.odds?.home_ml || 0,
+        spread_team: game.odds?.spread_favorite === 'home' ? (game.home_team?.name || 'Home Team') : (game.away_team?.name || 'Away Team'),
+        spread_line: game.odds?.spread_line || 0,
+        total_line: game.odds?.total_line || 0,
       },
     }))
 
