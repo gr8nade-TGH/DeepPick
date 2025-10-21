@@ -51,6 +51,7 @@ export default function ShivaManagementPage() {
   const [effectiveProfile, setEffectiveProfile] = useState<CapperProfile | null>(null)
   const [selectedGame, setSelectedGame] = useState<any>(null)
   const [mode, setMode] = useState<'dry-run' | 'write'>('dry-run')
+  const [betType, setBetType] = useState<'SPREAD' | 'MONEYLINE' | 'TOTAL'>('TOTAL')
   const [providerOverrides, setProviderOverrides] = useState<{ step3?: string; step4?: string }>({})
   const [factorConfigs, setFactorConfigs] = useState<FactorConfig[]>([])
 
@@ -99,6 +100,10 @@ export default function ShivaManagementPage() {
     setFactorConfigs(updatedFactors)
   }
 
+  const handleBetTypeChange = (newBetType: 'SPREAD' | 'MONEYLINE' | 'TOTAL') => {
+    setBetType(newBetType)
+  }
+
   const handleRunClick = () => {
     // Build effective profile from current selections
     if (!currentProfile) return
@@ -132,6 +137,7 @@ export default function ShivaManagementPage() {
         onGameChange={setSelectedGame}
         onModeChange={setMode}
         onProviderOverrides={(step3, step4) => setProviderOverrides({ step3, step4 })}
+        onBetTypeChange={handleBetTypeChange}
       />
       
       <div className="p-4 grid grid-cols-12 gap-4">

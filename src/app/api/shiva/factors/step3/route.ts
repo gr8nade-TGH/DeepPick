@@ -78,7 +78,8 @@ export async function POST(request: Request) {
       const responseBody = { 
         run_id, 
         factors: results.factors,
-        factor_count: results.factors.length 
+        factor_count: results.factors.length,
+        factor_version: 'nba_totals_v1'
       }
       
       // Structured logging

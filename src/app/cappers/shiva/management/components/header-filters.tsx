@@ -24,11 +24,13 @@ export interface HeaderFiltersProps {
   onGameChange: (game: any) => void
   onModeChange: (mode: 'dry-run' | 'write') => void
   onProviderOverrides: (step3?: string, step4?: string) => void
+  onBetTypeChange: (betType: 'SPREAD' | 'MONEYLINE' | 'TOTAL') => void
 }
 
 export function HeaderFilters(props: HeaderFiltersProps) {
   const [capper, setCapper] = useState('SHIVA')
   const [sport, setSport] = useState('NBA')
+  const [betType, setBetType] = useState<'SPREAD' | 'MONEYLINE' | 'TOTAL'>('TOTAL')
   const [mode, setMode] = useState<'dry-run' | 'write'>('dry-run')
   const [step3Provider, setStep3Provider] = useState<string>('')
   const [step4Provider, setStep4Provider] = useState<string>('')
@@ -146,6 +148,11 @@ export function HeaderFilters(props: HeaderFiltersProps) {
     setSport(newSport as 'NBA' | 'MLB' | 'NFL')
   }
 
+  const handleBetTypeChange = (newBetType: 'SPREAD' | 'MONEYLINE' | 'TOTAL') => {
+    setBetType(newBetType)
+    props.onBetTypeChange(newBetType)
+  }
+
   const handleModeChange = (newMode: 'dry-run' | 'write') => {
     setMode(newMode)
     props.onModeChange(newMode)
@@ -227,6 +234,20 @@ export function HeaderFilters(props: HeaderFiltersProps) {
             <option value="NFL" disabled title="Coming soon">
               NFL (coming soon)
             </option>
+          </select>
+        </div>
+
+        {/* Bet Type Selector */}
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-bold text-white">Bet Type</label>
+          <select
+            value={betType}
+            onChange={(e) => handleBetTypeChange(e.target.value as 'SPREAD' | 'MONEYLINE' | 'TOTAL')}
+            className="px-3 py-1 border border-gray-600 rounded text-sm bg-gray-800 text-white"
+          >
+            <option value="TOTAL">TOTAL</option>
+            <option value="SPREAD">SPREAD</option>
+            <option value="MONEYLINE">MONEYLINE</option>
           </select>
         </div>
 

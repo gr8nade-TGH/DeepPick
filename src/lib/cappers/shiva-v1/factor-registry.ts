@@ -1,165 +1,184 @@
 /**
- * SHIVA v1 Factor Registry
- * Pluggable factor system for extensibility
+ * NBA Totals Factor Registry
+ * 
+ * Defines the 5 NBA totals factors that real bettors use:
+ * F1) Matchup Pace Index - How fast both teams will play tonight
+ * F2) Offensive Form vs Opponent - Are offenses hot?
+ * F3) Defensive Erosion - Are key defenders out or playing hurt?
+ * F4) 3-Point Environment & Volatility - Combined 3PA rate and variance
+ * F5) Free-Throw/Whistle Environment - FT rate and foul propensity
  */
 
-import type { CapperProfile } from './profile'
+import { FactorMeta, BetType, Sport, Scope } from '@/types/factors';
 
-export interface FactorPlugin {
-  factor_no: 1 | 2 | 3 | 4 | 5 | 6 | 7
-  name: string
-  description: string
-  
-  // Calculate the factor value (per 100 possessions)
-  calculate: (inputs: FactorInputs) => Promise<FactorResult>
-}
-
-export interface FactorInputs {
-  homeTeam: string
-  awayTeam: string
-  profile: CapperProfile
-  context?: any // Additional context (stats, news, etc.)
-}
-
-export interface FactorResult {
-  value: number // Normalized value (per 100)
-  raw: unknown // Raw data used for calculation
-  parsed: Record<string, unknown> // Parsed intermediate values
-  capped: boolean
-  capReason: string | null
-  notes?: string | null
-}
-
-/**
- * SHIVA v1 Factor Registry
- * Maps factor numbers to calculation plugins
- */
-export const shivaFactorRegistry: FactorPlugin[] = [
+// NBA Totals Factors (5 factors)
+export const NBA_TOTALS_FACTORS: FactorMeta[] = [
   {
-    factor_no: 1,
-    name: 'Net Rating Differential',
-    description: 'Season-long net rating differential (home - away)',
-    calculate: async (inputs) => {
-      // Placeholder - actual implementation would call StatMuse
-      return {
-        value: 0,
-        raw: {},
-        parsed: {},
-        capped: false,
-        capReason: null,
-      }
+    key: 'paceIndex',
+    name: 'Matchup Pace Index',
+    shortName: 'Pace',
+    icon: '⏱️',
+    appliesTo: {
+      sports: ['NBA'],
+      betTypes: ['TOTAL'],
+      scope: 'LEAGUE'
     },
+    maxPoints: 0.6,
+    defaultWeight: 0.20
   },
   {
-    factor_no: 2,
-    name: 'Recent Form (Last 10 Games)',
-    description: 'Net rating differential over last 10 games',
-    calculate: async (inputs) => {
-      return {
-        value: 0,
-        raw: {},
-        parsed: {},
-        capped: false,
-        capReason: null,
-      }
+    key: 'offForm',
+    name: 'Offensive Form vs Opp',
+    shortName: 'ORtg Form',
+    icon: '🔥',
+    appliesTo: {
+      sports: ['NBA'],
+      betTypes: ['TOTAL'],
+      scope: 'LEAGUE'
     },
+    maxPoints: 0.6,
+    defaultWeight: 0.18
   },
   {
-    factor_no: 3,
-    name: 'Head-to-Head Matchup',
-    description: 'PPG differential in head-to-head games this season',
-    calculate: async (inputs) => {
-      return {
-        value: 0,
-        raw: {},
-        parsed: {},
-        capped: false,
-        capReason: null,
-      }
+    key: 'defErosion',
+    name: 'Defensive Erosion',
+    shortName: 'DRtg/Avail',
+    icon: '🛡️',
+    appliesTo: {
+      sports: ['NBA'],
+      betTypes: ['TOTAL'],
+      scope: 'GLOBAL'
     },
+    maxPoints: 0.5,
+    defaultWeight: 0.14
   },
   {
-    factor_no: 4,
-    name: 'Offensive Rating Differential',
-    description: 'ORtg differential (home - away)',
-    calculate: async (inputs) => {
-      return {
-        value: 0,
-        raw: {},
-        parsed: {},
-        capped: false,
-        capReason: null,
-      }
+    key: 'threeEnv',
+    name: '3PT Environment',
+    shortName: '3P Env',
+    icon: '🏹',
+    appliesTo: {
+      sports: ['NBA'],
+      betTypes: ['TOTAL'],
+      scope: 'LEAGUE'
     },
+    maxPoints: 0.4,
+    defaultWeight: 0.10
   },
   {
-    factor_no: 5,
+    key: 'whistleEnv',
+    name: 'FT/Whistle Env',
+    shortName: 'FT Env',
+    icon: '⛹️‍♂️',
+    appliesTo: {
+      sports: ['NBA'],
+      betTypes: ['TOTAL'],
+      scope: 'LEAGUE'
+    },
+    maxPoints: 0.3,
+    defaultWeight: 0.08
+  }
+];
+
+// Global factors (apply to all sports/bet types)
+export const GLOBAL_FACTORS: FactorMeta[] = [
+  {
+    key: 'newsEdge',
     name: 'News/Injury Edge',
-    description: 'Impact of injuries and news on game edge',
-    calculate: async (inputs) => {
-      return {
-        value: 0,
-        raw: {},
-        parsed: {},
-        capped: false,
-        capReason: null,
-      }
+    shortName: 'News',
+    icon: '🏥',
+    appliesTo: {
+      sports: ['*'],
+      betTypes: ['*'],
+      scope: 'GLOBAL'
     },
-  },
-  {
-    factor_no: 6,
-    name: 'Home Court Advantage',
-    description: 'Fixed home court edge per 100 possessions',
-    calculate: async (inputs) => {
-      return {
-        value: inputs.profile.constants.home_edge_per100,
-        raw: { home_team: inputs.homeTeam },
-        parsed: { home_edge_100: inputs.profile.constants.home_edge_per100 },
-        capped: false,
-        capReason: null,
-      }
-    },
-  },
-  {
-    factor_no: 7,
-    name: '3-Point Environment',
-    description: '3PT attempt and efficiency differentials',
-    calculate: async (inputs) => {
-      return {
-        value: 0,
-        raw: {},
-        parsed: {},
-        capped: false,
-        capReason: null,
-      }
-    },
-  },
-]
+    maxPoints: 0.3,
+    defaultWeight: 0.05
+  }
+];
 
-/**
- * Get factor plugin by number
- */
-export function getFactorPlugin(factorNo: number): FactorPlugin | undefined {
-  return shivaFactorRegistry.find(f => f.factor_no === factorNo)
+// Combined registry
+export const FACTOR_REGISTRY: FactorMeta[] = [
+  ...NBA_TOTALS_FACTORS,
+  ...GLOBAL_FACTORS
+];
+
+// StatMuse Query Helpers for NBA Totals
+export const StatMuseQueries = {
+  // Pace queries
+  pace: (team: string, last10 = false) => 
+    last10 ? `${team} pace last 10 games this season` : `${team} pace this season`,
+  
+  leaguePace: () => 'league average pace this season',
+  
+  // Offensive/Defensive rating queries
+  ortgLast10: (team: string) => `${team} offensive rating last 10 games this season`,
+  drtgSeason: (team: string) => `${team} defensive rating this season`,
+  ortgVenue: (team: string, venue: 'home' | 'away') => 
+    `${team} offensive rating ${venue === 'home' ? 'at home' : 'on the road'} this season`,
+  
+  // 3-Point environment queries
+  threePAR: (team: string) => `${team} 3 point attempt rate this season`,
+  oppThreePAR: (team: string) => `${team} opponent 3 point attempt rate this season`,
+  threePctLast10: (team: string) => `${team} 3pt percentage last 10 games this season`,
+  
+  // Free throw environment queries
+  ftr: (team: string) => `${team} free throw rate this season`,
+  oppFtr: (team: string) => `${team} opponent free throw rate this season`,
+  fouls: (team: string) => `${team} personal fouls per game this season`,
+  
+  // Rest/fatigue queries
+  restRecord: (team: string, days: number) => 
+    `${team} record on ${days} days rest this season`
+};
+
+// League constants for NBA
+export const NBA_CONSTANTS = {
+  LEAGUE_PACE: 100.0,        // Approximate league average pace
+  LEAGUE_ORTG: 110.0,        // League average offensive rating
+  LEAGUE_DRTG: 110.0,        // League average defensive rating
+  LEAGUE_3PAR: 0.39,         // League average 3-point attempt rate
+  LEAGUE_FTR: 0.220,         // League average free throw rate
+  LEAGUE_3P_STDEV: 0.05      // Approximate league 3P% standard deviation
+};
+
+// Factor computation helpers
+export function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
 }
 
-/**
- * Calculate delta per 100 using profile weights and factor values
- */
-export function calculateDelta100FromProfile(
-  factorValues: number[],
-  profile: CapperProfile
-): number {
-  const weights = [
-    profile.weights.f1_net_rating,
-    profile.weights.f2_recent_form,
-    profile.weights.f3_h2h_matchup,
-    profile.weights.f4_ortg_diff,
-    profile.weights.f5_news_injury,
-    profile.weights.f6_home_court,
-    profile.weights.f7_three_point,
-  ]
-
-  return factorValues.reduce((sum, val, idx) => sum + val * weights[idx], 0)
+export function normalizeToPoints(value: number, maxPoints: number): number {
+  return clamp(value, -1, 1) * maxPoints;
 }
 
+export function splitPointsEvenly(points: number): { away: number; home: number } {
+  return {
+    away: points / 2,
+    home: points / 2
+  };
+}
+
+// Factor metadata lookup
+export function getFactorMeta(key: string): FactorMeta | undefined {
+  return FACTOR_REGISTRY.find(factor => factor.key === key);
+}
+
+export function getFactorsBySport(sport: Sport): FactorMeta[] {
+  return FACTOR_REGISTRY.filter(factor => 
+    factor.appliesTo.sports.includes('*') || factor.appliesTo.sports.includes(sport)
+  );
+}
+
+export function getFactorsByBetType(betType: BetType): FactorMeta[] {
+  return FACTOR_REGISTRY.filter(factor => 
+    factor.appliesTo.betTypes.includes('*') || factor.appliesTo.betTypes.includes(betType)
+  );
+}
+
+export function getFactorsByContext(sport: Sport, betType: BetType): FactorMeta[] {
+  return FACTOR_REGISTRY.filter(factor => {
+    const sportMatch = factor.appliesTo.sports.includes('*') || factor.appliesTo.sports.includes(sport);
+    const betTypeMatch = factor.appliesTo.betTypes.includes('*') || factor.appliesTo.betTypes.includes(betType);
+    return sportMatch && betTypeMatch;
+  });
+}
