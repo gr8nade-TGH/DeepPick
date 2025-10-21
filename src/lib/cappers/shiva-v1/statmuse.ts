@@ -299,6 +299,17 @@ export async function askStatMuse(
     const cleanText = stripHTML(html)
     const value = parseStatMuseValue(cleanText, unit)
 
+    // Enhanced logging for debugging
+    console.log('[StatMuse:DEBUG]', {
+      query,
+      status: response.status,
+      htmlLength: html.length,
+      cleanTextLength: cleanText.length,
+      cleanTextPreview: cleanText.substring(0, 500),
+      valueFound: value !== null,
+      value: value
+    })
+
     if (value === null) {
       const result: StatMuseNumeric = {
         ok: false,
@@ -310,12 +321,16 @@ export async function askStatMuse(
         latencyMs: Date.now() - startTime,
       }
 
-      console.error('[StatMuse]', {
+      console.error('[StatMuse:PARSE_FAIL]', {
         query,
         status: response.status,
         latencyMs: result.latencyMs,
         cacheHit: false,
         error: 'Parse failure',
+        htmlLength: html.length,
+        cleanTextLength: cleanText.length,
+        cleanTextPreview: cleanText.substring(0, 500),
+        fullCleanText: cleanText // Full text for debugging
       })
 
       return result
