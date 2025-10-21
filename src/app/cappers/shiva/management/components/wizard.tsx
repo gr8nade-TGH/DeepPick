@@ -252,17 +252,55 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         console.debug('[Step 1] Response:', r)
         setLog(r)
         setStepLogs(prev => ({ ...prev, 1: r }))
-      } else if (current === 2) {
-        // Use selected game odds or fallback to fixture
-        const oddsData = props.selectedGame?.odds || (await import('@/../fixtures/shiva-v1/step2-odds-snapshot.json')).default.snapshot
-        
-        const r = await postJson('/api/shiva/odds/snapshot', {
-          run_id: runId,
-          snapshot: oddsData
-        }, 'ui-demo-snap')
-        if (r.json?.snapshot_id) setSnapId(r.json.snapshot_id)
-        setLog(r)
-        setStepLogs(prev => ({ ...prev, 2: r }))
+        } else if (current === 2) {
+          // Use selected game odds or fallback to fixture
+          const gameData = props.selectedGame || {
+            game_id: 'nba_2025_10_21_okc_hou',
+            home: 'Oklahoma City Thunder',
+            away: 'Houston Rockets',
+            start_time_utc: '2025-10-21T01:30:00Z',
+            odds: {
+              ml_home: -110,
+              ml_away: -110,
+              spread_team: 'Oklahoma City Thunder',
+              spread_line: 2.5,
+              total_line: 227.5
+            }
+          }
+          
+          // Transform to correct API format
+          const snapshotData = {
+            game_id: gameData.game_id,
+            sport: 'NBA' as const,
+            home_team: gameData.home,
+            away_team: gameData.away,
+            start_time_utc: gameData.start_time_utc,
+            captured_at_utc: new Date().toISOString(),
+            books_considered: 3,
+            moneyline: {
+              home_avg: gameData.odds.ml_home,
+              away_avg: gameData.odds.ml_away
+            },
+            spread: {
+              fav_team: gameData.odds.spread_team,
+              line: gameData.odds.spread_line,
+              odds: -110
+            },
+            total: {
+              line: gameData.odds.total_line,
+              over_odds: -110,
+              under_odds: -110
+            },
+            raw_payload: gameData.odds
+          }
+          
+          const r = await postJson('/api/shiva/odds/snapshot', {
+            run_id: runId,
+            snapshot: snapshotData
+          }, 'ui-demo-snap')
+          if (r.json?.snapshot_id) setSnapId(r.json.snapshot_id)
+          setLog(r)
+          setStepLogs(prev => ({ ...prev, 2: r }))
       } else if (current === 3) {
         const fx = (await import('@/../fixtures/shiva-v1/step3-factors.json')).default
         const r = await postJson('/api/shiva/factors/step3', { ...fx, run_id: runId }, 'ui-demo-step3')
@@ -380,7 +418,49 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       {/* Step Logs Table - Moved to top for better visibility */}
       {Object.keys(stepLogs).length > 0 && (
         <div className="mb-4">
-          <h4 className="text-sm font-semibold mb-2 text-white">Step Responses:</h4>
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-sm font-semibold text-white">Step Responses:</h4>
+            {/* Copy Debug Report Button - Always visible when there are step logs */}
+            {Object.keys(stepLogs).length > 0 && (
+              <button 
+                className="px-3 py-1 bg-blue-600 text-white rounded text-xs font-bold hover:bg-blue-700"
+                onClick={() => {
+                  const debugReport = {
+                    timestamp: new Date().toISOString(),
+                    runId: runId || 'unknown',
+                    snapId: snapId || 'unknown',
+                    effectiveProfile: effectiveProfileSnapshot || props.effectiveProfile || null,
+                    environment: {
+                      SHIVA_V1_API_ENABLED: process.env.NEXT_PUBLIC_SHIVA_V1_API_ENABLED,
+                      SHIVA_V1_UI_ENABLED: process.env.NEXT_PUBLIC_SHIVA_V1_UI_ENABLED,
+                      SHIVA_V1_WRITE_ENABLED: process.env.NEXT_PUBLIC_SHIVA_V1_WRITE_ENABLED,
+                    },
+                    steps: Object.entries(stepLogs)
+                      .filter(([stepNum]) => parseInt(stepNum) < 8)
+                      .map(([stepNum, response]: [string, any]) => ({
+                        step: parseInt(stepNum),
+                        status: response.status,
+                        dryRun: response.dryRun,
+                        latencyMs: response.latencyMs || 0,
+                        response: response.json || null,
+                        error: response.error || null,
+                      })),
+                    summary: {
+                      totalSteps: Object.keys(stepLogs).length,
+                      successfulSteps: Object.values(stepLogs).filter((s: any) => s.status >= 200 && s.status < 300).length,
+                      errorSteps: Object.values(stepLogs).filter((s: any) => s.status >= 400).length,
+                      dryRunSteps: Object.values(stepLogs).filter((s: any) => s.dryRun === true).length,
+                    },
+                    stepLogsRaw: stepLogs,
+                  }
+                  navigator.clipboard.writeText(JSON.stringify(debugReport, null, 2))
+                  alert('Debug report copied to clipboard!')
+                }}
+              >
+                📋 Copy Debug Report
+              </button>
+            )}
+          </div>
           <div className="border border-gray-600 rounded p-2 text-xs bg-gray-800">
             <table className="w-full">
               <thead>
@@ -421,6 +501,26 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         </div>
       )}
 
+      {/* Navigation Buttons - Moved to stay at top */}
+      <div className="flex gap-2 mb-4">
+        <button 
+          className={`px-3 py-1 border-2 border-gray-600 rounded font-semibold ${
+            step >= 8 
+              ? 'bg-gray-700 text-gray-500 cursor-not-allowed' 
+              : 'bg-gray-800 text-white hover:bg-gray-700'
+          }`}
+          onClick={async () => {
+            if (step >= 8) return // Clamp at Step 8
+            await handleStepClick(step)
+            setStep(Math.min(8, step + 1))
+          }}
+          disabled={step >= 8}
+          aria-disabled={step >= 8}
+        >
+          Next
+        </button>
+      </div>
+
       <div className="border rounded p-3 text-xs font-mono whitespace-pre-wrap bg-gray-900 text-white">
         {log ? JSON.stringify(log, null, 2) : 
          step === 8 ? 'Click Next to generate debug report with all step responses.' :
@@ -452,43 +552,6 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         </div>
       )}
 
-      {step === 8 && log?.json && (
-        <div className="mt-3">
-          <button 
-            className="px-3 py-1 bg-blue-500 text-white rounded text-sm font-bold"
-            onClick={() => {
-              navigator.clipboard.writeText(JSON.stringify(log.json, null, 2))
-              alert('Debug report copied to clipboard!')
-            }}
-          >
-            📋 Copy Debug Report
-          </button>
-        </div>
-      )}
-      <div className="flex gap-2 mt-3">
-        <button 
-          className="px-3 py-1 border-2 border-gray-600 rounded bg-gray-800 text-white hover:bg-gray-700 font-semibold"
-          onClick={() => setStep(Math.max(1, step - 1))}
-        >
-          Back
-        </button>
-        <button 
-          className={`px-3 py-1 border-2 border-gray-600 rounded font-semibold ${
-            step >= 8 
-              ? 'bg-gray-700 text-gray-500 cursor-not-allowed' 
-              : 'bg-gray-800 text-white hover:bg-gray-700'
-          }`}
-          onClick={async () => {
-            if (step >= 8) return // Clamp at Step 8
-            await handleStepClick(step)
-            setStep(Math.min(8, step + 1))
-          }}
-          disabled={step >= 8}
-          aria-disabled={step >= 8}
-        >
-          Next
-        </button>
-      </div>
 
       {/* Insight Card Modal */}
       {showInsightCard && insightCardData && (

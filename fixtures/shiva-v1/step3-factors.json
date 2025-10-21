@@ -9,7 +9,6 @@
     "factors": [
       {
         "factor_no": 1,
-        "key": "seasonNet",
         "name": "Season Net Rating",
         "weight_total_pct": 21.0,
         "raw_values_json": {
@@ -38,7 +37,6 @@
       },
       {
         "factor_no": 2,
-        "key": "recentNet",
         "name": "Recent Form (Last 10)",
         "weight_total_pct": 17.5,
         "raw_values_json": {
@@ -53,7 +51,6 @@
       },
       {
         "factor_no": 3,
-        "key": "matchupORtgDRtg",
         "name": "Off/Def Rating Differential",
         "weight_total_pct": 7.0,
         "raw_values_json": {
@@ -68,7 +65,6 @@
       },
       {
         "factor_no": 4,
-        "key": "h2hPpg",
         "name": "Head-to-Head PPG (season)",
         "weight_total_pct": 14.0,
         "raw_values_json": {
@@ -83,7 +79,6 @@
       },
       {
         "factor_no": 5,
-        "key": "newsEdge",
         "name": "News/Injury Edge",
         "weight_total_pct": 7.0,
         "raw_values_json": {
