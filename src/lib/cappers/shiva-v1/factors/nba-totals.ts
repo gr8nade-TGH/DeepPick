@@ -575,7 +575,9 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<{
   console.debug('[totals:branch-used]', branchLog)
   
   // Fetch StatMuse data bundle
+  console.log('[TOTALS:ABOUT_TO_FETCH_STATMUSE]', 'Starting StatMuse fetch...')
   const bundle = await fetchStatMuseBundle(ctx)
+  console.log('[TOTALS:STATMUSE_FETCHED]', 'StatMuse bundle received:', Object.keys(bundle))
   console.debug('[totals:bundle]', bundle)
   
   // Fetch injury impact via LLM
