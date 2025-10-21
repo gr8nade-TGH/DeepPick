@@ -582,34 +582,52 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                 <tr className="border-b border-gray-600">
                   <th className="text-left p-1 text-white">Step</th>
                   <th className="text-left p-1 text-white">Status</th>
+                  <th className="text-left p-1 text-white">AI Used</th>
                   <th className="text-left p-1 text-white">Dry Run</th>
                   <th className="text-left p-1 text-white">Response</th>
                 </tr>
               </thead>
               <tbody>
-                {Object.entries(stepLogs).map(([stepNum, response]: [string, any]) => (
-                  <tr key={stepNum} className="border-b border-gray-700">
-                    <td className="p-1 text-white">{stepNum}</td>
-                    <td className="p-1">
-                      <span className={`px-1 rounded text-xs ${
-                        response.status >= 200 && response.status < 300 ? 'bg-green-600 text-white' :
-                        response.status >= 400 ? 'bg-red-600 text-white' : 'bg-yellow-600 text-white'
-                      }`}>
-                        {response.status}
-                      </span>
-                    </td>
-                    <td className="p-1">
-                      <span className={`px-1 rounded text-xs ${
-                        response.dryRun ? 'bg-blue-600 text-white' : 'bg-gray-600 text-white'
-                      }`}>
-                        {response.dryRun ? 'Yes' : 'No'}
-                      </span>
-                    </td>
-                    <td className="p-1 font-mono text-xs max-w-xs truncate text-gray-300">
-                      {response.json ? JSON.stringify(response.json).substring(0, 50) + '...' : 'No data'}
-                    </td>
-                  </tr>
-                ))}
+                {Object.entries(stepLogs).map(([stepNum, response]: [string, any]) => {
+                  const step = parseInt(stepNum)
+                  const usesAI = step === 3 || step === 4 || step === 7 // Steps that use AI
+                  const aiProvider = step === 3 ? 'Perplexity' : step === 4 ? 'OpenAI' : step === 7 ? 'OpenAI' : null
+                  
+                  return (
+                    <tr key={stepNum} className="border-b border-gray-700">
+                      <td className="p-1 text-white">{stepNum}</td>
+                      <td className="p-1">
+                        <span className={`px-1 rounded text-xs ${
+                          response.status >= 200 && response.status < 300 ? 'bg-green-600 text-white' :
+                          response.status >= 400 ? 'bg-red-600 text-white' : 'bg-yellow-600 text-white'
+                        }`}>
+                          {response.status}
+                        </span>
+                      </td>
+                      <td className="p-1">
+                        {usesAI ? (
+                          <span className="px-1 rounded text-xs bg-purple-600 text-white">
+                            🤖 {aiProvider}
+                          </span>
+                        ) : (
+                          <span className="px-1 rounded text-xs bg-gray-600 text-white">
+                            —
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-1">
+                        <span className={`px-1 rounded text-xs ${
+                          response.dryRun ? 'bg-blue-600 text-white' : 'bg-gray-600 text-white'
+                        }`}>
+                          {response.dryRun ? 'Yes' : 'No'}
+                        </span>
+                      </td>
+                      <td className="p-1 font-mono text-xs max-w-xs truncate text-gray-300">
+                        {response.json ? JSON.stringify(response.json).substring(0, 50) + '...' : 'No data'}
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
