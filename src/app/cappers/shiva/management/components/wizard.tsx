@@ -23,47 +23,6 @@ function DryRunBanner() {
   )
 }
 
-// Factor metadata for UI display
-const FACTOR_METADATA: Record<string, { label: string; icon: string; description: string }> = {
-  seasonNet: { label: 'Season Net Rating', icon: '📊', description: 'Team Net Rating differential' },
-  recentNet: { label: 'Recent Form', icon: '📈', description: 'Last 10 games momentum' },
-  matchupORtgDRtg: { label: 'Off/Def Mismatch', icon: '⚔️', description: 'Offensive vs defensive rating' },
-  h2hPpg: { label: 'Head-to-Head', icon: '🤝', description: 'Season PPG vs opponent' },
-  newsEdge: { label: 'News/Injury', icon: '📰', description: 'Injury/availability impact' },
-  homeEdge: { label: 'Home Court', icon: '🏠', description: 'Home advantage adjustment' },
-  threePoint: { label: '3-Point Edge', icon: '🎯', description: '3PA/3P% environment' },
-}
-
-// Helper functions
-function isEnabledInProfile(factorKey: string, profile: any): boolean {
-  if (!profile?.weights) return true
-  const weightMap: Record<string, string> = {
-    seasonNet: 'f1_net_rating',
-    recentNet: 'f2_recent_form', 
-    h2hPpg: 'f3_h2h_matchup',
-    matchupORtgDRtg: 'f4_ortg_diff',
-    newsEdge: 'f5_news_injury',
-    homeEdge: 'f6_home_court',
-    threePoint: 'f7_three_point',
-  }
-  const weightKey = weightMap[factorKey]
-  return weightKey ? (profile.weights[weightKey] ?? 0) > 0 : true
-}
-
-function getWeightPct(factorKey: string, profile: any): number {
-  if (!profile?.weights) return 0.1
-  const weightMap: Record<string, string> = {
-    seasonNet: 'f1_net_rating',
-    recentNet: 'f2_recent_form',
-    h2hPpg: 'f3_h2h_matchup', 
-    matchupORtgDRtg: 'f4_ortg_diff',
-    newsEdge: 'f5_news_injury',
-    homeEdge: 'f6_home_court',
-    threePoint: 'f7_three_point',
-  }
-  const weightKey = weightMap[factorKey]
-  return weightKey ? (profile.weights[weightKey] ?? 0) : 0.1
-}
 
 function formatSpread(odds: any): number {
   if (!odds?.spread_line) return 0
