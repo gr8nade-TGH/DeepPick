@@ -30,6 +30,11 @@ export function FactorConfigModal({
   const [profile, setProfile] = useState<CapperProfile | null>(null)
   const [factors, setFactors] = useState<FactorConfig[]>([])
   
+  // Calculate weight budget
+  const totalWeight = factors.filter(f => f.enabled).reduce((sum, f) => sum + f.weight, 0)
+  const remainingWeight = 100 - totalWeight
+  const isWeightValid = totalWeight === 100
+  
   // Load factor configuration
   useEffect(() => {
     if (!isOpen) return
@@ -69,11 +74,22 @@ export function FactorConfigModal({
   
   // Update factor weight
   const updateWeight = (key: string, weight: number) => {
-    setFactors(prev =>
-      prev.map(f =>
-        f.key === key ? { ...f, weight: Math.max(0, Math.min(100, weight)) } : f
+    setFactors(prev => {
+      // Calculate total weight of OTHER enabled factors
+      const otherEnabledWeight = prev
+        .filter(f => f.enabled && f.key !== key)
+        .reduce((sum, f) => sum + f.weight, 0)
+      
+      // Calculate max weight this factor can have (can't exceed remaining budget)
+      const maxAllowed = 100 - otherEnabledWeight
+      
+      // Clamp weight to valid range
+      const newWeight = Math.max(0, Math.min(maxAllowed, weight))
+      
+      return prev.map(f =>
+        f.key === key ? { ...f, weight: newWeight } : f
       )
-    )
+    })
   }
   
   // Update factor data source
@@ -124,19 +140,68 @@ export function FactorConfigModal({
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-gray-900 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-800 flex justify-between items-center">
-          <div>
-            <h2 className="text-xl font-bold text-white">Configure Factors</h2>
-            <p className="text-sm text-gray-400 mt-1">
-              {capperId} • {sport} • {betType}
-            </p>
+        <div className="px-6 py-4 border-b border-gray-800">
+          <div className="flex justify-between items-start mb-3">
+            <div>
+              <h2 className="text-xl font-bold text-white">Configure Factors</h2>
+              <p className="text-sm text-gray-400 mt-1">
+                {capperId} • {sport} • {betType}
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-white transition"
+            >
+              ✕
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-white transition"
-          >
-            ✕
-          </button>
+          
+          {/* Weight Budget Display */}
+          <div className={`p-3 rounded border ${
+            isWeightValid 
+              ? 'bg-green-500/10 border-green-500/30' 
+              : remainingWeight > 0
+                ? 'bg-blue-500/10 border-blue-500/30'
+                : 'bg-red-500/10 border-red-500/30'
+          }`}>
+            <div className="flex justify-between items-center">
+              <div>
+                <div className="text-sm font-medium text-white">
+                  Weight Budget: {totalWeight}% / 100%
+                </div>
+                <div className={`text-xs mt-1 ${
+                  isWeightValid 
+                    ? 'text-green-400' 
+                    : remainingWeight > 0
+                      ? 'text-blue-400'
+                      : 'text-red-400'
+                }`}>
+                  {isWeightValid 
+                    ? '✓ Perfect! All weight allocated.' 
+                    : remainingWeight > 0
+                      ? `${remainingWeight}% remaining to allocate`
+                      : `Over budget by ${Math.abs(remainingWeight)}%`
+                  }
+                </div>
+              </div>
+              
+              {/* Progress Bar */}
+              <div className="w-48">
+                <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full transition-all ${
+                      isWeightValid 
+                        ? 'bg-green-500' 
+                        : totalWeight > 100
+                          ? 'bg-red-500'
+                          : 'bg-blue-500'
+                    }`}
+                    style={{ width: `${Math.min(totalWeight, 100)}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
         
         {/* Content */}
@@ -225,10 +290,15 @@ export function FactorConfigModal({
                         )}
                       </div>
                       
-                      {/* Max Points Badge */}
+                      {/* Dynamic Max Points Badge */}
                       <div className="text-right">
-                        <div className="text-xs text-gray-400">Max Points</div>
-                        <div className="text-white font-mono">{factor.maxPoints.toFixed(1)}</div>
+                        <div className="text-xs text-gray-400">Max ± Points</div>
+                        <div className="text-white font-mono">
+                          {((factor.maxPoints * factor.weight) / 100).toFixed(2)}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-0.5">
+                          ({factor.weight}% of {factor.maxPoints.toFixed(1)})
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -242,6 +312,11 @@ export function FactorConfigModal({
         <div className="px-6 py-4 border-t border-gray-800 flex justify-between items-center">
           <div className="text-sm text-gray-400">
             {factors.filter(f => f.enabled).length} of {factors.length} factors enabled
+            {!isWeightValid && (
+              <span className="ml-3 text-yellow-500">
+                ⚠ Weights must sum to 100%
+              </span>
+            )}
           </div>
           <div className="flex gap-3">
             <button
@@ -252,8 +327,8 @@ export function FactorConfigModal({
             </button>
             <button
               onClick={handleSave}
-              disabled={saving}
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium transition disabled:opacity-50"
+              disabled={saving || !isWeightValid}
+              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? 'Saving...' : 'Save Configuration'}
             </button>
