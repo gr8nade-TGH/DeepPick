@@ -32,9 +32,24 @@ export function FactorConfigModal({
   
   // Calculate weight budget (with proper rounding to avoid floating point precision issues)
   // Edge vs Market doesn't count toward weight budget
-  const totalWeight = Math.round(factors.filter(f => f.enabled && f.key !== 'edgeVsMarket').reduce((sum, f) => sum + f.weight, 0) * 100) / 100
+  const weightFactors = factors.filter(f => f.enabled && f.key !== 'edgeVsMarket')
+  const rawTotalWeight = weightFactors.reduce((sum, f) => sum + f.weight, 0)
+  const totalWeight = Math.round(rawTotalWeight * 100) / 100
   const remainingWeight = Math.round((100 - totalWeight) * 100) / 100
-  const isWeightValid = Math.abs(remainingWeight) < 0.01
+  const isWeightValid = Math.abs(remainingWeight) < 0.01 || Math.abs(totalWeight - 100) < 0.01
+  
+  // Debug logging
+  console.log('[Weight Debug]', {
+    weightFactors: weightFactors.map(f => ({ key: f.key, weight: f.weight })),
+    rawTotalWeight,
+    totalWeight,
+    remainingWeight,
+    isWeightValid
+  })
+  
+  // Force exact 100% if very close (within 0.01%)
+  const displayTotalWeight = Math.abs(totalWeight - 100) < 0.01 ? 100 : totalWeight
+  const displayRemainingWeight = Math.abs(remainingWeight) < 0.01 ? 0 : remainingWeight
   
   // Get factor eligibility tags
   const getFactorTags = (factor: FactorConfig) => {
@@ -163,13 +178,30 @@ export function FactorConfigModal({
       }
       if (f.enabled) {
         const normalizedWeight = (f.weight / totalWeight) * 100
-        return { ...f, weight: Math.round(normalizedWeight * 100) / 100 }
+        // Round to 2 decimal places to avoid floating point precision issues
+        const roundedWeight = Math.round(normalizedWeight * 100) / 100
+        return { ...f, weight: roundedWeight }
       } else {
         return { ...f, weight: 0 }
       }
     })
     
-    return normalizedFactors
+    // Final adjustment to ensure exact 100% total
+    const finalFactors = [...normalizedFactors]
+    const finalTotal = finalFactors
+      .filter(f => f.enabled && f.key !== 'edgeVsMarket')
+      .reduce((sum, f) => sum + f.weight, 0)
+    
+    if (Math.abs(finalTotal - 100) > 0.01) {
+      // Adjust the first enabled factor to make it exactly 100%
+      const firstEnabled = finalFactors.find(f => f.enabled && f.key !== 'edgeVsMarket')
+      if (firstEnabled) {
+        const adjustment = 100 - finalTotal
+        firstEnabled.weight = Math.round((firstEnabled.weight + adjustment) * 100) / 100
+      }
+    }
+    
+    return finalFactors
   }
 
   // Load factor configuration
@@ -528,20 +560,20 @@ export function FactorConfigModal({
             <div className="flex justify-between items-center">
               <div>
                 <div className="text-sm font-medium text-white">
-                  Weight Budget: {totalWeight}% / 100%
+                  Weight Budget: {displayTotalWeight}% / 100%
                 </div>
                 <div className={`text-xs mt-1 ${
                   isWeightValid 
                     ? 'text-green-400' 
-                    : remainingWeight > 0
+                    : displayRemainingWeight > 0
                       ? 'text-blue-400'
                       : 'text-red-400'
                 }`}>
                   {isWeightValid 
                     ? '✓ Perfect! All weight allocated.' 
-                    : remainingWeight > 0
-                      ? `${remainingWeight}% remaining to allocate`
-                      : `Over budget by ${Math.abs(remainingWeight)}%`
+                    : displayRemainingWeight > 0
+                      ? `${displayRemainingWeight}% remaining to allocate`
+                      : `Over budget by ${Math.abs(displayRemainingWeight)}%`
                   }
                 </div>
               </div>
@@ -553,11 +585,11 @@ export function FactorConfigModal({
                     className={`h-full transition-all ${
                       isWeightValid 
                         ? 'bg-green-500' 
-                        : totalWeight > 100
+                        : displayTotalWeight > 100
                           ? 'bg-red-500'
                           : 'bg-blue-500'
                     }`}
-                    style={{ width: `${Math.min(totalWeight, 100)}%` }}
+                    style={{ width: `${Math.min(displayTotalWeight, 100)}%` }}
                   />
                 </div>
               </div>
