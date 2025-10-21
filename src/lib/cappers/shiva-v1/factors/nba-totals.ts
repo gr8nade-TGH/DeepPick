@@ -8,8 +8,8 @@
 import { FactorMeta, FactorComputation } from '@/types/factors'
 import { NBA_CONSTANTS, StatMuseQueries, clamp, normalizeToPoints, splitPointsEvenly } from '../factor-registry'
 import { getFactorsByContext } from '../factor-registry'
-import * as statmuse from '../statmuse'
-import * as news from '../news'
+import { askStatMuse } from '../statmuse'
+import { searchInjuries } from '../news'
 
 // ============================================================================
 // TYPES
@@ -110,7 +110,7 @@ export async function fetchStatMuseBundle(ctx: RunCtx): Promise<StatMuseBundle> 
   ]
   
   const responses = await Promise.allSettled(
-    queries.map(query => statmuse.query(query))
+    queries.map(query => askStatMuse(query))
   )
   
   // Parse responses with fallbacks
@@ -186,13 +186,13 @@ export async function fetchStatMuseBundle(ctx: RunCtx): Promise<StatMuseBundle> 
 export async function summarizeAvailabilityWithLLM(ctx: RunCtx): Promise<InjuryImpact> {
   try {
     // Fetch injury news for both teams
-    const awayNews = await news.fetchTeamNews(ctx.away, 'NBA', 48) // 48h window
-    const homeNews = await news.fetchTeamNews(ctx.home, 'NBA', 48)
+    const awayNews = await searchInjuries(ctx.away, ctx.home, 48) // 48h window
+    const homeNews = await searchInjuries(ctx.home, ctx.away, 48)
     
-    // Combine news snippets
+    // Combine news snippets from findings
     const combinedNews = [
-      ...(awayNews || []).map(n => `[${ctx.away}] ${n}`),
-      ...(homeNews || []).map(n => `[${ctx.home}] ${n}`)
+      ...(awayNews?.findings || []).map(f => `[${ctx.away}] ${f.description}`),
+      ...(homeNews?.findings || []).map(f => `[${ctx.home}] ${f.description}`)
     ].join('\n\n')
     
     if (!combinedNews.trim()) {

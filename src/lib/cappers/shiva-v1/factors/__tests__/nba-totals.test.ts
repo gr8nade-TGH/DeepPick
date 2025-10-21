@@ -9,16 +9,16 @@ import type { RunCtx, StatMuseBundle, InjuryImpact } from '../nba-totals'
 
 // Mock StatMuse
 jest.mock('../../statmuse', () => ({
-  query: jest.fn()
+  askStatMuse: jest.fn()
 }))
 
 // Mock News
 jest.mock('../../news', () => ({
-  fetchTeamNews: jest.fn()
+  searchInjuries: jest.fn()
 }))
 
 // Mock fetch for OpenAI
-global.fetch = jest.fn()
+global.fetch = jest.fn() as jest.MockedFunction<typeof fetch>
 
 describe('NBA Totals Factors', () => {
   const mockCtx: RunCtx = {
@@ -84,10 +84,10 @@ describe('NBA Totals Factors', () => {
 
   describe('fetchStatMuseBundle', () => {
     it('should fetch and parse StatMuse data correctly', async () => {
-      const { query } = require('../../statmuse')
+      const { askStatMuse } = require('../../statmuse')
       
       // Mock successful StatMuse responses
-      query.mockImplementation((queryText: string) => {
+      askStatMuse.mockImplementation((queryText: string) => {
         if (queryText.includes('pace this season')) return Promise.resolve({ ok: true, data: '98.5' })
         if (queryText.includes('pace last 10')) return Promise.resolve({ ok: true, data: '101.2' })
         if (queryText.includes('league average pace')) return Promise.resolve({ ok: true, data: '100.0' })
@@ -112,10 +112,10 @@ describe('NBA Totals Factors', () => {
     })
 
     it('should handle StatMuse failures gracefully', async () => {
-      const { query } = require('../../statmuse')
+      const { askStatMuse } = require('../../statmuse')
       
       // Mock failed responses
-      query.mockResolvedValue({ ok: false, data: null })
+      askStatMuse.mockResolvedValue({ ok: false, data: null })
       
       const result = await fetchStatMuseBundle(mockCtx)
       
@@ -128,13 +128,20 @@ describe('NBA Totals Factors', () => {
 
   describe('summarizeAvailabilityWithLLM', () => {
     it('should parse injury data correctly', async () => {
-      const { fetchTeamNews } = require('../../news')
+      const { searchInjuries } = require('../../news')
       
       // Mock news data
-      fetchTeamNews.mockResolvedValue([
-        'Chet Holmgren (rim protector) is OUT with ankle injury',
-        'Jalen Green limited to 25 minutes due to knee soreness'
-      ])
+      searchInjuries.mockResolvedValue({
+        ok: true,
+        findings: [
+          { description: 'Chet Holmgren (rim protector) is OUT with ankle injury', status: 'OUT', impact: 0.3 },
+          { description: 'Jalen Green limited to 25 minutes due to knee soreness', status: 'LIMITED', impact: -0.1 }
+        ],
+        edgePer100: 0.1,
+        windowHours: 48,
+        latencyMs: 100,
+        cache: 'miss'
+      })
       
       // Mock OpenAI response
       ;(global.fetch as jest.Mock).mockResolvedValue({
@@ -164,10 +171,17 @@ describe('NBA Totals Factors', () => {
     })
 
     it('should handle LLM failures gracefully', async () => {
-      const { fetchTeamNews } = require('../../news')
+      const { searchInjuries } = require('../../news')
       
       // Mock no news
-      fetchTeamNews.mockResolvedValue([])
+      searchInjuries.mockResolvedValue({
+        ok: true,
+        findings: [],
+        edgePer100: 0,
+        windowHours: 48,
+        latencyMs: 100,
+        cache: 'miss'
+      })
       
       const result = await summarizeAvailabilityWithLLM(mockCtx)
       
@@ -178,11 +192,11 @@ describe('NBA Totals Factors', () => {
 
   describe('computeTotalsFactors', () => {
     it('should compute all 5 factors correctly', async () => {
-      const { query } = require('../../statmuse')
-      const { fetchTeamNews } = require('../../news')
+      const { askStatMuse } = require('../../statmuse')
+      const { searchInjuries } = require('../../news')
       
       // Mock StatMuse responses
-      query.mockImplementation((queryText: string) => {
+      askStatMuse.mockImplementation((queryText: string) => {
         if (queryText.includes('pace this season')) return Promise.resolve({ ok: true, data: '98.5' })
         if (queryText.includes('pace last 10')) return Promise.resolve({ ok: true, data: '101.2' })
         if (queryText.includes('league average pace')) return Promise.resolve({ ok: true, data: '100.0' })
@@ -197,7 +211,14 @@ describe('NBA Totals Factors', () => {
       })
       
       // Mock news
-      fetchTeamNews.mockResolvedValue([])
+      searchInjuries.mockResolvedValue({
+        ok: true,
+        findings: [],
+        edgePer100: 0,
+        windowHours: 48,
+        latencyMs: 100,
+        cache: 'miss'
+      })
       
       // Mock OpenAI
       ;(global.fetch as jest.Mock).mockResolvedValue({

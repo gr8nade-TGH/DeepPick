@@ -31,7 +31,7 @@ export interface FactorComputation {
   raw_values_json: Record<string, any>;
   parsed_values_json: Record<string, any>;
   caps_applied: boolean;
-  cap_reason?: string;
+  cap_reason?: string | null;
   notes?: string;
 }
 
