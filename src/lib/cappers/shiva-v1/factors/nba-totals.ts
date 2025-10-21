@@ -116,15 +116,15 @@ export async function fetchStatMuseBundle(ctx: RunCtx): Promise<StatMuseBundle> 
   // Parse responses with fallbacks
   const parseNumeric = (response: any, fallback: number = 0, queryName: string = 'unknown'): number => {
     if (!response?.ok || !response.data) {
-      console.debug(`[StatMuse:FAIL] ${queryName}:`, { ok: response?.ok, data: response?.data, error: response?.error })
+      console.log(`[StatMuse:FAIL] ${queryName}:`, { ok: response?.ok, data: response?.data, error: response?.error })
       return fallback
     }
     const numeric = parseFloat(response.data.toString())
     if (isNaN(numeric)) {
-      console.debug(`[StatMuse:PARSE_FAIL] ${queryName}:`, { data: response.data, parsed: numeric })
+      console.log(`[StatMuse:PARSE_FAIL] ${queryName}:`, { data: response.data, parsed: numeric })
       return fallback
     }
-    console.debug(`[StatMuse:SUCCESS] ${queryName}:`, numeric)
+    console.log(`[StatMuse:SUCCESS] ${queryName}:`, numeric)
     return numeric
   }
   
@@ -153,7 +153,14 @@ export async function fetchStatMuseBundle(ctx: RunCtx): Promise<StatMuseBundle> 
   // Log StatMuse call summary
   const successCount = responses.filter(r => r.status === 'fulfilled' && r.value?.ok).length
   const failCount = responses.length - successCount
-  console.debug(`[StatMuse:SUMMARY] ${successCount}/${responses.length} calls succeeded, ${failCount} failed`)
+  console.log(`[StatMuse:SUMMARY] ${successCount}/${responses.length} calls succeeded, ${failCount} failed`)
+  console.log(`[StatMuse:RESPONSES]`, responses.map((r, i) => ({
+    index: i,
+    status: r.status,
+    ok: r.status === 'fulfilled' ? r.value?.ok : false,
+    data: r.status === 'fulfilled' ? r.value?.data : null,
+    error: r.status === 'rejected' ? r.reason : null
+  })))
   
   return {
     // Team pace data
