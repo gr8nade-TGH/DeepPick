@@ -146,6 +146,7 @@ export default function ShivaManagementPage() {
               factors={factorConfigs}
               onFactorsChange={handleFactorsChange}
               onRunClick={handleRunClick}
+              hasSelectedGame={!!selectedGame}
             />
           )}
         </div>

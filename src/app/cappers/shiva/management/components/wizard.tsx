@@ -23,6 +23,121 @@ function DryRunBanner() {
   )
 }
 
+// Factor metadata for UI display
+const FACTOR_METADATA: Record<string, { label: string; icon: string; description: string }> = {
+  seasonNet: { label: 'Season Net Rating', icon: '📊', description: 'Team Net Rating differential' },
+  recentNet: { label: 'Recent Form', icon: '📈', description: 'Last 10 games momentum' },
+  matchupORtgDRtg: { label: 'Off/Def Mismatch', icon: '⚔️', description: 'Offensive vs defensive rating' },
+  h2hPpg: { label: 'Head-to-Head', icon: '🤝', description: 'Season PPG vs opponent' },
+  newsEdge: { label: 'News/Injury', icon: '📰', description: 'Injury/availability impact' },
+  homeEdge: { label: 'Home Court', icon: '🏠', description: 'Home advantage adjustment' },
+  threePoint: { label: '3-Point Edge', icon: '🎯', description: '3PA/3P% environment' },
+}
+
+// Helper functions
+function isEnabledInProfile(factorKey: string, profile: any): boolean {
+  if (!profile?.weights) return true
+  const weightMap: Record<string, string> = {
+    seasonNet: 'f1_net_rating',
+    recentNet: 'f2_recent_form', 
+    h2hPpg: 'f3_h2h_matchup',
+    matchupORtgDRtg: 'f4_ortg_diff',
+    newsEdge: 'f5_news_injury',
+    homeEdge: 'f6_home_court',
+    threePoint: 'f7_three_point',
+  }
+  const weightKey = weightMap[factorKey]
+  return weightKey ? (profile.weights[weightKey] ?? 0) > 0 : true
+}
+
+function getWeightPct(factorKey: string, profile: any): number {
+  if (!profile?.weights) return 0.1
+  const weightMap: Record<string, string> = {
+    seasonNet: 'f1_net_rating',
+    recentNet: 'f2_recent_form',
+    h2hPpg: 'f3_h2h_matchup', 
+    matchupORtgDRtg: 'f4_ortg_diff',
+    newsEdge: 'f5_news_injury',
+    homeEdge: 'f6_home_court',
+    threePoint: 'f7_three_point',
+  }
+  const weightKey = weightMap[factorKey]
+  return weightKey ? (profile.weights[weightKey] ?? 0) : 0.1
+}
+
+function formatSpread(odds: any): number {
+  if (!odds?.spread_line) return 0
+  return Number(odds.spread_line)
+}
+
+function assembleInsightCard({ runCtx, step4, step5, step6, step3, snapshot }: any) {
+  const g = runCtx?.game || {}
+  const pick = step6?.json?.pick || null
+  const conf7 = Number(step4?.json?.predictions?.conf7_score ?? 0)
+  const confAdj = Number(step5?.json?.conf_market_adj ?? 0)
+  const confFinal = Number(step5?.json?.conf_final ?? conf7 + confAdj)
+
+  const predictedScore = {
+    home: Number(step4?.json?.predictions?.scores?.home ?? 0),
+    away: Number(step4?.json?.predictions?.scores?.away ?? 0),
+    winner: String(step4?.json?.predictions?.winner ?? '')
+  }
+
+  // Factors → row items (enabled only), sorted by |weighted contribution|
+  const factorRows = (step3?.json?.factors ?? [])
+    .filter(f => isEnabledInProfile(f.key, runCtx?.effectiveProfile))
+    .map(f => {
+      const weightPct = getWeightPct(f.key, runCtx?.effectiveProfile)
+      const weighted = Number(f.normalized_value ?? 0) * weightPct
+      const metadata = FACTOR_METADATA[f.key] || { label: f.name || f.key, icon: 'ℹ️', description: 'Factor' }
+      
+      // For delta factors, split symmetrically
+      const awayContribution = weighted > 0 ? weighted : -weighted
+      const homeContribution = weighted > 0 ? -weighted : weighted
+      
+      return {
+        key: f.key,
+        name: metadata.label,
+        contributionAway: awayContribution,
+        contributionHome: homeContribution,
+        weight: weightPct,
+        rationale: f.notes || metadata.description
+      }
+    })
+    .sort((a, b) => {
+      const absA = Math.abs(a.contributionHome - a.contributionAway)
+      const absB = Math.abs(b.contributionHome - b.contributionAway)
+      return absB - absA
+    })
+
+  return {
+    matchup: `${g.away || 'Away'} @ ${g.home || 'Home'}`,
+    homeTeam: g.home || 'Home',
+    awayTeam: g.away || 'Away',
+    capper: 'SHIVA',
+    sport: 'NBA',
+    pick: pick ? {
+      type: pick.pick_type,
+      selection: pick.selection,
+      units: Number(pick.units ?? 0),
+      confidence: Number(pick.confidence ?? confFinal),
+      spread: pick.spread,
+      total: pick.total
+    } : { type: 'UNKNOWN', selection: 'N/A', units: 0, confidence: confFinal },
+    predictedScore,
+    factors: factorRows,
+    marketMismatch: {
+      conf7,
+      confMarketAdj: confAdj,
+      confFinal,
+      dominant: step5?.json?.dominant || 'side',
+      edgeSide: Number(step5?.json?.edge_side ?? 0),
+      edgeTotal: Number(step5?.json?.edge_total ?? 0)
+    },
+    isDryRun: true
+  }
+}
+
 export interface SHIVAWizardProps {
   effectiveProfile?: any
   selectedGame?: any
@@ -50,27 +165,31 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         
         // Use selected game or fallback to demo game
         const gameData = props.selectedGame || {
-          id: 'nba_2025_10_21_okc_hou',
-          home_team: 'Oklahoma City Thunder',
-          away_team: 'Houston Rockets',
-          start_time: '2025-10-21T01:30:00Z',
+          game_id: 'nba_2025_10_21_okc_hou',
+          home: 'Oklahoma City Thunder',
+          away: 'Houston Rockets',
+          start_time_utc: '2025-10-21T01:30:00Z',
         }
         
         const r = await postJson('/api/shiva/runs', {
-          game_id: gameData.id || 'nba_2025_10_21_okc_hou',
-          sport: 'NBA',
-          capper: 'SHIVA',
-          home_team: gameData.home_team || 'Oklahoma City Thunder',
-          away_team: gameData.away_team || 'Houston Rockets',
-          start_time_utc: gameData.start_time || '2025-10-21T01:30:00Z'
+          game: {
+            game_id: gameData.game_id || 'nba_2025_10_21_okc_hou',
+            home: gameData.home || 'Oklahoma City Thunder',
+            away: gameData.away || 'Houston Rockets',
+            start_time_utc: gameData.start_time_utc || '2025-10-21T01:30:00Z'
+          },
+          effectiveProfile: props.effectiveProfile
         }, 'ui-demo-run')
         if (r.json?.run_id) setRunId(r.json.run_id)
         setLog(r)
         setStepLogs(prev => ({ ...prev, 1: r }))
       } else if (current === 2) {
+        // Use selected game odds or fallback to fixture
+        const oddsData = props.selectedGame?.odds || (await import('@/../fixtures/shiva-v1/step2-odds-snapshot.json')).default.snapshot
+        
         const r = await postJson('/api/shiva/odds/snapshot', {
           run_id: runId,
-          snapshot: (await import('@/../fixtures/shiva-v1/step2-odds-snapshot.json')).default.snapshot
+          snapshot: oddsData
         }, 'ui-demo-snap')
         if (r.json?.snapshot_id) setSnapId(r.json.snapshot_id)
         setLog(r)
@@ -103,17 +222,24 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         setLog(r)
         setStepLogs(prev => ({ ...prev, 7: r }))
         
-        // Light up Insight pill when insight_card_id is present
-        if (r.json?.insight_card_id) {
-          setHasInsight(true)
-          // Store insight card data for rendering (use card from response or fixture)
-          if (r.json?.card) {
-            setInsightCardData(r.json.card)
-          } else {
-            // Fallback to fixture card if API doesn't return it
-            setInsightCardData(fx.card)
-          }
+        // Assemble Insight Card from real run data
+        const runCtx = {
+          game: props.selectedGame,
+          effectiveProfile: effectiveProfileSnapshot || props.effectiveProfile
         }
+        
+        const assembledCard = assembleInsightCard({
+          runCtx,
+          step4: stepLogs[4],
+          step5: stepLogs[5], 
+          step6: stepLogs[6],
+          step3: stepLogs[3],
+          snapshot: stepLogs[2]?.json
+        })
+        
+        // Light up Insight pill and store assembled data
+        setHasInsight(true)
+        setInsightCardData(assembledCard)
       } else if (current === 8) {
         // Debug Report - build flat structure (NO recursion)
         console.log('Generating debug report for step 8, stepLogs:', stepLogs)

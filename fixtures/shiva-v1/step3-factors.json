@@ -9,6 +9,7 @@
     "factors": [
       {
         "factor_no": 1,
+        "key": "seasonNet",
         "name": "Season Net Rating",
         "weight_total_pct": 21.0,
         "raw_values_json": {
@@ -34,6 +35,69 @@
         "caps_applied": false,
         "cap_reason": null,
         "notes": "NR_A - NR_B = 6.8 - 3.1"
+      },
+      {
+        "factor_no": 2,
+        "key": "recentNet",
+        "name": "Recent Form (Last 10)",
+        "weight_total_pct": 17.5,
+        "raw_values_json": {
+          "okc": { "last_10_games": { "net_rating": 8.2, "wins": 7, "losses": 3 } },
+          "hou": { "last_10_games": { "net_rating": 2.8, "wins": 5, "losses": 5 } }
+        },
+        "parsed_values_json": { "okc_recent": 8.2, "hou_recent": 2.8, "delta_100": 5.4 },
+        "normalized_value": 5.4,
+        "caps_applied": false,
+        "cap_reason": null,
+        "notes": "Recent momentum favors OKC"
+      },
+      {
+        "factor_no": 3,
+        "key": "matchupORtgDRtg",
+        "name": "Off/Def Rating Differential",
+        "weight_total_pct": 7.0,
+        "raw_values_json": {
+          "okc": { "offensive_rating": 116.2, "defensive_rating": 109.4 },
+          "hou": { "offensive_rating": 114.0, "defensive_rating": 110.9 }
+        },
+        "parsed_values_json": { "okc_ortg": 116.2, "hou_drtg": 110.9, "delta_100": 5.3 },
+        "normalized_value": 5.3,
+        "caps_applied": false,
+        "cap_reason": null,
+        "notes": "OKC offense vs HOU defense mismatch"
+      },
+      {
+        "factor_no": 4,
+        "key": "h2hPpg",
+        "name": "Head-to-Head PPG (season)",
+        "weight_total_pct": 14.0,
+        "raw_values_json": {
+          "okc_vs_hou": { "ppg": 118.5, "games": 2 },
+          "hou_vs_okc": { "ppg": 112.3, "games": 2 }
+        },
+        "parsed_values_json": { "okc_h2h": 118.5, "hou_h2h": 112.3, "delta_100": 6.2 },
+        "normalized_value": 6.2,
+        "caps_applied": false,
+        "cap_reason": null,
+        "notes": "OKC averages 6.2 more PPG vs HOU"
+      },
+      {
+        "factor_no": 5,
+        "key": "newsEdge",
+        "name": "News/Injury Edge",
+        "weight_total_pct": 7.0,
+        "raw_values_json": {
+          "injuries": {
+            "okc": { "key_players_out": 0, "impact_score": 0 },
+            "hou": { "key_players_out": 1, "impact_score": -2.1 }
+          },
+          "news_sources": ["nba.com", "espn.com", "rotowire.com"]
+        },
+        "parsed_values_json": { "okc_news": 0, "hou_news": -2.1, "delta_100": 2.1 },
+        "normalized_value": 2.1,
+        "caps_applied": false,
+        "cap_reason": null,
+        "notes": "HOU missing key player, OKC healthy"
       }
     ],
     "meta": { "provider_latency_ms": { "statmuse": 624, "web_search": 812 }, "ai_provider": "perplexity" }

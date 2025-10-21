@@ -5,10 +5,6 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const revalidate = 30
 
-/**
- * GET /api/games/by-id?game_id=...
- * Returns a single game by ID
- */
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
@@ -29,14 +25,14 @@ export async function GET(request: NextRequest) {
       .eq('id', gameId)
       .single()
 
-    if (error || !game) {
+    if (error) {
+      console.error('Supabase error fetching game by ID:', error)
       return NextResponse.json(
-        { error: 'Game not found' },
+        { error: 'Game not found or failed to fetch' },
         { status: 404 }
       )
     }
 
-    // Transform to API shape
     const transformed = {
       game_id: game.id,
       league: game.league,
@@ -57,16 +53,15 @@ export async function GET(request: NextRequest) {
       { game: transformed },
       {
         headers: {
-          'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
+          'Cache-Control': `s-maxage=${revalidate}, stale-while-revalidate`,
         },
       }
     )
-  } catch (error) {
-    console.error('Unexpected error in /api/games/by-id:', error)
+  } catch (e) {
+    console.error('API error:', e)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: (e as Error).message || 'An unexpected error occurred' },
       { status: 500 }
     )
   }
 }
-

@@ -14,6 +14,7 @@ export interface FactorControlsProps {
   factors: FactorConfig[]
   onFactorsChange: (factors: FactorConfig[]) => void
   onRunClick: () => void
+  hasSelectedGame?: boolean
 }
 
 export function FactorControls(props: FactorControlsProps) {
@@ -31,6 +32,7 @@ export function FactorControls(props: FactorControlsProps) {
     .reduce((sum, f) => sum + f.weight, 0)
   
   const isValidWeights = Math.abs(weightsSum - 0.70) < 0.005
+  const canRun = isValidWeights && (props.hasSelectedGame ?? true)
 
   const handleToggle = (key: string) => {
     const updated = factors.map(f =>
@@ -132,12 +134,19 @@ export function FactorControls(props: FactorControlsProps) {
         </div>
       )}
 
+      {/* Game Selection Hint */}
+      {!props.hasSelectedGame && (
+        <div className="mb-3 p-2 bg-blue-900 border border-blue-600 rounded text-xs text-blue-200 font-bold">
+          ℹ️ Select a game to enable running
+        </div>
+      )}
+
       {/* Run Button */}
       <button
         onClick={props.onRunClick}
-        disabled={!isValidWeights}
+        disabled={!canRun}
         className={`w-full py-2 rounded font-semibold text-sm ${
-          isValidWeights
+          canRun
             ? 'bg-blue-600 text-white hover:bg-blue-700 border-2 border-blue-800'
             : 'bg-gray-400 text-gray-700 cursor-not-allowed border-2 border-gray-500'
         }`}
