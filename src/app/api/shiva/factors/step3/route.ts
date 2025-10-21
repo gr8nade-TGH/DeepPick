@@ -74,25 +74,36 @@ export async function POST(request: Request) {
       
       if (sport === 'NBA' && betType === 'TOTAL') {
         // Use new NBA totals factors
-        const totalsResult = await computeTotalsFactors({
-          game_id: run_id, // Use run_id as game_id for now
-          away: inputs.teams.away,
-          home: inputs.teams.home,
-          sport: 'NBA',
-          betType: 'TOTAL',
-          leagueAverages: {
-            pace: 100.1,
-            ORtg: 110.0,
-            DRtg: 110.0,
-            threePAR: 0.39,
-            FTr: 0.22,
-            threePstdev: 0.036
-          }
-        })
-        
-        factorsToProcess = totalsResult.factors
-        factorVersion = totalsResult.factor_version
-        totalsDebug = totalsResult.totals_debug
+        try {
+          console.log('[Step3:NBA-Totals] Starting computeTotalsFactors...')
+          const totalsResult = await computeTotalsFactors({
+            game_id: run_id, // Use run_id as game_id for now
+            away: inputs.teams.away,
+            home: inputs.teams.home,
+            sport: 'NBA',
+            betType: 'TOTAL',
+            leagueAverages: {
+              pace: 100.1,
+              ORtg: 110.0,
+              DRtg: 110.0,
+              threePAR: 0.39,
+              FTr: 0.22,
+              threePstdev: 0.036
+            }
+          })
+          
+          console.log('[Step3:NBA-Totals] Success:', { 
+            factorCount: totalsResult.factors.length, 
+            version: totalsResult.factor_version 
+          })
+          
+          factorsToProcess = totalsResult.factors
+          factorVersion = totalsResult.factor_version
+          totalsDebug = totalsResult.totals_debug
+        } catch (error) {
+          console.error('[Step3:NBA-Totals] Error:', error)
+          throw new Error(`NBA Totals computation failed: ${error instanceof Error ? error.message : String(error)}`)
+        }
       } else {
         // Use legacy factors (existing logic)
         factorsToProcess = results.factors

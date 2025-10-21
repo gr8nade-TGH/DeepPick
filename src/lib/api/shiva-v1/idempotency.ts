@@ -56,19 +56,39 @@ export async function withIdempotency<TBody>(args: IdempotencyExecArgs<TBody>): 
 
   // Dry-run path: compute but do not persist
   if (!args.writeAllowed) {
-    const result = await args.exec()
-    return new Response(JSON.stringify(result.body), {
-      status: result.status,
-      headers: { 
-        'Content-Type': 'application/json', 
-        'X-Dry-Run': '1', 
-        'Idempotency-Skip': 'true' 
-      }
-    })
+    try {
+      const result = await args.exec()
+      return new Response(JSON.stringify(result.body), {
+        status: result.status,
+        headers: { 
+          'Content-Type': 'application/json', 
+          'X-Dry-Run': '1', 
+          'Idempotency-Skip': 'true' 
+        }
+      })
+    } catch (error) {
+      console.error(`[Idempotency:${args.step}] Dry-run error:`, error)
+      return new Response(JSON.stringify({
+        error: {
+          code: 'EXECUTION_ERROR',
+          message: error instanceof Error ? error.message : String(error),
+          step: args.step,
+          runId: args.runId
+        }
+      }), {
+        status: 500,
+        headers: { 
+          'Content-Type': 'application/json', 
+          'X-Dry-Run': '1', 
+          'Idempotency-Skip': 'true' 
+        }
+      })
+    }
   }
 
   // Execute and persist idempotent response
-  const result = await args.exec()
+  try {
+    const result = await args.exec()
   const canonical = stableStringify(result.body)
   const responseHash = hashResponse(canonical)
 
@@ -104,6 +124,23 @@ export async function withIdempotency<TBody>(args: IdempotencyExecArgs<TBody>): 
       'X-Dry-Run': '0'
     }
   })
+  } catch (error) {
+    console.error(`[Idempotency:${args.step}] Write error:`, error)
+    return new Response(JSON.stringify({
+      error: {
+        code: 'EXECUTION_ERROR',
+        message: error instanceof Error ? error.message : String(error),
+        step: args.step,
+        runId: args.runId
+      }
+    }), {
+      status: 500,
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-Dry-Run': '0'
+      }
+    })
+  }
 }
 
 
