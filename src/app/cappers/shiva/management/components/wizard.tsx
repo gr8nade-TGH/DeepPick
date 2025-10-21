@@ -1,5 +1,5 @@
 "use client"
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { InsightCard } from './insight-card'
 
 async function postJson(path: string, body: unknown, idempo: string) {
@@ -154,6 +154,49 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
   const [hasInsight, setHasInsight] = useState<boolean>(false)
   const [insightCardData, setInsightCardData] = useState<any>(null)
   const [effectiveProfileSnapshot, setEffectiveProfileSnapshot] = useState<any>(null)
+
+  // Auto-generate debug report when reaching Step 8
+  useEffect(() => {
+    if (step === 8 && Object.keys(stepLogs).length > 0) {
+      console.log('Auto-generating debug report for step 8, stepLogs:', stepLogs)
+      console.log('stepLogs keys:', Object.keys(stepLogs))
+      console.log('effectiveProfileSnapshot:', effectiveProfileSnapshot)
+      
+      // Build comprehensive steps array with actual response data
+      const stepsArray = Object.entries(stepLogs)
+        .filter(([stepNum]) => parseInt(stepNum) < 8) // Exclude step 8
+        .map(([stepNum, response]: [string, any]) => ({
+          step: parseInt(stepNum),
+          status: response.status,
+          dryRun: response.dryRun,
+          latencyMs: response.latencyMs || 0,
+          response: response.json || null, // Include actual response data
+          error: response.error || null,
+        }))
+      
+      const debugReport = {
+        timestamp: new Date().toISOString(),
+        runId: runId || 'unknown',
+        snapId: snapId || 'unknown',
+        effectiveProfile: effectiveProfileSnapshot || props.effectiveProfile || null,
+        environment: {
+          SHIVA_V1_API_ENABLED: process.env.NEXT_PUBLIC_SHIVA_V1_API_ENABLED,
+          SHIVA_V1_UI_ENABLED: process.env.NEXT_PUBLIC_SHIVA_V1_UI_ENABLED,
+          SHIVA_V1_WRITE_ENABLED: process.env.NEXT_PUBLIC_SHIVA_V1_WRITE_ENABLED,
+        },
+        steps: stepsArray,
+        summary: {
+          totalSteps: stepsArray.length,
+          successfulSteps: stepsArray.filter((s) => s.status >= 200 && s.status < 300).length,
+          errorSteps: stepsArray.filter((s) => s.status >= 400).length,
+          dryRunSteps: stepsArray.filter((s) => s.dryRun === true).length,
+        },
+        stepLogsRaw: stepLogs, // Include raw step logs for debugging
+      }
+      console.log('Debug report generated (comprehensive):', debugReport)
+      setLog({ status: 200, json: debugReport, dryRun: false })
+    }
+  }, [step, stepLogs, effectiveProfileSnapshot, runId, snapId, props.effectiveProfile])
 
   async function handleStepClick(current: number) {
     try {
@@ -333,50 +376,41 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         </div>
         <div className="text-sm text-white font-bold">Step {step} / 8</div>
       </div>
-      <div className="border rounded p-3 text-xs font-mono whitespace-pre-wrap bg-gray-900 text-white">
-        {log ? JSON.stringify(log, null, 2) : 
-         step === 8 ? 'Click Next to generate debug report with all step responses.' :
-         'Click Next to start (Step 1 creates run).'}
-      </div>
-      
-      {/* Debug info */}
-      <div className="mt-2 text-xs text-gray-800 font-semibold">
-        Current step: {step}, Step logs count: {Object.keys(stepLogs).length}
-      </div>
-      {/* Step Logs Table */}
+
+      {/* Step Logs Table - Moved to top for better visibility */}
       {Object.keys(stepLogs).length > 0 && (
-        <div className="mt-3">
-          <h4 className="text-sm font-semibold mb-2">Step Responses:</h4>
-          <div className="border rounded p-2 text-xs">
+        <div className="mb-4">
+          <h4 className="text-sm font-semibold mb-2 text-white">Step Responses:</h4>
+          <div className="border border-gray-600 rounded p-2 text-xs bg-gray-800">
             <table className="w-full">
               <thead>
-                <tr className="border-b">
-                  <th className="text-left p-1">Step</th>
-                  <th className="text-left p-1">Status</th>
-                  <th className="text-left p-1">Dry Run</th>
-                  <th className="text-left p-1">Response</th>
+                <tr className="border-b border-gray-600">
+                  <th className="text-left p-1 text-white">Step</th>
+                  <th className="text-left p-1 text-white">Status</th>
+                  <th className="text-left p-1 text-white">Dry Run</th>
+                  <th className="text-left p-1 text-white">Response</th>
                 </tr>
               </thead>
               <tbody>
                 {Object.entries(stepLogs).map(([stepNum, response]: [string, any]) => (
-                  <tr key={stepNum} className="border-b">
-                    <td className="p-1">{stepNum}</td>
+                  <tr key={stepNum} className="border-b border-gray-700">
+                    <td className="p-1 text-white">{stepNum}</td>
                     <td className="p-1">
                       <span className={`px-1 rounded text-xs ${
-                        response.status >= 200 && response.status < 300 ? 'bg-green-100 text-green-800' :
-                        response.status >= 400 ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
+                        response.status >= 200 && response.status < 300 ? 'bg-green-600 text-white' :
+                        response.status >= 400 ? 'bg-red-600 text-white' : 'bg-yellow-600 text-white'
                       }`}>
                         {response.status}
                       </span>
                     </td>
                     <td className="p-1">
                       <span className={`px-1 rounded text-xs ${
-                        response.dryRun ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                        response.dryRun ? 'bg-blue-600 text-white' : 'bg-gray-600 text-white'
                       }`}>
                         {response.dryRun ? 'Yes' : 'No'}
                       </span>
                     </td>
-                    <td className="p-1 font-mono text-xs max-w-xs truncate">
+                    <td className="p-1 font-mono text-xs max-w-xs truncate text-gray-300">
                       {response.json ? JSON.stringify(response.json).substring(0, 50) + '...' : 'No data'}
                     </td>
                   </tr>
@@ -386,6 +420,17 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           </div>
         </div>
       )}
+
+      <div className="border rounded p-3 text-xs font-mono whitespace-pre-wrap bg-gray-900 text-white">
+        {log ? JSON.stringify(log, null, 2) : 
+         step === 8 ? 'Click Next to generate debug report with all step responses.' :
+         'Click Next to start (Step 1 creates run).'}
+      </div>
+      
+      {/* Debug info */}
+      <div className="mt-2 text-xs text-gray-300 font-semibold">
+        Current step: {step}, Step logs count: {Object.keys(stepLogs).length}
+      </div>
 
       {/* Insight Card Button (Primary CTA after Step 7) */}
       {step >= 7 && hasInsight && (
