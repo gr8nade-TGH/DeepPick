@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Home, BarChart3, Trophy, Activity, Target } from 'lucide-react'
+import { Home, BarChart3, Trophy, Activity, Target, Brain } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 
 export function NavBar() {
@@ -46,13 +46,13 @@ export function NavBar() {
         </Button>
       </Link>
       
-      <Link href="/pick-test">
+      <Link href="/cappers/shiva/management">
         <Button 
-          variant={isActive('/pick-test') ? 'default' : 'outline'} 
+          variant={isActive('/cappers/shiva/management') ? 'default' : 'outline'} 
           className="gap-2"
         >
-          <Target className="w-4 h-4" />
-          Pick Test
+          <Brain className="w-4 h-4" />
+          SHIVA Management
         </Button>
       </Link>
       
