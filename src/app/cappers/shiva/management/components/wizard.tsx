@@ -163,6 +163,24 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           setEffectiveProfileSnapshot(props.effectiveProfile)
         }
         
+        // Generate run_id BEFORE POST (if not already set)
+        let generatedRunId = runId
+        if (!generatedRunId) {
+          // Use crypto.randomUUID() if available, otherwise fallback
+          if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+            generatedRunId = crypto.randomUUID()
+          } else {
+            // Fallback UUID v4 generator
+            generatedRunId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+              const r = Math.random() * 16 | 0
+              const v = c === 'x' ? r : (r & 0x3 | 0x8)
+              return v.toString(16)
+            })
+          }
+          console.debug('[Step 1] Generated run_id:', generatedRunId)
+          setRunId(generatedRunId)
+        }
+        
         // Use selected game or fallback to demo game
         const gameData = props.selectedGame || {
           game_id: 'nba_2025_10_21_okc_hou',
@@ -171,7 +189,14 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           start_time_utc: '2025-10-21T01:30:00Z',
         }
         
+        console.debug('[Step 1] POST body:', {
+          run_id: generatedRunId,
+          game: gameData,
+          effectiveProfile: props.effectiveProfile
+        })
+        
         const r = await postJson('/api/shiva/runs', {
+          run_id: generatedRunId, // Include run_id in POST body
           game: {
             game_id: gameData.game_id || 'nba_2025_10_21_okc_hou',
             home: gameData.home || 'Oklahoma City Thunder',
@@ -180,7 +205,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           },
           effectiveProfile: props.effectiveProfile
         }, 'ui-demo-run')
-        if (r.json?.run_id) setRunId(r.json.run_id)
+        
+        console.debug('[Step 1] Response:', r)
         setLog(r)
         setStepLogs(prev => ({ ...prev, 1: r }))
       } else if (current === 2) {

@@ -21,9 +21,7 @@ export async function GET(request: NextRequest) {
 
     const supabase = getSupabase()
 
-    // Query games from now onwards (scheduled/in_progress)
-    const cutoff = new Date().toISOString()
-
+    // Query games from now onwards (scheduled/live) - SAME AS /odds PAGE
     let query = supabase
       .from('games')
       .select('*')
@@ -48,11 +46,47 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    console.log('Raw games data:', JSON.stringify(games, null, 2))
+    console.debug('[games/current] Raw games count:', games?.length)
+    console.debug('[games/current] First game odds structure:', games?.[0]?.odds ? Object.keys(games[0].odds) : 'NO ODDS')
 
+    // Transform using the SAME LOGIC as /odds page
     const transformed = (games || []).map((game: any) => {
-      console.log('Transforming game:', game.id, 'odds:', game.odds)
-      return {
+      // Extract sportsbook names from odds object (just like /odds page)
+      const sportsbooks = game.odds ? Object.keys(game.odds) : []
+      
+      // Calculate average odds from all sportsbooks (same as /odds page)
+      const calculateAvgMoneyline = (isHome: boolean) => {
+        const values = sportsbooks
+          .map(book => game.odds[book]?.moneyline?.[isHome ? 'home' : 'away'])
+          .filter(val => val !== undefined && val !== null)
+        return values.length > 0 
+          ? Math.round(values.reduce((a, b) => a + b, 0) / values.length)
+          : 0
+      }
+
+      const calculateAvgSpread = () => {
+        const values = sportsbooks
+          .map(book => game.odds[book]?.spread?.line)
+          .filter(val => val !== undefined && val !== null)
+        return values.length > 0 
+          ? parseFloat((values.reduce((a, b) => a + b, 0) / values.length).toFixed(1))
+          : 0
+      }
+
+      const calculateAvgTotal = () => {
+        const values = sportsbooks
+          .map(book => game.odds[book]?.total?.line)
+          .filter(val => val !== undefined && val !== null)
+        return values.length > 0 
+          ? parseFloat((values.reduce((a, b) => a + b, 0) / values.length).toFixed(1))
+          : 0
+      }
+
+      // Determine spread favorite (team with negative spread)
+      const avgSpread = calculateAvgSpread()
+      const spreadTeam = avgSpread < 0 ? game.home_team?.name : game.away_team?.name
+
+      const result = {
         game_id: game.id,
         sport: game.sport?.toUpperCase() || 'NBA',
         status: game.status || 'scheduled',
@@ -60,15 +94,20 @@ export async function GET(request: NextRequest) {
         home: game.home_team?.name || 'Home Team',
         away: game.away_team?.name || 'Away Team',
         odds: {
-          ml_home: game.odds?.home_ml || 0,
-          ml_away: game.odds?.away_ml || 0,
-          spread_team: game.odds?.spread_favorite === 'home' ? (game.home_team?.name || 'Home Team') : (game.away_team?.name || 'Away Team'),
-          spread_line: game.odds?.spread_line || 0,
-          total_line: game.odds?.total_line || 0,
+          ml_home: calculateAvgMoneyline(true),
+          ml_away: calculateAvgMoneyline(false),
+          spread_team: spreadTeam || game.home_team?.name || 'Home Team',
+          spread_line: Math.abs(avgSpread),
+          total_line: calculateAvgTotal(),
         },
-        book_count: game.odds?.book_count || 0,
+        book_count: sportsbooks.length,
       }
+
+      console.debug('[games/current] Transformed game:', game.id, 'odds:', result.odds)
+      return result
     })
+
+    console.debug('[games/current] Final response:', JSON.stringify({ games: transformed }, null, 2))
 
     return NextResponse.json(
       { games: transformed },
@@ -79,7 +118,7 @@ export async function GET(request: NextRequest) {
       }
     )
   } catch (e) {
-    console.error('API error:', e)
+    console.error('[games/current] API error:', e)
     return NextResponse.json(
       { error: (e as Error).message || 'An unexpected error occurred' },
       { status: 500 }

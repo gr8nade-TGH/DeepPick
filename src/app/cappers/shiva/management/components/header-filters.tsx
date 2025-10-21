@@ -434,46 +434,6 @@ export function HeaderFilters(props: HeaderFiltersProps) {
           )}
         </div>
 
-        {/* Selected Game Odds Snippet */}
-        {selectedGame && (
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-bold text-white">Selected Game</label>
-            <div className="text-xs text-white px-2 py-1 bg-gray-800 rounded border border-gray-600 font-semibold">
-              <div className="flex items-center gap-2 flex-wrap">
-                {/* Status Chip */}
-                <span className={`px-1 py-0.5 rounded text-xs ${
-                  selectedGame.status === 'scheduled' ? 'bg-blue-600 text-white' :
-                  selectedGame.status === 'in_progress' ? 'bg-green-600 text-white' :
-                  selectedGame.status === 'final' ? 'bg-gray-600 text-white' :
-                  'bg-yellow-600 text-white'
-                }`}>
-                  {selectedGame.status === 'scheduled' ? 'UPCOMING' :
-                   selectedGame.status === 'in_progress' ? 'LIVE' :
-                   selectedGame.status === 'final' ? 'FINAL' : 'POSTPONED'}
-                </span>
-                
-                {/* Date & Time */}
-                <span className="text-gray-300">
-                  {new Date(selectedGame.start_time_utc).toLocaleDateString()} {formatLocalTime(selectedGame.start_time_utc)}
-                </span>
-                
-                {/* Odds */}
-                <span className="text-gray-300">|</span>
-                <span>
-                  ML {selectedGame.away.split(' ').pop()} {selectedGame.odds.ml_away !== 0 ? (selectedGame.odds.ml_away > 0 ? '+' : '') + selectedGame.odds.ml_away : '—'} / {selectedGame.home.split(' ').pop()} {selectedGame.odds.ml_home !== 0 ? (selectedGame.odds.ml_home > 0 ? '+' : '') + selectedGame.odds.ml_home : '—'}
-                </span>
-                <span className="text-gray-300">•</span>
-                <span>
-                  Spread: {selectedGame.odds.spread_team.split(' ').pop()} {selectedGame.odds.spread_line !== 0 ? (selectedGame.odds.spread_line > 0 ? '+' : '') + selectedGame.odds.spread_line : '—'}
-                </span>
-                <span className="text-gray-300">•</span>
-                <span>
-                  Total: {selectedGame.odds.total_line !== 0 ? selectedGame.odds.total_line : '—'}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   )

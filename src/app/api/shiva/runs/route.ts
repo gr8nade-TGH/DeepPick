@@ -4,13 +4,15 @@ import { ensureApiEnabled, isWriteAllowed, jsonError, jsonOk, requireIdempotency
 export const runtime = 'nodejs'
 
 const CreateRunSchema = z.object({
-  game_id: z.string().min(1),
-  sport: z.literal('NBA'),
-  capper: z.literal('SHIVA'),
-  home_team: z.string().min(1),
-  away_team: z.string().min(1),
-  start_time_utc: z.string().min(1),
-}).strict() // Strict: no extra keys allowed
+  run_id: z.string().uuid().optional(), // Accept pre-generated run_id
+  game: z.object({
+    game_id: z.string().min(1),
+    home: z.string().min(1),
+    away: z.string().min(1),
+    start_time_utc: z.string().min(1),
+  }),
+  effectiveProfile: z.any().optional(), // Allow effectiveProfile for context
+}) // Allow extra keys for forward compatibility
 
 export async function POST(request: Request) {
   const startTime = Date.now()
@@ -26,13 +28,27 @@ export async function POST(request: Request) {
     console.error('[SHIVA:CreateRun]', {
       error: 'INVALID_BODY',
       issues: parse.error.issues,
+      body: body,
       latencyMs: Date.now() - startTime,
     })
     return jsonError('INVALID_BODY', 'Invalid request body', 400, { issues: parse.error.issues })
   }
 
-  const { game_id, sport, capper, home_team, away_team } = parse.data
+  const { run_id: providedRunId, game } = parse.data
+  const game_id = game.game_id
+  const sport = 'NBA'
+  const capper = 'SHIVA'
+  
   const admin = getSupabaseAdmin()
+
+  // Use provided run_id or generate one
+  const run_id = providedRunId || crypto.randomUUID()
+  
+  console.debug('[SHIVA:CreateRun]', {
+    providedRunId,
+    generatedRunId: run_id,
+    game_id,
+  })
 
   // Idempotency short-circuit (reuse existing non-voided run)
   const existing = await admin.from('runs').select('run_id, state').eq('game_id', game_id).eq('capper', capper).neq('state', 'VOIDED').maybeSingle()
@@ -57,16 +73,16 @@ export async function POST(request: Request) {
 
   // Create new run
   if (!writeAllowed) {
-    // Dry-run: simulate new run id
+    // Dry-run: return the provided/generated run_id
     console.log('[SHIVA:CreateRun]', {
       game_id,
-      run_id: 'dryrun_run',
-      status: 'created',
+      run_id,
+      status: 'created (dry-run)',
       writeAllowed: false,
       latencyMs: Date.now() - startTime,
     })
     
-    return new Response(JSON.stringify({ run_id: 'dryrun_run', state: 'IN-PROGRESS' }), {
+    return new Response(JSON.stringify({ run_id, state: 'IN-PROGRESS' }), {
       status: 201,
       headers: {
         'Content-Type': 'application/json',
