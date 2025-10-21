@@ -93,7 +93,7 @@ export async function runCalibration(
 /**
  * Create confidence score bins for analysis
  */
-function createConfidenceBins(picks: any[]): CalibrationBin[] {
+export function createConfidenceBins(picks: any[]): CalibrationBin[] {
   const bins: CalibrationBin[] = []
   const binRanges: [number, number][] = [
     [1.0, 2.0],
@@ -125,7 +125,7 @@ function createConfidenceBins(picks: any[]): CalibrationBin[] {
 /**
  * Find optimal scaling constant using grid search
  */
-function findOptimalScaling(picks: any[], bins: CalibrationBin[]): number {
+export function findOptimalScaling(picks: any[], bins: CalibrationBin[]): number {
   const scalingRange = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]
   let bestScaling = 2.5
   let bestError = Infinity
@@ -144,7 +144,7 @@ function findOptimalScaling(picks: any[], bins: CalibrationBin[]): number {
 /**
  * Calculate error for a given scaling constant
  */
-function calculateScalingError(picks: any[], bins: CalibrationBin[], scaling: number): number {
+export function calculateScalingError(picks: any[], bins: CalibrationBin[], scaling: number): number {
   let totalError = 0
   let totalWeight = 0
   
@@ -171,7 +171,7 @@ function calculateScalingError(picks: any[], bins: CalibrationBin[], scaling: nu
 /**
  * Calculate R-squared for calibration quality
  */
-function calculateRSquared(picks: any[], bins: CalibrationBin[], scaling: number): number {
+export function calculateRSquared(picks: any[], bins: CalibrationBin[], scaling: number): number {
   let ssRes = 0 // Sum of squares of residuals
   let ssTot = 0 // Total sum of squares
   

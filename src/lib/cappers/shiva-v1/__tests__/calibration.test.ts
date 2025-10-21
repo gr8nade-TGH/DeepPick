@@ -160,7 +160,7 @@ describe('Calibration Logic', () => {
     })
 
     it('should handle edge cases', () => {
-      const emptyBins = []
+      const emptyBins: any[] = []
       const rSquared = calculateRSquared(mockPicks, emptyBins, 2.5)
       
       expect(rSquared).toBe(0)
@@ -171,7 +171,7 @@ describe('Calibration Logic', () => {
     it('should handle empty picks array', () => {
       const bins = createConfidenceBins([])
       expect(bins).toHaveLength(4)
-      bins.forEach(bin => {
+      bins.forEach((bin: any) => {
         expect(bin.sample_size).toBe(0)
         expect(bin.hit_rate).toBe(0)
         expect(bin.expected_rate).toBe(0)

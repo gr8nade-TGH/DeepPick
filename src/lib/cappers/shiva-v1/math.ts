@@ -164,3 +164,30 @@ export function calculateMarketMismatch(
     units
   }
 }
+
+// Legacy math functions for compatibility
+export function applyCap(value: number, cap: number): number {
+  return clamp(value, -cap, cap)
+}
+
+export function paceHarmonic(homePace: number, awayPace: number): number {
+  return 2 / (1/homePace + 1/awayPace)
+}
+
+export function spreadFromDelta(delta: number, pace: number): number {
+  return delta * 0.5
+}
+
+export function totalFromORtgs(homeOrtg: number, awayOrtg: number, pace: number): number {
+  return (homeOrtg + awayOrtg) * pace / 200
+}
+
+export function scoresFromSpreadTotal(spread: number, total: number): { home: number; away: number } {
+  const home = (total + spread) / 2
+  const away = (total - spread) / 2
+  return { home: Math.round(home), away: Math.round(away) }
+}
+
+export function conf7(spread: number): number {
+  return Math.abs(spread) * 0.1
+}
