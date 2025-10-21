@@ -1,6 +1,7 @@
 "use client"
 import { useMemo, useState, useEffect } from 'react'
 import { InsightCard } from './insight-card'
+import { getFactorMeta } from '@/lib/cappers/shiva-v1/factor-registry'
 
 async function postJson(path: string, body: unknown, idempo: string) {
   const res = await fetch(path, {
@@ -90,7 +91,7 @@ function getWeightPct(factorKey: string, profile: any): number {
   return weightKey ? (profile.weights[weightKey] || 0) : 0.1
 }
 
-function generatePredictionWriteup(pick: any, predictedScore: any, totalLine: number, confFinal: number, factorRows: any[]): string {
+function generatePredictionWriteup(pick: any, predictedScore: any, totalLine: number, confFinal: number, factorRows: any[], homeTeam: string, awayTeam: string): string {
   if (!pick) return 'No pick generated.'
   
   const totalPred = predictedScore.home + predictedScore.away
@@ -98,8 +99,14 @@ function generatePredictionWriteup(pick: any, predictedScore: any, totalLine: nu
   
   switch (pick.type) {
     case 'TOTAL':
+      // 3) Writeups should respect pick type (TOTAL) and totals values
+      const line = totalLine ?? null
+      const edge = line ? (totalPred - line).toFixed(1) : '0'
       const overUnder = pick.selection?.includes('OVER') ? 'Over' : 'Under'
-      return `Model projects ${predictedScore.home}-${predictedScore.away} (total ${totalPred}), ${overUnder} line ${totalLine}. Key driver: ${topFactor?.label} (${topFactor?.rationale}). With confidence ${confFinal.toFixed(1)}/5, we lean ${overUnder}.`
+      
+      return line
+        ? `Model projects ${homeTeam} ${predictedScore.home}-${awayTeam} ${predictedScore.away} (total ${totalPred}). With confidence ${confFinal.toFixed(1)}/5 and a +${edge}pt edge, we lean ${overUnder} ${line}. Key driver: ${topFactor?.label}.`
+        : `Model projects ${homeTeam} ${predictedScore.home}-${awayTeam} ${predictedScore.away}. Key driver: ${topFactor?.label}.`
     
     case 'SPREAD':
       return `Model projects ${predictedScore.winner} covering by ${Math.abs(predictedScore.home - predictedScore.away)} points vs spread. Key driver: ${topFactor?.label} (${topFactor?.rationale}). With confidence ${confFinal.toFixed(1)}/5, we lean ${pick.selection}.`
@@ -145,35 +152,54 @@ function assembleInsightCard({ runCtx, step4, step5, step6, step3, step2 }: any)
     winner: String(step4?.json?.predictions?.winner ?? '')
   }
 
-  // Format matchup strings
+  // 1) Use Step-2 snapshot odds in the card header
+  const odds = step2?.json?.snapshot?.odds ?? runCtx?.game?.odds ?? null
+  const spreadTeam = odds?.spread?.team
+  const spreadLine = odds?.spread?.line
+  const totalLine = odds?.total?.line
+
+  // Format matchup strings without injecting zeroes
   const awayTeam = g.away || 'Away'
   const homeTeam = g.home || 'Home'
-  const spreadLine = step2?.json?.snapshot?.spread?.line || 0
-  const totalLine = step2?.json?.snapshot?.total?.line || 0
   
-  const spreadText = `${awayTeam} ${spreadLine > 0 ? '+' : ''}${spreadLine} @ ${homeTeam} ${spreadLine < 0 ? spreadLine : ''}`
-  const totalText = `O/U ${totalLine}`
+  function formatSpread(away: string, home: string, spreadTeam: string, spreadLine: number) {
+    if (spreadTeam && typeof spreadLine === 'number') {
+      const fav = spreadTeam === home ? home : away
+      const dog = fav === home ? away : home
+      const line = Math.abs(spreadLine).toFixed(1)
+      return `${dog} +${line} @ ${fav} -${line}`
+    }
+    return `${away} @ ${home}` // no spread available
+  }
 
-  // Factors → row items (enabled only), sorted by |weighted contribution|
+  const spreadText = formatSpread(awayTeam, homeTeam, spreadTeam, spreadLine)
+  const totalText = typeof totalLine === 'number' ? `O/U ${totalLine}` : 'O/U —'
+
+  // 2) Populate factor rows from Step-3 (not defaults)
   const factorRows = (step3?.json?.factors ?? [])
     .filter((f: any) => isEnabledInProfile(f.key, runCtx?.effectiveProfile))
     .map((f: any) => {
+      // Use Step-3 parsed_values_json instead of recomputing
+      const z = Number(f.normalized_value ?? 0)
+      const pv = f.parsed_values_json ?? {}
+      const away = Number(pv.awayContribution ?? 0)
+      const home = Number(pv.homeContribution ?? 0)
+      const points = Number(pv.points ?? 0)
+
+      const metadata = getFactorMeta(f.key) || { shortName: f.name || f.key, icon: 'ℹ️', description: 'Factor' }
       const weightPct = getWeightPct(f.key, runCtx?.effectiveProfile)
-      const weighted = Number(f.normalized_value ?? 0) * weightPct
-      const metadata = FACTOR_METADATA[f.key] || { label: f.name || f.key, icon: 'ℹ️', description: 'Factor' }
-      
-      // For delta factors, split symmetrically
-      const awayContribution = weighted / 2
-      const homeContribution = -weighted / 2
+      const weightAppliedPct = Math.round(weightPct * 100)
       
       return {
         key: f.key,
-        label: metadata.label,
+        label: metadata.shortName,
         icon: metadata.icon,
-        awayContribution,
-        homeContribution,
-        weightAppliedPct: weightPct * 100,
-        rationale: f.notes || metadata.description
+        awayContribution: away, // use Step-3 computed values
+        homeContribution: home,
+        weightAppliedPct,
+        rationale: f.notes ?? metadata.description,
+        z,
+        points
       }
     })
     .sort((a: any, b: any) => {
@@ -181,6 +207,10 @@ function assembleInsightCard({ runCtx, step4, step5, step6, step3, step2 }: any)
       const absB = Math.abs(b.awayContribution - b.homeContribution)
       return absB - absA
     })
+
+  // Debug hooks (dev only)
+  console.debug('[card.odds.used]', odds)
+  console.debug('[card.factor.rows]', factorRows.map(r => ({ key: r.key, away: r.awayContribution, home: r.homeContribution })))
 
   return {
     capper: 'SHIVA',
@@ -208,7 +238,7 @@ function assembleInsightCard({ runCtx, step4, step5, step6, step3, step2 }: any)
     },
     predictedScore,
     writeups: {
-      prediction: generatePredictionWriteup(pick, predictedScore, totalLine, confFinal, factorRows),
+      prediction: generatePredictionWriteup(pick, predictedScore, totalLine, confFinal, factorRows, awayTeam, homeTeam),
       gamePrediction: `${predictedScore.winner} ${Math.max(predictedScore.home, predictedScore.away)}–${Math.min(predictedScore.home, predictedScore.away)}`,
       bold: generateBoldPrediction(pick, predictedScore, factorRows),
     },
