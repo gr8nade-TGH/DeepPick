@@ -70,6 +70,67 @@ function formatSpread(odds: any): number {
   return Number(odds.spread_line)
 }
 
+// Factor metadata for UI display
+const FACTOR_METADATA: Record<string, { label: string; icon: string; description: string }> = {
+  seasonNet: {
+    label: 'Season Net',
+    icon: '📈',
+    description: 'Season Net Rating: Team Net Rating (ORtg-DRtg) differential. Core strength signal.',
+  },
+  recentNet: {
+    label: 'Recent 10',
+    icon: '🔥',
+    description: 'Recent Form: Net Rating over last 10 games. Momentum indicator.',
+  },
+  h2hPpg: {
+    label: 'H2H',
+    icon: '🤝',
+    description: 'Head-to-Head PPG: Season PPG by each team vs this opponent. Style/fit history.',
+  },
+  matchupORtgDRtg: {
+    label: 'ORtg/DRtg',
+    icon: '🎯',
+    description: 'Off/Def Rating Differential: Offensive vs Defensive rating mismatch. Matchup quality.',
+  },
+  threePoint: {
+    label: '3PT',
+    icon: '🏀',
+    description: '3-Point Environment: 3PA rate / 3P% / opponent 3PA context. Variance lever.',
+  },
+  newsEdge: {
+    label: 'News',
+    icon: '🏥',
+    description: 'News/Injury Edge: Injury/availability impact within last 48-72h. Capped at ±3 per 100.',
+  },
+  homeEdge: {
+    label: 'Home',
+    icon: '🏠',
+    description: 'Home Court Edge: Generic home advantage adjustment. Default +1.5 per 100.',
+  },
+}
+
+function isEnabledInProfile(factorKey: string, profile: any): boolean {
+  if (!profile?.weights) return true // Default enabled if no profile
+  // Check if factor is enabled in profile (simplified - assume all enabled for now)
+  return true
+}
+
+function getWeightPct(factorKey: string, profile: any): number {
+  if (!profile?.weights) return 0.1 // Default weight
+  // Map factor keys to profile weights
+  const weightMap: Record<string, string> = {
+    seasonNet: 'f1_net_rating',
+    recentNet: 'f2_recent_form',
+    h2hPpg: 'f3_h2h_matchup',
+    matchupORtgDRtg: 'f4_ortg_diff',
+    newsEdge: 'f5_news_injury',
+    homeEdge: 'f6_home_court',
+    threePoint: 'f7_three_point',
+  }
+  const weightKey = weightMap[factorKey]
+  return weightKey ? (profile.weights[weightKey] || 0) : 0.1
+}
+
 function assembleInsightCard({ runCtx, step4, step5, step6, step3, snapshot }: any) {
   const g = runCtx?.game || {}
   const pick = step6?.json?.pick || null
@@ -82,6 +143,15 @@ function assembleInsightCard({ runCtx, step4, step5, step6, step3, snapshot }: a
     away: Number(step4?.json?.predictions?.scores?.away ?? 0),
     winner: String(step4?.json?.predictions?.winner ?? '')
   }
+
+  // Format matchup strings
+  const awayTeam = g.away || 'Away'
+  const homeTeam = g.home || 'Home'
+  const spreadLine = snapshot?.spread?.line || 0
+  const totalLine = snapshot?.total?.line || 0
+  
+  const spreadText = `${awayTeam} ${spreadLine > 0 ? '+' : ''}${spreadLine} @ ${homeTeam} ${spreadLine < 0 ? spreadLine : ''}`
+  const totalText = `O/U ${totalLine}`
 
   // Factors → row items (enabled only), sorted by |weighted contribution|
   const factorRows = (step3?.json?.factors ?? [])
@@ -97,44 +167,60 @@ function assembleInsightCard({ runCtx, step4, step5, step6, step3, snapshot }: a
       
       return {
         key: f.key,
-        name: metadata.label,
-        contributionAway: awayContribution,
-        contributionHome: homeContribution,
-        weight: weightPct,
+        label: metadata.label,
+        icon: metadata.icon,
+        awayContribution,
+        homeContribution,
+        weightAppliedPct: weightPct * 100,
         rationale: f.notes || metadata.description
       }
     })
     .sort((a: any, b: any) => {
-      const absA = Math.abs(a.contributionHome - a.contributionAway)
-      const absB = Math.abs(b.contributionHome - b.contributionAway)
+      const absA = Math.abs(a.awayContribution + a.homeContribution)
+      const absB = Math.abs(b.awayContribution + b.homeContribution)
       return absB - absA
     })
 
   return {
-    matchup: `${g.away || 'Away'} @ ${g.home || 'Home'}`,
-    homeTeam: g.home || 'Home',
-    awayTeam: g.away || 'Away',
     capper: 'SHIVA',
-    sport: 'NBA',
+    capperIconUrl: undefined, // Placeholder for now
+    sport: 'NBA' as const,
+    gameId: g.game_id || 'unknown',
+    generatedAt: new Date().toISOString(),
+    matchup: {
+      away: awayTeam,
+      home: homeTeam,
+      spreadText,
+      totalText,
+      gameDateLocal: g.start_time_utc || new Date().toISOString(),
+    },
     pick: pick ? {
-      type: pick.pick_type,
-      selection: pick.selection,
+      type: (pick.pick_type || 'UNKNOWN') as 'SPREAD' | 'MONEYLINE' | 'TOTAL' | 'RUN_LINE',
+      selection: pick.selection || 'N/A',
       units: Number(pick.units ?? 0),
       confidence: Number(pick.confidence ?? confFinal),
-      spread: pick.spread,
-      total: pick.total
-    } : { type: 'UNKNOWN', selection: 'N/A', units: 0, confidence: confFinal },
-    predictedScore,
-    factors: factorRows,
-    marketMismatch: {
-      conf7,
-      confMarketAdj: confAdj,
-      confFinal,
-      dominant: step5?.json?.dominant || 'side',
-      edgeSide: Number(step5?.json?.edge_side ?? 0),
-      edgeTotal: Number(step5?.json?.edge_total ?? 0)
+    } : { 
+      type: 'UNKNOWN' as const, 
+      selection: 'N/A', 
+      units: 0, 
+      confidence: confFinal 
     },
-    isDryRun: true
+    predictedScore,
+    writeups: {
+      prediction: `Based on our analysis, ${predictedScore.winner} should cover the spread with a predicted score of ${predictedScore.home}-${predictedScore.away}.`,
+      gamePrediction: `${predictedScore.winner} ${Math.max(predictedScore.home, predictedScore.away)}–${Math.min(predictedScore.home, predictedScore.away)}`,
+      bold: `Look for ${predictedScore.winner} to dominate in the ${step5?.json?.dominant || 'side'} market.`,
+    },
+    factors: factorRows,
+    market: {
+      conf7,
+      confAdj,
+      confFinal,
+      dominant: (step5?.json?.dominant || 'side') as 'side' | 'total',
+    },
+    state: {
+      dryRun: true,
+    },
   }
 }
 
@@ -502,7 +588,33 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       )}
 
       {/* Navigation Buttons - Moved to stay at top */}
-      <div className="flex gap-2 mb-4">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex-1">
+          {step <= 8 && (
+            <div className="text-sm text-white">
+              <div className="font-bold">
+                {step === 1 && "Step 1: Run Intake"}
+                {step === 2 && "Step 2: Odds Snapshot"}
+                {step === 3 && "Step 3: Factor Analysis"}
+                {step === 4 && "Step 4: AI Predictions"}
+                {step === 5 && "Step 5: Market Analysis"}
+                {step === 6 && "Step 6: Pick Generation"}
+                {step === 7 && "Step 7: Insight Card"}
+                {step === 8 && "Step 8: Debug Report"}
+              </div>
+              <div className="text-xs text-gray-300 mt-1">
+                {step === 1 && "Create run and validate game data"}
+                {step === 2 && "Capture current odds snapshot"}
+                {step === 3 && "Fetch and analyze confidence factors"}
+                {step === 4 && "Generate AI-powered predictions"}
+                {step === 5 && "Calculate market mismatch and adjustments"}
+                {step === 6 && "Generate final pick with units"}
+                {step === 7 && "Create insight card with factor breakdown"}
+                {step === 8 && "Generate comprehensive debug report"}
+              </div>
+            </div>
+          )}
+        </div>
         <button 
           className={`px-3 py-1 border-2 border-gray-600 rounded font-semibold ${
             step >= 8 

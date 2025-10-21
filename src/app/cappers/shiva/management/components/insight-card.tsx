@@ -12,6 +12,16 @@ const FACTOR_ICONS: Record<string, string> = {
   homeEdge: '🏠',
 }
 
+const FACTOR_LABELS: Record<string, string> = {
+  seasonNet: 'Season Net',
+  recentNet: 'Recent 10',
+  h2hPpg: 'H2H',
+  matchupORtgDRtg: 'ORtg/DRtg',
+  threePoint: '3PT',
+  newsEdge: 'News',
+  homeEdge: 'Home',
+}
+
 const FACTOR_TOOLTIPS: Record<string, string> = {
   seasonNet: 'Season Net Rating: Team Net Rating (ORtg-DRtg) differential. Core strength signal.',
   recentNet: 'Recent Form: Net Rating over last 10 games. Momentum indicator.',
@@ -23,50 +33,56 @@ const FACTOR_TOOLTIPS: Record<string, string> = {
 }
 
 export interface InsightCardProps {
-  matchup: string
-  homeTeam: string
-  awayTeam: string
   capper: string
-  sport: string
+  capperIconUrl?: string
+  sport: 'NBA' | 'MLB' | 'NFL'
+  gameId: string
+  generatedAt: string
+  matchup: {
+    away: string
+    home: string
+    spreadText: string
+    totalText: string
+    gameDateLocal: string
+  }
   pick: {
-    type: string
+    type: 'SPREAD' | 'MONEYLINE' | 'TOTAL' | 'RUN_LINE'
     selection: string
     units: number
     confidence: number
-    spread?: number
-    total?: number
   }
-  predictedScore: {
-    home: number
+  predictedScore: { 
     away: number
+    home: number
+    winner: string
+  }
+  writeups: {
+    prediction: string
+    gamePrediction: string
+    bold?: string
   }
   factors: Array<{
     key: string
-    name: string
-    contributionHome: number
-    contributionAway: number
-    weight: number
-    rationale: string
+    label: string
+    icon: string
+    awayContribution: number
+    homeContribution: number
+    weightAppliedPct: number
+    rationale?: string
   }>
-  marketMismatch: {
-    dominant: 'side' | 'total'
-    edgeSide: number
-    edgeTotal: number
+  market: { 
     conf7: number
-    confMarketAdj: number
+    confAdj: number
     confFinal: number
+    dominant: 'side' | 'total'
   }
-  aiWriteup?: {
-    prediction?: string
-    gamePrediction?: string
-    boldPrediction?: string
+  state: { 
+    dryRun: boolean
   }
-  isDryRun?: boolean
-  pickResult?: {
-    result: 'win' | 'loss' | 'push'
-    unitsDelta: number
-    finalScore: { home: number; away: number }
-    explanation: string
+  results?: {
+    status: 'pending' | 'win' | 'loss' | 'push'
+    finalScore?: { away: number; home: number }
+    postMortem?: string
   }
 }
 
@@ -87,16 +103,16 @@ export function InsightCard(props: InsightCardProps) {
   // Safe defaults for all fields
   const safeFactors = (props.factors ?? []).map(f => ({
     ...f,
-    contributionHome: Number(f.contributionHome ?? 0),
-    contributionAway: Number(f.contributionAway ?? 0),
-    weight: Number(f.weight ?? 0),
+    awayContribution: Number(f.awayContribution ?? 0),
+    homeContribution: Number(f.homeContribution ?? 0),
+    weightAppliedPct: Number(f.weightAppliedPct ?? 0),
     rationale: f.rationale || 'No rationale provided',
   }))
 
   // Sort factors by absolute contribution (sum of home + away impact)
   const sortedFactors = [...safeFactors].sort((a, b) => {
-    const absA = Math.abs((a.contributionHome ?? 0) - (a.contributionAway ?? 0))
-    const absB = Math.abs((b.contributionHome ?? 0) - (b.contributionAway ?? 0))
+    const absA = Math.abs((a.awayContribution ?? 0) + (a.homeContribution ?? 0))
+    const absB = Math.abs((b.awayContribution ?? 0) + (b.homeContribution ?? 0))
     return absB - absA
   })
 
@@ -106,130 +122,157 @@ export function InsightCard(props: InsightCardProps) {
     selection: props.pick?.selection || 'N/A',
     units: Number(props.pick?.units ?? 0),
     confidence: Number(props.pick?.confidence ?? 0),
-    spread: props.pick?.spread,
-    total: props.pick?.total,
   }
 
   const safePredictedScore = {
-    home: Number(props.predictedScore?.home ?? 0),
     away: Number(props.predictedScore?.away ?? 0),
+    home: Number(props.predictedScore?.home ?? 0),
+    winner: props.predictedScore?.winner || 'Unknown',
   }
 
-  const safeMarketMismatch = {
-    dominant: props.marketMismatch?.dominant || 'side',
-    edgeSide: Number(props.marketMismatch?.edgeSide ?? 0),
-    edgeTotal: Number(props.marketMismatch?.edgeTotal ?? 0),
-    conf7: Number(props.marketMismatch?.conf7 ?? 0),
-    confMarketAdj: Math.max(-1.2, Math.min(1.2, Number(props.marketMismatch?.confMarketAdj ?? 0))),
-    confFinal: Number(props.marketMismatch?.confFinal ?? 0),
+  const safeMarket = {
+    conf7: Number(props.market?.conf7 ?? 0),
+    confAdj: Number(props.market?.confAdj ?? 0),
+    confFinal: Number(props.market?.confFinal ?? 0),
+    dominant: props.market?.dominant || 'side',
+  }
+
+  const formatLocalDate = (isoString: string) => {
+    try {
+      return new Date(isoString).toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric',
+        year: 'numeric'
+      })
+    } catch {
+      return 'Unknown Date'
+    }
+  }
+
+  const formatLocalTime = (isoString: string) => {
+    try {
+      return new Date(isoString).toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+      })
+    } catch {
+      return 'Unknown Time'
+    }
   }
 
   return (
     <div className="border rounded-lg shadow-lg bg-white max-w-4xl mx-auto">
-      {/* Header Line */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-t-lg">
+      {/* Header Block */}
+      <div className="p-4 border-b">
         <div className="flex items-center justify-between">
-          <div className="text-lg font-bold">
-            {props.awayTeam || 'Away'} {safePick.spread && safePick.spread > 0 ? `+${safePick.spread}` : ''} @ {props.homeTeam || 'Home'} {safePick.spread && safePick.spread < 0 ? safePick.spread : ''}
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-lg">
+              {props.capperIconUrl ? (
+                <img src={props.capperIconUrl} alt={props.capper} className="w-6 h-6" />
+              ) : (
+                '❄️' // Ice elemental icon for SHIVA
+              )}
+            </div>
+            <div className="text-2xl font-bold text-gray-900">
+              {props.capper || 'SHIVA'}'S PICK
+            </div>
           </div>
-          <div className="text-sm">
-            O/U {safePick.total || '—'}
+          <div className="text-right text-sm text-gray-600">
+            <div>GAME DATE: {formatLocalDate(props.matchup?.gameDateLocal || props.generatedAt)}</div>
+            <div>GAME ID: {props.gameId || '#'}</div>
+            <div>PICK GENERATED: {formatLocalTime(props.generatedAt)}</div>
           </div>
         </div>
       </div>
 
-      {/* Dry-Run Chip */}
-      {props.isDryRun && (
-        <div className="bg-yellow-50 border-b border-yellow-200 px-4 py-2 text-sm text-yellow-800">
-          🧪 Dry-Run (no writes)
-        </div>
-      )}
-
-      {/* Bet Banner */}
-      <div className="bg-blue-50 border-b border-blue-200 p-4">
+      {/* Matchup Line */}
+      <div className="p-4 border-b bg-gray-50">
         <div className="text-center">
-          <div className="text-2xl font-bold text-blue-900">
-            {safePick.units} {safePick.units === 1 ? 'UNIT' : 'UNITS'} on {safePick.selection}
+          <div className="text-lg font-bold text-gray-900">
+            {props.matchup?.spreadText || 'AWAY +spread @ HOME -spread'}
           </div>
           <div className="text-sm text-gray-600 mt-1">
+            {props.matchup?.totalText || 'O/U {total_line}'}
+          </div>
+        </div>
+      </div>
+
+      {/* Bet Banner */}
+      <div className="p-4 border-b">
+        <div className="text-center">
+          <div className="text-3xl font-bold text-blue-600 mb-2">
+            {safePick.units} {safePick.units === 1 ? 'UNIT' : 'UNITS'} on {safePick.selection}
+          </div>
+          <div className="text-sm text-gray-600">
             {props.capper || 'SHIVA'} • {props.sport || 'NBA'} • {safePick.type}
           </div>
         </div>
       </div>
 
       {/* AI Writeups */}
-      {props.aiWriteup && (
+      {props.writeups && (
         <div className="p-4 border-b space-y-3">
-          {props.aiWriteup.prediction && (
+          {props.writeups.prediction && (
             <div>
-              <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Prediction Summary</div>
-              <p className="text-sm text-gray-700">{props.aiWriteup.prediction}</p>
+              <div className="text-xs font-semibold text-gray-500 uppercase mb-1">AI PREDICTION WRITEUP</div>
+              <p className="text-sm text-gray-700">{props.writeups.prediction}</p>
             </div>
           )}
           
-          {props.aiWriteup.gamePrediction && (
+          {props.writeups.gamePrediction && (
             <div>
-              <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Game Prediction (Score & Victor)</div>
-              <p className="text-sm font-semibold text-gray-900">{props.aiWriteup.gamePrediction}</p>
+              <div className="text-xs font-semibold text-gray-500 uppercase mb-1">AI GAME PREDICTION (SCORE AND VICTOR)</div>
+              <p className="text-sm font-semibold text-gray-900">{props.writeups.gamePrediction}</p>
             </div>
           )}
           
-          {props.aiWriteup.boldPrediction && (
+          {props.writeups.bold && (
             <div className="bg-yellow-50 border border-yellow-200 rounded p-2">
-              <div className="text-xs font-semibold text-yellow-700 uppercase mb-1">Bold Prediction</div>
-              <p className="text-sm font-bold text-yellow-900">{props.aiWriteup.boldPrediction}</p>
+              <div className="text-xs font-semibold text-yellow-700 uppercase mb-1">AI BOLD PREDICTION</div>
+              <p className="text-sm font-bold text-yellow-900">{props.writeups.bold}</p>
             </div>
           )}
         </div>
       )}
 
-      {/* Predicted Score */}
-      <div className="p-4 border-b bg-gray-50">
-        <div className="text-center">
-          <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Predicted Score</div>
-          <div className="text-3xl font-mono font-bold text-gray-900">
-            {safePredictedScore.away} - {safePredictedScore.home}
-          </div>
-          <div className="text-xs text-gray-600 mt-1">
-            {props.awayTeam || 'Away'} @ {props.homeTeam || 'Home'}
-          </div>
-        </div>
-      </div>
-
-      {/* Confidence Factors Grid (Two-Column Layout) */}
+      {/* Confidence Factors Table */}
       <div className="p-4 border-b">
         <div className="flex items-center justify-between mb-3">
-          <div className="text-sm font-semibold text-gray-700">Confidence Factors</div>
+          <div className="text-sm font-semibold text-gray-700">CONFIDENCE FACTORS:</div>
           {sortedFactors.length > 0 && (
             <div className="text-xs px-2 py-1 bg-purple-100 text-purple-800 rounded">
-              Dominant: {sortedFactors[0].name}
+              Dominant: {sortedFactors[0].label}
             </div>
           )}
         </div>
         
-        {/* Header Row */}
+        {/* Header Row with tiny labels */}
         <div className="grid grid-cols-[40px_1fr_1fr] gap-2 mb-2 text-xs font-semibold text-gray-600">
-          <div></div>
-          <div className="text-center">{props.awayTeam}</div>
-          <div className="text-center">{props.homeTeam}</div>
+          <div className="text-center">FACTOR ICONS</div>
+          <div className="text-center">
+            <div className="text-xs text-gray-400 mb-1">{props.matchup?.away?.split(' ').pop() || 'AWAY'}</div>
+          </div>
+          <div className="text-center">
+            <div className="text-xs text-gray-400 mb-1">{props.matchup?.home?.split(' ').pop() || 'HOME'}</div>
+          </div>
         </div>
 
         {/* Factor Rows (Sorted by absolute impact) */}
-        <div className="space-y-2">
+        <div className="space-y-1">
           {sortedFactors.map((factor) => {
-            const icon = FACTOR_ICONS[factor.key] || 'ℹ️'
-            const tooltip = FACTOR_TOOLTIPS[factor.key] || factor.name || 'Factor'
-            const differential = (factor.contributionHome ?? 0) - (factor.contributionAway ?? 0)
+            const icon = factor.icon || FACTOR_ICONS[factor.key] || 'ℹ️'
+            const tooltip = FACTOR_TOOLTIPS[factor.key] || factor.rationale || 'Factor'
             
             return (
               <div
                 key={factor.key}
-                className="grid grid-cols-[40px_1fr_1fr] gap-2 items-center py-2 border-b border-gray-100 hover:bg-gray-50"
+                className="grid grid-cols-[40px_1fr_1fr] gap-2 items-center py-1 border-b border-gray-100 hover:bg-gray-50"
                 onMouseEnter={() => setHoveredFactor(factor.key)}
                 onMouseLeave={() => setHoveredFactor(null)}
               >
                 {/* Icon with tooltip */}
-                <div className="text-center text-xl relative">
+                <div className="text-center text-lg relative">
                   <span title={tooltip}>{icon}</span>
                   {hoveredFactor === factor.key && (
                     <div className="absolute left-full ml-2 top-0 z-20 w-64 bg-gray-900 text-white text-xs p-2 rounded shadow-lg">
@@ -241,35 +284,29 @@ export function InsightCard(props: InsightCardProps) {
                 {/* Away Contribution */}
                 <div className="flex items-center gap-2">
                   <div className="flex-1 text-right">
-                    <span className={`text-sm font-mono ${
-                      factor.contributionAway > 0 ? 'text-green-600' :
-                      factor.contributionAway < 0 ? 'text-red-600' : 'text-gray-500'
-                    }`}>
-                      {factor.contributionAway > 0 ? '+' : ''}{factor.contributionAway.toFixed(1)}
+                    <span className={`text-sm font-mono ${factor.awayContribution > 0 ? 'text-green-600' : factor.awayContribution < 0 ? 'text-red-600' : 'text-gray-500'}`}>
+                      {factor.awayContribution > 0 ? '+' : ''}{factor.awayContribution.toFixed(1)}
                     </span>
                   </div>
-                  <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
                     <div
-                      className={`h-full ${factor.contributionAway > 0 ? 'bg-green-500' : 'bg-red-500'}`}
-                      style={{ width: `${Math.min(Math.abs(factor.contributionAway) / 6 * 100, 100)}%` }}
+                      className={`h-full ${factor.awayContribution > 0 ? 'bg-green-500' : 'bg-red-500'}`}
+                      style={{ width: `${Math.min(Math.abs(factor.awayContribution) / 6 * 100, 100)}%` }}
                     />
                   </div>
                 </div>
 
                 {/* Home Contribution */}
                 <div className="flex items-center gap-2">
-                  <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
                     <div
-                      className={`h-full ${factor.contributionHome > 0 ? 'bg-green-500' : 'bg-red-500'}`}
-                      style={{ width: `${Math.min(Math.abs(factor.contributionHome) / 6 * 100, 100)}%` }}
+                      className={`h-full ${factor.homeContribution > 0 ? 'bg-green-500' : 'bg-red-500'}`}
+                      style={{ width: `${Math.min(Math.abs(factor.homeContribution) / 6 * 100, 100)}%` }}
                     />
                   </div>
                   <div className="flex-1">
-                    <span className={`text-sm font-mono ${
-                      factor.contributionHome > 0 ? 'text-green-600' :
-                      factor.contributionHome < 0 ? 'text-red-600' : 'text-gray-500'
-                    }`}>
-                      {factor.contributionHome > 0 ? '+' : ''}{factor.contributionHome.toFixed(1)}
+                    <span className={`text-sm font-mono ${factor.homeContribution > 0 ? 'text-green-600' : factor.homeContribution < 0 ? 'text-red-600' : 'text-gray-500'}`}>
+                      {factor.homeContribution > 0 ? '+' : ''}{factor.homeContribution.toFixed(1)}
                     </span>
                   </div>
                 </div>
@@ -277,47 +314,30 @@ export function InsightCard(props: InsightCardProps) {
             )
           })}
         </div>
-
-        {/* Factor Notes */}
-        <div className="mt-3 text-xs text-gray-600">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold">Weight applied:</span>
-            <span>{(safeFactors.reduce((sum, f) => sum + (f.weight ?? 0), 0) * 100).toFixed(1)}%</span>
-          </div>
-        </div>
       </div>
 
       {/* Market Summary Strip */}
       <div className="p-4 border-b bg-gray-50">
         <div className="grid grid-cols-4 gap-4 text-center text-sm mb-3">
           <div>
-            <div className="text-xs text-gray-500 uppercase mb-1">Conf7</div>
-            <div className="font-mono font-bold">{safeMarketMismatch.conf7.toFixed(2)}</div>
+            <div className="text-xs text-gray-500 uppercase mb-1">CONF7</div>
+            <div className="font-mono font-bold">{safeMarket.conf7.toFixed(2)}</div>
           </div>
           <div>
-            <div className="text-xs text-gray-500 uppercase mb-1">Market Adj</div>
-            <div className={`font-mono font-bold ${
-              safeMarketMismatch.confMarketAdj > 0 ? 'text-green-600' : 
-              safeMarketMismatch.confMarketAdj < 0 ? 'text-red-600' : 'text-gray-600'
-            }`}>
-              {safeMarketMismatch.confMarketAdj > 0 ? '+' : ''}
-              {safeMarketMismatch.confMarketAdj.toFixed(2)}
+            <div className="text-xs text-gray-500 uppercase mb-1">MARKET ADJ</div>
+            <div className={`font-mono font-bold ${safeMarket.confAdj > 0 ? 'text-green-600' : safeMarket.confAdj < 0 ? 'text-red-600' : 'text-gray-600'}`}>
+              {safeMarket.confAdj > 0 ? '+' : ''}{safeMarket.confAdj.toFixed(2)}
             </div>
           </div>
           <div>
-            <div className="text-xs text-gray-500 uppercase mb-1">Conf Final</div>
+            <div className="text-xs text-gray-500 uppercase mb-1">CONF FINAL</div>
             <div className="font-mono font-bold text-blue-600 text-lg">
-              {safeMarketMismatch.confFinal.toFixed(2)}
+              {safeMarket.confFinal.toFixed(2)}
             </div>
           </div>
           <div>
-            <div className="text-xs text-gray-500 uppercase mb-1">Dominant Edge</div>
-            <div className="font-semibold">{safeMarketMismatch.dominant.toUpperCase()}</div>
-            <div className="text-xs text-gray-600">
-              Side: {safeMarketMismatch.edgeSide.toFixed(1)}pts
-              <br />
-              Total: {safeMarketMismatch.edgeTotal.toFixed(1)}pts
-            </div>
+            <div className="text-xs text-gray-500 uppercase mb-1">DOMINANT EDGE</div>
+            <div className="font-semibold">{safeMarket.dominant.toUpperCase()}</div>
           </div>
         </div>
         
@@ -326,19 +346,16 @@ export function InsightCard(props: InsightCardProps) {
           <div className="text-xs text-gray-500 text-center mb-1">
             Market Influence (max ±30%)
           </div>
-          <div className="relative h-3 bg-gray-200 rounded-full overflow-hidden">
+          <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
             {/* Center line */}
             <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gray-400" />
             
             {/* Market adjustment bar */}
             <div
-              className={`absolute top-0 bottom-0 ${
-                safeMarketMismatch.confMarketAdj > 0 ? 'bg-green-500' : 'bg-red-500'
-              }`}
+              className={`absolute top-0 bottom-0 ${safeMarket.confAdj > 0 ? 'bg-green-500' : 'bg-red-500'}`}
               style={{
-                left: safeMarketMismatch.confMarketAdj >= 0 ? '50%' : 
-                      `${50 + (safeMarketMismatch.confMarketAdj / 1.2) * 50}%`,
-                width: `${Math.abs(safeMarketMismatch.confMarketAdj / 1.2) * 50}%`,
+                left: safeMarket.confAdj >= 0 ? '50%' : `${50 + (safeMarket.confAdj / 1.2) * 50}%`,
+                width: `${Math.abs(safeMarket.confAdj / 1.2) * 50}%`,
               }}
             />
           </div>
@@ -353,55 +370,53 @@ export function InsightCard(props: InsightCardProps) {
       {/* Confidence Score Footer */}
       <div className="p-4 border-b bg-blue-50">
         <div className="text-center">
-          <div className="text-sm text-gray-600">Confidence Score</div>
-          <div className="text-3xl font-bold text-blue-600">
-            {safeMarketMismatch.confFinal.toFixed(2)} / 5.0
-          </div>
+          <div className="text-sm text-gray-600">Confidence Score = {safeMarket.confFinal.toFixed(1)} / 5.0</div>
           <div className="mt-2">
             <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-blue-400 to-blue-600"
-                style={{ width: `${Math.min(100, Math.max(0, (safeMarketMismatch.confFinal / 5.0) * 100))}%` }}
+                style={{ width: `${Math.min(100, Math.max(0, (safeMarket.confFinal / 5.0) * 100))}%` }}
               />
             </div>
           </div>
         </div>
       </div>
 
-      {/* RESULTS Section (Placeholder for Pick Grading) */}
-      {props.pickResult && (
-        <div className="p-4 border-b">
-          <div className="text-sm font-semibold text-gray-700 mb-3">RESULTS</div>
+      {/* RESULTS Section */}
+      <div className="p-4">
+        <div className="text-sm font-semibold text-gray-700 mb-3">RESULTS</div>
+        {props.results ? (
           <div className={`p-3 rounded ${
-            props.pickResult.result === 'win' ? 'bg-green-50 border border-green-200' :
-            props.pickResult.result === 'loss' ? 'bg-red-50 border border-red-200' :
+            props.results.status === 'win' ? 'bg-green-50 border border-green-200' :
+            props.results.status === 'loss' ? 'bg-red-50 border border-red-200' :
             'bg-yellow-50 border border-yellow-200'
           }`}>
             <div className="flex items-center justify-between mb-2">
               <span className={`text-lg font-bold ${
-                props.pickResult.result === 'win' ? 'text-green-700' :
-                props.pickResult.result === 'loss' ? 'text-red-700' :
+                props.results.status === 'win' ? 'text-green-700' :
+                props.results.status === 'loss' ? 'text-red-700' :
                 'text-yellow-700'
               }`}>
-                {props.pickResult.result.toUpperCase()}
-              </span>
-              <span className={`text-lg font-mono font-bold ${
-                props.pickResult.unitsDelta > 0 ? 'text-green-700' :
-                props.pickResult.unitsDelta < 0 ? 'text-red-700' :
-                'text-gray-700'
-              }`}>
-                {props.pickResult.unitsDelta > 0 ? '+' : ''}{props.pickResult.unitsDelta}u
+                {props.results.status.toUpperCase()}
               </span>
             </div>
-            <div className="text-sm text-gray-700 mb-2">
-              Final: {props.pickResult.finalScore.away} - {props.pickResult.finalScore.home}
-            </div>
-            <div className="text-xs text-gray-600">
-              {props.pickResult.explanation}
-            </div>
+            {props.results.finalScore && (
+              <div className="text-sm text-gray-700 mb-2">
+                Final: {props.results.finalScore.away} - {props.results.finalScore.home}
+              </div>
+            )}
+            {props.results.postMortem && (
+              <div className="text-xs text-gray-600">
+                {props.results.postMortem}
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="text-sm text-gray-600">
+            Game has not yet started yet, check back to see the outcome and our assessment of what we did right or wrong in predicting this matchup!
+          </div>
+        )}
+      </div>
     </div>
   )
 }
