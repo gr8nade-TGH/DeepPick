@@ -455,3 +455,4 @@ export function InsightCard(props: InsightCardProps) {
       </div>
     </div>
   )
+}
