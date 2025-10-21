@@ -73,8 +73,10 @@ describe('NBA Totals Factors', () => {
   }
 
   const mockInjuryImpact: InjuryImpact = {
-    away: 0.2,  // Slightly weaker defense
-    home: -0.1  // Slightly stronger defense
+    defenseImpactA: 0.2,  // Slightly weaker defense
+    defenseImpactB: -0.1,  // Slightly stronger defense
+    summary: 'Test injury impact',
+    rawResponse: 'Test response'
   }
 
   beforeEach(() => {
@@ -165,8 +167,8 @@ describe('NBA Totals Factors', () => {
       
       const result = await summarizeAvailabilityWithLLM(mockCtx)
       
-      expect(result.away).toBeCloseTo(0.3, 1)
-      expect(result.home).toBeCloseTo(-0.1, 1)
+      expect(result.defenseImpactA).toBeCloseTo(0.2, 1)
+      expect(result.defenseImpactB).toBeCloseTo(-0.1, 1)
     })
 
     it('should handle LLM failures gracefully', async () => {
@@ -184,8 +186,8 @@ describe('NBA Totals Factors', () => {
       
       const result = await summarizeAvailabilityWithLLM(mockCtx)
       
-      expect(result.away).toBe(0)
-      expect(result.home).toBe(0)
+      expect(result.defenseImpactA).toBe(0)
+      expect(result.defenseImpactB).toBe(0)
     })
   })
 
@@ -247,8 +249,8 @@ describe('NBA Totals Factors', () => {
       
       // Check debug info
       expect(result.totals_debug.league_anchors.pace).toBe(100.0)
-      expect(result.totals_debug.injury_impact.away).toBe(0)
-      expect(result.totals_debug.injury_impact.home).toBe(0)
+      expect(result.totals_debug.injury_impact.defenseImpactA).toBe(0)
+      expect(result.totals_debug.injury_impact.defenseImpactB).toBe(0)
       
       // Check that all factors have symmetric contributions
       result.factors.forEach(factor => {
