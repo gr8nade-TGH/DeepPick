@@ -335,11 +335,11 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       name: "Odds Snapshot",
       description: "Capture current market odds at prediction time",
       details: [
-        "Collect moneyline, spread, and total odds from all bookmakers",
-        "Timestamp snapshot for grading and edge calculation: Locks exact odds at prediction time for fair performance evaluation",
-        "Generate snapshot_id with complete odds data and precise timestamp",
-        "Enables accurate grading by comparing picks against the exact market lines you saw",
-        "Calculates edge by measuring how much the market moved in your favor"
+        "Store odds snapshot in database with precise timestamp",
+        "Generate snapshot_id for tracking and grading purposes",
+        "Deactivate previous snapshots for the same run_id",
+        "Enable accurate grading by comparing picks against locked odds",
+        "Note: Edge calculation happens in Step 5, not here"
       ]
     })
     
@@ -348,10 +348,11 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       name: "Factor Analysis",
       description: "Compute confidence factors based on team performance data",
       details: [
-        "Fetch team stats from NBA Stats API and StatMuse",
-        "Analyze Pace Index, Offensive Form, Defensive Erosion",
-        "Process 3-Point Environment and Free-Throw factors",
-        "Apply injury/availability data via LLM analysis"
+        "Fetch team stats from NBA Stats API (season and last 10 games)",
+        "Calculate 5 NBA Totals factors: Pace Index, Offensive Form, Defensive Erosion, 3-Point Environment, Free-Throw Environment",
+        "Apply factor weights from capper profile configuration",
+        "Use LLM for injury/availability analysis (currently mocked)",
+        "Note: StatMuse has been removed, using NBA Stats API only"
       ]
     })
     
