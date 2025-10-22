@@ -186,10 +186,15 @@ export async function POST(request: NextRequest) {
       console.error('[Factors:Config:POST] Error details:', error.details)
       console.error('[Factors:Config:POST] Error hint:', error.hint)
       console.error('[Factors:Config:POST] Full error object:', JSON.stringify(error, null, 2))
-      return NextResponse.json(
-        { error: 'Failed to save configuration', details: error.message, code: error.code },
-        { status: 500 }
-      )
+      
+      // Return detailed error info to help debug
+      return NextResponse.json({
+        error: 'Failed to save configuration',
+        details: error.message,
+        code: error.code,
+        hint: error.hint,
+        fullError: error
+      }, { status: 500 })
     }
     
     // Convert database profile to expected format
