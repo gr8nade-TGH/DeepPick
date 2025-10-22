@@ -28,13 +28,21 @@ const FactorConfigSchema = z.object({
   description: z.string(),
   enabled: z.boolean(),
   weight: z.number().min(0).max(150), // Updated to support 150% weight budget
-  dataSource: z.enum(['nba-stats-api', 'statmuse', 'manual', 'llm', 'news-api']),
+  dataSource: z.enum(['nba-stats-api', 'statmuse', 'manual', 'llm', 'news-api', 'system']),
   maxPoints: z.number(),
   sport: z.string(),
   betType: z.string(),
   scope: z.enum(['team', 'player', 'matchup', 'global']),
   icon: z.string(),
   shortName: z.string()
+}).refine((data) => {
+  // If factor is disabled, allow weight to be 0 and be more lenient with other fields
+  if (!data.enabled) {
+    return data.weight === 0
+  }
+  return true
+}, {
+  message: "Disabled factors must have weight 0"
 })
 
 const SaveConfigSchema = z.object({
@@ -132,6 +140,8 @@ export async function POST(request: NextRequest) {
     
     if (!parse.success) {
       console.error('[Factors:Config:POST] Validation error:', parse.error.issues)
+      console.error('[Factors:Config:POST] Full error object:', parse.error)
+      console.error('[Factors:Config:POST] Request body that failed:', JSON.stringify(body, null, 2))
       return NextResponse.json(
         { error: 'Invalid request body', details: parse.error.issues },
         { status: 400 }
