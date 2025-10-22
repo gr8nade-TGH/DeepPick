@@ -169,7 +169,7 @@ export function FactorConfigModal({
           "📊 Formula: edgePts = predictedTotal - marketTotalLine, signal = clamp(edgePts/10, -1, +1)",
           "⚖️ Smart Scaling: Uses clamp(edgePts/10) for linear scaling with ±10 point cap",
           "🎯 Single Positive Score: Positive edge → Over, Negative edge → Under",
-          "📈 Max Points: 2.0 (up from 1.0) for more significant impact",
+          "📈 Max Points: 3.0 (up from 2.0) for maximum impact",
           "🔒 Final Step: Applied after all other factors for final confidence adjustment"
         ],
         examples: [
@@ -177,17 +177,17 @@ export function FactorConfigModal({
           "• Predicted Total: 235, Market Line: 225",
           "• Edge Points: +10",
           "• Signal: +1.0",
-          "• Result: +2.0 Over Score (Maximum confidence for Over)",
+          "• Result: +3.0 Over Score (Maximum confidence for Over)",
           "",
           "Scenario 2: Moderate Under Edge",
           "• Predicted Total: 220, Market Line: 225",
           "• Edge Points: -5",
           "• Signal: -0.50",
-          "• Result: +1.0 Under Score (Moderate confidence for Under)"
+          "• Result: +1.5 Under Score (Moderate confidence for Under)"
         ],
         registry: [
           "Weight: 100% (Fixed - Final Step)",
-          "Max Points: 2.0 (up from 1.0)",
+          "Max Points: 3.0 (up from 2.0)",
           "Scope: global (applies to all sports/bet types)",
           "Data Sources: manual (calculated from other factors)",
           "Supported: All Totals predictions"
@@ -261,22 +261,22 @@ export function FactorConfigModal({
       },
       edgeVsMarket: {
         metric: "Final confidence adjustment based on predicted vs market line for totals",
-        formula: "edgePts = predictedTotal - marketTotalLine, signal = clamp(edgePts/10, -1, +1), if signal > 0: overScore = |signal| × 2.0, underScore = 0; else: overScore = 0, underScore = |signal| × 2.0",
+        formula: "edgePts = predictedTotal - marketTotalLine, signal = clamp(edgePts/10, -1, +1), if signal > 0: overScore = |signal| × 3.0, underScore = 0; else: overScore = 0, underScore = |signal| × 3.0",
         examples: [
           "| Edge Points | Signal | Over Score | Under Score | Confidence | Market Context |",
           "|-------------|--------|------------|-------------|------------|----------------|",
-          "| +10+        | +1.0   | +2.0       | 0.0         | Maximum    | Strong Over    |",
-          "| +7          | +0.70  | +1.40      | 0.0         | High       | Clear Over     |",
-          "| +5          | +0.50  | +1.00      | 0.0         | Moderate   | Moderate Over  |",
-          "| +2          | +0.20  | +0.40      | 0.0         | Low        | Slight Over    |",
+          "| +10+        | +1.0   | +3.0       | 0.0         | Maximum    | Strong Over    |",
+          "| +7          | +0.70  | +2.10      | 0.0         | High       | Clear Over     |",
+          "| +5          | +0.50  | +1.50      | 0.0         | Moderate   | Moderate Over  |",
+          "| +2          | +0.20  | +0.60      | 0.0         | Low        | Slight Over    |",
           "| 0           | 0.0    | 0.0        | 0.0         | Neutral    | Perfect Line   |",
-          "| -2          | -0.20  | 0.0        | +0.40       | Low        | Slight Under   |",
-          "| -5          | -0.50  | 0.0        | +1.00       | Moderate   | Moderate Under |",
-          "| -7          | -0.70  | 0.0        | +1.40       | High       | Clear Under    |",
-          "| -10+        | -1.0   | 0.0        | +2.0        | Maximum    | Strong Under   |",
+          "| -2          | -0.20  | 0.0        | +0.60       | Low        | Slight Under   |",
+          "| -5          | -0.50  | 0.0        | +1.50       | Moderate   | Moderate Under |",
+          "| -7          | -0.70  | 0.0        | +2.10       | High       | Clear Under    |",
+          "| -10+        | -1.0   | 0.0        | +3.0        | Maximum    | Strong Under   |",
           "",
           "*Metric: Final confidence adjustment based on predicted vs market line for totals*",
-          "*Formula: edgePts = predictedTotal - marketTotalLine, signal = clamp(edgePts/10, -1, +1), if signal > 0: overScore = |signal| × 2.0, underScore = 0; else: overScore = 0, underScore = |signal| × 2.0*"
+          "*Formula: edgePts = predictedTotal - marketTotalLine, signal = clamp(edgePts/10, -1, +1), if signal > 0: overScore = |signal| × 3.0, underScore = 0; else: overScore = 0, underScore = |signal| × 3.0*"
         ]
       },
       threeEnv: {
@@ -295,16 +295,6 @@ export function FactorConfigModal({
           "+6% FTr → s=+1 → 100% positive",
           "+3% FTr → s=+0.5 → 50% positive",
           "-3% FTr → s=-0.5 → 50% negative"
-        ]
-      },
-      
-      edgeVsMarket: {
-        metric: "Final confidence adjustment based on predicted vs market line",
-        formula: "Edge factor = clamp((predicted - market) / 10, -1, 1)",
-        examples: [
-          "Predicted 225, Market 220: +0.5 edge (favor Over)",
-          "Predicted 220, Market 225: -0.5 edge (favor Under)",
-          "Predicted = Market: 0.0 edge (neutral)"
         ]
       }
     }
