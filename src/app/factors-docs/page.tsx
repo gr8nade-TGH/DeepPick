@@ -1,6 +1,6 @@
 import { getSupabase } from '@/lib/supabase/server'
 import { FACTOR_REGISTRY } from '@/lib/cappers/shiva-v1/factor-registry'
-import { getAllStepDefinitions } from '@/lib/shared/step-definitions'
+import { getAllSteps, getStepCount } from '@/lib/shared/dynamic-step-registry'
 
 export default async function FactorsDocsPage() {
   const supabase = getSupabase()
@@ -95,11 +95,11 @@ export default async function FactorsDocsPage() {
       <div className="mb-12">
         <h2 className="text-2xl font-semibold mb-4 text-blue-600">Pick Generation Pipeline</h2>
         <p className="text-gray-600 mb-4">
-          The {getAllStepDefinitions().length}-step process for generating sports predictions using the SHIVA system.
+          The {getStepCount()}-step process for generating sports predictions using the SHIVA system.
         </p>
         
         <div className="space-y-4">
-          {getAllStepDefinitions().map((step) => (
+          {getAllSteps().map((step) => (
             <div key={step.step} className="border rounded-lg p-4 bg-white shadow-sm">
               <div className="flex items-center mb-3">
                 <span className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">
@@ -184,7 +184,7 @@ export default async function FactorsDocsPage() {
             <div className="space-y-1 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-600">Total Steps:</span>
-                <span className="font-mono">{getAllStepDefinitions().length}</span>
+                <span className="font-mono">{getStepCount()}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Total Factors:</span>
