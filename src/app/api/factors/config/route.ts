@@ -35,14 +35,12 @@ const FactorConfigSchema = z.object({
   scope: z.enum(['team', 'player', 'matchup', 'global']),
   icon: z.string(),
   shortName: z.string()
-}).refine((data) => {
-  // If factor is disabled, allow weight to be 0 and be more lenient with other fields
+}).transform((data) => {
+  // Automatically set weight to 0 for disabled factors
   if (!data.enabled) {
-    return data.weight === 0
+    return { ...data, weight: 0 }
   }
-  return true
-}, {
-  message: "Disabled factors must have weight 0"
+  return data
 })
 
 const SaveConfigSchema = z.object({
@@ -146,6 +144,19 @@ export async function POST(request: NextRequest) {
       betType: body.betType,
       factorsCount: body.factors?.length || 0
     })
+    
+    // Debug: Log factor details for validation issues
+    if (body.factors) {
+      console.log(`[${requestId}] [Factors:Config:POST] Factor details:`, 
+        body.factors.map((f: any) => ({ 
+          key: f.key, 
+          enabled: f.enabled, 
+          weight: f.weight,
+          dataSource: f.dataSource,
+          scope: f.scope
+        }))
+      )
+    }
     
     // Validate request body
     const parse = SaveConfigSchema.safeParse(body)
