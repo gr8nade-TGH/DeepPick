@@ -112,3 +112,26 @@ export function estimateOffensiveImpact(advantage: number): number {
   // League average: ~1.0 points per ORtg point difference
   return advantage * 1.0
 }
+
+/**
+ * Legacy wrapper function for compatibility with existing code
+ * This will be replaced when we integrate the new calculation logic
+ */
+export function computeOffensiveForm(bundle: any, ctx: any): any {
+  // TODO: Integrate with the new calculateOffensiveFormPoints function
+  // For now, return a placeholder that matches the expected interface
+  return {
+    key: 'offForm',
+    name: 'Offensive Form vs League',
+    normalized_value: 0,
+    parsed_values_json: {
+      overScore: 0,
+      underScore: 0,
+      awayContribution: 0,
+      homeContribution: 0
+    },
+    caps_applied: false,
+    cap_reason: null,
+    notes: 'Placeholder - new implementation pending'
+  }
+}
