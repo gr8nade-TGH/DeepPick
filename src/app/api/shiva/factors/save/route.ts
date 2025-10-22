@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
         // Additional validation: ensure weights sum matches
         const calculatedSum = config.factors
           .filter(f => f.enabled)
-          .reduce((sum, f) => sum + f.weight, 0)
+          .reduce((sum: number, f) => sum + f.weight, 0)
 
         if (Math.abs(calculatedSum - config.weights_sum) > 0.01) {
           await logError({

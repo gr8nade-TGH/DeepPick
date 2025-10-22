@@ -386,119 +386,42 @@ export function FactorConfigModal({
         const data = await response.json()
         setProfile(data.profile)
         
-        // Ensure factors have proper default weights
+        // Use the full registry to get all available factors
+        const registry = data.registry || {}
         const loadedFactors = data.profile.factors || []
+        
+        // Convert registry to FactorConfig array, merging with saved factors
+        const allFactors: FactorConfig[] = Object.entries(registry).map(([key, meta]: [string, any]) => {
+          // Find saved factor config for this key
+          const savedFactor = loadedFactors.find((f: any) => f.key === key)
+          
+          return {
+            key,
+            name: meta.name,
+            description: meta.description,
+            enabled: savedFactor?.enabled ?? (key === 'edgeVsMarket'), // Edge vs Market enabled by default
+            weight: savedFactor?.weight ?? meta.defaultWeight,
+            dataSource: savedFactor?.dataSource ?? meta.defaultDataSource,
+            maxPoints: meta.maxPoints,
+            sport: meta.supportedSports?.[0] || 'NBA',
+            betType: meta.supportedBetTypes?.[0] || 'TOTAL',
+            scope: meta.scope,
+            icon: meta.icon,
+            shortName: meta.shortName
+          }
+        })
+        
         let factorsToSet: FactorConfig[]
         
-        if (loadedFactors.length === 0) {
-          // Set default factors with equal weights (30% each = 150% total)
-          // Edge vs Market is always included but doesn't count toward weight budget
-          factorsToSet = [
-            // Edge vs Market - Totals (locked, doesn't count toward weight budget)
-            { 
-              key: 'edgeVsMarket', 
-              name: 'Edge vs Market - Totals', 
-              description: 'Final confidence adjustment based on predicted vs market line for totals',
-              enabled: true, 
-              weight: 100, // Always 100% (fixed)
-              dataSource: 'manual',
-              maxPoints: 2.0,
-              sport: 'NBA',
-              betType: 'TOTAL',
-              scope: 'global',
-              icon: '⚖️',
-              shortName: 'Edge vs Market'
-            },
-            { 
-              key: 'paceIndex', 
-              name: 'Pace Index', 
-              description: 'Expected game pace vs league average',
-              enabled: true, 
-              weight: 30, 
-              dataSource: 'nba-stats-api',
-              maxPoints: 1.0,
-              sport: 'NBA',
-              betType: 'TOTAL',
-              scope: 'matchup',
-              icon: '⏱️',
-              shortName: 'Pace'
-            },
-            { 
-              key: 'offForm', 
-              name: 'Offensive Form', 
-              description: 'Recent offensive efficiency vs opponent defense',
-              enabled: true, 
-              weight: 30, 
-              dataSource: 'nba-stats-api',
-              maxPoints: 1.0,
-              sport: 'NBA',
-              betType: 'TOTAL',
-              scope: 'matchup',
-              icon: '🔥',
-              shortName: 'ORtg Form'
-            },
-            { 
-              key: 'defErosion', 
-              name: 'Defensive Erosion', 
-              description: 'Defensive rating decline + injury impact',
-              enabled: true, 
-              weight: 30, 
-              dataSource: 'nba-stats-api',
-              maxPoints: 1.0,
-              sport: 'NBA',
-              betType: 'TOTAL',
-              scope: 'team',
-              icon: '🛡️',
-              shortName: 'DRtg/Avail'
-            },
-            { 
-              key: 'threeEnv', 
-              name: '3P Environment', 
-              description: '3-point environment & volatility',
-              enabled: true, 
-              weight: 30, 
-              dataSource: 'nba-stats-api',
-              maxPoints: 1.0,
-              sport: 'NBA',
-              betType: 'TOTAL',
-              scope: 'matchup',
-              icon: '🏹',
-              shortName: '3P Env'
-            },
-            { 
-              key: 'whistleEnv', 
-              name: 'FT Environment', 
-              description: 'Free throw rate environment',
-              enabled: true, 
-              weight: 30, 
-              dataSource: 'nba-stats-api',
-              maxPoints: 1.0,
-              sport: 'NBA',
-              betType: 'TOTAL',
-              scope: 'matchup',
-              icon: '⛹️‍♂️',
-              shortName: 'FT Env'
-            },
-          ]
-        } else {
-          // Normalize existing factors to ensure weights sum to 100%
-          factorsToSet = normalizeFactorWeights(loadedFactors)
-          
-          // If normalization resulted in some factors having 0 weight, redistribute
-          const totalWeight = factorsToSet
-            .filter(f => f.enabled && f.key !== 'edgeVsMarket')
-            .reduce((sum, f) => sum + f.weight, 0)
-          
-          if (totalWeight < 135) { // If total is too low, redistribute equally
-            const enabledFactors = factorsToSet.filter(f => f.enabled && f.key !== 'edgeVsMarket')
-            const equalWeight = 150 / enabledFactors.length
-            
-            factorsToSet = factorsToSet.map(f => {
-              if (f.key === 'edgeVsMarket') return f
-              return f.enabled ? { ...f, weight: equalWeight } : f
-            })
-          }
-        }
+        // Use the registry-based factors
+        factorsToSet = allFactors
+        
+        console.log('[FactorConfigModal] Loaded factors:', {
+          registryCount: Object.keys(registry).length,
+          loadedFactorsCount: loadedFactors.length,
+          allFactorsCount: allFactors.length,
+          factorsToSet: factorsToSet.map(f => ({ key: f.key, name: f.name, enabled: f.enabled, weight: f.weight }))
+        })
         
         setFactors(factorsToSet)
       } catch (error) {
