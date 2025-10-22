@@ -162,6 +162,36 @@ export function FactorConfigModal({
           "Data Sources: nba-stats-api, llm, manual",
           "Supported: NBA Totals only"
         ]
+      },
+      edgeVsMarket: {
+        features: [
+          "⚖️ Market Edge Calculation: Compares predicted total vs market line",
+          "📊 Formula: edgePts = predictedTotal - marketTotalLine, signal = clamp(edgePts/10, -1, +1)",
+          "⚖️ Smart Scaling: Uses clamp(edgePts/10) for linear scaling with ±10 point cap",
+          "🎯 Single Positive Score: Positive edge → Over, Negative edge → Under",
+          "📈 Max Points: 2.0 (up from 1.0) for more significant impact",
+          "🔒 Final Step: Applied after all other factors for final confidence adjustment"
+        ],
+        examples: [
+          "Scenario 1: Strong Over Edge",
+          "• Predicted Total: 235, Market Line: 225",
+          "• Edge Points: +10",
+          "• Signal: +1.0",
+          "• Result: +2.0 Over Score (Maximum confidence for Over)",
+          "",
+          "Scenario 2: Moderate Under Edge",
+          "• Predicted Total: 220, Market Line: 225",
+          "• Edge Points: -5",
+          "• Signal: -0.50",
+          "• Result: +1.0 Under Score (Moderate confidence for Under)"
+        ],
+        registry: [
+          "Weight: 100% (Fixed - Final Step)",
+          "Max Points: 2.0 (up from 1.0)",
+          "Scope: global (applies to all sports/bet types)",
+          "Data Sources: manual (calculated from other factors)",
+          "Supported: All Totals predictions"
+        ]
       }
     }
     return detailsMap[key] || { features: [], examples: [], registry: [] }
@@ -227,6 +257,26 @@ export function FactorConfigModal({
           "",
           "*Metric: Combined defensive rating decline + injury impact*",
           "*Formula: combinedDRtg = (homeDRtg + awayDRtg)/2, drtgDelta = combinedDRtg - leagueDRtg, totalErosion = 0.7×drtgDelta + 0.3×injuryImpact×10, signal = tanh(totalErosion/8), if signal > 0: overScore = |signal| × 2.0, underScore = 0; else: overScore = 0, underScore = |signal| × 2.0*"
+        ]
+      },
+      edgeVsMarket: {
+        metric: "Final confidence adjustment based on predicted vs market line for totals",
+        formula: "edgePts = predictedTotal - marketTotalLine, signal = clamp(edgePts/10, -1, +1), if signal > 0: overScore = |signal| × 2.0, underScore = 0; else: overScore = 0, underScore = |signal| × 2.0",
+        examples: [
+          "| Edge Points | Signal | Over Score | Under Score | Confidence | Market Context |",
+          "|-------------|--------|------------|-------------|------------|----------------|",
+          "| +10+        | +1.0   | +2.0       | 0.0         | Maximum    | Strong Over    |",
+          "| +7          | +0.70  | +1.40      | 0.0         | High       | Clear Over     |",
+          "| +5          | +0.50  | +1.00      | 0.0         | Moderate   | Moderate Over  |",
+          "| +2          | +0.20  | +0.40      | 0.0         | Low        | Slight Over    |",
+          "| 0           | 0.0    | 0.0        | 0.0         | Neutral    | Perfect Line   |",
+          "| -2          | -0.20  | 0.0        | +0.40       | Low        | Slight Under   |",
+          "| -5          | -0.50  | 0.0        | +1.00       | Moderate   | Moderate Under |",
+          "| -7          | -0.70  | 0.0        | +1.40       | High       | Clear Under    |",
+          "| -10+        | -1.0   | 0.0        | +2.0        | Maximum    | Strong Under   |",
+          "",
+          "*Metric: Final confidence adjustment based on predicted vs market line for totals*",
+          "*Formula: edgePts = predictedTotal - marketTotalLine, signal = clamp(edgePts/10, -1, +1), if signal > 0: overScore = |signal| × 2.0, underScore = 0; else: overScore = 0, underScore = |signal| × 2.0*"
         ]
       },
       threeEnv: {

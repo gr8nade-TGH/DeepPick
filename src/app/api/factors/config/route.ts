@@ -7,7 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDefaultProfile, FACTOR_REGISTRY } from '@/lib/cappers/shiva-v1/factor-config-registry'
-import { createClient } from '@/lib/supabase/server'
+import { getSupabase } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
     const { capperId: capper, sport: spt, betType: bt } = parse.data
     
     // Try to fetch from database first
-    const supabase = createClient()
+    const supabase = getSupabase()
     const { data: savedProfile, error } = await supabase
       .from('capper_profiles')
       .select('*')
@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
     const { capperId, sport, betType, name, description, factors } = parse.data
     
     // Save to database
-    const supabase = createClient()
+    const supabase = getSupabase()
     const profileId = `${capperId}-${sport}-${betType}-custom-${Date.now()}`.toLowerCase()
     
     // First, deactivate any existing active profile for this capper/sport/betType
