@@ -29,6 +29,7 @@ export function FactorConfigModal({
   const [saving, setSaving] = useState(false)
   const [profile, setProfile] = useState<CapperProfile | null>(null)
   const [factors, setFactors] = useState<FactorConfig[]>([])
+  const [selectedFactorDetails, setSelectedFactorDetails] = useState<string | null>(null)
   
   // Calculate weight budget (with proper rounding to avoid floating point precision issues)
   // Edge vs Market doesn't count toward weight budget
@@ -76,6 +77,94 @@ export function FactorConfigModal({
     if (factor.scope === 'team') tags.push('Team')
     
     return tags
+  }
+
+  // Detailed factor descriptions for the eye icon popup
+  const getFactorDetails = (key: string) => {
+    const detailsMap: Record<string, { features: string[]; examples: string[]; registry: string[] }> = {
+      paceIndex: {
+        features: [
+          "🏃‍♂️ Pace Calculation: Expected game pace based on both teams' pace interaction",
+          "📊 Formula: expPace = (awayPace + homePace)/2, signal = tanh((expPace - leaguePace)/8)",
+          "⚖️ Smart Scaling: Uses tanh for smooth saturation, caps at ±16+ possessions",
+          "🎯 Single Positive Score: Over OR Under, never both (prevents cancellation)",
+          "📈 Max Points: 2.0 (up from 1.5) for more significant impact"
+        ],
+        examples: [
+          "Scenario 1: High Pace Game",
+          "• Possessions: +12 vs league average",
+          "• Signal: +0.91",
+          "• Result: +1.82 Over Score (Very High confidence for Over)",
+          "",
+          "Scenario 2: Slow Pace Game", 
+          "• Possessions: -8 vs league average",
+          "• Signal: -0.76",
+          "• Result: +1.52 Under Score (High confidence for Under)"
+        ],
+        registry: [
+          "Weight: 30% (up from 20%)",
+          "Max Points: 2.0 (up from 1.5)",
+          "Scope: matchup (covers both teams)",
+          "Data Sources: nba-stats-api, manual",
+          "Supported: NBA Totals only"
+        ]
+      },
+      offForm: {
+        features: [
+          "🔥 Offensive Efficiency: Combined team offensive rating vs league average",
+          "📊 Formula: combinedORtg = (homeORtg + awayORtg)/2, advantage = combinedORtg - leagueORtg",
+          "⚖️ Smart Scaling: Uses tanh(advantage/10) for smooth saturation",
+          "🎯 Single Positive Score: Over OR Under, never both (prevents cancellation)",
+          "📈 Max Points: 2.0 (up from 1.0) for more significant impact"
+        ],
+        examples: [
+          "Scenario 1: High-Powered Offense",
+          "• Combined ORtg: 120 (10 points above league)",
+          "• Signal: +0.76",
+          "• Result: +1.52 Over Score (High confidence for Over)",
+          "",
+          "Scenario 2: Struggling Offense",
+          "• Combined ORtg: 100 (10 points below league)",
+          "• Signal: -0.76", 
+          "• Result: +1.52 Under Score (High confidence for Under)"
+        ],
+        registry: [
+          "Weight: 30% (up from 20%)",
+          "Max Points: 2.0 (up from 1.0)",
+          "Scope: matchup (covers both teams)",
+          "Data Sources: nba-stats-api, manual",
+          "Supported: NBA Totals only"
+        ]
+      },
+      defErosion: {
+        features: [
+          "🛡️ Dual Input Sources: 70% defensive rating + 30% injury impact",
+          "📊 Formula: totalErosion = 0.7×drtgDelta + 0.3×injuryImpact×10",
+          "⚖️ Smart Scaling: Uses tanh(totalErosion/8), caps at ±20 DRtg points",
+          "🎯 Single Positive Score: Poor defense → Over, Strong defense → Under",
+          "📈 Max Points: 2.0 (up from 1.0) for more significant impact"
+        ],
+        examples: [
+          "Scenario 1: Poor Defense + Injuries",
+          "• DRtg: 120 (10 points worse than league)",
+          "• Injuries: -0.5 impact",
+          "• Result: +1.20 Over Score (High confidence for Over)",
+          "",
+          "Scenario 2: Strong Defense + Healthy",
+          "• DRtg: 100 (10 points better than league)",
+          "• Injuries: +0.5 impact (healthy key players)",
+          "• Result: +1.20 Under Score (High confidence for Under)"
+        ],
+        registry: [
+          "Weight: 30% (up from 20%)",
+          "Max Points: 2.0 (up from 1.0)",
+          "Scope: matchup (covers both teams)",
+          "Data Sources: nba-stats-api, llm, manual",
+          "Supported: NBA Totals only"
+        ]
+      }
+    }
+    return detailsMap[key] || { features: [], examples: [], registry: [] }
   }
 
   // Factor logic definitions for the Logic Drawer
@@ -705,6 +794,13 @@ export function FactorConfigModal({
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <h3 className="text-white font-medium">{factor.name}</h3>
+                              <button
+                                onClick={() => setSelectedFactorDetails(factor.key)}
+                                className="text-gray-400 hover:text-blue-400 transition-colors ml-1"
+                                title="View detailed factor information"
+                              >
+                                👁️
+                              </button>
                               {/* Factor Tags */}
                               <div className="flex gap-1">
                                 {getFactorTags(factor).map((tag, i) => (
@@ -832,6 +928,78 @@ export function FactorConfigModal({
           </div>
         </div>
       </div>
+
+      {/* Detailed Factor Information Popup */}
+      {selectedFactorDetails && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-white">
+                  {factors.find(f => f.key === selectedFactorDetails)?.name} Details
+                </h2>
+                <button
+                  onClick={() => setSelectedFactorDetails(null)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              {(() => {
+                const details = getFactorDetails(selectedFactorDetails)
+                return (
+                  <div className="space-y-6">
+                    {/* Key Features */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-3">🔧 Key Features</h3>
+                      <div className="space-y-2">
+                        {details.features.map((feature, i) => (
+                          <div key={i} className="text-sm text-gray-300 leading-relaxed">
+                            {feature}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Impact Examples */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-3">📈 Impact Examples</h3>
+                      <div className="space-y-2">
+                        {details.examples.map((example, i) => (
+                          <div key={i} className={`text-sm leading-relaxed ${
+                            example.startsWith('Scenario') 
+                              ? 'text-blue-300 font-medium' 
+                              : example.startsWith('•')
+                              ? 'text-gray-300 ml-4'
+                              : example === ''
+                              ? 'h-2'
+                              : 'text-gray-400'
+                          }`}>
+                            {example}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Registry Info */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-3">⚙️ Registry Configuration</h3>
+                      <div className="space-y-1">
+                        {details.registry.map((info, i) => (
+                          <div key={i} className="text-sm text-gray-300">
+                            {info}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
