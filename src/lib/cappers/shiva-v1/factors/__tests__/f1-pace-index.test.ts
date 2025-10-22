@@ -11,7 +11,8 @@ describe('Matchup Pace Index Factor (F1)', () => {
         leaguePace
       })
 
-      expect(result.points).toBeCloseTo(0, 2)
+      expect(result.overScore).toBe(0)
+      expect(result.underScore).toBe(0)
       expect(result.signal).toBeCloseTo(0, 2)
       expect(result.meta.expPace).toBe(100)
       expect(result.meta.paceDelta).toBe(0)
@@ -26,7 +27,8 @@ describe('Matchup Pace Index Factor (F1)', () => {
 
       // expPace = 104, paceDelta = +4
       // signal = tanh(4/8) = tanh(0.5) ≈ 0.462
-      expect(result.points).toBeCloseTo(0.924, 2) // 0.462 * 2.0
+      expect(result.overScore).toBeCloseTo(0.924, 2) // 0.462 * 2.0
+      expect(result.underScore).toBe(0)
       expect(result.signal).toBeCloseTo(0.462, 2)
       expect(result.meta.expPace).toBe(104)
       expect(result.meta.paceDelta).toBe(4)
@@ -41,7 +43,8 @@ describe('Matchup Pace Index Factor (F1)', () => {
 
       // expPace = 109, paceDelta = +9
       // signal = tanh(9/8) = tanh(1.125) ≈ 0.811
-      expect(result.points).toBeCloseTo(1.622, 2) // 0.811 * 2.0
+      expect(result.overScore).toBeCloseTo(1.622, 2) // 0.811 * 2.0
+      expect(result.underScore).toBe(0)
       expect(result.signal).toBeCloseTo(0.811, 2)
       expect(result.meta.expPace).toBe(109)
       expect(result.meta.paceDelta).toBe(9)
@@ -57,7 +60,8 @@ describe('Matchup Pace Index Factor (F1)', () => {
       // expPace = 119, paceDelta = +19
       // signal = tanh(19/8) = tanh(2.375) ≈ 0.983
       // After clamp: signal = 0.983 (very close to full credit)
-      expect(result.points).toBeCloseTo(1.97, 2) // 0.983 * 2.0
+      expect(result.overScore).toBeCloseTo(1.97, 2) // 0.983 * 2.0
+      expect(result.underScore).toBe(0)
       expect(result.signal).toBeCloseTo(0.983, 2)
       expect(result.meta.expPace).toBe(119)
       expect(result.meta.paceDelta).toBe(19)
@@ -73,7 +77,8 @@ describe('Matchup Pace Index Factor (F1)', () => {
       // expPace = 149, paceDelta = +49
       // signal = tanh(49/8) = tanh(6.125) ≈ 0.9999
       // After clamp: signal = 1.0 (full credit due to clamp)
-      expect(result.points).toBeCloseTo(2.0, 2) // 1.0 * 2.0
+      expect(result.overScore).toBeCloseTo(2.0, 2) // 1.0 * 2.0
+      expect(result.underScore).toBe(0)
       expect(result.signal).toBeCloseTo(1.0, 2)
       expect(result.meta.expPace).toBe(149)
       expect(result.meta.paceDelta).toBe(30) // Capped at 30
@@ -88,7 +93,8 @@ describe('Matchup Pace Index Factor (F1)', () => {
 
       // expPace = 96, paceDelta = -4
       // signal = tanh(-4/8) = tanh(-0.5) ≈ -0.462
-      expect(result.points).toBeCloseTo(-0.924, 2) // -0.462 * 2.0
+      expect(result.overScore).toBe(0)
+      expect(result.underScore).toBeCloseTo(0.924, 2) // 0.462 * 2.0
       expect(result.signal).toBeCloseTo(-0.462, 2)
       expect(result.meta.expPace).toBe(96)
       expect(result.meta.paceDelta).toBe(-4)
@@ -101,7 +107,8 @@ describe('Matchup Pace Index Factor (F1)', () => {
         leaguePace
       })
 
-      expect(result.points).toBe(0)
+      expect(result.overScore).toBe(0)
+      expect(result.underScore).toBe(0)
       expect(result.signal).toBe(0)
       expect(result.meta.reason).toBe('bad_input')
     })
@@ -113,7 +120,8 @@ describe('Matchup Pace Index Factor (F1)', () => {
         leaguePace
       })
 
-      expect(result.points).toBe(0)
+      expect(result.overScore).toBe(0)
+      expect(result.underScore).toBe(0)
       expect(result.signal).toBe(0)
       expect(result.meta.reason).toBe('bad_input')
     })
@@ -127,7 +135,8 @@ describe('Matchup Pace Index Factor (F1)', () => {
 
       // Should be capped at +30 possessions
       expect(result.meta.paceDelta).toBe(30)
-      expect(result.points).toBeCloseTo(2.0, 2) // Should still get full points
+      expect(result.overScore).toBeCloseTo(2.0, 2) // Should still get full points
+      expect(result.underScore).toBe(0)
     })
   })
 

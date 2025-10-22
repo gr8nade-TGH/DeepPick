@@ -12,7 +12,8 @@ export interface PaceFactorInput {
 }
 
 export interface PaceFactorOutput {
-  points: number
+  overScore: number
+  underScore: number
   signal: number
   meta: {
     expPace: number
@@ -37,10 +38,11 @@ function tanh(x: number): number {
 }
 
 /**
- * Calculate pace factor points using smooth tanh scaling with hard limits
+ * Calculate pace factor points using single positive score system
+ * Each factor contributes to either Over OR Under, never both
  * 
  * @param input - Team pace data and league average
- * @returns Points awarded and debugging metadata
+ * @returns Over/Under scores and debugging metadata
  */
 export function calculatePaceFactorPoints(input: PaceFactorInput): PaceFactorOutput {
   const { homePace, awayPace, leaguePace } = input
@@ -49,7 +51,8 @@ export function calculatePaceFactorPoints(input: PaceFactorInput): PaceFactorOut
   // Input validation
   if (![homePace, awayPace, leaguePace].every(v => Number.isFinite(v) && v > 0)) {
     return {
-      points: 0,
+      overScore: 0,
+      underScore: 0,
       signal: 0,
       meta: {
         expPace: 0,
@@ -71,14 +74,25 @@ export function calculatePaceFactorPoints(input: PaceFactorInput): PaceFactorOut
   // Calculate signal using tanh for smooth saturation
   const rawSignal = tanh(paceDelta / 8.0)
   
-  // Apply hard limits to allow full ±2.0 points for extreme cases
+  // Apply hard limits to allow full ±1.0 signal for extreme cases
   const signal = clamp(rawSignal, -1, 1)
 
-  // Calculate final points
-  const points = signal * MAX_POINTS
+  // Convert to single positive scores for one direction
+  let overScore = 0
+  let underScore = 0
+  
+  if (signal > 0) {
+    // Positive signal favors Over
+    overScore = Math.abs(signal) * MAX_POINTS
+  } else if (signal < 0) {
+    // Negative signal favors Under
+    underScore = Math.abs(signal) * MAX_POINTS
+  }
+  // signal = 0 means neutral, both scores remain 0
 
   return {
-    points,
+    overScore,
+    underScore,
     signal,
     meta: {
       expPace,

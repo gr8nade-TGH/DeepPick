@@ -83,14 +83,15 @@ export function FactorConfigModal({
     const logicMap: Record<string, { metric: string; formula: string; examples: string[] }> = {
       paceIndex: {
         metric: "Expected game pace based on both teams' pace interaction",
-        formula: "expPace = (awayPace + homePace)/2, s = clamp(tanh((expPace - leaguePace)/8), -1, +1)",
+        formula: "expPace = (awayPace + homePace)/2, signal = tanh((expPace - leaguePace)/8), if signal > 0: overScore = |signal| × 2.0, underScore = 0; else: overScore = 0, underScore = |signal| × 2.0",
         examples: [
-          "+12 possessions → s=+1.0 → +2.0 pts (100%)",
-          "+8 possessions → s=+0.76 → +1.52 pts (76%)",
-          "+5 possessions → s=+0.55 → +1.10 pts (55%)",
-          "0 possessions → s=0.0 → 0.0 pts (0%)",
-          "-5 possessions → s=-0.55 → -1.10 pts (-55%)",
-          "-8 possessions → s=-0.76 → -1.52 pts (-76%)"
+          "+16+ possessions → Over: +2.0, Under: 0.0 (Full Over confidence)",
+          "+8 possessions → Over: +1.52, Under: 0.0 (High Over confidence)",
+          "+5 possessions → Over: +1.10, Under: 0.0 (Moderate Over confidence)",
+          "0 possessions → Over: 0.0, Under: 0.0 (Neutral pace)",
+          "-5 possessions → Over: 0.0, Under: +1.10 (Moderate Under confidence)",
+          "-8 possessions → Over: 0.0, Under: +1.52 (High Under confidence)",
+          "-16+ possessions → Over: 0.0, Under: +2.0 (Full Under confidence)"
         ]
       },
       offForm: {
