@@ -407,12 +407,11 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           return
         }
         
-        // Set the selected game and run_id from API response
+        // Set the run_id from API response
         const selectedGame = step1Data.json.selected_game
         const generatedRunId = step1Data.json.run_id
         
         setRunId(generatedRunId)
-        setSelectedGame(selectedGame)
         
         console.debug('[Step 1] Selected game:', selectedGame)
         console.debug('[Step 1] Generated run_id:', generatedRunId)
@@ -437,22 +436,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         return
       }
       
-      // Continue with other steps...
-      const r = await postJson('/api/shiva/runs', {
-          run_id: runId, // Use the run_id from state
-          game: selectedGame || {
-            game_id: 'nba_2025_10_21_okc_hou',
-            home_team: 'Oklahoma City Thunder',
-            away_team: 'Houston Rockets',
-            start_time_utc: '2025-10-21T01:30:00Z'
-          },
-          effectiveProfile: props.effectiveProfile
-        }, 'ui-demo-run')
-        
-        console.debug('[Step 1] Response:', r)
-        setLog(r)
-        setStepLogs(prev => ({ ...prev, 1: r }))
-        } else if (current === 2) {
+      if (current === 2) {
           // Use selected game odds or fallback to fixture
           const gameData = props.selectedGame || {
             game_id: 'nba_2025_10_21_okc_hou',
