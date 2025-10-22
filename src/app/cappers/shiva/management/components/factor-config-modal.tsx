@@ -739,6 +739,66 @@ export function FactorConfigModal({
               >
                 {saving ? 'Saving...' : 'Save Configuration'}
               </button>
+              
+              <button
+                onClick={() => {
+                  const debugInfo = {
+                    timestamp: new Date().toISOString(),
+                    capperId,
+                    sport,
+                    betType,
+                    profile: profile ? {
+                      id: profile.id,
+                      name: profile.name,
+                      description: profile.description,
+                      isActive: profile.isActive,
+                      isDefault: profile.isDefault
+                    } : null,
+                    factors: factors.map(f => ({
+                      key: f.key,
+                      name: f.name,
+                      enabled: f.enabled,
+                      weight: f.weight,
+                      dataSource: f.dataSource,
+                      maxPoints: f.maxPoints,
+                      sport: f.sport,
+                      betType: f.betType,
+                      scope: f.scope,
+                      icon: f.icon,
+                      shortName: f.shortName
+                    })),
+                    weightDebug: {
+                      weightFactors: weightFactors.map(f => ({ key: f.key, weight: f.weight })),
+                      rawTotalWeight,
+                      totalWeight,
+                      remainingWeight,
+                      isWeightValid
+                    },
+                    environment: {
+                      nodeEnv: process.env.NODE_ENV,
+                      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Set' : 'Missing',
+                      supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'Set' : 'Missing'
+                    }
+                  }
+                  
+                  const debugText = JSON.stringify(debugInfo, null, 2)
+                  navigator.clipboard.writeText(debugText).then(() => {
+                    alert('Debug report copied to clipboard!')
+                  }).catch(() => {
+                    // Fallback for older browsers
+                    const textArea = document.createElement('textarea')
+                    textArea.value = debugText
+                    document.body.appendChild(textArea)
+                    textArea.select()
+                    document.execCommand('copy')
+                    document.body.removeChild(textArea)
+                    alert('Debug report copied to clipboard!')
+                  })
+                }}
+                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded font-medium transition text-sm"
+              >
+                📋 Copy Debug Report
+              </button>
               <button
                 onClick={onClose}
                 className="text-gray-400 hover:text-white transition"
