@@ -3,7 +3,7 @@
  * Defines the structure for configurable factors per capper/sport/bet type
  */
 
-export type DataSource = 'nba-stats-api' | 'statmuse' | 'manual' | 'llm' | 'news-api'
+export type DataSource = 'nba-stats-api' | 'statmuse' | 'manual' | 'llm' | 'news-api' | 'system'
 
 export interface FactorConfig {
   key: string

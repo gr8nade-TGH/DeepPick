@@ -193,8 +193,8 @@ export const FACTOR_REGISTRY: FactorRegistry = {
     maxPoints: 3.0,
     supportedSports: ['NBA'],
     supportedBetTypes: ['TOTAL'],
-    availableDataSources: ['manual'],
-    defaultDataSource: 'manual',
+    availableDataSources: ['system'],
+    defaultDataSource: 'system',
     scope: 'global',
     icon: '⚖️',
     shortName: 'Edge vs Market'

@@ -31,6 +31,9 @@ export function FactorConfigModal({
   const [factors, setFactors] = useState<FactorConfig[]>([])
   const [selectedFactorDetails, setSelectedFactorDetails] = useState<string | null>(null)
   
+  // State to manage which Logic & Examples sections are expanded
+  const [expandedLogic, setExpandedLogic] = useState<Set<string>>(new Set())
+  
   // Calculate weight budget (with proper rounding to avoid floating point precision issues)
   // Edge vs Market doesn't count toward weight budget
   const weightFactors = factors.filter(f => f.enabled && f.key !== 'edgeVsMarket')
@@ -903,6 +906,7 @@ export function FactorConfigModal({
                                   <option value="statmuse">StatMuse (deprecated)</option>
                                   <option value="llm">LLM (AI)</option>
                                   <option value="news-api">News API</option>
+                                  <option value="system">System</option>
                                   <option value="manual">Manual Entry</option>
                                 </select>
                               </div>
@@ -910,88 +914,104 @@ export function FactorConfigModal({
                             
                             {/* Factor Logic Drawer */}
                             <div className="p-3 bg-gray-900 rounded border border-gray-600">
-                              <div className="text-xs font-medium text-gray-300 mb-3">
-                                🧮 Logic & Examples
-                              </div>
+                              <button
+                                onClick={() => {
+                                  const newExpanded = new Set(expandedLogic)
+                                  if (expandedLogic.has(factor.key)) {
+                                    newExpanded.delete(factor.key)
+                                  } else {
+                                    newExpanded.add(factor.key)
+                                  }
+                                  setExpandedLogic(newExpanded)
+                                }}
+                                className="flex items-center justify-between w-full text-xs font-medium text-gray-300 mb-3 hover:text-white transition-colors"
+                              >
+                                <span>🧮 Logic & Examples</span>
+                                <span className="text-gray-500">
+                                  {expandedLogic.has(factor.key) ? '▼' : '▶'}
+                                </span>
+                              </button>
                               
-                              <div className="space-y-3">
-                                {/* Full-width Examples Table */}
-                                <div className="overflow-x-auto">
-                                  <div className="text-xs text-gray-400 mb-2">
-                                    <strong>Scoring Examples:</strong>
-                                  </div>
-                                  <div className="space-y-1">
-                                    {(() => {
-                                      const examples = getFactorLogic(factor.key).examples
-                                      const tableRows = examples.filter(line => line.startsWith('|') && !line.includes('---'))
-                                      const headerRow = examples.find(line => line.startsWith('|') && line.includes('---'))
-                                      const metricLine = examples.find(line => line.startsWith('*Metric:'))
-                                      const formulaLine = examples.find(line => line.startsWith('*Formula:'))
-                                      
-                                      if (tableRows.length > 0) {
-                                        const headers = tableRows[0].split('|').slice(1, -1).map(h => h.trim())
+                              {expandedLogic.has(factor.key) && (
+                                <div className="space-y-3">
+                                  {/* Full-width Examples Table */}
+                                  <div className="overflow-x-auto">
+                                    <div className="text-xs text-gray-400 mb-2">
+                                      <strong>Scoring Examples:</strong>
+                                    </div>
+                                    <div className="space-y-1">
+                                      {(() => {
+                                        const examples = getFactorLogic(factor.key).examples
+                                        const tableRows = examples.filter(line => line.startsWith('|') && !line.includes('---'))
+                                        const headerRow = examples.find(line => line.startsWith('|') && line.includes('---'))
+                                        const metricLine = examples.find(line => line.startsWith('*Metric:'))
+                                        const formulaLine = examples.find(line => line.startsWith('*Formula:'))
                                         
-                                        return (
-                                          <>
-                                            <div className="overflow-x-auto">
-                                              <table className="w-full text-xs border-collapse">
-                                                <thead>
-                                                  <tr className="border-b border-gray-600">
-                                                    {headers.map((header, i) => (
-                                                      <th key={i} className="text-left py-2 px-2 text-gray-300 font-medium">
-                                                        {header}
-                                                      </th>
-                                                    ))}
-                                                  </tr>
-                                                </thead>
-                                                <tbody>
-                                                  {tableRows.slice(1).map((row, i) => {
-                                                    const cells = row.split('|').slice(1, -1).map(c => c.trim())
-                                                    return (
-                                                      <tr key={i} className="border-b border-gray-700">
-                                                        {cells.map((cell, j) => (
-                                                          <td key={j} className="py-2 px-2 text-gray-300">
-                                                            {cell}
-                                                          </td>
-                                                        ))}
-                                                      </tr>
-                                                    )
-                                                  })}
-                                                </tbody>
-                                              </table>
-                                            </div>
-                                            {metricLine && (
-                                              <div className="text-xs text-gray-500 italic mt-3">
-                                                {metricLine.replace(/\*/g, '')}
+                                        if (tableRows.length > 0) {
+                                          const headers = tableRows[0].split('|').slice(1, -1).map(h => h.trim())
+                                          
+                                          return (
+                                            <>
+                                              <div className="overflow-x-auto">
+                                                <table className="w-full text-xs border-collapse">
+                                                  <thead>
+                                                    <tr className="border-b border-gray-600">
+                                                      {headers.map((header, i) => (
+                                                        <th key={i} className="text-left py-2 px-2 text-gray-300 font-medium">
+                                                          {header}
+                                                        </th>
+                                                      ))}
+                                                    </tr>
+                                                  </thead>
+                                                  <tbody>
+                                                    {tableRows.slice(1).map((row, i) => {
+                                                      const cells = row.split('|').slice(1, -1).map(c => c.trim())
+                                                      return (
+                                                        <tr key={i} className="border-b border-gray-700">
+                                                          {cells.map((cell, j) => (
+                                                            <td key={j} className="py-2 px-2 text-gray-300">
+                                                              {cell}
+                                                            </td>
+                                                          ))}
+                                                        </tr>
+                                                      )
+                                                    })}
+                                                  </tbody>
+                                                </table>
                                               </div>
-                                            )}
-                                            {formulaLine && (
-                                              <div className="text-xs text-gray-500 italic mt-1">
-                                                {formulaLine.replace(/\*/g, '')}
-                                              </div>
-                                            )}
-                                          </>
-                                        )
-                                      }
-                                      
-                                      // Fallback to original format if no table structure found
-                                      return examples.map((example, i) => (
-                                        <div key={i} className={`text-xs leading-relaxed ${
-                                          example.startsWith('|') 
-                                            ? 'text-gray-300 font-mono' 
-                                            : example.startsWith('*') && example.endsWith('*')
-                                            ? 'text-gray-500 italic mt-2'
-                                            : example === ''
-                                            ? 'h-1'
-                                            : 'text-gray-400'
-                                        }`}>
-                                          {example.replace(/\*/g, '')}
-                                        </div>
-                                      ))
-                                    })()}
+                                              {metricLine && (
+                                                <div className="text-xs text-gray-500 italic mt-3">
+                                                  {metricLine.replace(/\*/g, '')}
+                                                </div>
+                                              )}
+                                              {formulaLine && (
+                                                <div className="text-xs text-gray-500 italic mt-1">
+                                                  {formulaLine.replace(/\*/g, '')}
+                                                </div>
+                                              )}
+                                            </>
+                                          )
+                                        }
+                                        
+                                        // Fallback to original format if no table structure found
+                                        return examples.map((example, i) => (
+                                          <div key={i} className={`text-xs leading-relaxed ${
+                                            example.startsWith('|') 
+                                              ? 'text-gray-300 font-mono' 
+                                              : example.startsWith('*') && example.endsWith('*')
+                                              ? 'text-gray-500 italic mt-2'
+                                              : example === ''
+                                              ? 'h-1'
+                                              : 'text-gray-400'
+                                          }`}>
+                                            {example.replace(/\*/g, '')}
+                                          </div>
+                                        ))
+                                      })()}
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
+                              )}
                             </div>
                           </div>
                         )}
@@ -1001,12 +1021,12 @@ export function FactorConfigModal({
                       <div className="text-right">
                         <div className="text-xs text-gray-400">Max ± Points</div>
                         <div className="text-white font-mono">
-                          {factor.key === 'edgeVsMarket' ? '2.0' : ((factor.maxPoints * factor.weight) / 100 * 5).toFixed(2)}
+                          {factor.key === 'edgeVsMarket' ? '3.0' : factor.maxPoints.toFixed(1)}
                         </div>
                         <div className="text-xs text-gray-500 mt-0.5">
                           {factor.key === 'edgeVsMarket' 
                             ? 'Fixed (Final Step)' 
-                            : `(${factor.weight}% of ${factor.maxPoints.toFixed(1)} × 5)`
+                            : `Max ${factor.maxPoints.toFixed(1)} points`
                           }
                         </div>
                       </div>
