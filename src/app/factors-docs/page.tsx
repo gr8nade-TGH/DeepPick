@@ -1,5 +1,6 @@
 import { getSupabase } from '@/lib/supabase/server'
 import { FACTOR_REGISTRY } from '@/lib/cappers/shiva-v1/factor-registry'
+import { getAllStepDefinitions } from '@/lib/shared/step-definitions'
 
 export default async function FactorsDocsPage() {
   const supabase = getSupabase()
@@ -94,90 +95,11 @@ export default async function FactorsDocsPage() {
       <div className="mb-12">
         <h2 className="text-2xl font-semibold mb-4 text-blue-600">Pick Generation Pipeline</h2>
         <p className="text-gray-600 mb-4">
-          The 7-step process for generating sports predictions using the SHIVA system.
+          The {getAllStepDefinitions().length}-step process for generating sports predictions using the SHIVA system.
         </p>
         
         <div className="space-y-4">
-          {[
-            {
-              step: 1,
-              name: "Run Intake",
-              description: "Initialize prediction run and select optimal game",
-              details: [
-                "Filter games by status (scheduled), timing (>30min), and existing picks",
-                "For TOTAL: Find games with no TOTAL predictions",
-                "For SPREAD/MONEYLINE: Find games with no SPREAD OR MONEYLINE predictions",
-                "Generate unique run_id and retrieve game details + current odds"
-              ]
-            },
-            {
-              step: 2,
-              name: "Odds Snapshot",
-              description: "Capture current market odds at prediction time",
-              details: [
-                "Collect moneyline, spread, and total odds from all bookmakers",
-                "Timestamp snapshot for grading and edge calculation: Locks exact odds at prediction time for fair performance evaluation",
-                "Generate snapshot_id with complete odds data and precise timestamp",
-                "Enables accurate grading by comparing picks against the exact market lines you saw",
-                "Calculates edge by measuring how much the market moved in your favor"
-              ]
-            },
-            {
-              step: 3,
-              name: "Factor Analysis",
-              description: "Compute confidence factors based on team performance data",
-              details: [
-                "Fetch team stats from NBA Stats API and StatMuse",
-                "Calculate normalized factor scores using league anchors",
-                "Apply factor weights from capper profile configuration",
-                "Generate factor contribution points for each team"
-              ]
-            },
-            {
-              step: 4,
-              name: "AI Predictions",
-              description: "Generate AI-powered score predictions and analysis",
-              details: [
-                "Use OpenAI to analyze team matchups and recent performance",
-                "Generate predicted scores for both teams",
-                "Calculate confidence based on factor analysis and AI insights",
-                "Determine pick direction (Over/Under, Spread, Moneyline)"
-              ]
-            },
-            {
-              step: 5,
-              name: "Market Analysis",
-              description: "Analyze market conditions and edge calculation",
-              details: [
-                "Compare predicted scores against market lines",
-                "Calculate edge percentage and value",
-                "Determine optimal unit sizing based on confidence",
-                "Apply risk management rules and thresholds"
-              ]
-            },
-            {
-              step: 6,
-              name: "Pick Generation",
-              description: "Generate final pick with locked odds and metadata",
-              details: [
-                "Create final pick record with all metadata",
-                "Lock odds snapshot for grading purposes",
-                "Apply unit sizing based on confidence level",
-                "Store pick in database with run_id and snapshot_id"
-              ]
-            },
-            {
-              step: 7,
-              name: "Insight Card",
-              description: "Generate comprehensive insight card for display",
-              details: [
-                "Create visual insight card with factor breakdown",
-                "Include AI-generated analysis and rationale",
-                "Show confidence score and unit recommendation",
-                "Display market edge and key factors"
-              ]
-            }
-          ].map((step) => (
+          {getAllStepDefinitions().map((step) => (
             <div key={step.step} className="border rounded-lg p-4 bg-white shadow-sm">
               <div className="flex items-center mb-3">
                 <span className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">
@@ -260,6 +182,10 @@ export default async function FactorsDocsPage() {
           <div className="border rounded-lg p-4 bg-white shadow-sm">
             <h3 className="font-semibold text-gray-900 mb-2">Factor Statistics</h3>
             <div className="space-y-1 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Total Steps:</span>
+                <span className="font-mono">{getAllStepDefinitions().length}</span>
+              </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Total Factors:</span>
                 <span className="font-mono">{FACTOR_REGISTRY.length}</span>
