@@ -182,9 +182,11 @@ export function computeInjuryAvailability(bundle: any, ctx: RunCtx): FactorCompu
   // This is a placeholder - the real implementation will be async
   // and will be called from the orchestrator
   return {
+    factor_no: 6,
     key: 'injuryAvailability',
     name: 'Key Injuries & Availability - Totals',
     normalized_value: 0,
+    raw_values_json: {},
     parsed_values_json: {
       overScore: 0,
       underScore: 0,
@@ -213,9 +215,16 @@ export async function computeInjuryAvailabilityAsync(ctx: RunCtx): Promise<Facto
     })
 
     return {
+      factor_no: 6,
       key: 'injuryAvailability',
       name: 'Key Injuries & Availability - Totals',
       normalized_value: analysis.signal,
+      raw_values_json: {
+        awayImpact: analysis.meta.awayImpact,
+        homeImpact: analysis.meta.homeImpact,
+        keyInjuries: analysis.meta.keyInjuries,
+        reasoning: analysis.meta.reasoning
+      },
       parsed_values_json: {
         overScore: analysis.overScore,
         underScore: analysis.underScore,
@@ -235,9 +244,16 @@ export async function computeInjuryAvailabilityAsync(ctx: RunCtx): Promise<Facto
     console.error('[INJURY_AVAILABILITY:ERROR]', error)
     
     return {
+      factor_no: 6,
       key: 'injuryAvailability',
       name: 'Key Injuries & Availability - Totals',
       normalized_value: 0,
+      raw_values_json: {
+        awayImpact: 0,
+        homeImpact: 0,
+        keyInjuries: [],
+        reasoning: 'AI analysis failed'
+      },
       parsed_values_json: {
         overScore: 0,
         underScore: 0,

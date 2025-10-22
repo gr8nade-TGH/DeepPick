@@ -21,9 +21,11 @@ export function computeWhistleEnv(bundle: StatMuseBundle | null, ctx: RunCtx): F
   // Handle case where bundle is null (factor disabled)
   if (!bundle) {
     return {
+      factor_no: 5,
       key: 'whistleEnv',
       name: 'Free-Throw / Whistle Environment',
       normalized_value: 0,
+      raw_values_json: {},
       parsed_values_json: {
         signal: 0,
         points: 0,

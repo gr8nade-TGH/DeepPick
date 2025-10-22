@@ -22,9 +22,11 @@ export function computeThreePointEnv(bundle: StatMuseBundle | null, ctx: RunCtx)
   // Handle case where bundle is null (factor disabled)
   if (!bundle) {
     return {
+      factor_no: 4,
       key: 'threeEnv',
       name: '3-Point Environment & Volatility',
       normalized_value: 0,
+      raw_values_json: {},
       parsed_values_json: {
         signal: 0,
         points: 0,

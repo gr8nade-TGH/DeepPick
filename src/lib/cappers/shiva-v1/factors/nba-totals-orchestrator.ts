@@ -34,10 +34,46 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
       factors: [],
       factor_version: 'nba_totals_v1',
       totals_debug: {
-        league_anchors: {},
+        league_anchors: {
+          pace: 100.1,
+          ORtg: 110.0,
+          DRtg: 110.0,
+          threePAR: 0.39,
+          FTr: 0.22,
+          threePstdev: 0.036
+        },
         injury_impact: { defenseImpactA: 0, defenseImpactB: 0, summary: 'No factors enabled', rawResponse: '' },
         factor_keys: [],
-        console_logs: { branch_used: branchLog, bundle: {}, rows_z_points: [] }
+        console_logs: { 
+          branch_used: branchLog, 
+          bundle: {
+            awayPaceSeason: 100.1,
+            awayPaceLast10: 100.1,
+            homePaceSeason: 100.1,
+            homePaceLast10: 100.1,
+            awayORtgLast10: 110.0,
+            homeORtgLast10: 110.0,
+            awayDRtgSeason: 110.0,
+            homeDRtgSeason: 110.0,
+            away3PAR: 0.39,
+            home3PAR: 0.39,
+            awayOpp3PAR: 0.39,
+            homeOpp3PAR: 0.39,
+            away3PctLast10: 0.35,
+            home3PctLast10: 0.35,
+            awayFTr: 0.22,
+            homeFTr: 0.22,
+            awayOppFTr: 0.22,
+            homeOppFTr: 0.22,
+            leaguePace: 100.1,
+            leagueORtg: 110.0,
+            leagueDRtg: 110.0,
+            league3PAR: 0.39,
+            leagueFTr: 0.22,
+            league3Pstdev: 0.036
+          }, 
+          rows_z_points: [] 
+        }
       }
     }
   }
@@ -142,12 +178,44 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
         threePAR: bundle.league3PAR,
         FTr: bundle.leagueFTr,
         threePstdev: bundle.league3Pstdev
-      } : {},
+      } : {
+        pace: 100.1,
+        ORtg: 110.0,
+        DRtg: 110.0,
+        threePAR: 0.39,
+        FTr: 0.22,
+        threePstdev: 0.036
+      },
       injury_impact: injuryImpact,
       factor_keys: weightedFactors.map(f => f.key),
       console_logs: {
         branch_used: branchLog,
-        bundle: bundle || {},
+        bundle: bundle || {
+          awayPaceSeason: 100.1,
+          awayPaceLast10: 100.1,
+          homePaceSeason: 100.1,
+          homePaceLast10: 100.1,
+          awayORtgLast10: 110.0,
+          homeORtgLast10: 110.0,
+          awayDRtgSeason: 110.0,
+          homeDRtgSeason: 110.0,
+          away3PAR: 0.39,
+          home3PAR: 0.39,
+          awayOpp3PAR: 0.39,
+          homeOpp3PAR: 0.39,
+          away3PctLast10: 0.35,
+          home3PctLast10: 0.35,
+          awayFTr: 0.22,
+          homeFTr: 0.22,
+          awayOppFTr: 0.22,
+          homeOppFTr: 0.22,
+          leaguePace: 100.1,
+          leagueORtg: 110.0,
+          leagueDRtg: 110.0,
+          league3PAR: 0.39,
+          leagueFTr: 0.22,
+          league3Pstdev: 0.036
+        },
         rows_z_points: rowsZPoints
       }
     }
