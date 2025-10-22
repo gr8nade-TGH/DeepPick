@@ -17,7 +17,7 @@ export interface FactorControlsProps {
   onRunClick: () => void
   hasSelectedGame?: boolean
   selectedGameStatus?: string
-  betType?: 'SPREAD' | 'MONEYLINE' | 'TOTAL'
+  betType?: 'TOTAL' | 'SPREAD/MONEYLINE'
   sport?: 'NBA' | 'NFL' | 'MLB'
 }
 

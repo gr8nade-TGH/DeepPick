@@ -5,7 +5,7 @@
  * Supports filtering factors by sport, bet type, and scope.
  */
 
-export type BetType = 'SPREAD' | 'MONEYLINE' | 'TOTAL';
+export type BetType = 'TOTAL' | 'SPREAD/MONEYLINE';
 export type Sport = 'NBA' | 'NFL' | 'MLB' | 'NHL';
 export type Scope = 'GLOBAL' | 'SPORT' | 'LEAGUE';
 

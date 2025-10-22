@@ -184,7 +184,20 @@ export function getFactorsByBetType(betType: BetType): FactorMeta[] {
 export function getFactorsByContext(sport: Sport, betType: BetType): FactorMeta[] {
   return FACTOR_REGISTRY.filter(factor => {
     const sportMatch = factor.appliesTo.sports === '*' || (Array.isArray(factor.appliesTo.sports) && factor.appliesTo.sports.includes(sport));
-    const betTypeMatch = factor.appliesTo.betTypes === '*' || (Array.isArray(factor.appliesTo.betTypes) && factor.appliesTo.betTypes.includes(betType));
+    
+    // Handle the new SPREAD/MONEYLINE bet type
+    let betTypeMatch = false;
+    if (factor.appliesTo.betTypes === '*') {
+      betTypeMatch = true;
+    } else if (Array.isArray(factor.appliesTo.betTypes)) {
+      if (betType === 'SPREAD/MONEYLINE') {
+        // For SPREAD/MONEYLINE, match if factor applies to either SPREAD or MONEYLINE
+        betTypeMatch = factor.appliesTo.betTypes.includes('SPREAD' as any) || factor.appliesTo.betTypes.includes('MONEYLINE' as any);
+      } else {
+        betTypeMatch = factor.appliesTo.betTypes.includes(betType as any);
+      }
+    }
+    
     return sportMatch && betTypeMatch;
   });
 }

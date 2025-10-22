@@ -15,7 +15,7 @@ import { logError } from '@/lib/telemetry/logger'
 const Step1Schema = z.object({
   capper: z.string().min(1),
   sport: z.enum(['NBA', 'NFL', 'MLB']),
-  betType: z.enum(['SPREAD', 'MONEYLINE', 'TOTAL']),
+  betType: z.enum(['TOTAL', 'SPREAD/MONEYLINE']),
   limit: z.number().min(1).max(50).default(10)
 })
 
@@ -143,13 +143,18 @@ export async function POST(request: NextRequest) {
         const availableGames = games.filter(game => {
           const existingPickTypes = existingPicksMap.get(game.id) || new Set()
           
-          // Check if this bet type is already picked for this game
-          if (existingPickTypes.has(betTypeLower)) {
-            return false
+          if (betTypeLower === 'total') {
+            // For TOTAL: check if TOTAL pick already exists
+            if (existingPickTypes.has('total')) {
+              return false
+            }
+          } else if (betTypeLower === 'spread/moneyline') {
+            // For SPREAD/MONEYLINE: check if EITHER SPREAD OR MONEYLINE pick exists
+            if (existingPickTypes.has('spread') || existingPickTypes.has('moneyline')) {
+              return false
+            }
           }
           
-          // For future: enforce max 2 picks per game (TOTAL + one of SPREAD/MONEYLINE)
-          // For now, just check if the specific bet type exists
           return true
         })
 

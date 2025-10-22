@@ -301,7 +301,7 @@ export interface SHIVAWizardProps {
   effectiveProfile?: any
   selectedGame?: any
   mode?: 'dry-run' | 'write'
-  betType?: 'SPREAD' | 'MONEYLINE' | 'TOTAL'
+  betType?: 'TOTAL' | 'SPREAD/MONEYLINE'
 }
 
 export function SHIVAWizard(props: SHIVAWizardProps = {}) {
@@ -941,7 +941,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                     <div className="font-semibold text-white mb-1">Initialize prediction run and select optimal game</div>
                     <ul className="list-disc list-inside space-y-1 text-xs">
                       <li>Filter games by status (scheduled), timing (&gt;30min), and existing picks</li>
-                      <li>Select best available game based on sport and bet type</li>
+                      <li><strong>For TOTAL:</strong> Find games with no TOTAL predictions</li>
+                      <li><strong>For SPREAD/MONEYLINE:</strong> Find games with no SPREAD OR MONEYLINE predictions</li>
                       <li>Generate unique run_id and retrieve game details + current odds</li>
                     </ul>
                   </div>
