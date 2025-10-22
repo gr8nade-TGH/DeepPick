@@ -35,8 +35,8 @@ export function FactorConfigModal({
   const weightFactors = factors.filter(f => f.enabled && f.key !== 'edgeVsMarket')
   const rawTotalWeight = weightFactors.reduce((sum, f) => sum + f.weight, 0)
   const totalWeight = Math.round(rawTotalWeight * 100) / 100
-  const remainingWeight = Math.round((100 - totalWeight) * 100) / 100
-  const isWeightValid = Math.abs(remainingWeight) < 0.01 || Math.abs(totalWeight - 100) < 0.01
+  const remainingWeight = Math.round((150 - totalWeight) * 100) / 100
+  const isWeightValid = Math.abs(remainingWeight) < 0.01 || Math.abs(totalWeight - 150) < 0.01
   
   // Debug logging
   console.log('[Weight Debug]', {
@@ -47,8 +47,8 @@ export function FactorConfigModal({
     isWeightValid
   })
   
-  // Force exact 100% if very close (within 0.01%)
-  const displayTotalWeight = Math.abs(totalWeight - 100) < 0.01 ? 100 : totalWeight
+  // Force exact 150% if very close (within 0.01%)
+  const displayTotalWeight = Math.abs(totalWeight - 150) < 0.01 ? 150 : totalWeight
   const displayRemainingWeight = Math.abs(remainingWeight) < 0.01 ? 0 : remainingWeight
   
   // Get factor eligibility tags
@@ -168,7 +168,7 @@ export function FactorConfigModal({
     
     if (totalWeight === 0) {
       // If all enabled factors have 0 weight, distribute equally
-      const equalWeight = 100 / enabledFactors.length
+      const equalWeight = 150 / enabledFactors.length
       return factors.map(f => {
         if (f.key === 'edgeVsMarket') {
           return { ...f, enabled: true, weight: 100 } // Edge vs Market is always 100%
@@ -177,13 +177,13 @@ export function FactorConfigModal({
       })
     }
     
-    // Normalize enabled factors to sum to 100% (excluding Edge vs Market)
+    // Normalize enabled factors to sum to 150% (excluding Edge vs Market)
     const normalizedFactors = factors.map(f => {
       if (f.key === 'edgeVsMarket') {
         return { ...f, enabled: true, weight: 100 } // Edge vs Market is always 100%
       }
       if (f.enabled) {
-        const normalizedWeight = (f.weight / totalWeight) * 100
+        const normalizedWeight = (f.weight / totalWeight) * 150
         // Round to 2 decimal places to avoid floating point precision issues
         const roundedWeight = Math.round(normalizedWeight * 100) / 100
         return { ...f, weight: roundedWeight }
@@ -192,17 +192,17 @@ export function FactorConfigModal({
       }
     })
     
-    // Final adjustment to ensure exact 100% total
+    // Final adjustment to ensure exact 150% total
     const finalFactors = [...normalizedFactors]
     const finalTotal = finalFactors
       .filter(f => f.enabled && f.key !== 'edgeVsMarket')
       .reduce((sum, f) => sum + f.weight, 0)
-    
-    if (Math.abs(finalTotal - 100) > 0.01) {
-      // Adjust the first enabled factor to make it exactly 100%
+
+    if (Math.abs(finalTotal - 150) > 0.01) {
+      // Adjust the first enabled factor to make it exactly 150%
       const firstEnabled = finalFactors.find(f => f.enabled && f.key !== 'edgeVsMarket')
       if (firstEnabled) {
-        const adjustment = 100 - finalTotal
+        const adjustment = 150 - finalTotal
         firstEnabled.weight = Math.round((firstEnabled.weight + adjustment) * 100) / 100
       }
     }
@@ -233,7 +233,7 @@ export function FactorConfigModal({
         let factorsToSet: FactorConfig[]
         
         if (loadedFactors.length === 0) {
-          // Set default factors with equal weights (20% each = 100% total)
+          // Set default factors with equal weights (30% each = 150% total)
           // Edge vs Market is always included but doesn't count toward weight budget
           factorsToSet = [
             // Edge vs Market - Totals (locked, doesn't count toward weight budget)
@@ -256,7 +256,7 @@ export function FactorConfigModal({
               name: 'Pace Index', 
               description: 'Expected game pace vs league average',
               enabled: true, 
-              weight: 20, 
+              weight: 30, 
               dataSource: 'nba-stats-api',
               maxPoints: 1.0,
               sport: 'NBA',
@@ -270,7 +270,7 @@ export function FactorConfigModal({
               name: 'Offensive Form', 
               description: 'Recent offensive efficiency vs opponent defense',
               enabled: true, 
-              weight: 20, 
+              weight: 30, 
               dataSource: 'nba-stats-api',
               maxPoints: 1.0,
               sport: 'NBA',
@@ -284,7 +284,7 @@ export function FactorConfigModal({
               name: 'Defensive Erosion', 
               description: 'Defensive rating decline + injury impact',
               enabled: true, 
-              weight: 20, 
+              weight: 30, 
               dataSource: 'nba-stats-api',
               maxPoints: 1.0,
               sport: 'NBA',
@@ -298,7 +298,7 @@ export function FactorConfigModal({
               name: '3P Environment', 
               description: '3-point environment & volatility',
               enabled: true, 
-              weight: 20, 
+              weight: 30, 
               dataSource: 'nba-stats-api',
               maxPoints: 1.0,
               sport: 'NBA',
@@ -312,7 +312,7 @@ export function FactorConfigModal({
               name: 'FT Environment', 
               description: 'Free throw rate environment',
               enabled: true, 
-              weight: 20, 
+              weight: 30, 
               dataSource: 'nba-stats-api',
               maxPoints: 1.0,
               sport: 'NBA',
@@ -331,9 +331,9 @@ export function FactorConfigModal({
             .filter(f => f.enabled && f.key !== 'edgeVsMarket')
             .reduce((sum, f) => sum + f.weight, 0)
           
-          if (totalWeight < 90) { // If total is too low, redistribute equally
+          if (totalWeight < 135) { // If total is too low, redistribute equally
             const enabledFactors = factorsToSet.filter(f => f.enabled && f.key !== 'edgeVsMarket')
-            const equalWeight = 100 / enabledFactors.length
+            const equalWeight = 150 / enabledFactors.length
             
             factorsToSet = factorsToSet.map(f => {
               if (f.key === 'edgeVsMarket') return f
@@ -470,7 +470,7 @@ export function FactorConfigModal({
         .reduce((sum, f) => sum + f.weight, 0)
       
       // Calculate max weight this factor can have (can't exceed remaining budget)
-      const maxAllowed = Math.max(0, 100 - otherEnabledWeight)
+      const maxAllowed = Math.max(0, 150 - otherEnabledWeight)
       
       // Clamp weight to valid range
       const newWeight = Math.max(0, Math.min(maxAllowed, weight))
@@ -560,7 +560,7 @@ export function FactorConfigModal({
               <button
                 onClick={() => {
                   const enabledFactors = factors.filter(f => f.enabled && f.key !== 'edgeVsMarket')
-                  const equalWeight = 100 / enabledFactors.length
+                  const equalWeight = 150 / enabledFactors.length
                   
                   setFactors(prev => prev.map(f => {
                     if (f.key === 'edgeVsMarket') return f
@@ -598,7 +598,7 @@ export function FactorConfigModal({
             <div className="flex justify-between items-center">
               <div>
                 <div className="text-sm font-medium text-white">
-                  Weight Budget: {displayTotalWeight}% / 100%
+                  Weight Budget: {displayTotalWeight}% / 150%
                 </div>
                 <div className={`text-xs mt-1 ${
                   isWeightValid 
