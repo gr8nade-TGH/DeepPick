@@ -608,7 +608,7 @@ export function FactorConfigModal({
   // Save factor configuration
   const handleSave = async () => {
     if (!isWeightValid) {
-      alert('Weights must sum to exactly 100% before saving')
+      alert('Weights must sum to exactly 150% before saving')
       return
     }
     
@@ -619,12 +619,15 @@ export function FactorConfigModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           capperId,
-          sport,
-          betType,
-          profile: {
-            ...profile,
-            factors: factors
-          }
+          sport: sport as string,
+          betType: betType as string,
+          name: profile?.name || `${capperId} ${sport} ${betType} Profile`,
+          description: profile?.description || `Custom factor configuration for ${capperId} ${sport} ${betType}`,
+          factors: factors.map(factor => ({
+            ...factor,
+            sport: sport as string,
+            betType: betType as string
+          }))
         })
       })
       
