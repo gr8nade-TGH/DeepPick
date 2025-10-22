@@ -70,25 +70,23 @@ const FACTOR_METADATA: Record<string, { label: string; icon: string; description
 }
 
 function isEnabledInProfile(factorKey: string, profile: any): boolean {
-  if (!profile?.weights) return true // Default enabled if no profile
-  // Check if factor is enabled in profile (simplified - assume all enabled for now)
-  return true
+  if (!profile?.config?.factors) return true // Default enabled if no profile
+  
+  // Find the factor in the profile configuration
+  const factorConfig = profile.config.factors.find((f: any) => f.key === factorKey)
+  if (!factorConfig) return false // Factor not found in profile
+  
+  return factorConfig.enabled === true
 }
 
 function getWeightPct(factorKey: string, profile: any): number {
-  if (!profile?.weights) return 0.1 // Default weight
-  // Map factor keys to profile weights
-  const weightMap: Record<string, string> = {
-    seasonNet: 'f1_net_rating',
-    recentNet: 'f2_recent_form',
-    h2hPpg: 'f3_h2h_matchup',
-    matchupORtgDRtg: 'f4_ortg_diff',
-    newsEdge: 'f5_news_injury',
-    homeEdge: 'f6_home_court',
-    threePoint: 'f7_three_point',
-  }
-  const weightKey = weightMap[factorKey]
-  return weightKey ? (profile.weights[weightKey] || 0) : 0.1
+  if (!profile?.config?.factors) return 0.1 // Default weight
+  
+  // Find the factor in the profile configuration
+  const factorConfig = profile.config.factors.find((f: any) => f.key === factorKey)
+  if (!factorConfig) return 0.1 // Default weight if not found
+  
+  return Number(factorConfig.weight ?? 0.1)
 }
 
 function generatePredictionWriteup(pick: any, predictedScore: any, totalLine: number, confFinal: number, factorRows: any[], homeTeam: string, awayTeam: string): string {
@@ -1035,7 +1033,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
 
             {/* Render Insight Card */}
             <div className="mt-16">
-              <InsightCard {...insightCardData} />
+              <InsightCard {...insightCardData} onClose={() => setShowInsightCard(false)} />
             </div>
           </div>
         </div>
