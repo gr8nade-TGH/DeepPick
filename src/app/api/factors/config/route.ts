@@ -182,8 +182,12 @@ export async function POST(request: NextRequest) {
     
     if (error) {
       console.error('[Factors:Config:POST] Database error:', error)
+      console.error('[Factors:Config:POST] Error code:', error.code)
+      console.error('[Factors:Config:POST] Error details:', error.details)
+      console.error('[Factors:Config:POST] Error hint:', error.hint)
+      console.error('[Factors:Config:POST] Full error object:', JSON.stringify(error, null, 2))
       return NextResponse.json(
-        { error: 'Failed to save configuration', details: error.message },
+        { error: 'Failed to save configuration', details: error.message, code: error.code },
         { status: 500 }
       )
     }
