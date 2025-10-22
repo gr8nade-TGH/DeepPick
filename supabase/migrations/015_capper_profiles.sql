@@ -10,12 +10,13 @@ CREATE TABLE IF NOT EXISTS capper_profiles (
   is_active BOOLEAN NOT NULL DEFAULT true,
   is_default BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  
-  -- Ensure unique combination of capper_id, sport, bet_type for active profiles
-  CONSTRAINT unique_active_profile UNIQUE (capper_id, sport, bet_type) 
-    WHERE is_active = true
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Create unique constraint for active profiles (simplified)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_capper_profiles_unique_active 
+  ON capper_profiles (capper_id, sport, bet_type) 
+  WHERE is_active = true;
 
 -- Create index for efficient lookups
 CREATE INDEX IF NOT EXISTS idx_capper_profiles_lookup 
