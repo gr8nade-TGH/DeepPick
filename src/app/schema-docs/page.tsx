@@ -40,7 +40,7 @@ export default async function SchemaDocsPage() {
       </p>
 
       <div className="space-y-8">
-        {tables?.map((table) => (
+        {tables?.map((table: any) => (
           <TableSchema key={table.table_name} tableName={table.table_name} />
         ))}
       </div>
