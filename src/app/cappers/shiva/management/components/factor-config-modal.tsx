@@ -95,12 +95,14 @@ export function FactorConfigModal({
         ]
       },
       offForm: {
-        metric: "Offensive form vs opponent defense",
-        formula: "s = clamp((teamORtg + oppDRtg - 2×leagueORtg) / 10, -1, +1)",
+        metric: "Combined team offensive efficiency vs league average",
+        formula: "combinedORtg = (homeORtg + awayORtg)/2, advantage = combinedORtg - leagueORtg, signal = tanh(advantage/10), if signal > 0: overScore = |signal| × 2.0, underScore = 0; else: overScore = 0, underScore = |signal| × 2.0",
         examples: [
-          "+10 ORtg → s=+1 → 100% positive",
-          "+5 ORtg → s=+0.5 → 50% positive",
-          "-5 ORtg → s=-0.5 → 50% negative"
+          "+10 ORtg advantage → Over: +1.52, Under: 0.0 (High Over confidence)",
+          "+5 ORtg advantage → Over: +0.76, Under: 0.0 (Moderate Over confidence)",
+          "0 ORtg advantage → Over: 0.0, Under: 0.0 (Neutral offense)",
+          "-5 ORtg advantage → Over: 0.0, Under: +0.76 (Moderate Under confidence)",
+          "-10 ORtg advantage → Over: 0.0, Under: +1.52 (High Under confidence)"
         ]
       },
       defErosion: {

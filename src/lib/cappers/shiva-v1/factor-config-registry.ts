@@ -25,17 +25,17 @@ export const FACTOR_REGISTRY: FactorRegistry = {
   },
   
   offForm: {
-    name: 'Offensive Form vs Opponent',
-    description: 'Recent offensive efficiency against opponent defensive strength',
+    name: 'Offensive Form vs League',
+    description: 'Combined team offensive efficiency vs league average',
     defaultWeight: 20,
-    maxPoints: 1.0,
+    maxPoints: 2.0,
     supportedSports: ['NBA'],
     supportedBetTypes: ['TOTAL'],
     availableDataSources: ['nba-stats-api', 'manual'],
     defaultDataSource: 'nba-stats-api',
     scope: 'matchup',
     icon: '🔥',
-    shortName: 'ORtg Form'
+    shortName: 'Offense'
   },
   
   defErosion: {
