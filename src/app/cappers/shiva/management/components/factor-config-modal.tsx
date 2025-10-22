@@ -83,11 +83,14 @@ export function FactorConfigModal({
     const logicMap: Record<string, { metric: string; formula: string; examples: string[] }> = {
       paceIndex: {
         metric: "Expected game pace based on both teams' pace interaction",
-        formula: "expPace = (awayPace + homePace)/2, s = clamp((expPace - leaguePace)/6, -1, +1)",
+        formula: "expPace = (awayPace + homePace)/2, s = clamp(tanh((expPace - leaguePace)/8), -1, +1)",
         examples: [
-          "Lakers(105) vs Grizzlies(95) → expPace=100 → s=0 → neutral",
-          "Warriors(108) vs Kings(106) → expPace=107 → s=+1.0 → +100% Over",
-          "Heat(96) vs Knicks(94) → expPace=95 → s=-0.8 → -80% Under"
+          "+12 possessions → s=+1.0 → +2.0 pts (100%)",
+          "+8 possessions → s=+0.76 → +1.52 pts (76%)",
+          "+5 possessions → s=+0.55 → +1.10 pts (55%)",
+          "0 possessions → s=0.0 → 0.0 pts (0%)",
+          "-5 possessions → s=-0.55 → -1.10 pts (-55%)",
+          "-8 possessions → s=-0.76 → -1.52 pts (-76%)"
         ]
       },
       offForm: {
