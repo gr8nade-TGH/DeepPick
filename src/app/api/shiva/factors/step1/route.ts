@@ -55,6 +55,10 @@ export async function POST(request: NextRequest) {
         const now = new Date()
         const thirtyMinutesFromNow = new Date(now.getTime() + 30 * 60 * 1000)
 
+        // Convert sport and betType to lowercase for database enums
+        const sportLower = sport.toLowerCase()
+        const betTypeLower = betType.toLowerCase()
+
         // 1. Get all games that are scheduled (not in progress or complete)
         const { data: games, error: gamesError } = await supabase
           .from('games')
@@ -68,7 +72,7 @@ export async function POST(request: NextRequest) {
             sport,
             odds
           `)
-          .eq('sport', sport)
+          .eq('sport', sportLower)
           .in('status', ['scheduled', 'pre-game'])
           .gte('game_date', now.toISOString().split('T')[0]) // Filter by today or later
           .order('game_date', { ascending: true })
@@ -109,7 +113,7 @@ export async function POST(request: NextRequest) {
         // 2. Get existing picks for this capper to avoid duplicates
         const { data: existingPicks, error: picksError } = await supabase
           .from('picks')
-          .select('game_id, pick_type')
+          .select('game_id, bet_type')
           .eq('capper', capper)
           .in('game_id', games.map(g => g.id))
 
@@ -131,7 +135,7 @@ export async function POST(request: NextRequest) {
             if (!existingPicksMap.has(pick.game_id)) {
               existingPicksMap.set(pick.game_id, new Set())
             }
-            existingPicksMap.get(pick.game_id).add(pick.pick_type)
+            existingPicksMap.get(pick.game_id).add(pick.bet_type)
           })
         }
 
@@ -140,7 +144,7 @@ export async function POST(request: NextRequest) {
           const existingPickTypes = existingPicksMap.get(game.id) || new Set()
           
           // Check if this bet type is already picked for this game
-          if (existingPickTypes.has(betType)) {
+          if (existingPickTypes.has(betTypeLower)) {
             return false
           }
           
