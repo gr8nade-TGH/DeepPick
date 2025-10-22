@@ -368,45 +368,83 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           setEffectiveProfileSnapshot(props.effectiveProfile)
         }
         
-        // Generate run_id BEFORE POST (if not already set)
-        let generatedRunId = runId
-        if (!generatedRunId) {
-          // Use crypto.randomUUID() if available, otherwise fallback
-          if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-            generatedRunId = crypto.randomUUID()
-          } else {
-            // Fallback UUID v4 generator
-            generatedRunId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-              const r = Math.random() * 16 | 0
-              const v = c === 'x' ? r : (r & 0x3 | 0x8)
-              return v.toString(16)
-            })
-          }
-          console.debug('[Step 1] Generated run_id:', generatedRunId)
-          setRunId(generatedRunId)
-        }
+        // Call Step 1 API to find available games
+        console.debug('[Step 1] Calling game selection API...')
         
-        // Use selected game or fallback to demo game
-        const gameData = props.selectedGame || {
-          game_id: 'nba_2025_10_21_okc_hou',
-          home: 'Oklahoma City Thunder',
-          away: 'Houston Rockets',
-          start_time_utc: '2025-10-21T01:30:00Z',
-        }
-        
-        console.debug('[Step 1] POST body:', {
-          run_id: generatedRunId,
-          game: gameData,
-          effectiveProfile: props.effectiveProfile
+        const step1Response = await fetch('/api/shiva/factors/step1', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Idempotency-Key': crypto.randomUUID(),
+          },
+          body: JSON.stringify({
+            capper: 'SHIVA',
+            sport: 'NBA',
+            betType: props.betType || 'TOTAL',
+            limit: 10
+          })
         })
         
-        const r = await postJson('/api/shiva/runs', {
-          run_id: generatedRunId, // Include run_id in POST body
-          game: {
-            game_id: gameData.game_id || 'nba_2025_10_21_okc_hou',
-            home: gameData.home || 'Oklahoma City Thunder',
-            away: gameData.away || 'Houston Rockets',
-            start_time_utc: gameData.start_time_utc || '2025-10-21T01:30:00Z'
+        const step1Data = await step1Response.json()
+        console.debug('[Step 1] API response:', step1Data)
+        
+        if (!step1Response.ok) {
+          throw new Error(`Step 1 failed: ${step1Data.error?.message || 'Unknown error'}`)
+        }
+        
+        if (step1Data.json.state === 'NO_GAMES_AVAILABLE' || step1Data.json.state === 'NO_AVAILABLE_GAMES') {
+          // No games available - show message
+          setLog({
+            status: 200,
+            json: {
+              run_id: null,
+              state: step1Data.json.state,
+              message: step1Data.json.message,
+              filters: step1Data.json.filters
+            },
+            dryRun: true
+          })
+          return
+        }
+        
+        // Set the selected game and run_id from API response
+        const selectedGame = step1Data.json.selected_game
+        const generatedRunId = step1Data.json.run_id
+        
+        setRunId(generatedRunId)
+        setSelectedGame(selectedGame)
+        
+        console.debug('[Step 1] Selected game:', selectedGame)
+        console.debug('[Step 1] Generated run_id:', generatedRunId)
+        
+        // Store Step 1 response
+        setStepLogs(prev => ({
+          ...prev,
+          [1]: {
+            status: step1Response.status,
+            json: step1Data.json,
+            dryRun: true,
+            latencyMs: Date.now() - Date.now() // Will be calculated properly
+          }
+        }))
+        
+        setLog({
+          status: step1Response.status,
+          json: step1Data.json,
+          dryRun: true
+        })
+        
+        return
+      }
+      
+      // Continue with other steps...
+      const r = await postJson('/api/shiva/runs', {
+          run_id: runId, // Use the run_id from state
+          game: selectedGame || {
+            game_id: 'nba_2025_10_21_okc_hou',
+            home_team: 'Oklahoma City Thunder',
+            away_team: 'Houston Rockets',
+            start_time_utc: '2025-10-21T01:30:00Z'
           },
           effectiveProfile: props.effectiveProfile
         }, 'ui-demo-run')
