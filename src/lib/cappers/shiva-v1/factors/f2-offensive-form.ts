@@ -118,6 +118,24 @@ export function estimateOffensiveImpact(advantage: number): number {
  * This will be replaced when we integrate the new calculation logic
  */
 export function computeOffensiveForm(bundle: any, ctx: any): any {
+  // Handle case where bundle is null (factor disabled)
+  if (!bundle) {
+    return {
+      key: 'offForm',
+      name: 'Offensive Form vs League',
+      normalized_value: 0,
+      parsed_values_json: {
+        overScore: 0,
+        underScore: 0,
+        awayContribution: 0,
+        homeContribution: 0
+      },
+      caps_applied: false,
+      cap_reason: null,
+      notes: 'Factor disabled - no data bundle'
+    }
+  }
+
   // TODO: Integrate with the new calculateOffensiveFormPoints function
   // For now, return a placeholder that matches the expected interface
   return {

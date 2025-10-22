@@ -17,7 +17,25 @@ import { clamp, normalizeToPoints, splitPointsEvenly } from '../factor-registry'
  *         z = clamp(ftrDelta / 0.06, -1, 1)
  *         points = 0.3 * z
  */
-export function computeWhistleEnv(bundle: StatMuseBundle, ctx: RunCtx): FactorComputation {
+export function computeWhistleEnv(bundle: StatMuseBundle | null, ctx: RunCtx): FactorComputation {
+  // Handle case where bundle is null (factor disabled)
+  if (!bundle) {
+    return {
+      key: 'whistleEnv',
+      name: 'Free-Throw / Whistle Environment',
+      normalized_value: 0,
+      parsed_values_json: {
+        signal: 0,
+        points: 0,
+        awayContribution: 0,
+        homeContribution: 0
+      },
+      caps_applied: false,
+      cap_reason: null,
+      notes: 'Factor disabled - no data bundle'
+    }
+  }
+
   const { 
     awayFTr, 
     homeFTr, 

@@ -117,6 +117,23 @@ export function estimateTotalImpact(paceDelta: number): number {
  * This will be replaced when we integrate the new calculation logic
  */
 export function computePaceIndex(bundle: any, ctx: any): any {
+  // Handle case where bundle is null (factor disabled)
+  if (!bundle) {
+    return {
+      key: 'paceIndex',
+      name: 'Matchup Pace Index',
+      normalized_value: 0,
+      parsed_values_json: {
+        points: 0,
+        awayContribution: 0,
+        homeContribution: 0
+      },
+      caps_applied: false,
+      cap_reason: null,
+      notes: 'Factor disabled - no data bundle'
+    }
+  }
+
   // TODO: Integrate with the new calculatePaceFactorPoints function
   // For now, return a placeholder that matches the expected interface
   return {

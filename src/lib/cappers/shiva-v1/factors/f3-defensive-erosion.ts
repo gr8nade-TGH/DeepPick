@@ -134,6 +134,24 @@ export function estimateDefensiveImpact(totalErosion: number): number {
  * TODO: Integrate with the new calculateDefensiveErosionPoints function
  */
 export function computeDefensiveErosion(bundle: any, ctx: any): any {
+  // Handle case where bundle is null (factor disabled)
+  if (!bundle) {
+    return {
+      key: 'defErosion',
+      name: 'Defensive Erosion',
+      normalized_value: 0,
+      parsed_values_json: {
+        overScore: 0,
+        underScore: 0,
+        awayContribution: 0,
+        homeContribution: 0
+      },
+      caps_applied: false,
+      cap_reason: null,
+      notes: 'Factor disabled - no data bundle'
+    }
+  }
+
   // TODO: Integrate with the new calculateDefensiveErosionPoints function
   return {
     key: 'defErosion',

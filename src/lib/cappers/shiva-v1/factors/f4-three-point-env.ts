@@ -18,7 +18,25 @@ import { clamp, normalizeToPoints, splitPointsEvenly } from '../factor-registry'
  *         z = clamp((2*rateDelta + hotVar), -1, 1)
  *         points = 0.4 * z
  */
-export function computeThreePointEnv(bundle: StatMuseBundle, ctx: RunCtx): FactorComputation {
+export function computeThreePointEnv(bundle: StatMuseBundle | null, ctx: RunCtx): FactorComputation {
+  // Handle case where bundle is null (factor disabled)
+  if (!bundle) {
+    return {
+      key: 'threeEnv',
+      name: '3-Point Environment & Volatility',
+      normalized_value: 0,
+      parsed_values_json: {
+        signal: 0,
+        points: 0,
+        awayContribution: 0,
+        homeContribution: 0
+      },
+      caps_applied: false,
+      cap_reason: null,
+      notes: 'Factor disabled - no data bundle'
+    }
+  }
+
   const { 
     away3PAR, 
     home3PAR, 
