@@ -858,6 +858,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                   <th className="text-left p-1 text-white">Status</th>
                   <th className="text-left p-1 text-white">AI Used</th>
                   <th className="text-left p-1 text-white">Dry Run</th>
+                  <th className="text-left p-1 text-white">Data Type</th>
                   <th className="text-left p-1 text-white">Response</th>
                 </tr>
               </thead>
@@ -866,6 +867,13 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                   const step = parseInt(stepNum)
                   const usesAI = step === 3 || step === 4 || step === 7 // Steps that use AI
                   const aiProvider = step === 3 ? 'Perplexity' : step === 4 ? 'OpenAI' : step === 7 ? 'OpenAI' : null
+                  
+                  // Detect mock vs real data
+                  const isMockData = response.json?.mock_data === true || 
+                                   response.json?.data_source === 'mock' ||
+                                   response.json?.fixture === true ||
+                                   (step === 2 && response.json?.snapshot?.odds?.mock === true) ||
+                                   (step === 3 && response.json?.factors?.some((f: any) => f.mock_data === true))
                   
                   return (
                     <tr key={stepNum} className="border-b border-gray-700">
@@ -895,6 +903,17 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                         }`}>
                           {response.dryRun ? 'Yes' : 'No'}
                         </span>
+                      </td>
+                      <td className="p-1">
+                        {isMockData ? (
+                          <span className="px-1 rounded text-xs bg-yellow-600 text-black font-bold">
+                            🔧 MOCK
+                          </span>
+                        ) : (
+                          <span className="px-1 rounded text-xs bg-green-600 text-white">
+                            ✅ REAL
+                          </span>
+                        )}
                       </td>
                       <td className="p-1 font-mono text-xs max-w-xs truncate text-gray-300">
                         {response.json ? JSON.stringify(response.json).substring(0, 50) + '...' : 'No data'}
@@ -952,8 +971,10 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                     <div className="font-semibold text-white mb-1">Capture current market odds at prediction time</div>
                     <ul className="list-disc list-inside space-y-1 text-xs">
                       <li>Collect moneyline, spread, and total odds from all bookmakers</li>
-                      <li>Timestamp snapshot for grading and edge calculation</li>
-                      <li>Generate snapshot_id with complete odds data</li>
+                      <li><strong>Timestamp snapshot for grading and edge calculation:</strong> Locks exact odds at prediction time for fair performance evaluation</li>
+                      <li>Generate snapshot_id with complete odds data and precise timestamp</li>
+                      <li>Enables accurate grading by comparing picks against the exact market lines you saw</li>
+                      <li>Calculates edge by measuring how much the market moved in your favor</li>
                     </ul>
                   </div>
                 )}
