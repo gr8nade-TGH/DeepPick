@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDefaultProfile, FACTOR_REGISTRY } from '@/lib/cappers/shiva-v1/factor-config-registry'
+import { createClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -67,9 +68,42 @@ export async function GET(request: NextRequest) {
     
     const { capperId: capper, sport: spt, betType: bt } = parse.data
     
-    // For now, return default profile
-    // TODO: Fetch from database when capper_profiles table is created
-    const profile = getDefaultProfile(capper, spt, bt)
+    // Try to fetch from database first
+    const supabase = createClient()
+    const { data: savedProfile, error } = await supabase
+      .from('capper_profiles')
+      .select('*')
+      .eq('capper_id', capper)
+      .eq('sport', spt)
+      .eq('bet_type', bt)
+      .eq('is_active', true)
+      .single()
+    
+    if (error || !savedProfile) {
+      // Fallback to default profile if no saved profile found
+      console.log('[Factors:Config:GET] No saved profile found, using default')
+      const profile = getDefaultProfile(capper, spt, bt)
+      return NextResponse.json({
+        success: true,
+        profile,
+        registry: FACTOR_REGISTRY
+      })
+    }
+    
+    // Convert database profile to expected format
+    const profile = {
+      id: savedProfile.id,
+      capperId: savedProfile.capper_id,
+      sport: savedProfile.sport,
+      betType: savedProfile.bet_type,
+      name: savedProfile.name,
+      description: savedProfile.description,
+      factors: savedProfile.factors,
+      isActive: savedProfile.is_active,
+      isDefault: savedProfile.is_default,
+      createdAt: savedProfile.created_at,
+      updatedAt: savedProfile.updated_at
+    }
     
     return NextResponse.json({
       success: true,
@@ -106,23 +140,57 @@ export async function POST(request: NextRequest) {
     
     const { capperId, sport, betType, name, description, factors } = parse.data
     
-    // TODO: Save to database when capper_profiles table is created
-    // For now, just return success
-    
+    // Save to database
+    const supabase = createClient()
     const profileId = `${capperId}-${sport}-${betType}-custom-${Date.now()}`.toLowerCase()
     
-    const savedProfile = {
-      id: profileId,
-      capperId,
-      sport,
-      betType,
-      name,
-      description,
-      factors,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      isActive: true,
-      isDefault: false
+    // First, deactivate any existing active profile for this capper/sport/betType
+    await supabase
+      .from('capper_profiles')
+      .update({ is_active: false })
+      .eq('capper_id', capperId)
+      .eq('sport', sport)
+      .eq('bet_type', betType)
+      .eq('is_active', true)
+    
+    // Insert new profile
+    const { data: savedProfile, error } = await supabase
+      .from('capper_profiles')
+      .insert({
+        id: profileId,
+        capper_id: capperId,
+        sport,
+        bet_type: betType,
+        name,
+        description,
+        factors,
+        is_active: true,
+        is_default: false
+      })
+      .select()
+      .single()
+    
+    if (error) {
+      console.error('[Factors:Config:POST] Database error:', error)
+      return NextResponse.json(
+        { error: 'Failed to save configuration', details: error.message },
+        { status: 500 }
+      )
+    }
+    
+    // Convert database profile to expected format
+    const profile = {
+      id: savedProfile.id,
+      capperId: savedProfile.capper_id,
+      sport: savedProfile.sport,
+      betType: savedProfile.bet_type,
+      name: savedProfile.name,
+      description: savedProfile.description,
+      factors: savedProfile.factors,
+      isActive: savedProfile.is_active,
+      isDefault: savedProfile.is_default,
+      createdAt: savedProfile.created_at,
+      updatedAt: savedProfile.updated_at
     }
     
     console.log('[Factors:Config:POST] Saved profile:', {
@@ -135,7 +203,7 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json({
       success: true,
-      profile: savedProfile,
+      profile,
       message: 'Factor configuration saved successfully'
     })
   } catch (error) {
