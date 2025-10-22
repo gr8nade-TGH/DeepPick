@@ -41,15 +41,15 @@ export const FACTOR_REGISTRY: FactorRegistry = {
   defErosion: {
     name: 'Defensive Erosion',
     description: 'Defensive rating decline + injury impact',
-    defaultWeight: 20,
-    maxPoints: 1.0,
+    defaultWeight: 30,
+    maxPoints: 2.0,
     supportedSports: ['NBA'],
     supportedBetTypes: ['TOTAL'],
     availableDataSources: ['nba-stats-api', 'llm', 'manual'],
     defaultDataSource: 'nba-stats-api',
-    scope: 'team',
+    scope: 'matchup',
     icon: '🛡️',
-    shortName: 'DRtg/Avail'
+    shortName: 'Defense'
   },
   
   threeEnv: {

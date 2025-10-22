@@ -1,83 +1,152 @@
 /**
- * F3: Defensive Erosion Factor
+ * Defensive Erosion Factor (F3)
  * 
- * Defensive rating decline + injury impact
- * Max Points: 0.5
+ * Calculates defensive rating decline + injury impact
+ * Uses smooth tanh scaling with single positive score system
  */
 
-import { FactorComputation } from '@/types/factors'
-import { StatMuseBundle, RunCtx, InjuryImpact } from './types'
-import { clamp, normalizeToPoints, splitPointsEvenly } from '../factor-registry'
+export interface DefensiveErosionInput {
+  homeDRtg: number
+  awayDRtg: number
+  leagueDRtg: number
+  injuryImpact: {
+    defenseImpactA: number // -1 to +1, negative = worse defense
+    defenseImpactB: number // -1 to +1, negative = worse defense
+  }
+}
+
+export interface DefensiveErosionOutput {
+  overScore: number
+  underScore: number
+  signal: number
+  meta: {
+    combinedDRtg: number
+    drtgDelta: number
+    injuryImpact: number
+    totalErosion: number
+    reason?: string
+  }
+}
 
 /**
- * Compute F3: Defensive Erosion
- * 
- * Formula: drDeltaA = (DRtgA_last10 - Ld) / 8
- *         drDeltaB = (DRtgB_last10 - Ld) / 8
- *         erosionA = 0.7*drDeltaA + 0.3*injA
- *         erosionB = 0.7*drDeltaB + 0.3*injB
- *         erosion = (erosionA + erosionB)/2
- *         z = clamp(erosion, -1, 1)
- *         points = 0.5 * z
+ * Helper function to clamp a value between min and max
  */
-export function computeDefensiveErosion(
-  bundle: StatMuseBundle, 
-  injuryImpact: InjuryImpact, 
-  ctx: RunCtx
-): FactorComputation {
-  const { 
-    awayDRtgSeason, 
-    homeDRtgSeason, 
-    leagueDRtg 
-  } = bundle
+function clamp(x: number, lo: number, hi: number): number {
+  return Math.max(lo, Math.min(hi, x))
+}
+
+/**
+ * Helper function to calculate hyperbolic tangent
+ */
+function tanh(x: number): number {
+  const e2x = Math.exp(2 * x)
+  return (e2x - 1) / (e2x + 1)
+}
+
+/**
+ * Calculate defensive erosion factor points using single positive score system
+ * Each factor contributes to either Over OR Under, never both
+ * 
+ * @param input - Team defensive ratings, league average, and injury impact
+ * @returns Over/Under scores and debugging metadata
+ */
+export function calculateDefensiveErosionPoints(input: DefensiveErosionInput): DefensiveErosionOutput {
+  const { homeDRtg, awayDRtg, leagueDRtg, injuryImpact } = input
+  const MAX_POINTS = 2.0
+  const SCALE = 8.0
+
+  // Input validation
+  if (![homeDRtg, awayDRtg, leagueDRtg].every(v => Number.isFinite(v) && v > 0)) {
+    return {
+      overScore: 0,
+      underScore: 0,
+      signal: 0,
+      meta: {
+        combinedDRtg: 0,
+        drtgDelta: 0,
+        injuryImpact: 0,
+        totalErosion: 0,
+        reason: 'bad_input'
+      }
+    }
+  }
+
+  // Calculate combined defensive rating
+  const combinedDRtg = (homeDRtg + awayDRtg) / 2
+
+  // Calculate defensive rating delta vs league (higher DRtg = worse defense)
+  let drtgDelta = combinedDRtg - leagueDRtg
+
+  // Safety cap for extreme outliers
+  drtgDelta = clamp(drtgDelta, -20, 20)
+
+  // Calculate injury impact (negative values = worse defense)
+  const injuryImpactAvg = (injuryImpact.defenseImpactA + injuryImpact.defenseImpactB) / 2
+
+  // Combine defensive erosion: 70% DRtg decline + 30% injury impact
+  const totalErosion = (0.7 * drtgDelta) + (0.3 * injuryImpactAvg * 10) // Scale injury impact
+
+  // Calculate signal using tanh for smooth saturation
+  const rawSignal = tanh(totalErosion / SCALE)
   
-  const { defenseImpactA, defenseImpactB } = injuryImpact
+  // Apply hard limits to allow full ±1.0 signal for extreme cases
+  const signal = clamp(rawSignal, -1, 1)
+
+  // Convert to single positive scores for one direction
+  let overScore = 0
+  let underScore = 0
   
-  // Calculate defensive rating deltas
-  const awayDrDelta = (awayDRtgSeason - leagueDRtg) / 8
-  const homeDrDelta = (homeDRtgSeason - leagueDRtg) / 8
-  
-  // Combine defensive decline with injury impact
-  const awayErosion = 0.7 * awayDrDelta + 0.3 * defenseImpactA
-  const homeErosion = 0.7 * homeDrDelta + 0.3 * defenseImpactB
-  
-  // Average erosion for both teams
-  const erosion = (awayErosion + homeErosion) / 2
-  
-  // Normalize to z-score (-1 to +1)
-  const signal = clamp(erosion, -1, 1)
-  
-  // Convert to points (max 0.5)
-  const points = normalizeToPoints(signal, 0.5)
-  
-  // Split points evenly between teams
-  const { away: awayContribution, home: homeContribution } = splitPointsEvenly(points)
-  
+  if (signal > 0) {
+    // Positive signal favors Over (worse defense = more points allowed)
+    overScore = Math.abs(signal) * MAX_POINTS
+  } else if (signal < 0) {
+    // Negative signal favors Under (better defense = fewer points allowed)
+    underScore = Math.abs(signal) * MAX_POINTS
+  }
+  // signal = 0 means neutral, both scores remain 0
+
   return {
-    factor_no: 3,
+    overScore,
+    underScore,
+    signal,
+    meta: {
+      combinedDRtg,
+      drtgDelta,
+      injuryImpact: injuryImpactAvg,
+      totalErosion
+    }
+  }
+}
+
+/**
+ * Calculate expected total impact for logging/debugging
+ * 
+ * @param totalErosion - Combined defensive erosion score
+ * @returns Estimated points added to game total
+ */
+export function estimateDefensiveImpact(totalErosion: number): number {
+  // League average: ~1.0 points per DRtg point difference
+  return totalErosion * 1.0
+}
+
+/**
+ * Legacy wrapper function for compatibility with existing orchestrator
+ * TODO: Integrate with the new calculateDefensiveErosionPoints function
+ */
+export function computeDefensiveErosion(bundle: any, ctx: any): any {
+  // TODO: Integrate with the new calculateDefensiveErosionPoints function
+  return {
     key: 'defErosion',
     name: 'Defensive Erosion',
-    raw_values_json: {
-      awayDRtgSeason,
-      homeDRtgSeason,
-      awayDrDelta,
-      homeDrDelta,
-      defenseImpactA,
-      defenseImpactB,
-      awayErosion,
-      homeErosion,
-      erosion,
-      leagueDRtg
-    },
+    normalized_value: 0,
     parsed_values_json: {
-      signal,
-      points,
-      awayContribution,
-      homeContribution
+      overScore: 0,
+      underScore: 0,
+      awayContribution: 0, // Legacy field, will be removed
+      homeContribution: 0  // Legacy field, will be removed
     },
-    normalized_value: signal,
-    caps_applied: Math.abs(signal) >= 1,
-    cap_reason: Math.abs(signal) >= 1 ? 'signal clamped to ±1' : null,
-    notes: `Erosion: Away ${awayErosion.toFixed(2)}, Home ${homeErosion.toFixed(2)} (inj: ${defenseImpactA.toFixed(2)}, ${defenseImpactB.toFixed(2)})`
+    caps_applied: false,
+    cap_reason: null,
+    notes: 'Placeholder - new implementation pending'
   }
 }

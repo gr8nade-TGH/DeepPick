@@ -85,33 +85,50 @@ export function FactorConfigModal({
         metric: "Expected game pace based on both teams' pace interaction",
         formula: "expPace = (awayPace + homePace)/2, signal = tanh((expPace - leaguePace)/8), if signal > 0: overScore = |signal| × 2.0, underScore = 0; else: overScore = 0, underScore = |signal| × 2.0",
         examples: [
-          "+16+ possessions → Over: +2.0, Under: 0.0 (Full Over confidence)",
-          "+8 possessions → Over: +1.52, Under: 0.0 (High Over confidence)",
-          "+5 possessions → Over: +1.10, Under: 0.0 (Moderate Over confidence)",
-          "0 possessions → Over: 0.0, Under: 0.0 (Neutral pace)",
-          "-5 possessions → Over: 0.0, Under: +1.10 (Moderate Under confidence)",
-          "-8 possessions → Over: 0.0, Under: +1.52 (High Under confidence)",
-          "-16+ possessions → Over: 0.0, Under: +2.0 (Full Under confidence)"
+          "| Possessions | Signal | Over Score | Under Score | Confidence |",
+          "|-------------|--------|------------|-------------|------------|",
+          "| +16+        | +1.0   | +2.0       | 0.0         | Maximum    |",
+          "| +12         | +0.91  | +1.82      | 0.0         | Very High  |",
+          "| +8          | +0.76  | +1.52      | 0.0         | High       |",
+          "| +5          | +0.55  | +1.10      | 0.0         | Moderate   |",
+          "| 0           | 0.0    | 0.0        | 0.0         | Neutral    |",
+          "| -5          | -0.55  | 0.0        | +1.10       | Moderate   |",
+          "| -8          | -0.76  | 0.0        | +1.52       | High       |",
+          "| -12         | -0.91  | 0.0        | +1.82       | Very High  |",
+          "| -16+        | -1.0   | 0.0        | +2.0        | Maximum    |"
         ]
       },
       offForm: {
         metric: "Combined team offensive efficiency vs league average",
         formula: "combinedORtg = (homeORtg + awayORtg)/2, advantage = combinedORtg - leagueORtg, signal = tanh(advantage/10), if signal > 0: overScore = |signal| × 2.0, underScore = 0; else: overScore = 0, underScore = |signal| × 2.0",
         examples: [
-          "+10 ORtg advantage → Over: +1.52, Under: 0.0 (High Over confidence)",
-          "+5 ORtg advantage → Over: +0.76, Under: 0.0 (Moderate Over confidence)",
-          "0 ORtg advantage → Over: 0.0, Under: 0.0 (Neutral offense)",
-          "-5 ORtg advantage → Over: 0.0, Under: +0.76 (Moderate Under confidence)",
-          "-10 ORtg advantage → Over: 0.0, Under: +1.52 (High Under confidence)"
+          "| ORtg Advantage | Signal | Over Score | Under Score | Confidence |",
+          "|----------------|--------|------------|-------------|------------|",
+          "| +15+           | +1.0   | +2.0       | 0.0         | Maximum    |",
+          "| +10            | +0.76  | +1.52      | 0.0         | High       |",
+          "| +5             | +0.46  | +0.92      | 0.0         | Moderate   |",
+          "| +2             | +0.20  | +0.40      | 0.0         | Low        |",
+          "| 0              | 0.0    | 0.0        | 0.0         | Neutral    |",
+          "| -2             | -0.20  | 0.0        | +0.40       | Low        |",
+          "| -5             | -0.46  | 0.0        | +0.92       | Moderate   |",
+          "| -10            | -0.76  | 0.0        | +1.52       | High       |",
+          "| -15+           | -1.0   | 0.0        | +2.0        | Maximum    |"
         ]
       },
       defErosion: {
-        metric: "Defensive erosion + injury impact",
-        formula: "s = clamp(0.7×DRtgDelta + 0.3×injuryImpact, -1, +1)",
+        metric: "Combined defensive rating decline + injury impact",
+        formula: "combinedDRtg = (homeDRtg + awayDRtg)/2, drtgDelta = combinedDRtg - leagueDRtg, totalErosion = 0.7×drtgDelta + 0.3×injuryImpact×10, signal = tanh(totalErosion/8), if signal > 0: overScore = |signal| × 2.0, underScore = 0; else: overScore = 0, underScore = |signal| × 2.0",
         examples: [
-          "Strong defense + no injuries → s=+1 → 100% positive",
-          "Weak defense + injuries → s=-1 → 100% negative",
-          "Mixed signals → s=0 → neutral"
+          "| DRtg Delta | Injury | Total Erosion | Signal | Over Score | Under Score | Confidence |",
+          "|------------|--------|---------------|--------|------------|-------------|------------|",
+          "| +10        | -0.5   | +5.5          | +0.60  | +1.20      | 0.0         | High       |",
+          "| +5         | -0.2   | +2.9          | +0.35  | +0.70      | 0.0         | Moderate   |",
+          "| +2         | 0.0    | +1.4          | +0.17  | +0.34      | 0.0         | Low        |",
+          "| 0          | 0.0    | 0.0           | 0.0    | 0.0        | 0.0         | Neutral    |",
+          "| -2         | 0.0    | -1.4          | -0.17  | 0.0        | +0.34       | Low        |",
+          "| -5         | +0.2   | -2.9          | -0.35  | 0.0        | +0.70       | Moderate   |",
+          "| -10        | +0.5   | -5.5          | -0.60  | 0.0        | +1.20       | High       |",
+          "| -15+       | +0.8   | -8.1          | -0.85  | 0.0        | +1.70       | Very High  |"
         ]
       },
       threeEnv: {
