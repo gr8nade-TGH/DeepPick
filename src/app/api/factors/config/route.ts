@@ -133,6 +133,32 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('[Factors:Config:POST] Starting POST request')
+    
+    // Test database connection first
+    console.log('[Factors:Config:POST] Testing database connection...')
+    const testSupabase = getSupabase()
+    console.log('[Factors:Config:POST] Supabase client created')
+    
+    const { data: testData, error: testError } = await testSupabase
+      .from('capper_profiles')
+      .select('count')
+      .limit(1)
+    
+    console.log('[Factors:Config:POST] Database test result:', { testData, testError })
+    
+    if (testError) {
+      console.error('[Factors:Config:POST] Database connection failed:', testError)
+      return NextResponse.json({
+        error: 'Database connection failed',
+        details: testError.message,
+        code: testError.code,
+        hint: testError.hint
+      }, { status: 500 })
+    }
+    
+    console.log('[Factors:Config:POST] Database connection successful, proceeding with request')
+    
     const body = await request.json()
     console.log('[Factors:Config:POST] Request body:', JSON.stringify(body, null, 2))
     
@@ -148,14 +174,22 @@ export async function POST(request: NextRequest) {
       )
     }
     
+    console.log('[Factors:Config:POST] Validation passed, proceeding with database operations')
+    
     const { capperId, sport, betType, name, description, factors } = parse.data
+    
+    console.log('[Factors:Config:POST] Extracted data:', { capperId, sport, betType, name, description, factorsCount: factors.length })
     
     // Save to database
     const supabase = getSupabase()
+    console.log('[Factors:Config:POST] Supabase client created')
+    
     const profileId = `${capperId}-${sport}-${betType}-custom-${Date.now()}`.toLowerCase()
+    console.log('[Factors:Config:POST] Generated profile ID:', profileId)
     
     // First, deactivate any existing active profile for this capper/sport/betType
-    await supabase
+    console.log('[Factors:Config:POST] Deactivating existing profiles...')
+    const { error: deactivateError } = await supabase
       .from('capper_profiles')
       .update({ is_active: false })
       .eq('capper_id', capperId)
@@ -163,22 +197,34 @@ export async function POST(request: NextRequest) {
       .eq('bet_type', betType)
       .eq('is_active', true)
     
+    if (deactivateError) {
+      console.error('[Factors:Config:POST] Error deactivating existing profiles:', deactivateError)
+    } else {
+      console.log('[Factors:Config:POST] Successfully deactivated existing profiles')
+    }
+    
     // Insert new profile
+    console.log('[Factors:Config:POST] Inserting new profile...')
+    const insertData = {
+      id: profileId,
+      capper_id: capperId,
+      sport,
+      bet_type: betType,
+      name,
+      description,
+      factors,
+      is_active: true,
+      is_default: false
+    }
+    console.log('[Factors:Config:POST] Insert data:', JSON.stringify(insertData, null, 2))
+    
     const { data: savedProfile, error } = await supabase
       .from('capper_profiles')
-      .insert({
-        id: profileId,
-        capper_id: capperId,
-        sport,
-        bet_type: betType,
-        name,
-        description,
-        factors,
-        is_active: true,
-        is_default: false
-      })
+      .insert(insertData)
       .select()
       .single()
+    
+    console.log('[Factors:Config:POST] Insert operation completed')
     
     if (error) {
       console.error('[Factors:Config:POST] Database error:', error)
@@ -226,11 +272,17 @@ export async function POST(request: NextRequest) {
       message: 'Factor configuration saved successfully'
     })
   } catch (error) {
-    console.error('[Factors:Config:POST] Error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    console.error('[Factors:Config:POST] Unexpected error:', error)
+    console.error('[Factors:Config:POST] Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+    console.error('[Factors:Config:POST] Full error object:', JSON.stringify(error, null, 2))
+    
+    // Return detailed error info to help debug
+    return NextResponse.json({
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      fullError: error
+    }, { status: 500 })
   }
 }
 
