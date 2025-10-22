@@ -878,19 +878,74 @@ export function FactorConfigModal({
                                     <strong>Scoring Examples:</strong>
                                   </div>
                                   <div className="space-y-1">
-                                    {getFactorLogic(factor.key).examples.map((example, i) => (
-                                      <div key={i} className={`text-xs leading-relaxed ${
-                                        example.startsWith('|') 
-                                          ? 'text-gray-300 font-mono' 
-                                          : example.startsWith('*') && example.endsWith('*')
-                                          ? 'text-gray-500 italic mt-2'
-                                          : example === ''
-                                          ? 'h-1'
-                                          : 'text-gray-400'
-                                      }`}>
-                                        {example.replace(/\*/g, '')}
-                                      </div>
-                                    ))}
+                                    {(() => {
+                                      const examples = getFactorLogic(factor.key).examples
+                                      const tableRows = examples.filter(line => line.startsWith('|') && !line.includes('---'))
+                                      const headerRow = examples.find(line => line.startsWith('|') && line.includes('---'))
+                                      const metricLine = examples.find(line => line.startsWith('*Metric:'))
+                                      const formulaLine = examples.find(line => line.startsWith('*Formula:'))
+                                      
+                                      if (tableRows.length > 0) {
+                                        const headers = tableRows[0].split('|').slice(1, -1).map(h => h.trim())
+                                        
+                                        return (
+                                          <>
+                                            <div className="overflow-x-auto">
+                                              <table className="w-full text-xs border-collapse">
+                                                <thead>
+                                                  <tr className="border-b border-gray-600">
+                                                    {headers.map((header, i) => (
+                                                      <th key={i} className="text-left py-2 px-2 text-gray-300 font-medium">
+                                                        {header}
+                                                      </th>
+                                                    ))}
+                                                  </tr>
+                                                </thead>
+                                                <tbody>
+                                                  {tableRows.slice(1).map((row, i) => {
+                                                    const cells = row.split('|').slice(1, -1).map(c => c.trim())
+                                                    return (
+                                                      <tr key={i} className="border-b border-gray-700">
+                                                        {cells.map((cell, j) => (
+                                                          <td key={j} className="py-2 px-2 text-gray-300">
+                                                            {cell}
+                                                          </td>
+                                                        ))}
+                                                      </tr>
+                                                    )
+                                                  })}
+                                                </tbody>
+                                              </table>
+                                            </div>
+                                            {metricLine && (
+                                              <div className="text-xs text-gray-500 italic mt-3">
+                                                {metricLine.replace(/\*/g, '')}
+                                              </div>
+                                            )}
+                                            {formulaLine && (
+                                              <div className="text-xs text-gray-500 italic mt-1">
+                                                {formulaLine.replace(/\*/g, '')}
+                                              </div>
+                                            )}
+                                          </>
+                                        )
+                                      }
+                                      
+                                      // Fallback to original format if no table structure found
+                                      return examples.map((example, i) => (
+                                        <div key={i} className={`text-xs leading-relaxed ${
+                                          example.startsWith('|') 
+                                            ? 'text-gray-300 font-mono' 
+                                            : example.startsWith('*') && example.endsWith('*')
+                                            ? 'text-gray-500 italic mt-2'
+                                            : example === ''
+                                            ? 'h-1'
+                                            : 'text-gray-400'
+                                        }`}>
+                                          {example.replace(/\*/g, '')}
+                                        </div>
+                                      ))
+                                    })()}
                                   </div>
                                 </div>
                               </div>

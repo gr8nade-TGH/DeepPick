@@ -26,7 +26,7 @@ const FactorConfigSchema = z.object({
   name: z.string(),
   description: z.string(),
   enabled: z.boolean(),
-  weight: z.number().min(0).max(100),
+  weight: z.number().min(0).max(150), // Updated to support 150% weight budget
   dataSource: z.enum(['nba-stats-api', 'statmuse', 'manual', 'llm', 'news-api']),
   maxPoints: z.number(),
   sport: z.string(),
@@ -92,9 +92,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    console.log('[Factors:Config:POST] Request body:', JSON.stringify(body, null, 2))
+    
     const parse = SaveConfigSchema.safeParse(body)
     
     if (!parse.success) {
+      console.error('[Factors:Config:POST] Validation error:', parse.error.issues)
       return NextResponse.json(
         { error: 'Invalid request body', details: parse.error.issues },
         { status: 400 }
