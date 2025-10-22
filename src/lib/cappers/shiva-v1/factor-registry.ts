@@ -88,25 +88,44 @@ export const NBA_TOTALS_FACTORS: FactorMeta[] = [
 // Global factors (apply to all sports/bet types)
 export const GLOBAL_FACTORS: FactorMeta[] = [
   {
-    key: 'newsEdge',
-    name: 'News/Injury Edge',
-    shortName: 'News',
-    icon: '🏥',
-    description: 'General news and injury impact not captured by specific factors. Applies across all sports/bet types.',
+    key: 'edgeVsMarket',
+    name: 'Edge vs Market - Totals',
+    shortName: 'Edge',
+    icon: '📊',
+    description: 'Predicted total vs market line. Positive edge favors Over, negative favors Under.',
     appliesTo: {
       sports: '*',
-      betTypes: '*',
+      betTypes: ['TOTAL'],
       scope: 'GLOBAL'
     },
-    maxPoints: 0.3,
-    defaultWeight: 0.05
+    maxPoints: 3.0,
+    defaultWeight: 0.15
+  }
+];
+
+// Injury factors (apply to totals across all sports)
+export const INJURY_FACTORS: FactorMeta[] = [
+  {
+    key: 'injuryAvailability',
+    name: 'Key Injuries & Availability - Totals',
+    shortName: 'Injuries',
+    icon: '🏥',
+    description: 'AI analysis of key player injuries and availability. Considers impact on scoring, team performance, and game flow.',
+    appliesTo: {
+      sports: ['NBA', 'NFL', 'MLB'],
+      betTypes: ['TOTAL'],
+      scope: 'GLOBAL'
+    },
+    maxPoints: 2.0,
+    defaultWeight: 0.12
   }
 ];
 
 // Combined registry
 export const FACTOR_REGISTRY: FactorMeta[] = [
   ...NBA_TOTALS_FACTORS,
-  ...GLOBAL_FACTORS
+  ...GLOBAL_FACTORS,
+  ...INJURY_FACTORS
 ];
 
 // StatMuse Query Helpers for NBA Totals

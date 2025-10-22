@@ -84,10 +84,11 @@ export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<StatMuseBundle> 
 }
 
 /**
- * Fetch injury impact via LLM
+ * Fetch injury impact via LLM (Legacy - now replaced by AI factor)
+ * @deprecated Use computeInjuryAvailabilityAsync instead
  */
 export async function summarizeAvailabilityWithLLM(ctx: RunCtx): Promise<InjuryImpact> {
-  console.log('[INJURY_LLM:START]', { away: ctx.away, home: ctx.home })
+  console.log('[INJURY_LLM:LEGACY]', 'Using legacy injury analysis - consider using AI factor instead')
   
   try {
     const injuryData = await searchInjuries(ctx.away, ctx.home, 48) // 48 hour window
@@ -99,7 +100,7 @@ export async function summarizeAvailabilityWithLLM(ctx: RunCtx): Promise<InjuryI
     const result: InjuryImpact = {
       defenseImpactA,
       defenseImpactB,
-      summary: `Injury analysis for ${ctx.away} vs ${ctx.home}`,
+      summary: `Legacy injury analysis for ${ctx.away} vs ${ctx.home}`,
       rawResponse: JSON.stringify(injuryData)
     }
     
@@ -117,7 +118,7 @@ export async function summarizeAvailabilityWithLLM(ctx: RunCtx): Promise<InjuryI
     return {
       defenseImpactA: 0,
       defenseImpactB: 0,
-      summary: 'Injury analysis failed',
+      summary: 'Legacy injury analysis failed',
       rawResponse: ''
     }
   }

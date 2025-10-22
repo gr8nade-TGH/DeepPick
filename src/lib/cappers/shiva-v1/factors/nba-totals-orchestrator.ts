@@ -12,6 +12,7 @@ import { computeOffensiveForm } from './f2-offensive-form'
 import { computeDefensiveErosion } from './f3-defensive-erosion'
 import { computeThreePointEnv } from './f4-three-point-env'
 import { computeWhistleEnv } from './f5-free-throw-env'
+import { computeInjuryAvailabilityAsync } from './f6-injury-availability'
 
 /**
  * Main entry point: compute only enabled NBA totals factors
@@ -76,6 +77,37 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
   }
   if (enabledFactorKeys.includes('whistleEnv')) {
     factors.push(computeWhistleEnv(bundle!, ctx))
+  }
+  
+  // Handle AI-powered injury factor (async)
+  if (enabledFactorKeys.includes('injuryAvailability')) {
+    console.log('[TOTALS:COMPUTING_INJURY_AI]', 'Key Injuries & Availability enabled, running AI analysis...')
+    try {
+      const injuryFactor = await computeInjuryAvailabilityAsync(ctx)
+      factors.push(injuryFactor)
+      console.log('[TOTALS:INJURY_AI_SUCCESS]', { 
+        signal: injuryFactor.normalized_value,
+        keyInjuries: injuryFactor.parsed_values_json.keyInjuries?.length || 0
+      })
+    } catch (error) {
+      console.error('[TOTALS:INJURY_AI_ERROR]', error)
+      // Add error factor
+      factors.push({
+        key: 'injuryAvailability',
+        name: 'Key Injuries & Availability - Totals',
+        normalized_value: 0,
+        parsed_values_json: {
+          overScore: 0,
+          underScore: 0,
+          awayContribution: 0,
+          homeContribution: 0,
+          reasoning: 'AI analysis failed'
+        },
+        caps_applied: false,
+        cap_reason: 'AI analysis error',
+        notes: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      })
+    }
   }
   
   // Apply factor weights for display purposes (confidence calculation happens separately)
