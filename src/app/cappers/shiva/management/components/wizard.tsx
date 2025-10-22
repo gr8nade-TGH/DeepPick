@@ -323,10 +323,13 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       console.log('Auto-generating debug report for step 8, stepLogs:', stepLogs)
       console.log('stepLogs keys:', Object.keys(stepLogs))
       console.log('effectiveProfileSnapshot:', effectiveProfileSnapshot)
+      console.log('current runId:', runId)
+      console.log('current snapId:', snapId)
       
       // Build comprehensive steps array with actual response data
       const stepsArray = Object.entries(stepLogs)
-        .filter(([stepNum]) => parseInt(stepNum) < 8) // Exclude step 8
+        .filter(([stepNum]) => parseInt(stepNum) >= 1 && parseInt(stepNum) < 8) // Include steps 1-7
+        .sort(([a], [b]) => parseInt(a) - parseInt(b)) // Sort by step number
         .map(([stepNum, response]: [string, any]) => ({
           step: parseInt(stepNum),
           status: response.status,
@@ -335,6 +338,12 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           response: response.json || null, // Include actual response data
           error: response.error || null,
         }))
+      
+      // Check if Step 1 was executed
+      const step1Executed = stepLogs[1] !== undefined
+      const step1Status = stepLogs[1]?.status || 'NOT_EXECUTED'
+      
+      console.log('[Debug Report] Step 1 check:', { step1Executed, step1Status, stepLogs })
       
       const debugReport = {
         timestamp: new Date().toISOString(),
@@ -352,8 +361,17 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           successfulSteps: stepsArray.filter((s) => s.status >= 200 && s.status < 300).length,
           errorSteps: stepsArray.filter((s) => s.status >= 400).length,
           dryRunSteps: stepsArray.filter((s) => s.dryRun === true).length,
+          step1Executed,
+          step1Status,
         },
         stepLogsRaw: stepLogs, // Include raw step logs for debugging
+        debugInfo: {
+          stepLogsKeys: Object.keys(stepLogs),
+          stepLogsValues: Object.values(stepLogs).map(v => ({ status: v.status, hasJson: !!v.json })),
+          currentStep: step,
+          runIdSet: !!runId,
+          snapIdSet: !!snapId,
+        }
       }
       console.log('Debug report generated (comprehensive):', debugReport)
       setLog({ status: 200, json: debugReport, dryRun: false })
@@ -363,77 +381,99 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
   async function handleStepClick(current: number) {
     try {
       if (current === 1) {
+        console.log('[Step 1] Starting Step 1 execution...')
+        
         // Snapshot effectiveProfile on first step
         if (props.effectiveProfile) {
           setEffectiveProfileSnapshot(props.effectiveProfile)
+          console.log('[Step 1] Snapshot effectiveProfile:', props.effectiveProfile)
         }
         
         // Call Step 1 API to find available games
-        console.debug('[Step 1] Calling game selection API...')
+        console.log('[Step 1] Calling game selection API...')
         
-        const step1Response = await fetch('/api/shiva/factors/step1', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Idempotency-Key': crypto.randomUUID(),
-          },
-          body: JSON.stringify({
-            capper: 'SHIVA',
-            sport: 'NBA',
-            betType: props.betType || 'TOTAL',
-            limit: 10
-          })
-        })
-        
-        const step1Data = await step1Response.json()
-        console.debug('[Step 1] API response:', step1Data)
-        
-        if (!step1Response.ok) {
-          throw new Error(`Step 1 failed: ${step1Data.error?.message || 'Unknown error'}`)
-        }
-        
-        if (step1Data.json.state === 'NO_GAMES_AVAILABLE' || step1Data.json.state === 'NO_AVAILABLE_GAMES') {
-          // No games available - show message
-          setLog({
-            status: 200,
-            json: {
-              run_id: null,
-              state: step1Data.json.state,
-              message: step1Data.json.message,
-              filters: step1Data.json.filters
+        try {
+          const step1Response = await fetch('/api/shiva/factors/step1', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Idempotency-Key': crypto.randomUUID(),
             },
-            dryRun: true
+            body: JSON.stringify({
+              capper: 'SHIVA',
+              sport: 'NBA',
+              betType: props.betType || 'TOTAL',
+              limit: 10
+            })
           })
-          return
-        }
-        
-        // Set the run_id from API response
-        const selectedGame = step1Data.json.selected_game
-        const generatedRunId = step1Data.json.run_id
-        
-        setRunId(generatedRunId)
-        
-        console.debug('[Step 1] Selected game:', selectedGame)
-        console.debug('[Step 1] Generated run_id:', generatedRunId)
-        
-        // Store Step 1 response
-        setStepLogs(prev => ({
-          ...prev,
-          [1]: {
+          
+          console.log('[Step 1] API response status:', step1Response.status)
+          const step1Data = await step1Response.json()
+          console.log('[Step 1] API response data:', step1Data)
+          
+          if (!step1Response.ok) {
+            console.error('[Step 1] API error:', step1Data)
+            throw new Error(`Step 1 failed: ${step1Data.error?.message || 'Unknown error'}`)
+          }
+          
+          if (step1Data.json.state === 'NO_GAMES_AVAILABLE' || step1Data.json.state === 'NO_AVAILABLE_GAMES') {
+            // No games available - show message
+            console.log('[Step 1] No games available, showing message')
+            const noGamesResponse = {
+              status: 200,
+              json: {
+                run_id: null,
+                state: step1Data.json.state,
+                message: step1Data.json.message,
+                filters: step1Data.json.filters
+              },
+              dryRun: true
+            }
+            
+            setLog(noGamesResponse)
+            setStepLogs(prev => ({ ...prev, [1]: noGamesResponse }))
+            return
+          }
+          
+          // Set the run_id from API response
+          const selectedGame = step1Data.json.selected_game
+          const generatedRunId = step1Data.json.run_id
+          
+          console.log('[Step 1] Setting runId to:', generatedRunId)
+          console.log('[Step 1] Selected game:', selectedGame)
+          
+          setRunId(generatedRunId)
+          
+          // Store Step 1 response
+          const step1LogEntry = {
             status: step1Response.status,
             json: step1Data.json,
             dryRun: true,
-            latencyMs: Date.now() - Date.now() // Will be calculated properly
+            latencyMs: 0 // Will be calculated properly later
           }
-        }))
-        
-        setLog({
-          status: step1Response.status,
-          json: step1Data.json,
-          dryRun: true
-        })
-        
-        return
+          
+          console.log('[Step 1] Storing step log entry:', step1LogEntry)
+          setStepLogs(prev => {
+            const newLogs = { ...prev, [1]: step1LogEntry }
+            console.log('[Step 1] Updated stepLogs:', newLogs)
+            return newLogs
+          })
+          
+          setLog(step1LogEntry)
+          console.log('[Step 1] Step 1 completed successfully')
+          return
+          
+        } catch (error) {
+          console.error('[Step 1] Error during Step 1 execution:', error)
+          const errorResponse = {
+            status: 500,
+            json: { error: { message: error instanceof Error ? error.message : 'Unknown error' } },
+            dryRun: false
+          }
+          setLog(errorResponse)
+          setStepLogs(prev => ({ ...prev, [1]: errorResponse }))
+          return
+        }
       }
       
       if (current === 2) {
@@ -854,8 +894,20 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         <div className="flex-1">
           {step <= 8 && (
             <div className="text-sm text-white">
-              <div className="font-bold">
-                {step === 1 && "Step 1: Run Intake"}
+              <div className="font-bold flex items-center gap-2">
+                {step === 1 && (
+                  <>
+                    Step 1: Run Intake
+                    {stepLogs[1] && (
+                      <span className={`px-2 py-1 rounded text-xs ${
+                        stepLogs[1].status >= 200 && stepLogs[1].status < 300 ? 'bg-green-600 text-white' :
+                        stepLogs[1].status >= 400 ? 'bg-red-600 text-white' : 'bg-yellow-600 text-white'
+                      }`}>
+                        {stepLogs[1].status}
+                      </span>
+                    )}
+                  </>
+                )}
                 {step === 2 && "Step 2: Odds Snapshot"}
                 {step === 3 && "Step 3: Factor Analysis"}
                 {step === 4 && "Step 4: AI Predictions"}
