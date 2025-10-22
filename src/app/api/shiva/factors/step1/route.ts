@@ -59,17 +59,20 @@ export async function POST(request: NextRequest) {
         const { data: games, error: gamesError } = await supabase
           .from('games')
           .select(`
-            game_id,
+            id,
             home_team,
             away_team,
-            start_time_utc,
+            game_date,
+            game_time,
             status,
-            sport
+            sport,
+            odds
           `)
           .eq('sport', sport)
           .in('status', ['scheduled', 'pre-game'])
-          .gte('start_time_utc', thirtyMinutesFromNow.toISOString())
-          .order('start_time_utc', { ascending: true })
+          .gte('game_date', now.toISOString().split('T')[0]) // Filter by today or later
+          .order('game_date', { ascending: true })
+          .order('game_time', { ascending: true })
           .limit(limit * 2) // Get more than needed to filter
 
         if (gamesError) {
@@ -108,7 +111,7 @@ export async function POST(request: NextRequest) {
           .from('picks')
           .select('game_id, pick_type')
           .eq('capper', capper)
-          .in('game_id', games.map(g => g.game_id))
+          .in('game_id', games.map(g => g.id))
 
         if (picksError) {
           await logError({
@@ -134,7 +137,7 @@ export async function POST(request: NextRequest) {
 
         // Filter games that don't already have this bet type
         const availableGames = games.filter(game => {
-          const existingPickTypes = existingPicksMap.get(game.game_id) || new Set()
+          const existingPickTypes = existingPicksMap.get(game.id) || new Set()
           
           // Check if this bet type is already picked for this game
           if (existingPickTypes.has(betType)) {
@@ -175,9 +178,10 @@ export async function POST(request: NextRequest) {
 
         // 6. Log the selection
         console.log(`[Step1:${capper}] Selected game:`, {
-          game_id: selectedGame.game_id,
+          game_id: selectedGame.id,
           matchup: `${selectedGame.away_team} @ ${selectedGame.home_team}`,
-          start_time: selectedGame.start_time_utc,
+          game_date: selectedGame.game_date,
+          game_time: selectedGame.game_time,
           bet_type: betType,
           run_id: runId
         })
@@ -188,11 +192,13 @@ export async function POST(request: NextRequest) {
             run_id: runId,
             state: 'IN-PROGRESS',
             selected_game: {
-              game_id: selectedGame.game_id,
+              game_id: selectedGame.id,
               home_team: selectedGame.home_team,
               away_team: selectedGame.away_team,
-              start_time_utc: selectedGame.start_time_utc,
-              status: selectedGame.status
+              game_date: selectedGame.game_date,
+              game_time: selectedGame.game_time,
+              status: selectedGame.status,
+              odds: selectedGame.odds
             },
             filters_applied: {
               sport,
