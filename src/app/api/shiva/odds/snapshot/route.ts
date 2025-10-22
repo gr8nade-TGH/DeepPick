@@ -82,10 +82,7 @@ export async function POST(request: Request) {
           body: { 
             snapshot_id: ins.data.snapshot_id, 
             is_active: ins.data.is_active, 
-            snapshot: parse.data.snapshot,
-            mock_data: false,
-            data_source: 'real',
-            timestamp: new Date().toISOString()
+            snapshot: parse.data.snapshot
           }, 
           status: 200 
         }
@@ -104,11 +101,7 @@ export async function POST(request: Request) {
         body: { 
           snapshot_id: 'dryrun_snapshot', 
           is_active: true, 
-          snapshot: parse.data.snapshot,
-          mock_data: true,
-          data_source: 'mock',
-          fixture: true,
-          timestamp: new Date().toISOString()
+          snapshot: parse.data.snapshot
         }, 
         status: 200 
       }

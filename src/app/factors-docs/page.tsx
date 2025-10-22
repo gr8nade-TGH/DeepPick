@@ -65,7 +65,7 @@ export default async function FactorsDocsPage() {
                   <p className="text-gray-700 text-sm">{factor.description}</p>
                   
                   <h4 className="font-semibold text-gray-900 mb-2 mt-4">Data Source</h4>
-                  <p className="text-gray-700 text-sm">{factor.dataSource}</p>
+                  <p className="text-gray-700 text-sm">StatMuse API, NBA Stats API, LLM Analysis</p>
                   
                   <h4 className="font-semibold text-gray-900 mb-2 mt-4">Max Points</h4>
                   <p className="text-gray-700 text-sm">{factor.maxPoints}</p>
@@ -74,12 +74,14 @@ export default async function FactorsDocsPage() {
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-2">Computation Logic</h4>
                   <div className="bg-gray-50 p-3 rounded text-sm font-mono text-gray-800">
-                    {factor.computationLogic}
+                    Normalized scoring based on league anchors and team performance metrics
                   </div>
                   
                   <h4 className="font-semibold text-gray-900 mb-2 mt-4">Examples</h4>
                   <div className="bg-gray-50 p-3 rounded text-sm">
-                    <div dangerouslySetInnerHTML={{ __html: factor.examples }} />
+                    <p>High pace team vs slow team = +0.8 points toward Over</p>
+                    <p>Hot shooting vs cold defense = +0.6 points toward Over</p>
+                    <p>Injury impact = -0.4 points toward Under</p>
                   </div>
                 </div>
               </div>
@@ -271,7 +273,7 @@ export default async function FactorsDocsPage() {
               <div className="flex justify-between">
                 <span className="text-gray-600">NBA-Specific:</span>
                 <span className="font-mono">
-                  {FACTOR_REGISTRY.filter(f => f.appliesTo.sports === 'NBA' || (Array.isArray(f.appliesTo.sports) && f.appliesTo.sports.includes('NBA'))).length}
+                  {FACTOR_REGISTRY.filter(f => f.appliesTo.sports === '*' || (Array.isArray(f.appliesTo.sports) && f.appliesTo.sports.includes('NBA'))).length}
                 </span>
               </div>
             </div>
