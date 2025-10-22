@@ -936,14 +936,92 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                 {step === 8 && "Step 8: Debug Report"}
               </div>
               <div className="text-xs text-gray-300 mt-1">
-                {step === 1 && "Create run and validate game data"}
-                {step === 2 && "Capture current odds snapshot"}
-                {step === 3 && "Fetch and analyze confidence factors"}
-                {step === 4 && "Generate AI-powered predictions"}
-                {step === 5 && "Calculate market mismatch and adjustments"}
-                {step === 6 && "Generate final pick with units"}
-                {step === 7 && "Create insight card with factor breakdown"}
-                {step === 8 && "Generate comprehensive debug report"}
+                {step === 1 && (
+                  <div>
+                    <div className="font-semibold text-white mb-1">Initialize prediction run and select optimal game</div>
+                    <ul className="list-disc list-inside space-y-1 text-xs">
+                      <li>Filter games by status (scheduled), timing (&gt;30min), and existing picks</li>
+                      <li>Select best available game based on sport and bet type</li>
+                      <li>Generate unique run_id and retrieve game details + current odds</li>
+                    </ul>
+                  </div>
+                )}
+                {step === 2 && (
+                  <div>
+                    <div className="font-semibold text-white mb-1">Capture current market odds at prediction time</div>
+                    <ul className="list-disc list-inside space-y-1 text-xs">
+                      <li>Collect moneyline, spread, and total odds from all bookmakers</li>
+                      <li>Timestamp snapshot for grading and edge calculation</li>
+                      <li>Generate snapshot_id with complete odds data</li>
+                    </ul>
+                  </div>
+                )}
+                {step === 3 && (
+                  <div>
+                    <div className="font-semibold text-white mb-1">Compute confidence factors based on team performance data</div>
+                    <ul className="list-disc list-inside space-y-1 text-xs">
+                      <li>Fetch team stats from NBA Stats API and StatMuse</li>
+                      <li>Analyze Pace Index, Offensive Form, Defensive Erosion</li>
+                      <li>Process 3-Point Environment and Free-Throw factors</li>
+                      <li>Apply injury/availability data via LLM analysis</li>
+                    </ul>
+                  </div>
+                )}
+                {step === 4 && (
+                  <div>
+                    <div className="font-semibold text-white mb-1">Generate final score predictions using AI models</div>
+                    <ul className="list-disc list-inside space-y-1 text-xs">
+                      <li>Combine factor analysis with team performance data</li>
+                      <li>Apply AI models for score prediction</li>
+                      <li>Calculate confidence scores and determine winner</li>
+                      <li>Generate predicted scores (home/away) and margin</li>
+                    </ul>
+                  </div>
+                )}
+                {step === 5 && (
+                  <div>
+                    <div className="font-semibold text-white mb-1">Calculate market edge and adjust confidence</div>
+                    <ul className="list-disc list-inside space-y-1 text-xs">
+                      <li>Compare predicted total vs market line</li>
+                      <li>Calculate edge percentage and market adjustment</li>
+                      <li>Apply final confidence score adjustments</li>
+                      <li>Determine pick direction (Over/Under) based on edge</li>
+                    </ul>
+                  </div>
+                )}
+                {step === 6 && (
+                  <div>
+                    <div className="font-semibold text-white mb-1">Create final betting recommendation</div>
+                    <ul className="list-disc list-inside space-y-1 text-xs">
+                      <li>Convert confidence to unit allocation (1u, 2u, 3u, 5u)</li>
+                      <li>Generate pick selection text and rationale</li>
+                      <li>Lock in odds snapshot for grading purposes</li>
+                      <li>Apply risk management rules and validation</li>
+                    </ul>
+                  </div>
+                )}
+                {step === 7 && (
+                  <div>
+                    <div className="font-semibold text-white mb-1">Generate comprehensive analysis summary</div>
+                    <ul className="list-disc list-inside space-y-1 text-xs">
+                      <li>Create visual factor breakdown with team contributions</li>
+                      <li>Generate AI-powered prediction writeup</li>
+                      <li>Display market analysis and edge visualization</li>
+                      <li>Show confidence scoring explanation and rationale</li>
+                    </ul>
+                  </div>
+                )}
+                {step === 8 && (
+                  <div>
+                    <div className="font-semibold text-white mb-1">Generate comprehensive debugging information</div>
+                    <ul className="list-disc list-inside space-y-1 text-xs">
+                      <li>Complete step-by-step execution log with timing</li>
+                      <li>API call details, success rates, and error tracking</li>
+                      <li>Factor calculations, weights, and performance metrics</li>
+                      <li>Pipeline optimization data and troubleshooting info</li>
+                    </ul>
+                  </div>
+                )}
               </div>
             </div>
           )}
