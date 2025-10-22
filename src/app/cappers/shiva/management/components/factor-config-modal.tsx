@@ -184,7 +184,10 @@ export function FactorConfigModal({
           "| -5          | -0.55  | 0.0        | +1.10       | Moderate   |",
           "| -8          | -0.76  | 0.0        | +1.52       | High       |",
           "| -12         | -0.91  | 0.0        | +1.82       | Very High  |",
-          "| -16+        | -1.0   | 0.0        | +2.0        | Maximum    |"
+          "| -16+        | -1.0   | 0.0        | +2.0        | Maximum    |",
+          "",
+          "*Metric: Expected game pace based on both teams' pace interaction*",
+          "*Formula: expPace = (awayPace + homePace)/2, signal = tanh((expPace - leaguePace)/8), if signal > 0: overScore = |signal| × 2.0, underScore = 0; else: overScore = 0, underScore = |signal| × 2.0*"
         ]
       },
       offForm: {
@@ -201,7 +204,10 @@ export function FactorConfigModal({
           "| -2             | -0.20  | 0.0        | +0.40       | Low        |",
           "| -5             | -0.46  | 0.0        | +0.92       | Moderate   |",
           "| -10            | -0.76  | 0.0        | +1.52       | High       |",
-          "| -15+           | -1.0   | 0.0        | +2.0        | Maximum    |"
+          "| -15+           | -1.0   | 0.0        | +2.0        | Maximum    |",
+          "",
+          "*Metric: Combined team offensive efficiency vs league average*",
+          "*Formula: combinedORtg = (homeORtg + awayORtg)/2, advantage = combinedORtg - leagueORtg, signal = tanh(advantage/10), if signal > 0: overScore = |signal| × 2.0, underScore = 0; else: overScore = 0, underScore = |signal| × 2.0*"
         ]
       },
       defErosion: {
@@ -217,7 +223,10 @@ export function FactorConfigModal({
           "| -2         | 0.0    | -1.4          | -0.17  | 0.0        | +0.34       | Low        |",
           "| -5         | +0.2   | -2.9          | -0.35  | 0.0        | +0.70       | Moderate   |",
           "| -10        | +0.5   | -5.5          | -0.60  | 0.0        | +1.20       | High       |",
-          "| -15+       | +0.8   | -8.1          | -0.85  | 0.0        | +1.70       | Very High  |"
+          "| -15+       | +0.8   | -8.1          | -0.85  | 0.0        | +1.70       | Very High  |",
+          "",
+          "*Metric: Combined defensive rating decline + injury impact*",
+          "*Formula: combinedDRtg = (homeDRtg + awayDRtg)/2, drtgDelta = combinedDRtg - leagueDRtg, totalErosion = 0.7×drtgDelta + 0.3×injuryImpact×10, signal = tanh(totalErosion/8), if signal > 0: overScore = |signal| × 2.0, underScore = 0; else: overScore = 0, underScore = |signal| × 2.0*"
         ]
       },
       threeEnv: {
@@ -862,32 +871,27 @@ export function FactorConfigModal({
                                 🧮 Logic & Examples
                               </div>
                               
-                              <div className="grid grid-cols-2 gap-4">
-                                {/* Left Column - Logic */}
-                                <div>
+                              <div className="space-y-3">
+                                {/* Full-width Examples Table */}
+                                <div className="overflow-x-auto">
                                   <div className="text-xs text-gray-400 mb-2">
-                                    <strong>Metric:</strong><br/>
-                                    <span className="text-gray-500">{getFactorLogic(factor.key).metric}</span>
+                                    <strong>Scoring Examples:</strong>
                                   </div>
-                                  
-                                  <div className="text-xs text-gray-400">
-                                    <strong>Formula:</strong><br/>
-                                    <span className="text-gray-500 font-mono">{getFactorLogic(factor.key).formula}</span>
-                                  </div>
-                                </div>
-                                
-                                {/* Right Column - Examples */}
-                                <div>
-                                  <div className="text-xs text-gray-400 mb-2">
-                                    <strong>Examples:</strong>
-                                  </div>
-                                  <ul className="space-y-1">
+                                  <div className="space-y-1">
                                     {getFactorLogic(factor.key).examples.map((example, i) => (
-                                      <li key={i} className="text-gray-500 text-xs">
-                                        {example}
-                                      </li>
+                                      <div key={i} className={`text-xs leading-relaxed ${
+                                        example.startsWith('|') 
+                                          ? 'text-gray-300 font-mono' 
+                                          : example.startsWith('*') && example.endsWith('*')
+                                          ? 'text-gray-500 italic mt-2'
+                                          : example === ''
+                                          ? 'h-1'
+                                          : 'text-gray-400'
+                                      }`}>
+                                        {example.replace(/\*/g, '')}
+                                      </div>
                                     ))}
-                                  </ul>
+                                  </div>
                                 </div>
                               </div>
                             </div>
