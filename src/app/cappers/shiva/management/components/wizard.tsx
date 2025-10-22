@@ -730,10 +730,11 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
             <h4 className="text-sm font-semibold text-white">Step Responses:</h4>
-            {/* Copy Debug Report Button - Always visible when there are step logs */}
+            {/* Debug Report Buttons - Always visible when there are step logs */}
             {Object.keys(stepLogs).length > 0 && (
-              <button 
-                className="px-3 py-1 bg-blue-600 text-white rounded text-xs font-bold hover:bg-blue-700"
+              <div className="flex gap-2">
+                <button 
+                  className="px-3 py-1 bg-blue-600 text-white rounded text-xs font-bold hover:bg-blue-700"
                 onClick={() => {
                   const debugReport = {
                     timestamp: new Date().toISOString(),
@@ -829,6 +830,26 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
               >
                 📋 Copy Debug Report
               </button>
+              <button 
+                className="px-3 py-1 bg-green-600 text-white rounded text-xs font-bold hover:bg-green-700 ml-2"
+                onClick={async () => {
+                  try {
+                    const response = await fetch('/api/monitoring/debug-report')
+                    if (response.ok) {
+                      const report = await response.text()
+                      navigator.clipboard.writeText(report)
+                      alert('API Debug Report copied to clipboard!')
+                    } else {
+                      alert('Failed to fetch API Debug Report')
+                    }
+                  } catch (error) {
+                    alert('Error fetching API Debug Report: ' + error)
+                  }
+                }}
+              >
+                🔍 API Debug Report
+              </button>
+              </div>
             )}
           </div>
           <div className="border border-gray-600 rounded p-2 text-xs bg-gray-800">

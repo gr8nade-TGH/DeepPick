@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
             odds
           `)
           .eq('sport', sportLower)
-          .in('status', ['scheduled', 'pre-game'])
+          .in('status', ['scheduled'])
           .gte('game_date', now.toISOString().split('T')[0]) // Filter by today or later
           .order('game_date', { ascending: true })
           .order('game_time', { ascending: true })
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
                 sport,
                 betType,
                 minStartTime: thirtyMinutesFromNow.toISOString(),
-                statusFilter: ['scheduled', 'pre-game']
+                statusFilter: ['scheduled']
               }
             },
             dryRun: true,
@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
                 betType,
                 capper,
                 minStartTime: thirtyMinutesFromNow.toISOString(),
-                statusFilter: ['scheduled', 'pre-game']
+                statusFilter: ['scheduled']
               }
             },
             dryRun: true,
