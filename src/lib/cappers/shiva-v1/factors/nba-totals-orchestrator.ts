@@ -35,7 +35,7 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
   const factors = [
     computePaceIndex(bundle, ctx),
     computeOffensiveForm(bundle, ctx),
-    computeDefensiveErosion(bundle, injuryImpact, ctx),
+    computeDefensiveErosion(bundle, ctx),
     computeThreePointEnv(bundle, ctx),
     computeWhistleEnv(bundle, ctx),
   ]
