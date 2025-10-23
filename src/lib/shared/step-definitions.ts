@@ -34,11 +34,11 @@ export const STEP_DEFINITIONS: StepDefinition[] = [
     name: "Factor Analysis",
     description: "Compute confidence factors based on team performance data",
     details: [
-      "Fetch team stats from NBA Stats API: pace, offensive/defensive ratings, 3-point rates, free throw rates",
-      "Calculate 5 NBA Totals factors: Pace Index, Offensive Form, Defensive Erosion, 3-Point Environment, Free-Throw Environment",
-      "Apply factor weights from capper profile configuration (currently 20% each)",
+      "Fetch team stats from NBA Stats API only for enabled factors (pace, ORtg/DRtg, 3P rates, FT rates)",
+      "Calculate enabled NBA Totals factors: Pace Index, Offensive Form, Defensive Erosion, 3-Point Environment, Free-Throw Environment",
+      "Apply factor weights from capper profile configuration",
       "Generate overScore/underScore signals for each factor using tanh normalization",
-      "Use LLM for injury/availability analysis (currently mocked with Perplexity AI)"
+      "Use LLM for injury/availability analysis only if Defensive Erosion is enabled"
     ]
   },
   {

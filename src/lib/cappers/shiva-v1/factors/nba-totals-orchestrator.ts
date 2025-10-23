@@ -85,6 +85,13 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
   let bundle: StatMuseBundle | null = null
   if (enabledFactorKeys.some(key => ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv'].includes(key))) {
     console.log('[TOTALS:ABOUT_TO_FETCH_NBA_STATS]', 'Starting NBA Stats API fetch...')
+    console.log('[TOTALS:ENABLED_FACTORS_FOR_DATA]', { 
+      paceIndex: enabledFactorKeys.includes('paceIndex'),
+      offForm: enabledFactorKeys.includes('offForm'), 
+      defErosion: enabledFactorKeys.includes('defErosion'),
+      threeEnv: enabledFactorKeys.includes('threeEnv'),
+      whistleEnv: enabledFactorKeys.includes('whistleEnv')
+    })
     bundle = await fetchNBAStatsBundle(ctx)
     console.log('[TOTALS:NBA_STATS_FETCHED]', 'NBA Stats bundle received:', Object.keys(bundle))
     console.debug('[totals:bundle]', bundle)
