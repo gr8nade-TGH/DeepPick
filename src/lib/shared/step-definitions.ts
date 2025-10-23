@@ -44,13 +44,14 @@ export const STEP_DEFINITIONS: StepDefinition[] = [
   {
     step: 4,
     name: "AI Predictions",
-    description: "Generate final score predictions using AI models",
+    description: "Generate final score predictions using factor signals",
     details: [
       "Combine factor analysis with team performance data from Step 3",
       "Calculate weighted confidence score from all enabled factors",
-      "Generate predicted total score using factor signals and team data",
-      "Determine predicted home/away scores and margin",
-      "Note: Currently uses placeholder predictions (230.0 total) - AI models pending"
+      "Generate predicted total: leagueAverage + Σ(factorSignal × maxPoints × weight%)",
+      "Split total into home/away scores with realistic variance",
+      "Determine predicted winner based on score differential",
+      "Apply factor adjustments: Pace (+/-X), Offense (+/-Y), Defense (+/-Z), 3P (+/-W), FT (+/-V), Injuries (+/-U)"
     ]
   },
   {

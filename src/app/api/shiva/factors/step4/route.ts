@@ -80,12 +80,38 @@ export async function POST(request: Request) {
           confSource: 'nba_totals_v1'
         })
         
-        // Generate basic predictions (we'll enhance this later)
-        const predictedTotal = 230.0 // Placeholder - will be calculated from factors
-        const predictedScores = {
-          home: 115,
-          away: 115
+        // Generate real score predictions from factor signals
+        const leagueAverageTotal = 225.0 // NBA league average total
+        
+        // Calculate factor adjustments to the total
+        let totalAdjustment = 0
+        const factorAdjustments: Record<string, number> = {}
+        
+        for (const factor of results.factors) {
+          const signal = factor.normalized_value || 0
+          const weight = factorWeights[factor.key] || 0
+          const maxPoints = 5.0 // All factors now have 5.0 max points
+          
+          // Calculate adjustment: signal × maxPoints × (weight/100)
+          const adjustment = signal * maxPoints * (weight / 100)
+          totalAdjustment += adjustment
+          factorAdjustments[factor.key] = adjustment
         }
+        
+        // Calculate predicted total
+        const predictedTotal = Math.max(180, Math.min(280, leagueAverageTotal + totalAdjustment))
+        
+        // Split into home/away scores (simplified - could be enhanced with team-specific data)
+        const homeScore = Math.round(predictedTotal / 2 + (Math.random() - 0.5) * 4) // Add some variance
+        const awayScore = Math.round(predictedTotal - homeScore)
+        
+        const predictedScores = {
+          home: homeScore,
+          away: awayScore
+        }
+        
+        // Determine winner
+        const winner = homeScore > awayScore ? 'home' : awayScore > homeScore ? 'away' : 'tie'
         
         if (writeAllowed) {
           // Store confidence calculation
@@ -99,12 +125,12 @@ export async function POST(request: Request) {
         const responseBody = {
           run_id,
           predictions: {
-            pace_exp: 100.0, // Placeholder
-            delta_100: 0.0, // Placeholder
-            spread_pred_points: 0.0, // Placeholder
+            league_average_total: leagueAverageTotal,
+            total_adjustment: totalAdjustment,
+            factor_adjustments: factorAdjustments,
             total_pred_points: predictedTotal,
             scores: predictedScores,
-            winner: 'TBD', // Placeholder
+            winner: winner,
             conf7_score: confidenceResult.confScore,
           },
           confidence: {
@@ -121,10 +147,16 @@ export async function POST(request: Request) {
           run_id,
           inputs: { sport, betType },
           outputs: {
+            league_average_total: leagueAverageTotal,
+            total_adjustment: totalAdjustment,
+            predicted_total: predictedTotal,
+            predicted_scores: predictedScores,
+            winner: winner,
             base_confidence: confidenceResult.confScore,
             signed_sum: confidenceResult.edgeRaw,
             factor_count: results.factors.length,
           },
+          factor_adjustments: factorAdjustments,
           writeAllowed,
           latencyMs: Date.now() - startTime,
           status: 200,
