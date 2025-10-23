@@ -1,0 +1,5 @@
+---
+alwaysApply: true
+---
+
+Every factor must include Logic & Examples documentation in the getFactorLogic function in src/app/cappers/shiva/management/components/factor-config-modal.tsx. The examples should include a markdown table showing different input scenarios, their calculated signals, over/under scores, and confidence levels. Follow the established pattern with metric description, formula explanation, and comprehensive examples table.

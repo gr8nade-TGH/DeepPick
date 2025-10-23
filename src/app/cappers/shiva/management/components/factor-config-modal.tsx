@@ -299,6 +299,25 @@ export function FactorConfigModal({
           "+3% FTr → s=+0.5 → 50% positive",
           "-3% FTr → s=-0.5 → 50% negative"
         ]
+      },
+      injuryAvailability: {
+        metric: "AI analysis of key player injuries and availability impact on scoring",
+        formula: "AI analyzes injuries → awayImpact (-10 to +10) + homeImpact (-10 to +10) → totalImpact = (awayImpact + homeImpact)/2 → signal = clamp(totalImpact/10, -1, +1) → if signal > 0: overScore = |signal| × 2.0, underScore = 0; else: overScore = 0, underScore = |signal| × 2.0",
+        examples: [
+          "| Away Impact | Home Impact | Total Impact | Signal | Over Score | Under Score | Confidence | Example Scenario |",
+          "|-------------|-------------|--------------|--------|------------|-------------|------------|------------------|",
+          "| -8          | -6          | -7.0         | -0.70  | 0.0        | +1.40       | High       | Both teams missing key scorers |",
+          "| -5          | -3          | -4.0         | -0.40  | 0.0        | +0.80       | Moderate   | One team missing star player |",
+          "| -2          | -1          | -1.5         | -0.15  | 0.0        | +0.30       | Low        | Minor injuries affecting depth |",
+          "| 0           | 0           | 0.0          | 0.0    | 0.0        | 0.0         | Neutral    | No significant injuries |",
+          "| +2          | +1          | +1.5         | +0.15  | +0.30      | 0.0         | Low        | Minor defensive injuries |",
+          "| +5          | +3          | +4.0         | +0.40  | +0.80      | 0.0         | Moderate   | One team missing key defender |",
+          "| +8          | +6          | +7.0         | +0.70  | +1.40      | 0.0         | High       | Both teams missing key defenders |",
+          "| +10         | +8          | +9.0         | +0.90  | +1.80      | 0.0         | Very High  | Multiple defensive injuries |",
+          "",
+          "*Metric: AI analysis of key player injuries and availability impact on scoring*",
+          "*Formula: AI analyzes injuries → awayImpact (-10 to +10) + homeImpact (-10 to +10) → totalImpact = (awayImpact + homeImpact)/2 → signal = clamp(totalImpact/10, -1, +1) → if signal > 0: overScore = |signal| × 2.0, underScore = 0; else: overScore = 0, underScore = |signal| × 2.0*"
+        ]
       }
     }
     return logicMap[key] || { metric: "Unknown", formula: "Unknown", examples: [] }
