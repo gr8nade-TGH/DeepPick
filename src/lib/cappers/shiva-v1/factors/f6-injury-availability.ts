@@ -137,10 +137,10 @@ Return ONLY the JSON, no other text.
     
     if (signal > 0) {
       // Positive signal favors Over (injuries help scoring)
-      overScore = Math.abs(signal) * 2.0 // Max 2.0 points
+      overScore = Math.abs(signal) * 5.0 // Max 5.0 points
     } else if (signal < 0) {
       // Negative signal favors Under (injuries hurt scoring)
-      underScore = Math.abs(signal) * 2.0 // Max 2.0 points
+      underScore = Math.abs(signal) * 5.0 // Max 5.0 points
     }
 
     return {

@@ -24,7 +24,7 @@ export const NBA_TOTALS_FACTORS: FactorMeta[] = [
       betTypes: ['TOTAL'],
       scope: 'LEAGUE'
     },
-    maxPoints: 1.0,
+    maxPoints: 5.0,
     defaultWeight: 0.20,
     defaultDataSource: 'nba-stats-api'
   },
@@ -39,7 +39,7 @@ export const NBA_TOTALS_FACTORS: FactorMeta[] = [
       betTypes: ['TOTAL'],
       scope: 'LEAGUE'
     },
-    maxPoints: 1.0,
+    maxPoints: 5.0,
     defaultWeight: 0.20,
     defaultDataSource: 'nba-stats-api'
   },
@@ -54,7 +54,7 @@ export const NBA_TOTALS_FACTORS: FactorMeta[] = [
       betTypes: ['TOTAL'],
       scope: 'SPORT'
     },
-    maxPoints: 1.0,
+    maxPoints: 5.0,
     defaultWeight: 0.20,
     defaultDataSource: 'nba-stats-api'
   },
@@ -69,7 +69,7 @@ export const NBA_TOTALS_FACTORS: FactorMeta[] = [
       betTypes: ['TOTAL'],
       scope: 'LEAGUE'
     },
-    maxPoints: 1.0,
+    maxPoints: 5.0,
     defaultWeight: 0.20,
     defaultDataSource: 'nba-stats-api'
   },
@@ -84,7 +84,7 @@ export const NBA_TOTALS_FACTORS: FactorMeta[] = [
       betTypes: ['TOTAL'],
       scope: 'LEAGUE'
     },
-    maxPoints: 1.0,
+    maxPoints: 5.0,
     defaultWeight: 0.20,
     defaultDataSource: 'nba-stats-api'
   }
@@ -103,7 +103,7 @@ export const GLOBAL_FACTORS: FactorMeta[] = [
       betTypes: ['TOTAL'],
       scope: 'GLOBAL'
     },
-    maxPoints: 3.0,
+    maxPoints: 5.0,
     defaultWeight: 0.15,
     defaultDataSource: 'manual'
   }
@@ -122,7 +122,7 @@ export const INJURY_FACTORS: FactorMeta[] = [
       betTypes: ['TOTAL'],
       scope: 'GLOBAL'
     },
-    maxPoints: 2.0,
+    maxPoints: 5.0,
     defaultWeight: 0.00,
     defaultDataSource: 'llm'
   }

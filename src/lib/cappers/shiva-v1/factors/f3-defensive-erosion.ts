@@ -52,7 +52,7 @@ function tanh(x: number): number {
  */
 export function calculateDefensiveErosionPoints(input: DefensiveErosionInput): DefensiveErosionOutput {
   const { homeDRtg, awayDRtg, leagueDRtg, injuryImpact } = input
-  const MAX_POINTS = 2.0
+  const MAX_POINTS = 5.0
   const SCALE = 8.0
 
   // Input validation

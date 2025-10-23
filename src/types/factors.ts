@@ -22,6 +22,7 @@ export interface FactorMeta {
   };
   maxPoints: number;      // cap of absolute contribution in points
   defaultWeight: number;  // contributes to confidence (your ~0.70 target)
+  defaultDataSource?: string; // default data source for the factor
 }
 
 export interface FactorComputation {

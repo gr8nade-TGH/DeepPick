@@ -46,7 +46,7 @@ function tanh(x: number): number {
  */
 export function calculateOffensiveFormPoints(input: OffensiveFormInput): OffensiveFormOutput {
   const { homeORtg, awayORtg, leagueORtg } = input
-  const MAX_POINTS = 2.0
+  const MAX_POINTS = 5.0
   const SCALE = 10.0
 
   // Input validation

@@ -46,7 +46,7 @@ function tanh(x: number): number {
  */
 export function calculatePaceFactorPoints(input: PaceFactorInput): PaceFactorOutput {
   const { homePace, awayPace, leaguePace } = input
-  const MAX_POINTS = 2.0
+  const MAX_POINTS = 5.0
 
   // Input validation
   if (![homePace, awayPace, leaguePace].every(v => Number.isFinite(v) && v > 0)) {

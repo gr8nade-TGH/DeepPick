@@ -205,79 +205,79 @@ export function FactorConfigModal({
     const logicMap: Record<string, { metric: string; formula: string; examples: string[] }> = {
       paceIndex: {
         metric: "Expected game pace based on both teams' recent pace (last 10 games)",
-        formula: "expPace = (awayPace + homePace)/2, signal = tanh((expPace - leaguePace)/8), if signal > 0: overScore = |signal| × 2.0, underScore = 0; else: overScore = 0, underScore = |signal| × 2.0",
+        formula: "expPace = (awayPace + homePace)/2, signal = tanh((expPace - leaguePace)/8), if signal > 0: overScore = |signal| × 5.0, underScore = 0; else: overScore = 0, underScore = |signal| × 5.0",
         examples: [
           "| Expected Pace | League Pace | Delta | Signal | Over Score | Under Score | Confidence | Example Teams |",
           "|---------------|-------------|-------|--------|------------|-------------|------------|---------------|",
-          "| 108.0         | 100.1       | +7.9  | +0.70  | +1.40      | 0.0         | High       | Fast teams    |",
-          "| 105.0         | 100.1       | +4.9  | +0.55  | +1.10      | 0.0         | Moderate   | Above avg     |",
-          "| 102.0         | 100.1       | +1.9  | +0.24  | +0.48      | 0.0         | Low        | Slightly fast |",
+          "| 108.0         | 100.1       | +7.9  | +0.70  | +3.50      | 0.0         | High       | Fast teams    |",
+          "| 105.0         | 100.1       | +4.9  | +0.55  | +2.75      | 0.0         | Moderate   | Above avg     |",
+          "| 102.0         | 100.1       | +1.9  | +0.24  | +1.20      | 0.0         | Low        | Slightly fast |",
           "| 100.1         | 100.1       | 0.0   | 0.0    | 0.0        | 0.0         | Neutral    | League avg    |",
-          "| 98.0          | 100.1       | -2.1  | -0.26  | 0.0        | +0.52       | Low        | Slightly slow |",
-          "| 95.0          | 100.1       | -5.1  | -0.56  | 0.0        | +1.12       | Moderate   | Below avg     |",
-          "| 92.0          | 100.1       | -8.1  | -0.78  | 0.0        | +1.56       | High       | Slow teams    |",
+          "| 98.0          | 100.1       | -2.1  | -0.26  | 0.0        | +1.30       | Low        | Slightly slow |",
+          "| 95.0          | 100.1       | -5.1  | -0.56  | 0.0        | +2.80       | Moderate   | Below avg     |",
+          "| 92.0          | 100.1       | -8.1  | -0.78  | 0.0        | +3.90       | High       | Slow teams    |",
           "",
           "*Metric: Expected game pace based on both teams' recent pace (last 10 games)*",
-          "*Formula: expPace = (awayPace + homePace)/2, signal = tanh((expPace - leaguePace)/8), if signal > 0: overScore = |signal| × 2.0, underScore = 0; else: overScore = 0, underScore = |signal| × 2.0*"
+          "*Formula: expPace = (awayPace + homePace)/2, signal = tanh((expPace - leaguePace)/8), if signal > 0: overScore = |signal| × 5.0, underScore = 0; else: overScore = 0, underScore = |signal| × 5.0*"
         ]
       },
       offForm: {
         metric: "Combined team offensive efficiency vs league average (last 10 games)",
-        formula: "combinedORtg = (homeORtg + awayORtg)/2, advantage = combinedORtg - leagueORtg, signal = tanh(advantage/10), if signal > 0: overScore = |signal| × 2.0, underScore = 0; else: overScore = 0, underScore = |signal| × 2.0",
+        formula: "combinedORtg = (homeORtg + awayORtg)/2, advantage = combinedORtg - leagueORtg, signal = tanh(advantage/10), if signal > 0: overScore = |signal| × 5.0, underScore = 0; else: overScore = 0, underScore = |signal| × 5.0",
         examples: [
           "| Combined ORtg | League ORtg | Advantage | Signal | Over Score | Under Score | Confidence | Example Teams |",
           "|---------------|-------------|-----------|--------|------------|-------------|------------|---------------|",
-          "| 125.0         | 110.0       | +15.0     | +0.91  | +1.82      | 0.0         | High       | Hot offenses  |",
-          "| 120.0         | 110.0       | +10.0     | +0.76  | +1.52      | 0.0         | High       | Above avg     |",
-          "| 115.0         | 110.0       | +5.0      | +0.46  | +0.92      | 0.0         | Moderate   | Slightly hot  |",
-          "| 112.0         | 110.0       | +2.0      | +0.20  | +0.40      | 0.0         | Low        | Mildly hot    |",
+          "| 125.0         | 110.0       | +15.0     | +0.91  | +4.55      | 0.0         | High       | Hot offenses  |",
+          "| 120.0         | 110.0       | +10.0     | +0.76  | +3.80      | 0.0         | High       | Above avg     |",
+          "| 115.0         | 110.0       | +5.0      | +0.46  | +2.30      | 0.0         | Moderate   | Slightly hot  |",
+          "| 112.0         | 110.0       | +2.0      | +0.20  | +1.00      | 0.0         | Low        | Mildly hot    |",
           "| 110.0         | 110.0       | 0.0       | 0.0    | 0.0        | 0.0         | Neutral    | League avg    |",
-          "| 108.0         | 110.0       | -2.0      | -0.20  | 0.0        | +0.40       | Low        | Mildly cold   |",
-          "| 105.0         | 110.0       | -5.0      | -0.46  | 0.0        | +0.92       | Moderate   | Slightly cold |",
-          "| 100.0         | 110.0       | -10.0     | -0.76  | 0.0        | +1.52       | High       | Below avg     |",
-          "| 95.0          | 110.0       | -15.0     | -0.91  | 0.0        | +1.82       | High       | Cold offenses  |",
+          "| 108.0         | 110.0       | -2.0      | -0.20  | 0.0        | +1.00       | Low        | Mildly cold   |",
+          "| 105.0         | 110.0       | -5.0      | -0.46  | 0.0        | +2.30       | Moderate   | Slightly cold |",
+          "| 100.0         | 110.0       | -10.0     | -0.76  | 0.0        | +3.80       | High       | Below avg     |",
+          "| 95.0          | 110.0       | -15.0     | -0.91  | 0.0        | +4.55       | High       | Cold offenses  |",
           "",
           "*Metric: Combined team offensive efficiency vs league average (last 10 games)*",
-          "*Formula: combinedORtg = (homeORtg + awayORtg)/2, advantage = combinedORtg - leagueORtg, signal = tanh(advantage/10), if signal > 0: overScore = |signal| × 2.0, underScore = 0; else: overScore = 0, underScore = |signal| × 2.0*"
+          "*Formula: combinedORtg = (homeORtg + awayORtg)/2, advantage = combinedORtg - leagueORtg, signal = tanh(advantage/10), if signal > 0: overScore = |signal| × 5.0, underScore = 0; else: overScore = 0, underScore = |signal| × 5.0*"
         ]
       },
       defErosion: {
         metric: "Combined defensive rating decline + injury impact (season + AI analysis)",
-        formula: "combinedDRtg = (homeDRtg + awayDRtg)/2, drtgDelta = combinedDRtg - leagueDRtg, totalErosion = 0.7×drtgDelta + 0.3×injuryImpact×10, signal = tanh(totalErosion/8), if signal > 0: overScore = |signal| × 2.0, underScore = 0; else: overScore = 0, underScore = |signal| × 2.0",
+        formula: "combinedDRtg = (homeDRtg + awayDRtg)/2, drtgDelta = combinedDRtg - leagueDRtg, totalErosion = 0.7×drtgDelta + 0.3×injuryImpact×10, signal = tanh(totalErosion/8), if signal > 0: overScore = |signal| × 5.0, underScore = 0; else: overScore = 0, underScore = |signal| × 5.0",
         examples: [
           "| Combined DRtg | League DRtg | DRtg Delta | Injury Impact | Total Erosion | Signal | Over Score | Under Score | Confidence | Example Teams |",
           "|---------------|-------------|------------|---------------|---------------|--------|------------|-------------|------------|---------------|",
-          "| 120.0         | 110.0       | +10.0      | -0.5          | +5.5          | +0.60  | +1.20      | 0.0         | High       | Weak defense + injuries |",
-          "| 115.0         | 110.0       | +5.0       | -0.2          | +2.9          | +0.35  | +0.70      | 0.0         | Moderate   | Below avg + minor injuries |",
-          "| 112.0         | 110.0       | +2.0       | 0.0           | +1.4          | +0.17  | +0.34      | 0.0         | Low        | Slightly weak |",
+          "| 120.0         | 110.0       | +10.0      | -0.5          | +5.5          | +0.60  | +3.00      | 0.0         | High       | Weak defense + injuries |",
+          "| 115.0         | 110.0       | +5.0       | -0.2          | +2.9          | +0.35  | +1.75      | 0.0         | Moderate   | Below avg + minor injuries |",
+          "| 112.0         | 110.0       | +2.0       | 0.0           | +1.4          | +0.17  | +0.85      | 0.0         | Low        | Slightly weak |",
           "| 110.0         | 110.0       | 0.0        | 0.0           | 0.0           | 0.0    | 0.0        | 0.0         | Neutral    | League avg |",
-          "| 108.0         | 110.0       | -2.0       | 0.0           | -1.4          | -0.17  | 0.0        | +0.34       | Low        | Slightly strong |",
-          "| 105.0         | 110.0       | -5.0       | +0.2          | -2.9          | -0.35  | 0.0        | +0.70       | Moderate   | Above avg + healthy |",
-          "| 100.0         | 110.0       | -10.0      | +0.5          | -5.5          | -0.60  | 0.0        | +1.20       | High       | Strong defense + healthy |",
-          "| 95.0          | 110.0       | -15.0      | +0.8          | -8.1          | -0.85  | 0.0        | +1.70       | Very High  | Elite defense + very healthy |",
+          "| 108.0         | 110.0       | -2.0       | 0.0           | -1.4          | -0.17  | 0.0        | +0.85       | Low        | Slightly strong |",
+          "| 105.0         | 110.0       | -5.0       | +0.2          | -2.9          | -0.35  | 0.0        | +1.75       | Moderate   | Above avg + healthy |",
+          "| 100.0         | 110.0       | -10.0      | +0.5          | -5.5          | -0.60  | 0.0        | +3.00       | High       | Strong defense + healthy |",
+          "| 95.0          | 110.0       | -15.0      | +0.8          | -8.1          | -0.85  | 0.0        | +4.25       | Very High  | Elite defense + very healthy |",
           "",
           "*Metric: Combined defensive rating decline + injury impact (season + AI analysis)*",
-          "*Formula: combinedDRtg = (homeDRtg + awayDRtg)/2, drtgDelta = combinedDRtg - leagueDRtg, totalErosion = 0.7×drtgDelta + 0.3×injuryImpact×10, signal = tanh(totalErosion/8), if signal > 0: overScore = |signal| × 2.0, underScore = 0; else: overScore = 0, underScore = |signal| × 2.0*"
+          "*Formula: combinedDRtg = (homeDRtg + awayDRtg)/2, drtgDelta = combinedDRtg - leagueDRtg, totalErosion = 0.7×drtgDelta + 0.3×injuryImpact×10, signal = tanh(totalErosion/8), if signal > 0: overScore = |signal| × 5.0, underScore = 0; else: overScore = 0, underScore = |signal| × 5.0*"
         ]
       },
       edgeVsMarket: {
         metric: "Final confidence adjustment based on predicted vs market line for totals",
-        formula: "edgePts = predictedTotal - marketTotalLine, signal = clamp(edgePts/10, -1, +1), if signal > 0: overScore = |signal| × 3.0, underScore = 0; else: overScore = 0, underScore = |signal| × 3.0",
+        formula: "edgePts = predictedTotal - marketTotalLine, signal = clamp(edgePts/10, -1, +1), if signal > 0: overScore = |signal| × 5.0, underScore = 0; else: overScore = 0, underScore = |signal| × 5.0",
         examples: [
           "| Edge Points | Signal | Over Score | Under Score | Confidence | Market Context |",
           "|-------------|--------|------------|-------------|------------|----------------|",
-          "| +10+        | +1.0   | +3.0       | 0.0         | Maximum    | Strong Over    |",
-          "| +7          | +0.70  | +2.10      | 0.0         | High       | Clear Over     |",
-          "| +5          | +0.50  | +1.50      | 0.0         | Moderate   | Moderate Over  |",
-          "| +2          | +0.20  | +0.60      | 0.0         | Low        | Slight Over    |",
+          "| +10+        | +1.0   | +5.0       | 0.0         | Maximum    | Strong Over    |",
+          "| +7          | +0.70  | +3.50      | 0.0         | High       | Clear Over     |",
+          "| +5          | +0.50  | +2.50      | 0.0         | Moderate   | Moderate Over  |",
+          "| +2          | +0.20  | +1.00      | 0.0         | Low        | Slight Over    |",
           "| 0           | 0.0    | 0.0        | 0.0         | Neutral    | Perfect Line   |",
-          "| -2          | -0.20  | 0.0        | +0.60       | Low        | Slight Under   |",
-          "| -5          | -0.50  | 0.0        | +1.50       | Moderate   | Moderate Under |",
-          "| -7          | -0.70  | 0.0        | +2.10       | High       | Clear Under    |",
-          "| -10+        | -1.0   | 0.0        | +3.0        | Maximum    | Strong Under   |",
+          "| -2          | -0.20  | 0.0        | +1.00       | Low        | Slight Under   |",
+          "| -5          | -0.50  | 0.0        | +2.50       | Moderate   | Moderate Under |",
+          "| -7          | -0.70  | 0.0        | +3.50       | High       | Clear Under    |",
+          "| -10+        | -1.0   | 0.0        | +5.0        | Maximum    | Strong Under   |",
           "",
           "*Metric: Final confidence adjustment based on predicted vs market line for totals*",
-          "*Formula: edgePts = predictedTotal - marketTotalLine, signal = clamp(edgePts/10, -1, +1), if signal > 0: overScore = |signal| × 3.0, underScore = 0; else: overScore = 0, underScore = |signal| × 3.0*"
+          "*Formula: edgePts = predictedTotal - marketTotalLine, signal = clamp(edgePts/10, -1, +1), if signal > 0: overScore = |signal| × 5.0, underScore = 0; else: overScore = 0, underScore = |signal| × 5.0*"
         ]
       },
       threeEnv: {
@@ -300,21 +300,21 @@ export function FactorConfigModal({
       },
       injuryAvailability: {
         metric: "AI analysis of key player injuries and availability impact on scoring",
-        formula: "AI analyzes injuries → awayImpact (-10 to +10) + homeImpact (-10 to +10) → totalImpact = (awayImpact + homeImpact)/2 → signal = clamp(totalImpact/10, -1, +1) → if signal > 0: overScore = |signal| × 2.0, underScore = 0; else: overScore = 0, underScore = |signal| × 2.0",
+        formula: "AI analyzes injuries → awayImpact (-10 to +10) + homeImpact (-10 to +10) → totalImpact = (awayImpact + homeImpact)/2 → signal = clamp(totalImpact/10, -1, +1) → if signal > 0: overScore = |signal| × 5.0, underScore = 0; else: overScore = 0, underScore = |signal| × 5.0",
         examples: [
           "| Away Impact | Home Impact | Total Impact | Signal | Over Score | Under Score | Confidence | Example Scenario |",
           "|-------------|-------------|--------------|--------|------------|-------------|------------|------------------|",
-          "| -8          | -6          | -7.0         | -0.70  | 0.0        | +1.40       | High       | Both teams missing key scorers |",
-          "| -5          | -3          | -4.0         | -0.40  | 0.0        | +0.80       | Moderate   | One team missing star player |",
-          "| -2          | -1          | -1.5         | -0.15  | 0.0        | +0.30       | Low        | Minor injuries affecting depth |",
+          "| -8          | -6          | -7.0         | -0.70  | 0.0        | +3.50       | High       | Both teams missing key scorers |",
+          "| -5          | -3          | -4.0         | -0.40  | 0.0        | +2.00       | Moderate   | One team missing star player |",
+          "| -2          | -1          | -1.5         | -0.15  | 0.0        | +0.75       | Low        | Minor injuries affecting depth |",
           "| 0           | 0           | 0.0          | 0.0    | 0.0        | 0.0         | Neutral    | No significant injuries |",
-          "| +2          | +1          | +1.5         | +0.15  | +0.30      | 0.0         | Low        | Minor defensive injuries |",
-          "| +5          | +3          | +4.0         | +0.40  | +0.80      | 0.0         | Moderate   | One team missing key defender |",
-          "| +8          | +6          | +7.0         | +0.70  | +1.40      | 0.0         | High       | Both teams missing key defenders |",
-          "| +10         | +8          | +9.0         | +0.90  | +1.80      | 0.0         | Very High  | Multiple defensive injuries |",
+          "| +2          | +1          | +1.5         | +0.15  | +0.75      | 0.0         | Low        | Minor defensive injuries |",
+          "| +5          | +3          | +4.0         | +0.40  | +2.00      | 0.0         | Moderate   | One team missing key defender |",
+          "| +8          | +6          | +7.0         | +0.70  | +3.50      | 0.0         | High       | Both teams missing key defenders |",
+          "| +10         | +8          | +9.0         | +0.90  | +4.50      | 0.0         | Very High  | Multiple defensive injuries |",
           "",
           "*Metric: AI analysis of key player injuries and availability impact on scoring*",
-          "*Formula: AI analyzes injuries → awayImpact (-10 to +10) + homeImpact (-10 to +10) → totalImpact = (awayImpact + homeImpact)/2 → signal = clamp(totalImpact/10, -1, +1) → if signal > 0: overScore = |signal| × 2.0, underScore = 0; else: overScore = 0, underScore = |signal| × 2.0*"
+          "*Formula: AI analyzes injuries → awayImpact (-10 to +10) + homeImpact (-10 to +10) → totalImpact = (awayImpact + homeImpact)/2 → signal = clamp(totalImpact/10, -1, +1) → if signal > 0: overScore = |signal| × 5.0, underScore = 0; else: overScore = 0, underScore = |signal| × 5.0*"
         ]
       }
     }
