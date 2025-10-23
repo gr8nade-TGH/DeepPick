@@ -44,14 +44,14 @@ export const STEP_DEFINITIONS: StepDefinition[] = [
   {
     step: 4,
     name: "AI Predictions",
-    description: "Generate final score predictions using factor signals",
+    description: "Generate team-specific total predictions using factor signals",
     details: [
-      "Combine factor analysis with team performance data from Step 3",
-      "Calculate weighted confidence score from all enabled factors",
-      "Generate predicted total: leagueAverage + Σ(factorSignal × maxPoints × weight%)",
-      "Split total into home/away scores with realistic variance",
-      "Determine predicted winner based on score differential",
-      "Apply factor adjustments: Pace (+/-X), Offense (+/-Y), Defense (+/-Z), 3P (+/-W), FT (+/-V), Injuries (+/-U)"
+      "Calculate team-specific baseline: P = 0.5×(pace_home + pace_away), PPP_home = 1.10 + 0.5×(ORtg_home-110)/100 - 0.5×(DRtg_away-110)/100",
+      "Compute away team efficiency: PPP_away = 1.10 + 0.5×(ORtg_away-110)/100 - 0.5×(DRtg_home-110)/100",
+      "Generate baseline total: total_base = P × (PPP_home + PPP_away)",
+      "Apply factor adjustments: predicted_total = total_base + Σ(factor_signal × 5.0 × weight%)",
+      "Split total into home/away scores using efficiency-based allocation",
+      "Calculate final confidence score from all enabled factors for unit allocation"
     ]
   },
   {
