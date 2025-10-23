@@ -164,7 +164,7 @@ Research recent news, injury reports, and statistical trends to make the most ac
             status: 200,
           })
           
-          return jsonOk(responseBody)
+          return { body: responseBody, status: 200 }
         } catch (error) {
           console.error('[SHIVA:Step5.5] Error processing Bold Player Predictions:', {
             run_id,
