@@ -39,8 +39,8 @@ export function FactorConfigModal({
   const weightFactors = factors.filter(f => f.enabled && f.key !== 'edgeVsMarket')
   const rawTotalWeight = weightFactors.reduce((sum, f) => sum + f.weight, 0)
   const totalWeight = Math.round(rawTotalWeight * 100) / 100
-  const remainingWeight = Math.round((150 - totalWeight) * 100) / 100
-  const isWeightValid = Math.abs(remainingWeight) < 0.01 || Math.abs(totalWeight - 150) < 0.01
+  const remainingWeight = Math.round((250 - totalWeight) * 100) / 100
+  const isWeightValid = Math.abs(remainingWeight) < 0.01 || Math.abs(totalWeight - 250) < 0.01
   
   // Debug logging
   console.log('[Weight Debug]', {
@@ -51,8 +51,8 @@ export function FactorConfigModal({
     isWeightValid
   })
   
-  // Force exact 150% if very close (within 0.01%)
-  const displayTotalWeight = Math.abs(totalWeight - 150) < 0.01 ? 150 : totalWeight
+  // Force exact 250% if very close (within 0.01%)
+  const displayTotalWeight = Math.abs(totalWeight - 250) < 0.01 ? 250 : totalWeight
   const displayRemainingWeight = Math.abs(remainingWeight) < 0.01 ? 0 : remainingWeight
   
   // Get factor eligibility tags
@@ -200,12 +200,20 @@ export function FactorConfigModal({
     return detailsMap[key] || { features: [], examples: [], registry: [] }
   }
 
+  // Calculate effective max points based on weight
+  const getEffectiveMaxPoints = (factor: FactorConfig) => {
+    if (factor.key === 'edgeVsMarket') {
+      return 5.0 // Edge vs Market is always at 100% weight
+    }
+    return (factor.maxPoints * factor.weight) / 100
+  }
+
   // Factor logic definitions for the Logic Drawer
   const getFactorLogic = (key: string) => {
     const logicMap: Record<string, { metric: string; formula: string; examples: string[] }> = {
       paceIndex: {
         metric: "Expected game pace based on both teams' recent pace (last 10 games)",
-        formula: "expPace = (awayPace + homePace)/2, signal = tanh((expPace - leaguePace)/8), if signal > 0: overScore = |signal| × 5.0, underScore = 0; else: overScore = 0, underScore = |signal| × 5.0",
+        formula: "expPace = (awayPace + homePace)/2, signal = tanh((expPace - leaguePace)/8), if signal > 0: overScore = |signal| × maxPoints, underScore = 0; else: overScore = 0, underScore = |signal| × maxPoints",
         examples: [
           "| Expected Pace | League Pace | Delta | Signal | Over Score | Under Score | Confidence | Example Teams |",
           "|---------------|-------------|-------|--------|------------|-------------|------------|---------------|",
@@ -343,7 +351,7 @@ export function FactorConfigModal({
     
     if (totalWeight === 0) {
       // If all enabled factors have 0 weight, distribute equally
-      const equalWeight = 150 / enabledFactors.length
+      const equalWeight = 250 / enabledFactors.length
       return factors.map(f => {
         if (f.key === 'edgeVsMarket') {
           return { ...f, enabled: true, weight: 100 } // Edge vs Market is always 100%
@@ -352,13 +360,13 @@ export function FactorConfigModal({
       })
     }
     
-    // Normalize enabled factors to sum to 150% (excluding Edge vs Market)
+    // Normalize enabled factors to sum to 250% (excluding Edge vs Market)
     const normalizedFactors = factors.map(f => {
       if (f.key === 'edgeVsMarket') {
         return { ...f, enabled: true, weight: 100 } // Edge vs Market is always 100%
       }
       if (f.enabled) {
-        const normalizedWeight = (f.weight / totalWeight) * 150
+        const normalizedWeight = (f.weight / totalWeight) * 250
         // Round to 2 decimal places to avoid floating point precision issues
         const roundedWeight = Math.round(normalizedWeight * 100) / 100
         return { ...f, weight: roundedWeight }
@@ -367,17 +375,17 @@ export function FactorConfigModal({
       }
     })
     
-    // Final adjustment to ensure exact 150% total
+    // Final adjustment to ensure exact 250% total
     const finalFactors = [...normalizedFactors]
     const finalTotal = finalFactors
       .filter(f => f.enabled && f.key !== 'edgeVsMarket')
       .reduce((sum, f) => sum + f.weight, 0)
 
-    if (Math.abs(finalTotal - 150) > 0.01) {
-      // Adjust the first enabled factor to make it exactly 150%
+    if (Math.abs(finalTotal - 250) > 0.01) {
+      // Adjust the first enabled factor to make it exactly 250%
       const firstEnabled = finalFactors.find(f => f.enabled && f.key !== 'edgeVsMarket')
       if (firstEnabled) {
-        const adjustment = 150 - finalTotal
+        const adjustment = 250 - finalTotal
         firstEnabled.weight = Math.round((firstEnabled.weight + adjustment) * 100) / 100
       }
     }
@@ -568,7 +576,7 @@ export function FactorConfigModal({
         .reduce((sum, f) => sum + f.weight, 0)
       
       // Calculate max weight this factor can have (can't exceed remaining budget)
-      const maxAllowed = Math.max(0, 150 - otherEnabledWeight)
+      const maxAllowed = Math.max(0, 250 - otherEnabledWeight)
       
       // Clamp weight to valid range
       const newWeight = Math.max(0, Math.min(maxAllowed, weight))
@@ -591,7 +599,7 @@ export function FactorConfigModal({
   // Save factor configuration
   const handleSave = async () => {
     if (!isWeightValid) {
-      alert('Weights must sum to exactly 150% before saving')
+      alert('Weights must sum to exactly 250% before saving')
       return
     }
     
@@ -661,7 +669,7 @@ export function FactorConfigModal({
               <button
                 onClick={() => {
                   const enabledFactors = factors.filter(f => f.enabled && f.key !== 'edgeVsMarket')
-                  const equalWeight = 150 / enabledFactors.length
+                  const equalWeight = 250 / enabledFactors.length
                   
                   setFactors(prev => prev.map(f => {
                     if (f.key === 'edgeVsMarket') return f
@@ -759,7 +767,7 @@ export function FactorConfigModal({
             <div className="flex justify-between items-center">
               <div>
                 <div className="text-sm font-medium text-white">
-                  Weight Budget: {displayTotalWeight}% / 150%
+                  Weight Budget: {displayTotalWeight}% / 250%
                 </div>
                 <div className={`text-xs mt-1 ${
                   isWeightValid 
@@ -1028,7 +1036,7 @@ export function FactorConfigModal({
                       <div className="text-right">
                         <div className="text-xs text-gray-400">Max ± Points</div>
                         <div className="text-white font-mono">
-                          {factor.key === 'edgeVsMarket' ? '3.0' : factor.maxPoints.toFixed(1)}
+                          {getEffectiveMaxPoints(factor).toFixed(1)}
                         </div>
                         <div className="text-xs text-gray-500 mt-0.5">
                           {factor.key === 'edgeVsMarket' 

@@ -28,7 +28,7 @@ const FactorConfigSchema = z.object({
   name: z.string(),
   description: z.string(),
   enabled: z.boolean(),
-  weight: z.number().min(0).max(150), // Updated to support 150% weight budget
+  weight: z.number().min(0).max(250), // Updated to support 250% weight budget
   dataSource: z.enum(['nba-stats-api', 'statmuse', 'manual', 'llm', 'news-api', 'system']),
   maxPoints: z.number(),
   sport: z.string(),
