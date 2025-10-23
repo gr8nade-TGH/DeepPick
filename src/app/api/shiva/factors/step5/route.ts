@@ -72,9 +72,9 @@ export async function POST(request: Request) {
       // Calculate units based on final confidence
       let units = 0
       if (adjustedConfidence >= 4.5) units = 5
-      else if (adjustedConfidence >= 3.5) units = 3
-      else if (adjustedConfidence >= 2.5) units = 2
-      else if (adjustedConfidence >= 1.5) units = 1
+      else if (adjustedConfidence >= 4.0) units = 3
+      else if (adjustedConfidence >= 3.5) units = 2
+      else if (adjustedConfidence >= 2.5) units = 1
       
       // Generate final pick
       const line = market_total_line.toFixed(1)
