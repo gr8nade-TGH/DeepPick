@@ -56,13 +56,15 @@ export const STEP_DEFINITIONS: StepDefinition[] = [
   },
   {
     step: 5,
-    name: "Market Analysis",
-    description: "Calculate market edge and adjust confidence",
+    name: "Edge vs Market FINAL Factor",
+    description: "Calculate final Edge vs Market factor and combine all factors for confidence",
     details: [
-      "Compare predicted total vs market line",
-      "Calculate edge percentage and market adjustment",
-      "Apply final confidence score adjustments",
-      "Determine pick direction (Over/Under) based on edge"
+      "Compare team-specific predicted total from Step 4 vs current market line",
+      "Calculate edge points: edgePts = predictedTotal - marketTotalLine",
+      "Generate Edge vs Market factor signal: signal = clamp(edgePts/10, -1, +1)",
+      "Apply final factor: if signal > 0: overScore = |signal| × 5.0, underScore = 0; else: overScore = 0, underScore = |signal| × 5.0",
+      "Combine all factor signals (Pace + Offense + Defense + 3P + FT + Injuries + Edge) for final confidence",
+      "Pass to Step 6: predicted_total, market_total_line, edge_points, final_confidence, pick_direction"
     ]
   },
   {
