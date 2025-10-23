@@ -210,6 +210,7 @@ export function FactorConfigModal({
 
   // Factor logic definitions for the Logic Drawer
   const getFactorLogic = (key: string) => {
+    console.log(`[getFactorLogic] Looking for key: ${key}`)
     const logicMap: Record<string, { metric: string; formula: string; examples: string[] }> = {
       paceIndex: {
         metric: "Expected game pace based on both teams' recent pace (last 10 games)",
@@ -374,7 +375,9 @@ export function FactorConfigModal({
         ]
       }
     }
-    return logicMap[key] || { metric: "Unknown", formula: "Unknown", examples: [] }
+    const result = logicMap[key] || { metric: "Unknown", formula: "Unknown", examples: [] }
+    console.log(`[getFactorLogic] Result for ${key}:`, result)
+    return result
   }
   
   // Normalize factor weights to ensure they sum to 100%
