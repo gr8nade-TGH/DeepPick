@@ -80,7 +80,10 @@ export async function POST(request: Request) {
     idempotencyKey: key,
     writeAllowed,
     exec: async () => {
+      console.log('[SHIVA:Step4] ===== EXEC FUNCTION CALLED =====')
+      console.log('[SHIVA:Step4] exec() started, run_id:', run_id)
       const admin = getSupabaseAdmin()
+      console.log('[SHIVA:Step4] Supabase admin obtained')
       
       console.log('[SHIVA:Step4] Inside exec, checking conditions:', { sport, betType, isNBA: sport === 'NBA', isTOTAL: betType === 'TOTAL' })
       
