@@ -688,7 +688,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         }
         console.log('[Wizard:Step4] About to call API with body:', step4Body)
         try {
-          const r = await postJson('/api/shiva/factors/step4', step4Body, `ui-demo-step4-${Date.now()}`)
+          const r = await postJson('/api/shiva/factors/step4', step4Body, `ui-demo-step4-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`)
           console.log('[Wizard:Step4] API Response:', r)
           console.log('[Wizard:Step4] Has predictions?', !!r.json?.predictions)
           setLog(r)
@@ -741,7 +741,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         }
         console.log('[Wizard:Step5] About to call API with body:', step5Body)
         try {
-          const r = await postJson('/api/shiva/factors/step5', step5Body, `ui-demo-step5-${Date.now()}`)
+          const r = await postJson('/api/shiva/factors/step5', step5Body, `ui-demo-step5-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`)
           console.log('[Wizard:Step5] API Response:', r)
           setLog(r)
           setStepLogs(prev => ({ ...prev, 5: r }))
