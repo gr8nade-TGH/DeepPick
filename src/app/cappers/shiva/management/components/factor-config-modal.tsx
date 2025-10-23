@@ -171,32 +171,39 @@ export function FactorConfigModal({
       },
       edgeVsMarket: {
         features: [
-          "⚖️ Market Edge Calculation: Compares predicted total vs market line",
-          "📊 Formula: edgePts = predictedTotal - marketTotalLine, signal = clamp(edgePts/10, -1, +1)",
-          "⚖️ Smart Scaling: Uses clamp(edgePts/10) for linear scaling with ±10 point cap",
+          "⚖️ Market Edge Calculation: Compares team-specific predicted total vs market line",
+          "🏀 Team-Specific Baseline: P = 0.5×(pace_home + pace_away), PPP_home = 1.10 + 0.5×(ORtg_home-110)/100 - 0.5×(DRtg_away-110)/100",
+          "📊 Formula: total_base = P × (PPP_home + PPP_away), predicted_total = total_base + Σ(factor_points)",
+          "⚖️ Edge Calculation: edgePts = predictedTotal - marketTotalLine, signal = clamp(edgePts/10, -1, +1)",
           "🎯 Single Positive Score: Positive edge → Over, Negative edge → Under",
-          "📈 Max Points: 3.0 (up from 2.0) for maximum impact",
+          "📈 Max Points: 5.0 for maximum impact on final prediction",
           "🔒 Final Step: Applied after all other factors for final confidence adjustment"
         ],
         examples: [
-          "Scenario 1: Strong Over Edge",
-          "• Predicted Total: 235, Market Line: 225",
-          "• Edge Points: +10",
-          "• Signal: +1.0",
-          "• Result: +3.0 Over Score (Maximum confidence for Over)",
+          "Scenario 1: Strong Over Edge (Phoenix vs Sacramento)",
+          "• Team Baseline: P=101.0, PPP_home=1.143, PPP_away=1.103 → total_base=226.8",
+          "• Factor Adjustments: +4.5 points (pace+offense+defense+3P+FT+injuries)",
+          "• Predicted Total: 226.8 + 4.5 = 231.3, Market Line: 227.0",
+          "• Edge Points: +4.3, Signal: +0.43, Result: +2.15 Over Score",
           "",
-          "Scenario 2: Moderate Under Edge",
-          "• Predicted Total: 220, Market Line: 225",
-          "• Edge Points: -5",
-          "• Signal: -0.50",
-          "• Result: +1.5 Under Score (Moderate confidence for Under)"
+          "Scenario 2: Moderate Under Edge (Slow teams)",
+          "• Team Baseline: P=95.0, PPP_home=1.05, PPP_away=1.08 → total_base=202.4",
+          "• Factor Adjustments: -2.0 points (slow pace, poor offense)",
+          "• Predicted Total: 202.4 - 2.0 = 200.4, Market Line: 205.0",
+          "• Edge Points: -4.6, Signal: -0.46, Result: +2.30 Under Score",
+          "",
+          "Scenario 3: Perfect Line (Balanced teams)",
+          "• Team Baseline: P=100.1, PPP_home=1.10, PPP_away=1.10 → total_base=220.2",
+          "• Factor Adjustments: +0.8 points (minimal adjustments)",
+          "• Predicted Total: 220.2 + 0.8 = 221.0, Market Line: 221.0",
+          "• Edge Points: 0.0, Signal: 0.0, Result: 0.0 (No edge)"
         ],
         registry: [
           "Weight: 100% (Fixed - Final Step)",
-          "Max Points: 3.0 (up from 2.0)",
+          "Max Points: 5.0 (maximum impact on prediction)",
           "Scope: global (applies to all sports/bet types)",
-          "Data Sources: manual (calculated from other factors)",
-          "Supported: All Totals predictions"
+          "Data Sources: calculated (team pace + efficiency + factor adjustments)",
+          "Supported: All Totals predictions with team-specific baselines"
         ]
       }
     }
@@ -273,23 +280,33 @@ export function FactorConfigModal({
         ]
       },
       edgeVsMarket: {
-        metric: "Final confidence adjustment based on predicted vs market line for totals",
-        formula: "edgePts = predictedTotal - marketTotalLine, signal = clamp(edgePts/10, -1, +1), if signal > 0: overScore = |signal| × 5.0, underScore = 0; else: overScore = 0, underScore = |signal| × 5.0",
+        metric: "Final confidence adjustment based on team-specific predicted total vs market line",
+        formula: "P = 0.5×(pace_home + pace_away), PPP_home = 1.10 + 0.5×(ORtg_home-110)/100 - 0.5×(DRtg_away-110)/100, PPP_away = 1.10 + 0.5×(ORtg_away-110)/100 - 0.5×(DRtg_home-110)/100, total_base = P × (PPP_home + PPP_away), predicted_total = total_base + Σ(factor_points), edgePts = predictedTotal - marketTotalLine, signal = clamp(edgePts/10, -1, +1), if signal > 0: overScore = |signal| × 5.0, underScore = 0; else: overScore = 0, underScore = |signal| × 5.0",
         examples: [
-          "| Edge Points | Signal | Over Score | Under Score | Confidence | Market Context |",
-          "|-------------|--------|------------|-------------|------------|----------------|",
-          "| +10+        | +1.0   | +5.0       | 0.0         | Maximum    | Strong Over    |",
-          "| +7          | +0.70  | +3.50      | 0.0         | High       | Clear Over     |",
-          "| +5          | +0.50  | +2.50      | 0.0         | Moderate   | Moderate Over  |",
-          "| +2          | +0.20  | +1.00      | 0.0         | Low        | Slight Over    |",
-          "| 0           | 0.0    | 0.0        | 0.0         | Neutral    | Perfect Line   |",
-          "| -2          | -0.20  | 0.0        | +1.00       | Low        | Slight Under   |",
-          "| -5          | -0.50  | 0.0        | +2.50       | Moderate   | Moderate Under |",
-          "| -7          | -0.70  | 0.0        | +3.50       | High       | Clear Under    |",
-          "| -10+        | -1.0   | 0.0        | +5.0        | Maximum    | Strong Under   |",
+          "| Team Baseline | Factor Adj | Predicted | Market | Edge | Signal | Over Score | Under Score | Confidence | Example |",
+          "|---------------|------------|-----------|--------|------|--------|------------|-------------|------------|---------|",
+          "| 226.8 (fast)  | +4.5       | 231.3     | 227.0  | +4.3 | +0.43  | +2.15      | 0.0         | Moderate  | High-scoring teams |",
+          "| 220.2 (avg)   | +2.0       | 222.2     | 225.0  | -2.8 | -0.28  | 0.0        | +1.40       | Low       | Balanced teams |",
+          "| 202.4 (slow)  | -2.0       | 200.4     | 205.0  | -4.6 | -0.46  | 0.0        | +2.30       | Moderate  | Slow teams |",
+          "| 215.5 (def)   | +1.5       | 217.0     | 217.0  | 0.0  | 0.0    | 0.0        | 0.0         | Neutral   | Perfect line |",
+          "| 240.1 (hot)   | +6.0       | 246.1     | 240.0  | +6.1 | +0.61  | +3.05      | 0.0         | High      | Hot offenses |",
+          "| 195.8 (cold)  | -3.5       | 192.3     | 200.0  | -7.7 | -0.77  | 0.0        | +3.85       | High      | Cold offenses |",
+          "| 230.5 (3P)    | +3.2       | 233.7     | 228.0  | +5.7 | +0.57  | +2.85      | 0.0         | High      | High 3P volume |",
+          "| 210.3 (FT)    | +1.8       | 212.1     | 215.0  | -2.9 | -0.29  | 0.0        | +1.45       | Low       | Low FT teams |",
           "",
-          "*Metric: Final confidence adjustment based on predicted vs market line for totals*",
-          "*Formula: edgePts = predictedTotal - marketTotalLine, signal = clamp(edgePts/10, -1, +1), if signal > 0: overScore = |signal| × 5.0, underScore = 0; else: overScore = 0, underScore = |signal| × 5.0*"
+          "🏀 **Team-Specific Baseline Calculation:**",
+          "• P = 0.5 × (pace_home + pace_away) - Expected possessions",
+          "• PPP_home = 1.10 + 0.5×(ORtg_home-110)/100 - 0.5×(DRtg_away-110)/100",
+          "• PPP_away = 1.10 + 0.5×(ORtg_away-110)/100 - 0.5×(DRtg_home-110)/100",
+          "• total_base = P × (PPP_home + PPP_away)",
+          "",
+          "📊 **Factor Integration:**",
+          "• predicted_total = total_base + Σ(factor_signal × 5.0 × weight%)",
+          "• edgePts = predicted_total - market_total_line",
+          "• signal = clamp(edgePts/10, -1, +1)",
+          "",
+          "*Metric: Final confidence adjustment based on team-specific predicted total vs market line*",
+          "*Formula: P = 0.5×(pace_home + pace_away), PPP_home = 1.10 + 0.5×(ORtg_home-110)/100 - 0.5×(DRtg_away-110)/100, PPP_away = 1.10 + 0.5×(ORtg_away-110)/100 - 0.5×(DRtg_home-110)/100, total_base = P × (PPP_home + PPP_away), predicted_total = total_base + Σ(factor_points), edgePts = predictedTotal - marketTotalLine, signal = clamp(edgePts/10, -1, +1), if signal > 0: overScore = |signal| × 5.0, underScore = 0; else: overScore = 0, underScore = |signal| × 5.0*"
         ]
       },
       threeEnv: {
