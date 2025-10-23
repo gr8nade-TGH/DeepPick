@@ -171,11 +171,33 @@ Research recent news, injury reports, and statistical trends to make the most ac
             error: error instanceof Error ? error.message : String(error),
             stack: error instanceof Error ? error.stack : undefined
           })
-          return { body: { error: 'PROCESSING_ERROR', message: 'Error processing Bold Player Predictions', details: error instanceof Error ? error.message : String(error) }, status: 500 }
+          return { 
+            body: { 
+              run_id, 
+              bold_predictions: { predictions: [], summary: 'Error generating predictions' },
+              ai_prompt: '',
+              generated_at: new Date().toISOString(),
+              confidence: 0,
+              pick_direction: 'OVER' as const,
+              error: error instanceof Error ? error.message : String(error)
+            }, 
+            status: 500 
+          }
         }
       } else {
         // For non-NBA or non-TOTAL, return unsupported
-        return { body: { error: 'UNSUPPORTED', message: 'Only NBA TOTAL bets supported for Bold Player Predictions' }, status: 400 }
+        return { 
+          body: { 
+            run_id, 
+            bold_predictions: { predictions: [], summary: 'Unsupported bet type' },
+            ai_prompt: '',
+            generated_at: new Date().toISOString(),
+            confidence: 0,
+            pick_direction: 'OVER' as const,
+            error: 'Only NBA TOTAL bets supported for Bold Player Predictions'
+          }, 
+          status: 400 
+        }
       }
     }
   })
