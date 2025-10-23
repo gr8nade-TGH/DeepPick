@@ -22,7 +22,7 @@ export const NBA_TOTALS_FACTORS: FactorMeta[] = [
     appliesTo: {
       sports: ['NBA'],
       betTypes: ['TOTAL'],
-      scope: 'MATCHUP'
+      scope: 'LEAGUE'
     },
     maxPoints: 1.0,
     defaultWeight: 0.20
@@ -36,7 +36,7 @@ export const NBA_TOTALS_FACTORS: FactorMeta[] = [
     appliesTo: {
       sports: ['NBA'],
       betTypes: ['TOTAL'],
-      scope: 'MATCHUP'
+      scope: 'LEAGUE'
     },
     maxPoints: 1.0,
     defaultWeight: 0.20
@@ -50,7 +50,7 @@ export const NBA_TOTALS_FACTORS: FactorMeta[] = [
     appliesTo: {
       sports: ['NBA'],
       betTypes: ['TOTAL'],
-      scope: 'TEAM'
+      scope: 'SPORT'
     },
     maxPoints: 1.0,
     defaultWeight: 0.20
@@ -64,7 +64,7 @@ export const NBA_TOTALS_FACTORS: FactorMeta[] = [
     appliesTo: {
       sports: ['NBA'],
       betTypes: ['TOTAL'],
-      scope: 'MATCHUP'
+      scope: 'LEAGUE'
     },
     maxPoints: 1.0,
     defaultWeight: 0.20
@@ -78,7 +78,7 @@ export const NBA_TOTALS_FACTORS: FactorMeta[] = [
     appliesTo: {
       sports: ['NBA'],
       betTypes: ['TOTAL'],
-      scope: 'MATCHUP'
+      scope: 'LEAGUE'
     },
     maxPoints: 1.0,
     defaultWeight: 0.20
