@@ -78,33 +78,35 @@ export async function POST(request: Request) {
         try {
           console.log('[Step3:NBA-Totals] Starting computeTotalsFactors...')
           
-          // Fetch capper profile to get factor weights
+          // Fetch capper profile to get factor weights (both dry run and write modes)
           let factorWeights: Record<string, number> = {}
-          if (writeAllowed) {
-            try {
-              const profileRes = await admin
-                .from('capper_settings')
-                .select('profile_json')
-                .eq('capper_id', 'SHIVA')
-                .eq('sport', 'NBA')
-                .eq('bet_type', 'TOTAL')
-                .single()
-              
-              if (profileRes.data?.profile_json?.factors) {
-                factorWeights = getFactorWeightsFromProfile(profileRes.data.profile_json)
-                console.log('[Step3:NBA-Totals] Using factor weights from profile:', factorWeights)
-              } else {
-                console.error('[Step3:NBA-Totals] No profile found - FAILING as requested')
-                throw new Error('No capper profile found. Please configure factors first.')
-              }
-            } catch (profileError) {
-              console.error('[Step3:NBA-Totals] Could not fetch profile - FAILING as requested:', profileError)
-              throw new Error(`Failed to load capper profile: ${profileError}`)
+          try {
+            console.log('[Step3:NBA-Totals] Fetching profile for:', { capper_id: 'SHIVA', sport: 'NBA', bet_type: 'TOTAL' })
+            const profileRes = await admin
+              .from('capper_settings')
+              .select('profile_json')
+              .eq('capper_id', 'SHIVA')
+              .eq('sport', 'NBA')
+              .eq('bet_type', 'TOTAL')
+              .single()
+            
+            console.log('[Step3:NBA-Totals] Profile query result:', { 
+              data: profileRes.data, 
+              error: profileRes.error,
+              hasProfileJson: !!profileRes.data?.profile_json,
+              hasFactors: !!profileRes.data?.profile_json?.factors
+            })
+            
+            if (profileRes.data?.profile_json?.factors) {
+              factorWeights = getFactorWeightsFromProfile(profileRes.data.profile_json)
+              console.log('[Step3:NBA-Totals] Using factor weights from profile:', factorWeights)
+            } else {
+              console.error('[Step3:NBA-Totals] No profile found - FAILING as requested')
+              throw new Error('No capper profile found. Please configure factors first.')
             }
-          } else {
-            // Dry run mode - still require profile
-            console.error('[Step3:NBA-Totals] Dry run mode but no profile - FAILING as requested')
-            throw new Error('Dry run mode requires a capper profile. Please configure factors first.')
+          } catch (profileError) {
+            console.error('[Step3:NBA-Totals] Could not fetch profile - FAILING as requested:', profileError)
+            throw new Error(`Failed to load capper profile: ${profileError}`)
           }
           
           const totalsResult = await computeTotalsFactors({
