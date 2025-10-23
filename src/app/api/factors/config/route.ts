@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDefaultProfile, FACTOR_REGISTRY } from '@/lib/cappers/shiva-v1/factor-config-registry'
+import { FACTOR_REGISTRY as MAIN_FACTOR_REGISTRY } from '@/lib/cappers/shiva-v1/factor-registry'
 import { getSupabase } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
@@ -89,10 +90,17 @@ export async function GET(request: NextRequest) {
       // Fallback to default profile if no saved profile found
       console.log('[Factors:Config:GET] No saved profile found, using default')
       const profile = getDefaultProfile(capper, spt, bt)
+      // Filter main registry by sport and bet type
+      const applicableFactors = MAIN_FACTOR_REGISTRY.filter(factor => {
+        const sportMatch = factor.appliesTo.sports === '*' || (Array.isArray(factor.appliesTo.sports) && factor.appliesTo.sports.includes(spt as any));
+        const betTypeMatch = factor.appliesTo.betTypes === '*' || (Array.isArray(factor.appliesTo.betTypes) && factor.appliesTo.betTypes.includes(bt as any));
+        return sportMatch && betTypeMatch;
+      });
+      
       return NextResponse.json({
         success: true,
         profile,
-        registry: FACTOR_REGISTRY
+        registry: applicableFactors
       })
     }
     
@@ -111,10 +119,17 @@ export async function GET(request: NextRequest) {
       updatedAt: savedProfile.updated_at
     }
     
+    // Filter main registry by sport and bet type
+    const applicableFactors = MAIN_FACTOR_REGISTRY.filter(factor => {
+      const sportMatch = factor.appliesTo.sports === '*' || (Array.isArray(factor.appliesTo.sports) && factor.appliesTo.sports.includes(spt as any));
+      const betTypeMatch = factor.appliesTo.betTypes === '*' || (Array.isArray(factor.appliesTo.betTypes) && factor.appliesTo.betTypes.includes(bt as any));
+      return sportMatch && betTypeMatch;
+    });
+    
     return NextResponse.json({
       success: true,
       profile,
-      registry: FACTOR_REGISTRY
+      registry: applicableFactors
     })
   } catch (error) {
     console.error('[Factors:Config:GET] Error:', error)

@@ -144,16 +144,16 @@ export const FACTOR_REGISTRY: FactorRegistry = {
     shortName: 'News/Injury'
   },
   
-  injuries: {
-    name: 'Key Injuries & Availability',
-    description: 'Impact of missing key players',
+  injuryAvailability: {
+    name: 'Key Injuries & Availability - Totals',
+    description: 'AI analysis of key player injuries and availability. Considers impact on scoring, team performance, and game flow.',
     defaultWeight: 12,
-    maxPoints: 0.8,
+    maxPoints: 3.0,
     supportedSports: ['NBA', 'NFL', 'MLB'],
-    supportedBetTypes: ['SPREAD', 'MONEYLINE', 'TOTAL'],
+    supportedBetTypes: ['TOTAL'],
     availableDataSources: ['llm', 'news-api', 'manual'],
     defaultDataSource: 'llm',
-    scope: 'team',
+    scope: 'global',
     icon: '🏥',
     shortName: 'Injuries'
   },
