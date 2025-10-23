@@ -82,7 +82,25 @@ export async function withIdempotency<TBody>(args: IdempotencyExecArgs<TBody>): 
     })
     try {
       const result = await args.exec()
-      return new Response(JSON.stringify(result.body), {
+      console.log(`[Idempotency:${args.step}] Dry-run exec completed:`, {
+        hasBody: !!result,
+        bodyKeys: result ? Object.keys(result.body || {}) : [],
+        status: result?.status
+      })
+      
+      // Add debugging info to response for client visibility
+      const responseBody = {
+        ...(result.body as any),
+        _idempotency_debug: {
+          step: args.step,
+          runId: args.runId,
+          key: args.idempotencyKey,
+          execCompleted: true,
+          bodyKeys: result ? Object.keys(result.body || {}) : []
+        }
+      }
+      
+      return new Response(JSON.stringify(responseBody), {
         status: result.status,
         headers: { 
           'Content-Type': 'application/json', 
@@ -96,6 +114,7 @@ export async function withIdempotency<TBody>(args: IdempotencyExecArgs<TBody>): 
         error: {
           code: 'EXECUTION_ERROR',
           message: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
           step: args.step,
           runId: args.runId
         }
