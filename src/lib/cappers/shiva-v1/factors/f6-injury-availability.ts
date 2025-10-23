@@ -31,10 +31,10 @@ export interface InjuryAnalysisOutput {
 }
 
 /**
- * AI-powered injury analysis using Perplexity
+ * AI-powered injury analysis using Perplexity or OpenAI
  * Returns a score from -10 to +10 based on injury impact on scoring
  */
-export async function analyzeInjuriesWithAI(input: InjuryAnalysisInput): Promise<InjuryAnalysisOutput> {
+export async function analyzeInjuriesWithAI(input: InjuryAnalysisInput, provider: 'perplexity' | 'openai' = 'perplexity'): Promise<InjuryAnalysisOutput> {
   const { awayTeam, homeTeam, gameDate, sport } = input
   
   try {
@@ -90,27 +90,50 @@ For TOTALS betting, focus on scoring impact:
 Return ONLY the JSON, no other text.
 `
 
-    const response = await fetch('https://api.perplexity.ai/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'llama-3.1-sonar-small-128k-online',
-        messages: [
-          {
-            role: 'user',
-            content: analysisPrompt
-          }
-        ],
-        max_tokens: 1000,
-        temperature: 0.1
+    let response: Response
+    
+    if (provider === 'openai') {
+      response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'user',
+              content: analysisPrompt
+            }
+          ],
+          max_tokens: 1000,
+          temperature: 0.1
+        })
       })
-    })
+    } else {
+      response = await fetch('https://api.perplexity.ai/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'llama-3.1-sonar-small-128k-online',
+          messages: [
+            {
+              role: 'user',
+              content: analysisPrompt
+            }
+          ],
+          max_tokens: 1000,
+          temperature: 0.1
+        })
+      })
+    }
 
     if (!response.ok) {
-      throw new Error(`Perplexity API error: ${response.status}`)
+      throw new Error(`${provider} API error: ${response.status}`)
     }
 
     const data = await response.json()
@@ -202,7 +225,7 @@ export function computeInjuryAvailability(bundle: any, ctx: RunCtx): FactorCompu
 /**
  * Async version for use in orchestrator
  */
-export async function computeInjuryAvailabilityAsync(ctx: RunCtx): Promise<FactorComputation> {
+export async function computeInjuryAvailabilityAsync(ctx: RunCtx, provider: 'perplexity' | 'openai' = 'perplexity'): Promise<FactorComputation> {
   try {
     // Get game date from context (you'll need to pass this in)
     const gameDate = new Date().toISOString().split('T')[0] // Default to today
@@ -212,7 +235,7 @@ export async function computeInjuryAvailabilityAsync(ctx: RunCtx): Promise<Facto
       homeTeam: ctx.home,
       gameDate,
       sport: ctx.sport
-    })
+    }, provider)
 
     return {
       factor_no: 6,

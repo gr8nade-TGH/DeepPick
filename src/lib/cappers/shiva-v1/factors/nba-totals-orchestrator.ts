@@ -26,6 +26,11 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
   // Get enabled factors from profile
   const enabledFactorKeys = Object.keys(ctx.factorWeights || {})
   console.log('[TOTALS:ENABLED_FACTORS]', { enabledFactorKeys, totalEnabled: enabledFactorKeys.length })
+  console.log('[TOTALS:INJURY_FACTOR_CHECK]', { 
+    hasInjuryFactor: enabledFactorKeys.includes('injuryAvailability'),
+    allKeys: enabledFactorKeys,
+    factorWeights: ctx.factorWeights
+  })
   
   // Only fetch data if we have enabled factors
   if (enabledFactorKeys.length === 0) {
