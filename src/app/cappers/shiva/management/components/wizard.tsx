@@ -686,11 +686,17 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             }
           }
         }
-        const r = await postJson('/api/shiva/factors/step4', step4Body, `ui-demo-step4-${Date.now()}`)
-        console.log('[Wizard:Step4] Response:', r)
-        console.log('[Wizard:Step4] Has predictions?', !!r.json?.predictions)
-        setLog(r)
-        setStepLogs(prev => ({ ...prev, 4: r }))
+        console.log('[Wizard:Step4] About to call API with body:', step4Body)
+        try {
+          const r = await postJson('/api/shiva/factors/step4', step4Body, `ui-demo-step4-${Date.now()}`)
+          console.log('[Wizard:Step4] API Response:', r)
+          console.log('[Wizard:Step4] Has predictions?', !!r.json?.predictions)
+          setLog(r)
+          setStepLogs(prev => ({ ...prev, 4: r }))
+        } catch (error) {
+          console.error('[Wizard:Step4] API Error:', error)
+          setLog({ error: error.message })
+        }
       } else if (current === 5) {
         // Use actual Step 4 results instead of fixture
         const step4Results = stepLogs[4]?.json
@@ -733,9 +739,16 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             }
           }
         }
-        const r = await postJson('/api/shiva/factors/step5', step5Body, `ui-demo-step5-${Date.now()}`)
-        setLog(r)
-        setStepLogs(prev => ({ ...prev, 5: r }))
+        console.log('[Wizard:Step5] About to call API with body:', step5Body)
+        try {
+          const r = await postJson('/api/shiva/factors/step5', step5Body, `ui-demo-step5-${Date.now()}`)
+          console.log('[Wizard:Step5] API Response:', r)
+          setLog(r)
+          setStepLogs(prev => ({ ...prev, 5: r }))
+        } catch (error) {
+          console.error('[Wizard:Step5] API Error:', error)
+          setLog({ error: error.message })
+        }
       } else if (current === 5.5) {
         // Bold Player Predictions - Step 5.5
         const step5Results = stepLogs[5]?.json
