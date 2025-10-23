@@ -201,10 +201,12 @@ export function getFactorsByBetType(betType: BetType): FactorMeta[] {
 }
 
 export function getFactorsByContext(sport: Sport, betType: BetType): FactorMeta[] {
+  console.log('[getFactorsByContext] Input:', { sport, betType });
+  
   const result = FACTOR_REGISTRY.filter(factor => {
     const sportMatch = factor.appliesTo.sports === '*' || (Array.isArray(factor.appliesTo.sports) && factor.appliesTo.sports.includes(sport));
     
-    // Handle the new SPREAD/MONEYLINE bet type
+    // Handle bet type matching
     let betTypeMatch = false;
     if (factor.appliesTo.betTypes === '*') {
       betTypeMatch = true;
@@ -213,15 +215,25 @@ export function getFactorsByContext(sport: Sport, betType: BetType): FactorMeta[
         // For SPREAD/MONEYLINE, match if factor applies to either SPREAD or MONEYLINE
         betTypeMatch = factor.appliesTo.betTypes.includes('SPREAD' as any) || factor.appliesTo.betTypes.includes('MONEYLINE' as any);
       } else {
+        // For TOTAL, match if factor applies to TOTAL
         betTypeMatch = factor.appliesTo.betTypes.includes(betType as any);
       }
     }
     
-    return sportMatch && betTypeMatch;
+    const matches = sportMatch && betTypeMatch;
+    console.log(`[getFactorsByContext] Factor ${factor.key}:`, {
+      sportMatch,
+      betTypeMatch,
+      factorBetTypes: factor.appliesTo.betTypes,
+      requestedBetType: betType,
+      matches
+    });
+    
+    return matches;
   });
   
   // Debug logging
-  console.log('[getFactorsByContext] Debug:', {
+  console.log('[getFactorsByContext] Result:', {
     sport,
     betType,
     totalFactors: FACTOR_REGISTRY.length,
