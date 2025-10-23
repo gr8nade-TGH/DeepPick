@@ -56,6 +56,8 @@ export async function POST(request: Request) {
   const { run_id, inputs, results } = parse.data
   const { sport, betType } = inputs
   
+  console.log('[SHIVA:Step4] Parsed data:', { run_id, sport, betType, factorCount: results.factors.length })
+  
   return withIdempotency({
     runId: run_id,
     step: 'step4',
@@ -64,7 +66,7 @@ export async function POST(request: Request) {
     exec: async () => {
       const admin = getSupabaseAdmin()
       
-      console.log('[SHIVA:Step4] Checking conditions:', { sport, betType, isNBA: sport === 'NBA', isTOTAL: betType === 'TOTAL' })
+      console.log('[SHIVA:Step4] Inside exec, checking conditions:', { sport, betType, isNBA: sport === 'NBA', isTOTAL: betType === 'TOTAL' })
       
       // Only process NBA TOTAL bets with new system
       if (sport === 'NBA' && betType === 'TOTAL') {
