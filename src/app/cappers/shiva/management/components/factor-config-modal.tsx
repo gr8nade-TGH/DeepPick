@@ -84,6 +84,9 @@ export function FactorConfigModal({
 
   // Detailed factor descriptions for the eye icon popup
   const getFactorDetails = (key: string) => {
+    // Get the detailed logic from getFactorLogic
+    const logic = getFactorLogic(key)
+    
     const detailsMap: Record<string, { features: string[]; examples: string[]; registry: string[] }> = {
       paceIndex: {
         features: [
@@ -514,6 +517,9 @@ export function FactorConfigModal({
         factorsToSet.forEach(factor => {
           const logic = getFactorLogic(factor.key)
           console.log(`[FactorConfigModal] Factor ${factor.key} logic:`, logic)
+          console.log(`[FactorConfigModal] Factor ${factor.key} examples:`, logic.examples)
+          console.log(`[FactorConfigModal] Factor ${factor.key} metric:`, logic.metric)
+          console.log(`[FactorConfigModal] Factor ${factor.key} formula:`, logic.formula)
         })
         
         setFactors(factorsToSet)
@@ -1152,48 +1158,44 @@ export function FactorConfigModal({
               </div>
               
               {(() => {
-                const details = getFactorDetails(selectedFactorDetails)
+                const logic = getFactorLogic(selectedFactorDetails)
                 return (
                   <div className="space-y-6">
-                    {/* Key Features */}
+                    {/* Metric Description */}
                     <div>
-                      <h3 className="text-lg font-semibold text-white mb-3">🔧 Key Features</h3>
-                      <div className="space-y-2">
-                        {details.features.map((feature, i) => (
-                          <div key={i} className="text-sm text-gray-300 leading-relaxed">
-                            {feature}
-                          </div>
-                        ))}
+                      <h3 className="text-lg font-semibold text-white mb-3">📊 Metric Description</h3>
+                      <div className="text-sm text-gray-300 leading-relaxed">
+                        {logic.metric}
                       </div>
                     </div>
 
-                    {/* Impact Examples */}
+                    {/* Formula */}
                     <div>
-                      <h3 className="text-lg font-semibold text-white mb-3">📈 Impact Examples</h3>
+                      <h3 className="text-lg font-semibold text-white mb-3">🧮 Formula</h3>
+                      <div className="text-sm text-gray-300 leading-relaxed font-mono bg-gray-800 p-3 rounded">
+                        {logic.formula}
+                      </div>
+                    </div>
+
+                    {/* Logic & Examples Table */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-3">📈 Logic & Examples</h3>
                       <div className="space-y-2">
-                        {details.examples.map((example, i) => (
+                        {logic.examples.map((example, i) => (
                           <div key={i} className={`text-sm leading-relaxed ${
-                            example.startsWith('Scenario') 
-                              ? 'text-blue-300 font-medium' 
-                              : example.startsWith('•')
-                              ? 'text-gray-300 ml-4'
+                            example.startsWith('|') 
+                              ? 'text-gray-300 font-mono' 
+                              : example.startsWith('*') && example.endsWith('*')
+                              ? 'text-blue-300 italic'
+                              : example.startsWith('🤖')
+                              ? 'text-green-300 font-bold'
+                              : example.startsWith('```')
+                              ? 'text-yellow-300 font-mono bg-gray-800 p-2 rounded'
                               : example === ''
                               ? 'h-2'
                               : 'text-gray-400'
                           }`}>
                             {example}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Registry Info */}
-                    <div>
-                      <h3 className="text-lg font-semibold text-white mb-3">⚙️ Registry Configuration</h3>
-                      <div className="space-y-1">
-                        {details.registry.map((info, i) => (
-                          <div key={i} className="text-sm text-gray-300">
-                            {info}
                           </div>
                         ))}
                       </div>
