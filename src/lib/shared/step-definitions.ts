@@ -46,10 +46,11 @@ export const STEP_DEFINITIONS: StepDefinition[] = [
     name: "AI Predictions",
     description: "Generate final score predictions using AI models",
     details: [
-      "Combine factor analysis with team performance data",
-      "Apply AI models for score prediction",
-      "Calculate confidence scores and determine winner",
-      "Generate predicted scores (home/away) and margin"
+      "Combine factor analysis with team performance data from Step 3",
+      "Calculate weighted confidence score from all enabled factors",
+      "Generate predicted total score using factor signals and team data",
+      "Determine predicted home/away scores and margin",
+      "Note: Currently uses placeholder predictions (230.0 total) - AI models pending"
     ]
   },
   {
