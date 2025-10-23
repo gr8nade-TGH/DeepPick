@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { ensureApiEnabled, isWriteAllowed, jsonError, jsonOk, requireIdempotencyKey } from '@/lib/api/shiva-v1/route-helpers'
 import { withIdempotency } from '@/lib/api/shiva-v1/idempotency'
-import { computeTotalsFactors } from '@/lib/cappers/shiva-v1/factors/nba-totals'
+import { computeTotalsFactors } from '@/lib/cappers/shiva-v1/factors/nba-totals-orchestrator'
 import { getFactorWeightsFromProfile } from '@/lib/cappers/shiva-v1/confidence-calculator'
 export const runtime = 'nodejs'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
@@ -17,7 +17,7 @@ const Step3Schema = z.object({
   }).strict(),
   results: z.object({
     factors: z.array(z.object({
-      factor_no: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]),
+      factor_no: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5), z.literal(6)]),
       key: z.string().min(1),
       name: z.string().min(1),
       weight_total_pct: z.number().finite(),
