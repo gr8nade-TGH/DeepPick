@@ -102,10 +102,16 @@ export async function GET(request: NextRequest) {
         factorKeys: applicableFactors.map(f => f.key)
       });
       
+      // Convert array to object for frontend compatibility
+      const registryObject = applicableFactors.reduce((acc, factor) => {
+        acc[factor.key] = factor
+        return acc
+      }, {} as Record<string, any>)
+      
       return NextResponse.json({
         success: true,
         profile,
-        registry: applicableFactors
+        registry: registryObject
       })
     }
     
@@ -136,10 +142,16 @@ export async function GET(request: NextRequest) {
       factorKeys: applicableFactors.map(f => f.key)
     });
     
+    // Convert array to object for frontend compatibility
+    const registryObject = applicableFactors.reduce((acc, factor) => {
+      acc[factor.key] = factor
+      return acc
+    }, {} as Record<string, any>)
+    
     return NextResponse.json({
       success: true,
       profile,
-      registry: applicableFactors
+      registry: registryObject
     })
   } catch (error) {
     console.error('[Factors:Config:GET] Error:', error)
