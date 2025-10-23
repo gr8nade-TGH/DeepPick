@@ -41,10 +41,12 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => null)
   console.log('[SHIVA:Step4] Request body:', JSON.stringify(body, null, 2))
+  console.log('[SHIVA:Step4] Body type:', typeof body)
+  console.log('[SHIVA:Step4] Body keys:', body ? Object.keys(body) : 'null')
   
   const parse = Step4Schema.safeParse(body)
   if (!parse.success) {
-    console.error('[SHIVA:Step4]', {
+    console.error('[SHIVA:Step4] Schema validation failed:', {
       error: 'INVALID_BODY',
       issues: parse.error.issues,
       body: body,
@@ -52,6 +54,8 @@ export async function POST(request: Request) {
     })
     return jsonError('INVALID_BODY', 'Invalid request body', 400, { issues: parse.error.issues })
   }
+  
+  console.log('[SHIVA:Step4] Schema validation passed')
 
   const { run_id, inputs, results } = parse.data
   const { sport, betType } = inputs
