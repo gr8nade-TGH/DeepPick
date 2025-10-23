@@ -695,7 +695,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           setStepLogs(prev => ({ ...prev, 4: r }))
         } catch (error) {
           console.error('[Wizard:Step4] API Error:', error)
-          setLog({ error: error.message })
+          setLog({ error: error instanceof Error ? error.message : String(error) })
         }
       } else if (current === 5) {
         // Use actual Step 4 results instead of fixture
@@ -747,7 +747,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           setStepLogs(prev => ({ ...prev, 5: r }))
         } catch (error) {
           console.error('[Wizard:Step5] API Error:', error)
-          setLog({ error: error.message })
+          setLog({ error: error instanceof Error ? error.message : String(error) })
         }
       } else if (current === 5.5) {
         // Bold Player Predictions - Step 5.5
