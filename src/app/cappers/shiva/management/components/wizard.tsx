@@ -652,12 +652,21 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         setLog(r)
         setStepLogs(prev => ({ ...prev, 3: r }))
       } else if (current === 4) {
-        const fx = (await import('@/../fixtures/shiva-v1/step4-prediction.json')).default
+        // Use actual Step 3 results instead of fixture
+        const step3Results = stepLogs[3]?.json
+        if (!step3Results?.factors) {
+          throw new Error('Step 3 must be completed before Step 4')
+        }
+        
         const step4Body = {
-          ...fx,
           run_id: runId,
+          inputs: { 
+            sport: props.sport || 'NBA', 
+            betType: props.betType || 'TOTAL' 
+          },
           results: {
-            ...fx.results,
+            factors: step3Results.factors,
+            factor_version: step3Results.factor_version || 'nba_totals_v1',
             meta: {
               conf_source: props.betType === 'TOTAL' ? 'nba_totals_v1' : 'legacy_v1'
             }
@@ -667,10 +676,38 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         setLog(r)
         setStepLogs(prev => ({ ...prev, 4: r }))
       } else if (current === 5) {
-        const fx = (await import('@/../fixtures/shiva-v1/step5-market.json')).default
-        const body = { ...fx, run_id: runId }
-        if (snapId) (body as any).inputs.active_snapshot_id = snapId
-        const r = await postJson('/api/shiva/factors/step5', body as any, 'ui-demo-step5')
+        // Use actual Step 4 results instead of fixture
+        const step4Results = stepLogs[4]?.json
+        if (!step4Results?.predictions) {
+          throw new Error('Step 4 must be completed before Step 5')
+        }
+        
+        const step5Body = {
+          run_id: runId,
+          inputs: {
+            base_confidence: step4Results.predictions.conf7_score || 0,
+            predicted_total: step4Results.predictions.total_pred_points || 225,
+            market_total_line: stepLogs[2]?.json?.snapshot?.total?.line || 225,
+            pick_direction: step4Results.predictions.total_pred_points > (stepLogs[2]?.json?.snapshot?.total?.line || 225) ? 'OVER' : 'UNDER'
+          },
+          results: {
+            final_factor: {
+              name: 'Edge vs Market',
+              edge_pts: 0,
+              edge_factor: 0,
+              confidence_before: step4Results.predictions.conf7_score || 0,
+              confidence_after: step4Results.predictions.conf7_score || 0
+            },
+            units: 0,
+            final_pick: {
+              type: 'TOTAL',
+              selection: 'OVER 225',
+              units: 0,
+              confidence: step4Results.predictions.conf7_score || 0
+            }
+          }
+        }
+        const r = await postJson('/api/shiva/factors/step5', step5Body, 'ui-demo-step5')
         setLog(r)
         setStepLogs(prev => ({ ...prev, 5: r }))
       } else if (current === 6) {
