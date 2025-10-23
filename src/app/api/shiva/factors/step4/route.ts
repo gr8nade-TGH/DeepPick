@@ -63,106 +63,130 @@ export async function POST(request: Request) {
       
       // Only process NBA TOTAL bets with new system
       if (sport === 'NBA' && betType === 'TOTAL') {
-        // Extract factor weights from the factors
-        const factorWeights = results.factors.reduce((acc, factor) => {
-          acc[factor.key] = factor.weight_total_pct
-          return acc
-        }, {} as Record<string, number>)
-        
-        // Calculate confidence using new system
-        const confidenceResult = calculateConfidence({
-          factors: results.factors.map(f => ({
-            ...f,
-            raw_values_json: f.raw_values_json as Record<string, any>,
-            notes: f.notes || undefined
-          })),
-          factorWeights,
-          confSource: 'nba_totals_v1'
-        })
-        
-        // Generate real score predictions from factor signals
-        const leagueAverageTotal = 225.0 // NBA league average total
-        
-        // Calculate factor adjustments to the total
-        let totalAdjustment = 0
-        const factorAdjustments: Record<string, number> = {}
-        
-        for (const factor of results.factors) {
-          const signal = factor.normalized_value || 0
-          const weight = factorWeights[factor.key] || 0
-          const maxPoints = 5.0 // All factors now have 5.0 max points
+        try {
+          console.log('[SHIVA:Step4] Processing NBA TOTAL bet:', {
+            run_id,
+            sport,
+            betType,
+            factorCount: results.factors.length
+          })
           
-          // Calculate adjustment: signal × maxPoints × (weight/100)
-          const adjustment = signal * maxPoints * (weight / 100)
-          totalAdjustment += adjustment
-          factorAdjustments[factor.key] = adjustment
-        }
-        
-        // Calculate predicted total
-        const predictedTotal = Math.max(180, Math.min(280, leagueAverageTotal + totalAdjustment))
-        
-        // Split into home/away scores (simplified - could be enhanced with team-specific data)
-        const homeScore = Math.round(predictedTotal / 2 + (Math.random() - 0.5) * 4) // Add some variance
-        const awayScore = Math.round(predictedTotal - homeScore)
-        
-        const predictedScores = {
-          home: homeScore,
-          away: awayScore
-        }
-        
-        // Determine winner
-        const winner = homeScore > awayScore ? 'home' : awayScore > homeScore ? 'away' : 'tie'
-        
-        if (writeAllowed) {
-          // Store confidence calculation
-          const upd = await admin.from('runs').update({ 
-            conf7: confidenceResult.confScore,
-            conf_source: confidenceResult.confSource
-          }).eq('run_id', run_id)
-          if (upd.error) throw new Error(upd.error.message)
-        }
-        
-        const responseBody = {
-          run_id,
-          predictions: {
-            league_average_total: leagueAverageTotal,
-            total_adjustment: totalAdjustment,
+          // Extract factor weights from the factors
+          const factorWeights = results.factors.reduce((acc, factor) => {
+            acc[factor.key] = factor.weight_total_pct
+            return acc
+          }, {} as Record<string, number>)
+          
+          // Calculate confidence using new system
+          const confidenceResult = calculateConfidence({
+            factors: results.factors.map(f => ({
+              ...f,
+              raw_values_json: f.raw_values_json as Record<string, any>,
+              notes: f.notes || undefined
+            })),
+            factorWeights,
+            confSource: 'nba_totals_v1'
+          })
+          
+          console.log('[SHIVA:Step4] Confidence calculation:', {
+            factorWeights,
+            factorCount: results.factors.length,
+            confidenceResult
+          })
+          
+          // Generate real score predictions from factor signals
+          const leagueAverageTotal = 225.0 // NBA league average total
+          
+          // Calculate factor adjustments to the total
+          let totalAdjustment = 0
+          const factorAdjustments: Record<string, number> = {}
+          
+          for (const factor of results.factors) {
+            const signal = factor.normalized_value || 0
+            const weight = factorWeights[factor.key] || 0
+            const maxPoints = 5.0 // All factors now have 5.0 max points
+            
+            // Calculate adjustment: signal × maxPoints × (weight/100)
+            const adjustment = signal * maxPoints * (weight / 100)
+            totalAdjustment += adjustment
+            factorAdjustments[factor.key] = adjustment
+          }
+          
+          // Calculate predicted total
+          const predictedTotal = Math.max(180, Math.min(280, leagueAverageTotal + totalAdjustment))
+          
+          // Split into home/away scores (simplified - could be enhanced with team-specific data)
+          const homeScore = Math.round(predictedTotal / 2 + (Math.random() - 0.5) * 4) // Add some variance
+          const awayScore = Math.round(predictedTotal - homeScore)
+          
+          const predictedScores = {
+            home: homeScore,
+            away: awayScore
+          }
+          
+          // Determine winner
+          const winner = homeScore > awayScore ? 'home' : awayScore > homeScore ? 'away' : 'tie'
+          
+          if (writeAllowed) {
+            // Store confidence calculation
+            const upd = await admin.from('runs').update({ 
+              conf7: confidenceResult.confScore,
+              conf_source: confidenceResult.confSource
+            }).eq('run_id', run_id)
+            if (upd.error) throw new Error(upd.error.message)
+          }
+          
+          const responseBody = {
+            run_id,
+            predictions: {
+              league_average_total: leagueAverageTotal,
+              total_adjustment: totalAdjustment,
+              factor_adjustments: factorAdjustments,
+              total_pred_points: predictedTotal,
+              scores: predictedScores,
+              winner: winner,
+              conf7_score: confidenceResult.confScore,
+            },
+            confidence: {
+              base_confidence: confidenceResult.confScore,
+              signed_sum: confidenceResult.edgeRaw,
+              factor_contributions: confidenceResult.factorContributions,
+              conf_source: confidenceResult.confSource
+            },
+            conf_source: confidenceResult.confSource,
+          }
+          
+          // Structured logging
+          console.log('[SHIVA:Step4New]', {
+            run_id,
+            inputs: { sport, betType },
+            outputs: {
+              league_average_total: leagueAverageTotal,
+              total_adjustment: totalAdjustment,
+              predicted_total: predictedTotal,
+              predicted_scores: predictedScores,
+              winner: winner,
+              base_confidence: confidenceResult.confScore,
+              signed_sum: confidenceResult.edgeRaw,
+              factor_count: results.factors.length,
+            },
             factor_adjustments: factorAdjustments,
-            total_pred_points: predictedTotal,
-            scores: predictedScores,
-            winner: winner,
-            conf7_score: confidenceResult.confScore,
-          },
-          confidence: {
-            base_confidence: confidenceResult.confScore,
-            signed_sum: confidenceResult.edgeRaw,
-            factor_contributions: confidenceResult.factorContributions,
-            conf_source: confidenceResult.confSource
-          },
-          conf_source: confidenceResult.confSource,
+            writeAllowed,
+            latencyMs: Date.now() - startTime,
+            status: 200,
+          })
+          
+          return jsonOk(responseBody)
+        } catch (error) {
+          console.error('[SHIVA:Step4] Error processing NBA TOTAL bet:', {
+            run_id,
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined
+          })
+          return jsonError('PROCESSING_ERROR', 'Error processing NBA TOTAL bet', 500, { 
+            error: error instanceof Error ? error.message : String(error) 
+          })
         }
-        
-        // Structured logging
-        console.log('[SHIVA:Step4New]', {
-          run_id,
-          inputs: { sport, betType },
-          outputs: {
-            league_average_total: leagueAverageTotal,
-            total_adjustment: totalAdjustment,
-            predicted_total: predictedTotal,
-            predicted_scores: predictedScores,
-            winner: winner,
-            base_confidence: confidenceResult.confScore,
-            signed_sum: confidenceResult.edgeRaw,
-            factor_count: results.factors.length,
-          },
-          factor_adjustments: factorAdjustments,
-          writeAllowed,
-          latencyMs: Date.now() - startTime,
-          status: 200,
-        })
-        
-        return jsonOk(responseBody)
       } else {
         // For non-NBA or non-TOTAL, return legacy response
         return jsonError('UNSUPPORTED', 'Only NBA TOTAL bets supported in new system', 400)
