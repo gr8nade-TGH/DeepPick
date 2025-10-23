@@ -1,24 +1,26 @@
 {
   "run_id": "run_01HZYKQ8G2R9S0",
   "inputs": {
-    "active_snapshot_id": "snap_01HZYM6Z9M8TF4",
-    "spread_pred_points": 2.19,
-    "total_pred_points": 230.1,
-    "pick_side_team": "Oklahoma City Thunder",
-    "snapshot": { "spread": { "fav_team": "Oklahoma City Thunder", "line": -3.5 }, "total": { "line": 227.5 } },
-    "conf7_score": 2.46
+    "base_confidence": 2.46,
+    "predicted_total": 230.1,
+    "market_total_line": 227.5,
+    "pick_direction": "OVER"
   },
   "results": {
-    "market_edge": {
-      "edge_side_points": -1.31,
-      "edge_side_norm": -0.22,
-      "edge_total_points": 2.6,
-      "edge_total_norm": 0.22,
-      "dominant": "total",
-      "conf_market_adj": "1.2 * 0.22",
-      "conf_market_adj_value": 0.26
+    "final_factor": {
+      "name": "Edge vs Market - Totals",
+      "edge_pts": 2.6,
+      "edge_factor": 0.22,
+      "confidence_before": 2.46,
+      "confidence_after": 2.72
     },
-    "confidence": { "conf7": 2.46, "conf_final": 2.72 }
+    "units": 2,
+    "final_pick": {
+      "type": "TOTAL",
+      "selection": "OVER 227.5",
+      "units": 2,
+      "confidence": 2.72
+    }
   }
 }
 

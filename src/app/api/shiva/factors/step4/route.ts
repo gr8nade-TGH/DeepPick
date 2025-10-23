@@ -13,7 +13,7 @@ const Step4Schema = z.object({
   }).strict(),
   results: z.object({
     factors: z.array(z.object({
-      factor_no: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]),
+      factor_no: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5), z.literal(6)]),
       key: z.string().min(1),
       name: z.string().min(1),
       weight_total_pct: z.number().finite(),

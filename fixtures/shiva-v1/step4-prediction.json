@@ -1,26 +1,15 @@
 {
   "run_id": "run_01HZYKQ8G2R9S0",
-  "inputs": { "ai_provider": "openai", "home_team": "Oklahoma City Thunder", "away_team": "Houston Rockets" },
+  "inputs": { "sport": "NBA", "betType": "TOTAL" },
   "results": {
     "factors": [
-      { "factor_no": 6, "name": "Home-Court Edge", "weight_total_pct": 3.5, "raw_values_json": { "home_team": "Oklahoma City Thunder" }, "parsed_values_json": { "home_edge_100": 1.5 }, "normalized_value": 1.5, "caps_applied": false, "cap_reason": null },
-      { "factor_no": 7, "name": "3-Point Environment", "weight_total_pct": 2.1, "raw_values_json": { "okc": { "queries": ["Oklahoma City Thunder 3 point attempts per game this season", "Oklahoma City Thunder 3 point percentage this season", "Oklahoma City Thunder opponent 3 point attempts per game this season"], "resp": { "3pa": 38.2, "3p_pct": 37.0, "opp_3pa": 34.0 } }, "hou": { "queries": ["Houston Rockets 3 point attempts per game this season", "Houston Rockets 3 point percentage this season", "Houston Rockets opponent 3 point attempts per game this season"], "resp": { "3pa": 40.1, "3p_pct": 36.1, "opp_3pa": 37.9 } } }, "parsed_values_json": { "three_point_edge_100": 0.0, "explanation": "Offsetting 3PT profiles" }, "normalized_value": 0.0, "caps_applied": false, "cap_reason": null }
+      { "factor_no": 1, "key": "paceIndex", "name": "Matchup Pace Index", "weight_total_pct": 20, "raw_values_json": { "homePace": 100.5, "awayPace": 97.7, "leaguePace": 100.1 }, "parsed_values_json": { "points": 0.5, "awayContribution": 0.25, "homeContribution": 0.25 }, "normalized_value": 0.5, "caps_applied": false, "cap_reason": null, "notes": "Mock pace data" },
+      { "factor_no": 2, "key": "offForm", "name": "Offensive Form vs League", "weight_total_pct": 20, "raw_values_json": { "homeORtg": 116.2, "awayORtg": 114.6, "leagueORtg": 114.0 }, "parsed_values_json": { "overScore": 0.3, "underScore": 0, "awayContribution": 0.15, "homeContribution": 0.15 }, "normalized_value": 0.3, "caps_applied": false, "cap_reason": null, "notes": "Mock offensive form" },
+      { "factor_no": 3, "key": "defErosion", "name": "Defensive Erosion", "weight_total_pct": 20, "raw_values_json": { "homeDRtg": 110.5, "awayDRtg": 112.3, "leagueDRtg": 110.0 }, "parsed_values_json": { "overScore": 0.2, "underScore": 0, "awayContribution": 0.1, "homeContribution": 0.1 }, "normalized_value": 0.2, "caps_applied": false, "cap_reason": null, "notes": "Mock defensive erosion" },
+      { "factor_no": 4, "key": "threeEnv", "name": "3-Point Environment & Volatility", "weight_total_pct": 20, "raw_values_json": { "away3PAR": 0.4, "home3PAR": 0.41, "league3PAR": 0.39 }, "parsed_values_json": { "signal": 0.1, "points": 0.04, "awayContribution": 0.02, "homeContribution": 0.02 }, "normalized_value": 0.1, "caps_applied": false, "cap_reason": null, "notes": "Mock 3P environment" },
+      { "factor_no": 5, "key": "whistleEnv", "name": "Free-Throw / Whistle Environment", "weight_total_pct": 20, "raw_values_json": { "awayFTr": 0.25, "homeFTr": 0.26, "leagueFTr": 0.22 }, "parsed_values_json": { "signal": 0.4, "points": 0.12, "awayContribution": 0.06, "homeContribution": 0.06 }, "normalized_value": 0.4, "caps_applied": false, "cap_reason": null, "notes": "Mock FT environment" }
     ],
-    "pace_and_predictions": {
-      "statmuse_pace": { "okc_query": "Oklahoma City Thunder pace this season", "hou_query": "Houston Rockets pace this season", "okc_pace": 100.5, "hou_pace": 97.7 },
-      "pace_exp": 99.07,
-      "delta_100": "3.7*0.21 + 4.8*0.175 + 0.7*0.14 + 5.56*0.07 + (-1.0)*0.07 + 1.5*0.035 + 0.0*0.021",
-      "delta_100_value": 2.21,
-      "spread_pred_points": 2.19,
-      "league_avg_ortg": 114.0,
-      "ortg_hat": { "okc": 116.2, "hou": 114.6 },
-      "total_pred_points": 230.1,
-      "scores": { "home_pts": 116, "away_pts": 114 },
-      "winner": "Oklahoma City Thunder",
-      "conf7_score": "1.0 + 4.0 * (2.19 / 6.0)",
-      "conf7_score_value": 2.46
-    },
-    "meta": { "ai_provider": "openai" }
+    "factor_version": "nba_totals_v1"
   }
 }
 

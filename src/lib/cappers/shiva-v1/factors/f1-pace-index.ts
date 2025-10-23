@@ -120,9 +120,11 @@ export function computePaceIndex(bundle: any, ctx: any): any {
   // Handle case where bundle is null (factor disabled)
   if (!bundle) {
     return {
+      factor_no: 1,
       key: 'paceIndex',
       name: 'Matchup Pace Index',
       normalized_value: 0,
+      raw_values_json: {},
       parsed_values_json: {
         points: 0,
         awayContribution: 0,
@@ -137,9 +139,11 @@ export function computePaceIndex(bundle: any, ctx: any): any {
   // TODO: Integrate with the new calculatePaceFactorPoints function
   // For now, return a placeholder that matches the expected interface
   return {
+    factor_no: 1,
     key: 'paceIndex',
     name: 'Matchup Pace Index',
     normalized_value: 0,
+    raw_values_json: {},
     parsed_values_json: {
       points: 0,
       awayContribution: 0,

@@ -116,7 +116,7 @@ export const INJURY_FACTORS: FactorMeta[] = [
       betTypes: ['TOTAL'],
       scope: 'GLOBAL'
     },
-    maxPoints: 2.0,
+    maxPoints: 3.0,
     defaultWeight: 0.12
   }
 ];

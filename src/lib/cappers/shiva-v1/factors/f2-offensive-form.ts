@@ -121,9 +121,11 @@ export function computeOffensiveForm(bundle: any, ctx: any): any {
   // Handle case where bundle is null (factor disabled)
   if (!bundle) {
     return {
+      factor_no: 2,
       key: 'offForm',
       name: 'Offensive Form vs League',
       normalized_value: 0,
+      raw_values_json: {},
       parsed_values_json: {
         overScore: 0,
         underScore: 0,
@@ -139,9 +141,11 @@ export function computeOffensiveForm(bundle: any, ctx: any): any {
   // TODO: Integrate with the new calculateOffensiveFormPoints function
   // For now, return a placeholder that matches the expected interface
   return {
+    factor_no: 2,
     key: 'offForm',
     name: 'Offensive Form vs League',
     normalized_value: 0,
+    raw_values_json: {},
     parsed_values_json: {
       overScore: 0,
       underScore: 0,

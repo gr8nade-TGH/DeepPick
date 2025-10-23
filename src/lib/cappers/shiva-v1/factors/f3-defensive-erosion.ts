@@ -137,9 +137,11 @@ export function computeDefensiveErosion(bundle: any, ctx: any): any {
   // Handle case where bundle is null (factor disabled)
   if (!bundle) {
     return {
+      factor_no: 3,
       key: 'defErosion',
       name: 'Defensive Erosion',
       normalized_value: 0,
+      raw_values_json: {},
       parsed_values_json: {
         overScore: 0,
         underScore: 0,
@@ -154,9 +156,11 @@ export function computeDefensiveErosion(bundle: any, ctx: any): any {
 
   // TODO: Integrate with the new calculateDefensiveErosionPoints function
   return {
+    factor_no: 3,
     key: 'defErosion',
     name: 'Defensive Erosion',
     normalized_value: 0,
+    raw_values_json: {},
     parsed_values_json: {
       overScore: 0,
       underScore: 0,
