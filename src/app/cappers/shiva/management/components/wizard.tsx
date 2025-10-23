@@ -686,12 +686,16 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             }
           }
         }
-        const r = await postJson('/api/shiva/factors/step4', step4Body, 'ui-demo-step4')
+        const r = await postJson('/api/shiva/factors/step4', step4Body, `ui-demo-step4-${Date.now()}`)
+        console.log('[Wizard:Step4] Response:', r)
+        console.log('[Wizard:Step4] Has predictions?', !!r.json?.predictions)
         setLog(r)
         setStepLogs(prev => ({ ...prev, 4: r }))
       } else if (current === 5) {
         // Use actual Step 4 results instead of fixture
         const step4Results = stepLogs[4]?.json
+        console.log('[Wizard:Step5] Step 4 results:', step4Results)
+        console.log('[Wizard:Step5] Has predictions?', !!step4Results?.predictions)
         if (!step4Results?.predictions) {
           throw new Error('Step 4 must be completed before Step 5')
         }
