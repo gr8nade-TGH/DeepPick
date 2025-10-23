@@ -48,6 +48,13 @@ export async function withIdempotency<TBody>(args: IdempotencyExecArgs<TBody>): 
     .maybeSingle()
 
   if (existing.data && existing.data.response_json) {
+    console.log(`[Idempotency:${args.step}] Returning cached response:`, {
+      runId: args.runId,
+      step: args.step,
+      key: args.idempotencyKey,
+      cachedResponse: existing.data.response_json,
+      statusCode: existing.data.status_code
+    })
     return new Response(JSON.stringify(existing.data.response_json), {
       status: existing.data.status_code ?? 200,
       headers: { 'Content-Type': 'application/json' }
@@ -56,6 +63,11 @@ export async function withIdempotency<TBody>(args: IdempotencyExecArgs<TBody>): 
 
   // Dry-run path: compute but do not persist
   if (!args.writeAllowed) {
+    console.log(`[Idempotency:${args.step}] Executing dry-run for step:`, {
+      runId: args.runId,
+      step: args.step,
+      key: args.idempotencyKey
+    })
     try {
       const result = await args.exec()
       return new Response(JSON.stringify(result.body), {
