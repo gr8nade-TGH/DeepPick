@@ -48,17 +48,29 @@ export async function withIdempotency<TBody>(args: IdempotencyExecArgs<TBody>): 
     .maybeSingle()
 
   if (existing.data && existing.data.response_json) {
-    console.log(`[Idempotency:${args.step}] Returning cached response:`, {
-      runId: args.runId,
-      step: args.step,
-      key: args.idempotencyKey,
-      cachedResponse: existing.data.response_json,
-      statusCode: existing.data.status_code
-    })
-    return new Response(JSON.stringify(existing.data.response_json), {
-      status: existing.data.status_code ?? 200,
-      headers: { 'Content-Type': 'application/json' }
-    })
+    // TEMPORARY FIX: Always execute Step 4 fresh to bypass cached empty responses
+    if (args.step === 'step4') {
+      console.log(`[Idempotency:${args.step}] Bypassing cached response for Step 4:`, {
+        runId: args.runId,
+        step: args.step,
+        key: args.idempotencyKey,
+        cachedResponse: existing.data.response_json,
+        statusCode: existing.data.status_code
+      })
+      // Continue to execution instead of returning cached response
+    } else {
+      console.log(`[Idempotency:${args.step}] Returning cached response:`, {
+        runId: args.runId,
+        step: args.step,
+        key: args.idempotencyKey,
+        cachedResponse: existing.data.response_json,
+        statusCode: existing.data.status_code
+      })
+      return new Response(JSON.stringify(existing.data.response_json), {
+        status: existing.data.status_code ?? 200,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
   }
 
   // Dry-run path: compute but do not persist
