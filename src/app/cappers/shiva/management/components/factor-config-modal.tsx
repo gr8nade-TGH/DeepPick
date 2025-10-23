@@ -417,7 +417,7 @@ export function FactorConfigModal({
             name: meta.name,
             description: meta.description,
             enabled: savedFactor?.enabled ?? (key === 'edgeVsMarket'), // Edge vs Market enabled by default
-            weight: savedFactor?.weight ?? meta.defaultWeight,
+            weight: key === 'edgeVsMarket' ? 100 : (savedFactor?.weight ?? meta.defaultWeight), // Edge vs Market always 100%
             dataSource: savedFactor?.dataSource ?? meta.defaultDataSource,
             maxPoints: meta.maxPoints,
             sport: meta.supportedSports?.[0] || 'NBA',
@@ -942,10 +942,13 @@ export function FactorConfigModal({
                                     <div className="space-y-1">
                                       {(() => {
                                         const examples = getFactorLogic(factor.key).examples
+                                        console.log(`[Logic & Examples] Factor: ${factor.key}, Examples:`, examples)
                                         const tableRows = examples.filter(line => line.startsWith('|') && !line.includes('---'))
                                         const headerRow = examples.find(line => line.startsWith('|') && line.includes('---'))
                                         const metricLine = examples.find(line => line.startsWith('*Metric:'))
                                         const formulaLine = examples.find(line => line.startsWith('*Formula:'))
+                                        
+                                        console.log(`[Logic & Examples] Table rows:`, tableRows)
                                         
                                         if (tableRows.length > 0) {
                                           const headers = tableRows[0].split('|').slice(1, -1).map(h => h.trim())
