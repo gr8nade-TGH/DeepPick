@@ -733,7 +733,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             }
           }
         }
-        const r = await postJson('/api/shiva/factors/step5', step5Body, 'ui-demo-step5')
+        const r = await postJson('/api/shiva/factors/step5', step5Body, `ui-demo-step5-${Date.now()}`)
         setLog(r)
         setStepLogs(prev => ({ ...prev, 5: r }))
       } else if (current === 5.5) {
@@ -766,7 +766,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           }
         }
         
-        const r = await postJson('/api/shiva/factors/step5-5', step5_5Body, 'ui-demo-step5-5')
+        const r = await postJson('/api/shiva/factors/step5-5', step5_5Body, `ui-demo-step5-5-${Date.now()}`)
         setLog(r)
         setStepLogs(prev => ({ ...prev, 5.5: r }))
       } else if (current === 6) {

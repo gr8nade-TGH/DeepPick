@@ -39,6 +39,8 @@ export async function POST(request: Request) {
   if (typeof key !== 'string') return key
 
   const body = await request.json().catch(() => null)
+  console.log('[SHIVA:Step5] Request body:', JSON.stringify(body, null, 2))
+  console.log('[SHIVA:Step5] Idempotency key:', key)
   const parse = Step5Schema.safeParse(body)
   if (!parse.success) {
     console.error('[SHIVA:Step5]', {

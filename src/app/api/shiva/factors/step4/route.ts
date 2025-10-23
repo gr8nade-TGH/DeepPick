@@ -43,6 +43,7 @@ export async function POST(request: Request) {
   console.log('[SHIVA:Step4] Request body:', JSON.stringify(body, null, 2))
   console.log('[SHIVA:Step4] Body type:', typeof body)
   console.log('[SHIVA:Step4] Body keys:', body ? Object.keys(body) : 'null')
+  console.log('[SHIVA:Step4] Idempotency key:', key)
   
   const parse = Step4Schema.safeParse(body)
   if (!parse.success) {
