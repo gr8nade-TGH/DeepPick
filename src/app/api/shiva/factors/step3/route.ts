@@ -94,38 +94,17 @@ export async function POST(request: Request) {
                 factorWeights = getFactorWeightsFromProfile(profileRes.data.profile_json)
                 console.log('[Step3:NBA-Totals] Using factor weights from profile:', factorWeights)
               } else {
-                console.log('[Step3:NBA-Totals] No profile found, using default weights')
-                // Default weights: 20% each for 6 factors
-                factorWeights = {
-                  paceIndex: 20,
-                  offForm: 20,
-                  defErosion: 20,
-                  threeEnv: 20,
-                  whistleEnv: 20,
-                  injuryAvailability: 20
-                }
+                console.error('[Step3:NBA-Totals] No profile found - FAILING as requested')
+                throw new Error('No capper profile found. Please configure factors first.')
               }
             } catch (profileError) {
-              console.warn('[Step3:NBA-Totals] Could not fetch profile, using defaults:', profileError)
-              factorWeights = {
-                paceIndex: 20,
-                offForm: 20,
-                defErosion: 20,
-                threeEnv: 20,
-                whistleEnv: 20,
-                injuryAvailability: 20
-              }
+              console.error('[Step3:NBA-Totals] Could not fetch profile - FAILING as requested:', profileError)
+              throw new Error(`Failed to load capper profile: ${profileError}`)
             }
           } else {
-            // Dry run mode - use default weights
-            factorWeights = {
-              paceIndex: 20,
-              offForm: 20,
-              defErosion: 20,
-              threeEnv: 20,
-              whistleEnv: 20,
-              injuryAvailability: 20
-            }
+            // Dry run mode - still require profile
+            console.error('[Step3:NBA-Totals] Dry run mode but no profile - FAILING as requested')
+            throw new Error('Dry run mode requires a capper profile. Please configure factors first.')
           }
           
           const totalsResult = await computeTotalsFactors({
