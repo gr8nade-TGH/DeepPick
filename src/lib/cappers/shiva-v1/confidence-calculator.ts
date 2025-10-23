@@ -42,6 +42,12 @@ export function calculateConfidence(input: ConfidenceInput): ConfidenceOutput {
     ? Object.fromEntries(Object.entries(factorWeights).map(([k, v]) => [k, v / totalWeight]))
     : {}
   
+  console.log('[ConfidenceCalculator] Weight normalization:', {
+    factorWeights,
+    totalWeight,
+    normalizedWeights
+  })
+  
   // Calculate signed sum: Σ(wᵢ × sᵢ)
   let signedSum = 0
   const factorContributions: ConfidenceOutput['factorContributions'] = []
