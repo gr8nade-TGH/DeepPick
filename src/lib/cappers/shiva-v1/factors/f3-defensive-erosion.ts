@@ -154,21 +154,54 @@ export function computeDefensiveErosion(bundle: any, ctx: any): any {
     }
   }
 
-  // TODO: Integrate with the new calculateDefensiveErosionPoints function
+  // Get defensive ratings from bundle
+  const awayDRtg = bundle.awayDRtgSeason || 110.0
+  const homeDRtg = bundle.homeDRtgSeason || 110.0
+  const leagueDRtg = bundle.leagueDRtg || 110.0
+  
+  // Calculate combined defensive rating vs league
+  const combinedDRtg = (awayDRtg + homeDRtg) / 2
+  const drtgDelta = combinedDRtg - leagueDRtg
+  
+  // Get injury impact from context (if available)
+  const injuryImpact = ctx.injuryImpact || { defenseImpactA: 0, defenseImpactB: 0 }
+  const totalInjuryImpact = (injuryImpact.defenseImpactA + injuryImpact.defenseImpactB) / 2
+  
+  // Combine defensive decline with injury impact
+  // 70% defensive rating, 30% injury impact
+  const totalErosion = 0.7 * drtgDelta + 0.3 * (totalInjuryImpact * 10)
+  
+  // Use tanh for smooth saturation
+  const signal = Math.tanh(totalErosion / 8)
+  
+  // Convert to over/under scores
+  const maxPoints = 2.0
+  const overScore = signal > 0 ? Math.abs(signal) * maxPoints : 0
+  const underScore = signal < 0 ? Math.abs(signal) * maxPoints : 0
+  
   return {
     factor_no: 3,
     key: 'defErosion',
     name: 'Defensive Erosion',
-    normalized_value: 0,
-    raw_values_json: {},
+    normalized_value: signal,
+    raw_values_json: {
+      awayDRtg,
+      homeDRtg,
+      leagueDRtg,
+      combinedDRtg,
+      drtgDelta,
+      injuryImpact: totalInjuryImpact,
+      totalErosion
+    },
     parsed_values_json: {
-      overScore: 0,
-      underScore: 0,
-      awayContribution: 0, // Legacy field, will be removed
-      homeContribution: 0  // Legacy field, will be removed
+      overScore,
+      underScore,
+      awayContribution: Math.max(overScore, underScore) / 2,
+      homeContribution: Math.max(overScore, underScore) / 2,
+      signal
     },
     caps_applied: false,
     cap_reason: null,
-    notes: 'Placeholder - new implementation pending'
+    notes: `DRtg: ${combinedDRtg.toFixed(1)} vs ${leagueDRtg.toFixed(1)} (Δ${drtgDelta.toFixed(1)}), Injury: ${totalInjuryImpact.toFixed(2)}`
   }
 }

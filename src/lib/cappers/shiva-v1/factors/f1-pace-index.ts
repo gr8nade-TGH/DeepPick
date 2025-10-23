@@ -136,21 +136,46 @@ export function computePaceIndex(bundle: any, ctx: any): any {
     }
   }
 
-  // TODO: Integrate with the new calculatePaceFactorPoints function
-  // For now, return a placeholder that matches the expected interface
+  // Calculate expected game pace from both teams
+  const awayPace = bundle.awayPaceLast10 || bundle.awayPaceSeason || 100.1
+  const homePace = bundle.homePaceLast10 || bundle.homePaceSeason || 100.1
+  const leaguePace = bundle.leaguePace || 100.1
+  
+  // Use the new calculation function
+  const result = calculatePaceFactorPoints({
+    homePace,
+    awayPace,
+    leaguePace
+  })
+  
+  // Convert to the expected format
+  const maxPoints = 2.0
+  const overScore = result.overScore
+  const underScore = result.underScore
+  const signal = result.signal
+  
   return {
     factor_no: 1,
     key: 'paceIndex',
     name: 'Matchup Pace Index',
-    normalized_value: 0,
-    raw_values_json: {},
+    normalized_value: signal,
+    raw_values_json: {
+      homePace,
+      awayPace,
+      leaguePace,
+      expPace: result.meta.expPace,
+      paceDelta: result.meta.paceDelta
+    },
     parsed_values_json: {
-      points: 0,
-      awayContribution: 0,
-      homeContribution: 0
+      points: Math.max(overScore, underScore),
+      awayContribution: Math.max(overScore, underScore) / 2,
+      homeContribution: Math.max(overScore, underScore) / 2,
+      overScore,
+      underScore,
+      signal
     },
     caps_applied: false,
     cap_reason: null,
-    notes: 'Placeholder - new implementation pending'
+    notes: `Pace: ${result.meta.expPace.toFixed(1)} vs ${leaguePace.toFixed(1)} (Δ${result.meta.paceDelta.toFixed(1)})`
   }
 }

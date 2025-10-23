@@ -138,22 +138,44 @@ export function computeOffensiveForm(bundle: any, ctx: any): any {
     }
   }
 
-  // TODO: Integrate with the new calculateOffensiveFormPoints function
-  // For now, return a placeholder that matches the expected interface
+  // Get offensive ratings from bundle
+  const awayORtg = bundle.awayORtgLast10 || 110.0
+  const homeORtg = bundle.homeORtgLast10 || 110.0
+  const leagueORtg = bundle.leagueORtg || 110.0
+  
+  // Calculate combined offensive efficiency vs league
+  const combinedORtg = (awayORtg + homeORtg) / 2
+  const advantage = combinedORtg - leagueORtg
+  
+  // Use tanh for smooth saturation (advantage/10 gives good range)
+  const signal = Math.tanh(advantage / 10)
+  
+  // Convert to over/under scores
+  const maxPoints = 2.0
+  const overScore = signal > 0 ? Math.abs(signal) * maxPoints : 0
+  const underScore = signal < 0 ? Math.abs(signal) * maxPoints : 0
+  
   return {
     factor_no: 2,
     key: 'offForm',
     name: 'Offensive Form vs League',
-    normalized_value: 0,
-    raw_values_json: {},
+    normalized_value: signal,
+    raw_values_json: {
+      awayORtg,
+      homeORtg,
+      leagueORtg,
+      combinedORtg,
+      advantage
+    },
     parsed_values_json: {
-      overScore: 0,
-      underScore: 0,
-      awayContribution: 0,
-      homeContribution: 0
+      overScore,
+      underScore,
+      awayContribution: Math.max(overScore, underScore) / 2,
+      homeContribution: Math.max(overScore, underScore) / 2,
+      signal
     },
     caps_applied: false,
     cap_reason: null,
-    notes: 'Placeholder - new implementation pending'
+    notes: `ORtg: ${combinedORtg.toFixed(1)} vs ${leagueORtg.toFixed(1)} (Δ${advantage.toFixed(1)})`
   }
 }
