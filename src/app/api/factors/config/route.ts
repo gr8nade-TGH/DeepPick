@@ -97,6 +97,15 @@ export async function GET(request: NextRequest) {
         return sportMatch && betTypeMatch;
       });
       
+      console.log('[Factors:Config:GET] Fallback debug info:', {
+        capper: capper,
+        sport: spt,
+        betType: bt,
+        totalFactors: MAIN_FACTOR_REGISTRY.length,
+        applicableFactors: applicableFactors.length,
+        factorKeys: applicableFactors.map(f => f.key)
+      });
+      
       return NextResponse.json({
         success: true,
         profile,
@@ -124,6 +133,15 @@ export async function GET(request: NextRequest) {
       const sportMatch = factor.appliesTo.sports === '*' || (Array.isArray(factor.appliesTo.sports) && factor.appliesTo.sports.includes(spt as any));
       const betTypeMatch = factor.appliesTo.betTypes === '*' || (Array.isArray(factor.appliesTo.betTypes) && factor.appliesTo.betTypes.includes(bt as any));
       return sportMatch && betTypeMatch;
+    });
+    
+    console.log('[Factors:Config:GET] Debug info:', {
+      capper: capper,
+      sport: spt,
+      betType: bt,
+      totalFactors: MAIN_FACTOR_REGISTRY.length,
+      applicableFactors: applicableFactors.length,
+      factorKeys: applicableFactors.map(f => f.key)
     });
     
     return NextResponse.json({
