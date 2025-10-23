@@ -185,18 +185,18 @@ export function InsightCard(props: InsightCardProps) {
           </div>
         </div>
 
-        {/* Bet Banner */}
-        <div className="p-4 bg-slate-700 border-b border-slate-600">
+        {/* Bet Banner - LIT UP AND PRONOUNCED */}
+        <div className="p-6 bg-gradient-to-r from-green-900 to-emerald-800 border-2 border-green-500 border-b border-slate-600 shadow-2xl">
           <div className="text-center">
-            <div className="text-2xl font-bold text-white mb-2">
+            <div className="text-4xl font-black text-white mb-3 drop-shadow-lg">
               {safePick.units} {safePick.units === 1 ? 'UNIT' : 'UNITS'} on {safePick.selection}
             </div>
             {(safePick as any).locked_odds?.total_line && (
-              <div className="text-slate-400 text-xs mb-1">
+              <div className="text-green-200 text-sm mb-2 font-semibold">
                 (Locked at {(safePick as any).locked_odds.total_line})
               </div>
             )}
-            <div className="text-slate-300 text-sm">
+            <div className="text-green-100 text-sm font-bold">
               {props.capper || 'SHIVA'} • {props.sport || 'NBA'} • {safePick.type}
             </div>
           </div>
@@ -228,7 +228,7 @@ export function InsightCard(props: InsightCardProps) {
           </div>
         )}
 
-        {/* Confidence Factors Table */}
+        {/* Confidence Factors Table - OVER/UNDER DIRECTION */}
         <div className="p-4 bg-slate-800 border-b border-slate-700">
           <div className="flex items-center justify-between mb-3">
             <div className="text-sm font-semibold text-white">CONFIDENCE FACTORS:</div>
@@ -239,19 +239,16 @@ export function InsightCard(props: InsightCardProps) {
             )}
           </div>
           
-          {/* Header Row with tiny labels */}
-          <div className="grid grid-cols-[50px_1fr_1fr_1fr] gap-3 mb-3 text-xs font-semibold text-slate-400">
+          {/* Header Row - Over/Under Direction */}
+          <div className="grid grid-cols-[50px_1fr_1fr] gap-3 mb-3 text-xs font-semibold text-slate-400">
             <div className="text-center">FACTOR ICONS</div>
             <div className="text-center">FACTOR NAME</div>
-            <div className="text-center border-r border-slate-600 pr-3">
-              <div className="text-xs text-slate-500 mb-1">{props.matchup?.away?.split(' ').pop() || 'AWAY'}</div>
-            </div>
             <div className="text-center">
-              <div className="text-xs text-slate-500 mb-1">{props.matchup?.home?.split(' ').pop() || 'HOME'}</div>
+              <div className="text-xs text-slate-500 mb-1">OVER / UNDER</div>
             </div>
           </div>
 
-          {/* Factor Rows (Sorted by absolute impact) */}
+          {/* Factor Rows - Over/Under Direction */}
           <div className="space-y-1">
             {sortedFactors.map((factor) => {
               const factorMeta = getFactorMeta(factor.key)
@@ -259,10 +256,17 @@ export function InsightCard(props: InsightCardProps) {
               const shortName = factorMeta?.shortName || factor.label || factor.key
               const tooltip = factorMeta?.description || factor.rationale || 'Factor'
               
+              // Calculate Over/Under direction from factor contributions
+              // For NBA Totals: positive = OVER, negative = UNDER
+              const totalContribution = (factor.awayContribution || 0) + (factor.homeContribution || 0)
+              const isOver = totalContribution > 0
+              const isUnder = totalContribution < 0
+              const isNeutral = Math.abs(totalContribution) < 0.01
+              
               return (
                 <div
                   key={factor.key}
-                  className="grid grid-cols-[50px_1fr_1fr_1fr] gap-3 items-center py-2 bg-slate-700 rounded hover:bg-slate-600 transition-colors border border-slate-600"
+                  className="grid grid-cols-[50px_1fr_1fr] gap-3 items-center py-2 bg-slate-700 rounded hover:bg-slate-600 transition-colors border border-slate-600"
                   onMouseEnter={() => setHoveredFactor(factor.key)}
                   onMouseLeave={() => setHoveredFactor(null)}
                 >
@@ -281,32 +285,25 @@ export function InsightCard(props: InsightCardProps) {
                     {shortName}
                   </div>
 
-                  {/* Away Contribution */}
-                  <div className="flex items-center gap-2 border-r border-slate-600 pr-3">
+                  {/* Over/Under Direction */}
+                  <div className="flex items-center gap-2">
                     <div className="flex-1 text-right">
-                      <span className={`text-sm font-mono ${factor.awayContribution > 0 ? 'text-green-400' : factor.awayContribution < 0 ? 'text-red-400' : 'text-slate-400'}`}>
-                        {factor.awayContribution > 0 ? '+' : ''}{factor.awayContribution.toFixed(1)}
+                      <span className={`text-sm font-mono ${isOver ? 'text-green-400' : isUnder ? 'text-red-400' : 'text-slate-400'}`}>
+                        {isOver ? 'OVER' : isUnder ? 'UNDER' : 'NEUTRAL'}
                       </span>
                     </div>
-                    <div className="w-16 h-1.5 bg-slate-600 rounded-full overflow-hidden">
+                    <div className="w-20 h-1.5 bg-slate-600 rounded-full overflow-hidden">
                       <div
-                        className={`h-full ${factor.awayContribution > 0 ? 'bg-green-500' : 'bg-red-500'}`}
-                        style={{ width: `${Math.min(Math.abs(factor.awayContribution) / 6 * 100, 100)}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Home Contribution */}
-                  <div className="flex items-center gap-2">
-                    <div className="w-16 h-1.5 bg-slate-600 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full ${factor.homeContribution > 0 ? 'bg-green-500' : 'bg-red-500'}`}
-                        style={{ width: `${Math.min(Math.abs(factor.homeContribution) / 6 * 100, 100)}%` }}
+                        className={`h-full ${isOver ? 'bg-green-500' : isUnder ? 'bg-red-500' : 'bg-slate-500'}`}
+                        style={{ 
+                          width: `${Math.min(Math.abs(totalContribution) / 2 * 100, 100)}%`,
+                          marginLeft: isOver ? '0%' : isUnder ? `${100 - Math.min(Math.abs(totalContribution) / 2 * 100, 100)}%` : '50%'
+                        }}
                       />
                     </div>
                     <div className="flex-1 text-left">
-                      <span className={`text-sm font-mono ${factor.homeContribution > 0 ? 'text-green-400' : factor.homeContribution < 0 ? 'text-red-400' : 'text-slate-400'}`}>
-                        {factor.homeContribution > 0 ? '+' : ''}{factor.homeContribution.toFixed(1)}
+                      <span className={`text-xs font-mono ${isOver ? 'text-green-400' : isUnder ? 'text-red-400' : 'text-slate-400'}`}>
+                        {totalContribution > 0 ? '+' : ''}{totalContribution.toFixed(2)}
                       </span>
                     </div>
                   </div>
@@ -337,7 +334,9 @@ export function InsightCard(props: InsightCardProps) {
             </div>
             <div className="bg-slate-700 rounded p-2">
               <div className="text-xs text-slate-400 uppercase mb-1">DOMINANT EDGE</div>
-              <div className="text-sm font-bold text-white">{safeMarket.dominant.toUpperCase()}</div>
+              <div className="text-sm font-bold text-white">
+                {safePick.type === 'TOTAL' ? (safePick.selection?.includes('OVER') ? 'OVER' : 'UNDER') : safeMarket.dominant.toUpperCase()}
+              </div>
             </div>
           </div>
           

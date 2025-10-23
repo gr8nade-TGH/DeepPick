@@ -25,6 +25,9 @@ const Step4Schema = z.object({
       notes: z.string().nullable().optional(),
     }).strict()),
     factor_version: z.string(),
+    meta: z.object({
+      conf_source: z.string(),
+    }).optional(),
   }).strict(),
 }).strict()
 
