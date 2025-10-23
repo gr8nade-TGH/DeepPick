@@ -33,11 +33,22 @@ const Step4Schema = z.object({
 
 export async function POST(request: Request) {
   const startTime = Date.now()
+  console.log('[SHIVA:Step4] === ROUTE CALLED ===')
+  
   const apiErr = ensureApiEnabled()
-  if (apiErr) return apiErr
+  if (apiErr) {
+    console.log('[SHIVA:Step4] API not enabled:', apiErr)
+    return apiErr
+  }
+  
   const writeAllowed = isWriteAllowed()
+  console.log('[SHIVA:Step4] Write allowed:', writeAllowed)
+  
   const key = requireIdempotencyKey(request)
-  if (typeof key !== 'string') return key
+  if (typeof key !== 'string') {
+    console.log('[SHIVA:Step4] Invalid idempotency key:', key)
+    return key
+  }
 
   const body = await request.json().catch(() => null)
   console.log('[SHIVA:Step4] Request body:', JSON.stringify(body, null, 2))
