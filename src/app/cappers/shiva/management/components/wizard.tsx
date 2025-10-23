@@ -303,6 +303,7 @@ export interface SHIVAWizardProps {
   selectedGame?: any
   mode?: 'dry-run' | 'write'
   betType?: 'TOTAL' | 'SPREAD/MONEYLINE'
+  sport?: 'NBA' | 'NFL' | 'MLB'
 }
 
 export function SHIVAWizard(props: SHIVAWizardProps = {}) {
