@@ -510,6 +510,12 @@ export function FactorConfigModal({
           factorsToSet: factorsToSet.map(f => ({ key: f.key, name: f.name, enabled: f.enabled, weight: f.weight }))
         })
         
+        // Debug the getFactorLogic function
+        factorsToSet.forEach(factor => {
+          const logic = getFactorLogic(factor.key)
+          console.log(`[FactorConfigModal] Factor ${factor.key} logic:`, logic)
+        })
+        
         setFactors(factorsToSet)
       } catch (error) {
         console.error('Error loading factor config:', error)

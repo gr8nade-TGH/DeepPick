@@ -95,13 +95,14 @@ export async function POST(request: Request) {
                 console.log('[Step3:NBA-Totals] Using factor weights from profile:', factorWeights)
               } else {
                 console.log('[Step3:NBA-Totals] No profile found, using default weights')
-                // Default weights: 20% each for 5 factors
+                // Default weights: 20% each for 6 factors
                 factorWeights = {
                   paceIndex: 20,
                   offForm: 20,
                   defErosion: 20,
                   threeEnv: 20,
-                  whistleEnv: 20
+                  whistleEnv: 20,
+                  injuryAvailability: 20
                 }
               }
             } catch (profileError) {
@@ -111,7 +112,8 @@ export async function POST(request: Request) {
                 offForm: 20,
                 defErosion: 20,
                 threeEnv: 20,
-                whistleEnv: 20
+                whistleEnv: 20,
+                injuryAvailability: 20
               }
             }
           } else {
@@ -121,7 +123,8 @@ export async function POST(request: Request) {
               offForm: 20,
               defErosion: 20,
               threeEnv: 20,
-              whistleEnv: 20
+              whistleEnv: 20,
+              injuryAvailability: 20
             }
           }
           
