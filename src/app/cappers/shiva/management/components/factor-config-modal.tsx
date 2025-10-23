@@ -445,7 +445,7 @@ export function FactorConfigModal({
         console.error('Error loading factor config:', error)
         // Set default factors with proper weights on error
         setFactors([
-          // Edge vs Market - Totals (locked, doesn't count toward weight budget)
+          // Edge vs Market - Totals (locked, doesn't count toward weight budget) - FIRST
           { 
             key: 'edgeVsMarket', 
             name: 'Edge vs Market - Totals', 
@@ -453,12 +453,12 @@ export function FactorConfigModal({
             enabled: true, 
             weight: 100, // Always 100% (fixed)
             dataSource: 'manual',
-            maxPoints: 2.0,
+            maxPoints: 3.0,
             sport: 'NBA',
             betType: 'TOTAL',
             scope: 'global',
-            icon: '⚖️',
-            shortName: 'Edge vs Market'
+            icon: '📊',
+            shortName: 'Edge'
           },
           { 
             key: 'paceIndex', 

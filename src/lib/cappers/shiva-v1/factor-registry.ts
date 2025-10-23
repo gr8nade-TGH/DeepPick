@@ -15,73 +15,73 @@ import { FactorMeta, BetType, Sport, Scope } from '@/types/factors';
 export const NBA_TOTALS_FACTORS: FactorMeta[] = [
   {
     key: 'paceIndex',
-    name: 'Matchup Pace Index',
+    name: 'Pace Index',
     shortName: 'Pace',
     icon: '⏱️',
-    description: 'Expected pace based on season + last-10 games. Higher pace = more possessions = higher totals.',
+    description: 'Expected game pace vs league average',
     appliesTo: {
       sports: ['NBA'],
       betTypes: ['TOTAL'],
-      scope: 'LEAGUE'
+      scope: 'MATCHUP'
     },
-    maxPoints: 0.6,
+    maxPoints: 1.0,
     defaultWeight: 0.20
   },
   {
     key: 'offForm',
-    name: 'Offensive Form vs Opp',
+    name: 'Offensive Form',
     shortName: 'ORtg Form',
     icon: '🔥',
-    description: 'Recent offensive efficiency adjusted for opponent defense. Hot offenses = higher totals.',
+    description: 'Recent offensive efficiency vs opponent defense',
     appliesTo: {
       sports: ['NBA'],
       betTypes: ['TOTAL'],
-      scope: 'LEAGUE'
+      scope: 'MATCHUP'
     },
-    maxPoints: 0.6,
-    defaultWeight: 0.18
+    maxPoints: 1.0,
+    defaultWeight: 0.20
   },
   {
     key: 'defErosion',
     name: 'Defensive Erosion',
     shortName: 'DRtg/Avail',
     icon: '🛡️',
-    description: 'Defensive decline from injuries/availability. Weaker defense = higher totals.',
+    description: 'Defensive rating decline + injury impact',
     appliesTo: {
       sports: ['NBA'],
       betTypes: ['TOTAL'],
-      scope: 'GLOBAL'
+      scope: 'TEAM'
     },
-    maxPoints: 0.5,
-    defaultWeight: 0.14
+    maxPoints: 1.0,
+    defaultWeight: 0.20
   },
   {
     key: 'threeEnv',
-    name: '3PT Environment',
+    name: '3P Environment',
     shortName: '3P Env',
     icon: '🏹',
-    description: '3PA rate + shooting variance. More 3s + hot shooting = higher totals.',
+    description: '3-point environment & volatility',
     appliesTo: {
       sports: ['NBA'],
       betTypes: ['TOTAL'],
-      scope: 'LEAGUE'
+      scope: 'MATCHUP'
     },
-    maxPoints: 0.4,
-    defaultWeight: 0.10
+    maxPoints: 1.0,
+    defaultWeight: 0.20
   },
   {
     key: 'whistleEnv',
-    name: 'FT/Whistle Env',
+    name: 'FT Environment',
     shortName: 'FT Env',
     icon: '⛹️‍♂️',
-    description: 'Free throw rate environment. More FTs = more points + clock stops.',
+    description: 'Free throw rate environment',
     appliesTo: {
       sports: ['NBA'],
       betTypes: ['TOTAL'],
-      scope: 'LEAGUE'
+      scope: 'MATCHUP'
     },
-    maxPoints: 0.3,
-    defaultWeight: 0.08
+    maxPoints: 1.0,
+    defaultWeight: 0.20
   }
 ];
 
@@ -110,21 +110,21 @@ export const INJURY_FACTORS: FactorMeta[] = [
     name: 'Key Injuries & Availability - Totals',
     shortName: 'Injuries',
     icon: '🏥',
-    description: 'AI analysis of key player injuries and availability. Considers impact on scoring, team performance, and game flow.',
+    description: 'AI analysis of key player injuries and availability',
     appliesTo: {
       sports: ['NBA', 'NFL', 'MLB'],
       betTypes: ['TOTAL'],
       scope: 'GLOBAL'
     },
-    maxPoints: 3.0,
-    defaultWeight: 0.12
+    maxPoints: 2.0,
+    defaultWeight: 0.00
   }
 ];
 
-// Combined registry
+// Combined registry - Edge vs Market should be FIRST (non-adjustable)
 export const FACTOR_REGISTRY: FactorMeta[] = [
+  ...GLOBAL_FACTORS,  // Edge vs Market first
   ...NBA_TOTALS_FACTORS,
-  ...GLOBAL_FACTORS,
   ...INJURY_FACTORS
 ];
 
