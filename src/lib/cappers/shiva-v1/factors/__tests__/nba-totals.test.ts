@@ -54,6 +54,8 @@ describe('NBA Totals Factors', () => {
     home3PAR: 0.38,
     awayOpp3PAR: 0.41,
     homeOpp3PAR: 0.37,
+    away3Pct: 0.38,
+    home3Pct: 0.34,
     away3PctLast10: 0.38,
     home3PctLast10: 0.34,
     
@@ -68,6 +70,7 @@ describe('NBA Totals Factors', () => {
     leagueORtg: 110.0,
     leagueDRtg: 110.0,
     league3PAR: 0.39,
+    league3Pct: 0.35,
     leagueFTr: 0.22,
     league3Pstdev: 0.036
   }

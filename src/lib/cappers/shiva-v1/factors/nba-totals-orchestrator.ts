@@ -59,6 +59,8 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
             home3PAR: 0.39,
             awayOpp3PAR: 0.39,
             homeOpp3PAR: 0.39,
+            away3Pct: 0.35,
+            home3Pct: 0.35,
             away3PctLast10: 0.35,
             home3PctLast10: 0.35,
             awayFTr: 0.22,
@@ -69,6 +71,7 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
             leagueORtg: 110.0,
             leagueDRtg: 110.0,
             league3PAR: 0.39,
+            league3Pct: 0.35,
             leagueFTr: 0.22,
             league3Pstdev: 0.036
           }, 
@@ -203,6 +206,8 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
           home3PAR: 0.39,
           awayOpp3PAR: 0.39,
           homeOpp3PAR: 0.39,
+          away3Pct: 0.35,
+          home3Pct: 0.35,
           away3PctLast10: 0.35,
           home3PctLast10: 0.35,
           awayFTr: 0.22,
@@ -213,6 +218,7 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
           leagueORtg: 110.0,
           leagueDRtg: 110.0,
           league3PAR: 0.39,
+          league3Pct: 0.35,
           leagueFTr: 0.22,
           league3Pstdev: 0.036
         },

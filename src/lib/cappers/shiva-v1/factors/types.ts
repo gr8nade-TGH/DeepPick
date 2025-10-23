@@ -39,6 +39,8 @@ export interface StatMuseBundle {
   home3PAR: number
   awayOpp3PAR: number
   homeOpp3PAR: number
+  away3Pct: number
+  home3Pct: number
   away3PctLast10: number
   home3PctLast10: number
   
@@ -53,6 +55,7 @@ export interface StatMuseBundle {
   leagueORtg: number
   leagueDRtg: number
   league3PAR: number
+  league3Pct: number
   leagueFTr: number
   league3Pstdev: number
 }
