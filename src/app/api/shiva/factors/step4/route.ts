@@ -74,6 +74,7 @@ export async function POST(request: Request) {
       
       // Only process NBA TOTAL bets with new system
       if (sport === 'NBA' && betType === 'TOTAL') {
+        console.log('[SHIVA:Step4] Starting NBA TOTAL processing...')
         try {
           console.log('[SHIVA:Step4] Processing NBA TOTAL bet:', {
             run_id,
@@ -89,6 +90,7 @@ export async function POST(request: Request) {
           }, {} as Record<string, number>)
           
           // Calculate confidence using new system
+          console.log('[SHIVA:Step4] About to calculate confidence...')
           const confidenceResult = calculateConfidence({
             factors: results.factors.map(f => ({
               ...f,
@@ -99,7 +101,7 @@ export async function POST(request: Request) {
             confSource: 'nba_totals_v1'
           })
           
-          console.log('[SHIVA:Step4] Confidence calculation:', {
+          console.log('[SHIVA:Step4] Confidence calculation completed:', {
             factorWeights,
             factorCount: results.factors.length,
             confidenceResult
@@ -166,6 +168,8 @@ export async function POST(request: Request) {
             },
             conf_source: confidenceResult.confSource,
           }
+          
+          console.log('[SHIVA:Step4] Generated response body:', responseBody)
           
           // Structured logging
           console.log('[SHIVA:Step4New]', {

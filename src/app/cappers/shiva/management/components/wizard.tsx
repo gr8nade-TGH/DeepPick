@@ -696,32 +696,40 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         const step4Results = stepLogs[4]?.json
         console.log('[Wizard:Step5] Step 4 results:', step4Results)
         console.log('[Wizard:Step5] Has predictions?', !!step4Results?.predictions)
+        
+        // Always execute Step 5, even if Step 4 failed - show in Step Responses table
         if (!step4Results?.predictions) {
-          throw new Error('Step 4 must be completed before Step 5')
+          console.log('[Wizard:Step5] Step 4 has no predictions, using fallback data for Step 5')
         }
+        
+        // Use fallback values when Step 4 data is missing
+        const baseConfidence = step4Results?.predictions?.conf7_score || 0
+        const predictedTotal = step4Results?.predictions?.total_pred_points || 225
+        const marketTotal = stepLogs[2]?.json?.snapshot?.total?.line || 225
+        const pickDirection = predictedTotal > marketTotal ? 'OVER' : 'UNDER'
         
         const step5Body = {
           run_id: runId,
           inputs: {
-            base_confidence: step4Results.predictions.conf7_score || 0,
-            predicted_total: step4Results.predictions.total_pred_points || 225,
-            market_total_line: stepLogs[2]?.json?.snapshot?.total?.line || 225,
-            pick_direction: step4Results.predictions.total_pred_points > (stepLogs[2]?.json?.snapshot?.total?.line || 225) ? 'OVER' : 'UNDER'
+            base_confidence: baseConfidence,
+            predicted_total: predictedTotal,
+            market_total_line: marketTotal,
+            pick_direction: pickDirection
           },
           results: {
             final_factor: {
               name: 'Edge vs Market',
               edge_pts: 0,
               edge_factor: 0,
-              confidence_before: step4Results.predictions.conf7_score || 0,
-              confidence_after: step4Results.predictions.conf7_score || 0
+              confidence_before: baseConfidence,
+              confidence_after: baseConfidence
             },
             units: 0,
             final_pick: {
               type: 'TOTAL',
-              selection: 'OVER 225',
+              selection: `${pickDirection} ${Math.round(marketTotal)}`,
               units: 0,
-              confidence: step4Results.predictions.conf7_score || 0
+              confidence: baseConfidence
             }
           }
         }
@@ -734,9 +742,9 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         const step4Results = stepLogs[4]?.json
         const step1Results = stepLogs[1]?.json
         
+        // Always execute Step 5.5, even if previous steps failed - show in Step Responses table
         if (!step5Results || !step4Results || !step1Results) {
-          setLog({ error: 'Missing required data from previous steps' })
-          return
+          console.log('[Wizard:Step5.5] Missing previous step data, using fallback')
         }
         
         const step5_5Body = {
