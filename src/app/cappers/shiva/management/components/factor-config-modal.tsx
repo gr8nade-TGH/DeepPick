@@ -420,9 +420,9 @@ export function FactorConfigModal({
             weight: key === 'edgeVsMarket' ? 100 : (savedFactor?.weight ?? meta.defaultWeight), // Edge vs Market always 100%
             dataSource: savedFactor?.dataSource ?? meta.defaultDataSource ?? (key === 'injuryAvailability' ? 'llm' : 'nba-stats-api'),
             maxPoints: meta.maxPoints,
-            sport: meta.supportedSports?.[0] || 'NBA',
-            betType: meta.supportedBetTypes?.[0] || 'TOTAL',
-            scope: meta.scope,
+            sport: Array.isArray(meta.appliesTo.sports) ? meta.appliesTo.sports[0] : 'NBA',
+            betType: Array.isArray(meta.appliesTo.betTypes) ? meta.appliesTo.betTypes[0] : 'TOTAL',
+            scope: meta.appliesTo.scope,
             icon: meta.icon,
             shortName: meta.shortName
           }

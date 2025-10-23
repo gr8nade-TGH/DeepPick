@@ -33,7 +33,7 @@ const FactorConfigSchema = z.object({
   maxPoints: z.number(),
   sport: z.string(),
   betType: z.string(),
-  scope: z.enum(['team', 'player', 'matchup', 'global']),
+  scope: z.enum(['team', 'player', 'matchup', 'global', 'GLOBAL', 'SPORT', 'LEAGUE']),
   icon: z.string(),
   shortName: z.string()
 }).transform((data) => {
