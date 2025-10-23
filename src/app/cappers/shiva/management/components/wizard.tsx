@@ -138,7 +138,7 @@ function generateBoldPrediction(pick: any, predictedScore: any, factorRows: any[
   }
 }
 
-function assembleInsightCard({ runCtx, step4, step5, step6, step3, step2 }: any) {
+function assembleInsightCard({ runCtx, step4, step5, step5_5, step6, step3, step2 }: any) {
   const g = runCtx?.game || {}
   const pick = step6?.json?.pick || null
   const conf7 = Number(step4?.json?.predictions?.conf7_score ?? 0)
@@ -269,8 +269,9 @@ function assembleInsightCard({ runCtx, step4, step5, step6, step3, step2 }: any)
     writeups: {
       prediction: generatePredictionWriteup(pick, predictedScore, totalLine, confFinal, factorRows, awayTeam, homeTeam),
       gamePrediction: `${predictedScore.winner} ${Math.max(predictedScore.home, predictedScore.away)}–${Math.min(predictedScore.home, predictedScore.away)}`,
-      bold: generateBoldPrediction(pick, predictedScore, factorRows),
+      bold: step5_5?.json?.bold_predictions?.summary || generateBoldPrediction(pick, predictedScore, factorRows),
     },
+    bold_predictions: step5_5?.json?.bold_predictions || null,
     factors: factorRows,
     market: {
       conf7,
@@ -371,13 +372,25 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     
     registerStep({
       step: 5,
-      name: "Market Analysis",
+      name: "Edge vs Market FINAL Factor",
       description: "Calculate market edge and adjust confidence",
       details: [
         "Compare predicted total vs market line",
         "Calculate edge percentage and market adjustment",
         "Apply final confidence score adjustments",
         "Determine pick direction (Over/Under) based on edge"
+      ]
+    })
+    
+    registerStep({
+      step: 5.5,
+      name: "Bold Player Predictions",
+      description: "Generate AI-powered bold player predictions",
+      details: [
+        "Research recent news, injuries, and statistical trends",
+        "Generate 2-4 specific, measurable player predictions",
+        "Align predictions with pick direction (OVER/UNDER)",
+        "Include reasoning and confidence levels for each prediction"
       ]
     })
     
@@ -711,6 +724,39 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         const r = await postJson('/api/shiva/factors/step5', step5Body, 'ui-demo-step5')
         setLog(r)
         setStepLogs(prev => ({ ...prev, 5: r }))
+      } else if (current === 5.5) {
+        // Bold Player Predictions - Step 5.5
+        const step5Results = stepLogs[5]?.json
+        const step4Results = stepLogs[4]?.json
+        const step1Results = stepLogs[1]?.json
+        
+        if (!step5Results || !step4Results || !step1Results) {
+          setLog({ error: 'Missing required data from previous steps' })
+          return
+        }
+        
+        const step5_5Body = {
+          run_id: runId,
+          inputs: {
+            sport: props.sport || 'NBA',
+            betType: props.betType || 'TOTAL',
+            game_data: {
+              home_team: step1Results.selected_game?.home_team?.name || 'Home Team',
+              away_team: step1Results.selected_game?.away_team?.name || 'Away Team',
+              game_date: step1Results.selected_game?.game_date || new Date().toISOString().split('T')[0]
+            },
+            prediction_data: {
+              predicted_total: step4Results.predictions?.total_pred_points || 225,
+              pick_direction: step5Results.final_pick?.selection?.includes('OVER') ? 'OVER' : 'UNDER',
+              confidence: step5Results.final_pick?.confidence || 0,
+              factors_summary: stepLogs[3]?.json?.factors?.map((f: any) => `${f.name}: ${f.notes}`).join(', ') || 'Factor analysis complete'
+            }
+          }
+        }
+        
+        const r = await postJson('/api/shiva/factors/step5-5', step5_5Body, 'ui-demo-step5-5')
+        setLog(r)
+        setStepLogs(prev => ({ ...prev, 5.5: r }))
       } else if (current === 6) {
         // Real API call for Step 6 - Pick generation with locked odds
         const step6Body = {
@@ -771,7 +817,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         const assembledCard = assembleInsightCard({
           runCtx,
           step4: stepLogs[4],
-          step5: stepLogs[5], 
+          step5: stepLogs[5],
+          step5_5: stepLogs[5.5],
           step6: stepLogs[6],
           step3: stepLogs[3],
           snapshot: stepLogs[2]?.json
@@ -1088,7 +1135,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                 {step === 2 && "Step 2: Odds Snapshot"}
                 {step === 3 && "Step 3: Factor Analysis"}
                 {step === 4 && "Step 4: AI Predictions"}
-                {step === 5 && "Step 5: Market Analysis"}
+                {step === 5 && "Step 5: Edge vs Market FINAL Factor"}
+                {step === 5.5 && "Step 5.5: Bold Player Predictions"}
                 {step === 6 && "Step 6: Pick Generation"}
                 {step === 7 && "Step 7: Insight Card"}
                 {step === 8 && "Step 8: Debug Report"}
@@ -1147,6 +1195,17 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                       <li>Calculate edge percentage and market adjustment</li>
                       <li>Apply final confidence score adjustments</li>
                       <li>Determine pick direction (Over/Under) based on edge</li>
+                    </ul>
+                  </div>
+                )}
+                {step === 5.5 && (
+                  <div>
+                    <div className="font-semibold text-white mb-1">Generate AI-powered bold player predictions</div>
+                    <ul className="list-disc list-inside space-y-1 text-xs">
+                      <li>Research recent news, injuries, and statistical trends</li>
+                      <li>Generate 2-4 specific, measurable player predictions</li>
+                      <li>Align predictions with pick direction (OVER/UNDER)</li>
+                      <li>Include reasoning and confidence levels for each prediction</li>
                     </ul>
                   </div>
                 )}

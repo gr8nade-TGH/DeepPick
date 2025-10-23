@@ -68,6 +68,18 @@ export const STEP_DEFINITIONS: StepDefinition[] = [
     ]
   },
   {
+    step: 5.5,
+    name: "Bold Player Predictions",
+    description: "Generate AI-powered bold player predictions using web research",
+    details: [
+      "Research recent news, injuries, and statistical trends using AI",
+      "Generate 2-4 specific, measurable player predictions",
+      "Align predictions with pick direction (OVER/UNDER) from Step 5",
+      "Include reasoning and confidence levels for each prediction",
+      "Use AI to analyze matchups and recent form for maximum accuracy"
+    ]
+  },
+  {
     step: 6,
     name: "Pick Generation",
     description: "Create final betting recommendation with locked odds",
