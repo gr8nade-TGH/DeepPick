@@ -147,7 +147,7 @@ export async function POST(request: Request) {
         status: 200,
       })
       
-      return jsonOk(responseBody)
+      return { body: responseBody, status: 200 }
     }
   })
 }
