@@ -40,11 +40,14 @@ export async function POST(request: Request) {
   if (typeof key !== 'string') return key
 
   const body = await request.json().catch(() => null)
+  console.log('[SHIVA:Step4] Request body:', JSON.stringify(body, null, 2))
+  
   const parse = Step4Schema.safeParse(body)
   if (!parse.success) {
     console.error('[SHIVA:Step4]', {
       error: 'INVALID_BODY',
       issues: parse.error.issues,
+      body: body,
       latencyMs: Date.now() - startTime,
     })
     return jsonError('INVALID_BODY', 'Invalid request body', 400, { issues: parse.error.issues })
@@ -60,6 +63,8 @@ export async function POST(request: Request) {
     writeAllowed,
     exec: async () => {
       const admin = getSupabaseAdmin()
+      
+      console.log('[SHIVA:Step4] Checking conditions:', { sport, betType, isNBA: sport === 'NBA', isTOTAL: betType === 'TOTAL' })
       
       // Only process NBA TOTAL bets with new system
       if (sport === 'NBA' && betType === 'TOTAL') {
@@ -189,6 +194,7 @@ export async function POST(request: Request) {
         }
       } else {
         // For non-NBA or non-TOTAL, return legacy response
+        console.log('[SHIVA:Step4] Unsupported bet type:', { sport, betType })
         return jsonError('UNSUPPORTED', 'Only NBA TOTAL bets supported in new system', 400)
       }
     }
