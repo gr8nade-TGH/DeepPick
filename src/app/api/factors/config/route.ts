@@ -199,6 +199,7 @@ export async function POST(request: NextRequest) {
     const parse = SaveConfigSchema.safeParse(body)
     if (!parse.success) {
       console.error(`[${requestId}] [Factors:Config:POST] Validation failed:`, parse.error.issues)
+      console.error(`[${requestId}] [Factors:Config:POST] Full request body:`, JSON.stringify(body, null, 2))
       return NextResponse.json({
         error: 'Invalid request body',
         details: parse.error.issues,

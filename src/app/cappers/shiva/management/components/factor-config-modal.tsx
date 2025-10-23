@@ -971,11 +971,15 @@ export function FactorConfigModal({
                                                       const cells = row.split('|').slice(1, -1).map(c => c.trim())
                                                       return (
                                                         <tr key={i} className="border-b border-gray-700">
-                                                          {cells.map((cell, j) => (
-                                                            <td key={j} className="py-2 px-2 text-gray-300">
-                                                              {cell}
-                                                            </td>
-                                                          ))}
+                                                          {cells.map((cell, j) => {
+                                                            // Check if this is Over Score or Under Score column and has a + number
+                                                            const isScoreColumn = headers[j]?.includes('Score') && cell.startsWith('+')
+                                                            return (
+                                                              <td key={j} className={`py-2 px-2 ${isScoreColumn ? 'text-green-400 font-medium' : 'text-gray-300'}`}>
+                                                                {cell}
+                                                              </td>
+                                                            )
+                                                          })}
                                                         </tr>
                                                       )
                                                     })}
