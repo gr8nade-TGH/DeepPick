@@ -289,21 +289,36 @@ export function FactorConfigModal({
         ]
       },
       threeEnv: {
-        metric: "3-point environment & volatility",
-        formula: "s = clamp((team3PAR + opp3PAR - 2×league3PAR) / 0.08, -1, +1)",
+        metric: "3-point environment & volatility based on attempt rate and shooting variance",
+        formula: "envRate = (home3PAR + away3PAR)/2, rateDelta = envRate - league3PAR, shootingVariance = |home3Pct - away3Pct|, hotShootingFactor = max(0, shootingVariance - leagueVariance), combinedSignal = (2×rateDelta) + (hotShootingFactor×10), signal = tanh(combinedSignal/0.1), if signal > 0: overScore = |signal| × 5.0, underScore = 0; else: overScore = 0, underScore = |signal| × 5.0",
         examples: [
-          "+8% 3PAR → s=+1 → 100% positive",
-          "+4% 3PAR → s=+0.5 → 50% positive",
-          "-4% 3PAR → s=-0.5 → 50% negative"
+          "| Home 3PAR | Away 3PAR | Env Rate | League 3PAR | Rate Delta | Shooting Var | Hot Factor | Signal | Over Score | Under Score | Confidence | Example Teams |",
+          "|-----------|-----------|----------|-------------|------------|--------------|------------|--------|------------|-------------|------------|---------------|",
+          "| 0.45      | 0.43      | 0.44     | 0.39        | +0.05      | 0.08         | 0.03       | +0.85  | +4.25      | 0.0         | High       | High-volume 3P teams |",
+          "| 0.42      | 0.40      | 0.41     | 0.39        | +0.02      | 0.05         | 0.00       | +0.46  | +2.30      | 0.0         | Moderate   | Above avg 3P teams |",
+          "| 0.40      | 0.38      | 0.39     | 0.39        | 0.00       | 0.03         | 0.00       | 0.00   | 0.0        | 0.0         | Neutral    | League avg 3P teams |",
+          "| 0.35      | 0.33      | 0.34     | 0.39        | -0.05      | 0.02         | 0.00       | -0.85  | 0.0        | +4.25       | High       | Low-volume 3P teams |",
+          "| 0.32      | 0.30      | 0.31     | 0.39        | -0.08      | 0.01         | 0.00       | -1.00  | 0.0        | +5.00       | Maximum    | Very low 3P teams |",
+          "",
+          "*Metric: 3-point environment based on attempt rate and shooting variance*",
+          "*Formula: envRate = (home3PAR + away3PAR)/2, rateDelta = envRate - league3PAR, shootingVariance = |home3Pct - away3Pct|, hotShootingFactor = max(0, shootingVariance - leagueVariance), combinedSignal = (2×rateDelta) + (hotShootingFactor×10), signal = tanh(combinedSignal/0.1), if signal > 0: overScore = |signal| × 5.0, underScore = 0; else: overScore = 0, underScore = |signal| × 5.0*"
         ]
       },
       whistleEnv: {
-        metric: "Free throw rate environment",
-        formula: "s = clamp((teamFTr + oppFTr - 2×leagueFTr) / 0.06, -1, +1)",
+        metric: "Free throw rate environment based on team FT attempt rates",
+        formula: "ftrEnv = (homeFTr + awayFTr)/2, ftrDelta = ftrEnv - leagueFTr, signal = tanh(ftrDelta/0.06), if signal > 0: overScore = |signal| × 5.0, underScore = 0; else: overScore = 0, underScore = |signal| × 5.0",
         examples: [
-          "+6% FTr → s=+1 → 100% positive",
-          "+3% FTr → s=+0.5 → 50% positive",
-          "-3% FTr → s=-0.5 → 50% negative"
+          "| Home FTr | Away FTr | FT Env | League FTr | FT Delta | Signal | Over Score | Under Score | Confidence | Example Teams |",
+          "|----------|----------|--------|------------|----------|--------|------------|-------------|------------|---------------|",
+          "| 0.28     | 0.26     | 0.27   | 0.22       | +0.05    | +0.76  | +3.80      | 0.0         | High       | High FT rate teams |",
+          "| 0.25     | 0.23     | 0.24   | 0.22       | +0.02    | +0.33  | +1.65      | 0.0         | Moderate   | Above avg FT teams |",
+          "| 0.22     | 0.20     | 0.21   | 0.22       | -0.01    | -0.17  | 0.0        | +0.85       | Low        | Slightly below avg |",
+          "| 0.20     | 0.18     | 0.19   | 0.22       | -0.03    | -0.46  | 0.0        | +2.30       | Moderate   | Below avg FT teams |",
+          "| 0.18     | 0.16     | 0.17   | 0.22       | -0.05    | -0.76  | 0.0        | +3.80       | High       | Low FT rate teams |",
+          "| 0.15     | 0.13     | 0.14   | 0.22       | -0.08    | -1.00  | 0.0        | +5.00       | Maximum    | Very low FT teams |",
+          "",
+          "*Metric: Free throw rate environment based on team FT attempt rates*",
+          "*Formula: ftrEnv = (homeFTr + awayFTr)/2, ftrDelta = ftrEnv - leagueFTr, signal = tanh(ftrDelta/0.06), if signal > 0: overScore = |signal| × 5.0, underScore = 0; else: overScore = 0, underScore = |signal| × 5.0*"
         ]
       },
       injuryAvailability: {

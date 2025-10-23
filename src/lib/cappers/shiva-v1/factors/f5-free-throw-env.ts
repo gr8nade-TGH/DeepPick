@@ -1,23 +1,90 @@
 /**
  * F5: Free-Throw / Whistle Environment Factor
  * 
- * Free throw rate environment
- * Max Points: 0.3
+ * Free throw rate environment based on NBA Stats API data
+ * Max Points: 5.0 (scaled by weight)
  */
 
 import { FactorComputation } from '@/types/factors'
-import { StatMuseBundle, RunCtx } from './types'
-import { clamp, normalizeToPoints, splitPointsEvenly } from '../factor-registry'
+import { RunCtx } from './types'
+
+export interface FreeThrowEnvInput {
+  homeFTr: number      // Home team free throw rate
+  awayFTr: number      // Away team free throw rate
+  leagueFTr: number    // League average free throw rate
+}
+
+export interface FreeThrowEnvOutput {
+  overScore: number
+  underScore: number
+  signal: number
+  meta: {
+    ftrEnv: number
+    ftrDelta: number
+    reason: string
+  }
+}
+
+/**
+ * Calculate free throw environment factor points using single positive score system
+ * Each factor contributes to either Over OR Under, never both
+ * 
+ * @param input - Team FT data and league averages
+ * @returns Over/Under scores and debugging metadata
+ */
+export function calculateFreeThrowEnvPoints(input: FreeThrowEnvInput): FreeThrowEnvOutput {
+  const { homeFTr, awayFTr, leagueFTr } = input
+  const MAX_POINTS = 5.0
+
+  // Input validation
+  if (![homeFTr, awayFTr, leagueFTr].every(v => Number.isFinite(v) && v >= 0)) {
+    return {
+      overScore: 0,
+      underScore: 0,
+      signal: 0,
+      meta: {
+        ftrEnv: 0,
+        ftrDelta: 0,
+        reason: 'bad_input'
+      }
+    }
+  }
+
+  // Calculate FT environment rate (average free throw rate)
+  const ftrEnv = (homeFTr + awayFTr) / 2
+
+  // Calculate rate delta vs league average
+  const ftrDelta = ftrEnv - leagueFTr
+
+  // Normalize using tanh for smooth saturation
+  // Higher FT rate = more points scored (more free throws = more scoring opportunities)
+  const signal = Math.tanh(ftrDelta / 0.06) // Scale factor for sensitivity
+
+  // Convert to over/under scores
+  const overScore = signal > 0 ? Math.abs(signal) * MAX_POINTS : 0
+  const underScore = signal < 0 ? Math.abs(signal) * MAX_POINTS : 0
+
+  return {
+    overScore,
+    underScore,
+    signal,
+    meta: {
+      ftrEnv,
+      ftrDelta,
+      reason: `FT Env: ${ftrEnv.toFixed(3)} vs ${leagueFTr.toFixed(3)} (Δ${ftrDelta.toFixed(3)})`
+    }
+  }
+}
 
 /**
  * Compute F5: Free-Throw / Whistle Environment
  * 
- * Formula: ftrEnv = mean(A_FTr, B_FTr, oppA_oppFTr, oppB_oppFTr)
+ * Formula: ftrEnv = (homeFTr + awayFTr) / 2
  *         ftrDelta = ftrEnv - leagueFTr
- *         z = clamp(ftrDelta / 0.06, -1, 1)
- *         points = 0.3 * z
+ *         signal = tanh(ftrDelta / 0.06)
+ *         if signal > 0: overScore = |signal| × 5.0, underScore = 0; else: overScore = 0, underScore = |signal| × 5.0
  */
-export function computeWhistleEnv(bundle: StatMuseBundle | null, ctx: RunCtx): FactorComputation {
+export function computeWhistleEnv(bundle: any, ctx: RunCtx): FactorComputation {
   // Handle case where bundle is null (factor disabled)
   if (!bundle) {
     return {
@@ -28,9 +95,8 @@ export function computeWhistleEnv(bundle: StatMuseBundle | null, ctx: RunCtx): F
       raw_values_json: {},
       parsed_values_json: {
         signal: 0,
-        points: 0,
-        awayContribution: 0,
-        homeContribution: 0
+        overScore: 0,
+        underScore: 0
       },
       caps_applied: false,
       cap_reason: null,
@@ -38,51 +104,37 @@ export function computeWhistleEnv(bundle: StatMuseBundle | null, ctx: RunCtx): F
     }
   }
 
-  const { 
-    awayFTr, 
-    homeFTr, 
-    awayOppFTr, 
-    homeOppFTr, 
-    leagueFTr 
-  } = bundle
-  
-  // Calculate free throw rate environment
-  const ftrEnv = (awayFTr + homeFTr + awayOppFTr + homeOppFTr) / 4
-  
-  // Rate delta vs league average
-  const ftrDelta = ftrEnv - leagueFTr
-  
-  // Normalize to z-score (-1 to +1)
-  const signal = clamp(ftrDelta / 0.06, -1, 1)
-  
-  // Convert to points (max 0.3)
-  const points = normalizeToPoints(signal, 0.3)
-  
-  // Split points evenly between teams
-  const { away: awayContribution, home: homeContribution } = splitPointsEvenly(points)
-  
+  // Extract data from NBA Stats API bundle
+  const homeFTr = bundle.homeFTr || 0.22
+  const awayFTr = bundle.awayFTr || 0.22
+  const leagueFTr = bundle.leagueFTr || 0.22
+
+  // Calculate FT environment points
+  const result = calculateFreeThrowEnvPoints({
+    homeFTr,
+    awayFTr,
+    leagueFTr
+  })
+
   return {
     factor_no: 5,
     key: 'whistleEnv',
     name: 'Free-Throw / Whistle Environment',
     raw_values_json: {
-      awayFTr,
       homeFTr,
-      awayOppFTr,
-      homeOppFTr,
-      ftrEnv,
-      ftrDelta,
-      leagueFTr
+      awayFTr,
+      leagueFTr,
+      ftrEnv: result.meta.ftrEnv,
+      ftrDelta: result.meta.ftrDelta
     },
     parsed_values_json: {
-      signal,
-      points,
-      awayContribution,
-      homeContribution
+      signal: result.signal,
+      overScore: result.overScore,
+      underScore: result.underScore
     },
-    normalized_value: signal,
-    caps_applied: Math.abs(signal) >= 1,
-    cap_reason: Math.abs(signal) >= 1 ? 'signal clamped to ±1' : null,
-    notes: `FT Env: ${ftrEnv.toFixed(3)} vs ${leagueFTr.toFixed(3)} (Δ${ftrDelta.toFixed(3)})`
+    normalized_value: result.signal,
+    caps_applied: Math.abs(result.signal) >= 0.99,
+    cap_reason: Math.abs(result.signal) >= 0.99 ? 'signal saturated' : null,
+    notes: result.meta.reason
   }
 }

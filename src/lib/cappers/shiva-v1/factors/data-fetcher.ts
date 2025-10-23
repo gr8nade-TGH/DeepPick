@@ -50,6 +50,8 @@ export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<StatMuseBundle> 
       home3PAR: homeSeasonData?.data?.threePointAttemptRate || ctx.leagueAverages.threePAR,
       awayOpp3PAR: awaySeasonData?.data?.threePointAttemptRate || ctx.leagueAverages.threePAR, // Using same as team rate for now
       homeOpp3PAR: homeSeasonData?.data?.threePointAttemptRate || ctx.leagueAverages.threePAR, // Using same as team rate for now
+      away3Pct: awayLast10Data?.data?.threePointPercentage || 0.35,
+      home3Pct: homeLast10Data?.data?.threePointPercentage || 0.35,
       away3PctLast10: awayLast10Data?.data?.threePointPercentage || 0.35,
       home3PctLast10: homeLast10Data?.data?.threePointPercentage || 0.35,
       
@@ -64,6 +66,7 @@ export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<StatMuseBundle> 
       leagueORtg: ctx.leagueAverages.ORtg,
       leagueDRtg: ctx.leagueAverages.DRtg,
       league3PAR: ctx.leagueAverages.threePAR,
+      league3Pct: 0.35, // League average 3P percentage
       leagueFTr: ctx.leagueAverages.FTr,
       league3Pstdev: ctx.leagueAverages.threePstdev
     }
