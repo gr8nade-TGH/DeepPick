@@ -83,22 +83,23 @@ export async function POST(request: Request) {
           try {
             console.log('[Step3:NBA-Totals] Fetching profile for:', { capper_id: 'SHIVA', sport: 'NBA', bet_type: 'TOTAL' })
             const profileRes = await admin
-              .from('capper_settings')
-              .select('profile_json')
+              .from('capper_profiles')
+              .select('factors')
               .eq('capper_id', 'SHIVA')
               .eq('sport', 'NBA')
               .eq('bet_type', 'TOTAL')
+              .eq('is_active', true)
               .single()
             
             console.log('[Step3:NBA-Totals] Profile query result:', { 
               data: profileRes.data, 
               error: profileRes.error,
-              hasProfileJson: !!profileRes.data?.profile_json,
-              hasFactors: !!profileRes.data?.profile_json?.factors
+              hasFactors: !!profileRes.data?.factors,
+              factorsCount: profileRes.data?.factors?.length || 0
             })
             
-            if (profileRes.data?.profile_json?.factors) {
-              factorWeights = getFactorWeightsFromProfile(profileRes.data.profile_json)
+            if (profileRes.data?.factors && profileRes.data.factors.length > 0) {
+              factorWeights = getFactorWeightsFromProfile({ factors: profileRes.data.factors })
               console.log('[Step3:NBA-Totals] Using factor weights from profile:', factorWeights)
             } else {
               console.error('[Step3:NBA-Totals] No profile found - FAILING as requested')
