@@ -46,8 +46,8 @@ export interface InsightCardProps {
     key: string
     label: string
     icon: string
-    awayContribution: number
-    homeContribution: number
+    overScore: number
+    underScore: number
     weightAppliedPct: number
     rationale?: string
   }>
@@ -85,16 +85,16 @@ export function InsightCard(props: InsightCardProps) {
   // Safe defaults for all fields
   const safeFactors = (props.factors ?? []).map(f => ({
     ...f,
-    awayContribution: Number(f.awayContribution ?? 0),
-    homeContribution: Number(f.homeContribution ?? 0),
+    overScore: Number(f.overScore ?? 0),
+    underScore: Number(f.underScore ?? 0),
     weightAppliedPct: Number(f.weightAppliedPct ?? 0),
     rationale: f.rationale || 'No rationale provided',
   }))
 
-  // Sort factors by absolute contribution (sum of home + away impact)
+  // Sort factors by absolute contribution (sum of over + under impact)
   const sortedFactors = [...safeFactors].sort((a, b) => {
-    const absA = Math.abs((a.awayContribution ?? 0) + (a.homeContribution ?? 0))
-    const absB = Math.abs((b.awayContribution ?? 0) + (b.homeContribution ?? 0))
+    const absA = Math.abs((a.overScore ?? 0) + (a.underScore ?? 0))
+    const absB = Math.abs((b.overScore ?? 0) + (b.underScore ?? 0))
     return absB - absA
   })
 
@@ -186,18 +186,21 @@ export function InsightCard(props: InsightCardProps) {
         </div>
 
         {/* Bet Banner - LIT UP AND PRONOUNCED */}
-        <div className="p-6 bg-gradient-to-r from-green-900 to-emerald-800 border-2 border-green-500 border-b border-slate-600 shadow-2xl">
-          <div className="text-center">
-            <div className="text-4xl font-black text-white mb-3 drop-shadow-lg">
+        <div className="p-8 bg-gradient-to-r from-green-900 via-emerald-800 to-green-900 border-4 border-green-400 border-b border-slate-600 shadow-2xl relative overflow-hidden">
+          {/* Animated background effect */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse"></div>
+          
+          <div className="text-center relative z-10">
+            <div className="text-5xl font-black text-white mb-4 drop-shadow-2xl tracking-wide">
               {safePick.units} {safePick.units === 1 ? 'UNIT' : 'UNITS'} on {safePick.selection}
             </div>
             {(safePick as any).locked_odds?.total_line && (
-              <div className="text-green-200 text-sm mb-2 font-semibold">
-                (Locked at {(safePick as any).locked_odds.total_line})
+              <div className="text-green-200 text-lg mb-3 font-bold">
+                🔒 Locked at {(safePick as any).locked_odds.total_line}
               </div>
             )}
-            <div className="text-green-100 text-sm font-bold">
-              {props.capper || 'SHIVA'} • {props.sport || 'NBA'} • {safePick.type}
+            <div className="text-green-100 text-lg font-bold">
+              {props.capper || 'SHIVA'} • {props.sport || 'NBA'} • {safePick.type} • {safePick.confidence.toFixed(1)}% Confidence
             </div>
           </div>
         </div>
@@ -256,12 +259,12 @@ export function InsightCard(props: InsightCardProps) {
               const shortName = factorMeta?.shortName || factor.label || factor.key
               const tooltip = factorMeta?.description || factor.rationale || 'Factor'
               
-              // Calculate Over/Under direction from factor contributions
-              // For NBA Totals: positive = OVER, negative = UNDER
-              const totalContribution = (factor.awayContribution || 0) + (factor.homeContribution || 0)
-              const isOver = totalContribution > 0
-              const isUnder = totalContribution < 0
-              const isNeutral = Math.abs(totalContribution) < 0.01
+              // Calculate Over/Under direction from factor scores
+              // For NBA Totals: overScore = points toward OVER, underScore = points toward UNDER
+              const netContribution = (factor.overScore || 0) - (factor.underScore || 0)
+              const isOver = factor.overScore > 0
+              const isUnder = factor.underScore > 0
+              const isNeutral = Math.abs(netContribution) < 0.01
               
               return (
                 <div
@@ -296,14 +299,14 @@ export function InsightCard(props: InsightCardProps) {
                       <div
                         className={`h-full ${isOver ? 'bg-green-500' : isUnder ? 'bg-red-500' : 'bg-slate-500'}`}
                         style={{ 
-                          width: `${Math.min(Math.abs(totalContribution) / 2 * 100, 100)}%`,
-                          marginLeft: isOver ? '0%' : isUnder ? `${100 - Math.min(Math.abs(totalContribution) / 2 * 100, 100)}%` : '50%'
+                          width: `${Math.min(Math.abs(netContribution) / 2 * 100, 100)}%`,
+                          marginLeft: isOver ? '0%' : isUnder ? `${100 - Math.min(Math.abs(netContribution) / 2 * 100, 100)}%` : '50%'
                         }}
                       />
                     </div>
                     <div className="flex-1 text-left">
                       <span className={`text-xs font-mono ${isOver ? 'text-green-400' : isUnder ? 'text-red-400' : 'text-slate-400'}`}>
-                        {totalContribution > 0 ? '+' : ''}{totalContribution.toFixed(2)}
+                        {isOver ? `+${factor.overScore.toFixed(1)}` : isUnder ? `+${factor.underScore.toFixed(1)}` : '0.0'}
                       </span>
                     </div>
                   </div>

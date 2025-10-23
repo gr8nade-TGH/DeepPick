@@ -217,8 +217,8 @@ function assembleInsightCard({ runCtx, step4, step5, step6, step3, step2 }: any)
         key: f.key,
         label: meta?.shortName || f.name || f.key,
         icon: meta?.icon || 'ℹ️',
-        awayContribution: Number(pv.awayContribution ?? 0),
-        homeContribution: Number(pv.homeContribution ?? 0),
+        overScore: Number(pv.overScore ?? 0),
+        underScore: Number(pv.underScore ?? 0),
         weightAppliedPct: Math.round(((weightPct ?? 0) * 100)),
         rationale: f.notes ?? meta?.description ?? '',
         z: Number(f.normalized_value ?? 0),
@@ -226,8 +226,8 @@ function assembleInsightCard({ runCtx, step4, step5, step6, step3, step2 }: any)
       }
     })
     .sort((a: any, b: any) => {
-      const absA = Math.abs(a.awayContribution - a.homeContribution)
-      const absB = Math.abs(b.awayContribution - b.homeContribution)
+      const absA = Math.abs(a.overScore + a.underScore)
+      const absB = Math.abs(b.overScore + b.underScore)
       return absB - absA
     })
 
