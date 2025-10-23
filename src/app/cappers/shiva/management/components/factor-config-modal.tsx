@@ -451,20 +451,31 @@ export function FactorConfigModal({
     const loadConfig = async () => {
       try {
         setLoading(true)
+        console.log('[FactorConfigModal] Loading config for:', { capperId, sport, betType })
+        
         const response = await fetch(
           `/api/factors/config?capperId=${capperId}&sport=${sport}&betType=${betType}`
         )
         
+        console.log('[FactorConfigModal] API response status:', response.status)
+        
         if (!response.ok) {
-          throw new Error('Failed to load factor configuration')
+          const errorText = await response.text()
+          console.error('[FactorConfigModal] API error:', { status: response.status, error: errorText })
+          throw new Error(`Failed to load factor configuration: ${response.status}`)
         }
         
         const data = await response.json()
+        console.log('[FactorConfigModal] API response data:', data)
+        
         setProfile(data.profile)
         
         // Use the full registry to get all available factors
         const registry = data.registry || {}
+        console.log('[FactorConfigModal] Registry keys:', Object.keys(registry))
+        
         const loadedFactors = data.profile.factors || []
+        console.log('[FactorConfigModal] Loaded factors:', loadedFactors)
         
         // Convert registry to FactorConfig array, merging with saved factors
         const allFactors: FactorConfig[] = Object.entries(registry).map(([key, meta]: [string, any]) => {
