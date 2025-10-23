@@ -659,7 +659,6 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           results: {
             ...fx.results,
             meta: {
-              ...fx.results.meta,
               conf_source: props.betType === 'TOTAL' ? 'nba_totals_v1' : 'legacy_v1'
             }
           }
@@ -670,7 +669,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       } else if (current === 5) {
         const fx = (await import('@/../fixtures/shiva-v1/step5-market.json')).default
         const body = { ...fx, run_id: runId }
-        if (snapId) body.inputs.active_snapshot_id = snapId
+        if (snapId) (body as any).inputs.active_snapshot_id = snapId
         const r = await postJson('/api/shiva/factors/step5', body as any, 'ui-demo-step5')
         setLog(r)
         setStepLogs(prev => ({ ...prev, 5: r }))
