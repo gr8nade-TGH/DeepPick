@@ -418,7 +418,7 @@ export function FactorConfigModal({
             description: meta.description,
             enabled: savedFactor?.enabled ?? (key === 'edgeVsMarket'), // Edge vs Market enabled by default
             weight: key === 'edgeVsMarket' ? 100 : (savedFactor?.weight ?? meta.defaultWeight), // Edge vs Market always 100%
-            dataSource: savedFactor?.dataSource ?? meta.defaultDataSource,
+            dataSource: savedFactor?.dataSource ?? meta.defaultDataSource ?? (key === 'injuryAvailability' ? 'llm' : 'nba-stats-api'),
             maxPoints: meta.maxPoints,
             sport: meta.supportedSports?.[0] || 'NBA',
             betType: meta.supportedBetTypes?.[0] || 'TOTAL',

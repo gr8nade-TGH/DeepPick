@@ -25,7 +25,8 @@ export const NBA_TOTALS_FACTORS: FactorMeta[] = [
       scope: 'LEAGUE'
     },
     maxPoints: 1.0,
-    defaultWeight: 0.20
+    defaultWeight: 0.20,
+    defaultDataSource: 'nba-stats-api'
   },
   {
     key: 'offForm',
@@ -39,7 +40,8 @@ export const NBA_TOTALS_FACTORS: FactorMeta[] = [
       scope: 'LEAGUE'
     },
     maxPoints: 1.0,
-    defaultWeight: 0.20
+    defaultWeight: 0.20,
+    defaultDataSource: 'nba-stats-api'
   },
   {
     key: 'defErosion',
@@ -53,7 +55,8 @@ export const NBA_TOTALS_FACTORS: FactorMeta[] = [
       scope: 'SPORT'
     },
     maxPoints: 1.0,
-    defaultWeight: 0.20
+    defaultWeight: 0.20,
+    defaultDataSource: 'nba-stats-api'
   },
   {
     key: 'threeEnv',
@@ -67,7 +70,8 @@ export const NBA_TOTALS_FACTORS: FactorMeta[] = [
       scope: 'LEAGUE'
     },
     maxPoints: 1.0,
-    defaultWeight: 0.20
+    defaultWeight: 0.20,
+    defaultDataSource: 'nba-stats-api'
   },
   {
     key: 'whistleEnv',
@@ -81,7 +85,8 @@ export const NBA_TOTALS_FACTORS: FactorMeta[] = [
       scope: 'LEAGUE'
     },
     maxPoints: 1.0,
-    defaultWeight: 0.20
+    defaultWeight: 0.20,
+    defaultDataSource: 'nba-stats-api'
   }
 ];
 
@@ -99,7 +104,8 @@ export const GLOBAL_FACTORS: FactorMeta[] = [
       scope: 'GLOBAL'
     },
     maxPoints: 3.0,
-    defaultWeight: 0.15
+    defaultWeight: 0.15,
+    defaultDataSource: 'manual'
   }
 ];
 
@@ -117,7 +123,8 @@ export const INJURY_FACTORS: FactorMeta[] = [
       scope: 'GLOBAL'
     },
     maxPoints: 2.0,
-    defaultWeight: 0.00
+    defaultWeight: 0.00,
+    defaultDataSource: 'llm'
   }
 ];
 
