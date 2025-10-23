@@ -92,5 +92,6 @@ export async function POST(request: Request) {
       
       console.log('[SHIVA:Step4] Returning test response:', testResponse)
       return jsonOk(testResponse)
+    }
   })
 }
