@@ -20,7 +20,7 @@ export const dynamic = 'force-dynamic'
 const GetConfigSchema = z.object({
   capperId: z.string().min(1),
   sport: z.enum(['NBA', 'NFL', 'MLB']),
-  betType: z.enum(['SPREAD', 'MONEYLINE', 'TOTAL'])
+  betType: z.enum(['SPREAD', 'MONEYLINE', 'TOTAL', 'SPREAD/MONEYLINE'])
 })
 
 const FactorConfigSchema = z.object({
@@ -47,7 +47,7 @@ const FactorConfigSchema = z.object({
 const SaveConfigSchema = z.object({
   capperId: z.string().min(1),
   sport: z.enum(['NBA', 'NFL', 'MLB']),
-  betType: z.enum(['SPREAD', 'MONEYLINE', 'TOTAL']),
+  betType: z.enum(['SPREAD', 'MONEYLINE', 'TOTAL', 'SPREAD/MONEYLINE']),
   name: z.string().min(1),
   description: z.string().optional(),
   factors: z.array(FactorConfigSchema)
