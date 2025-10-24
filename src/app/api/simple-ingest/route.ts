@@ -1,460 +1,264 @@
-import { NextResponse } from 'next/server'
-export const runtime = 'nodejs'
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
+import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
-import { logApiCall, logIngestion, GameChangeDetail } from '@/lib/monitoring/api-logger'
 import { getTeamAbbreviation } from '@/lib/team-abbreviations'
 
-// Map API sport keys to database enum values
-function mapSportKey(apiSportKey: string): string {
-  const sportMap: Record<string, string> = {
-    'americanfootball_nfl': 'nfl',
+// Helper function to map sport keys
+function mapSportKey(sportKey: string): string {
+  const sportMap: { [key: string]: string } = {
     'basketball_nba': 'nba',
-    'baseball_mlb': 'mlb',
-    'icehockey_nhl': 'nhl',
-    'soccer_epl': 'soccer',
+    'americanfootball_nfl': 'nfl',
+    'baseball_mlb': 'mlb'
   }
-  return sportMap[apiSportKey] || apiSportKey
+  return sportMap[sportKey] || sportKey
 }
 
-// Helper: Calculate largest odds swing between before/after
-function calculateLargestSwing(beforeOdds: any, afterOdds: any): number {
-  if (!beforeOdds || !afterOdds) return 0
-  
-  let maxSwing = 0
-  const bookmakers = Object.keys(afterOdds)
-  
-  for (const book of bookmakers) {
-    const before = beforeOdds[book]
-    const after = afterOdds[book]
-    
-    if (!before || !after) continue
-    
-    // Check moneyline swings
-    if (before.moneyline && after.moneyline) {
-      const homeSwing = Math.abs((after.moneyline.home || 0) - (before.moneyline.home || 0))
-      const awaySwing = Math.abs((after.moneyline.away || 0) - (before.moneyline.away || 0))
-      maxSwing = Math.max(maxSwing, homeSwing, awaySwing)
-    }
-  }
-  
-  return Math.round(maxSwing)
+// Types for The Odds API response
+interface OddsAPIEvent {
+  id: string
+  sport_key: string
+  sport_title: string
+  commence_time: string
+  home_team: string
+  away_team: string
+  bookmakers: Array<{
+    key: string
+    title: string
+    last_update: string
+    markets: Array<{
+      key: string
+      last_update: string
+      outcomes: Array<{
+        name: string
+        price: number
+        point?: number
+      }>
+    }>
+  }>
 }
 
-// Helper: Check if odds changed
-function hasOddsChanged(beforeOdds: any, afterOdds: any, market: 'moneyline' | 'spread' | 'total'): boolean {
-  if (!beforeOdds || !afterOdds) return true
-  
-  const bookmakers = Object.keys(afterOdds)
-  for (const book of bookmakers) {
-    const before = beforeOdds[book]?.[market]
-    const after = afterOdds[book]?.[market]
-    
-    if (JSON.stringify(before) !== JSON.stringify(after)) {
-      return true
-    }
+interface ProcessedGame {
+  gameId: string
+  matchup: string
+  sport: string
+  action: 'processed'
+  bookmakersAfter: string[]
+  oddsChangesSummary: {
+    largestSwing: number
   }
-  return false
+  afterSnapshot: any
+  warnings?: string[]
 }
 
 export async function GET() {
   try {
-    console.log('🚀 Simple odds ingestion starting...')
+    console.log('🚀 Starting enhanced game ingestion with smart deduplication...')
     
-    const oddsApiKey = process.env.THE_ODDS_API_KEY
-
-    if (!oddsApiKey) {
-      return NextResponse.json({
-        success: false,
-        error: 'THE_ODDS_API_KEY not found'
-      })
-    }
-
-    // Fetch sport settings from database
-    const supabase = getSupabaseAdmin()
-    const { data: sportSettings, error: settingsError } = await supabase
-      .from('data_feed_settings')
-      .select('*')
+    const allOddsData: string[] = []
+    const gameDetails: ProcessedGame[] = []
+    let storedCount = 0
+    let errorCount = 0
     
-    // If settings table doesn't exist yet, use defaults
-    const enabledSports = sportSettings && !settingsError
-      ? sportSettings.filter(s => s.enabled).map(s => s.sport)
-      : ['nfl', 'nba', 'mlb'] // Default to all enabled
-    
-    console.log('📊 Enabled sports from settings:', enabledSports)
-
-    // Fetch all sports (NFL, NBA, MLB) - filtered by settings
-    const allSports = [
-      { key: 'americanfootball_nfl', name: 'NFL', dbKey: 'nfl' },
-      { key: 'basketball_nba', name: 'NBA', dbKey: 'nba' },
-      { key: 'baseball_mlb', name: 'MLB', dbKey: 'mlb' }
+    // Sports to process
+    const sports = [
+      { key: 'basketball_nba', name: 'NBA' },
+      { key: 'americanfootball_nfl', name: 'NFL' },
+      { key: 'baseball_mlb', name: 'MLB' }
     ]
     
-    // Filter sports based on settings
-    const sports = allSports.filter(sport => enabledSports.includes(sport.dbKey))
-    
-    if (sports.length === 0) {
-      console.log('⚠️ No sports enabled in settings - skipping ingestion')
-      return NextResponse.json({
-        success: true,
-        message: 'No sports enabled in settings',
-        totalEvents: 0,
-        storedCount: 0,
-        updatedCount: 0,
-        historyCount: 0
-      })
-    }
-    
-    const today = new Date().toISOString().split('T')[0]
-    const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-    
-    let storedCount = 0
-    let updatedCount = 0
-    let historyCount = 0
-    let totalEvents = 0
-    const gameDetails: GameChangeDetail[] = [] // NEW: Track detailed changes
-    const processingStart = Date.now() // Track processing time
-    
     for (const sport of sports) {
-      console.log(`Fetching ${sport.name} odds...`)
-      
-      const apiCallStart = Date.now()
-      const endpoint = `/v4/sports/${sport.key}/odds`
-      
-      const response = await fetch(
-        `https://api.the-odds-api.com/v4/sports/${sport.key}/odds?apiKey=${oddsApiKey}&regions=us&markets=h2h,spreads,totals&oddsFormat=american&dateFormat=iso&commenceTimeFrom=${today}T00:00:00Z&commenceTimeTo=${nextWeek}T23:59:59Z&bookmakers=draftkings,fanduel,williamhill_us,betmgm`
-      )
-      
-      const apiCallTime = Date.now() - apiCallStart
-      const responseStatus = response.status
-      
-      // Get API usage from headers
-      const apiCallsRemaining = response.headers.get('x-requests-remaining')
-      const apiCallsUsed = response.headers.get('x-requests-used')
-
-      if (!response.ok) {
-        console.error(`Failed to fetch ${sport.name} odds:`, response.statusText)
-        
-        // Log failed API call
-        await logApiCall({
-          apiProvider: 'the_odds_api',
-          endpoint,
-          responseStatus,
-          responseTimeMs: apiCallTime,
-          success: false,
-          errorMessage: response.statusText,
-          triggeredBy: 'cron',
-          apiCallsRemaining: apiCallsRemaining ? parseInt(apiCallsRemaining) : undefined,
-          apiCallsUsed: apiCallsUsed ? parseInt(apiCallsUsed) : undefined,
-        })
-        
-        continue
-      }
-
-      const events = await response.json()
-      console.log(`Found ${events.length} ${sport.name} events`)
-      totalEvents += events.length
-      
-      // Extract bookmakers and sports from response
-      const bookmakers = events.length > 0 ? Array.from(new Set(events[0].bookmakers?.map((b: any) => b.key) || [])) : []
-      
-      // Log successful API call
-      const apiCallId = await logApiCall({
-        apiProvider: 'the_odds_api',
-        endpoint,
-        responseStatus,
-        responseTimeMs: apiCallTime,
-        eventsReceived: events.length,
-        bookmakersReceived: bookmakers as string[],
-        sportsReceived: [sport.key],
-        dataSnapshot: events[0] || null,
-        success: true,
-        triggeredBy: 'cron',
-        apiCallsRemaining: apiCallsRemaining ? parseInt(apiCallsRemaining) : undefined,
-        apiCallsUsed: apiCallsUsed ? parseInt(apiCallsUsed) : undefined,
-        notes: `Fetched ${sport.name} odds`
-      })
-      
-      if (events.length === 0) {
-        console.log(`No events found for ${sport.name}`)
-        continue
-      }
-
-      for (const event of events) { // Process ALL events
-      console.log(`Processing: ${event.home_team} vs ${event.away_team}`)
-      
       try {
-        // Extract odds from bookmakers
-        const sportsbooks: any = {}
+        console.log(`\n📊 Processing ${sport.name}...`)
         
-        for (const bookmaker of event.bookmakers || []) {
-          const bookmakerOdds: any = {
-            last_update: bookmaker.last_update
-          }
-
-          for (const market of bookmaker.markets || []) {
-            if (market.key === 'h2h') {
-              const homeOutcome = market.outcomes.find((o: any) => o.name === event.home_team)
-              const awayOutcome = market.outcomes.find((o: any) => o.name === event.away_team)
-              if (homeOutcome && awayOutcome) {
-                bookmakerOdds.moneyline = { home: homeOutcome.price, away: awayOutcome.price }
+        const response = await fetch(`https://api.the-odds-api.com/v4/sports/${sport.key}/odds/?apiKey=${process.env.ODDS_API_KEY}&regions=us&markets=h2h,spreads,totals&oddsFormat=american&dateFormat=iso`)
+        
+        if (!response.ok) {
+          console.error(`❌ Failed to fetch ${sport.name} odds:`, response.status, response.statusText)
+          continue
+        }
+        
+        const data: OddsAPIEvent[] = await response.json()
+        console.log(`📈 Fetched ${data.length} ${sport.name} events`)
+        
+        for (const event of data) {
+          try {
+            // Parse game details
+            const gameStartTimestamp = new Date(event.commence_time).toISOString()
+            const gameDate = event.commence_time.split('T')[0]
+            const gameTime = event.commence_time.split('T')[1].substring(0, 8)
+            const apiEventId = event.id
+            const matchup = `${event.away_team} @ ${event.home_team}`
+            
+            // Determine game status
+            let gameStatus = 'scheduled'
+            const gameStartTime = new Date(event.commence_time)
+            const now = new Date()
+            
+            if (now > gameStartTime) {
+              // Game has started - check if it's live or final
+              const hoursSinceStart = (now.getTime() - gameStartTime.getTime()) / (1000 * 60 * 60)
+              
+              if (hoursSinceStart < 4) {
+                gameStatus = 'live'
+              } else {
+                gameStatus = 'final'
               }
-            } else if (market.key === 'spreads') {
-              const homeOutcome = market.outcomes.find((o: any) => o.name === event.home_team)
-              const awayOutcome = market.outcomes.find((o: any) => o.name === event.away_team)
-              if (homeOutcome && awayOutcome && homeOutcome.point !== undefined) {
-                bookmakerOdds.spread = { 
-                  home: homeOutcome.price, 
-                  away: awayOutcome.price, 
-                  line: homeOutcome.point 
+            }
+            
+            // Process sportsbooks data
+            const sportsbooks: any = {}
+            
+            for (const bookmaker of event.bookmakers) {
+              const bookmakerData: any = {
+                moneyline: {},
+                spread: {},
+                total: {}
+              }
+              
+              for (const market of bookmaker.markets) {
+                if (market.key === 'h2h') {
+                  // Moneyline
+                  for (const outcome of market.outcomes) {
+                    bookmakerData.moneyline[outcome.name] = outcome.price
+                  }
+                } else if (market.key === 'spreads') {
+                  // Spread
+                  for (const outcome of market.outcomes) {
+                    bookmakerData.spread[outcome.name] = {
+                      price: outcome.price,
+                      point: outcome.point
+                    }
+                  }
+                } else if (market.key === 'totals') {
+                  // Total
+                  for (const outcome of market.outcomes) {
+                    bookmakerData.total[outcome.name] = {
+                      price: outcome.price,
+                      point: outcome.point
+                    }
+                  }
                 }
               }
-            } else if (market.key === 'totals') {
-              const overOutcome = market.outcomes.find((o: any) => o.name === 'Over')
-              const underOutcome = market.outcomes.find((o: any) => o.name === 'Under')
-              if (overOutcome && underOutcome && overOutcome.point !== undefined) {
-                bookmakerOdds.total = { 
-                  over: overOutcome.price, 
-                  under: underOutcome.price, 
-                  line: overOutcome.point 
-                }
-              }
+              
+              sportsbooks[bookmaker.key] = bookmakerData
             }
-          }
-
-          sportsbooks[bookmaker.key] = bookmakerOdds
-        }
-        
-        // CRITICAL FIX: Convert UTC to EST
-        const commenceTimeUTC = new Date(event.commence_time)
-        const commenceTimeEST = new Date(commenceTimeUTC.toLocaleString('en-US', { timeZone: 'America/New_York' }))
-        
-        const gameDate = commenceTimeEST.toISOString().split('T')[0]
-        const gameTime = commenceTimeEST.toTimeString().split(' ')[0]
-        const gameStartTimestamp = commenceTimeEST.toISOString() // Full timestamp
-        const apiEventId = event.id // Store API's unique event ID
-        
-        // Determine game status based on commence time
-        const now = new Date()
-        let gameStatus = 'scheduled'
-        
-        // Game is live if current time is past commence time but within ~4 hours
-        const hoursSinceStart = (now.getTime() - commenceTimeEST.getTime()) / (1000 * 60 * 60)
-        if (hoursSinceStart > 0 && hoursSinceStart < 4) {
-          gameStatus = 'live'
-        } else if (hoursSinceStart >= 4) {
-          // Game likely completed - will be updated by score fetch
-          gameStatus = 'scheduled' // Keep as scheduled until score fetch confirms
-        }
-        
-        const matchup = `${event.away_team} @ ${event.home_team}`
-        
-        // CRITICAL FIX: Match by API event ID (most reliable)
-        const { data: existingGames } = await getSupabaseAdmin()
-          .from('games')
-          .select('id, status, odds, home_team, away_team, api_event_id')
-          .eq('api_event_id', apiEventId)
-        
-        let gameId: string | null = null
-        
-        // Use API event ID for matching (prevents duplicates)
-        const existingGame = existingGames && existingGames.length > 0 ? existingGames[0] : null
-        
-        // Debug logging
-        if (existingGames && existingGames.length > 0 && !existingGame) {
-          console.log(`⚠️ No match found for ${matchup}. Existing games on ${gameDate}:`, 
-            existingGames.map((g: any) => `${g.away_team?.name} @ ${g.home_team?.name}`))
-        }
-        
-        // NEW: Track bookmakers for detailed logging
-        const bookmakersBefore = existingGame?.odds ? Object.keys(existingGame.odds) : undefined
-        const bookmakersAfter = Object.keys(sportsbooks)
-        
-        // NEW: Detect changes and warnings
-        const warnings: string[] = []
-        let largestSwing = 0
-        
-        if (existingGame) {
-          largestSwing = calculateLargestSwing(existingGame.odds, sportsbooks)
-          
-          if (largestSwing > 100) {
-            warnings.push(`Large odds swing: ${largestSwing} points`)
-          }
-          
-          if (bookmakersBefore && bookmakersBefore.length !== bookmakersAfter.length) {
-            const missing = bookmakersBefore.filter(b => !bookmakersAfter.includes(b))
-            const added = bookmakersAfter.filter(b => !bookmakersBefore.includes(b))
             
-            if (missing.length > 0) {
-              warnings.push(`Bookmakers dropped: ${missing.join(', ')}`)
-            }
-            if (added.length > 0) {
-              warnings.push(`Bookmakers added: ${added.join(', ')}`)
-            }
-          }
-        }
-        
-        // Check for missing odds data
-        if (bookmakersAfter.length === 0) {
-          warnings.push('No bookmakers returned odds for this game')
-        }
-        if (bookmakersAfter.length < 3) {
-          warnings.push(`Only ${bookmakersAfter.length} bookmaker(s) available`)
-        }
-        
-        if (existingGame) {
-          // Update existing game
-          gameId = existingGame.id
-          const { error: updateError } = await getSupabaseAdmin()
-            .from('games')
-            .update({
-              odds: sportsbooks,
-              status: gameStatus,
-              game_start_timestamp: gameStartTimestamp,
-              api_event_id: apiEventId,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', gameId)
-          
-          if (updateError) {
-            console.error(`❌ Error updating game:`, updateError.message)
-          } else {
-            updatedCount++
-            console.log(`🔄 Updated existing game (status: ${gameStatus})`)
+            // ENHANCED: Use smart deduplication function
+            const { data: gameResult, error: upsertError } = await getSupabaseAdmin()
+              .rpc('upsert_game_smart', {
+                p_sport: mapSportKey(sport.key),
+                p_league: sport.name,
+                p_home_team: { 
+                  name: event.home_team, 
+                  abbreviation: getTeamAbbreviation(event.home_team)
+                },
+                p_away_team: { 
+                  name: event.away_team, 
+                  abbreviation: getTeamAbbreviation(event.away_team)
+                },
+                p_game_date: gameDate,
+                p_game_time: gameTime,
+                p_game_start_timestamp: gameStartTimestamp,
+                p_status: gameStatus,
+                p_odds: sportsbooks,
+                p_api_event_id: apiEventId,
+                p_venue: null,
+                p_weather: null
+              })
             
-            // NEW: Add detailed tracking for updated game
-            gameDetails.push({
-              gameId: gameId!,
-              matchup,
-              sport: mapSportKey(sport.key),
-              action: 'updated',
-              bookmakersBefore,
-              bookmakersAfter,
-              oddsChangesSummary: {
-                moneylineChanged: hasOddsChanged(existingGame.odds, sportsbooks, 'moneyline'),
-                spreadChanged: hasOddsChanged(existingGame.odds, sportsbooks, 'spread'),
-                totalChanged: hasOddsChanged(existingGame.odds, sportsbooks, 'total'),
-                largestSwing
-              },
-              beforeSnapshot: existingGame.odds,
-              afterSnapshot: sportsbooks,
-              warnings: warnings.length > 0 ? warnings : undefined
-            })
-          }
-        } else {
-          // Insert new game
-          gameId = crypto.randomUUID()
-          
-          console.log(`➕ Creating NEW game: ${matchup} (${gameDate} ${gameTime}) - API ID: ${apiEventId}`)
-          
-          const { error: insertError } = await getSupabaseAdmin()
-            .from('games')
-            .insert({
-              id: gameId,
-              sport: mapSportKey(sport.key),
-              league: sport.name,
-              home_team: { 
-                name: event.home_team, 
-                abbreviation: getTeamAbbreviation(event.home_team)
-              },
-              away_team: { 
-                name: event.away_team, 
-                abbreviation: getTeamAbbreviation(event.away_team)
-              },
-              game_date: gameDate,
-              game_time: gameTime,
-              game_start_timestamp: gameStartTimestamp,
-              api_event_id: apiEventId,
-              timezone: 'America/New_York',
-              status: gameStatus,
-              odds: sportsbooks,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            })
-
-          if (insertError) {
-            console.error(`❌ Error inserting game:`, insertError.message)
-            warnings.push(`Failed to insert: ${insertError.message}`)
-          } else {
+            if (upsertError) {
+              console.error(`❌ Error upserting game ${matchup}:`, upsertError.message)
+              errorCount++
+              continue
+            }
+            
+            const gameId = gameResult
+            
+            // Track bookmakers for logging
+            const bookmakersAfter = Object.keys(sportsbooks)
+            const warnings: string[] = []
+            
+            // Check for missing odds data
+            if (bookmakersAfter.length === 0) {
+              warnings.push('No bookmakers returned odds for this game')
+            }
+            if (bookmakersAfter.length < 3) {
+              warnings.push(`Only ${bookmakersAfter.length} bookmaker(s) available`)
+            }
+            
+            // Track game processing
             storedCount++
-            console.log(`✅ Inserted new game (status: ${gameStatus}, bookmakers: ${bookmakersAfter.length})`)
+            console.log(`✅ Processed game: ${matchup} (${gameDate} ${gameTime}) - ID: ${gameId}`)
             
-            // NEW: Add detailed tracking for new game
+            // Add detailed tracking for processed game
             gameDetails.push({
-              gameId,
+              gameId: gameId,
               matchup,
               sport: mapSportKey(sport.key),
-              action: 'added',
+              action: 'processed',
               bookmakersAfter,
               oddsChangesSummary: {
-                moneylineChanged: false,
-                spreadChanged: false,
-                totalChanged: false,
-                largestSwing: 0
+                largestSwing: 0 // Will be calculated if we have previous odds
               },
               afterSnapshot: sportsbooks,
               warnings: warnings.length > 0 ? warnings : undefined
             })
+            
+            // Add odds history record ONLY if game is scheduled (not live/final)
+            if (gameId && gameStatus === 'scheduled') {
+              const { error: historyError } = await getSupabaseAdmin()
+                .from('odds_history')
+                .insert({
+                  game_id: gameId,
+                  snapshot_data: sportsbooks,
+                  bookmaker_count: bookmakersAfter.length,
+                  created_at: new Date().toISOString()
+                })
+              
+              if (historyError) {
+                console.error(`❌ Error inserting odds history for ${matchup}:`, historyError.message)
+              }
+            }
+            
+            allOddsData.push(event.id)
+            
+          } catch (eventError) {
+            console.error(`❌ Error processing event ${event.id}:`, eventError)
+            errorCount++
           }
         }
         
-        // Add odds history record ONLY if game is scheduled (not live)
-        if (gameId && gameStatus === 'scheduled') {
-          const { error: historyError } = await getSupabaseAdmin()
-            .from('odds_history')
-            .insert({
-              game_id: gameId,
-              odds: sportsbooks,
-              captured_at: new Date().toISOString(),
-            })
-          
-          if (historyError) {
-            console.error(`❌ Error adding history:`, historyError.message)
-          } else {
-            historyCount++
-          }
-        } else if (gameId && gameStatus === 'live') {
-          console.log(`⏩ Skipping history for live game`)
-        }
-      } catch (err) {
-        console.error(`❌ Exception processing ${event.id}:`, err)
+      } catch (sportError) {
+        console.error(`❌ Error processing ${sport.name}:`, sportError)
+        errorCount++
       }
-    }
     }
     
-    // Log ingestion results (optional - won't crash if table doesn't exist)
-    try {
-      const processingTimeMs = Date.now() - processingStart
-      
-      await logIngestion({
-        gamesAdded: storedCount,
-        gamesUpdated: updatedCount,
-        oddsHistoryRecordsCreated: historyCount,
-        processingTimeMs,
-        success: true,
-        gameDetails // NEW: Include detailed game-by-game tracking
-      })
-      
-      console.log(`📊 Logged ingestion with ${gameDetails.length} game details`)
-    } catch (logError) {
-      console.warn('⚠️ Could not log ingestion (table may not exist yet):', logError)
-    }
+    // Summary
+    console.log(`\n📊 Ingestion Summary:`)
+    console.log(`✅ Games processed: ${storedCount}`)
+    console.log(`❌ Errors: ${errorCount}`)
+    console.log(`📈 Total events fetched: ${allOddsData.length}`)
     
     return NextResponse.json({
       success: true,
-      message: `Processed ${totalEvents} events: ${storedCount} new, ${updatedCount} updated, ${historyCount} history records`,
-      totalEvents,
-      storedCount,
-      updatedCount,
-      historyCount
+      message: `Enhanced ingestion completed with smart deduplication`,
+      summary: {
+        gamesProcessed: storedCount,
+        errors: errorCount,
+        totalEventsFetched: allOddsData.length,
+        gameDetails: gameDetails.slice(0, 10) // Show first 10 for debugging
+      },
+      timestamp: new Date().toISOString()
     })
-
+    
   } catch (error) {
-    console.error('❌ Error:', error)
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    })
+    console.error('❌ Critical error in enhanced ingestion:', error)
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
+      },
+      { status: 500 }
+    )
   }
 }
