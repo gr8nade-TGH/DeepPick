@@ -31,7 +31,7 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
     allKeys: enabledFactorKeys,
     factorWeights: ctx.factorWeights
   })
-  console.log('[TOTALS:NBA_STATS_CONDITION_CHECK]', {
+  const nbaStatsConditionCheck = {
     enabledFactorKeys,
     shouldFetchNBAStats: enabledFactorKeys.some(key => ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv'].includes(key)),
     paceIndex: enabledFactorKeys.includes('paceIndex'),
@@ -39,7 +39,8 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
     defErosion: enabledFactorKeys.includes('defErosion'),
     threeEnv: enabledFactorKeys.includes('threeEnv'),
     whistleEnv: enabledFactorKeys.includes('whistleEnv')
-  })
+  }
+  console.log('[TOTALS:NBA_STATS_CONDITION_CHECK]', nbaStatsConditionCheck)
   
   // Only fetch data if we have enabled factors
   if (enabledFactorKeys.length === 0) {
@@ -97,6 +98,16 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
   
   // Fetch NBA Stats API data bundle (only if needed)
   let bundle: StatMuseBundle | null = null
+  let nbaStatsDebugInfo = {
+    condition_check: nbaStatsConditionCheck,
+    enabled_factors: enabledFactorKeys,
+    nba_stats_fetched: false,
+    team_names: { away: ctx.away, home: ctx.home },
+    bundle_keys: [] as string[],
+    bundle_sample: {} as any,
+    api_calls_made: false
+  }
+  
   if (enabledFactorKeys.some(key => ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv'].includes(key))) {
     console.log('[TOTALS:ABOUT_TO_FETCH_NBA_STATS]', 'Starting NBA Stats API fetch...')
     console.log('[TOTALS:ENABLED_FACTORS_FOR_DATA]', { 
@@ -110,6 +121,19 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
     bundle = await fetchNBAStatsBundle(ctx)
     console.log('[TOTALS:NBA_STATS_FETCHED]', 'NBA Stats bundle received:', Object.keys(bundle))
     console.debug('[totals:bundle]', bundle)
+    
+    // Update debug info
+    nbaStatsDebugInfo.nba_stats_fetched = true
+    nbaStatsDebugInfo.bundle_keys = Object.keys(bundle)
+    nbaStatsDebugInfo.bundle_sample = {
+      awayPaceSeason: bundle.awayPaceSeason,
+      homePaceSeason: bundle.homePaceSeason,
+      awayORtgLast10: bundle.awayORtgLast10,
+      homeORtgLast10: bundle.homeORtgLast10,
+      leaguePace: bundle.leaguePace,
+      leagueORtg: bundle.leagueORtg
+    }
+    nbaStatsDebugInfo.api_calls_made = true
   }
   
   // Fetch injury impact via LLM (only if Defensive Erosion is enabled)
@@ -245,7 +269,8 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
           league3Pstdev: 0.036
         },
         rows_z_points: rowsZPoints
-      }
+      },
+      nba_stats_api_debug: nbaStatsDebugInfo
     }
   }
 }
