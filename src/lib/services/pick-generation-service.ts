@@ -229,10 +229,13 @@ export class PickGenerationService {
     hours: number = 24
   ): Promise<any[]> {
     try {
+      // Map capper to database format (lowercase)
+      const mappedCapper = capper.toLowerCase() as capper_type
+      
       const { data, error } = await this.supabase
         .from('pick_generation_cooldowns')
         .select('*')
-        .eq('capper', capper)
+        .eq('capper', mappedCapper)
         .gte('created_at', new Date(Date.now() - hours * 60 * 60 * 1000).toISOString())
         .order('created_at', { ascending: false })
 
@@ -261,12 +264,18 @@ export class PickGenerationService {
     betType: BetType
   ): Promise<any | null> {
     try {
+      // Map capper to database format (lowercase)
+      const mappedCapper = capper.toLowerCase() as capper_type
+      
+      // Map bet type to database format
+      const mappedBetType = betType === 'TOTAL' ? 'total' : betType === 'SPREAD' ? 'spread' : betType.toLowerCase()
+      
       const { data, error } = await this.supabase
         .from('pick_generation_cooldowns')
         .select('*')
         .eq('game_id', gameId)
-        .eq('capper', capper)
-        .eq('bet_type', betType)
+        .eq('capper', mappedCapper)
+        .eq('bet_type', mappedBetType)
         .single()
 
       if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
