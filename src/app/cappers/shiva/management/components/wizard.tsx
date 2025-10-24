@@ -810,6 +810,15 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     return { isValid: true, data: step5Data }
   }
 
+  function validateStep6(): { isValid: boolean; error?: string; data?: any } {
+    const step6Data = stepLogs[6]?.json
+    if (!step6Data) {
+      return { isValid: false, error: 'Step 6 not executed' }
+    }
+    
+    return { isValid: true, data: step6Data }
+  }
+
   async function handleStepClick(current: number) {
     try {
       // Validate previous steps before executing current step
