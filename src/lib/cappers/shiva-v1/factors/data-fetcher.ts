@@ -4,7 +4,7 @@
  * Handles all external data fetching for NBA totals factors
  */
 
-import { fetchNBATeamStats, fetchNBATeamStatsLastN } from '@/lib/data-sources/nba-stats-simple'
+import { fetchNBATeamStats, fetchNBATeamStatsLastN } from '@/lib/data-sources/nba-stats-api'
 import { searchInjuries } from '../news'
 import { RunCtx, StatMuseBundle, InjuryImpact } from './types'
 
