@@ -64,8 +64,9 @@ export default function ShivaManagementPage() {
     setCurrentProfile(profile)
   }
 
-  const handleBetTypeChange = (newBetType: 'TOTAL' | 'SPREAD/MONEYLINE') => {
-    setBetType(newBetType)
+  const handleGameSelect = (game: any) => {
+    console.log('Main page: Game selected:', game)
+    setSelectedGame(game)
   }
 
   const handleRunClick = () => {
@@ -88,7 +89,7 @@ export default function ShivaManagementPage() {
     <div className="min-h-screen bg-black">
       <HeaderFilters
         onProfileChange={handleProfileChange}
-        onGameChange={setSelectedGame}
+        onGameChange={handleGameSelect}
         onModeChange={setMode}
         onProviderOverrides={(step3, step4) => setProviderOverrides({ step3, step4 })}
         onBetTypeChange={handleBetTypeChange}
@@ -100,7 +101,7 @@ export default function ShivaManagementPage() {
         <div className="col-span-4 space-y-4">
           <div className="border border-gray-700 rounded p-3 bg-gray-900">
             <SHIVAManagementInbox 
-              onGameSelect={setSelectedGame}
+              onGameSelect={handleGameSelect}
               selectedGame={selectedGame}
             />
           </div>

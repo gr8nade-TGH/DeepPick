@@ -46,6 +46,7 @@ export function HeaderFilters(props: HeaderFiltersProps) {
 
   // Update selectedGame when prop changes
   useEffect(() => {
+    console.log('HeaderFilters: selectedGame prop changed:', props.selectedGame)
     if (props.selectedGame) {
       setSelectedGame(props.selectedGame)
     }

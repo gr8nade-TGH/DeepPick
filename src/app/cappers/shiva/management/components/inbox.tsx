@@ -35,6 +35,8 @@ export function SHIVAManagementInbox({ onGameSelect, selectedGame }: SHIVAManage
         if (response.ok) {
           const data = await response.json()
           setGames(data.games || [])
+        } else {
+          console.error('Failed to fetch games:', response.status, response.statusText)
         }
       } catch (error) {
         console.error('Failed to fetch games:', error)
@@ -107,7 +109,10 @@ export function SHIVAManagementInbox({ onGameSelect, selectedGame }: SHIVAManage
                         ? 'bg-blue-600 text-white' 
                         : 'hover:bg-gray-700'
                     }`}
-                    onClick={() => onGameSelect?.(game)}
+                    onClick={() => {
+                      console.log('Game selected:', game)
+                      onGameSelect?.(game)
+                    }}
                   >
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1">
