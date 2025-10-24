@@ -135,12 +135,18 @@ export function GeneratedPicksInbox({ capper }: { capper: capper_type }) {
       // Fetch real picks from the database
       const response = await fetch(`/api/picks?capper=${capper}&limit=20`)
       if (!response.ok) {
-        throw new Error(`Failed to fetch picks: ${response.statusText}`)
+        const errorText = await response.text()
+        throw new Error(`API Error ${response.status}: ${errorText}`)
       }
       
       const data = await response.json()
       
-      if (data.success && data.picks) {
+      if (data.success) {
+        if (!data.picks || data.picks.length === 0) {
+          setError(`No picks found for ${capper}. Try generating some picks first.`)
+          setGeneratedPicks([])
+          return
+        }
         // Transform database picks to GeneratedPick format
         const transformedPicks: GeneratedPick[] = data.picks.map((pick: any) => ({
           id: pick.id,
@@ -162,7 +168,7 @@ export function GeneratedPicksInbox({ capper }: { capper: capper_type }) {
         setGeneratedPicks([])
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch picks')
+      setError(err instanceof Error ? err.message : 'Failed to fetch picks from database')
       console.error('Error fetching generated picks:', err)
       // Set empty array on error
       setGeneratedPicks([])

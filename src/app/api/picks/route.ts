@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
         confidence,
         status,
         created_at,
-        games!inner(
+        game:games(
           home_team,
           away_team
         )

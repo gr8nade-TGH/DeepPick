@@ -1001,9 +1001,9 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
               status: 200,
               json: {
                 run_id: null,
-                state: step1Data.json.state,
-                message: step1Data.json.message,
-                filters: step1Data.json.filters
+                state: step1Data.state,
+                message: step1Data.message,
+                filters: step1Data.filters
               },
               dryRun: true
             }
