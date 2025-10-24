@@ -143,7 +143,7 @@ function assembleInsightCard({ runCtx, step4, step5, step5_5, step6, step3, step
   const pick = step6?.json?.pick || null
   const conf7 = Number(step4?.json?.predictions?.conf7_score ?? 0)
   const confAdj = Number(step5?.json?.conf_market_adj ?? 0)
-  const confFinal = Number(step5?.json?.conf_final ?? conf7 + confAdj)
+  const confFinal = Number(step5?.json?.conf_final ?? 0)
 
   const predictedScore = {
     home: Number(step4?.json?.predictions?.scores?.home ?? 0),

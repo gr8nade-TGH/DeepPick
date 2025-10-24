@@ -63,8 +63,8 @@ export async function POST(request: Request) {
       // Calculate edge factor: clamp(edgePts / 3, -2, 2) - more aggressive scaling
       const edgeFactor = Math.max(-2, Math.min(2, marketEdgePts / 3))
       
-      // Adjust confidence: clamp(base + (edgeFactor * 1.5), 0, 5) - stronger impact
-      const adjustedConfidence = Math.max(0, Math.min(5, base_confidence + (edgeFactor * 1.5)))
+      // Adjust confidence: allow negative values for UNDER picks, clamp to reasonable range
+      const adjustedConfidence = Math.max(-2, Math.min(5, base_confidence + (edgeFactor * 1.5)))
       
       // Calculate units based on final confidence
       let units = 0
