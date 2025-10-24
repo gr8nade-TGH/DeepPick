@@ -665,14 +665,14 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           
           // Use selected game odds or fallback to fixture
           const gameData = props.selectedGame || {
-            game_id: 'nba_2025_10_21_okc_hou',
-            home: 'Oklahoma City Thunder',
-            away: 'Houston Rockets',
+            game_id: 'nba_2025_10_21_den_gsw',
+            home: 'Golden State Warriors',
+            away: 'Denver Nuggets',
             start_time_utc: '2025-10-21T01:30:00Z',
             odds: {
               ml_home: -110,
               ml_away: -110,
-              spread_team: 'Oklahoma City Thunder',
+              spread_team: 'Golden State Warriors',
               spread_line: 2.5,
               total_line: 227.5
             }
@@ -725,8 +725,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           run_id: runId,
           inputs: {
             teams: {
-              away: 'Houston Rockets',
-              home: 'Oklahoma City Thunder'
+              away: 'Denver Nuggets',
+              home: 'Golden State Warriors'
             },
             sport: 'NBA',
             betType: props.betType || 'TOTAL',
@@ -1185,29 +1185,10 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                     stepLogsRaw: stepLogs,
                   }
                   navigator.clipboard.writeText(JSON.stringify(debugReport, null, 2))
-                  alert('Debug report copied to clipboard!')
+                  alert('Comprehensive debug report copied to clipboard! (Includes NBA Stats API debugging)')
                 }}
               >
-                📋 Copy Debug Report
-              </button>
-              <button 
-                className="px-3 py-1 bg-green-600 text-white rounded text-xs font-bold hover:bg-green-700 ml-2"
-                onClick={async () => {
-                  try {
-                    const response = await fetch('/api/monitoring/debug-report')
-                    if (response.ok) {
-                      const report = await response.json()
-                      navigator.clipboard.writeText(JSON.stringify(report, null, 2))
-                      alert('API Debug Report copied to clipboard! (Note: Use Copy Debug Report for comprehensive NBA Stats API debugging)')
-                    } else {
-                      alert('Failed to fetch API Debug Report')
-                    }
-                  } catch (error) {
-                    alert('Error fetching API Debug Report: ' + error)
-                  }
-                }}
-              >
-                🔍 API Debug Report
+                📋 Debug Report
               </button>
               </div>
             )}
