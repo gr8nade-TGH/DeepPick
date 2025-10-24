@@ -40,8 +40,9 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('Supabase error fetching games:', error)
+      console.error('Query details:', { league, q, limit })
       return NextResponse.json(
-        { error: 'Failed to fetch games' },
+        { error: 'Failed to fetch games', details: error.message },
         { status: 500 }
       )
     }

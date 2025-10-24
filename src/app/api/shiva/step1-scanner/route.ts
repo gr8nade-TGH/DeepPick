@@ -56,6 +56,7 @@ export async function POST(request: NextRequest) {
         // If a specific game is selected, check if it's eligible first
         if (selectedGameFromProps) {
           console.log(`[SHIVA_SCANNER] Checking selected game: ${selectedGameFromProps.away} @ ${selectedGameFromProps.home}`)
+          console.log(`[SHIVA_SCANNER] Selected game structure:`, JSON.stringify(selectedGameFromProps, null, 2))
           
           // Check if this game can be processed
           const canProcess = await checkGameEligibility(selectedGameFromProps, sport, betType, supabase)
@@ -167,14 +168,19 @@ async function checkGameEligibility(
     const sportLower = sport.toLowerCase()
     const betTypeLower = betType === 'TOTAL' ? 'total' : 'spread'
     
-    // Check if game exists and is scheduled
+    // Check if game exists and is scheduled or live
+    console.log(`[SHIVA_SCANNER] Looking for game with ID: ${game.game_id}`)
+    console.log(`[SHIVA_SCANNER] Sport filter: ${sportLower}`)
+    
     const { data: gameData, error: gameError } = await supabase
       .from('games')
       .select('id, status, game_time')
       .eq('id', game.game_id)
       .eq('sport', sportLower)
-      .eq('status', 'scheduled')
+      .in('status', ['scheduled', 'live'])
       .single()
+
+    console.log(`[SHIVA_SCANNER] Game query result:`, { gameData, gameError })
 
     if (gameError || !gameData) {
       console.log(`[SHIVA_SCANNER] Game not found or not scheduled:`, gameError?.message)
