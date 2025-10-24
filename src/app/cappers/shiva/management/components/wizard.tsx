@@ -982,6 +982,20 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           const step1Data = await step1Response.json()
           console.log('[Step 1] API response data:', step1Data)
           
+          // Enhanced client-side debugging
+          if (step1Data.json?.debug_info) {
+            console.log('🔍 === STEP 1 DEBUG INFO (CLIENT) ===')
+            console.log('Game ID:', step1Data.json.debug_info.gameId)
+            console.log('Capper:', step1Data.json.debug_info.capper)
+            console.log('Bet Type:', step1Data.json.debug_info.betType)
+            console.log('Existing Picks:', step1Data.json.debug_info.existingPicks)
+            console.log('Cooldown Data:', step1Data.json.debug_info.cooldownData)
+            console.log('All Picks for Game:', step1Data.json.debug_info.allPicks)
+            console.log('Database Errors:', step1Data.json.debug_info.errors)
+            console.log('Summary:', step1Data.json.debug_info.summary)
+            console.log('🔍 === END STEP 1 DEBUG INFO ===')
+          }
+          
           if (!step1Response.ok) {
             console.error('[Step 1] API error:', step1Data)
             throw new Error(`Step 1 failed: ${step1Data.error?.message || 'Unknown error'}`)
@@ -1654,6 +1668,23 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       pick_generation_cooldown: {
         step1_cooldown_info: stepLogs[1]?.json?.cooldown_info || null,
         step1_debug_info: stepLogs[0]?.json?.debug_info || null,
+        step1_detailed_debug: {
+          game_id: stepLogs[0]?.json?.debug_info?.gameId || 'unknown',
+          capper: stepLogs[0]?.json?.debug_info?.capper || 'unknown',
+          bet_type: stepLogs[0]?.json?.debug_info?.betType || 'unknown',
+          existing_picks_count: stepLogs[0]?.json?.debug_info?.existingPicks?.length || 0,
+          cooldown_records_count: stepLogs[0]?.json?.debug_info?.cooldownData?.length || 0,
+          all_picks_count: stepLogs[0]?.json?.debug_info?.allPicks?.length || 0,
+          has_existing_picks: stepLogs[0]?.json?.debug_info?.summary?.hasExistingPicks || false,
+          has_active_cooldown: stepLogs[0]?.json?.debug_info?.summary?.hasActiveCooldown || false,
+          total_picks_for_game: stepLogs[0]?.json?.debug_info?.summary?.totalPicksForGame || 0,
+          database_errors: stepLogs[0]?.json?.debug_info?.errors || {},
+          blocking_reason: stepLogs[0]?.json?.debug_info?.summary?.hasExistingPicks ? 
+            'EXISTING_PICKS' : 
+            stepLogs[0]?.json?.debug_info?.summary?.hasActiveCooldown ? 
+            'ACTIVE_COOLDOWN' : 
+            'UNKNOWN'
+        },
         games_in_cooldown: stepLogs[1]?.json?.cooldown_info?.games_in_cooldown || 0,
         cooldown_hours: stepLogs[1]?.json?.cooldown_info?.cooldown_hours || 2,
         total_games_checked: stepLogs[1]?.json?.total_games_checked || 0,

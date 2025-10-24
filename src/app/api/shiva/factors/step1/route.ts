@@ -73,28 +73,49 @@ export async function POST(request: NextRequest) {
           
           console.log(`[Step1:${capper}] Selected game canGenerate: ${canGenerate}`)
           
+          // Always get detailed debugging information for console and debug report
+          console.log(`[Step1:${capper}] Getting detailed debug info for game ${selectedGameFromProps.game_id}`)
+          
+          const { data: existingPicks, error: picksError } = await supabase
+            .from('picks')
+            .select('id, pick_type, status, units, created_at')
+            .eq('game_id', selectedGameFromProps.game_id)
+            .eq('capper', capper)
+            .eq('pick_type', betType === 'TOTAL' ? 'TOTAL' : 'SPREAD')
+
+          const { data: cooldownData, error: cooldownError } = await supabase
+            .from('pick_generation_cooldowns')
+            .select('*')
+            .eq('game_id', selectedGameFromProps.game_id)
+            .eq('capper', capper)
+            .eq('bet_type', betType === 'TOTAL' ? 'TOTAL' : 'SPREAD')
+            .gt('cooldown_until', new Date().toISOString())
+
+          const { data: allPicks, error: allPicksError } = await supabase
+            .from('picks')
+            .select('id, capper, pick_type, status, units, created_at')
+            .eq('game_id', selectedGameFromProps.game_id)
+
+          // Log detailed debugging to console
+          console.log(`[Step1:${capper}] === DETAILED DEBUG INFO ===`)
+          console.log(`[Step1:${capper}] Game ID: ${selectedGameFromProps.game_id}`)
+          console.log(`[Step1:${capper}] Capper: ${capper}`)
+          console.log(`[Step1:${capper}] Bet Type: ${betType}`)
+          console.log(`[Step1:${capper}] Existing Picks:`, existingPicks)
+          console.log(`[Step1:${capper}] Cooldown Data:`, cooldownData)
+          console.log(`[Step1:${capper}] All Picks for Game:`, allPicks)
+          console.log(`[Step1:${capper}] Picks Error:`, picksError?.message)
+          console.log(`[Step1:${capper}] Cooldown Error:`, cooldownError?.message)
+          console.log(`[Step1:${capper}] All Picks Error:`, allPicksError?.message)
+          console.log(`[Step1:${capper}] Summary:`, {
+            hasExistingPicks: existingPicks && existingPicks.length > 0,
+            hasActiveCooldown: cooldownData && cooldownData.length > 0,
+            totalPicksForGame: allPicks ? allPicks.length : 0,
+            canGenerate: canGenerate
+          })
+          console.log(`[Step1:${capper}] === END DEBUG INFO ===`)
+          
           if (!canGenerate) {
-            // Get detailed debugging information
-            const { data: existingPicks, error: picksError } = await supabase
-              .from('picks')
-              .select('id, pick_type, status, units, created_at')
-              .eq('game_id', selectedGameFromProps.game_id)
-              .eq('capper', capper)
-              .eq('pick_type', betType === 'TOTAL' ? 'TOTAL' : 'SPREAD')
-
-            const { data: cooldownData, error: cooldownError } = await supabase
-              .from('pick_generation_cooldowns')
-              .select('*')
-              .eq('game_id', selectedGameFromProps.game_id)
-              .eq('capper', capper)
-              .eq('bet_type', betType === 'TOTAL' ? 'TOTAL' : 'SPREAD')
-              .gt('cooldown_until', new Date().toISOString())
-
-            const { data: allPicks, error: allPicksError } = await supabase
-              .from('picks')
-              .select('id, capper, pick_type, status, units, created_at')
-              .eq('game_id', selectedGameFromProps.game_id)
-
             return NextResponse.json({
               status: 200,
               json: {
@@ -139,13 +160,20 @@ export async function POST(request: NextRequest) {
           // Generate run_id for this prediction
           const runId = crypto.randomUUID()
           
-          // Log the selection
+          // Log the selection with debug info
           console.log(`[Step1:${capper}] Selected game:`, {
             game_id: selectedGameFromProps.game_id,
             matchup: `${selectedGameFromProps.away} @ ${selectedGameFromProps.home}`,
             bet_type: betType,
             run_id: runId
           })
+          
+          console.log(`[Step1:${capper}] === SUCCESS DEBUG INFO ===`)
+          console.log(`[Step1:${capper}] Game can be processed!`)
+          console.log(`[Step1:${capper}] Existing Picks:`, existingPicks)
+          console.log(`[Step1:${capper}] Cooldown Data:`, cooldownData)
+          console.log(`[Step1:${capper}] All Picks for Game:`, allPicks)
+          console.log(`[Step1:${capper}] === END SUCCESS DEBUG ===`)
           
           return NextResponse.json({
             status: 201,
