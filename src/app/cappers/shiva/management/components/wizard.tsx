@@ -614,6 +614,19 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     if (!step1Data.run_id) {
       return { isValid: false, error: 'Step 1 did not generate run_id' }
     }
+    
+    // Data anomaly checks
+    const game = step1Data.selected_game
+    if (!game.home_team?.name || !game.away_team?.name) {
+      return { isValid: false, error: 'Step 1 game missing team names' }
+    }
+    if (!game.game_date || !game.game_time) {
+      return { isValid: false, error: 'Step 1 game missing date/time' }
+    }
+    if (!game.odds || Object.keys(game.odds).length === 0) {
+      return { isValid: false, error: 'Step 1 game missing odds data' }
+    }
+    
     return { isValid: true, data: step1Data }
   }
 
@@ -631,6 +644,22 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     if (!step2Data.snapshot) {
       return { isValid: false, error: 'Step 2 did not capture odds snapshot' }
     }
+    
+    // Data anomaly checks
+    const snapshot = step2Data.snapshot
+    if (!snapshot.total?.line || typeof snapshot.total.line !== 'number') {
+      return { isValid: false, error: 'Step 2 snapshot missing valid total line' }
+    }
+    if (snapshot.total.line < 150 || snapshot.total.line > 300) {
+      return { isValid: false, error: `Step 2 total line ${snapshot.total.line} seems anomalous (expected 150-300)` }
+    }
+    if (!snapshot.home_team || !snapshot.away_team) {
+      return { isValid: false, error: 'Step 2 snapshot missing team names' }
+    }
+    if (!snapshot.start_time_utc) {
+      return { isValid: false, error: 'Step 2 snapshot missing start time' }
+    }
+    
     return { isValid: true, data: step2Data }
   }
 
@@ -648,6 +677,48 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     if (step3Data.factors.length === 0) {
       return { isValid: false, error: 'Step 3 generated empty factors array' }
     }
+    
+    // Data anomaly checks
+    const factors = step3Data.factors
+    const expectedFactorKeys = ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv', 'injuryAvailability']
+    const actualFactorKeys = factors.map(f => f.key)
+    
+    // Check if we have the expected number of factors
+    if (factors.length < 5) {
+      return { isValid: false, error: `Step 3 only generated ${factors.length} factors, expected at least 5` }
+    }
+    
+    // Check for missing critical factors
+    const missingFactors = expectedFactorKeys.filter(key => !actualFactorKeys.includes(key))
+    if (missingFactors.length > 0) {
+      return { isValid: false, error: `Step 3 missing critical factors: ${missingFactors.join(', ')}` }
+    }
+    
+    // Check if all factors have valid data structure
+    for (const factor of factors) {
+      if (!factor.key || !factor.name) {
+        return { isValid: false, error: `Step 3 factor missing key or name: ${JSON.stringify(factor)}` }
+      }
+      if (typeof factor.normalized_value !== 'number') {
+        return { isValid: false, error: `Step 3 factor ${factor.key} missing normalized_value` }
+      }
+      if (!factor.parsed_values_json) {
+        return { isValid: false, error: `Step 3 factor ${factor.key} missing parsed_values_json` }
+      }
+    }
+    
+    // Check for suspicious data patterns (all factors returning 0)
+    const allFactorsZero = factors.every(f => f.normalized_value === 0)
+    if (allFactorsZero) {
+      return { isValid: false, error: 'Step 3 all factors returning 0 - possible data issue' }
+    }
+    
+    // Check weight validation
+    const totalWeight = factors.reduce((sum, f) => sum + (f.weight_total_pct || 0), 0)
+    if (Math.abs(totalWeight - 250) > 1) {
+      return { isValid: false, error: `Step 3 total weight ${totalWeight}% is not 250%` }
+    }
+    
     return { isValid: true, data: step3Data }
   }
 
@@ -665,6 +736,33 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     if (typeof step4Data.predictions.total_pred_points !== 'number') {
       return { isValid: false, error: 'Step 4 predictions missing total_pred_points' }
     }
+    
+    // Data anomaly checks
+    const predictions = step4Data.predictions
+    if (predictions.total_pred_points < 150 || predictions.total_pred_points > 300) {
+      return { isValid: false, error: `Step 4 total_pred_points ${predictions.total_pred_points} seems anomalous (expected 150-300)` }
+    }
+    if (!predictions.scores || !predictions.scores.home || !predictions.scores.away) {
+      return { isValid: false, error: 'Step 4 predictions missing home/away scores' }
+    }
+    if (typeof predictions.scores.home !== 'number' || typeof predictions.scores.away !== 'number') {
+      return { isValid: false, error: 'Step 4 predictions scores not numeric' }
+    }
+    if (predictions.scores.home < 50 || predictions.scores.home > 200) {
+      return { isValid: false, error: `Step 4 home score ${predictions.scores.home} seems anomalous (expected 50-200)` }
+    }
+    if (predictions.scores.away < 50 || predictions.scores.away > 200) {
+      return { isValid: false, error: `Step 4 away score ${predictions.scores.away} seems anomalous (expected 50-200)` }
+    }
+    if (!predictions.winner || !['home', 'away'].includes(predictions.winner)) {
+      return { isValid: false, error: 'Step 4 predictions missing or invalid winner' }
+    }
+    
+    // Check confidence data
+    if (!step4Data.confidence || typeof step4Data.confidence.base_confidence !== 'number') {
+      return { isValid: false, error: 'Step 4 missing confidence data' }
+    }
+    
     return { isValid: true, data: step4Data }
   }
 
@@ -682,6 +780,29 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     if (typeof step5Data.units !== 'number') {
       return { isValid: false, error: 'Step 5 missing units' }
     }
+    
+    // Data anomaly checks
+    if (step5Data.conf_final < 0 || step5Data.conf_final > 10) {
+      return { isValid: false, error: `Step 5 conf_final ${step5Data.conf_final} seems anomalous (expected 0-10)` }
+    }
+    if (![0, 1, 2, 3, 5].includes(step5Data.units)) {
+      return { isValid: false, error: `Step 5 units ${step5Data.units} not in expected range [0,1,2,3,5]` }
+    }
+    if (!step5Data.final_pick || !step5Data.final_pick.selection) {
+      return { isValid: false, error: 'Step 5 missing final_pick selection' }
+    }
+    if (!step5Data.final_pick.type || !['TOTAL', 'SPREAD', 'MONEYLINE'].includes(step5Data.final_pick.type)) {
+      return { isValid: false, error: 'Step 5 final_pick has invalid type' }
+    }
+    
+    // Check edge vs market data
+    if (!step5Data.final_factor || typeof step5Data.final_factor.edge_pts !== 'number') {
+      return { isValid: false, error: 'Step 5 missing final_factor edge data' }
+    }
+    if (Math.abs(step5Data.final_factor.edge_pts) > 50) {
+      return { isValid: false, error: `Step 5 edge_pts ${step5Data.final_factor.edge_pts} seems anomalous (expected -50 to +50)` }
+    }
+    
     return { isValid: true, data: step5Data }
   }
 
