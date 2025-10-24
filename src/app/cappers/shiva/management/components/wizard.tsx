@@ -1134,6 +1134,22 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           capped: f.caps_applied,
           notes: f.notes
         })) || [],
+        nba_stats_api_debug: {
+          condition_check: stepLogs[3]?.json?._debug?.totals?.console_logs?.nba_stats_condition_check || 'Not found in debug logs',
+          enabled_factors: stepLogs[3]?.json?._debug?.totals?.console_logs?.enabled_factors || 'Not found in debug logs',
+          nba_stats_fetched: stepLogs[3]?.json?._debug?.totals?.console_logs?.nba_stats_fetched || 'Not found in debug logs',
+          team_names: stepLogs[3]?.json?._debug?.totals?.console_logs?.team_names || 'Not found in debug logs',
+          bundle_keys: stepLogs[3]?.json?._debug?.totals?.console_logs?.bundle ? Object.keys(stepLogs[3].json._debug.totals.console_logs.bundle) : 'Not found in debug logs',
+          bundle_sample: stepLogs[3]?.json?._debug?.totals?.console_logs?.bundle ? {
+            awayPaceSeason: stepLogs[3].json._debug.totals.console_logs.bundle.awayPaceSeason,
+            homePaceSeason: stepLogs[3].json._debug.totals.console_logs.bundle.homePaceSeason,
+            awayORtgLast10: stepLogs[3].json._debug.totals.console_logs.bundle.awayORtgLast10,
+            homeORtgLast10: stepLogs[3].json._debug.totals.console_logs.bundle.homeORtgLast10,
+            leaguePace: stepLogs[3].json._debug.totals.console_logs.bundle.leaguePace,
+            leagueORtg: stepLogs[3].json._debug.totals.console_logs.bundle.leagueORtg
+          } : 'Not found in debug logs',
+          api_calls_made: stepLogs[3]?.json?._debug?.totals?.console_logs?.api_calls || 'Not found in debug logs'
+        },
         step4_predictions: stepLogs[4]?.json || null,
         step5_confidence: stepLogs[5]?.json || null,
         step6_pick: stepLogs[6]?.json?.pick || null,
@@ -1180,9 +1196,9 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                   try {
                     const response = await fetch('/api/monitoring/debug-report')
                     if (response.ok) {
-                      const report = await response.text()
-                      navigator.clipboard.writeText(report)
-                      alert('API Debug Report copied to clipboard!')
+                      const report = await response.json()
+                      navigator.clipboard.writeText(JSON.stringify(report, null, 2))
+                      alert('API Debug Report copied to clipboard! (Note: Use Copy Debug Report for comprehensive NBA Stats API debugging)')
                     } else {
                       alert('Failed to fetch API Debug Report')
                     }
