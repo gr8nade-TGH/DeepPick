@@ -64,10 +64,13 @@ export async function POST(request: NextRequest) {
           console.log(`[Step1:${capper}] Using selected game: ${selectedGameFromProps.away} @ ${selectedGameFromProps.home}`)
           
           // Check if the selected game can be processed
+          const mappedBetType = betType === 'TOTAL' ? 'total' : 'spread'
+          console.log(`[Step1:${capper}] Mapped bet type: ${betType} -> ${mappedBetType}`)
+          
           const canGenerate = await pickGenerationService.canGeneratePick(
             selectedGameFromProps.game_id,
             capper as any,
-            betType === 'TOTAL' ? 'TOTAL' : 'SPREAD',
+            mappedBetType as any,
             2
           )
           
@@ -81,14 +84,14 @@ export async function POST(request: NextRequest) {
             .select('id, pick_type, status, units, created_at')
             .eq('game_id', selectedGameFromProps.game_id)
             .eq('capper', capper)
-            .eq('pick_type', betType === 'TOTAL' ? 'TOTAL' : 'SPREAD')
+            .eq('pick_type', mappedBetType)
 
           const { data: cooldownData, error: cooldownError } = await supabase
             .from('pick_generation_cooldowns')
             .select('*')
             .eq('game_id', selectedGameFromProps.game_id)
             .eq('capper', capper)
-            .eq('bet_type', betType === 'TOTAL' ? 'TOTAL' : 'SPREAD')
+            .eq('bet_type', mappedBetType)
             .gt('cooldown_until', new Date().toISOString())
 
           const { data: allPicks, error: allPicksError } = await supabase

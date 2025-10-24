@@ -75,10 +75,14 @@ export class PickGenerationService {
         console.error('[PickGenerationService] Error checking cooldown:', cooldownError)
       }
       
+      // Map bet type to database format
+      const mappedBetType = betType === 'TOTAL' ? 'total' : betType === 'SPREAD' ? 'spread' : betType.toLowerCase()
+      console.log(`[PickGenerationService] Mapped bet type: ${betType} -> ${mappedBetType}`)
+      
       const { data, error } = await this.supabase.rpc('can_generate_pick', {
         p_game_id: gameId,
         p_capper: capper,
-        p_bet_type: betType,
+        p_bet_type: mappedBetType,
         p_cooldown_hours: cooldownHours
       })
 
