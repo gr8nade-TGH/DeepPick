@@ -123,8 +123,15 @@ export async function fetchTeamRecentForm(
   }
 
   try {
+    console.log('[ODDS-API:SCORES:FETCH_START]', { teamName, lastNGames })
+    
     // Fetch completed games from The Odds API
     const scores = await fetchRecentScores('basketball_nba', 21) // 3 weeks to ensure we get enough games
+    
+    console.log('[ODDS-API:SCORES:FETCHED_GAMES]', { 
+      totalGames: scores.length,
+      sampleGame: scores.length > 0 ? scores[0] : null
+    })
     
     console.log('[ODDS-API:SCORES] Fetched', scores.length, 'completed games')
     
@@ -241,6 +248,12 @@ export async function fetchTeamRecentForm(
     }
   } catch (error) {
     console.error('[ODDS-API:SCORES] Error:', error)
+    console.error('[ODDS-API:SCORES] Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      teamName,
+      lastNGames
+    })
     return {
       ok: false,
       error: error instanceof Error ? error.message : String(error),
