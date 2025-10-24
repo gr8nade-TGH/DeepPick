@@ -681,7 +681,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     // Data anomaly checks
     const factors = step3Data.factors
     const expectedFactorKeys = ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv', 'injuryAvailability']
-    const actualFactorKeys = factors.map(f => f.key)
+    const actualFactorKeys = factors.map((f: any) => f.key)
     
     // Check if we have the expected number of factors
     if (factors.length < 5) {
@@ -708,13 +708,13 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     }
     
     // Check for suspicious data patterns (all factors returning 0)
-    const allFactorsZero = factors.every(f => f.normalized_value === 0)
+    const allFactorsZero = factors.every((f: any) => f.normalized_value === 0)
     if (allFactorsZero) {
       return { isValid: false, error: 'Step 3 all factors returning 0 - possible data issue' }
     }
     
     // Check weight validation
-    const totalWeight = factors.reduce((sum, f) => sum + (f.weight_total_pct || 0), 0)
+    const totalWeight = factors.reduce((sum: number, f: any) => sum + (f.weight_total_pct || 0), 0)
     if (Math.abs(totalWeight - 250) > 1) {
       return { isValid: false, error: `Step 3 total weight ${totalWeight}% is not 250%` }
     }
