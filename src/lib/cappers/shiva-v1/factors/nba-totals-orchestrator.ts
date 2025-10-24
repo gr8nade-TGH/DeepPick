@@ -124,6 +124,16 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
     api_calls_made: false
   }
   
+  console.log('[TOTALS:CONDITION_CHECK]', {
+    enabledFactorKeys,
+    conditionCheck: enabledFactorKeys.some(key => ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv'].includes(key)),
+    paceIndex: enabledFactorKeys.includes('paceIndex'),
+    offForm: enabledFactorKeys.includes('offForm'),
+    defErosion: enabledFactorKeys.includes('defErosion'),
+    threeEnv: enabledFactorKeys.includes('threeEnv'),
+    whistleEnv: enabledFactorKeys.includes('whistleEnv')
+  })
+  
   if (enabledFactorKeys.some(key => ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv'].includes(key))) {
     console.log('[TOTALS:ABOUT_TO_FETCH_NBA_STATS]', 'Starting NBA Stats API fetch...')
     console.log('[TOTALS:ENABLED_FACTORS_FOR_DATA]', { 
