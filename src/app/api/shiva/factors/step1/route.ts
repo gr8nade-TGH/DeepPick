@@ -59,9 +59,9 @@ export async function POST(request: NextRequest) {
 
         console.log(`[Step1:${capper}] Starting with selectedGame:`, selectedGameFromProps)
         
-        // If a game is selected, use it directly instead of querying database
+        // If a game is selected, check if it can be processed first, otherwise scan for games
         if (selectedGameFromProps) {
-          console.log(`[Step1:${capper}] Using selected game: ${selectedGameFromProps.away} @ ${selectedGameFromProps.home}`)
+          console.log(`[Step1:${capper}] Checking selected game: ${selectedGameFromProps.away} @ ${selectedGameFromProps.home}`)
           
           // Check if the selected game can be processed
           const mappedBetType = betType === 'TOTAL' ? 'total' : 'spread'
@@ -118,14 +118,17 @@ export async function POST(request: NextRequest) {
           })
           console.log(`[Step1:${capper}] === END DEBUG INFO ===`)
           
-          if (!canGenerate) {
+          if (canGenerate) {
+            console.log(`[Step1:${capper}] Selected game can be processed, using it`)
+            
+            // Selected game is eligible, use it
             return NextResponse.json({
               status: 200,
               json: {
-                run_id: null,
-                state: 'NO_AVAILABLE_GAMES',
-                message: `Selected game ${selectedGameFromProps.away} @ ${selectedGameFromProps.home} is not available for ${betType} predictions for ${capper} or is in cooldown period`,
-                games: [],
+                run_id: `shiva_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+                state: 'GAME_SELECTED',
+                message: `Selected game ${selectedGameFromProps.away} @ ${selectedGameFromProps.home} is available for ${betType} predictions`,
+                games: [selectedGameFromProps],
                 debug_info: {
                   gameId: selectedGameFromProps.game_id,
                   capper,
@@ -155,10 +158,14 @@ export async function POST(request: NextRequest) {
                   selectedGame: selectedGameFromProps.game_id
                 }
               },
-              dryRun: true,
+              dryRun: false,
               request_id: requestId,
             })
+          } else {
+            console.log(`[Step1:${capper}] Selected game cannot be processed, falling back to game scanning`)
+            // Continue to scan for other eligible games
           }
+        }
           
           // Generate run_id for this prediction
           const runId = crypto.randomUUID()
