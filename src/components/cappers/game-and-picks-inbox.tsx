@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react'
-import { pickGenerationService } from '@/lib/services/pick-generation-service'
 import { capper_type } from '@/lib/database.types'
 
 interface GameInboxProps {
@@ -33,8 +32,28 @@ export function GameInbox({ capper, betType, onGameSelect, selectedGameId, selec
     setLoading(true)
     setError(null)
     try {
-      const games = await pickGenerationService.getAvailableGames(capper, betType, 2, 10)
-      setAvailableGames(games)
+      // Use the new scanner API to get available games
+      const response = await fetch('/api/shiva/step1-scanner', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sport: 'NBA',
+          betType: betType,
+          limit: 10
+        }),
+      })
+      
+      const data = await response.json()
+      
+      if (data.success && data.selected_game) {
+        // If a game was selected, wrap it in an array
+        setAvailableGames([data.selected_game])
+      } else {
+        // No games available
+        setAvailableGames([])
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch games')
     } finally {

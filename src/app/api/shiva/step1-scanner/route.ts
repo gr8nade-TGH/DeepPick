@@ -47,18 +47,18 @@ export async function POST(request: NextRequest) {
           }, { status: 400 })
         }
 
-        const { sport, betType, limit, selectedGame } = parse.data
+        const { sport, betType, limit, selectedGame: selectedGameFromProps } = parse.data
         const supabase = getSupabase()
         
         console.log(`[SHIVA_SCANNER] Starting scan for ${sport} ${betType} games`)
-        console.log(`[SHIVA_SCANNER] Selected game:`, selectedGame)
+        console.log(`[SHIVA_SCANNER] Selected game:`, selectedGameFromProps)
 
         // If a specific game is selected, check if it's eligible first
-        if (selectedGame) {
-          console.log(`[SHIVA_SCANNER] Checking selected game: ${selectedGame.away} @ ${selectedGame.home}`)
+        if (selectedGameFromProps) {
+          console.log(`[SHIVA_SCANNER] Checking selected game: ${selectedGameFromProps.away} @ ${selectedGameFromProps.home}`)
           
           // Check if this game can be processed
-          const canProcess = await checkGameEligibility(selectedGame, sport, betType, supabase)
+          const canProcess = await checkGameEligibility(selectedGameFromProps, sport, betType, supabase)
           
           if (canProcess) {
             console.log(`[SHIVA_SCANNER] Selected game is eligible, using it`)
@@ -66,20 +66,20 @@ export async function POST(request: NextRequest) {
               success: true,
               run_id: `shiva_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
               state: 'GAME_SELECTED',
-              message: `Selected game ${selectedGame.away} @ ${selectedGame.home} is available for ${betType} predictions`,
+              message: `Selected game ${selectedGameFromProps.away} @ ${selectedGameFromProps.home} is available for ${betType} predictions`,
               selected_game: {
-                id: selectedGame.game_id,
-                home_team: { name: selectedGame.home },
-                away_team: { name: selectedGame.away },
-                game_time: selectedGame.game_time,
-                total_line: selectedGame.total_line,
-                spread_line: selectedGame.spread_line
+                id: selectedGameFromProps.game_id,
+                home_team: { name: selectedGameFromProps.home },
+                away_team: { name: selectedGameFromProps.away },
+                game_time: selectedGameFromProps.game_time,
+                total_line: selectedGameFromProps.total_line,
+                spread_line: selectedGameFromProps.spread_line
               },
               filters: {
                 sport,
                 betType,
                 capper: 'SHIVA',
-                selectedGame: selectedGame.game_id
+                selectedGame: selectedGameFromProps.game_id
               }
             })
           } else {
@@ -108,21 +108,21 @@ export async function POST(request: NextRequest) {
         }
 
         // Select the first eligible game
-        const selectedGame = eligibleGames[0]
-        console.log(`[SHIVA_SCANNER] Selected game: ${selectedGame.away_team} @ ${selectedGame.home_team}`)
+        const firstEligibleGame = eligibleGames[0]
+        console.log(`[SHIVA_SCANNER] Selected game: ${firstEligibleGame.away_team} @ ${firstEligibleGame.home_team}`)
 
         return NextResponse.json({
           success: true,
           run_id: `shiva_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
           state: 'GAME_SELECTED',
-          message: `Selected game ${selectedGame.away_team} @ ${selectedGame.home_team} for ${betType} predictions`,
+          message: `Selected game ${firstEligibleGame.away_team} @ ${firstEligibleGame.home_team} for ${betType} predictions`,
           selected_game: {
-            id: selectedGame.id,
-            home_team: { name: selectedGame.home_team },
-            away_team: { name: selectedGame.away_team },
-            game_time: selectedGame.game_time,
-            total_line: selectedGame.total_line,
-            spread_line: selectedGame.spread_line
+            id: firstEligibleGame.id,
+            home_team: { name: firstEligibleGame.home_team },
+            away_team: { name: firstEligibleGame.away_team },
+            game_time: firstEligibleGame.game_time,
+            total_line: firstEligibleGame.total_line,
+            spread_line: firstEligibleGame.spread_line
           },
           filters: {
             sport,
@@ -287,7 +287,7 @@ async function scanForEligibleGames(
     console.log(`[SHIVA_SCANNER] Found ${games.length} potential games`)
 
     // Filter out games that already have picks
-    const gameIds = games.map(game => game.id)
+    const gameIds = games.map((game: any) => game.id)
     
     const { data: existingPicks, error: picksError } = await supabase
       .from('picks')
@@ -305,13 +305,13 @@ async function scanForEligibleGames(
     // Create a set of game IDs that already have picks
     const gamesWithPicks = new Set()
     if (existingPicks) {
-      existingPicks.forEach(pick => {
+      existingPicks.forEach((pick: any) => {
         gamesWithPicks.add(pick.game_id)
       })
     }
 
     // Filter out games with existing picks
-    const availableGames = games.filter(game => !gamesWithPicks.has(game.id))
+    const availableGames = games.filter((game: any) => !gamesWithPicks.has(game.id))
     console.log(`[SHIVA_SCANNER] After filtering existing picks: ${availableGames.length} games`)
 
     if (availableGames.length === 0) {
@@ -323,7 +323,7 @@ async function scanForEligibleGames(
     const { data: cooldownData, error: cooldownError } = await supabase
       .from('pick_generation_cooldowns')
       .select('game_id, cooldown_until')
-      .in('game_id', availableGames.map(g => g.id))
+      .in('game_id', availableGames.map((g: any) => g.id))
       .eq('capper', 'shiva')
       .eq('bet_type', betTypeLower)
       .gt('cooldown_until', new Date().toISOString())
@@ -336,13 +336,13 @@ async function scanForEligibleGames(
     // Create a set of game IDs in cooldown
     const gamesInCooldown = new Set()
     if (cooldownData) {
-      cooldownData.forEach(cooldown => {
+      cooldownData.forEach((cooldown: any) => {
         gamesInCooldown.add(cooldown.game_id)
       })
     }
 
     // Filter out games in cooldown
-    const finalGames = availableGames.filter(game => !gamesInCooldown.has(game.id))
+    const finalGames = availableGames.filter((game: any) => !gamesInCooldown.has(game.id))
     console.log(`[SHIVA_SCANNER] After filtering cooldown: ${finalGames.length} games`)
 
     return finalGames.slice(0, limit) // Return up to the requested limit
