@@ -219,7 +219,7 @@ export async function POST(request: NextRequest) {
             }
           }, { status: 201 })
         }
-        
+
         // Original database query logic for when no game is selected
         console.log(`[Step1:${capper}] No selected game, querying database...`)
         
@@ -437,7 +437,6 @@ export async function POST(request: NextRequest) {
             }
           }
         }, { status: 201 })
-
       } catch (error: any) {
         await logError({
           source: 'api',
