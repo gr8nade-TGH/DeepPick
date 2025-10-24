@@ -68,11 +68,19 @@ export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<StatMuseBundle> 
       } : null
     })
     
-    // Log any API errors
-    if (awayForm.status === 'rejected') console.error('[NBA_STATS_BUNDLE:ERROR] Away Form:', awayForm.reason)
-    if (homeForm.status === 'rejected') console.error('[NBA_STATS_BUNDLE:ERROR] Home Form:', homeForm.reason)
-    if (awaySeason.status === 'rejected') console.error('[NBA_STATS_BUNDLE:ERROR] Away Season:', awaySeason.reason)
-    if (homeSeason.status === 'rejected') console.error('[NBA_STATS_BUNDLE:ERROR] Home Season:', homeSeason.reason)
+    // Debug: Log any rejected promises
+    if (awaySeason.status === 'rejected') {
+      console.error('[NBA_STATS_BUNDLE:ERROR] Away season API failed:', awaySeason.reason)
+    }
+    if (homeSeason.status === 'rejected') {
+      console.error('[NBA_STATS_BUNDLE:ERROR] Home season API failed:', homeSeason.reason)
+    }
+    if (awayForm.status === 'rejected') {
+      console.error('[NBA_STATS_BUNDLE:ERROR] Away form API failed:', awayForm.reason)
+    }
+    if (homeForm.status === 'rejected') {
+      console.error('[NBA_STATS_BUNDLE:ERROR] Home form API failed:', homeForm.reason)
+    }
     
     // Convert recent form to stat format (or use fallbacks)
     const awayStats = awayFormData?.ok && awayFormData.data ? convertRecentFormToStats(awayFormData.data) : null
