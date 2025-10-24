@@ -1071,18 +1071,25 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
               if (gameResult.success && gameResult.data) {
                 const game = gameResult.data
                 
+                // Validate game data structure
+                if (!game || typeof game !== 'object') {
+                  throw new Error('Invalid game data structure')
+                }
+                
                 // Calculate averages from multiple sportsbooks (same logic as Games & Odds page)
-                const sportsbooks = game.sportsbooks || []
+                const sportsbooks = Array.isArray(game.sportsbooks) ? game.sportsbooks : []
+                const gameOdds = game.odds || {}
+                
                 const totals = sportsbooks
-                  .map((book: string) => game.odds?.[book]?.total?.line)
+                  .map((book: string) => gameOdds[book]?.total?.line)
                   .filter((val: any) => val !== undefined && val !== null)
                 
                 const moneylines = sportsbooks
-                  .map((book: string) => game.odds?.[book]?.moneyline)
+                  .map((book: string) => gameOdds[book]?.moneyline)
                   .filter((val: any) => val !== undefined && val !== null)
                 
                 const spreads = sportsbooks
-                  .map((book: string) => game.odds?.[book]?.spread)
+                  .map((book: string) => gameOdds[book]?.spread)
                   .filter((val: any) => val !== undefined && val !== null)
                 
                 // Calculate averages
