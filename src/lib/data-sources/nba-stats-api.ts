@@ -280,16 +280,35 @@ export async function fetchNBATeamStats(
     const headers = json.resultSets[0].headers
     const row = json.resultSets[0].rowSet[0]
     
-    // Parse the stats we need
+    // Parse the stats we need - use league averages if data is missing
+    const pace = row[headers.indexOf('PACE')]
+    const offRating = row[headers.indexOf('OFF_RATING')]
+    const defRating = row[headers.indexOf('DEF_RATING')]
+    const threePAR = row[headers.indexOf('PCT_FGA_3PT')]
+    const ftr = row[headers.indexOf('PCT_FGA_FT')]
+    const threePct = row[headers.indexOf('FG3_PCT')]
+    
+    // Check if we have real data or just empty values
+    const hasRealData = pace && offRating && defRating && threePAR && ftr && threePct
+    
+    if (!hasRealData) {
+      console.warn(`[NBA-Stats-API] Incomplete data for ${teamName} in season ${season}, using league averages`)
+      // Try fallback to previous season if current season has incomplete data
+      if (season === '2024-25') {
+        console.log(`[NBA-Stats-API] Trying fallback to 2023-24 season for ${teamName}...`)
+        return await fetchNBATeamStats(teamName, '2023-24')
+      }
+    }
+    
     const stats: NBATeamStats = {
       teamId,
       teamName,
-      pace: row[headers.indexOf('PACE')] || 100,
-      offensiveRating: row[headers.indexOf('OFF_RATING')] || 110,
-      defensiveRating: row[headers.indexOf('DEF_RATING')] || 110,
-      threePointAttemptRate: row[headers.indexOf('PCT_FGA_3PT')] || 0.39,
-      freeThrowRate: row[headers.indexOf('PCT_FGA_FT')] || 0.22,
-      threePointPercentage: row[headers.indexOf('FG3_PCT')] || 0.35
+      pace: pace || 100.1,
+      offensiveRating: offRating || 110.0,
+      defensiveRating: defRating || 110.0,
+      threePointAttemptRate: threePAR || 0.39,
+      freeThrowRate: ftr || 0.22,
+      threePointPercentage: threePct || 0.35
     }
     
     // Debug: Log the parsed stats
