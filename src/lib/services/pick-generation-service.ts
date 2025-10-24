@@ -48,6 +48,33 @@ export class PickGenerationService {
     try {
       console.log(`[PickGenerationService] Checking canGeneratePick for game ${gameId}, capper ${capper}, betType ${betType}`)
       
+      // First, let's check if there are any existing picks for this game/capper/betType
+      const { data: existingPicks, error: picksError } = await this.supabase
+        .from('picks')
+        .select('id, pick_type, status, units')
+        .eq('game_id', gameId)
+        .eq('capper', capper)
+        .eq('pick_type', betType)
+      
+      console.log(`[PickGenerationService] Existing picks for game ${gameId}:`, existingPicks)
+      if (picksError) {
+        console.error('[PickGenerationService] Error checking existing picks:', picksError)
+      }
+      
+      // Check cooldown table
+      const { data: cooldownData, error: cooldownError } = await this.supabase
+        .from('pick_generation_cooldowns')
+        .select('*')
+        .eq('game_id', gameId)
+        .eq('capper', capper)
+        .eq('bet_type', betType)
+        .gt('cooldown_until', new Date().toISOString())
+      
+      console.log(`[PickGenerationService] Cooldown data for game ${gameId}:`, cooldownData)
+      if (cooldownError) {
+        console.error('[PickGenerationService] Error checking cooldown:', cooldownError)
+      }
+      
       const { data, error } = await this.supabase.rpc('can_generate_pick', {
         p_game_id: gameId,
         p_capper: capper,
