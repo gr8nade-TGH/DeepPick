@@ -50,7 +50,7 @@ export class PickGenerationService {
       console.log(`[PickGenerationService] Capper type: ${typeof capper}`)
       console.log(`[PickGenerationService] Capper value: '${capper}'`)
       console.log(`[PickGenerationService] Capper === 'shiva': ${capper === 'shiva'}`)
-      console.log(`[PickGenerationService] Capper === 'SHIVA': ${capper === 'SHIVA'}`)
+      console.log(`[PickGenerationService] Capper === 'SHIVA': ${(capper as string) === 'SHIVA'}`)
       
       // Map capper to database format (lowercase)
       const mappedCapper = capper.toLowerCase() as capper_type
