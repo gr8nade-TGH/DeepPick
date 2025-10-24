@@ -1031,10 +1031,13 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           }
           
           updateStepProgress(2, 60, 'Calling odds API...')
+          // Use timestamp-based key to bypass idempotency cache
+          const step2IdempotencyKey = `ui-demo-snap-${Date.now()}-${Math.random().toString(36).substring(7)}`
+          console.log('[Step 2] Using idempotency key:', step2IdempotencyKey)
           const r = await postJson('/api/shiva/odds/snapshot', {
             run_id: runId,
             snapshot: snapshotData
-          }, 'ui-demo-snap')
+          }, step2IdempotencyKey)
           if (r.json?.snapshot_id) setSnapId(r.json.snapshot_id)
           setLog(r)
           setStepLogs(prev => ({ ...prev, 2: r }))
@@ -1067,7 +1070,10 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           }
         }
         updateStepProgress(3, 50, 'Fetching team stats...')
-        const r = await postJson('/api/shiva/factors/step3', step3Body, 'ui-demo-step3')
+        // Use timestamp-based key to bypass idempotency cache and force fresh execution
+        const step3IdempotencyKey = `ui-demo-step3-${Date.now()}-${Math.random().toString(36).substring(7)}`
+        console.log('[Step 3] Using idempotency key:', step3IdempotencyKey)
+        const r = await postJson('/api/shiva/factors/step3', step3Body, step3IdempotencyKey)
         updateStepProgress(3, 80, 'Computing factor signals...')
         setLog(r)
         setStepLogs(prev => ({ ...prev, 3: r }))
@@ -1269,7 +1275,10 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           }
         }
         updateStepProgress(6, 50, 'Locking odds...')
-        const r = await postJson('/api/shiva/pick/generate', step6Body, 'ui-demo-step6')
+        // Use timestamp-based key to bypass idempotency cache
+        const step6IdempotencyKey = `ui-demo-step6-${Date.now()}-${Math.random().toString(36).substring(7)}`
+        console.log('[Step 6] Using idempotency key:', step6IdempotencyKey)
+        const r = await postJson('/api/shiva/pick/generate', step6Body, step6IdempotencyKey)
         updateStepProgress(6, 80, 'Finalizing pick...')
         setLog(r)
         setStepLogs(prev => ({ ...prev, 6: r }))
@@ -1282,7 +1291,10 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         updateStepProgress(7, 30, 'Loading card template...')
         const fx = (await import('@/../fixtures/shiva-v1/step7-insight-card.json')).default
         updateStepProgress(7, 60, 'Assembling card data...')
-        const r = await postJson('/api/shiva/insight-card', { ...fx, run_id: runId }, 'ui-demo-step7')
+        // Use timestamp-based key to bypass idempotency cache
+        const step7IdempotencyKey = `ui-demo-step7-${Date.now()}-${Math.random().toString(36).substring(7)}`
+        console.log('[Step 7] Using idempotency key:', step7IdempotencyKey)
+        const r = await postJson('/api/shiva/insight-card', { ...fx, run_id: runId }, step7IdempotencyKey)
         updateStepProgress(7, 80, 'Finalizing card...')
         setLog(r)
         setStepLogs(prev => ({ ...prev, 7: r }))
