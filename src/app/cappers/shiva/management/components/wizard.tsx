@@ -1901,36 +1901,38 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
               : 'bg-gray-800 text-white hover:bg-gray-700'
           }`}
           onClick={async () => {
-            if (step >= 8 || loadingSteps.has(step)) return // Clamp at Step 8 or if loading
+            if (loadingSteps.has(step)) return // Only block if loading
             
-            // Check if current step can be executed (validation)
+            // Check if next step can be executed (validation)
+            const nextStep = Math.min(9, step + 1)
             let canExecute = true
-            if (step === 2) {
+            if (nextStep === 2) {
               canExecute = validateStep1().isValid
-            } else if (step === 3) {
+            } else if (nextStep === 3) {
               canExecute = validateStep2().isValid
-            } else if (step === 4) {
+            } else if (nextStep === 4) {
               canExecute = validateStep3().isValid
-            } else if (step === 5) {
+            } else if (nextStep === 5) {
               canExecute = validateStep4().isValid
-            } else if (step === 6) {
+            } else if (nextStep === 6) {
               canExecute = validateStep5().isValid
-            } else if (step === 7) {
+            } else if (nextStep === 7) {
               canExecute = validateStep6().isValid
-            } else if (step === 8) {
+            } else if (nextStep === 8) {
               canExecute = stepLogs[7]?.json ? true : false
-            } else if (step === 9) {
+            } else if (nextStep === 9) {
               canExecute = stepLogs[8]?.json ? true : false
             }
             
             if (!canExecute) {
-              console.warn(`[Step ${step}] Cannot execute - previous step validation failed`)
+              console.warn(`[Step ${nextStep}] Cannot execute - previous step validation failed`)
               return
             }
             
-            await handleStepClick(step)
-            // Handle step progression
-            setStep(Math.min(9, step + 1)) // Normal progression for all steps
+            // Execute the next step, not the current one
+            await handleStepClick(nextStep)
+            // Update current step after execution
+            setStep(nextStep)
           }}
           disabled={step >= 9 || loadingSteps.has(step)}
           aria-disabled={step >= 9 || loadingSteps.has(step)}
