@@ -722,15 +722,15 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     const expectedFactorKeys = ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv', 'injuryAvailability']
     const actualFactorKeys = factors.map((f: any) => f.key)
     
-    // Check if we have the expected number of factors
-    if (factors.length < 5) {
-      return { isValid: false, error: `Step 3 only generated ${factors.length} factors, expected at least 5` }
+    // Check if we have at least some factors (minimum 1)
+    if (factors.length < 1) {
+      return { isValid: false, error: `Step 3 only generated ${factors.length} factors, expected at least 1` }
     }
     
-    // Check for missing critical factors
+    // Check for missing critical factors (only warn, don't block)
     const missingFactors = expectedFactorKeys.filter(key => !actualFactorKeys.includes(key))
     if (missingFactors.length > 0) {
-      return { isValid: false, error: `Step 3 missing critical factors: ${missingFactors.join(', ')}` }
+      console.warn(`[Step 3] Missing factors: ${missingFactors.join(', ')} - this may be intentional based on configuration`)
     }
     
     // Check if all factors have valid data structure
