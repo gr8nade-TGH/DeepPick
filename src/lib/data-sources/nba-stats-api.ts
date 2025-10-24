@@ -190,7 +190,10 @@ export async function fetchNBATeamStats(
     await new Promise(resolve => setTimeout(resolve, delay))
     
     // NBA Stats API endpoint for team advanced stats
-    const url = `https://stats.nba.com/stats/teamdashboardbygeneralsplits?DateFrom=&DateTo=&GameSegment=&LastNGames=0&LeagueID=00&Location=&MeasureType=Advanced&Month=0&OpponentTeamID=0&Outcome=&PORound=0&PaceAdjust=N&PerMode=PerGame&Period=0&PlusMinus=N&Rank=N&Season=${season}&SeasonSegment=&SeasonType=Regular+Season&ShotClockRange=&TeamID=${teamId}&VsConference=&VsDivision=`
+    const encodedSeason = encodeURIComponent(season)
+    const url = `https://stats.nba.com/stats/teamdashboardbygeneralsplits?DateFrom=&DateTo=&GameSegment=&LastNGames=0&LeagueID=00&Location=&MeasureType=Advanced&Month=0&OpponentTeamID=0&Outcome=&PORound=0&PaceAdjust=N&PerMode=PerGame&Period=0&PlusMinus=N&Rank=N&Season=${encodedSeason}&SeasonSegment=&SeasonType=Regular+Season&ShotClockRange=&TeamID=${teamId}&VsConference=&VsDivision=`
+    
+    console.log(`[NBA-Stats-API] Constructed URL: ${url.substring(0, 200)}...`)
     
     const response = await fetchWithRetry(url, {
       headers: {
@@ -210,6 +213,9 @@ export async function fetchNBATeamStats(
         'Pragma': 'no-cache'
       }
     })
+    
+    console.log(`[NBA-Stats-API] Response status for ${teamName}: ${response.status} ${response.statusText}`)
+    console.log(`[NBA-Stats-API] Response headers for ${teamName}:`, Object.fromEntries(response.headers.entries()))
     
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'No response body')
@@ -241,6 +247,9 @@ export async function fetchNBATeamStats(
         firstRow: json.resultSets[0].rowSet?.[0] || null
       } : null
     })
+    
+    // Debug: Log the raw response for debugging
+    console.log(`[NBA-Stats-API] Raw response for ${teamName}:`, JSON.stringify(json, null, 2).substring(0, 1000) + '...')
     
         if (!json.resultSets || !json.resultSets[0] || !json.resultSets[0].rowSet || json.resultSets[0].rowSet.length === 0) {
           console.error(`[NBA-Stats-API] No data returned for ${teamName} (${season}):`, {
