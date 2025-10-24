@@ -59,7 +59,9 @@ export async function POST(request: NextRequest) {
           console.log(`[SHIVA_SCANNER] Selected game structure:`, JSON.stringify(selectedGameFromProps, null, 2))
           
           // Check if this game can be processed
+          console.log(`[SHIVA_SCANNER] About to check game eligibility...`)
           const canProcess = await checkGameEligibility(selectedGameFromProps, sport, betType, supabase)
+          console.log(`[SHIVA_SCANNER] Game eligibility result:`, canProcess)
           
           if (canProcess) {
             console.log(`[SHIVA_SCANNER] Selected game is eligible, using it`)
@@ -85,6 +87,7 @@ export async function POST(request: NextRequest) {
             })
           } else {
             console.log(`[SHIVA_SCANNER] Selected game is not eligible, falling back to scanning`)
+            console.log(`[SHIVA_SCANNER] Reason: Game failed eligibility check`)
           }
         }
 

@@ -115,28 +115,13 @@ export function HeaderFilters(props: HeaderFiltersProps) {
     }
   }, [gameSearch, sport])
 
-  // Load default game on mount
+  // Set default to "Scan all Games" on mount
   useEffect(() => {
-    async function loadDefaultGame() {
-      if (sport !== 'NBA') return
-      
-      try {
-        const res = await fetch(`/api/games/current?league=${sport}&limit=1`)
-        if (res.ok) {
-          const data = await res.json()
-          if (data.games && data.games.length > 0) {
-            const firstGame = data.games[0]
-            setSelectedGame(firstGame)
-            setGameSearch(`${firstGame.away} @ ${firstGame.home}`)
-            props.onGameChange(firstGame)
-          }
-        }
-      } catch (error) {
-        console.error('Failed to load default game:', error)
-      }
+    if (sport === 'NBA' && !selectedGame) {
+      setSelectedGame(null)
+      setGameSearch('Scan all Games')
+      props.onGameChange(null)
     }
-    
-    loadDefaultGame()
   }, [sport])
 
   // Click outside to close dropdown
@@ -339,6 +324,31 @@ export function HeaderFilters(props: HeaderFiltersProps) {
           {/* Dropdown */}
           {showGameDropdown && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded shadow-lg max-h-96 overflow-y-auto z-20">
+              {/* Scan All Games Option */}
+              <button
+                onClick={() => {
+                  setSelectedGame(null)
+                  setGameSearch('Scan all Games')
+                  setShowGameDropdown(false)
+                  props.onGameChange(null)
+                }}
+                className="w-full px-3 py-2 text-left hover:bg-gray-700 border-b border-gray-700"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="text-sm font-bold text-white">
+                      🔍 Scan all Games
+                    </div>
+                    <div className="text-xs text-gray-300 mt-1">
+                      Automatically find the best available game
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-400 ml-2">
+                    <span className="px-1 py-0.5 bg-green-600 rounded text-xs text-white">AUTO</span>
+                  </div>
+                </div>
+              </button>
+              
               {loadingGames && (
                 <div className="p-3 text-center text-gray-400 text-xs">Loading games...</div>
               )}
