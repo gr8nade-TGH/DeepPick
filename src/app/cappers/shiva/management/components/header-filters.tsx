@@ -49,6 +49,8 @@ export function HeaderFilters(props: HeaderFiltersProps) {
     console.log('HeaderFilters: selectedGame prop changed:', props.selectedGame)
     if (props.selectedGame) {
       setSelectedGame(props.selectedGame)
+      // Update the search input to show the selected game
+      setGameSearch(`${props.selectedGame.away} @ ${props.selectedGame.home}`)
     }
   }, [props.selectedGame])
 
@@ -168,6 +170,7 @@ export function HeaderFilters(props: HeaderFiltersProps) {
   }
 
   const handleGameSelect = (game: GameOption) => {
+    console.log('HeaderFilters: handleGameSelect called with:', game)
     setSelectedGame(game)
     setGameSearch(`${game.away} @ ${game.home}`)
     setShowGameDropdown(false)

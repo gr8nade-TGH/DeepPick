@@ -56,6 +56,11 @@ export default function ShivaManagementPage() {
   const [providerOverrides, setProviderOverrides] = useState<{ step3?: string; step4?: string }>({})
   const [showFactorConfig, setShowFactorConfig] = useState(false)
 
+  // Debug selectedGame changes
+  useEffect(() => {
+    console.log('Main page: selectedGame state changed to:', selectedGame)
+  }, [selectedGame])
+
   if (!uiEnabled) {
     return <div className="p-6">SHIVA v1 UI is disabled.</div>
   }
@@ -66,7 +71,9 @@ export default function ShivaManagementPage() {
 
   const handleGameSelect = (game: any) => {
     console.log('Main page: Game selected:', game)
+    console.log('Main page: Setting selectedGame to:', game)
     setSelectedGame(game)
+    console.log('Main page: selectedGame state updated')
   }
 
   const handleBetTypeChange = (newBetType: 'TOTAL' | 'SPREAD/MONEYLINE') => {
