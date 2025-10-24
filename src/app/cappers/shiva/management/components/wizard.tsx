@@ -1143,9 +1143,9 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           weight_validation: {
             total_weight: stepLogs[3]?.json?.factors?.reduce((sum: number, f: any) => 
               sum + (f.weight_total_pct || 0), 0) || 0,
-            expected_weight: 100,
+            expected_weight: 250,
             is_valid: Math.abs((stepLogs[3]?.json?.factors?.reduce((sum: number, f: any) => 
-              sum + (f.weight_total_pct || 0), 0) || 0) - 100) < 0.01
+              sum + (f.weight_total_pct || 0), 0) || 0) - 250) < 0.01
           }
         }
       },

@@ -186,17 +186,30 @@ export async function fetchNBATeamStats(
     
     const response = await fetchWithRetry(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0',
-        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
         'Referer': 'https://stats.nba.com/',
+        'Origin': 'https://stats.nba.com',
         'x-nba-stats-origin': 'stats',
-        'x-nba-stats-token': 'true'
+        'x-nba-stats-token': 'true',
+        'Connection': 'keep-alive',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-origin'
       }
     })
     
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'No response body')
-      console.error(`[NBA-Stats-API] HTTP ${response.status}:`, errorText.substring(0, 200))
+      console.error(`[NBA-Stats-API] HTTP ${response.status}:`, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries()),
+        errorText: errorText.substring(0, 500),
+        url: url.substring(0, 200) + '...'
+      })
       return {
         ok: false,
         error: `NBA Stats API returned ${response.status}: ${errorText.substring(0, 100)}`,
@@ -206,6 +219,29 @@ export async function fetchNBATeamStats(
     }
     
     const json = await response.json()
+    
+    // Debug: Log the full API response structure
+    console.log(`[NBA-Stats-API] Response structure for ${teamName}:`, {
+      hasResultSets: !!json.resultSets,
+      resultSetsCount: json.resultSets?.length || 0,
+      firstResultSet: json.resultSets?.[0] ? {
+        name: json.resultSets[0].name,
+        headers: json.resultSets[0].headers,
+        rowCount: json.resultSets[0].rowSet?.length || 0,
+        firstRow: json.resultSets[0].rowSet?.[0] || null
+      } : null
+    })
+    
+    if (!json.resultSets || !json.resultSets[0] || !json.resultSets[0].rowSet || json.resultSets[0].rowSet.length === 0) {
+      console.error(`[NBA-Stats-API] No data returned for ${teamName}:`, json)
+      return {
+        ok: false,
+        error: `No data returned for team ${teamName}`,
+        cached: false,
+        latencyMs: Date.now() - startTime
+      }
+    }
+    
     const headers = json.resultSets[0].headers
     const row = json.resultSets[0].rowSet[0]
     
@@ -220,6 +256,9 @@ export async function fetchNBATeamStats(
       freeThrowRate: row[headers.indexOf('PCT_FGA_FT')] || 0.22,
       threePointPercentage: row[headers.indexOf('FG3_PCT')] || 0.35
     }
+    
+    // Debug: Log the parsed stats
+    console.log(`[NBA-Stats-API] Parsed stats for ${teamName}:`, stats)
     
     // Cache the result
     setCache(teamName, 'advanced', stats)
@@ -286,17 +325,30 @@ export async function fetchNBATeamStatsLastN(
     
     const response = await fetchWithRetry(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0',
-        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
         'Referer': 'https://stats.nba.com/',
+        'Origin': 'https://stats.nba.com',
         'x-nba-stats-origin': 'stats',
-        'x-nba-stats-token': 'true'
+        'x-nba-stats-token': 'true',
+        'Connection': 'keep-alive',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-origin'
       }
     })
     
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'No response body')
-      console.error(`[NBA-Stats-API] HTTP ${response.status}:`, errorText.substring(0, 200))
+      console.error(`[NBA-Stats-API] HTTP ${response.status}:`, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries()),
+        errorText: errorText.substring(0, 500),
+        url: url.substring(0, 200) + '...'
+      })
       return {
         ok: false,
         error: `NBA Stats API returned ${response.status}: ${errorText.substring(0, 100)}`,
