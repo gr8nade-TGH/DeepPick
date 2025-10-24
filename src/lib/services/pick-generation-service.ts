@@ -47,14 +47,26 @@ export class PickGenerationService {
   ): Promise<boolean> {
     try {
       console.log(`[PickGenerationService] Checking canGeneratePick for game ${gameId}, capper ${capper}, betType ${betType}`)
+      console.log(`[PickGenerationService] Capper type: ${typeof capper}`)
+      console.log(`[PickGenerationService] Capper value: '${capper}'`)
+      console.log(`[PickGenerationService] Capper === 'shiva': ${capper === 'shiva'}`)
+      console.log(`[PickGenerationService] Capper === 'SHIVA': ${capper === 'SHIVA'}`)
+      
+      // Map capper to database format (lowercase)
+      const mappedCapper = capper.toLowerCase() as capper_type
+      console.log(`[PickGenerationService] Mapped capper: ${capper} -> ${mappedCapper}`)
+      
+      // Map bet type to database format
+      const mappedBetType = betType === 'TOTAL' ? 'total' : betType === 'SPREAD' ? 'spread' : betType.toLowerCase()
+      console.log(`[PickGenerationService] Mapped bet type: ${betType} -> ${mappedBetType}`)
       
       // First, let's check if there are any existing picks for this game/capper/betType
       const { data: existingPicks, error: picksError } = await this.supabase
         .from('picks')
         .select('id, pick_type, status, units')
         .eq('game_id', gameId)
-        .eq('capper', capper)
-        .eq('pick_type', betType)
+        .eq('capper', mappedCapper)
+        .eq('pick_type', mappedBetType)
       
       console.log(`[PickGenerationService] Existing picks for game ${gameId}:`, existingPicks)
       if (picksError) {
@@ -66,8 +78,8 @@ export class PickGenerationService {
         .from('pick_generation_cooldowns')
         .select('*')
         .eq('game_id', gameId)
-        .eq('capper', capper)
-        .eq('bet_type', betType)
+        .eq('capper', mappedCapper)
+        .eq('bet_type', mappedBetType)
         .gt('cooldown_until', new Date().toISOString())
       
       console.log(`[PickGenerationService] Cooldown data for game ${gameId}:`, cooldownData)
@@ -75,13 +87,9 @@ export class PickGenerationService {
         console.error('[PickGenerationService] Error checking cooldown:', cooldownError)
       }
       
-      // Map bet type to database format
-      const mappedBetType = betType === 'TOTAL' ? 'total' : betType === 'SPREAD' ? 'spread' : betType.toLowerCase()
-      console.log(`[PickGenerationService] Mapped bet type: ${betType} -> ${mappedBetType}`)
-      
       const { data, error } = await this.supabase.rpc('can_generate_pick', {
         p_game_id: gameId,
-        p_capper: capper,
+        p_capper: mappedCapper,
         p_bet_type: mappedBetType,
         p_cooldown_hours: cooldownHours
       })
@@ -92,7 +100,19 @@ export class PickGenerationService {
       }
 
       console.log(`[PickGenerationService] canGeneratePick result for game ${gameId}: ${data}`)
-      return data === true
+      console.log(`[PickGenerationService] canGeneratePick result type: ${typeof data}`)
+      console.log(`[PickGenerationService] canGeneratePick result === true: ${data === true}`)
+      console.log(`[PickGenerationService] canGeneratePick result === 'true': ${data === 'true'}`)
+      console.log(`[PickGenerationService] canGeneratePick result == true: ${data == true}`)
+      
+      // Handle different return types from the database function
+      if (data === true || data === 'true' || data === 1) {
+        console.log(`[PickGenerationService] Game ${gameId} CAN generate pick`)
+        return true
+      } else {
+        console.log(`[PickGenerationService] Game ${gameId} CANNOT generate pick`)
+        return false
+      }
     } catch (error) {
       console.error('[PickGenerationService] Exception checking pick eligibility:', error)
       return false
