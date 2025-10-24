@@ -113,37 +113,40 @@ export function GeneratedPicksInbox({ capper }: { capper: capper_type }) {
     setLoading(true)
     setError(null)
     try {
-      // This would fetch from the picks table
-      // For now, we'll use mock data
-      const mockPicks: GeneratedPick[] = [
-        {
-          id: `shiva_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
-          game_id: 'nba_2025_10_24_den_gsw',
-          home_team: 'Golden State Warriors',
-          away_team: 'Denver Nuggets',
-          pick_type: 'TOTAL',
-          selection: 'OVER 233.5',
-          units: 2,
-          confidence: 3.5,
-          created_at: new Date().toISOString(),
-          status: 'pending'
-        },
-        {
-          id: `shiva_${Date.now() - 3600000}_${Math.random().toString(36).substring(2, 8)}`,
-          game_id: 'nba_2025_10_24_lal_bos',
-          home_team: 'Lakers',
-          away_team: 'Celtics',
-          pick_type: 'TOTAL',
-          selection: 'UNDER 225.0',
-          units: 1,
-          confidence: 2.8,
-          created_at: new Date(Date.now() - 3600000).toISOString(),
-          status: 'pending'
-        }
-      ]
-      setGeneratedPicks(mockPicks)
+      // Fetch real picks from the database
+      const response = await fetch(`/api/picks?capper=${capper}&limit=20`)
+      if (!response.ok) {
+        throw new Error(`Failed to fetch picks: ${response.statusText}`)
+      }
+      
+      const data = await response.json()
+      
+      if (data.success && data.picks) {
+        // Transform database picks to GeneratedPick format
+        const transformedPicks: GeneratedPick[] = data.picks.map((pick: any) => ({
+          id: pick.id,
+          game_id: pick.game_id,
+          home_team: pick.game?.home_team?.name || 'Unknown',
+          away_team: pick.game?.away_team?.name || 'Unknown',
+          pick_type: pick.pick_type?.toUpperCase() || 'UNKNOWN',
+          selection: `${pick.pick_type?.toUpperCase()} ${pick.selection || ''}`,
+          units: pick.units || 0,
+          confidence: pick.confidence || 0,
+          created_at: pick.created_at,
+          status: pick.status,
+          insight_card_data: pick.insight_card_data
+        }))
+        
+        setGeneratedPicks(transformedPicks)
+      } else {
+        // Fallback to empty array if no picks found
+        setGeneratedPicks([])
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch picks')
+      console.error('Error fetching generated picks:', err)
+      // Set empty array on error
+      setGeneratedPicks([])
     } finally {
       setLoading(false)
     }
