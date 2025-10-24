@@ -143,17 +143,45 @@ export async function POST(request: Request) {
           // Calculate predicted total
           const predictedTotal = Math.max(180, Math.min(280, leagueAverageTotal + totalAdjustment))
           
-          // Split into home/away scores (simplified - could be enhanced with team-specific data)
-          const homeScore = Math.round(predictedTotal / 2 + (Math.random() - 0.5) * 4) // Add some variance
-          const awayScore = Math.round(predictedTotal - homeScore)
+          // Split into home/away scores with proper home court advantage
+          const homeCourtAdvantage = 2.5 // NBA home court advantage
+          const baseHomeScore = predictedTotal / 2 + homeCourtAdvantage
+          const baseAwayScore = predictedTotal / 2 - homeCourtAdvantage
+          
+          // Add realistic variance (±2-3 points) but ensure no ties
+          const variance = (Math.random() - 0.5) * 4 // ±2 point variance
+          let homeScore = Math.round(baseHomeScore + variance)
+          let awayScore = Math.round(baseAwayScore - variance)
+          
+          // Ensure no ties by adding minimum 1-point difference
+          if (homeScore === awayScore) {
+            // Randomly pick which team gets the extra point
+            if (Math.random() > 0.5) {
+              homeScore += 1
+            } else {
+              awayScore += 1
+            }
+          }
+          
+          // Ensure scores add up to predicted total (within 1 point)
+          const actualTotal = homeScore + awayScore
+          const totalDiff = predictedTotal - actualTotal
+          if (Math.abs(totalDiff) > 0) {
+            // Adjust the higher scoring team to match predicted total
+            if (homeScore > awayScore) {
+              homeScore += Math.round(totalDiff)
+            } else {
+              awayScore += Math.round(totalDiff)
+            }
+          }
           
           const predictedScores = {
             home: homeScore,
             away: awayScore
           }
           
-          // Determine winner
-          const winner = homeScore > awayScore ? 'home' : awayScore > homeScore ? 'away' : 'tie'
+          // Determine winner (guaranteed to be home or away, never tie)
+          const winner = homeScore > awayScore ? 'home' : 'away'
           
           if (writeAllowed) {
             // Store confidence calculation

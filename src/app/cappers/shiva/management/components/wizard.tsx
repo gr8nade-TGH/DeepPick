@@ -271,7 +271,7 @@ function assembleInsightCard({ runCtx, step4, step5, step5_5, step6, step3, step
     predictedScore,
     writeups: {
       prediction: generatePredictionWriteup(pick, predictedScore, totalLine, confFinal, factorRows, awayTeam, homeTeam),
-      gamePrediction: `${predictedScore.winner === 'tie' ? 'TIE GAME' : (predictedScore.winner === 'home' ? homeTeam : awayTeam)} ${Math.max(predictedScore.home, predictedScore.away)}–${Math.min(predictedScore.home, predictedScore.away)} (Total: ${predictedScore.home + predictedScore.away})`,
+      gamePrediction: `${predictedScore.winner === 'home' ? homeTeam : awayTeam} ${Math.max(predictedScore.home, predictedScore.away)}–${Math.min(predictedScore.home, predictedScore.away)} (Total: ${predictedScore.home + predictedScore.away})`,
       bold: step5_5?.json?.bold_predictions?.summary || generateBoldPrediction(pick, predictedScore, factorRows),
     },
     bold_predictions: step5_5?.json?.bold_predictions || null,
@@ -765,7 +765,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     if (predictions.scores.away < 50 || predictions.scores.away > 200) {
       return { isValid: false, error: `Step 4 away score ${predictions.scores.away} seems anomalous (expected 50-200)` }
     }
-    if (!predictions.winner || !['home', 'away', 'tie'].includes(predictions.winner)) {
+    if (!predictions.winner || !['home', 'away'].includes(predictions.winner)) {
       return { isValid: false, error: 'Step 4 predictions missing or invalid winner' }
     }
     
