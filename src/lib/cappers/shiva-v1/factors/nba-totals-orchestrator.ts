@@ -31,6 +31,15 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
     allKeys: enabledFactorKeys,
     factorWeights: ctx.factorWeights
   })
+  console.log('[TOTALS:NBA_STATS_CONDITION_CHECK]', {
+    enabledFactorKeys,
+    shouldFetchNBAStats: enabledFactorKeys.some(key => ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv'].includes(key)),
+    paceIndex: enabledFactorKeys.includes('paceIndex'),
+    offForm: enabledFactorKeys.includes('offForm'),
+    defErosion: enabledFactorKeys.includes('defErosion'),
+    threeEnv: enabledFactorKeys.includes('threeEnv'),
+    whistleEnv: enabledFactorKeys.includes('whistleEnv')
+  })
   
   // Only fetch data if we have enabled factors
   if (enabledFactorKeys.length === 0) {
