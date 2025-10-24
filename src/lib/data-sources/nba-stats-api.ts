@@ -158,10 +158,12 @@ export async function fetchNBATeamStats(
   season: string = '2024-25'
 ): Promise<NBAStatsResponse> {
   const startTime = Date.now()
+  console.log(`[NBA-Stats-API] Fetching stats for ${teamName} (${season})...`)
   
   // Check cache first
   const cached = getCached(teamName, 'advanced')
   if (cached) {
+    console.log(`[NBA-Stats-API] Using cached data for ${teamName}`)
     return {
       ok: true,
       data: cached,
@@ -171,7 +173,9 @@ export async function fetchNBATeamStats(
   }
   
   const teamId = getTeamId(teamName)
+  console.log(`[NBA-Stats-API] Team ID for ${teamName}: ${teamId}`)
   if (!teamId) {
+    console.error(`[NBA-Stats-API] Unknown team: ${teamName}`)
     return {
       ok: false,
       error: `Unknown team: ${teamName}`,

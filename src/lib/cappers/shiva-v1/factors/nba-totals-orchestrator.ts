@@ -97,6 +97,7 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
       threeEnv: enabledFactorKeys.includes('threeEnv'),
       whistleEnv: enabledFactorKeys.includes('whistleEnv')
     })
+    console.log('[TOTALS:TEAM_NAMES]', { away: ctx.away, home: ctx.home })
     bundle = await fetchNBAStatsBundle(ctx)
     console.log('[TOTALS:NBA_STATS_FETCHED]', 'NBA Stats bundle received:', Object.keys(bundle))
     console.debug('[totals:bundle]', bundle)
