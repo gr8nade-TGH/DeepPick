@@ -892,44 +892,54 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         setStepLoading(6, true, 'Generating final pick...', 10)
         
         // Real API call for Step 6 - Pick generation with locked odds
+        const step5Results = stepLogs[5]?.json
+        const step4Results = stepLogs[4]?.json
+        const step2Results = stepLogs[2]?.json
+        
+        const confFinal = step5Results?.conf_final || 0
+        const totalPred = step4Results?.predictions?.total_pred_points || 225
+        const marketTotal = step2Results?.snapshot?.total?.line || 225
+        
+        // Determine pick direction and units based on actual confidence
+        const pickDirection = totalPred > marketTotal ? 'OVER' : 'UNDER'
+        let units = 0
+        if (confFinal >= 4.5) units = 5
+        else if (confFinal >= 4.0) units = 3
+        else if (confFinal >= 3.5) units = 2
+        else if (confFinal >= 2.5) units = 1
+        
         const step6Body = {
           run_id: runId,
           inputs: {
-            conf_final: 2.72, // From Step 5
+            conf_final: confFinal,
             edge_dominant: 'total',
             total_data: {
-              total_pred: 230.1, // From Step 4
-              market_total: 226.5 // From Step 2 snapshot
+              total_pred: totalPred,
+              market_total: marketTotal
             }
           },
           results: {
             decision: {
               pick_type: 'TOTAL',
-              pick_side: 'OVER',
-              line: 227.5,
-              units: 1,
-              reason: 'NBA Totals model projects 230.1 vs market 226.5'
+              pick_side: pickDirection,
+              line: marketTotal,
+              units: units,
+              reason: `NBA Totals model projects ${totalPred} vs market ${marketTotal}`
             },
             persistence: {
               picks_row: {
                 id: `pick_${runId.slice(-8)}`,
                 run_id: runId,
                 sport: 'NBA',
-                matchup: 'Houston Rockets @ Oklahoma City Thunder',
-                confidence: 2.72,
-                units: 1,
+                matchup: `${stepLogs[1]?.json?.selected_game?.away_team?.name || 'Away'} @ ${stepLogs[1]?.json?.selected_game?.home_team?.name || 'Home'}`,
+                confidence: confFinal,
+                units: units,
                 pick_type: 'TOTAL',
-                selection: 'OVER 227.5',
+                selection: `${pickDirection} ${marketTotal}`,
                 created_at_utc: new Date().toISOString()
               }
             },
-            locked_odds: {
-              total_line: 226.5,
-              spread_team: 'Oklahoma City Thunder',
-              spread_line: -7.5,
-              ml_home: -302,
-              ml_away: 242
-            }
+            locked_odds: step2Results?.snapshot?.raw_payload || {}
           }
         }
         updateStepProgress(6, 50, 'Locking odds...')
