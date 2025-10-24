@@ -318,6 +318,57 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
   const [hasInsight, setHasInsight] = useState<boolean>(false)
   const [insightCardData, setInsightCardData] = useState<any>(null)
   const [effectiveProfileSnapshot, setEffectiveProfileSnapshot] = useState<any>(null)
+  const [loadingSteps, setLoadingSteps] = useState<Set<number>>(new Set())
+  const [stepProgress, setStepProgress] = useState<Record<number, { progress: number; status: string }>>({})
+
+  // Loading state management
+  const setStepLoading = (stepNum: number, loading: boolean, status: string = 'Processing...', progress: number = 0) => {
+    setLoadingSteps(prev => {
+      const newSet = new Set(prev)
+      if (loading) {
+        newSet.add(stepNum)
+      } else {
+        newSet.delete(stepNum)
+      }
+      return newSet
+    })
+    
+    setStepProgress(prev => ({
+      ...prev,
+      [stepNum]: { progress, status }
+    }))
+  }
+
+  const updateStepProgress = (stepNum: number, progress: number, status: string) => {
+    setStepProgress(prev => ({
+      ...prev,
+      [stepNum]: { progress, status }
+    }))
+  }
+
+  // Helper function to render step status
+  const renderStepStatus = (stepNum: number, stepName: string) => {
+    if (loadingSteps.has(stepNum)) {
+      return (
+        <div className="flex items-center gap-2">
+          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-400"></div>
+          <span className="px-2 py-1 rounded text-xs bg-blue-600 text-white">
+            {stepProgress[stepNum]?.status || 'Processing...'}
+          </span>
+        </div>
+      )
+    } else if (stepLogs[stepNum]) {
+      return (
+        <span className={`px-2 py-1 rounded text-xs ${
+          stepLogs[stepNum].status >= 200 && stepLogs[stepNum].status < 300 ? 'bg-green-600 text-white' :
+          stepLogs[stepNum].status >= 400 ? 'bg-red-600 text-white' : 'bg-yellow-600 text-white'
+        }`}>
+          {stepLogs[stepNum].status}
+        </span>
+      )
+    }
+    return null
+  }
 
   // Auto-register steps for dynamic documentation
   useEffect(() => {
@@ -497,6 +548,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     try {
       if (current === 1) {
         console.log('[Step 1] Starting Step 1 execution...')
+        setStepLoading(1, true, 'Initializing run...', 10)
         
         // Snapshot effectiveProfile on first step
         if (props.effectiveProfile) {
@@ -506,6 +558,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         
         // Call Step 1 API to find available games
         console.log('[Step 1] Calling game selection API...')
+        updateStepProgress(1, 30, 'Finding available games...')
         
         try {
           const step1Response = await fetch('/api/shiva/factors/step1', {
@@ -575,6 +628,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           })
           
           setLog(step1LogEntry)
+          updateStepProgress(1, 100, 'Game selected successfully')
+          setStepLoading(1, false, 'Complete', 100)
           console.log('[Step 1] Step 1 completed successfully')
           return
           
@@ -592,6 +647,9 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       }
       
       if (current === 2) {
+          console.log('[Step 2] Starting Step 2 execution...')
+          setStepLoading(2, true, 'Capturing odds snapshot...', 20)
+          
           // Use selected game odds or fallback to fixture
           const gameData = props.selectedGame || {
             game_id: 'nba_2025_10_21_okc_hou',
@@ -633,6 +691,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             raw_payload: gameData.odds
           }
           
+          updateStepProgress(2, 60, 'Calling odds API...')
           const r = await postJson('/api/shiva/odds/snapshot', {
             run_id: runId,
             snapshot: snapshotData
@@ -640,7 +699,12 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           if (r.json?.snapshot_id) setSnapId(r.json.snapshot_id)
           setLog(r)
           setStepLogs(prev => ({ ...prev, 2: r }))
+          updateStepProgress(2, 100, 'Odds captured successfully')
+          setStepLoading(2, false, 'Complete', 100)
       } else if (current === 3) {
+        console.log('[Step 3] Starting Step 3 execution...')
+        setStepLoading(3, true, 'Computing NBA factors...', 10)
+        
         // Real API call for Step 3 - NBA Totals factors
         // Note: For NBA TOTAL, the API will compute factors via computeTotalsFactors()
         // The results object is required by schema but will be replaced by computed factors
@@ -663,10 +727,17 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             }
           }
         }
+        updateStepProgress(3, 50, 'Fetching team stats...')
         const r = await postJson('/api/shiva/factors/step3', step3Body, 'ui-demo-step3')
+        updateStepProgress(3, 80, 'Computing factor signals...')
         setLog(r)
         setStepLogs(prev => ({ ...prev, 3: r }))
+        updateStepProgress(3, 100, 'Factors computed successfully')
+        setStepLoading(3, false, 'Complete', 100)
       } else if (current === 4) {
+        console.log('[Step 4] Starting Step 4 execution...')
+        setStepLoading(4, true, 'Generating AI predictions...', 10)
+        
         // Use actual Step 3 results instead of fixture
         const step3Results = stepLogs[3]?.json
         if (!step3Results?.factors) {
@@ -688,17 +759,25 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           }
         }
         console.log('[Wizard:Step4] About to call API with body:', step4Body)
+        updateStepProgress(4, 50, 'Calculating confidence...')
         try {
           const r = await postJson('/api/shiva/factors/step4', step4Body, `ui-demo-step4-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`)
           console.log('[Wizard:Step4] API Response:', r)
           console.log('[Wizard:Step4] Has predictions?', !!r.json?.predictions)
+          updateStepProgress(4, 80, 'Generating score predictions...')
           setLog(r)
           setStepLogs(prev => ({ ...prev, 4: r }))
+          updateStepProgress(4, 100, 'Predictions generated successfully')
+          setStepLoading(4, false, 'Complete', 100)
         } catch (error) {
           console.error('[Wizard:Step4] API Error:', error)
+          setStepLoading(4, false, 'Error', 0)
           setLog({ error: error instanceof Error ? error.message : String(error) })
         }
       } else if (current === 5) {
+        console.log('[Step 5] Starting Step 5 execution...')
+        setStepLoading(5, true, 'Calculating market edge...', 10)
+        
         // Use actual Step 4 results instead of fixture
         const step4Results = stepLogs[4]?.json
         console.log('[Wizard:Step5] Step 4 results:', step4Results)
@@ -741,16 +820,24 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           }
         }
         console.log('[Wizard:Step5] About to call API with body:', step5Body)
+        updateStepProgress(5, 50, 'Computing edge factor...')
         try {
           const r = await postJson('/api/shiva/factors/step5', step5Body, `ui-demo-step5-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`)
           console.log('[Wizard:Step5] API Response:', r)
+          updateStepProgress(5, 80, 'Determining unit allocation...')
           setLog(r)
           setStepLogs(prev => ({ ...prev, 5: r }))
+          updateStepProgress(5, 100, 'Market analysis complete')
+          setStepLoading(5, false, 'Complete', 100)
         } catch (error) {
           console.error('[Wizard:Step5] API Error:', error)
+          setStepLoading(5, false, 'Error', 0)
           setLog({ error: error instanceof Error ? error.message : String(error) })
         }
       } else if (current === 5.5) {
+        console.log('[Step 5.5] Starting Step 5.5 execution...')
+        setStepLoading(5.5, true, 'Generating bold predictions...', 10)
+        
         // Bold Player Predictions - Step 5.5
         const step5Results = stepLogs[5]?.json
         const step4Results = stepLogs[4]?.json
@@ -780,10 +867,17 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           }
         }
         
+        updateStepProgress(5.5, 50, 'Calling AI service...')
         const r = await postJson('/api/shiva/factors/step5-5', step5_5Body, `ui-demo-step5-5-${Date.now()}`)
+        updateStepProgress(5.5, 80, 'Processing predictions...')
         setLog(r)
         setStepLogs(prev => ({ ...prev, 5.5: r }))
+        updateStepProgress(5.5, 100, 'Bold predictions generated')
+        setStepLoading(5.5, false, 'Complete', 100)
       } else if (current === 6) {
+        console.log('[Step 6] Starting Step 6 execution...')
+        setStepLoading(6, true, 'Generating final pick...', 10)
+        
         // Real API call for Step 6 - Pick generation with locked odds
         const step6Body = {
           run_id: runId,
@@ -825,12 +919,22 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             }
           }
         }
+        updateStepProgress(6, 50, 'Locking odds...')
         const r = await postJson('/api/shiva/pick/generate', step6Body, 'ui-demo-step6')
+        updateStepProgress(6, 80, 'Finalizing pick...')
         setLog(r)
         setStepLogs(prev => ({ ...prev, 6: r }))
+        updateStepProgress(6, 100, 'Pick generated successfully')
+        setStepLoading(6, false, 'Complete', 100)
       } else if (current === 7) {
+        console.log('[Step 7] Starting Step 7 execution...')
+        setStepLoading(7, true, 'Generating insight card...', 10)
+        
+        updateStepProgress(7, 30, 'Loading card template...')
         const fx = (await import('@/../fixtures/shiva-v1/step7-insight-card.json')).default
+        updateStepProgress(7, 60, 'Assembling card data...')
         const r = await postJson('/api/shiva/insight-card', { ...fx, run_id: runId }, 'ui-demo-step7')
+        updateStepProgress(7, 80, 'Finalizing card...')
         setLog(r)
         setStepLogs(prev => ({ ...prev, 7: r }))
         
@@ -853,11 +957,17 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         // Light up Insight pill and store assembled data
         setHasInsight(true)
         setInsightCardData(assembledCard)
+        updateStepProgress(7, 100, 'Insight card generated')
+        setStepLoading(7, false, 'Complete', 100)
       } else if (current === 8) {
+        console.log('[Step 8] Starting Step 8 execution...')
+        setStepLoading(8, true, 'Generating debug report...', 10)
+        
         // Debug Report - build comprehensive structure
         console.log('Generating debug report for step 8, stepLogs:', stepLogs)
         console.log('stepLogs keys:', Object.keys(stepLogs))
         console.log('effectiveProfileSnapshot:', effectiveProfileSnapshot)
+        updateStepProgress(8, 30, 'Collecting step data...')
         
         // Build comprehensive steps array with actual response data
         const stepsArray = Object.entries(stepLogs)
@@ -906,6 +1016,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         }
         console.log('Debug report generated (comprehensive):', debugReport)
         setLog({ status: 200, json: debugReport, dryRun: false })
+        updateStepProgress(8, 100, 'Debug report generated')
+        setStepLoading(8, false, 'Complete', 100)
         // DO NOT add to stepLogs to prevent recursion
       }
     } catch (e) {
@@ -1148,25 +1260,75 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                 {step === 1 && (
                   <>
                     Step 1: Run Intake
-                    {stepLogs[1] && (
-                      <span className={`px-2 py-1 rounded text-xs ${
-                        stepLogs[1].status >= 200 && stepLogs[1].status < 300 ? 'bg-green-600 text-white' :
-                        stepLogs[1].status >= 400 ? 'bg-red-600 text-white' : 'bg-yellow-600 text-white'
-                      }`}>
-                        {stepLogs[1].status}
-                      </span>
-                    )}
+                    {renderStepStatus(1, "Run Intake")}
                   </>
                 )}
-                {step === 2 && "Step 2: Odds Snapshot"}
-                {step === 3 && "Step 3: Factor Analysis"}
-                {step === 4 && "Step 4: AI Predictions"}
-                {step === 5 && "Step 5: Edge vs Market FINAL Factor"}
-                {step === 5.5 && "Step 5.5: Bold Player Predictions"}
-                {step === 6 && "Step 6: Pick Generation"}
-                {step === 7 && "Step 7: Insight Card"}
-                {step === 8 && "Step 8: Debug Report"}
+                {step === 2 && (
+                  <>
+                    Step 2: Odds Snapshot
+                    {renderStepStatus(2, "Odds Snapshot")}
+                  </>
+                )}
+                {step === 3 && (
+                  <>
+                    Step 3: Factor Analysis
+                    {renderStepStatus(3, "Factor Analysis")}
+                  </>
+                )}
+                {step === 4 && (
+                  <>
+                    Step 4: AI Predictions
+                    {renderStepStatus(4, "AI Predictions")}
+                  </>
+                )}
+                {step === 5 && (
+                  <>
+                    Step 5: Edge vs Market FINAL Factor
+                    {renderStepStatus(5, "Edge vs Market FINAL Factor")}
+                  </>
+                )}
+                {step === 5.5 && (
+                  <>
+                    Step 5.5: Bold Player Predictions
+                    {renderStepStatus(5.5, "Bold Player Predictions")}
+                  </>
+                )}
+                {step === 6 && (
+                  <>
+                    Step 6: Pick Generation
+                    {renderStepStatus(6, "Pick Generation")}
+                  </>
+                )}
+                {step === 7 && (
+                  <>
+                    Step 7: Insight Card
+                    {renderStepStatus(7, "Insight Card")}
+                  </>
+                )}
+                {step === 8 && (
+                  <>
+                    Step 8: Debug Report
+                    {renderStepStatus(8, "Debug Report")}
+                  </>
+                )}
               </div>
+              
+              {/* Progress Bar for Current Step */}
+              {loadingSteps.has(step) && stepProgress[step] && (
+                <div className="mt-2">
+                  <div className="flex items-center justify-between text-xs text-gray-300 mb-1">
+                    <span>{stepProgress[step].status}</span>
+                    <span>{stepProgress[step].progress}%</span>
+                  </div>
+                  <div className="w-full bg-gray-700 rounded-full h-2">
+                    <div 
+                      className="bg-blue-500 h-2 rounded-full transition-all duration-300 ease-out"
+                      style={{ width: `${stepProgress[step].progress}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )}
+              
               <div className="text-xs text-gray-300 mt-1">
                 {step === 1 && (
                   <div>
@@ -1273,20 +1435,29 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           )}
         </div>
         <button 
-          className={`px-3 py-1 border-2 border-gray-600 rounded font-semibold ${
+          className={`px-3 py-1 border-2 border-gray-600 rounded font-semibold flex items-center gap-2 ${
             step >= 8 
               ? 'bg-gray-700 text-gray-500 cursor-not-allowed' 
+              : loadingSteps.has(step)
+              ? 'bg-blue-600 text-white cursor-wait border-blue-500'
               : 'bg-gray-800 text-white hover:bg-gray-700'
           }`}
           onClick={async () => {
-            if (step >= 8) return // Clamp at Step 8
+            if (step >= 8 || loadingSteps.has(step)) return // Clamp at Step 8 or if loading
             await handleStepClick(step)
             setStep(Math.min(8, step + 1))
           }}
-          disabled={step >= 8}
-          aria-disabled={step >= 8}
+          disabled={step >= 8 || loadingSteps.has(step)}
+          aria-disabled={step >= 8 || loadingSteps.has(step)}
         >
-          Next
+          {loadingSteps.has(step) ? (
+            <>
+              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+              <span className="text-xs">{stepProgress[step]?.status || 'Processing...'}</span>
+            </>
+          ) : (
+            'Next'
+          )}
         </button>
       </div>
 
