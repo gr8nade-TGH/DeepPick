@@ -960,20 +960,26 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         // Call Step 1 API to find available games
         console.log('[Step 1] Calling game selection API...')
         console.log('[Step 1] Selected game:', props.selectedGame)
+        console.log('[Step 1] Selected game type:', typeof props.selectedGame)
+        console.log('[Step 1] Selected game keys:', props.selectedGame ? Object.keys(props.selectedGame) : 'undefined')
         updateStepProgress(1, 30, 'Finding available games...')
         
         try {
+          const requestBody = {
+            sport: 'NBA',
+            betType: props.betType || 'TOTAL',
+            limit: 10,
+            selectedGame: props.selectedGame // Pass the selected game
+          }
+          
+          console.log('[Step 1] Request body:', JSON.stringify(requestBody, null, 2))
+          
           const step1Response = await fetch('/api/shiva/step1-scanner', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              sport: 'NBA',
-              betType: props.betType || 'TOTAL',
-              limit: 10,
-              selectedGame: props.selectedGame // Pass the selected game
-            })
+            body: JSON.stringify(requestBody)
           })
           
           console.log('[Step 1] API response status:', step1Response.status)
