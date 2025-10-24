@@ -104,7 +104,7 @@ export function getFactorWeightsFromProfile(profile: any): Record<string, number
 }
 
 /**
- * Validate that weights sum to 100%
+ * Validate that weights sum to 250%
  */
 export function validateWeights(weights: Record<string, number>): {
   isValid: boolean
@@ -112,7 +112,7 @@ export function validateWeights(weights: Record<string, number>): {
   remainingWeight: number
 } {
   const totalWeight = Object.values(weights).reduce((sum, weight) => sum + weight, 0)
-  const remainingWeight = 100 - totalWeight
+  const remainingWeight = 250 - totalWeight
   const isValid = Math.abs(remainingWeight) < 0.01 // Allow tiny floating point errors
   
   return { isValid, totalWeight, remainingWeight }

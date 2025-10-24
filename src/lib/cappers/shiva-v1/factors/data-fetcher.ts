@@ -29,6 +29,24 @@ export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<StatMuseBundle> 
     const homeSeasonData = homeSeason.status === 'fulfilled' ? homeSeason.value : null
     const homeLast10Data = homeLast10.status === 'fulfilled' ? homeLast10.value : null
     
+    // Debug: Log API call results
+    console.log('[NBA_STATS:API_RESULTS]', {
+      awaySeason: awaySeason.status,
+      awayLast10: awayLast10.status,
+      homeSeason: homeSeason.status,
+      homeLast10: homeLast10.status,
+      awaySeasonData: awaySeasonData ? { ok: awaySeasonData.ok, cached: awaySeasonData.cached, latencyMs: awaySeasonData.latencyMs } : null,
+      awayLast10Data: awayLast10Data ? { ok: awayLast10Data.ok, cached: awayLast10Data.cached, latencyMs: awayLast10Data.latencyMs } : null,
+      homeSeasonData: homeSeasonData ? { ok: homeSeasonData.ok, cached: homeSeasonData.cached, latencyMs: homeSeasonData.latencyMs } : null,
+      homeLast10Data: homeLast10Data ? { ok: homeLast10Data.ok, cached: homeLast10Data.cached, latencyMs: homeLast10Data.latencyMs } : null,
+    })
+    
+    // Log any API errors
+    if (awaySeason.status === 'rejected') console.error('[NBA_STATS:ERROR] Away Season:', awaySeason.reason)
+    if (awayLast10.status === 'rejected') console.error('[NBA_STATS:ERROR] Away Last 10:', awayLast10.reason)
+    if (homeSeason.status === 'rejected') console.error('[NBA_STATS:ERROR] Home Season:', homeSeason.reason)
+    if (homeLast10.status === 'rejected') console.error('[NBA_STATS:ERROR] Home Last 10:', homeLast10.reason)
+    
     // Build bundle with fallbacks to league averages
     const bundle: StatMuseBundle = {
       // Pace data

@@ -1483,7 +1483,14 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           onClick={async () => {
             if (step >= 8 || loadingSteps.has(step)) return // Clamp at Step 8 or if loading
             await handleStepClick(step)
-            setStep(Math.min(8, step + 1))
+            // Handle step progression including Step 5.5
+            if (step === 5) {
+              setStep(5.5) // Go to Step 5.5 after Step 5
+            } else if (step === 5.5) {
+              setStep(6) // Go to Step 6 after Step 5.5
+            } else {
+              setStep(Math.min(8, step + 1)) // Normal progression for other steps
+            }
           }}
           disabled={step >= 8 || loadingSteps.has(step)}
           aria-disabled={step >= 8 || loadingSteps.has(step)}
