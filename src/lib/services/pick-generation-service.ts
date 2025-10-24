@@ -60,6 +60,12 @@ export class PickGenerationService {
       const mappedBetType = betType === 'TOTAL' ? 'total' : betType === 'SPREAD' ? 'spread' : betType.toLowerCase()
       console.log(`[PickGenerationService] Mapped bet type: ${betType} -> ${mappedBetType}`)
       
+      console.log(`[PickGenerationService] === DETAILED QUERY DEBUG ===`)
+      console.log(`[PickGenerationService] Querying picks with:`)
+      console.log(`[PickGenerationService] - game_id: ${gameId}`)
+      console.log(`[PickGenerationService] - capper: ${mappedCapper}`)
+      console.log(`[PickGenerationService] - pick_type: ${mappedBetType}`)
+      
       // First, let's check if there are any existing picks for this game/capper/betType
       const { data: existingPicks, error: picksError } = await this.supabase
         .from('picks')
@@ -68,10 +74,35 @@ export class PickGenerationService {
         .eq('capper', mappedCapper)
         .eq('pick_type', mappedBetType)
       
-      console.log(`[PickGenerationService] Existing picks for game ${gameId}:`, existingPicks)
-      if (picksError) {
-        console.error('[PickGenerationService] Error checking existing picks:', picksError)
-      }
+      console.log(`[PickGenerationService] Existing picks query result:`, existingPicks)
+      console.log(`[PickGenerationService] Existing picks error:`, picksError)
+      
+      // Let's also check what picks exist for this capper on this game (any bet type)
+      const { data: capperPicks, error: capperPicksError } = await this.supabase
+        .from('picks')
+        .select('id, pick_type, status, units, created_at')
+        .eq('game_id', gameId)
+        .eq('capper', mappedCapper)
+      
+      console.log(`[PickGenerationService] All picks for capper ${mappedCapper} on game ${gameId}:`, capperPicks)
+      console.log(`[PickGenerationService] Capper picks error:`, capperPicksError)
+      
+      // Let's check what the exact pick_type values are in the database
+      const { data: allGamePicks, error: allGamePicksError } = await this.supabase
+        .from('picks')
+        .select('id, capper, pick_type, status, units, created_at')
+        .eq('game_id', gameId)
+      
+      console.log(`[PickGenerationService] All picks for game ${gameId}:`, allGamePicks)
+      console.log(`[PickGenerationService] All game picks error:`, allGamePicksError)
+      
+      // Let's specifically look for the shiva/total pick we saw in the console
+      const shivaTotalPicks = allGamePicks?.filter(pick => 
+        pick.capper === 'shiva' && pick.pick_type === 'total'
+      ) || []
+      console.log(`[PickGenerationService] SHIVA total picks found:`, shivaTotalPicks)
+      
+      console.log(`[PickGenerationService] === END DETAILED QUERY DEBUG ===`)
       
       // Check cooldown table
       const { data: cooldownData, error: cooldownError } = await this.supabase
