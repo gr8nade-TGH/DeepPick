@@ -959,6 +959,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         
         // Call Step 1 API to find available games
         console.log('[Step 1] Calling game selection API...')
+        console.log('[Step 1] Selected game:', props.selectedGame)
         updateStepProgress(1, 30, 'Finding available games...')
         
         try {
@@ -972,7 +973,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
               capper: 'SHIVA',
               sport: 'NBA',
               betType: props.betType || 'TOTAL',
-              limit: 10
+              limit: 10,
+              selectedGame: props.selectedGame // Pass the selected game
             })
           })
           

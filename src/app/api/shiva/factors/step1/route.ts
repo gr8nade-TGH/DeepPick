@@ -17,7 +17,8 @@ const Step1Schema = z.object({
   capper: z.string().min(1),
   sport: z.enum(['NBA', 'NFL', 'MLB']),
   betType: z.enum(['TOTAL', 'SPREAD/MONEYLINE']),
-  limit: z.number().min(1).max(50).default(10)
+  limit: z.number().min(1).max(50).default(10),
+  selectedGame: z.any().optional() // Add selectedGame parameter
 })
 
 export async function POST(request: NextRequest) {
@@ -49,13 +50,102 @@ export async function POST(request: NextRequest) {
           }, { status: 400 })
         }
 
-        const { capper, sport, betType, limit } = parse.data
+        const { capper, sport, betType, limit, selectedGame } = parse.data
         const supabase = getSupabase()
 
         // Get current time for filtering
         const now = new Date()
         const thirtyMinutesFromNow = new Date(now.getTime() + 30 * 60 * 1000)
 
+        console.log(`[Step1:${capper}] Starting with selectedGame:`, selectedGame)
+        
+        // If a game is selected, use it directly instead of querying database
+        if (selectedGame) {
+          console.log(`[Step1:${capper}] Using selected game: ${selectedGame.away} @ ${selectedGame.home}`)
+          
+          // Check if the selected game can be processed
+          const canGenerate = await pickGenerationService.canGeneratePick(
+            selectedGame.game_id,
+            capper as any,
+            betType === 'TOTAL' ? 'TOTAL' : 'SPREAD',
+            2
+          )
+          
+          console.log(`[Step1:${capper}] Selected game canGenerate: ${canGenerate}`)
+          
+          if (!canGenerate) {
+            return NextResponse.json({
+              status: 200,
+              json: {
+                run_id: null,
+                state: 'NO_AVAILABLE_GAMES',
+                message: `Selected game ${selectedGame.away} @ ${selectedGame.home} is not available for ${betType} predictions for ${capper} or is in cooldown period`,
+                games: [],
+                filters: {
+                  sport,
+                  betType,
+                  capper,
+                  minStartTime: thirtyMinutesFromNow.toISOString(),
+                  statusFilter: ['scheduled'],
+                  excludeExistingPicks: true,
+                  excludeCooldownGames: true,
+                  selectedGame: selectedGame.game_id
+                }
+              },
+              dryRun: true,
+              request_id: requestId,
+            })
+          }
+          
+          // Generate run_id for this prediction
+          const runId = crypto.randomUUID()
+          
+          // Log the selection
+          console.log(`[Step1:${capper}] Selected game:`, {
+            game_id: selectedGame.game_id,
+            matchup: `${selectedGame.away} @ ${selectedGame.home}`,
+            bet_type: betType,
+            run_id: runId
+          })
+          
+          return NextResponse.json({
+            status: 201,
+            json: {
+              run_id: runId,
+              state: 'IN-PROGRESS',
+              selected_game: {
+                id: selectedGame.game_id,
+                home_team: { name: selectedGame.home },
+                away_team: { name: selectedGame.away },
+                game_date: selectedGame.start_time_utc?.split('T')[0] || new Date().toISOString().split('T')[0],
+                game_time: selectedGame.start_time_utc?.split('T')[1] || '19:00:00',
+                status: selectedGame.status || 'scheduled',
+                sport: selectedGame.sport || sport.toLowerCase(),
+                odds: selectedGame.odds || {}
+              },
+              filters: {
+                sport,
+                betType,
+                capper,
+                minStartTime: thirtyMinutesFromNow.toISOString(),
+                statusFilter: ['scheduled', 'pre-game'],
+                excludeExistingPicks: true,
+                excludeCooldownGames: true,
+                selectedGame: selectedGame.game_id
+              },
+              available_games_count: 1,
+              total_games_checked: 1,
+              cooldown_info: {
+                games_in_cooldown: 0,
+                cooldown_hours: 2
+              }
+            }
+          }, { status: 201 })
+        }
+        
+        // Original database query logic for when no game is selected
+        console.log(`[Step1:${capper}] No selected game, querying database...`)
+        
         // Convert sport and betType to lowercase for database enums
         const sportLower = sport.toLowerCase()
         const betTypeLower = betType.toLowerCase()
