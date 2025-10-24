@@ -1060,18 +1060,95 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           console.log('[Step 2] Starting Step 2 execution...')
           setStepLoading(2, true, 'Capturing odds snapshot...', 20)
           
-          // Use selected game odds or fallback to fixture
-          const gameData = props.selectedGame || {
-            game_id: 'nba_2025_10_21_den_gsw',
-            home: 'Golden State Warriors',
-            away: 'Denver Nuggets',
-            start_time_utc: '2025-10-21T01:30:00Z',
-            odds: {
-              ml_home: -110,
-              ml_away: -110,
-              spread_team: 'Golden State Warriors',
-              spread_line: 2.5,
-              total_line: 227.5
+          // Fetch actual game data with multiple sportsbook odds
+          let gameData
+          if (props.selectedGame) {
+            // Fetch full game data with odds from database
+            try {
+              const gameResponse = await fetch(`/api/games/current?gameId=${props.selectedGame.game_id}`)
+              const gameResult = await gameResponse.json()
+              
+              if (gameResult.success && gameResult.data) {
+                const game = gameResult.data
+                
+                // Calculate averages from multiple sportsbooks (same logic as Games & Odds page)
+                const sportsbooks = game.sportsbooks || []
+                const totals = sportsbooks
+                  .map(book => game.odds?.[book]?.total?.line)
+                  .filter(val => val !== undefined && val !== null)
+                
+                const moneylines = sportsbooks
+                  .map(book => game.odds?.[book]?.moneyline)
+                  .filter(val => val !== undefined && val !== null)
+                
+                const spreads = sportsbooks
+                  .map(book => game.odds?.[book]?.spread)
+                  .filter(val => val !== undefined && val !== null)
+                
+                // Calculate averages
+                const avgTotal = totals.length > 0 ? totals.reduce((a, b) => a + b, 0) / totals.length : 227.5
+                const avgMLHome = moneylines.length > 0 ? 
+                  Math.round(moneylines.reduce((a, b) => a + (b.home || 0), 0) / moneylines.length) : -110
+                const avgMLAway = moneylines.length > 0 ? 
+                  Math.round(moneylines.reduce((a, b) => a + (b.away || 0), 0) / moneylines.length) : -110
+                const avgSpread = spreads.length > 0 ? 
+                  (spreads.reduce((a, b) => a + (b.line || 0), 0) / spreads.length) : 2.5
+                
+                gameData = {
+                  game_id: game.id,
+                  home: game.home_team?.name || 'Home Team',
+                  away: game.away_team?.name || 'Away Team',
+                  start_time_utc: game.game_time,
+                  sportsbooks: sportsbooks,
+                  odds: {
+                    ml_home: avgMLHome,
+                    ml_away: avgMLAway,
+                    spread_team: game.home_team?.name || 'Home Team',
+                    spread_line: avgSpread,
+                    total_line: avgTotal
+                  }
+                }
+                
+                console.log('[Step 2] Using averaged odds from', sportsbooks.length, 'sportsbooks:', {
+                  total_line: avgTotal,
+                  ml_home: avgMLHome,
+                  ml_away: avgMLAway,
+                  spread_line: avgSpread
+                })
+              } else {
+                throw new Error('Failed to fetch game data')
+              }
+            } catch (error) {
+              console.warn('[Step 2] Failed to fetch game data, using fallback:', error)
+              // Fallback to hardcoded data
+              gameData = {
+                game_id: 'nba_2025_10_21_den_gsw',
+                home: 'Golden State Warriors',
+                away: 'Denver Nuggets',
+                start_time_utc: '2025-10-21T01:30:00Z',
+                odds: {
+                  ml_home: -110,
+                  ml_away: -110,
+                  spread_team: 'Golden State Warriors',
+                  spread_line: 2.5,
+                  total_line: 227.5
+                }
+              }
+            }
+          } else {
+            // No selected game - use fallback
+            gameData = {
+              game_id: 'nba_2025_10_21_den_gsw',
+              home: 'Golden State Warriors',
+              away: 'Denver Nuggets',
+              start_time_utc: '2025-10-21T01:30:00Z',
+              odds: {
+                ml_home: -110,
+                ml_away: -110,
+                spread_team: 'Golden State Warriors',
+                spread_line: 2.5,
+                total_line: 227.5
+              }
             }
           }
           
@@ -1083,7 +1160,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             away_team: gameData.away,
             start_time_utc: gameData.start_time_utc,
             captured_at_utc: new Date().toISOString(),
-            books_considered: 3,
+            books_considered: props.selectedGame ? (gameData.sportsbooks?.length || 4) : 3,
             moneyline: {
               home_avg: gameData.odds.ml_home,
               away_avg: gameData.odds.ml_away
