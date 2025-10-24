@@ -12,22 +12,6 @@ const Step5Schema = z.object({
     market_total_line: z.number().finite(),
     pick_direction: z.enum(['OVER', 'UNDER']),
   }).strict(),
-  results: z.object({
-    final_factor: z.object({
-      name: z.string(),
-      edge_pts: z.number(),
-      edge_factor: z.number(),
-      confidence_before: z.number(),
-      confidence_after: z.number(),
-    }).strict(),
-    units: z.number().min(0).max(5),
-    final_pick: z.object({
-      type: z.literal('TOTAL'),
-      selection: z.string(),
-      units: z.number(),
-      confidence: z.number(),
-    }).strict(),
-  }).strict(),
 }).strict()
 
 export async function POST(request: Request) {
@@ -62,7 +46,7 @@ export async function POST(request: Request) {
     return jsonError('INVALID_BODY', 'Invalid request body', 400, { issues: parse.error.issues })
   }
 
-  const { run_id, inputs, results } = parse.data
+  const { run_id, inputs } = parse.data
   const { base_confidence, predicted_total, market_total_line, pick_direction } = inputs
   
   return withIdempotency({
@@ -76,11 +60,11 @@ export async function POST(request: Request) {
       // Calculate market edge
       const marketEdgePts = predicted_total - market_total_line
       
-      // Calculate edge factor: clamp(edgePts / 10, -1, 1)
-      const edgeFactor = Math.max(-1, Math.min(1, marketEdgePts / 10))
+      // Calculate edge factor: clamp(edgePts / 3, -2, 2) - more aggressive scaling
+      const edgeFactor = Math.max(-2, Math.min(2, marketEdgePts / 3))
       
-      // Adjust confidence: clamp(base + (edgeFactor * 1.0), 0, 5)
-      const adjustedConfidence = Math.max(0, Math.min(5, base_confidence + (edgeFactor * 1.0)))
+      // Adjust confidence: clamp(base + (edgeFactor * 1.5), 0, 5) - stronger impact
+      const adjustedConfidence = Math.max(0, Math.min(5, base_confidence + (edgeFactor * 1.5)))
       
       // Calculate units based on final confidence
       let units = 0
@@ -104,7 +88,7 @@ export async function POST(request: Request) {
         // Store final confidence and pick
         const upd = await admin.from('runs').update({ 
           conf_final: adjustedConfidence,
-          final_factor: results.final_factor.name,
+          final_factor: 'Edge vs Market',
           edge_pts: marketEdgePts,
           edge_factor: edgeFactor
         }).eq('run_id', run_id)

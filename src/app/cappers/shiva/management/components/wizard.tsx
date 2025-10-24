@@ -208,7 +208,25 @@ function assembleInsightCard({ runCtx, step4, step5, step5_5, step6, step3, step
   // 2) Populate factor rows from Step-3 (not defaults)
   console.debug('[card:step3.factors.raw]', step3?.json?.factors)
 
-  const factorRows = (step3?.json?.factors ?? [])
+  // Get Edge vs Market factor from Step 5
+  const edgeVsMarket = step5?.json?.final_factor
+  const marketEdgePts = edgeVsMarket?.edge_pts ?? 0
+  const marketEdgeFactor = edgeVsMarket?.edge_factor ?? 0
+  
+  // Create Edge vs Market factor row (always at top)
+  const edgeVsMarketRow = {
+    key: 'edgeVsMarket',
+    label: 'Edge vs Market',
+    icon: '📊',
+    overScore: marketEdgePts > 0 ? Math.abs(marketEdgePts) : 0,
+    underScore: marketEdgePts < 0 ? Math.abs(marketEdgePts) : 0,
+    weightAppliedPct: 100, // Always 100% weight
+    rationale: `Market Edge: ${marketEdgePts > 0 ? 'OVER' : 'UNDER'} ${Math.abs(marketEdgePts).toFixed(1)} pts vs market`,
+    z: marketEdgeFactor,
+    points: Math.abs(marketEdgePts),
+  }
+
+  const otherFactorRows = (step3?.json?.factors ?? [])
     .filter((f: any) => isEnabledInProfile(f.key, runCtx?.effectiveProfile))
     .map((f: any) => {
       const pv = f.parsed_values_json ?? {}
@@ -232,6 +250,9 @@ function assembleInsightCard({ runCtx, step4, step5, step5_5, step6, step3, step
       const absB = Math.abs(b.overScore + b.underScore)
       return absB - absA
     })
+
+  // Combine Edge vs Market (always first) with other factors
+  const factorRows = [edgeVsMarketRow, ...otherFactorRows]
 
   console.debug('[card:factor.rows]', factorRows)
 
@@ -278,7 +299,11 @@ function assembleInsightCard({ runCtx, step4, step5, step5_5, step6, step3, step
     injury_summary: step3?.json?._debug?.totals?.injury_impact ? {
       findings: [],
       total_impact: 0,
-      summary: step3.json._debug.totals.injury_impact.summary || "No recent injury data found"
+      summary: step3.json._debug.totals.injury_impact.rawResponse ? 
+        JSON.parse(step3.json._debug.totals.injury_impact.rawResponse).findings?.length > 0 ?
+          step3.json._debug.totals.injury_impact.summary :
+          "No key injury data was found" :
+        "No key injury data was found"
     } : null,
     factors: factorRows,
     market: {
