@@ -370,6 +370,19 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     return null
   }
 
+  // Step names mapping
+  const stepNames: Record<number, string> = {
+    1: 'Run Intake',
+    2: 'Odds Snapshot', 
+    3: 'Factor Analysis',
+    4: 'AI Predictions',
+    5: 'Edge vs Market FINAL Factor',
+    5.5: 'Bold Player Predictions',
+    6: 'Pick Generation',
+    7: 'Insight Card',
+    8: 'Debug Report'
+  }
+
   // Auto-register steps for dynamic documentation
   useEffect(() => {
     registerStep({
@@ -1047,9 +1060,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         <div className="text-sm text-white font-bold">Step {step} / 8</div>
       </div>
 
-      {/* Step Logs Table - Moved to top for better visibility */}
-      {Object.keys(stepLogs).length > 0 && (
-        <div className="mb-4">
+      {/* Step Logs Table - Always visible, shows all 8 steps */}
+      <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
             <h4 className="text-sm font-semibold text-white">Step Responses:</h4>
             {/* Debug Report Buttons - Always visible when there are step logs */}
@@ -1179,6 +1191,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
               <thead>
                 <tr className="border-b border-gray-600">
                   <th className="text-left p-1 text-white">Step</th>
+                  <th className="text-left p-1 text-white">Name</th>
                   <th className="text-left p-1 text-white">Status</th>
                   <th className="text-left p-1 text-white">AI Used</th>
                   <th className="text-left p-1 text-white">Dry Run</th>
@@ -1187,60 +1200,86 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                 </tr>
               </thead>
               <tbody>
-                {Object.entries(stepLogs).map(([stepNum, response]: [string, any]) => {
-                  const step = parseInt(stepNum)
-                  const usesAI = step === 3 || step === 4 || step === 7 // Steps that use AI
-                  const aiProvider = step === 3 ? 'Perplexity' : step === 4 ? 'OpenAI' : step === 7 ? 'OpenAI' : null
+                {[1, 2, 3, 4, 5, 5.5, 6, 7, 8].map((stepNum) => {
+                  const response = stepLogs[stepNum]
+                  const isExecuted = !!response
+                  const usesAI = stepNum === 3 || stepNum === 4 || stepNum === 7 // Steps that use AI
+                  const aiProvider = stepNum === 3 ? 'Perplexity' : stepNum === 4 ? 'OpenAI' : stepNum === 7 ? 'OpenAI' : null
                   
-                  // Detect mock vs real data
-                  const isMockData = response.json?.mock_data === true || 
-                                   response.json?.data_source === 'mock' ||
-                                   response.json?.fixture === true ||
-                                   (step === 2 && response.json?.snapshot?.odds?.mock === true) ||
-                                   (step === 3 && response.json?.factors?.some((f: any) => f.mock_data === true))
+                  // Detect mock vs real data (only for executed steps)
+                  const isMockData = isExecuted && (
+                    response.json?.mock_data === true || 
+                    response.json?.data_source === 'mock' ||
+                    response.json?.fixture === true ||
+                    (stepNum === 2 && response.json?.snapshot?.odds?.mock === true) ||
+                    (stepNum === 3 && response.json?.factors?.some((f: any) => f.mock_data === true))
+                  )
                   
                   return (
-                    <tr key={stepNum} className="border-b border-gray-700">
+                    <tr key={stepNum} className={`border-b border-gray-700 ${!isExecuted ? 'opacity-50' : ''}`}>
                       <td className="p-1 text-white">{stepNum}</td>
+                      <td className="p-1 text-gray-300">{stepNames[stepNum]}</td>
                       <td className="p-1">
-                        <span className={`px-1 rounded text-xs ${
-                          response.status >= 200 && response.status < 300 ? 'bg-green-600 text-white' :
-                          response.status >= 400 ? 'bg-red-600 text-white' : 'bg-yellow-600 text-white'
-                        }`}>
-                          {response.status}
-                        </span>
-                      </td>
-                      <td className="p-1">
-                        {usesAI ? (
-                          <span className="px-1 rounded text-xs bg-purple-600 text-white">
-                            🤖 {aiProvider}
+                        {isExecuted ? (
+                          <span className={`px-1 rounded text-xs ${
+                            response.status >= 200 && response.status < 300 ? 'bg-green-600 text-white' :
+                            response.status >= 400 ? 'bg-red-600 text-white' : 'bg-yellow-600 text-white'
+                          }`}>
+                            {response.status}
                           </span>
                         ) : (
-                          <span className="px-1 rounded text-xs bg-gray-600 text-white">
+                          <span className="px-1 rounded text-xs bg-gray-600 text-gray-400">
                             —
                           </span>
                         )}
                       </td>
                       <td className="p-1">
-                        <span className={`px-1 rounded text-xs ${
-                          response.dryRun ? 'bg-blue-600 text-white' : 'bg-gray-600 text-white'
-                        }`}>
-                          {response.dryRun ? 'Yes' : 'No'}
-                        </span>
-                      </td>
-                      <td className="p-1">
-                        {isMockData ? (
-                          <span className="px-1 rounded text-xs bg-yellow-600 text-black font-bold">
-                            🔧 MOCK
+                        {isExecuted && usesAI ? (
+                          <span className="px-1 rounded text-xs bg-purple-600 text-white">
+                            🤖 {aiProvider}
                           </span>
                         ) : (
-                          <span className="px-1 rounded text-xs bg-green-600 text-white">
-                            ✅ REAL
+                          <span className="px-1 rounded text-xs bg-gray-600 text-gray-400">
+                            —
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-1">
+                        {isExecuted ? (
+                          <span className={`px-1 rounded text-xs ${
+                            response.dryRun ? 'bg-blue-600 text-white' : 'bg-gray-600 text-white'
+                          }`}>
+                            {response.dryRun ? 'Yes' : 'No'}
+                          </span>
+                        ) : (
+                          <span className="px-1 rounded text-xs bg-gray-600 text-gray-400">
+                            —
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-1">
+                        {isExecuted ? (
+                          isMockData ? (
+                            <span className="px-1 rounded text-xs bg-yellow-600 text-black font-bold">
+                              🔧 MOCK
+                            </span>
+                          ) : (
+                            <span className="px-1 rounded text-xs bg-green-600 text-white">
+                              ✅ REAL
+                            </span>
+                          )
+                        ) : (
+                          <span className="px-1 rounded text-xs bg-gray-600 text-gray-400">
+                            —
                           </span>
                         )}
                       </td>
                       <td className="p-1 font-mono text-xs max-w-xs truncate text-gray-300">
-                        {response.json ? JSON.stringify(response.json).substring(0, 50) + '...' : 'No data'}
+                        {isExecuted ? (
+                          response.json ? JSON.stringify(response.json).substring(0, 50) + '...' : 'No data'
+                        ) : (
+                          <span className="text-gray-500">Not executed</span>
+                        )}
                       </td>
                     </tr>
                   )
@@ -1249,7 +1288,6 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             </table>
           </div>
         </div>
-      )}
 
       {/* Navigation Buttons - Moved to stay at top */}
       <div className="flex items-center justify-between mb-4">
