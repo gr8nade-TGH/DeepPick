@@ -86,5 +86,29 @@ export interface FactorComputationResult {
       bundle: StatMuseBundle
       rows_z_points: Array<{ key: string; z: number; pts: number }>
     }
+    nba_stats_api_debug: {
+      condition_check: {
+        enabledFactorKeys: string[]
+        shouldFetchNBAStats: boolean
+        paceIndex: boolean
+        offForm: boolean
+        defErosion: boolean
+        threeEnv: boolean
+        whistleEnv: boolean
+      }
+      enabled_factors: string[]
+      nba_stats_fetched: boolean
+      team_names: { away: string; home: string }
+      bundle_keys: string[]
+      bundle_sample: {
+        awayPaceSeason: number
+        homePaceSeason: number
+        awayORtgLast10: number
+        homeORtgLast10: number
+        leaguePace: number
+        leagueORtg: number
+      }
+      api_calls_made: boolean
+    }
   }
 }
