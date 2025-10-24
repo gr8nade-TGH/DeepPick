@@ -31,10 +31,16 @@ export function SHIVAManagementInbox({ onGameSelect, selectedGame }: SHIVAManage
   useEffect(() => {
     async function fetchGames() {
       try {
-        const response = await fetch(`/api/games/current?league=${selectedSport}&limit=20`)
+        const response = await fetch(`/api/games/current?league=${selectedSport}&limit=50`)
         if (response.ok) {
           const data = await response.json()
-          setGames(data.games || [])
+          const allGames = data.games || []
+          
+          // Deduplicate games by team matchup (home vs away)
+          const deduplicatedGames = deduplicateGamesByMatchup(allGames)
+          
+          console.log(`[Game Inbox] Fetched ${allGames.length} games, deduplicated to ${deduplicatedGames.length}`)
+          setGames(deduplicatedGames)
         } else {
           console.error('Failed to fetch games:', response.status, response.statusText)
         }
@@ -47,6 +53,45 @@ export function SHIVAManagementInbox({ onGameSelect, selectedGame }: SHIVAManage
     
     fetchGames()
   }, [selectedSport])
+
+  // Deduplicate games by team matchup, keeping the earliest game
+  const deduplicateGamesByMatchup = (games: GameInboxItem[]) => {
+    const matchupMap = new Map<string, GameInboxItem>()
+    const duplicatesRemoved: string[] = []
+    
+    games.forEach(game => {
+      // Create a unique key based on team names (case-insensitive)
+      const homeTeam = game.home.toLowerCase().trim()
+      const awayTeam = game.away.toLowerCase().trim()
+      const matchupKey = `${awayTeam}@${homeTeam}`
+      
+      // If we haven't seen this matchup, or if this game is earlier, keep it
+      if (!matchupMap.has(matchupKey)) {
+        matchupMap.set(matchupKey, game)
+      } else {
+        const existingGame = matchupMap.get(matchupKey)!
+        const currentGameTime = new Date(game.start_time_utc).getTime()
+        const existingGameTime = new Date(existingGame.start_time_utc).getTime()
+        
+        // Keep the earlier game
+        if (currentGameTime < existingGameTime) {
+          duplicatesRemoved.push(`Removed duplicate: ${game.away} @ ${game.home} (${existingGame.start_time_utc})`)
+          matchupMap.set(matchupKey, game)
+        } else {
+          duplicatesRemoved.push(`Removed duplicate: ${game.away} @ ${game.home} (${game.start_time_utc})`)
+        }
+      }
+    })
+    
+    if (duplicatesRemoved.length > 0) {
+      console.log('[Game Inbox] Deduplication results:', duplicatesRemoved)
+    }
+    
+    // Convert back to array and sort by start time
+    return Array.from(matchupMap.values()).sort((a, b) => 
+      new Date(a.start_time_utc).getTime() - new Date(b.start_time_utc).getTime()
+    )
+  }
 
   const formatLocalTime = (utcTime: string) => {
     try {
@@ -89,6 +134,13 @@ export function SHIVAManagementInbox({ onGameSelect, selectedGame }: SHIVAManage
             <div className="text-xs text-gray-300 font-semibold">• SHIVA</div>
           </div>
         </div>
+        
+        {/* Deduplication Info */}
+        {games.length > 0 && (
+          <div className="mb-2 text-xs text-gray-400">
+            Showing {games.length} unique matchups (duplicates removed)
+          </div>
+        )}
         
         {/* Fixed height container with scroll */}
         <div className="h-64 overflow-y-auto border border-gray-600 rounded bg-gray-800">
