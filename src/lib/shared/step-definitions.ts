@@ -8,7 +8,7 @@ export interface StepDefinition {
 export const STEP_DEFINITIONS: StepDefinition[] = [
   {
     step: 1,
-    name: "Run Intake",
+    name: "Game Selection",
     description: "Initialize prediction run and select optimal game",
     details: [
       "Filter games by status (scheduled), timing (>30min), and existing picks",
@@ -43,32 +43,33 @@ export const STEP_DEFINITIONS: StepDefinition[] = [
   },
   {
     step: 4,
-    name: "AI Predictions",
+    name: "Score Predictions",
     description: "Generate total predictions using factor signals and confidence calculation",
     details: [
       "Calculate base confidence score from all factor signals using weighted sum",
       "Generate predicted total: leagueAverage (225) + Σ(factor_signal × 5.0 × weight%)",
       "Apply factor adjustments from Step 3: Pace, Offense, Defense, 3P, FT, Injuries",
       "Split total into home/away scores with realistic variance",
-      "Calculate final confidence score for unit allocation in Step 6",
+      "Calculate final confidence score for unit allocation in Step 5",
       "Note: Team-specific baseline calculation pending implementation"
     ]
   },
   {
     step: 5,
-    name: "Edge vs Market FINAL Factor",
-    description: "Calculate final Edge vs Market factor and determine unit allocation",
+    name: "Pick Generation",
+    description: "Calculate final Edge vs Market factor and generate betting pick",
     details: [
       "Compare predicted total from Step 4 vs current market line from Step 2",
       "Calculate edge points: edgePts = predictedTotal - marketTotalLine",
       "Generate Edge vs Market factor signal: signal = clamp(edgePts/10, -1, +1)",
       "Apply final factor: if signal > 0: overScore = |signal| × 5.0, underScore = 0; else: overScore = 0, underScore = |signal| × 5.0",
       "Calculate final confidence: base_confidence + (edgeFactor × 1.0)",
-      "Determine unit allocation: <2.5→0u, 2.5-3.5→1u, 3.5-4.0→2u, 4.0-4.5→3u, ≥4.5→5u"
+      "Determine unit allocation: <2.5→0u, 2.5-3.5→1u, 3.5-4.0→2u, 4.0-4.5→3u, ≥4.5→5u",
+      "Generate pick selection text (e.g., 'OVER 227.5') with units and confidence"
     ]
   },
   {
-    step: 5.5,
+    step: 6,
     name: "Bold Player Predictions",
     description: "Generate AI-powered bold player predictions using web research",
     details: [
@@ -80,19 +81,19 @@ export const STEP_DEFINITIONS: StepDefinition[] = [
     ]
   },
   {
-    step: 6,
-    name: "Pick Generation",
-    description: "Create final betting recommendation with locked odds",
+    step: 7,
+    name: "Pick Finalization",
+    description: "Finalize and commit the betting pick with locked odds",
     details: [
-      "Use unit allocation from Step 5: <2.5→0u, 2.5-3.5→1u, 3.5-4.0→2u, 4.0-4.5→3u, ≥4.5→5u",
-      "Generate pick selection text (e.g., 'OVER 227.5')",
+      "Use pick decision from Step 5 with unit allocation and confidence",
       "Lock in odds snapshot from Step 2 for grading purposes",
       "Apply risk management rules and validation",
-      "Store final pick with confidence, units, and locked odds"
+      "Store final pick with confidence, units, and locked odds",
+      "Generate unique pick ID for tracking and grading"
     ]
   },
   {
-    step: 7,
+    step: 8,
     name: "Insight Card",
     description: "Generate comprehensive analysis summary and visualization",
     details: [
@@ -105,7 +106,7 @@ export const STEP_DEFINITIONS: StepDefinition[] = [
     ]
   },
   {
-    step: 8,
+    step: 9,
     name: "Debug Report",
     description: "Generate comprehensive debugging information",
     details: [
