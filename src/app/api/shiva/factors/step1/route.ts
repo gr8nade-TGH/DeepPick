@@ -83,14 +83,14 @@ export async function POST(request: NextRequest) {
             .from('picks')
             .select('id, pick_type, status, units, created_at')
             .eq('game_id', selectedGameFromProps.game_id)
-            .eq('capper', capper)
+            .eq('capper', capper.toLowerCase())
             .eq('pick_type', mappedBetType)
 
           const { data: cooldownData, error: cooldownError } = await supabase
             .from('pick_generation_cooldowns')
             .select('*')
             .eq('game_id', selectedGameFromProps.game_id)
-            .eq('capper', capper)
+            .eq('capper', capper.toLowerCase())
             .eq('bet_type', mappedBetType)
             .gt('cooldown_until', new Date().toISOString())
 
@@ -286,7 +286,7 @@ export async function POST(request: NextRequest) {
         const { data: existingPicks, error: picksError } = await supabase
           .from('picks')
           .select('game_id, bet_type')
-          .eq('capper', capper)
+          .eq('capper', capper.toLowerCase())
           .in('game_id', games.map(g => g.id))
 
         if (picksError) {
