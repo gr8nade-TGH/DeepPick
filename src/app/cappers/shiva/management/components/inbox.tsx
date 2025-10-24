@@ -18,7 +18,12 @@ interface GameInboxItem {
   }
 }
 
-export function SHIVAManagementInbox() {
+interface SHIVAManagementInboxProps {
+  onGameSelect?: (game: any) => void
+  selectedGame?: any
+}
+
+export function SHIVAManagementInbox({ onGameSelect, selectedGame }: SHIVAManagementInboxProps = {}) {
   const [games, setGames] = useState<GameInboxItem[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedSport, setSelectedSport] = useState('NBA')
@@ -93,8 +98,17 @@ export function SHIVAManagementInbox() {
             <ul className="divide-y divide-gray-700">
               {games.map((game) => {
                 const statusChip = getStatusChip(game.status)
+                const isSelected = selectedGame?.game_id === game.game_id
                 return (
-                  <li key={game.game_id} className="py-3 px-3">
+                  <li 
+                    key={game.game_id} 
+                    className={`py-3 px-3 cursor-pointer transition-colors ${
+                      isSelected 
+                        ? 'bg-blue-600 text-white' 
+                        : 'hover:bg-gray-700'
+                    }`}
+                    onClick={() => onGameSelect?.(game)}
+                  >
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1">
                         <div className="text-white font-semibold text-sm">
@@ -105,6 +119,9 @@ export function SHIVAManagementInbox() {
                         </div>
                         <div className="text-xs text-gray-300">
                           Spread: {game.odds.spread_team.split(' ').pop()} {game.odds.spread_line !== 0 ? (game.odds.spread_line > 0 ? '+' : '') + game.odds.spread_line : '—'} • Total: {game.odds.total_line !== 0 ? game.odds.total_line : '—'}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          Game ID: {game.game_id}
                         </div>
                       </div>
                       <div className="flex flex-col items-end ml-2">

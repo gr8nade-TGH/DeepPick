@@ -7,6 +7,7 @@ interface GameInboxProps {
   betType: 'TOTAL' | 'SPREAD' | 'MONEYLINE'
   onGameSelect?: (game: any) => void
   selectedGameId?: string
+  selectedGame?: any
 }
 
 interface GeneratedPick {
@@ -23,7 +24,7 @@ interface GeneratedPick {
   insight_card_data?: any // Optional insight card data
 }
 
-export function GameInbox({ capper, betType, onGameSelect, selectedGameId }: GameInboxProps) {
+export function GameInbox({ capper, betType, onGameSelect, selectedGameId, selectedGame }: GameInboxProps) {
   const [availableGames, setAvailableGames] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -85,6 +86,9 @@ export function GameInbox({ capper, betType, onGameSelect, selectedGameId }: Gam
                 <div className="text-xs text-gray-400">
                   {new Date(game.game_time).toLocaleString()} • O/U: {game.total_line}
                 </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  Game ID: {game.game_id}
+                </div>
               </div>
             ))}
           </div>
@@ -113,8 +117,8 @@ export function GeneratedPicksInbox({ capper }: { capper: capper_type }) {
       // For now, we'll use mock data
       const mockPicks: GeneratedPick[] = [
         {
-          id: 'pick_001',
-          game_id: 'game_001',
+          id: `shiva_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+          game_id: 'nba_2025_10_24_den_gsw',
           home_team: 'Golden State Warriors',
           away_team: 'Denver Nuggets',
           pick_type: 'TOTAL',
@@ -125,8 +129,8 @@ export function GeneratedPicksInbox({ capper }: { capper: capper_type }) {
           status: 'pending'
         },
         {
-          id: 'pick_002',
-          game_id: 'game_002',
+          id: `shiva_${Date.now() - 3600000}_${Math.random().toString(36).substring(2, 8)}`,
+          game_id: 'nba_2025_10_24_lal_bos',
           home_team: 'Lakers',
           away_team: 'Celtics',
           pick_type: 'TOTAL',
@@ -337,7 +341,7 @@ export function GeneratedPicksInbox({ capper }: { capper: capper_type }) {
   )
 }
 
-export function GameAndPicksInbox({ capper, betType, onGameSelect, selectedGameId }: GameInboxProps) {
+export function GameAndPicksInbox({ capper, betType, onGameSelect, selectedGameId, selectedGame }: GameInboxProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <GameInbox 
@@ -345,6 +349,7 @@ export function GameAndPicksInbox({ capper, betType, onGameSelect, selectedGameI
         betType={betType} 
         onGameSelect={onGameSelect}
         selectedGameId={selectedGameId}
+        selectedGame={selectedGame}
       />
       <GeneratedPicksInbox capper={capper} />
     </div>

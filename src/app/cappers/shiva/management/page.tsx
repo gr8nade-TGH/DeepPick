@@ -92,13 +92,17 @@ export default function ShivaManagementPage() {
         onModeChange={setMode}
         onProviderOverrides={(step3, step4) => setProviderOverrides({ step3, step4 })}
         onBetTypeChange={handleBetTypeChange}
+        selectedGame={selectedGame}
       />
       
       <div className="p-4 grid grid-cols-12 gap-4">
         {/* Left: Inbox */}
         <div className="col-span-4 space-y-4">
           <div className="border border-gray-700 rounded p-3 bg-gray-900">
-            <SHIVAManagementInbox />
+            <SHIVAManagementInbox 
+              onGameSelect={setSelectedGame}
+              selectedGame={selectedGame}
+            />
           </div>
         </div>
 

@@ -25,6 +25,7 @@ export interface HeaderFiltersProps {
   onModeChange: (mode: 'dry-run' | 'write') => void
   onProviderOverrides: (step3?: string, step4?: string) => void
   onBetTypeChange: (betType: 'TOTAL' | 'SPREAD/MONEYLINE') => void
+  selectedGame?: any
 }
 
 export function HeaderFilters(props: HeaderFiltersProps) {
@@ -36,12 +37,19 @@ export function HeaderFilters(props: HeaderFiltersProps) {
   const [step4Provider, setStep4Provider] = useState<string>('')
   const [profile, setProfile] = useState<CapperProfile | null>(null)
   const [gameSearch, setGameSearch] = useState('')
-  const [selectedGame, setSelectedGame] = useState<GameOption | null>(null)
+  const [selectedGame, setSelectedGame] = useState<GameOption | null>(props.selectedGame || null)
   const [gameOptions, setGameOptions] = useState<GameOption[]>([])
   const [showGameDropdown, setShowGameDropdown] = useState(false)
   const [loadingGames, setLoadingGames] = useState(false)
   const searchTimeoutRef = useRef<NodeJS.Timeout>()
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Update selectedGame when prop changes
+  useEffect(() => {
+    if (props.selectedGame) {
+      setSelectedGame(props.selectedGame)
+    }
+  }, [props.selectedGame])
 
   // Fetch profile when capper/sport changes
   useEffect(() => {

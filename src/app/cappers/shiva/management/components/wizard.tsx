@@ -1332,7 +1332,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             },
             persistence: {
               picks_row: {
-                id: `pick_${runId.slice(-8)}`,
+                id: `shiva_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
                 run_id: runId,
                 sport: 'NBA',
                 matchup: `${stepLogs[1]?.json?.selected_game?.away_team?.name || 'Away'} @ ${stepLogs[1]?.json?.selected_game?.home_team?.name || 'Home'}`,
