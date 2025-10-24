@@ -1074,25 +1074,25 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                 // Calculate averages from multiple sportsbooks (same logic as Games & Odds page)
                 const sportsbooks = game.sportsbooks || []
                 const totals = sportsbooks
-                  .map(book => game.odds?.[book]?.total?.line)
-                  .filter(val => val !== undefined && val !== null)
+                  .map((book: string) => game.odds?.[book]?.total?.line)
+                  .filter((val: any) => val !== undefined && val !== null)
                 
                 const moneylines = sportsbooks
-                  .map(book => game.odds?.[book]?.moneyline)
-                  .filter(val => val !== undefined && val !== null)
+                  .map((book: string) => game.odds?.[book]?.moneyline)
+                  .filter((val: any) => val !== undefined && val !== null)
                 
                 const spreads = sportsbooks
-                  .map(book => game.odds?.[book]?.spread)
-                  .filter(val => val !== undefined && val !== null)
+                  .map((book: string) => game.odds?.[book]?.spread)
+                  .filter((val: any) => val !== undefined && val !== null)
                 
                 // Calculate averages
-                const avgTotal = totals.length > 0 ? totals.reduce((a, b) => a + b, 0) / totals.length : 227.5
+                const avgTotal = totals.length > 0 ? totals.reduce((a: number, b: number) => a + b, 0) / totals.length : 227.5
                 const avgMLHome = moneylines.length > 0 ? 
-                  Math.round(moneylines.reduce((a, b) => a + (b.home || 0), 0) / moneylines.length) : -110
+                  Math.round(moneylines.reduce((a: number, b: any) => a + (b.home || 0), 0) / moneylines.length) : -110
                 const avgMLAway = moneylines.length > 0 ? 
-                  Math.round(moneylines.reduce((a, b) => a + (b.away || 0), 0) / moneylines.length) : -110
+                  Math.round(moneylines.reduce((a: number, b: any) => a + (b.away || 0), 0) / moneylines.length) : -110
                 const avgSpread = spreads.length > 0 ? 
-                  (spreads.reduce((a, b) => a + (b.line || 0), 0) / spreads.length) : 2.5
+                  (spreads.reduce((a: number, b: any) => a + (b.line || 0), 0) / spreads.length) : 2.5
                 
                 gameData = {
                   game_id: game.id,
