@@ -213,17 +213,21 @@ function assembleInsightCard({ runCtx, step4, step5, step5_5, step6, step3, step
   const marketEdgePts = edgeVsMarket?.edge_pts ?? 0
   const marketEdgeFactor = edgeVsMarket?.edge_factor ?? 0
   
+  // Calculate Edge vs Market factor points (following factor pattern)
+  // Edge factor is already normalized (-1.83), convert to points using MAX_POINTS = 5.0
+  const edgeFactorPoints = Math.abs(marketEdgeFactor) * 5.0
+  
   // Create Edge vs Market factor row (always at top)
   const edgeVsMarketRow = {
     key: 'edgeVsMarket',
     label: 'Edge vs Market',
     icon: '📊',
-    overScore: marketEdgePts > 0 ? Math.abs(marketEdgePts) : 0,
-    underScore: marketEdgePts < 0 ? Math.abs(marketEdgePts) : 0,
+    overScore: marketEdgeFactor > 0 ? edgeFactorPoints : 0,
+    underScore: marketEdgeFactor < 0 ? edgeFactorPoints : 0,
     weightAppliedPct: 100, // Always 100% weight
     rationale: `Market Edge: ${marketEdgePts > 0 ? 'OVER' : 'UNDER'} ${Math.abs(marketEdgePts).toFixed(1)} pts vs market`,
     z: marketEdgeFactor,
-    points: Math.abs(marketEdgePts),
+    points: edgeFactorPoints,
   }
 
   const otherFactorRows = (step3?.json?.factors ?? [])
