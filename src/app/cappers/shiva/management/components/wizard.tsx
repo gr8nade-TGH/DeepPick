@@ -1653,6 +1653,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       // Pick Generation Cooldown Information
       pick_generation_cooldown: {
         step1_cooldown_info: stepLogs[1]?.json?.cooldown_info || null,
+        step1_debug_info: stepLogs[0]?.json?.debug_info || null,
         games_in_cooldown: stepLogs[1]?.json?.cooldown_info?.games_in_cooldown || 0,
         cooldown_hours: stepLogs[1]?.json?.cooldown_info?.cooldown_hours || 2,
         total_games_checked: stepLogs[1]?.json?.total_games_checked || 0,

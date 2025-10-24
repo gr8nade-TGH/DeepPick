@@ -74,6 +74,27 @@ export async function POST(request: NextRequest) {
           console.log(`[Step1:${capper}] Selected game canGenerate: ${canGenerate}`)
           
           if (!canGenerate) {
+            // Get detailed debugging information
+            const { data: existingPicks, error: picksError } = await supabase
+              .from('picks')
+              .select('id, pick_type, status, units, created_at')
+              .eq('game_id', selectedGameFromProps.game_id)
+              .eq('capper', capper)
+              .eq('pick_type', betType === 'TOTAL' ? 'TOTAL' : 'SPREAD')
+
+            const { data: cooldownData, error: cooldownError } = await supabase
+              .from('pick_generation_cooldowns')
+              .select('*')
+              .eq('game_id', selectedGameFromProps.game_id)
+              .eq('capper', capper)
+              .eq('bet_type', betType === 'TOTAL' ? 'TOTAL' : 'SPREAD')
+              .gt('cooldown_until', new Date().toISOString())
+
+            const { data: allPicks, error: allPicksError } = await supabase
+              .from('picks')
+              .select('id, capper, pick_type, status, units, created_at')
+              .eq('game_id', selectedGameFromProps.game_id)
+
             return NextResponse.json({
               status: 200,
               json: {
@@ -81,6 +102,24 @@ export async function POST(request: NextRequest) {
                 state: 'NO_AVAILABLE_GAMES',
                 message: `Selected game ${selectedGameFromProps.away} @ ${selectedGameFromProps.home} is not available for ${betType} predictions for ${capper} or is in cooldown period`,
                 games: [],
+                debug_info: {
+                  gameId: selectedGameFromProps.game_id,
+                  capper,
+                  betType,
+                  existingPicks: existingPicks || [],
+                  cooldownData: cooldownData || [],
+                  allPicks: allPicks || [],
+                  errors: {
+                    picksError: picksError?.message,
+                    cooldownError: cooldownError?.message,
+                    allPicksError: allPicksError?.message
+                  },
+                  summary: {
+                    hasExistingPicks: existingPicks && existingPicks.length > 0,
+                    hasActiveCooldown: cooldownData && cooldownData.length > 0,
+                    totalPicksForGame: allPicks ? allPicks.length : 0
+                  }
+                },
                 filters: {
                   sport,
                   betType,
