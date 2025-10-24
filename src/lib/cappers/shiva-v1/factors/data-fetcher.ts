@@ -6,6 +6,7 @@
  */
 
 import { fetchTeamRecentForm, convertRecentFormToStats } from '@/lib/data-sources/odds-api-scores'
+import { fetchNBATeamStats } from '@/lib/data-sources/nba-stats-api'
 import { searchInjuries } from '../news'
 import { RunCtx, StatMuseBundle, InjuryImpact } from './types'
 
@@ -14,23 +15,29 @@ import { RunCtx, StatMuseBundle, InjuryImpact } from './types'
  * Uses The Odds API scores endpoint to calculate stats from last 5 games
  */
 export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<StatMuseBundle> {
-  console.log('[ODDS_API:SCORES:FETCH_START]', { away: ctx.away, home: ctx.home })
+  console.log('[NBA_STATS_BUNDLE:FETCH_START]', { away: ctx.away, home: ctx.home })
   
   try {
-    // Fetch recent form from The Odds API (last 5 games)
-    const [awayForm, homeForm] = await Promise.allSettled([
-      fetchTeamRecentForm(ctx.away, 5),
-      fetchTeamRecentForm(ctx.home, 5)
+    // Fetch both NBA Stats API (season data) and Odds API (recent form)
+    const [awayForm, homeForm, awaySeason, homeSeason] = await Promise.allSettled([
+      fetchTeamRecentForm(ctx.away, 5),  // Odds API - recent form
+      fetchTeamRecentForm(ctx.home, 5),  // Odds API - recent form
+      fetchNBATeamStats(ctx.away),       // NBA Stats API - season data
+      fetchNBATeamStats(ctx.home)        // NBA Stats API - season data
     ])
     
     // Extract data with fallbacks
     const awayFormData = awayForm.status === 'fulfilled' ? awayForm.value : null
     const homeFormData = homeForm.status === 'fulfilled' ? homeForm.value : null
+    const awaySeasonData = awaySeason.status === 'fulfilled' ? awaySeason.value : null
+    const homeSeasonData = homeSeason.status === 'fulfilled' ? homeSeason.value : null
     
     // Debug: Log API call results
-    console.log('[ODDS_API:SCORES:API_RESULTS]', {
+    console.log('[NBA_STATS_BUNDLE:API_RESULTS]', {
       awayForm: awayForm.status,
       homeForm: homeForm.status,
+      awaySeason: awaySeason.status,
+      homeSeason: homeSeason.status,
       awayFormData: awayFormData ? { 
         ok: awayFormData.ok, 
         gamesPlayed: awayFormData.data?.gamesPlayed,
@@ -43,65 +50,107 @@ export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<StatMuseBundle> 
         cached: homeFormData.cached, 
         latencyMs: homeFormData.latencyMs 
       } : null,
+      awaySeasonData: awaySeasonData ? {
+        ok: awaySeasonData.ok,
+        pace: awaySeasonData.data?.pace,
+        offensiveRating: awaySeasonData.data?.offensiveRating,
+        defensiveRating: awaySeasonData.data?.defensiveRating,
+        cached: awaySeasonData.cached,
+        latencyMs: awaySeasonData.latencyMs
+      } : null,
+      homeSeasonData: homeSeasonData ? {
+        ok: homeSeasonData.ok,
+        pace: homeSeasonData.data?.pace,
+        offensiveRating: homeSeasonData.data?.offensiveRating,
+        defensiveRating: homeSeasonData.data?.defensiveRating,
+        cached: homeSeasonData.cached,
+        latencyMs: homeSeasonData.latencyMs
+      } : null
     })
     
     // Log any API errors
-    if (awayForm.status === 'rejected') console.error('[ODDS_API:SCORES:ERROR] Away Form:', awayForm.reason)
-    if (homeForm.status === 'rejected') console.error('[ODDS_API:SCORES:ERROR] Home Form:', homeForm.reason)
+    if (awayForm.status === 'rejected') console.error('[NBA_STATS_BUNDLE:ERROR] Away Form:', awayForm.reason)
+    if (homeForm.status === 'rejected') console.error('[NBA_STATS_BUNDLE:ERROR] Home Form:', homeForm.reason)
+    if (awaySeason.status === 'rejected') console.error('[NBA_STATS_BUNDLE:ERROR] Away Season:', awaySeason.reason)
+    if (homeSeason.status === 'rejected') console.error('[NBA_STATS_BUNDLE:ERROR] Home Season:', homeSeason.reason)
     
     // Convert recent form to stat format (or use fallbacks)
     const awayStats = awayFormData?.ok && awayFormData.data ? convertRecentFormToStats(awayFormData.data) : null
     const homeStats = homeFormData?.ok && homeFormData.data ? convertRecentFormToStats(homeFormData.data) : null
     
-    console.log('[ODDS_API:SCORES:CONVERTED_STATS]', {
+    // Extract NBA Stats API data
+    const awaySeasonStats = awaySeasonData?.ok && awaySeasonData.data ? awaySeasonData.data : null
+    const homeSeasonStats = homeSeasonData?.ok && homeSeasonData.data ? homeSeasonData.data : null
+    
+    console.log('[NBA_STATS_BUNDLE:CONVERTED_STATS]', {
       away: {
         team: ctx.away,
-        gamesPlayed: awayFormData?.data?.gamesPlayed,
-        pace: awayStats?.pace.toFixed(1),
-        ORtg: awayStats?.offensiveRating.toFixed(1),
-        DRtg: awayStats?.defensiveRating.toFixed(1)
+        recentForm: {
+          gamesPlayed: awayFormData?.data?.gamesPlayed,
+          pace: awayStats?.pace.toFixed(1),
+          ORtg: awayStats?.offensiveRating.toFixed(1),
+          DRtg: awayStats?.defensiveRating.toFixed(1)
+        },
+        seasonStats: {
+          pace: awaySeasonStats?.pace.toFixed(1),
+          ORtg: awaySeasonStats?.offensiveRating.toFixed(1),
+          DRtg: awaySeasonStats?.defensiveRating.toFixed(1),
+          threePAR: awaySeasonStats?.threePointAttemptRate.toFixed(3),
+          FTr: awaySeasonStats?.freeThrowRate.toFixed(3),
+          threePct: awaySeasonStats?.threePointPercentage.toFixed(3)
+        }
       },
       home: {
         team: ctx.home,
-        gamesPlayed: homeFormData?.data?.gamesPlayed,
-        pace: homeStats?.pace.toFixed(1),
-        ORtg: homeStats?.offensiveRating.toFixed(1),
-        DRtg: homeStats?.defensiveRating.toFixed(1)
+        recentForm: {
+          gamesPlayed: homeFormData?.data?.gamesPlayed,
+          pace: homeStats?.pace.toFixed(1),
+          ORtg: homeStats?.offensiveRating.toFixed(1),
+          DRtg: homeStats?.defensiveRating.toFixed(1)
+        },
+        seasonStats: {
+          pace: homeSeasonStats?.pace.toFixed(1),
+          ORtg: homeSeasonStats?.offensiveRating.toFixed(1),
+          DRtg: homeSeasonStats?.defensiveRating.toFixed(1),
+          threePAR: homeSeasonStats?.threePointAttemptRate.toFixed(3),
+          FTr: homeSeasonStats?.freeThrowRate.toFixed(3),
+          threePct: homeSeasonStats?.threePointPercentage.toFixed(3)
+        }
       }
     })
     
-    // Build bundle using recent form data (last 5 games)
-    // All stats now come from actual game results, not season averages
+    // Build bundle using NBA Stats API (season data) and Odds API (recent form)
+    // Priority: NBA Stats API for season data, Odds API for recent form, fallback to league averages
     const bundle: StatMuseBundle = {
-      // Pace data (from last 5 games)
-      awayPaceSeason: awayStats?.pace || ctx.leagueAverages.pace,
-      awayPaceLast10: awayStats?.pace || ctx.leagueAverages.pace,
-      homePaceSeason: homeStats?.pace || ctx.leagueAverages.pace,
-      homePaceLast10: homeStats?.pace || ctx.leagueAverages.pace,
+      // Pace data (NBA Stats API season data, with recent form fallback)
+      awayPaceSeason: awaySeasonStats?.pace || awayStats?.pace || ctx.leagueAverages.pace,
+      awayPaceLast10: awayStats?.pace || awaySeasonStats?.pace || ctx.leagueAverages.pace,
+      homePaceSeason: homeSeasonStats?.pace || homeStats?.pace || ctx.leagueAverages.pace,
+      homePaceLast10: homeStats?.pace || homeSeasonStats?.pace || ctx.leagueAverages.pace,
       
-      // Offensive ratings (from last 5 games)
-      awayORtgLast10: awayStats?.offensiveRating || ctx.leagueAverages.ORtg,
-      homeORtgLast10: homeStats?.offensiveRating || ctx.leagueAverages.ORtg,
+      // Offensive ratings (NBA Stats API season data, with recent form fallback)
+      awayORtgLast10: awayStats?.offensiveRating || awaySeasonStats?.offensiveRating || ctx.leagueAverages.ORtg,
+      homeORtgLast10: homeStats?.offensiveRating || homeSeasonStats?.offensiveRating || ctx.leagueAverages.ORtg,
       
-      // Defensive ratings (from last 5 games)
-      awayDRtgSeason: awayStats?.defensiveRating || ctx.leagueAverages.DRtg,
-      homeDRtgSeason: homeStats?.defensiveRating || ctx.leagueAverages.DRtg,
+      // Defensive ratings (NBA Stats API season data, with recent form fallback)
+      awayDRtgSeason: awaySeasonStats?.defensiveRating || awayStats?.defensiveRating || ctx.leagueAverages.DRtg,
+      homeDRtgSeason: homeSeasonStats?.defensiveRating || homeStats?.defensiveRating || ctx.leagueAverages.DRtg,
       
-      // 3-Point environment (estimated from total points)
-      away3PAR: awayStats?.threePointAttemptRate || ctx.leagueAverages.threePAR,
-      home3PAR: homeStats?.threePointAttemptRate || ctx.leagueAverages.threePAR,
-      awayOpp3PAR: homeStats?.threePointAttemptRate || ctx.leagueAverages.threePAR,
-      homeOpp3PAR: awayStats?.threePointAttemptRate || ctx.leagueAverages.threePAR,
-      away3Pct: awayStats?.threePointPercentage || 0.35,
-      home3Pct: homeStats?.threePointPercentage || 0.35,
-      away3PctLast10: awayStats?.threePointPercentage || 0.35,
-      home3PctLast10: homeStats?.threePointPercentage || 0.35,
+      // 3-Point environment (NBA Stats API season data, with fallback)
+      away3PAR: awaySeasonStats?.threePointAttemptRate || ctx.leagueAverages.threePAR,
+      home3PAR: homeSeasonStats?.threePointAttemptRate || ctx.leagueAverages.threePAR,
+      awayOpp3PAR: homeSeasonStats?.threePointAttemptRate || ctx.leagueAverages.threePAR,
+      homeOpp3PAR: awaySeasonStats?.threePointAttemptRate || ctx.leagueAverages.threePAR,
+      away3Pct: awaySeasonStats?.threePointPercentage || 0.35,
+      home3Pct: homeSeasonStats?.threePointPercentage || 0.35,
+      away3PctLast10: awayStats?.threePointPercentage || awaySeasonStats?.threePointPercentage || 0.35,
+      home3PctLast10: homeStats?.threePointPercentage || homeSeasonStats?.threePointPercentage || 0.35,
       
-      // Free throw environment (estimated from total points)
-      awayFTr: awayStats?.freeThrowRate || ctx.leagueAverages.FTr,
-      homeFTr: homeStats?.freeThrowRate || ctx.leagueAverages.FTr,
-      awayOppFTr: homeStats?.freeThrowRate || ctx.leagueAverages.FTr,
-      homeOppFTr: awayStats?.freeThrowRate || ctx.leagueAverages.FTr,
+      // Free throw environment (NBA Stats API season data, with fallback)
+      awayFTr: awaySeasonStats?.freeThrowRate || ctx.leagueAverages.FTr,
+      homeFTr: homeSeasonStats?.freeThrowRate || ctx.leagueAverages.FTr,
+      awayOppFTr: homeSeasonStats?.freeThrowRate || ctx.leagueAverages.FTr,
+      homeOppFTr: awaySeasonStats?.freeThrowRate || ctx.leagueAverages.FTr,
       
       // League anchors
       leaguePace: ctx.leagueAverages.pace,
