@@ -963,14 +963,12 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         updateStepProgress(1, 30, 'Finding available games...')
         
         try {
-          const step1Response = await fetch('/api/shiva/factors/step1', {
+          const step1Response = await fetch('/api/shiva/step1-scanner', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Idempotency-Key': crypto.randomUUID(),
             },
             body: JSON.stringify({
-              capper: 'SHIVA',
               sport: 'NBA',
               betType: props.betType || 'TOTAL',
               limit: 10,
@@ -983,25 +981,20 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           console.log('[Step 1] API response data:', step1Data)
           
           // Enhanced client-side debugging
-          if (step1Data.json?.debug_info) {
-            console.log('🔍 === STEP 1 DEBUG INFO (CLIENT) ===')
-            console.log('Game ID:', step1Data.json.debug_info.gameId)
-            console.log('Capper:', step1Data.json.debug_info.capper)
-            console.log('Bet Type:', step1Data.json.debug_info.betType)
-            console.log('Existing Picks:', step1Data.json.debug_info.existingPicks)
-            console.log('Cooldown Data:', step1Data.json.debug_info.cooldownData)
-            console.log('All Picks for Game:', step1Data.json.debug_info.allPicks)
-            console.log('Database Errors:', step1Data.json.debug_info.errors)
-            console.log('Summary:', step1Data.json.debug_info.summary)
-            console.log('🔍 === END STEP 1 DEBUG INFO ===')
-          }
+          console.log('🔍 === STEP 1 SCANNER DEBUG INFO (CLIENT) ===')
+          console.log('Success:', step1Data.success)
+          console.log('State:', step1Data.state)
+          console.log('Message:', step1Data.message)
+          console.log('Selected Game:', step1Data.selected_game)
+          console.log('Available Games Count:', step1Data.available_games_count)
+          console.log('🔍 === END STEP 1 SCANNER DEBUG INFO ===')
           
           if (!step1Response.ok) {
             console.error('[Step 1] API error:', step1Data)
             throw new Error(`Step 1 failed: ${step1Data.error?.message || 'Unknown error'}`)
           }
           
-          if (step1Data.json.state === 'NO_GAMES_AVAILABLE' || step1Data.json.state === 'NO_AVAILABLE_GAMES') {
+          if (!step1Data.success || step1Data.state === 'NO_AVAILABLE_GAMES') {
             // No games available - show message
             console.log('[Step 1] No games available, showing message')
             const noGamesResponse = {
@@ -1021,8 +1014,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           }
           
           // Set the run_id from API response
-          const selectedGame = step1Data.json.selected_game
-          const generatedRunId = step1Data.json.run_id
+          const selectedGame = step1Data.selected_game
+          const generatedRunId = step1Data.run_id
           
           console.log('[Step 1] Setting runId to:', generatedRunId)
           console.log('[Step 1] Selected game:', selectedGame)
@@ -1032,8 +1025,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           // Store Step 1 response
           const step1LogEntry = {
             status: step1Response.status,
-            json: step1Data.json,
-            dryRun: true,
+            json: step1Data,
+            dryRun: false,
             latencyMs: 0 // Will be calculated properly later
           }
           
