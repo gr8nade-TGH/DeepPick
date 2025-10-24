@@ -220,24 +220,21 @@ export function InsightCard(props: InsightCardProps) {
           <div className="p-4 bg-slate-800 border-b border-slate-700 space-y-3">
             {props.writeups.prediction && (
               <div className="bg-slate-700 rounded-lg p-3">
-                <div className="text-xs font-semibold text-slate-300 uppercase mb-2">[CAPPER NAME: SHIVA] PREDICTION WRITEUP</div>
+                <div className="text-xs font-semibold text-slate-300 uppercase mb-2">PREDICTION WRITEUP</div>
                 <p className="text-white text-sm leading-relaxed">{props.writeups.prediction}</p>
               </div>
             )}
             
             {props.writeups.gamePrediction && (
               <div className="bg-slate-700 rounded-lg p-3">
-                <div className="text-xs font-semibold text-slate-300 uppercase mb-2">[CAPPER NAME: SHIVA] GAME PREDICTION (SCORE AND VICTOR)</div>
+                <div className="text-xs font-semibold text-slate-300 uppercase mb-2">GAME PREDICTION (SCORE AND VICTOR)</div>
                 <p className="text-white text-base font-semibold mb-2">{props.writeups.gamePrediction}</p>
-                {/* Clear predicted score and victor display */}
+                {/* Clear predicted score display */}
                 <div className="bg-slate-600 rounded p-2 mt-2">
                   <div className="text-center">
                     <div className="text-sm text-slate-300 mb-1">PREDICTED FINAL SCORE</div>
                     <div className="text-lg font-bold text-white">
                       {props.matchup?.away || 'Away'} {safePredictedScore.away} - {safePredictedScore.home} {props.matchup?.home || 'Home'}
-                    </div>
-                    <div className="text-sm text-slate-300 mt-1">
-                      🏆 PREDICTED WINNER: <span className="font-bold text-yellow-400">{safePredictedScore.winner}</span>
                     </div>
                   </div>
                 </div>
