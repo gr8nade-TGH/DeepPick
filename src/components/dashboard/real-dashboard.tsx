@@ -349,21 +349,21 @@ export function RealDashboard() {
                 })
                 return null
               })()}
-              {!performance?.chartData || performance.chartData.length === 0 ? (
+              {!performance?.chartData || performance?.chartData?.length === 0 ? (
                 <div className="h-[250px] flex items-center justify-center text-gray-400">
                   <div className="text-center">
                     <p className="text-lg mb-2">No data yet</p>
                     <p className="text-sm">Place some picks to see your profit over time</p>
                   </div>
                 </div>
-              ) : performance.chartData.length === 1 ? (
+              ) : performance?.chartData?.length === 1 ? (
                 <div className="h-[250px] flex items-center justify-center">
                   <div className="text-center">
                     <p className="text-gray-400 text-sm mb-2">
-                      {new Date(performance.chartData[0].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      {new Date(performance?.chartData?.[0]?.date || new Date()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </p>
-                    <p className={`text-4xl font-bold ${performance.chartData[0].profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      ${performance.chartData[0].profit.toFixed(2)}
+                    <p className={`text-4xl font-bold ${(performance?.chartData?.[0]?.profit || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      ${(performance?.chartData?.[0]?.profit || 0).toFixed(2)}
                     </p>
                     <p className="text-gray-500 text-sm mt-2">Current Profit</p>
                     <p className="text-gray-600 text-xs mt-4">Chart will show when you have multiple days of picks</p>
@@ -372,7 +372,7 @@ export function RealDashboard() {
               ) : (
               <div className="h-[250px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={performance.chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                  <AreaChart data={performance?.chartData || []} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                     <defs>
                       <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#10B981" stopOpacity={0.8}/>
