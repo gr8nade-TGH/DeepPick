@@ -185,6 +185,10 @@ export async function fetchNBATeamStats(
   }
   
   try {
+    // Add random delay to avoid rate limiting (NBA Stats API is sensitive)
+    const delay = Math.random() * 1000 + 500 // 500-1500ms delay
+    await new Promise(resolve => setTimeout(resolve, delay))
+    
     // NBA Stats API endpoint for team advanced stats
     const url = `https://stats.nba.com/stats/teamdashboardbygeneralsplits?DateFrom=&DateTo=&GameSegment=&LastNGames=0&LeagueID=00&Location=&MeasureType=Advanced&Month=0&OpponentTeamID=0&Outcome=&PORound=0&PaceAdjust=N&PerMode=PerGame&Period=0&PlusMinus=N&Rank=N&Season=${season}&SeasonSegment=&SeasonType=Regular+Season&ShotClockRange=&TeamID=${teamId}&VsConference=&VsDivision=`
     
@@ -194,14 +198,16 @@ export async function fetchNBATeamStats(
         'Accept': 'application/json, text/plain, */*',
         'Accept-Language': 'en-US,en;q=0.9',
         'Accept-Encoding': 'gzip, deflate, br',
-        'Referer': 'https://stats.nba.com/',
-        'Origin': 'https://stats.nba.com',
+        'Referer': 'https://www.nba.com/',
+        'Origin': 'https://www.nba.com',
         'x-nba-stats-origin': 'stats',
         'x-nba-stats-token': 'true',
         'Connection': 'keep-alive',
         'Sec-Fetch-Dest': 'empty',
         'Sec-Fetch-Mode': 'cors',
-        'Sec-Fetch-Site': 'same-origin'
+        'Sec-Fetch-Site': 'cross-site',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
       }
     })
     
@@ -236,15 +242,31 @@ export async function fetchNBATeamStats(
       } : null
     })
     
-    if (!json.resultSets || !json.resultSets[0] || !json.resultSets[0].rowSet || json.resultSets[0].rowSet.length === 0) {
-      console.error(`[NBA-Stats-API] No data returned for ${teamName}:`, json)
-      return {
-        ok: false,
-        error: `No data returned for team ${teamName}`,
-        cached: false,
-        latencyMs: Date.now() - startTime
-      }
-    }
+        if (!json.resultSets || !json.resultSets[0] || !json.resultSets[0].rowSet || json.resultSets[0].rowSet.length === 0) {
+          console.error(`[NBA-Stats-API] No data returned for ${teamName} (${season}):`, {
+            hasResultSets: !!json.resultSets,
+            resultSetsCount: json.resultSets?.length || 0,
+            firstResultSet: json.resultSets?.[0] ? {
+              name: json.resultSets[0].name,
+              headers: json.resultSets[0].headers,
+              rowCount: json.resultSets[0].rowSet?.length || 0
+            } : null,
+            season: season,
+            note: 'This may be due to the new NBA season (2024-25) having limited data availability'
+          })
+          // Try fallback to previous season if current season has no data
+          if (season === '2024-25') {
+            console.log(`[NBA-Stats-API] Trying fallback to 2023-24 season for ${teamName}...`)
+            return await fetchNBATeamStats(teamName, '2023-24')
+          }
+          
+          return {
+            ok: false,
+            error: `No data returned for team ${teamName} in season ${season}. This may be due to the new NBA season having limited data availability.`,
+            cached: false,
+            latencyMs: Date.now() - startTime
+          }
+        }
     
     const headers = json.resultSets[0].headers
     const row = json.resultSets[0].rowSet[0]
@@ -325,6 +347,10 @@ export async function fetchNBATeamStatsLastN(
   }
   
   try {
+    // Add random delay to avoid rate limiting (NBA Stats API is sensitive)
+    const delay = Math.random() * 1000 + 500 // 500-1500ms delay
+    await new Promise(resolve => setTimeout(resolve, delay))
+    
     const url = `https://stats.nba.com/stats/teamdashboardbygeneralsplits?DateFrom=&DateTo=&GameSegment=&LastNGames=${lastNGames}&LeagueID=00&Location=&MeasureType=Advanced&Month=0&OpponentTeamID=0&Outcome=&PORound=0&PaceAdjust=N&PerMode=PerGame&Period=0&PlusMinus=N&Rank=N&Season=${season}&SeasonSegment=&SeasonType=Regular+Season&ShotClockRange=&TeamID=${teamId}&VsConference=&VsDivision=`
     
     const response = await fetchWithRetry(url, {
@@ -333,14 +359,16 @@ export async function fetchNBATeamStatsLastN(
         'Accept': 'application/json, text/plain, */*',
         'Accept-Language': 'en-US,en;q=0.9',
         'Accept-Encoding': 'gzip, deflate, br',
-        'Referer': 'https://stats.nba.com/',
-        'Origin': 'https://stats.nba.com',
+        'Referer': 'https://www.nba.com/',
+        'Origin': 'https://www.nba.com',
         'x-nba-stats-origin': 'stats',
         'x-nba-stats-token': 'true',
         'Connection': 'keep-alive',
         'Sec-Fetch-Dest': 'empty',
         'Sec-Fetch-Mode': 'cors',
-        'Sec-Fetch-Site': 'same-origin'
+        'Sec-Fetch-Site': 'cross-site',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
       }
     })
     
