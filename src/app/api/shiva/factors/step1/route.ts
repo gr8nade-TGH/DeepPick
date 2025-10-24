@@ -50,22 +50,22 @@ export async function POST(request: NextRequest) {
           }, { status: 400 })
         }
 
-        const { capper, sport, betType, limit, selectedGame } = parse.data
+        const { capper, sport, betType, limit, selectedGame: selectedGameFromProps } = parse.data
         const supabase = getSupabase()
 
         // Get current time for filtering
         const now = new Date()
         const thirtyMinutesFromNow = new Date(now.getTime() + 30 * 60 * 1000)
 
-        console.log(`[Step1:${capper}] Starting with selectedGame:`, selectedGame)
+        console.log(`[Step1:${capper}] Starting with selectedGame:`, selectedGameFromProps)
         
         // If a game is selected, use it directly instead of querying database
-        if (selectedGame) {
-          console.log(`[Step1:${capper}] Using selected game: ${selectedGame.away} @ ${selectedGame.home}`)
+        if (selectedGameFromProps) {
+          console.log(`[Step1:${capper}] Using selected game: ${selectedGameFromProps.away} @ ${selectedGameFromProps.home}`)
           
           // Check if the selected game can be processed
           const canGenerate = await pickGenerationService.canGeneratePick(
-            selectedGame.game_id,
+            selectedGameFromProps.game_id,
             capper as any,
             betType === 'TOTAL' ? 'TOTAL' : 'SPREAD',
             2
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
               json: {
                 run_id: null,
                 state: 'NO_AVAILABLE_GAMES',
-                message: `Selected game ${selectedGame.away} @ ${selectedGame.home} is not available for ${betType} predictions for ${capper} or is in cooldown period`,
+                message: `Selected game ${selectedGameFromProps.away} @ ${selectedGameFromProps.home} is not available for ${betType} predictions for ${capper} or is in cooldown period`,
                 games: [],
                 filters: {
                   sport,
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
                   statusFilter: ['scheduled'],
                   excludeExistingPicks: true,
                   excludeCooldownGames: true,
-                  selectedGame: selectedGame.game_id
+                  selectedGame: selectedGameFromProps.game_id
                 }
               },
               dryRun: true,
@@ -102,8 +102,8 @@ export async function POST(request: NextRequest) {
           
           // Log the selection
           console.log(`[Step1:${capper}] Selected game:`, {
-            game_id: selectedGame.game_id,
-            matchup: `${selectedGame.away} @ ${selectedGame.home}`,
+            game_id: selectedGameFromProps.game_id,
+            matchup: `${selectedGameFromProps.away} @ ${selectedGameFromProps.home}`,
             bet_type: betType,
             run_id: runId
           })
@@ -114,14 +114,14 @@ export async function POST(request: NextRequest) {
               run_id: runId,
               state: 'IN-PROGRESS',
               selected_game: {
-                id: selectedGame.game_id,
-                home_team: { name: selectedGame.home },
-                away_team: { name: selectedGame.away },
-                game_date: selectedGame.start_time_utc?.split('T')[0] || new Date().toISOString().split('T')[0],
-                game_time: selectedGame.start_time_utc?.split('T')[1] || '19:00:00',
-                status: selectedGame.status || 'scheduled',
-                sport: selectedGame.sport || sport.toLowerCase(),
-                odds: selectedGame.odds || {}
+                id: selectedGameFromProps.game_id,
+                home_team: { name: selectedGameFromProps.home },
+                away_team: { name: selectedGameFromProps.away },
+                game_date: selectedGameFromProps.start_time_utc?.split('T')[0] || new Date().toISOString().split('T')[0],
+                game_time: selectedGameFromProps.start_time_utc?.split('T')[1] || '19:00:00',
+                status: selectedGameFromProps.status || 'scheduled',
+                sport: selectedGameFromProps.sport || sport.toLowerCase(),
+                odds: selectedGameFromProps.odds || {}
               },
               filters: {
                 sport,
@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
                 statusFilter: ['scheduled', 'pre-game'],
                 excludeExistingPicks: true,
                 excludeCooldownGames: true,
-                selectedGame: selectedGame.game_id
+                selectedGame: selectedGameFromProps.game_id
               },
               available_games_count: 1,
               total_games_checked: 1,
