@@ -98,7 +98,14 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
           nba_stats_fetched: false,
           team_names: { away: ctx.away, home: ctx.home },
           bundle_keys: [],
-          bundle_sample: {},
+          bundle_sample: {
+            awayPaceSeason: 0,
+            homePaceSeason: 0,
+            awayORtgLast10: 0,
+            homeORtgLast10: 0,
+            leaguePace: 0,
+            leagueORtg: 0
+          },
           api_calls_made: false
         }
       }
