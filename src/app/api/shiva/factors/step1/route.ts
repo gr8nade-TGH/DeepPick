@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
           
           const canGenerate = await pickGenerationService.canGeneratePick(
             selectedGameFromProps.game_id,
-            capper as any,
+            capper.toLowerCase() as any,
             mappedBetType as any,
             2
           )
@@ -339,7 +339,7 @@ export async function POST(request: NextRequest) {
             console.log(`[Step1:${capper}] Checking game ${game.id} (${game.away_team} @ ${game.home_team})`)
             const canGenerate = await pickGenerationService.canGeneratePick(
               game.id,
-              capper as any, // Cast to capper_type
+              capper.toLowerCase() as any, // Cast to capper_type
               betType === 'TOTAL' ? 'TOTAL' : 'SPREAD', // Map bet types
               2 // 2 hour cooldown
             )
