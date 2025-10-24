@@ -220,15 +220,27 @@ export function InsightCard(props: InsightCardProps) {
           <div className="p-4 bg-slate-800 border-b border-slate-700 space-y-3">
             {props.writeups.prediction && (
               <div className="bg-slate-700 rounded-lg p-3">
-                <div className="text-xs font-semibold text-slate-300 uppercase mb-2">AI PREDICTION WRITEUP</div>
+                <div className="text-xs font-semibold text-slate-300 uppercase mb-2">[CAPPER NAME: SHIVA] PREDICTION WRITEUP</div>
                 <p className="text-white text-sm leading-relaxed">{props.writeups.prediction}</p>
               </div>
             )}
             
             {props.writeups.gamePrediction && (
               <div className="bg-slate-700 rounded-lg p-3">
-                <div className="text-xs font-semibold text-slate-300 uppercase mb-2">AI GAME PREDICTION (SCORE AND VICTOR)</div>
-                <p className="text-white text-base font-semibold">{props.writeups.gamePrediction}</p>
+                <div className="text-xs font-semibold text-slate-300 uppercase mb-2">[CAPPER NAME: SHIVA] GAME PREDICTION (SCORE AND VICTOR)</div>
+                <p className="text-white text-base font-semibold mb-2">{props.writeups.gamePrediction}</p>
+                {/* Clear predicted score and victor display */}
+                <div className="bg-slate-600 rounded p-2 mt-2">
+                  <div className="text-center">
+                    <div className="text-sm text-slate-300 mb-1">PREDICTED FINAL SCORE</div>
+                    <div className="text-lg font-bold text-white">
+                      {props.matchup?.away || 'Away'} {safePredictedScore.away} - {safePredictedScore.home} {props.matchup?.home || 'Home'}
+                    </div>
+                    <div className="text-sm text-slate-300 mt-1">
+                      🏆 PREDICTED WINNER: <span className="font-bold text-yellow-400">{safePredictedScore.winner}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
             
@@ -244,7 +256,7 @@ export function InsightCard(props: InsightCardProps) {
         {/* Confidence Factors Table - OVER/UNDER DIRECTION */}
         <div className="p-4 bg-slate-800 border-b border-slate-700">
           <div className="flex items-center justify-between mb-3">
-            <div className="text-sm font-semibold text-white">CONFIDENCE FACTORS:</div>
+            <div className="text-sm font-semibold text-white">EDGE FACTORS:</div>
             {sortedFactors.length > 0 && (
               <div className="text-xs px-3 py-1 bg-slate-600 text-slate-200 rounded-full border border-slate-500">
                 🏆 Dominant: {sortedFactors[0].label}
@@ -382,7 +394,7 @@ export function InsightCard(props: InsightCardProps) {
         {/* Confidence Score Footer */}
         <div className="p-4 bg-slate-800 border-b border-slate-700">
           <div className="text-center">
-            <div className="text-sm text-slate-300 mb-2">Confidence Score = {safeMarket.confFinal.toFixed(1)} / 5.0</div>
+            <div className="text-sm text-slate-300 mb-2">Edge Score = {safeMarket.confFinal.toFixed(1)} / 5.0</div>
             <div className="relative h-3 bg-slate-600 rounded-full overflow-hidden mx-auto max-w-xs">
               <div
                 className="h-full bg-gradient-to-r from-red-500 via-yellow-500 to-green-500"
@@ -390,9 +402,9 @@ export function InsightCard(props: InsightCardProps) {
               />
             </div>
             <div className="text-xs text-slate-400 mt-2">
-              {safeMarket.confFinal >= 4 ? '🔥 HIGH CONFIDENCE' : 
-               safeMarket.confFinal >= 3 ? '⚡ MODERATE CONFIDENCE' : 
-               safeMarket.confFinal >= 2 ? '⚠️ LOW CONFIDENCE' : '❌ VERY LOW CONFIDENCE'}
+              {safeMarket.confFinal >= 4 ? '🔥 HIGH EDGE' : 
+               safeMarket.confFinal >= 3 ? '⚡ MODERATE EDGE' : 
+               safeMarket.confFinal >= 2 ? '⚠️ LOW EDGE' : '❌ VERY LOW EDGE'}
             </div>
           </div>
         </div>
