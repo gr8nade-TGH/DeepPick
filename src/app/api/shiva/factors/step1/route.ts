@@ -61,6 +61,7 @@ export async function POST(request: NextRequest) {
         const betTypeLower = betType.toLowerCase()
 
         // 1. Get all games that are scheduled (not in progress or complete)
+        console.log(`[Step1:${capper}] Querying games for sport: ${sportLower}, status: scheduled`)
         const { data: games, error: gamesError } = await supabase
           .from('games')
           .select(`
@@ -79,6 +80,16 @@ export async function POST(request: NextRequest) {
           .order('game_date', { ascending: true })
           .order('game_time', { ascending: true })
           .limit(limit * 2) // Get more than needed to filter
+
+        console.log(`[Step1:${capper}] Found ${games?.length || 0} games in database`)
+        if (games && games.length > 0) {
+          console.log(`[Step1:${capper}] Sample game:`, {
+            id: games[0].id,
+            matchup: `${games[0].away_team?.name || 'Away'} @ ${games[0].home_team?.name || 'Home'}`,
+            date: games[0].game_date,
+            time: games[0].game_time
+          })
+        }
 
         if (gamesError) {
           await logError({
