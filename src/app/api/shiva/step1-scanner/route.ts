@@ -93,8 +93,11 @@ export async function POST(request: NextRequest) {
 
         // Scan for eligible games
         console.log(`[SHIVA_SCANNER] Scanning for eligible ${sport} ${betType} games`)
+        console.log(`[SHIVA_SCANNER] About to call scanForEligibleGames...`)
         
         const eligibleGames = await scanForEligibleGames(sport, betType, limit, supabase)
+        
+        console.log(`[SHIVA_SCANNER] scanForEligibleGames returned:`, eligibleGames.length, 'games')
         
         if (eligibleGames.length === 0) {
           console.log(`[SHIVA_SCANNER] No eligible games found`)
@@ -300,7 +303,8 @@ async function scanForEligibleGames(
     }
 
     if (!games || games.length === 0) {
-      console.log(`[SHIVA_SCANNER] No games found`)
+      console.log(`[SHIVA_SCANNER] No games found in database query`)
+      console.log(`[SHIVA_SCANNER] Query parameters: sport=${sportLower}, status=['scheduled','live'], game_time >= ${thirtyMinutesFromNow.toISOString()}`)
       return []
     }
 
@@ -341,6 +345,7 @@ async function scanForEligibleGames(
 
     if (availableGames.length === 0) {
       console.log(`[SHIVA_SCANNER] No games available after filtering existing picks`)
+      console.log(`[SHIVA_SCANNER] Games with existing picks:`, Array.from(gamesWithPicks))
       return []
     }
 
@@ -369,6 +374,11 @@ async function scanForEligibleGames(
     // Filter out games in cooldown
     const finalGames = availableGames.filter((game: any) => !gamesInCooldown.has(game.id))
     console.log(`[SHIVA_SCANNER] After filtering cooldown: ${finalGames.length} games`)
+    
+    if (finalGames.length === 0) {
+      console.log(`[SHIVA_SCANNER] No games available after filtering cooldown`)
+      console.log(`[SHIVA_SCANNER] Games in cooldown:`, Array.from(gamesInCooldown))
+    }
 
     return finalGames.slice(0, limit) // Return up to the requested limit
 
