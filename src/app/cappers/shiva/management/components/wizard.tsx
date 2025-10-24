@@ -1,6 +1,6 @@
 "use client"
 import { useMemo, useState, useEffect } from 'react'
-import { InsightCard } from './insight-card'
+import { GameAndPicksInbox } from '@/components/cappers/game-and-picks-inbox'
 import { getFactorMeta } from '@/lib/cappers/shiva-v1/factor-registry'
 import { registerStep } from '@/lib/shared/dynamic-step-registry'
 
@@ -1647,6 +1647,14 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
               sum + (f.weight_total_pct || 0), 0) || 0) - 250) < 0.01
           }
         }
+      },
+      // Pick Generation Cooldown Information
+      pick_generation_cooldown: {
+        step1_cooldown_info: stepLogs[1]?.json?.cooldown_info || null,
+        games_in_cooldown: stepLogs[1]?.json?.cooldown_info?.games_in_cooldown || 0,
+        cooldown_hours: stepLogs[1]?.json?.cooldown_info?.cooldown_hours || 2,
+        total_games_checked: stepLogs[1]?.json?.total_games_checked || 0,
+        available_games_count: stepLogs[1]?.json?.available_games_count || 0
       },
                     // AI Usage Summary
                     ai_usage: {

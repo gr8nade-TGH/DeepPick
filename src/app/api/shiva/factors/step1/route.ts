@@ -11,6 +11,7 @@ import { z } from 'zod'
 import { getSupabase } from '@/lib/supabase/server'
 import { createRequestId, withApiCall } from '@/lib/telemetry/tracing'
 import { logError } from '@/lib/telemetry/logger'
+import { pickGenerationService } from '@/lib/services/pick-generation-service'
 
 const Step1Schema = z.object({
   capper: z.string().min(1),
@@ -158,20 +159,45 @@ export async function POST(request: NextRequest) {
           return true
         })
 
-        if (availableGames.length === 0) {
+        // 4. Check cooldown periods for remaining games
+        const cooldownCheckedGames = []
+        for (const game of availableGames) {
+          try {
+            const canGenerate = await pickGenerationService.canGeneratePick(
+              game.id,
+              capper as any, // Cast to capper_type
+              betType === 'TOTAL' ? 'TOTAL' : 'SPREAD', // Map bet types
+              2 // 2 hour cooldown
+            )
+            
+            if (canGenerate) {
+              cooldownCheckedGames.push(game)
+            } else {
+              console.log(`[Step1:${capper}] Game ${game.id} in cooldown period, skipping`)
+            }
+          } catch (error) {
+            console.error(`[Step1:${capper}] Error checking cooldown for game ${game.id}:`, error)
+            // If cooldown check fails, include the game (fail open)
+            cooldownCheckedGames.push(game)
+          }
+        }
+
+        if (cooldownCheckedGames.length === 0) {
           return NextResponse.json({
             status: 200,
             json: {
               run_id: null,
               state: 'NO_AVAILABLE_GAMES',
-              message: `All ${sport} games already have ${betType} predictions for ${capper}`,
+              message: `All ${sport} games already have ${betType} predictions for ${capper} or are in cooldown period`,
               games: [],
               filters: {
                 sport,
                 betType,
                 capper,
                 minStartTime: thirtyMinutesFromNow.toISOString(),
-                statusFilter: ['scheduled']
+                statusFilter: ['scheduled'],
+                excludeExistingPicks: true,
+                excludeCooldownGames: true
               }
             },
             dryRun: true,
@@ -179,8 +205,8 @@ export async function POST(request: NextRequest) {
           })
         }
 
-        // 4. Select the first available game (closest to start time)
-        const selectedGame = availableGames[0]
+        // 5. Select the first available game (closest to start time)
+        const selectedGame = cooldownCheckedGames[0]
         
         // 5. Generate run_id for this prediction
         const runId = crypto.randomUUID()
@@ -215,10 +241,15 @@ export async function POST(request: NextRequest) {
               capper,
               minStartTime: thirtyMinutesFromNow.toISOString(),
               statusFilter: ['scheduled', 'pre-game'],
-              excludeExistingPicks: true
+              excludeExistingPicks: true,
+              excludeCooldownGames: true
             },
-            available_games_count: availableGames.length,
-            total_games_checked: games.length
+            available_games_count: cooldownCheckedGames.length,
+            total_games_checked: games.length,
+            cooldown_info: {
+              games_in_cooldown: availableGames.length - cooldownCheckedGames.length,
+              cooldown_hours: 2
+            }
           }
         }, { status: 201 })
 

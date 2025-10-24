@@ -1,5 +1,6 @@
 "use client"
 import { useEffect, useState } from 'react'
+import { GeneratedPicksInbox } from '@/components/cappers/game-and-picks-inbox'
 
 interface GameInboxItem {
   game_id: string
@@ -63,59 +64,68 @@ export function SHIVAManagementInbox() {
   }
 
   return (
-    <div>
-      <div className="mb-3 flex items-center justify-between">
-        <div className="font-bold text-white">Game Inbox</div>
-        <div className="flex items-center gap-2">
-          <select
-            value={selectedSport}
-            onChange={(e) => setSelectedSport(e.target.value)}
-            className="px-2 py-1 border border-gray-600 rounded text-xs bg-gray-800 text-white"
-          >
-            <option value="NBA">NBA</option>
-            <option value="NFL">NFL</option>
-            <option value="MLB">MLB</option>
-          </select>
-          <div className="text-xs text-gray-300 font-semibold">• SHIVA</div>
+    <div className="space-y-4">
+      {/* Game Inbox with fixed height and scroll */}
+      <div>
+        <div className="mb-3 flex items-center justify-between">
+          <div className="font-bold text-white">Game Inbox</div>
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedSport}
+              onChange={(e) => setSelectedSport(e.target.value)}
+              className="px-2 py-1 border border-gray-600 rounded text-xs bg-gray-800 text-white"
+            >
+              <option value="NBA">NBA</option>
+              <option value="NFL">NFL</option>
+              <option value="MLB">MLB</option>
+            </select>
+            <div className="text-xs text-gray-300 font-semibold">• SHIVA</div>
+          </div>
+        </div>
+        
+        {/* Fixed height container with scroll */}
+        <div className="h-64 overflow-y-auto border border-gray-600 rounded bg-gray-800">
+          {loading ? (
+            <div className="text-center text-gray-400 text-sm py-4">Loading games...</div>
+          ) : games.length === 0 ? (
+            <div className="text-center text-gray-400 text-sm py-4">No upcoming games found</div>
+          ) : (
+            <ul className="divide-y divide-gray-700">
+              {games.map((game) => {
+                const statusChip = getStatusChip(game.status)
+                return (
+                  <li key={game.game_id} className="py-3 px-3">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <div className="text-white font-semibold text-sm">
+                          {game.away} @ {game.home}
+                        </div>
+                        <div className="text-xs text-gray-300 mt-1">
+                          ML {game.away.split(' ').pop()} {game.odds.ml_away !== 0 ? (game.odds.ml_away > 0 ? '+' : '') + game.odds.ml_away : '—'} • {game.home.split(' ').pop()} {game.odds.ml_home !== 0 ? (game.odds.ml_home > 0 ? '+' : '') + game.odds.ml_home : '—'}
+                        </div>
+                        <div className="text-xs text-gray-300">
+                          Spread: {game.odds.spread_team.split(' ').pop()} {game.odds.spread_line !== 0 ? (game.odds.spread_line > 0 ? '+' : '') + game.odds.spread_line : '—'} • Total: {game.odds.total_line !== 0 ? game.odds.total_line : '—'}
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end ml-2">
+                        <div className="text-xs text-gray-400">{formatLocalTime(game.start_time_utc)}</div>
+                        <div className="mt-1">
+                          <span className={`px-1 py-0.5 rounded text-xs ${statusChip.class}`}>
+                            {statusChip.text}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
         </div>
       </div>
-      
-      {loading ? (
-        <div className="text-center text-gray-400 text-sm py-4">Loading games...</div>
-      ) : games.length === 0 ? (
-        <div className="text-center text-gray-400 text-sm py-4">No upcoming games found</div>
-      ) : (
-        <ul className="divide-y divide-gray-700">
-          {games.map((game) => {
-            const statusChip = getStatusChip(game.status)
-            return (
-              <li key={game.game_id} className="py-3">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1">
-                    <div className="text-white font-semibold text-sm">
-                      {game.away} @ {game.home}
-                    </div>
-                    <div className="text-xs text-gray-300 mt-1">
-                      ML {game.away.split(' ').pop()} {game.odds.ml_away !== 0 ? (game.odds.ml_away > 0 ? '+' : '') + game.odds.ml_away : '—'} • {game.home.split(' ').pop()} {game.odds.ml_home !== 0 ? (game.odds.ml_home > 0 ? '+' : '') + game.odds.ml_home : '—'}
-                    </div>
-                    <div className="text-xs text-gray-300">
-                      Spread: {game.odds.spread_team.split(' ').pop()} {game.odds.spread_line !== 0 ? (game.odds.spread_line > 0 ? '+' : '') + game.odds.spread_line : '—'} • Total: {game.odds.total_line !== 0 ? game.odds.total_line : '—'}
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end ml-2">
-                    <div className="text-xs text-gray-400">{formatLocalTime(game.start_time_utc)}</div>
-                    <div className="mt-1">
-                      <span className={`px-1 py-0.5 rounded text-xs ${statusChip.class}`}>
-                        {statusChip.text}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </li>
-            )
-          })}
-        </ul>
-      )}
+
+      {/* Generated Picks Inbox */}
+      <GeneratedPicksInbox capper="shiva" />
     </div>
   )
 }
