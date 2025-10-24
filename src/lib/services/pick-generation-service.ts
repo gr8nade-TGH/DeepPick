@@ -46,6 +46,8 @@ export class PickGenerationService {
     cooldownHours: number = 2
   ): Promise<boolean> {
     try {
+      console.log(`[PickGenerationService] Checking canGeneratePick for game ${gameId}, capper ${capper}, betType ${betType}`)
+      
       const { data, error } = await this.supabase.rpc('can_generate_pick', {
         p_game_id: gameId,
         p_capper: capper,
@@ -58,6 +60,7 @@ export class PickGenerationService {
         return false
       }
 
+      console.log(`[PickGenerationService] canGeneratePick result for game ${gameId}: ${data}`)
       return data === true
     } catch (error) {
       console.error('[PickGenerationService] Exception checking pick eligibility:', error)

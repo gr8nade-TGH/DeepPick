@@ -161,14 +161,19 @@ export async function POST(request: NextRequest) {
 
         // 4. Check cooldown periods for remaining games
         const cooldownCheckedGames = []
+        console.log(`[Step1:${capper}] Checking cooldown for ${availableGames.length} games`)
+        
         for (const game of availableGames) {
           try {
+            console.log(`[Step1:${capper}] Checking game ${game.id} (${game.away_team} @ ${game.home_team})`)
             const canGenerate = await pickGenerationService.canGeneratePick(
               game.id,
               capper as any, // Cast to capper_type
               betType === 'TOTAL' ? 'TOTAL' : 'SPREAD', // Map bet types
               2 // 2 hour cooldown
             )
+            
+            console.log(`[Step1:${capper}] Game ${game.id} canGenerate: ${canGenerate}`)
             
             if (canGenerate) {
               cooldownCheckedGames.push(game)
@@ -181,6 +186,8 @@ export async function POST(request: NextRequest) {
             cooldownCheckedGames.push(game)
           }
         }
+        
+        console.log(`[Step1:${capper}] Cooldown check complete: ${cooldownCheckedGames.length} games available`)
 
         if (cooldownCheckedGames.length === 0) {
           return NextResponse.json({

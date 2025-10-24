@@ -246,7 +246,10 @@ export function GeneratedPicksInbox({ capper }: { capper: capper_type }) {
                       {pick.selection} • {pick.units}u • {pick.confidence}/5
                     </div>
                     <div className="text-xs text-gray-400">
-                      ID: {pick.id} • {new Date(pick.created_at).toLocaleString()}
+                      Pick ID: {pick.id}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      Game ID: {pick.game_id} • {new Date(pick.created_at).toLocaleString()}
                     </div>
                   </div>
                   <button
