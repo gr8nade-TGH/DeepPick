@@ -244,6 +244,7 @@ function assembleInsightCard({ runCtx, step4, step5, step5_5, step6, step3, step
     capperIconUrl: undefined, // Placeholder for now
     sport: 'NBA' as const,
     gameId: g.game_id || 'unknown',
+    pickId: pick?.id || null, // Only present for generated picks (not PASS)
     generatedAt: new Date().toISOString(),
     matchup: {
       away: awayTeam,
@@ -253,14 +254,14 @@ function assembleInsightCard({ runCtx, step4, step5, step5_5, step6, step3, step
       gameDateLocal: g.start_time_utc || new Date().toISOString(),
     },
     pick: pick ? {
-      type: (pick.pick_type || 'UNKNOWN') as 'SPREAD' | 'MONEYLINE' | 'TOTAL' | 'RUN_LINE',
+      type: (pick.pick_type || pick.type || 'TOTAL') as 'SPREAD' | 'MONEYLINE' | 'TOTAL' | 'RUN_LINE',
       selection: pick.selection || 'N/A',
       units: Number(pick.units ?? 0),
       confidence: Number(pick.confidence ?? confFinal),
       locked_odds: pick.locked_odds || null,
       locked_at: pick.locked_at || null,
     } : { 
-      type: 'UNKNOWN' as const, 
+      type: 'TOTAL' as const, 
       selection: 'N/A', 
       units: 0, 
       confidence: confFinal,
@@ -274,7 +275,11 @@ function assembleInsightCard({ runCtx, step4, step5, step5_5, step6, step3, step
       bold: step5_5?.json?.bold_predictions?.summary || generateBoldPrediction(pick, predictedScore, factorRows),
     },
     bold_predictions: step5_5?.json?.bold_predictions || null,
-    injury_summary: step3?.json?.injury_summary || null,
+    injury_summary: step3?.json?._debug?.totals?.injury_impact ? {
+      findings: [],
+      total_impact: 0,
+      summary: step3.json._debug.totals.injury_impact.summary || "No recent injury data found"
+    } : null,
     factors: factorRows,
     market: {
       conf7,

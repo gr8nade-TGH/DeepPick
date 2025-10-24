@@ -7,6 +7,7 @@ export interface InsightCardProps {
   capperIconUrl?: string
   sport: 'NBA' | 'MLB' | 'NFL'
   gameId: string
+  pickId?: string | null  // Only present for generated picks (not PASS)
   generatedAt: string
   matchup: {
     away: string
@@ -181,6 +182,7 @@ export function InsightCard(props: InsightCardProps) {
             <div className="text-right text-slate-300 text-sm">
               <div className="mb-1">GAME DATE: {formatLocalDate(props.matchup?.gameDateLocal || props.generatedAt)}</div>
               <div className="mb-1">GAME ID: {props.gameId || '#'}</div>
+              {props.pickId && <div className="mb-1">PICK ID: {props.pickId}</div>}
               <div>PICK GENERATED: {formatLocalTime(props.generatedAt)}</div>
             </div>
           </div>
