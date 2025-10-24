@@ -12,9 +12,9 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const parse = GetPicksSchema.safeParse({
-      capper: searchParams.get('capper'),
-      limit: searchParams.get('limit'),
-      offset: searchParams.get('offset')
+      capper: searchParams.get('capper') || undefined,
+      limit: searchParams.get('limit') || undefined,
+      offset: searchParams.get('offset') || undefined
     })
 
     if (!parse.success) {

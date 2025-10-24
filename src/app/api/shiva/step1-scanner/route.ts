@@ -256,6 +256,12 @@ async function scanForEligibleGames(
     const now = new Date()
     const thirtyMinutesFromNow = new Date(now.getTime() + 30 * 60 * 1000)
     
+    console.log(`[SHIVA_SCANNER] Scanning for games with:`)
+    console.log(`  - sport: ${sportLower}`)
+    console.log(`  - status: scheduled`)
+    console.log(`  - game_time >= ${thirtyMinutesFromNow.toISOString()}`)
+    console.log(`  - limit: ${limit * 2}`)
+    
     const { data: games, error: gamesError } = await supabase
       .from('games')
       .select(`
@@ -272,7 +278,12 @@ async function scanForEligibleGames(
       .eq('status', 'scheduled')
       .gte('game_time', thirtyMinutesFromNow.toISOString())
       .order('game_time', { ascending: true })
-      .limit(limit * 2) // Get more games to filter from
+      .limit(limit * 2)
+    
+    console.log(`[SHIVA_SCANNER] Found ${games?.length || 0} games`)
+    if (gamesError) {
+      console.log(`[SHIVA_SCANNER] Games query error:`, gamesError)
+    }
 
     if (gamesError) {
       console.error(`[SHIVA_SCANNER] Error fetching games:`, gamesError)
@@ -288,6 +299,8 @@ async function scanForEligibleGames(
 
     // Filter out games that already have picks
     const gameIds = games.map((game: any) => game.id)
+    console.log(`[SHIVA_SCANNER] Checking existing picks for ${gameIds.length} games`)
+    console.log(`[SHIVA_SCANNER] Looking for capper: shiva, pick_type: ${betTypeLower}`)
     
     const { data: existingPicks, error: picksError } = await supabase
       .from('picks')
@@ -305,9 +318,12 @@ async function scanForEligibleGames(
     // Create a set of game IDs that already have picks
     const gamesWithPicks = new Set()
     if (existingPicks) {
+      console.log(`[SHIVA_SCANNER] Found ${existingPicks.length} existing picks:`, existingPicks)
       existingPicks.forEach((pick: any) => {
         gamesWithPicks.add(pick.game_id)
       })
+    } else {
+      console.log(`[SHIVA_SCANNER] No existing picks found`)
     }
 
     // Filter out games with existing picks
