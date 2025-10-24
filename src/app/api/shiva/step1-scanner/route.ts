@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
         // Scan for eligible games
         console.log(`[SHIVA_SCANNER] Scanning for eligible ${sport} ${betType} games`)
         
-        const eligibleGames = await getEligibleGames(sport, betType, capper, limit, supabase)
+        const eligibleGames = await scanForEligibleGames(sport, betType, limit, supabase)
         
         if (eligibleGames.length === 0) {
           console.log(`[SHIVA_SCANNER] No eligible games found`)
