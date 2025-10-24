@@ -275,7 +275,7 @@ async function scanForEligibleGames(
         status
       `)
       .eq('sport', sportLower)
-      .eq('status', 'scheduled')
+      .in('status', ['scheduled', 'live'])
       .gte('game_time', thirtyMinutesFromNow.toISOString())
       .order('game_time', { ascending: true })
       .limit(limit * 2)
