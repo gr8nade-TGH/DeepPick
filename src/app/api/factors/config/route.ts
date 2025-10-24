@@ -29,7 +29,7 @@ const FactorConfigSchema = z.object({
   description: z.string(),
   enabled: z.boolean(),
   weight: z.number().min(0).max(250), // Updated to support 250% weight budget
-  dataSource: z.enum(['nba-stats-api', 'llm', 'openai', 'manual', 'system']),
+  dataSource: z.enum(['odds-api-scores', 'llm', 'openai', 'manual', 'system']),
   maxPoints: z.number(),
   sport: z.string(),
   betType: z.string(),

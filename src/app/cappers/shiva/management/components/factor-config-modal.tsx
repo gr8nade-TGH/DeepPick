@@ -111,7 +111,7 @@ export function FactorConfigModal({
           "Weight: 30% (up from 20%)",
           "Max Points: 2.0 (up from 1.5)",
           "Scope: matchup (covers both teams)",
-          "Data Sources: nba-stats-api, manual",
+          "Data Sources: odds-api-scores, manual",
           "Supported: NBA Totals only"
         ]
       },
@@ -138,7 +138,7 @@ export function FactorConfigModal({
           "Weight: 30% (up from 20%)",
           "Max Points: 2.0 (up from 1.0)",
           "Scope: matchup (covers both teams)",
-          "Data Sources: nba-stats-api, manual",
+          "Data Sources: odds-api-scores, manual",
           "Supported: NBA Totals only"
         ]
       },
@@ -165,7 +165,7 @@ export function FactorConfigModal({
           "Weight: 30% (up from 20%)",
           "Max Points: 2.0 (up from 1.0)",
           "Scope: matchup (covers both teams)",
-          "Data Sources: nba-stats-api, llm, manual",
+          "Data Sources: odds-api-scores, llm, manual",
           "Supported: NBA Totals only"
         ]
       },
@@ -508,7 +508,7 @@ export function FactorConfigModal({
             description: meta.description,
             enabled: savedFactor?.enabled ?? (key === 'edgeVsMarket'), // Edge vs Market enabled by default
             weight: key === 'edgeVsMarket' ? 100 : (savedFactor?.weight ?? meta.defaultWeight), // Edge vs Market always 100%
-            dataSource: savedFactor?.dataSource ?? meta.defaultDataSource ?? (key === 'injuryAvailability' ? 'llm' : 'nba-stats-api'),
+            dataSource: savedFactor?.dataSource ?? meta.defaultDataSource ?? (key === 'injuryAvailability' ? 'llm' : 'odds-api-scores'),
             maxPoints: meta.maxPoints,
             sport: Array.isArray(meta.appliesTo.sports) ? meta.appliesTo.sports[0] : 'NBA',
             betType: Array.isArray(meta.appliesTo.betTypes) ? meta.appliesTo.betTypes[0] : 'TOTAL',
@@ -565,7 +565,7 @@ export function FactorConfigModal({
             description: 'Expected game pace vs league average',
             enabled: true, 
             weight: 20, 
-            dataSource: 'nba-stats-api',
+            dataSource: 'odds-api-scores',
             maxPoints: 1.0,
             sport: 'NBA',
             betType: 'TOTAL',
@@ -579,7 +579,7 @@ export function FactorConfigModal({
             description: 'Recent offensive efficiency vs opponent defense',
             enabled: true, 
             weight: 20, 
-            dataSource: 'nba-stats-api',
+            dataSource: 'odds-api-scores',
             maxPoints: 1.0,
             sport: 'NBA',
             betType: 'TOTAL',
@@ -593,7 +593,7 @@ export function FactorConfigModal({
             description: 'Defensive rating decline + injury impact',
             enabled: true, 
             weight: 20, 
-            dataSource: 'nba-stats-api',
+            dataSource: 'odds-api-scores',
             maxPoints: 1.0,
             sport: 'NBA',
             betType: 'TOTAL',
@@ -607,7 +607,7 @@ export function FactorConfigModal({
             description: '3-point environment & volatility',
             enabled: true, 
             weight: 20, 
-            dataSource: 'nba-stats-api',
+            dataSource: 'odds-api-scores',
             maxPoints: 1.0,
             sport: 'NBA',
             betType: 'TOTAL',
@@ -621,7 +621,7 @@ export function FactorConfigModal({
             description: 'Free throw rate environment',
             enabled: true, 
             weight: 20, 
-            dataSource: 'nba-stats-api',
+            dataSource: 'odds-api-scores',
             maxPoints: 1.0,
             sport: 'NBA',
             betType: 'TOTAL',
@@ -1001,7 +1001,7 @@ export function FactorConfigModal({
                                   onChange={e => updateDataSource(factor.key, e.target.value as DataSource)}
                                   className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm"
                                 >
-                                  <option value="nba-stats-api">NBA Stats API</option>
+                                  <option value="odds-api-scores">Odds API Scores</option>
                                   <option value="statmuse">StatMuse (deprecated)</option>
                                   <option value="llm">LLM (AI)</option>
                                   <option value="news-api">News API</option>

@@ -26,7 +26,7 @@ export const NBA_TOTALS_FACTORS: FactorMeta[] = [
     },
     maxPoints: 5.0,
     defaultWeight: 0.20,
-    defaultDataSource: 'nba-stats-api'
+    defaultDataSource: 'odds-api-scores'
   },
   {
     key: 'offForm',
@@ -41,7 +41,7 @@ export const NBA_TOTALS_FACTORS: FactorMeta[] = [
     },
     maxPoints: 5.0,
     defaultWeight: 0.20,
-    defaultDataSource: 'nba-stats-api'
+    defaultDataSource: 'odds-api-scores'
   },
   {
     key: 'defErosion',
@@ -56,7 +56,7 @@ export const NBA_TOTALS_FACTORS: FactorMeta[] = [
     },
     maxPoints: 5.0,
     defaultWeight: 0.20,
-    defaultDataSource: 'nba-stats-api'
+    defaultDataSource: 'odds-api-scores'
   },
   {
     key: 'threeEnv',
@@ -71,7 +71,7 @@ export const NBA_TOTALS_FACTORS: FactorMeta[] = [
     },
     maxPoints: 5.0,
     defaultWeight: 0.20,
-    defaultDataSource: 'nba-stats-api'
+    defaultDataSource: 'odds-api-scores'
   },
   {
     key: 'whistleEnv',
@@ -86,7 +86,7 @@ export const NBA_TOTALS_FACTORS: FactorMeta[] = [
     },
     maxPoints: 5.0,
     defaultWeight: 0.20,
-    defaultDataSource: 'nba-stats-api'
+    defaultDataSource: 'odds-api-scores'
   }
 ];
 
