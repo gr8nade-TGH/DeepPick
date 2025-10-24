@@ -73,21 +73,30 @@ async function fetchRecentScores(
     throw new Error('THE_ODDS_API_KEY not configured')
   }
 
-  const url = `https://api.the-odds-api.com/v4/sports/${sport}/scores/?apiKey=${apiKey}&daysFrom=${daysFrom}`
+  const url = `https://api.the-odds-api.com/v4/sports/${sport}/scores/?daysFrom=${daysFrom}&dateFormat=iso`
   
-  console.log('[ODDS-API:SCORES] Fetching scores from:', url.replace(apiKey, 'xxx'))
+  console.log('[ODDS-API:SCORES] Fetching scores from:', url)
   
   const response = await fetch(url, {
     headers: {
-      'Accept': 'application/json'
+      'Accept': 'application/json',
+      'x-api-key': apiKey
     }
   })
 
   if (!response.ok) {
-    throw new Error(`Odds API returned ${response.status}`)
+    const errorText = await response.text()
+    console.error('[ODDS-API:SCORES] API Error:', response.status, errorText)
+    throw new Error(`Odds API returned ${response.status}: ${errorText}`)
   }
 
   const data = await response.json()
+  console.log('[ODDS-API:SCORES] API Response:', {
+    dataType: typeof data,
+    isArray: Array.isArray(data),
+    length: Array.isArray(data) ? data.length : 'N/A',
+    sample: Array.isArray(data) && data.length > 0 ? data[0] : data
+  })
   return data
 }
 
