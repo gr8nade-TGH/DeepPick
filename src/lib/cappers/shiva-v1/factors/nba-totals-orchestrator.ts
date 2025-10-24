@@ -89,8 +89,17 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
             league3Pct: 0.35,
             leagueFTr: 0.22,
             league3Pstdev: 0.036
-          }, 
-          rows_z_points: [] 
+          },
+          rows_z_points: []
+        },
+        nba_stats_api_debug: {
+          condition_check: nbaStatsConditionCheck,
+          enabled_factors: enabledFactorKeys,
+          nba_stats_fetched: false,
+          team_names: { away: ctx.away, home: ctx.home },
+          bundle_keys: [],
+          bundle_sample: {},
+          api_calls_made: false
         }
       }
     }
