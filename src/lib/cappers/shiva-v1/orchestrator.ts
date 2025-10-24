@@ -131,8 +131,10 @@ async function initializeRun(runId: string, input: PipelineInput) {
  * Step 2: Capture current odds snapshot
  */
 async function captureOddsSnapshot(runId: string, input: PipelineInput) {
-  // This would integrate with your odds API
-  // For now, return mock data
+  // TODO: Integrate with real odds API
+  // For now, return minimal structure - this should be replaced with real odds fetching
+  console.warn('[ORCHESTRATOR] Using placeholder odds snapshot - integrate with real odds API')
+  
   return {
     snapshot_id: `snapshot_${runId}`,
     is_active: true,
@@ -143,10 +145,10 @@ async function captureOddsSnapshot(runId: string, input: PipelineInput) {
       away_team: input.awayTeam,
       start_time_utc: new Date().toISOString(),
       captured_at_utc: new Date().toISOString(),
-      books_considered: 3,
-      moneyline: { home_avg: -110, away_avg: -110 },
-      spread: { fav_team: input.homeTeam, line: -3.5, odds: -110 },
-      total: { line: 220.5, over_odds: -110, under_odds: -110 }
+      books_considered: 0, // No books considered - placeholder
+      moneyline: null, // Placeholder - should be fetched from real API
+      spread: null, // Placeholder - should be fetched from real API  
+      total: null // Placeholder - should be fetched from real API
     }
   }
 }

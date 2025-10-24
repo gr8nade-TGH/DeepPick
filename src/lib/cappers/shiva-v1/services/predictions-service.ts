@@ -52,10 +52,20 @@ export async function generatePredictions(input: PredictionInput): Promise<Predi
   
   const confidence = await calculateConfidenceScore(confidenceInput)
   
-  // Generate mock predictions (would be more sophisticated in reality)
-  const predictedTotal = 220 + (confidence.edgeRaw * 10) // Simple mock based on confidence
-  const homeScore = predictedTotal / 2 + 2
-  const awayScore = predictedTotal / 2 - 2
+  // TODO: Replace with sophisticated prediction model
+  // For now, use factor-based calculation instead of simple mock
+  console.warn('[PREDICTIONS_SERVICE] Using simplified prediction model - should be enhanced with real prediction algorithms')
+  
+  // Calculate predicted total based on factor signals and league average
+  const leagueAverageTotal = 225.0 // NBA league average
+  const factorAdjustment = confidence.edgeRaw * 5.0 // Scale factor adjustment
+  const predictedTotal = Math.max(180, Math.min(280, leagueAverageTotal + factorAdjustment))
+  
+  // Split into home/away with realistic variance
+  const homeAdvantage = 2.5 // Typical home court advantage
+  const variance = (Math.random() - 0.5) * 6 // ±3 point variance
+  const homeScore = Math.round(predictedTotal / 2 + homeAdvantage + variance)
+  const awayScore = Math.round(predictedTotal - homeScore)
   const winner = homeScore > awayScore ? homeTeam : awayTeam
   
   const result: PredictionResult = {

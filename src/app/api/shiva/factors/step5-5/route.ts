@@ -56,12 +56,21 @@ export async function POST(request: Request) {
       // Only process NBA TOTAL bets for now
       if (sport === 'NBA' && betType === 'TOTAL') {
         try {
+          console.log('[SHIVA:Step5.5] ===== STARTING BOLD PREDICTIONS =====')
           console.log('[SHIVA:Step5.5] Processing Bold Player Predictions:', {
             run_id,
             sport,
             betType,
             game_data,
             prediction_data
+          })
+          
+          // Debug: Log input validation
+          console.log('[SHIVA:Step5.5] Input validation:', {
+            hasGameData: !!game_data,
+            hasPredictionData: !!prediction_data,
+            gameDataKeys: game_data ? Object.keys(game_data) : [],
+            predictionDataKeys: prediction_data ? Object.keys(prediction_data) : []
           })
           
           // Generate AI prompt for bold player predictions
@@ -105,6 +114,7 @@ Research recent news, injury reports, and statistical trends to make the most ac
 
           // For now, return mock data since we don't have AI integration yet
           // TODO: Integrate with OpenAI/Perplexity API for real predictions
+          console.log('[SHIVA:Step5.5] Generating mock predictions...')
           const mockPredictions = {
             predictions: [
               {
@@ -131,6 +141,11 @@ Research recent news, injury reports, and statistical trends to make the most ac
             ],
             summary: `These bold predictions align perfectly with our ${prediction_data.pick_direction} pick. The predicted total of ${prediction_data.predicted_total} points suggests an offensive explosion, and these key players are positioned to drive that scoring with their recent form and favorable matchups.`
           }
+          
+          console.log('[SHIVA:Step5.5] Mock predictions generated:', {
+            predictionCount: mockPredictions.predictions.length,
+            summary: mockPredictions.summary.substring(0, 100) + '...'
+          })
           
           const responseBody = {
             run_id,
@@ -162,6 +177,15 @@ Research recent news, injury reports, and statistical trends to make the most ac
             writeAllowed,
             latencyMs: Date.now() - startTime,
             status: 200,
+          })
+          
+          console.log('[SHIVA:Step5.5] ===== BOLD PREDICTIONS COMPLETE =====')
+          console.log('[SHIVA:Step5.5] Final response body:', {
+            run_id: responseBody.run_id,
+            predictionCount: responseBody.bold_predictions.predictions.length,
+            hasSummary: !!responseBody.bold_predictions.summary,
+            confidence: responseBody.confidence,
+            pickDirection: responseBody.pick_direction
           })
           
           return { body: responseBody, status: 200 }

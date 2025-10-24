@@ -272,6 +272,7 @@ function assembleInsightCard({ runCtx, step4, step5, step5_5, step6, step3, step
       bold: step5_5?.json?.bold_predictions?.summary || generateBoldPrediction(pick, predictedScore, factorRows),
     },
     bold_predictions: step5_5?.json?.bold_predictions || null,
+    injury_summary: step3?.json?.injury_summary || null,
     factors: factorRows,
     market: {
       conf7,

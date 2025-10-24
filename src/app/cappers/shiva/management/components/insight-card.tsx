@@ -42,6 +42,16 @@ export interface InsightCardProps {
     gamePrediction: string
     bold?: string
   }
+  injury_summary?: {
+    findings: Array<{
+      team: string
+      player: string
+      status: string
+      impact: number
+    }>
+    total_impact: number
+    summary: string
+  } | null
   factors: Array<{
     key: string
     label: string
@@ -408,6 +418,50 @@ export function InsightCard(props: InsightCardProps) {
               </div>
               <div className="text-xs text-slate-400" title="Model edge vs market implied probability">
                 Model edge vs market implied probability
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* INJURY SUMMARY Section */}
+        {props.injury_summary && props.injury_summary.findings.length > 0 && (
+          <div className="p-4 bg-slate-800 border-b border-slate-700">
+            <div className="text-center">
+              <div className="text-sm font-semibold text-white mb-3">🏥 INJURY REPORT</div>
+              <div className="text-xs text-slate-300 mb-3">
+                {props.injury_summary.summary}
+              </div>
+              <div className="space-y-2">
+                {props.injury_summary.findings.map((finding, index) => (
+                  <div key={index} className="flex items-center justify-between p-2 bg-slate-700 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium text-white">{finding.team}</span>
+                      <span className="text-xs text-slate-300">{finding.player}</span>
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        finding.status === 'out' ? 'bg-red-600 text-white' :
+                        finding.status === 'doubtful' ? 'bg-orange-600 text-white' :
+                        finding.status === 'questionable' ? 'bg-yellow-600 text-black' :
+                        'bg-green-600 text-white'
+                      }`}>
+                        {finding.status.toUpperCase()}
+                      </span>
+                    </div>
+                    <span className={`text-xs font-bold ${
+                      finding.impact > 0 ? 'text-red-400' : 
+                      finding.impact < 0 ? 'text-green-400' : 'text-slate-400'
+                    }`}>
+                      {finding.impact > 0 ? '+' : ''}{finding.impact.toFixed(1)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3 text-xs text-slate-400">
+                Total Impact: <span className={`font-bold ${
+                  props.injury_summary.total_impact > 0 ? 'text-red-400' : 
+                  props.injury_summary.total_impact < 0 ? 'text-green-400' : 'text-slate-400'
+                }`}>
+                  {props.injury_summary.total_impact > 0 ? '+' : ''}{props.injury_summary.total_impact.toFixed(1)} points
+                </span>
               </div>
             </div>
           </div>
