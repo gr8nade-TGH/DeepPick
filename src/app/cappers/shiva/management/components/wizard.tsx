@@ -185,7 +185,9 @@ function assembleInsightCard({ runCtx, step4, step5, step5_5, step6, step3, step
     if (spreadTeam && typeof spreadLine === 'number') {
       const fav = spreadTeam === home ? home : away
       const dog = fav === home ? away : home
-      const line = Math.abs(spreadLine).toFixed(1)
+      // Round to nearest 0.5 for proper spread display
+      const roundedLine = Math.round(spreadLine * 2) / 2
+      const line = Math.abs(roundedLine).toFixed(1)
       return `${dog} +${line} @ ${fav} -${line}`
     }
     return `${away} @ ${home}` // no spread available
@@ -1204,17 +1206,23 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         }
       } else if (current === 6) {
         console.log('[Step 6] Starting Step 6 execution...')
-        setStepLoading(6, true, 'Generating bold predictions...', 10)
         
         // Bold Player Predictions - Step 6
         const step5Results = stepLogs[5]?.json
         const step4Results = stepLogs[4]?.json
         const step1Results = stepLogs[1]?.json
         
-        // Always execute Step 6, even if previous steps failed - show in Step Responses table
-        if (!step5Results || !step4Results || !step1Results) {
-          console.log('[Wizard:Step6] Missing previous step data, using fallback')
-        }
+        // Check if we should run Step 6 (only if pick has units > 0)
+        const step5Units = step5Results?.units || 0
+        console.log('[Step 6] Checking units:', { step5Units, willRun: step5Units > 0 })
+        
+        if (step5Units > 0) {
+          setStepLoading(6, true, 'Generating bold predictions...', 10)
+          
+          // Always execute Step 6, even if previous steps failed - show in Step Responses table
+          if (!step5Results || !step4Results || !step1Results) {
+            console.log('[Wizard:Step6] Missing previous step data, using fallback')
+          }
         
         const step5_5Body = {
           run_id: runId,
@@ -1235,13 +1243,33 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           }
         }
         
-        updateStepProgress(6, 50, 'Calling AI service...')
-        const r = await postJson('/api/shiva/factors/step5-5', step5_5Body, `ui-demo-step6-${Date.now()}`)
-        updateStepProgress(6, 80, 'Processing predictions...')
-        setLog(r)
-        setStepLogs(prev => ({ ...prev, 6: r }))
-        updateStepProgress(6, 100, 'Bold predictions generated')
-        setStepLoading(6, false, 'Complete', 100)
+          updateStepProgress(6, 50, 'Calling AI service...')
+          const r = await postJson('/api/shiva/factors/step5-5', step5_5Body, `ui-demo-step6-${Date.now()}`)
+          updateStepProgress(6, 80, 'Processing predictions...')
+          setLog(r)
+          setStepLogs(prev => ({ ...prev, 6: r }))
+          updateStepProgress(6, 100, 'Bold predictions generated')
+          setStepLoading(6, false, 'Complete', 100)
+        } else {
+          console.log('[Step 6] Skipping Bold Player Predictions - no units allocated (PASS)')
+          setStepLoading(6, true, 'Skipping - no units allocated...', 10)
+          
+          const skipResult = {
+            status: 200,
+            json: { 
+              run_id: runId,
+              bold_predictions: null,
+              reason: 'Skipped - no units allocated (PASS)',
+              skipped: true
+            },
+            dryRun: true,
+            latencyMs: 0
+          }
+          
+          setLog(skipResult)
+          setStepLogs(prev => ({ ...prev, 6: skipResult }))
+          setStepLoading(6, false, 'Skipped', 100)
+        }
       } else if (current === 7) {
         console.log('[Step 7] Starting Step 7 execution...')
         setStepLoading(7, true, 'Generating final pick...', 10)

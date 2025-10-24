@@ -42,6 +42,16 @@ export interface InsightCardProps {
     gamePrediction: string
     bold?: string
   }
+  bold_predictions?: {
+    predictions: Array<{
+      player: string
+      team: string
+      prediction: string
+      reasoning: string
+      confidence: string
+    }>
+    summary: string
+  } | null
   injury_summary?: {
     findings: Array<{
       team: string
@@ -241,12 +251,59 @@ export function InsightCard(props: InsightCardProps) {
               </div>
             )}
             
-            {props.writeups.bold && (
+            {props.bold_predictions && props.bold_predictions.predictions && props.bold_predictions.predictions.length > 0 ? (
+              <div className="bg-amber-900 border border-amber-700 rounded-lg p-3">
+                <div className="text-xs font-semibold text-amber-300 uppercase mb-2">AI BOLD PREDICTIONS</div>
+                <div className="space-y-3">
+                  {props.bold_predictions.predictions.map((pred, index) => (
+                    <div key={index} className="bg-amber-800 rounded p-2">
+                      <div className="flex justify-between items-start mb-1">
+                        <span className="text-amber-100 font-semibold text-sm">{pred.player}</span>
+                        <span className="text-amber-300 text-xs px-2 py-1 rounded bg-amber-700">
+                          {pred.confidence}
+                        </span>
+                      </div>
+                      <p className="text-amber-200 text-sm font-medium mb-1">{pred.prediction}</p>
+                      <p className="text-amber-300 text-xs">{pred.reasoning}</p>
+                    </div>
+                  ))}
+                  {props.bold_predictions.summary && (
+                    <div className="text-amber-100 text-sm font-medium mt-2 p-2 bg-amber-800 rounded">
+                      {props.bold_predictions.summary}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : props.writeups.bold ? (
               <div className="bg-amber-900 border border-amber-700 rounded-lg p-3">
                 <div className="text-xs font-semibold text-amber-300 uppercase mb-2">AI BOLD PREDICTION</div>
                 <p className="text-amber-100 text-sm font-semibold">{props.writeups.bold}</p>
               </div>
+            ) : (
+              <div className="bg-amber-900 border border-amber-700 rounded-lg p-3">
+                <div className="text-xs font-semibold text-amber-300 uppercase mb-2">AI BOLD PREDICTIONS</div>
+                <p className="text-amber-100 text-sm">No prediction available.</p>
+              </div>
             )}
+          </div>
+        )}
+
+        {/* Injury Summary */}
+        {props.injury_summary && (
+          <div className="p-4 bg-slate-800 border-b border-slate-700">
+            <div className="text-sm font-semibold text-white mb-2">INJURY SUMMARY</div>
+            <div className="bg-slate-700 rounded p-3">
+              <p className="text-slate-300 text-sm">{props.injury_summary.summary}</p>
+              {props.injury_summary.findings && props.injury_summary.findings.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  {props.injury_summary.findings.map((finding, index) => (
+                    <div key={index} className="text-xs text-slate-400">
+                      {finding.team}: {finding.player} - {finding.status} (Impact: {finding.impact})
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
