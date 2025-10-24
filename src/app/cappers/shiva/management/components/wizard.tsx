@@ -1201,22 +1201,6 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             predicted_total: predictedTotal,
             market_total_line: marketTotal,
             pick_direction: pickDirection
-          },
-          results: {
-            final_factor: {
-              name: 'Edge vs Market',
-              edge_pts: 0,
-              edge_factor: 0,
-              confidence_before: baseConfidence,
-              confidence_after: baseConfidence
-            },
-            units: 0,
-            final_pick: {
-              type: 'TOTAL',
-              selection: `${pickDirection} ${Math.round(marketTotal)}`,
-              units: 0,
-              confidence: baseConfidence
-            }
           }
         }
         console.log('[Wizard:Step5] About to call API with body:', step5Body)
