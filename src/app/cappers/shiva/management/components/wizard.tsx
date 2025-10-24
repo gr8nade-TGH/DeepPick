@@ -1903,36 +1903,10 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           onClick={async () => {
             if (loadingSteps.has(step)) return // Only block if loading
             
-            // Check if next step can be executed (validation)
-            const nextStep = Math.min(9, step + 1)
-            let canExecute = true
-            if (nextStep === 2) {
-              canExecute = validateStep1().isValid
-            } else if (nextStep === 3) {
-              canExecute = validateStep2().isValid
-            } else if (nextStep === 4) {
-              canExecute = validateStep3().isValid
-            } else if (nextStep === 5) {
-              canExecute = validateStep4().isValid
-            } else if (nextStep === 6) {
-              canExecute = validateStep5().isValid
-            } else if (nextStep === 7) {
-              canExecute = validateStep6().isValid
-            } else if (nextStep === 8) {
-              canExecute = stepLogs[7]?.json ? true : false
-            } else if (nextStep === 9) {
-              canExecute = stepLogs[8]?.json ? true : false
-            }
-            
-            if (!canExecute) {
-              console.warn(`[Step ${nextStep}] Cannot execute - previous step validation failed`)
-              return
-            }
-            
-            // Execute the next step, not the current one
-            await handleStepClick(nextStep)
-            // Update current step after execution
-            setStep(nextStep)
+            // Execute the current step first, then advance
+            await handleStepClick(step)
+            // Advance to next step after execution
+            setStep(Math.min(9, step + 1))
           }}
           disabled={step >= 9 || loadingSteps.has(step)}
           aria-disabled={step >= 9 || loadingSteps.has(step)}
