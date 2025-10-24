@@ -68,9 +68,9 @@ async function fetchRecentScores(
   sport: string = 'basketball_nba',
   daysFrom: number = 14  // Look back 2 weeks to find 5 games
 ): Promise<GameScore[]> {
-  const apiKey = process.env.ODDS_API_KEY
+  const apiKey = process.env.THE_ODDS_API_KEY
   if (!apiKey) {
-    throw new Error('ODDS_API_KEY not configured')
+    throw new Error('THE_ODDS_API_KEY not configured')
   }
 
   const url = `https://api.the-odds-api.com/v4/sports/${sport}/scores/?apiKey=${apiKey}&daysFrom=${daysFrom}`
