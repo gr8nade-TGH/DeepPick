@@ -48,8 +48,8 @@ export async function withIdempotency<TBody>(args: IdempotencyExecArgs<TBody>): 
     .maybeSingle()
 
   if (existing.data && existing.data.response_json) {
-    // TEMPORARY FIX: Always execute Steps 4 and 5 fresh to bypass cached empty responses
-    if (args.step === 'step4' || args.step === 'step5') {
+    // TEMPORARY FIX: Always execute Steps 3, 4 and 5 fresh to bypass cached empty responses
+    if (args.step === 'step3' || args.step === 'step4' || args.step === 'step5') {
       console.log(`[Idempotency:${args.step}] Bypassing cached response for ${args.step}:`, {
         runId: args.runId,
         step: args.step,
