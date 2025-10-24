@@ -69,6 +69,10 @@ export default function ShivaManagementPage() {
     setSelectedGame(game)
   }
 
+  const handleBetTypeChange = (newBetType: 'TOTAL' | 'SPREAD/MONEYLINE') => {
+    setBetType(newBetType)
+  }
+
   const handleRunClick = () => {
     // Build effective profile from current selections
     if (!currentProfile) return
