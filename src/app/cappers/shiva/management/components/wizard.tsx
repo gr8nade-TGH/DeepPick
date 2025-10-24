@@ -383,7 +383,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         const validation = validateStep3()
         canExecute = validation.isValid
         validationError = validation.error || ''
-      } else if (stepNum === 5 || stepNum === 5.5) {
+      } else if (stepNum === 5) {
         const validation = validateStep4()
         canExecute = validation.isValid
         validationError = validation.error || ''
@@ -1211,9 +1211,9 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         const step4Results = stepLogs[4]?.json
         const step1Results = stepLogs[1]?.json
         
-        // Always execute Step 5.5, even if previous steps failed - show in Step Responses table
+        // Always execute Step 6, even if previous steps failed - show in Step Responses table
         if (!step5Results || !step4Results || !step1Results) {
-          console.log('[Wizard:Step5.5] Missing previous step data, using fallback')
+          console.log('[Wizard:Step6] Missing previous step data, using fallback')
         }
         
         const step5_5Body = {
@@ -1235,8 +1235,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           }
         }
         
-        updateStepProgress(5.5, 50, 'Calling AI service...')
-        const r = await postJson('/api/shiva/factors/step5-5', step5_5Body, `ui-demo-step5-5-${Date.now()}`)
+        updateStepProgress(6, 50, 'Calling AI service...')
+        const r = await postJson('/api/shiva/factors/step5-5', step5_5Body, `ui-demo-step6-${Date.now()}`)
         updateStepProgress(6, 80, 'Processing predictions...')
         setLog(r)
         setStepLogs(prev => ({ ...prev, 6: r }))
@@ -1631,11 +1631,11 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                 </tr>
               </thead>
               <tbody>
-                {[1, 2, 3, 4, 5, 5.5, 6, 7, 8].map((stepNum) => {
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((stepNum) => {
                   const response = stepLogs[stepNum]
                   const isExecuted = !!response
-                  const usesAI = stepNum === 3 || stepNum === 4 || stepNum === 7 // Steps that use AI
-                  const aiProvider = stepNum === 3 ? 'Perplexity' : stepNum === 4 ? 'OpenAI' : stepNum === 7 ? 'OpenAI' : null
+                  const usesAI = stepNum === 3 || stepNum === 4 || stepNum === 6 || stepNum === 8 // Steps that use AI
+                  const aiProvider = stepNum === 3 ? 'Perplexity' : stepNum === 4 ? 'OpenAI' : stepNum === 6 ? 'Perplexity' : stepNum === 8 ? 'OpenAI' : null
                   
                   // Detect mock vs real data (only for executed steps)
                   const isMockData = isExecuted && (
