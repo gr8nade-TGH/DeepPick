@@ -1,4 +1,4 @@
-import { getSupabaseAdmin } from '@/lib/supabase/admin'
+import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { capper_type } from '@/lib/database.types'
 
 export type BetType = 'TOTAL' | 'SPREAD' | 'MONEYLINE'

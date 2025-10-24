@@ -1,6 +1,6 @@
 "use client"
 import { useMemo, useState, useEffect } from 'react'
-import { GameAndPicksInbox } from '@/components/cappers/game-and-picks-inbox'
+import { InsightCard } from './insight-card'
 import { getFactorMeta } from '@/lib/cappers/shiva-v1/factor-registry'
 import { registerStep } from '@/lib/shared/dynamic-step-registry'
 
