@@ -340,13 +340,29 @@ export function RealDashboard() {
             </CardHeader>
             <CardContent>
               {(() => {
-                console.log('📊 CHART DEBUG:', {
-                  hasPerformance: !!performance,
-                  hasChartData: !!performance?.chartData,
-                  chartDataLength: performance?.chartData?.length,
-                  chartData: performance?.chartData,
-                  firstDataPoint: performance?.chartData?.[0]
-                })
+                try {
+                  console.log('📊 CHART DEBUG:', {
+                    hasPerformance: !!performance,
+                    hasChartData: !!performance?.chartData,
+                    chartDataLength: performance?.chartData?.length,
+                    chartData: performance?.chartData,
+                    firstDataPoint: performance?.chartData?.[0],
+                    performanceKeys: performance ? Object.keys(performance) : 'undefined',
+                    chartDataType: typeof performance?.chartData,
+                    chartDataIsArray: Array.isArray(performance?.chartData)
+                  })
+                  
+                  // Test all potential length accesses
+                  console.log('🔍 LENGTH TESTS:', {
+                    'performance?.chartData?.length': performance?.chartData?.length,
+                    'picks.length': picks?.length,
+                    'pickHistory.length': pickHistory?.length,
+                    'performance?.metrics': performance?.metrics,
+                    'performance?.metrics?.net_units': performance?.metrics?.net_units
+                  })
+                } catch (error) {
+                  console.error('🚨 CHART DEBUG ERROR:', error)
+                }
                 return null
               })()}
               {!performance?.chartData || performance?.chartData?.length === 0 ? (
@@ -371,11 +387,16 @@ export function RealDashboard() {
                 </div>
               ) : (
               <div className="h-[250px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart 
-                    data={performance?.chartData?.filter(item => item && typeof item === 'object' && item.date && typeof item.cumulative_profit === 'number') || []} 
-                    margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-                  >
+                {(() => {
+                  try {
+                    const chartData = performance?.chartData?.filter(item => item && typeof item === 'object' && item.date && typeof item.cumulative_profit === 'number') || []
+                    console.log('📈 RENDERING CHART with data:', chartData)
+                    return (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart 
+                          data={chartData} 
+                          margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                        >
                     <defs>
                       <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#10B981" stopOpacity={0.8}/>
@@ -416,6 +437,19 @@ export function RealDashboard() {
                     <Area type="monotone" dataKey="cumulative_profit" stroke="#10B981" fillOpacity={1} fill="url(#colorProfit)" />
                   </AreaChart>
                 </ResponsiveContainer>
+                    )
+                  } catch (error) {
+                    console.error('🚨 CHART RENDERING ERROR:', error)
+                    return (
+                      <div className="h-[250px] flex items-center justify-center text-red-400">
+                        <div className="text-center">
+                          <p className="text-lg mb-2">Chart Error</p>
+                          <p className="text-sm">Failed to render chart: {error instanceof Error ? error.message : 'Unknown error'}</p>
+                        </div>
+                      </div>
+                    )
+                  }
+                })()}
               </div>
               )}
             </CardContent>
@@ -478,7 +512,15 @@ export function RealDashboard() {
               </tr>
             </thead>
             <tbody>
-              {picks.length === 0 ? (
+              {(() => {
+                try {
+                  console.log('🔍 PICKS LENGTH CHECK:', { picksLength: picks?.length, picks: picks })
+                } catch (error) {
+                  console.error('🚨 PICKS LENGTH ERROR:', error)
+                }
+                return null
+              })()}
+              {picks?.length === 0 ? (
                 <tr>
                   <td colSpan={11} className="py-8 px-4 text-center text-gray-400">
                     No picks found. Add some picks to see them here!
@@ -606,7 +648,15 @@ export function RealDashboard() {
               </tr>
             </thead>
             <tbody>
-              {pickHistory.length === 0 ? (
+              {(() => {
+                try {
+                  console.log('🔍 PICK HISTORY LENGTH CHECK:', { pickHistoryLength: pickHistory?.length, pickHistory: pickHistory })
+                } catch (error) {
+                  console.error('🚨 PICK HISTORY LENGTH ERROR:', error)
+                }
+                return null
+              })()}
+              {pickHistory?.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-8 px-4 text-center text-gray-400">
                     No completed picks yet. Check back after games finish!
