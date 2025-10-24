@@ -366,8 +366,50 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           {stepLogs[stepNum].status}
         </span>
       )
+    } else {
+      // Check if this step can be executed (previous steps validated)
+      let canExecute = true
+      let validationError = ''
+      
+      if (stepNum === 2) {
+        const validation = validateStep1()
+        canExecute = validation.isValid
+        validationError = validation.error || ''
+      } else if (stepNum === 3) {
+        const validation = validateStep2()
+        canExecute = validation.isValid
+        validationError = validation.error || ''
+      } else if (stepNum === 4) {
+        const validation = validateStep3()
+        canExecute = validation.isValid
+        validationError = validation.error || ''
+      } else if (stepNum === 5 || stepNum === 5.5) {
+        const validation = validateStep4()
+        canExecute = validation.isValid
+        validationError = validation.error || ''
+      } else if (stepNum === 6) {
+        const validation = validateStep5()
+        canExecute = validation.isValid
+        validationError = validation.error || ''
+      } else if (stepNum === 7) {
+        canExecute = stepLogs[6]?.json ? true : false
+        validationError = stepLogs[6]?.json ? '' : 'Step 6 not executed'
+      }
+      
+      if (!canExecute) {
+        return (
+          <span className="px-2 py-1 rounded text-xs bg-orange-600 text-white" title={validationError}>
+            Blocked
+          </span>
+        )
+      }
+      
+      return (
+        <span className="px-2 py-1 rounded text-xs bg-gray-600 text-white">
+          Ready
+        </span>
+      )
     }
-    return null
   }
 
   // Step names mapping
@@ -557,8 +599,167 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     }
   }, [step, stepLogs, effectiveProfileSnapshot, runId, snapId, props.effectiveProfile])
 
+  // Step validation helper functions
+  function validateStep1(): { isValid: boolean; error?: string; data?: any } {
+    const step1Data = stepLogs[1]?.json
+    if (!step1Data) {
+      return { isValid: false, error: 'Step 1 not executed' }
+    }
+    if (stepLogs[1]?.status < 200 || stepLogs[1]?.status >= 300) {
+      return { isValid: false, error: `Step 1 failed with status ${stepLogs[1]?.status}` }
+    }
+    if (!step1Data.selected_game) {
+      return { isValid: false, error: 'Step 1 did not select a game' }
+    }
+    if (!step1Data.run_id) {
+      return { isValid: false, error: 'Step 1 did not generate run_id' }
+    }
+    return { isValid: true, data: step1Data }
+  }
+
+  function validateStep2(): { isValid: boolean; error?: string; data?: any } {
+    const step2Data = stepLogs[2]?.json
+    if (!step2Data) {
+      return { isValid: false, error: 'Step 2 not executed' }
+    }
+    if (stepLogs[2]?.status < 200 || stepLogs[2]?.status >= 300) {
+      return { isValid: false, error: `Step 2 failed with status ${stepLogs[2]?.status}` }
+    }
+    if (!step2Data.snapshot_id) {
+      return { isValid: false, error: 'Step 2 did not generate snapshot_id' }
+    }
+    if (!step2Data.snapshot) {
+      return { isValid: false, error: 'Step 2 did not capture odds snapshot' }
+    }
+    return { isValid: true, data: step2Data }
+  }
+
+  function validateStep3(): { isValid: boolean; error?: string; data?: any } {
+    const step3Data = stepLogs[3]?.json
+    if (!step3Data) {
+      return { isValid: false, error: 'Step 3 not executed' }
+    }
+    if (stepLogs[3]?.status < 200 || stepLogs[3]?.status >= 300) {
+      return { isValid: false, error: `Step 3 failed with status ${stepLogs[3]?.status}` }
+    }
+    if (!step3Data.factors || !Array.isArray(step3Data.factors)) {
+      return { isValid: false, error: 'Step 3 did not generate factors array' }
+    }
+    if (step3Data.factors.length === 0) {
+      return { isValid: false, error: 'Step 3 generated empty factors array' }
+    }
+    return { isValid: true, data: step3Data }
+  }
+
+  function validateStep4(): { isValid: boolean; error?: string; data?: any } {
+    const step4Data = stepLogs[4]?.json
+    if (!step4Data) {
+      return { isValid: false, error: 'Step 4 not executed' }
+    }
+    if (stepLogs[4]?.status < 200 || stepLogs[4]?.status >= 300) {
+      return { isValid: false, error: `Step 4 failed with status ${stepLogs[4]?.status}` }
+    }
+    if (!step4Data.predictions) {
+      return { isValid: false, error: 'Step 4 did not generate predictions' }
+    }
+    if (typeof step4Data.predictions.total_pred_points !== 'number') {
+      return { isValid: false, error: 'Step 4 predictions missing total_pred_points' }
+    }
+    return { isValid: true, data: step4Data }
+  }
+
+  function validateStep5(): { isValid: boolean; error?: string; data?: any } {
+    const step5Data = stepLogs[5]?.json
+    if (!step5Data) {
+      return { isValid: false, error: 'Step 5 not executed' }
+    }
+    if (stepLogs[5]?.status < 200 || stepLogs[5]?.status >= 300) {
+      return { isValid: false, error: `Step 5 failed with status ${stepLogs[5]?.status}` }
+    }
+    if (typeof step5Data.conf_final !== 'number') {
+      return { isValid: false, error: 'Step 5 missing conf_final' }
+    }
+    if (typeof step5Data.units !== 'number') {
+      return { isValid: false, error: 'Step 5 missing units' }
+    }
+    return { isValid: true, data: step5Data }
+  }
+
   async function handleStepClick(current: number) {
     try {
+      // Validate previous steps before executing current step
+      if (current === 2) {
+        const step1Validation = validateStep1()
+        if (!step1Validation.isValid) {
+          console.error('[Step 2] Step 1 validation failed:', step1Validation.error)
+          setStepLoading(2, false, `Cannot proceed: ${step1Validation.error}`, 0)
+          return
+        }
+        console.log('[Step 2] Step 1 validation passed, proceeding...')
+      }
+
+      if (current === 3) {
+        const step2Validation = validateStep2()
+        if (!step2Validation.isValid) {
+          console.error('[Step 3] Step 2 validation failed:', step2Validation.error)
+          setStepLoading(3, false, `Cannot proceed: ${step2Validation.error}`, 0)
+          return
+        }
+        console.log('[Step 3] Step 2 validation passed, proceeding...')
+      }
+
+      if (current === 4) {
+        const step3Validation = validateStep3()
+        if (!step3Validation.isValid) {
+          console.error('[Step 4] Step 3 validation failed:', step3Validation.error)
+          setStepLoading(4, false, `Cannot proceed: ${step3Validation.error}`, 0)
+          return
+        }
+        console.log('[Step 4] Step 3 validation passed, proceeding...')
+      }
+
+      if (current === 5) {
+        const step4Validation = validateStep4()
+        if (!step4Validation.isValid) {
+          console.error('[Step 5] Step 4 validation failed:', step4Validation.error)
+          setStepLoading(5, false, `Cannot proceed: ${step4Validation.error}`, 0)
+          return
+        }
+        console.log('[Step 5] Step 4 validation passed, proceeding...')
+      }
+
+      if (current === 5.5) {
+        const step4Validation = validateStep4()
+        if (!step4Validation.isValid) {
+          console.error('[Step 5.5] Step 4 validation failed:', step4Validation.error)
+          setStepLoading(5.5, false, `Cannot proceed: ${step4Validation.error}`, 0)
+          return
+        }
+        console.log('[Step 5.5] Step 4 validation passed, proceeding...')
+      }
+
+      if (current === 6) {
+        const step5Validation = validateStep5()
+        if (!step5Validation.isValid) {
+          console.error('[Step 6] Step 5 validation failed:', step5Validation.error)
+          setStepLoading(6, false, `Cannot proceed: ${step5Validation.error}`, 0)
+          return
+        }
+        console.log('[Step 6] Step 5 validation passed, proceeding...')
+      }
+
+      if (current === 7) {
+        const step6Validation = stepLogs[6]?.json ? 
+          { isValid: true, data: stepLogs[6].json } : 
+          { isValid: false, error: 'Step 6 not executed' }
+        if (!step6Validation.isValid) {
+          console.error('[Step 7] Step 6 validation failed:', step6Validation.error)
+          setStepLoading(7, false, `Cannot proceed: ${step6Validation.error}`, 0)
+          return
+        }
+        console.log('[Step 7] Step 6 validation passed, proceeding...')
+      }
+
       if (current === 1) {
         console.log('[Step 1] Starting Step 1 execution...')
         setStepLoading(1, true, 'Initializing run...', 10)
@@ -1489,6 +1690,28 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           }`}
           onClick={async () => {
             if (step >= 8 || loadingSteps.has(step)) return // Clamp at Step 8 or if loading
+            
+            // Check if current step can be executed (validation)
+            let canExecute = true
+            if (step === 2) {
+              canExecute = validateStep1().isValid
+            } else if (step === 3) {
+              canExecute = validateStep2().isValid
+            } else if (step === 4) {
+              canExecute = validateStep3().isValid
+            } else if (step === 5 || step === 5.5) {
+              canExecute = validateStep4().isValid
+            } else if (step === 6) {
+              canExecute = validateStep5().isValid
+            } else if (step === 7) {
+              canExecute = stepLogs[6]?.json ? true : false
+            }
+            
+            if (!canExecute) {
+              console.warn(`[Step ${step}] Cannot execute - previous step validation failed`)
+              return
+            }
+            
             await handleStepClick(step)
             // Handle step progression including Step 5.5
             if (step === 5) {
