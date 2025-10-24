@@ -372,7 +372,10 @@ export function RealDashboard() {
               ) : (
               <div className="h-[250px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={performance?.chartData || []} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                  <AreaChart 
+                    data={performance?.chartData?.filter(item => item && typeof item === 'object' && item.date && typeof item.cumulative_profit === 'number') || []} 
+                    margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                  >
                     <defs>
                       <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#10B981" stopOpacity={0.8}/>
@@ -395,7 +398,7 @@ export function RealDashboard() {
                       }}
                       itemStyle={{ color: '#10B981' }}
                       content={({ active, payload, label }) => {
-                        if (active && payload && payload.length) {
+                        if (active && payload && payload?.length && payload[0]) {
                           const value = payload[0].value as number
                           const color = value >= 0 ? '#10B981' : '#EF4444'
                           return (
