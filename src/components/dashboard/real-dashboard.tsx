@@ -527,7 +527,7 @@ export function RealDashboard() {
                   </td>
                 </tr>
               ) : (
-                picks.map((pick) => {
+                (picks || []).map((pick) => {
                   const InsightIcon = getInsightIcon(pick)
                   const capperInfo = CAPPERS.find(c => c.id === pick.capper) || CAPPERS[1] // Default to DeepPick
                   return (
@@ -663,7 +663,7 @@ export function RealDashboard() {
                   </td>
                 </tr>
               ) : (
-                pickHistory.map((pick) => {
+                (pickHistory || []).map((pick) => {
                   const capperInfo = CAPPERS.find(c => c.id === pick.capper) || CAPPERS[1]
                   const finalScore = pick.games?.final_score
                   
@@ -902,7 +902,7 @@ export function RealDashboard() {
                       Detailed Prediction Process
                     </h3>
                     <div className="space-y-3 max-h-96 overflow-y-auto">
-                      {selectedPick.result.prediction_log.steps.map((step, idx) => (
+                      {(selectedPick?.result?.prediction_log?.steps || []).map((step, idx) => (
                         <div 
                           key={idx} 
                           className={`p-3 rounded-lg border ${
