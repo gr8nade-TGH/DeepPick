@@ -149,7 +149,7 @@ export function HeaderFilters(props: HeaderFiltersProps) {
     props.onBetTypeChange(newBetType)
   }
 
-  const handleModeChange = (newMode: 'dry-run' | 'write') => {
+  const handleModeChange = (newMode: 'dry-run' | 'write' | 'auto') => {
     setMode(newMode)
     props.onModeChange(newMode)
   }
