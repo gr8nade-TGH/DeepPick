@@ -183,26 +183,26 @@ export default function ShivaManagementPage() {
             <button
               onClick={async () => {
                 try {
-                  console.log('🎮 [ADD GAMES] Button clicked, adding games...')
-                  const response = await fetch('/api/debug/add-games', { method: 'POST' })
+                  console.log('🔄 [FETCH GAMES] Button clicked, fetching from Odds API...')
+                  const response = await fetch('/api/simple-ingest')
                   const result = await response.json()
-                  console.log('🎮 [ADD GAMES] Response:', result)
+                  console.log('🔄 [FETCH GAMES] Response:', result)
                   
                   if (result.success) {
                     alert(`✅ ${result.message}! Refreshing page...`)
                     window.location.reload()
                   } else {
-                    alert('❌ Error adding games: ' + result.error)
+                    alert('❌ Error fetching games: ' + result.error)
                   }
                 } catch (error) {
-                  alert('❌ Error adding games: ' + error)
-                  console.error('🎮 [ADD GAMES] Network error:', error)
+                  alert('❌ Error fetching games: ' + error)
+                  console.error('🔄 [FETCH GAMES] Network error:', error)
                 }
               }}
               className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded font-medium transition flex items-center gap-2"
             >
-              <span>🎮</span>
-              Add Games
+              <span>🔄</span>
+              Fetch Games (Odds API)
             </button>
             <a
               href="/odds"
