@@ -120,15 +120,28 @@ export async function POST(request: NextRequest) {
         const firstEligibleGame = eligibleGames[0]
         console.log(`[SHIVA_SCANNER] Selected game: ${firstEligibleGame.away_team} @ ${firstEligibleGame.home_team}`)
 
+        // Extract team names properly
+        const homeTeamName = firstEligibleGame.home_team?.name || firstEligibleGame.home_team
+        const awayTeamName = firstEligibleGame.away_team?.name || firstEligibleGame.away_team
+        const homeTeamAbbr = firstEligibleGame.home_team?.abbreviation || (typeof homeTeamName === 'string' ? homeTeamName.substring(0, 3).toUpperCase() : 'HOM')
+        const awayTeamAbbr = firstEligibleGame.away_team?.abbreviation || (typeof awayTeamName === 'string' ? awayTeamName.substring(0, 3).toUpperCase() : 'AWY')
+        
         return NextResponse.json({
           success: true,
           run_id: `shiva_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
           state: 'GAME_SELECTED',
-          message: `Selected game ${firstEligibleGame.away_team} @ ${firstEligibleGame.home_team} for ${betType} predictions`,
+          message: `Selected game ${awayTeamName} @ ${homeTeamName} for ${betType} predictions`,
           selected_game: {
             id: firstEligibleGame.id,
-            home_team: { name: firstEligibleGame.home_team },
-            away_team: { name: firstEligibleGame.away_team },
+            home_team: {
+              name: homeTeamName,
+              abbreviation: homeTeamAbbr
+            },
+            away_team: {
+              name: awayTeamName,
+              abbreviation: awayTeamAbbr
+            },
+            game_date: firstEligibleGame.game_date,
             game_time: firstEligibleGame.game_time,
             total_line: firstEligibleGame.total_line,
             spread_line: firstEligibleGame.spread_line
