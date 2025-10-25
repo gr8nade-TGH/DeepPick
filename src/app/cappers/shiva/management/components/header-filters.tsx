@@ -32,7 +32,7 @@ export function HeaderFilters(props: HeaderFiltersProps) {
   const [capper, setCapper] = useState('SHIVA')
   const [sport, setSport] = useState('NBA')
   const [betType, setBetType] = useState<'TOTAL' | 'SPREAD/MONEYLINE'>('TOTAL')
-  const [mode, setMode] = useState<'dry-run' | 'write'>('dry-run')
+  const [mode, setMode] = useState<'dry-run' | 'write' | 'auto'>('dry-run')
   const [step3Provider, setStep3Provider] = useState<string>('')
   const [step4Provider, setStep4Provider] = useState<string>('')
   const [profile, setProfile] = useState<CapperProfile | null>(null)
