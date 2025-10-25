@@ -15,6 +15,19 @@ export const dynamic = 'force-dynamic'
  * 4. Store picks in database
  */
 export async function GET(request: Request) {
+  // 🚨 DISABLED - Use manual pick generation only
+  console.log('🚨 [AUTO-RUN-CAPPERS] DISABLED - This endpoint has been disabled')
+  console.log('🚨 [AUTO-RUN-CAPPERS] Use the SHIVA management page for manual pick generation')
+  console.log('🚨 [AUTO-RUN-CAPPERS] Cron jobs should be removed from Vercel dashboard')
+  
+  return NextResponse.json({
+    success: false,
+    error: 'AUTO-RUN-CAPPERS DISABLED',
+    message: 'This endpoint has been disabled. Use the SHIVA management page for manual pick generation.',
+    instructions: 'Go to Vercel Dashboard → Settings → Cron Jobs and delete all cron jobs.'
+  }, { status: 503 })
+  
+  /* DISABLED CODE - DO NOT RUN
   const executionTime = new Date().toISOString()
   console.log(`\n${'='.repeat(80)}`)
   console.log(`🤖 [AUTO-RUN-CAPPERS CRON] EXECUTION START: ${executionTime}`)
