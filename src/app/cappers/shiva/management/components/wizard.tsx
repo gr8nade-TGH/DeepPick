@@ -1200,6 +1200,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           setStepLoading(2, false, 'Failed', 0)
           return
         }
+        return
       }
 
       if (current === 3) {
