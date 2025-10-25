@@ -1029,7 +1029,9 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             sport: 'NBA' as const,
             home_team: step1Game.home_team?.name || 'Home Team',
             away_team: step1Game.away_team?.name || 'Away Team',
-            start_time_utc: step1Game.game_time ? new Date(step1Game.game_time).toISOString() : new Date().toISOString(),
+            start_time_utc: step1Game.game_date && step1Game.game_time ? 
+              new Date(`${step1Game.game_date}T${step1Game.game_time}`).toISOString() : 
+              new Date().toISOString(),
             captured_at_utc: new Date().toISOString(),
             books_considered: Object.keys(step1Game.odds || {}).length,
             moneyline: {
