@@ -8,12 +8,12 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = getSupabase()
     
-    // Check picks table
+    // Check picks table - get all picks to see what's there
     const { data: picks, error: picksError } = await supabase
       .from('picks')
-      .select('id, game_id, capper, pick_type, status, created_at')
-      .eq('capper', 'shiva')
+      .select('id, game_id, capper, pick_type, status, created_at, sport')
       .order('created_at', { ascending: false })
+      .limit(20) // Limit to first 20 for debugging
     
     if (picksError) {
       console.error('Error fetching picks:', picksError)

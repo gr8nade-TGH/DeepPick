@@ -29,11 +29,11 @@ export async function POST(request: NextRequest) {
     
     console.log(`[clear-picks] Found ${beforePicksCount || 0} SHIVA picks and ${beforeCooldownCount || 0} cooldown records to delete`)
     
-    // Clear all SHIVA picks - try both 'shiva' and 'SHIVA' case variations
+    // Clear all SHIVA picks - use lowercase 'shiva' as per database enum
     const { error: picksError, count: deletedPicksCount } = await supabase
       .from('picks')
       .delete({ count: 'exact' })
-      .or('capper.eq.shiva,capper.eq.SHIVA')
+      .eq('capper', 'shiva')
     
     if (picksError) {
       console.error('Error deleting picks:', picksError)
