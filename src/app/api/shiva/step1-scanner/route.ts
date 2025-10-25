@@ -144,7 +144,9 @@ export async function POST(request: NextRequest) {
             game_date: firstEligibleGame.game_date,
             game_time: firstEligibleGame.game_time,
             total_line: firstEligibleGame.total_line,
-            spread_line: firstEligibleGame.spread_line
+            spread_line: firstEligibleGame.spread_line,
+            odds: firstEligibleGame.odds || {}, // Include odds data
+            status: firstEligibleGame.status || 'scheduled'
           },
           filters: {
             sport,
@@ -307,7 +309,7 @@ async function scanForEligibleGames(
         status
       `)
       .eq('sport', sportLower)
-      .in('status', ['scheduled', 'live'])
+      .eq('status', 'scheduled') // ONLY scheduled games - skip live/completed
       .or(`game_date.gte.${dateString},and(game_date.eq.${dateString},game_time.gte.${timeString})`)
       .order('game_date', { ascending: true })
       .order('game_time', { ascending: true })
