@@ -131,31 +131,34 @@ export default function ShivaManagementPage() {
             </button>
             <button
               onClick={async () => {
+                if (!confirm('⚠️ This will delete ALL picks from ALL cappers. Continue?')) {
+                  return
+                }
                 try {
-                  console.log('🧹 [CLEAR PICKS] Button clicked, calling API...')
-                  const response = await fetch('/api/debug/clear-picks', { method: 'POST' })
-                  console.log('🧹 [CLEAR PICKS] API response status:', response.status)
+                  console.log('🧹 [CLEAR ALL PICKS] Button clicked, calling API...')
+                  const response = await fetch('/api/debug/clear-all-picks', { method: 'POST' })
+                  console.log('🧹 [CLEAR ALL PICKS] API response status:', response.status)
                   const result = await response.json()
-                  console.log('🧹 [CLEAR PICKS] API response data:', result)
+                  console.log('🧹 [CLEAR ALL PICKS] API response data:', result)
                   
                   if (result.success) {
                     alert(`✅ ${result.message}! Refreshing data...`)
-                    console.log('🧹 [CLEAR PICKS] Success, refreshing page...')
+                    console.log('🧹 [CLEAR ALL PICKS] Success, refreshing page...')
                     // Refresh the page to update all data
                     window.location.reload()
                   } else {
                     alert('❌ Error clearing picks: ' + (result.error || 'Unknown error'))
-                    console.error('🧹 [CLEAR PICKS] API error:', result)
+                    console.error('🧹 [CLEAR ALL PICKS] API error:', result)
                   }
                 } catch (error) {
                   alert('❌ Error clearing picks: ' + error)
-                  console.error('🧹 [CLEAR PICKS] Network error:', error)
+                  console.error('🧹 [CLEAR ALL PICKS] Network error:', error)
                 }
               }}
               className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded font-medium transition flex items-center gap-2"
             >
               <span>🧹</span>
-              Clear Picks (Debug)
+              Clear ALL Picks
             </button>
             <button
               onClick={async () => {
