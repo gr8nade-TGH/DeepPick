@@ -51,7 +51,7 @@ export default function ShivaManagementPage() {
   const [currentProfile, setCurrentProfile] = useState<CapperProfile | null>(null)
   const [effectiveProfile, setEffectiveProfile] = useState<CapperProfile | null>(null)
   const [selectedGame, setSelectedGame] = useState<any>(null)
-  const [mode, setMode] = useState<'dry-run' | 'write'>('dry-run')
+  const [mode, setMode] = useState<'dry-run' | 'write' | 'auto'>('dry-run')
   const [betType, setBetType] = useState<'TOTAL' | 'SPREAD/MONEYLINE'>('TOTAL')
   const [providerOverrides, setProviderOverrides] = useState<{ step3?: string; step4?: string }>({})
   const [showFactorConfig, setShowFactorConfig] = useState(false)
