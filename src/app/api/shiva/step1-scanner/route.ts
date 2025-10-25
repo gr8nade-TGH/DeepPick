@@ -443,14 +443,14 @@ async function scanForEligibleGames(
       } 
     }
 
-  } catch (error) {
+  } catch (error: any) {
     console.error(`[SHIVA_SCANNER] Error scanning for eligible games:`, error)
     return { 
       games: [], 
       debug: { 
         step: 'error', 
-        error: error.message,
-        stack: error.stack
+        error: error?.message || 'Unknown error',
+        stack: error?.stack || 'No stack trace'
       } 
     }
   }

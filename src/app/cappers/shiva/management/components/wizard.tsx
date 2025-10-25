@@ -347,7 +347,27 @@ export interface SHIVAWizardProps {
   sport?: 'NBA' | 'NFL' | 'MLB'
 }
 
+// Enhanced logging system for debugging
+const createLogger = (context: string) => ({
+  info: (message: string, data?: any) => {
+    console.log(`[${context}] ${message}`, data || '')
+  },
+  error: (message: string, error?: any) => {
+    console.error(`[${context}] ERROR: ${message}`, error || '')
+  },
+  debug: (message: string, data?: any) => {
+    console.debug(`[${context}] DEBUG: ${message}`, data || '')
+  },
+  warn: (message: string, data?: any) => {
+    console.warn(`[${context}] WARN: ${message}`, data || '')
+  },
+  step: (stepNumber: number, message: string, data?: any) => {
+    console.log(`[STEP ${stepNumber}] ${message}`, data || '')
+  }
+})
+
 export function SHIVAWizard(props: SHIVAWizardProps = {}) {
+  const logger = createLogger('SHIVA_WIZARD')
   const [step, setStep] = useState<number>(1)
   const [log, setLog] = useState<any>(null)
   const [runId, setRunId] = useState<string>('')
@@ -631,6 +651,73 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           currentStep: step,
           runIdSet: !!runId,
           snapIdSet: !!snapId,
+        },
+        // Enhanced debugging sections
+        factor_count: 0,
+        factor_keys: [],
+        assembler: {
+          factorRows: 0,
+          topFactorKey: "none",
+          oddsUsed: {
+            ml_home: 0,
+            ml_away: 0,
+            spread_team: "unknown",
+            spread_line: 0,
+            total_line: 0
+          }
+        },
+        step_debug: {
+          step3_totals: null,
+          step3_factors_detail: [],
+          nba_stats_api_debug: {
+            condition_check: "Not found in debug logs",
+            enabled_factors: "Not found in debug logs",
+            nba_stats_fetched: "Not found in debug logs",
+            team_names: "Not found in debug logs",
+            bundle_keys: "Not found in debug logs",
+            bundle_sample: "Not found in debug logs",
+            api_calls_made: "Not found in debug logs"
+          },
+          step4_predictions: null,
+          step5_confidence: null,
+          step6_pick: null,
+          confidence_calculation: {
+            factor_signals: [],
+            signed_sum: 0,
+            base_confidence: 0,
+            weight_validation: {
+              total_weight: 0,
+              expected_weight: 250,
+              is_valid: false
+            }
+          }
+        },
+        pick_generation_cooldown: {
+          step1_cooldown_info: null,
+          step1_debug_info: null,
+          step1_detailed_debug: {
+            game_id: "unknown",
+            capper: "unknown",
+            bet_type: "unknown",
+            existing_picks_count: 0,
+            cooldown_records_count: 0,
+            all_picks_count: 0,
+            has_existing_picks: false,
+            has_active_cooldown: false,
+            total_picks_for_game: 0,
+            database_errors: {},
+            blocking_reason: "UNKNOWN"
+          },
+          games_in_cooldown: 0,
+          cooldown_hours: 2,
+          total_games_checked: 0,
+          available_games_count: 0
+        },
+        ai_usage: {
+          step3_provider: "unknown",
+          step3_news_window: 48,
+          step4_used: "unknown",
+          step7_used: false
         }
       }
       console.log('Debug report generated (comprehensive):', debugReport)
@@ -948,20 +1035,22 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       }
 
       if (current === 1) {
-        console.log('[Step 1] Starting Step 1 execution...')
+        logger.step(1, 'Starting Step 1 execution...')
         setStepLoading(1, true, 'Initializing run...', 10)
         
         // Snapshot effectiveProfile on first step
         if (props.effectiveProfile) {
           setEffectiveProfileSnapshot(props.effectiveProfile)
-          console.log('[Step 1] Snapshot effectiveProfile:', props.effectiveProfile)
+          logger.debug('Snapshot effectiveProfile', props.effectiveProfile)
         }
         
         // Call Step 1 API to find available games
-        console.log('[Step 1] Calling game selection API...')
-        console.log('[Step 1] Selected game:', props.selectedGame)
-        console.log('[Step 1] Selected game type:', typeof props.selectedGame)
-        console.log('[Step 1] Selected game keys:', props.selectedGame ? Object.keys(props.selectedGame) : 'undefined')
+        logger.step(1, 'Calling game selection API...')
+        logger.debug('Selected game details', {
+          game: props.selectedGame,
+          type: typeof props.selectedGame,
+          keys: props.selectedGame ? Object.keys(props.selectedGame) : 'undefined'
+        })
         updateStepProgress(1, 30, 'Finding available games...')
         
         try {
