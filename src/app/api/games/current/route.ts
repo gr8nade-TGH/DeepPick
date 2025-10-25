@@ -71,16 +71,8 @@ export async function GET(request: NextRequest) {
             const spread = game.odds[book]?.spread
             if (!spread) return null
             
-            // Get the home team spread (negative value)
-            const homeTeam = game.home_team?.name
-            const awayTeam = game.away_team?.name
-            
-            if (homeTeam && spread[homeTeam]?.point !== undefined) {
-              return spread[homeTeam].point
-            } else if (awayTeam && spread[awayTeam]?.point !== undefined) {
-              return spread[awayTeam].point
-            }
-            return null
+            // Get the spread line (negative value for home team)
+            return spread.line || null
           })
           .filter(val => val !== undefined && val !== null)
         return values.length > 0 
@@ -94,8 +86,8 @@ export async function GET(request: NextRequest) {
             const total = game.odds[book]?.total
             if (!total) return null
             
-            // Get the Over point (same as Under point)
-            return total.Over?.point || total.Under?.point || null
+            // Get the total line
+            return total.line || null
           })
           .filter(val => val !== undefined && val !== null)
         return values.length > 0 
