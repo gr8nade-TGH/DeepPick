@@ -4,6 +4,7 @@ import { z } from 'zod'
 
 const GetPicksSchema = z.object({
   capper: z.string().optional(),
+  status: z.string().optional(),
   limit: z.string().optional().transform(val => val ? parseInt(val) : 20),
   offset: z.string().optional().transform(val => val ? parseInt(val) : 0)
 })
@@ -13,6 +14,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const parse = GetPicksSchema.safeParse({
       capper: searchParams.get('capper') || undefined,
+      status: searchParams.get('status') || undefined,
       limit: searchParams.get('limit') || undefined,
       offset: searchParams.get('offset') || undefined
     })
@@ -25,7 +27,7 @@ export async function GET(request: NextRequest) {
       }, { status: 400 })
     }
 
-    const { capper, limit, offset } = parse.data
+    const { capper, status, limit, offset } = parse.data
     const supabase = await getSupabase()
 
     // Build query
@@ -39,6 +41,7 @@ export async function GET(request: NextRequest) {
         units,
         confidence,
         status,
+        net_units,
         created_at,
         game:games(
           home_team,
@@ -51,6 +54,18 @@ export async function GET(request: NextRequest) {
     // Filter by capper if provided
     if (capper) {
       query = query.eq('capper', capper.toLowerCase())
+    }
+
+    // Filter by status if provided
+    if (status) {
+      if (status === 'pending') {
+        query = query.eq('status', 'pending')
+      } else if (status === 'completed') {
+        // For completed, include won, lost, and push
+        query = query.in('status', ['won', 'lost', 'push'])
+      } else {
+        query = query.eq('status', status)
+      }
     }
 
     const { data: picks, error } = await query

@@ -96,6 +96,7 @@ export async function POST(request: Request) {
         const ins = await admin.from('picks').insert({
           id: r.id,
           game_id: null,
+          capper: 'shiva', // Add capper field so picks show up on dashboard
           pick_type: results.decision.pick_type.toLowerCase(),
           selection: r.selection,
           odds: 0,
