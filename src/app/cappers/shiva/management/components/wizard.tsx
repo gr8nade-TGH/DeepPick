@@ -1152,17 +1152,34 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         // Use timestamp-based key to bypass idempotency cache
         const step2IdempotencyKey = `ui-demo-snap-${Date.now()}-${Math.random().toString(36).substring(7)}`
         console.log('[Step 2] Using idempotency key:', step2IdempotencyKey)
-        const r = await postJson('/api/shiva/odds/snapshot', {
-          run_id: runId,
-          snapshot: snapshotData
-        }, step2IdempotencyKey)
-        if (r.json?.snapshot_id) setSnapId(r.json.snapshot_id)
-        setLog(r)
-        setStepLogs(prev => ({ ...prev, 2: r }))
-        updateStepProgress(2, 100, 'Odds snapshot captured')
-        setStepLoading(2, false, 'Complete', 100)
-        console.log('[Step 2] Step 2 completed successfully')
-        return
+        
+        try {
+          const r = await postJson('/api/shiva/odds/snapshot', {
+            run_id: runId,
+            snapshot: snapshotData
+          }, step2IdempotencyKey)
+          
+          console.log('[Step 2] API response:', r)
+          
+          if (r.json?.snapshot_id) setSnapId(r.json.snapshot_id)
+          setLog(r)
+          setStepLogs(prev => ({ ...prev, 2: r }))
+          updateStepProgress(2, 100, 'Odds snapshot captured')
+          setStepLoading(2, false, 'Complete', 100)
+          console.log('[Step 2] Step 2 completed successfully')
+          return
+        } catch (error) {
+          console.error('[Step 2] API call failed:', error)
+          const errorResponse = {
+            status: 500,
+            json: { error: { message: error instanceof Error ? error.message : 'Step 2 API call failed' } },
+            dryRun: false
+          }
+          setLog(errorResponse)
+          setStepLogs(prev => ({ ...prev, 2: errorResponse }))
+          setStepLoading(2, false, 'Failed', 0)
+          return
+        }
       }
 
       if (current === 3) {
