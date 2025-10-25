@@ -270,10 +270,14 @@ async function scanForEligibleGames(
     const now = new Date()
     const thirtyMinutesFromNow = new Date(now.getTime() + 30 * 60 * 1000)
     
+    // Format the time for database comparison (HH:MM:SS format)
+    const timeString = thirtyMinutesFromNow.toTimeString().split(' ')[0] // Gets HH:MM:SS
+    const dateString = thirtyMinutesFromNow.toISOString().split('T')[0] // Gets YYYY-MM-DD
+    
     console.log(`[SHIVA_SCANNER] Scanning for games with:`)
     console.log(`  - sport: ${sportLower}`)
-    console.log(`  - status: scheduled`)
-    console.log(`  - game_time >= ${thirtyMinutesFromNow.toISOString()}`)
+    console.log(`  - status: scheduled/live`)
+    console.log(`  - game_date >= ${dateString} OR (game_date = ${dateString} AND game_time >= ${timeString})`)
     console.log(`  - limit: ${limit * 2}`)
     
     const { data: games, error: gamesError } = await supabase
@@ -289,7 +293,8 @@ async function scanForEligibleGames(
       `)
       .eq('sport', sportLower)
       .in('status', ['scheduled', 'live'])
-      .gte('game_time', thirtyMinutesFromNow.toISOString())
+      .or(`game_date.gte.${dateString},and(game_date.eq.${dateString},game_time.gte.${timeString})`)
+      .order('game_date', { ascending: true })
       .order('game_time', { ascending: true })
       .limit(limit * 2)
     
@@ -305,20 +310,20 @@ async function scanForEligibleGames(
         debug: { 
           step: 'database_query', 
           error: gamesError.message,
-          queryParams: { sport: sportLower, status: ['scheduled','live'], game_time: thirtyMinutesFromNow.toISOString() }
+          queryParams: { sport: sportLower, status: ['scheduled','live'], game_date: dateString, game_time: timeString }
         } 
       }
     }
 
     if (!games || games.length === 0) {
       console.log(`[SHIVA_SCANNER] No games found in database query`)
-      console.log(`[SHIVA_SCANNER] Query parameters: sport=${sportLower}, status=['scheduled','live'], game_time >= ${thirtyMinutesFromNow.toISOString()}`)
+      console.log(`[SHIVA_SCANNER] Query parameters: sport=${sportLower}, status=['scheduled','live'], game_date >= ${dateString}, game_time >= ${timeString}`)
       return { 
         games: [], 
         debug: { 
           step: 'database_query', 
           gamesFound: 0,
-          queryParams: { sport: sportLower, status: ['scheduled','live'], game_time: thirtyMinutesFromNow.toISOString() }
+          queryParams: { sport: sportLower, status: ['scheduled','live'], game_date: dateString, game_time: timeString }
         } 
       }
     }
