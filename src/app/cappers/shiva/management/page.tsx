@@ -47,7 +47,7 @@ const NBA_FACTOR_METADATA: Record<string, { name: string; description: string; d
 }
 
 export default function ShivaManagementPage() {
-  const uiEnabled = (process.env.NEXT_PUBLIC_SHIVA_V1_UI_ENABLED || '').toLowerCase() === 'true'
+  const uiEnabled = true // Force enabled for production
   const [currentProfile, setCurrentProfile] = useState<CapperProfile | null>(null)
   const [effectiveProfile, setEffectiveProfile] = useState<CapperProfile | null>(null)
   const [selectedGame, setSelectedGame] = useState<any>(null)
