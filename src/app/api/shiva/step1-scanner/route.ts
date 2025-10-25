@@ -284,8 +284,7 @@ async function scanForEligibleGames(
         away_team,
         game_date,
         game_time,
-        total_line,
-        spread_line,
+        odds,
         status
       `)
       .eq('sport', sportLower)
@@ -326,8 +325,41 @@ async function scanForEligibleGames(
 
     console.log(`[SHIVA_SCANNER] Found ${games.length} potential games`)
 
+    // Process games to extract odds information
+    const processedGames = games.map((game: any) => {
+      // Extract odds from JSONB column
+      const odds = game.odds || {}
+      
+      // Calculate average total line from all sportsbooks
+      const sportsbooks = Object.keys(odds)
+      const totalLines = sportsbooks
+        .map(book => odds[book]?.total?.line)
+        .filter(line => line !== undefined && line !== null)
+      
+      const avgTotalLine = totalLines.length > 0 
+        ? parseFloat((totalLines.reduce((a, b) => a + b, 0) / totalLines.length).toFixed(1))
+        : 0
+
+      // Calculate average spread line
+      const spreadLines = sportsbooks
+        .map(book => odds[book]?.spread?.line)
+        .filter(line => line !== undefined && line !== null)
+      
+      const avgSpreadLine = spreadLines.length > 0 
+        ? parseFloat((spreadLines.reduce((a, b) => a + b, 0) / spreadLines.length).toFixed(1))
+        : 0
+
+      return {
+        ...game,
+        total_line: avgTotalLine,
+        spread_line: avgSpreadLine
+      }
+    })
+
+    console.log(`[SHIVA_SCANNER] Processed ${processedGames.length} games with odds`)
+
     // Filter out games that already have picks
-    const gameIds = games.map((game: any) => game.id)
+    const gameIds = processedGames.map((game: any) => game.id)
     console.log(`[SHIVA_SCANNER] Checking existing picks for ${gameIds.length} games`)
     console.log(`[SHIVA_SCANNER] Looking for capper: shiva, pick_type: ${betTypeLower}`)
     
@@ -346,7 +378,7 @@ async function scanForEligibleGames(
         debug: { 
           step: 'existing_picks_check', 
           error: picksError.message,
-          gamesFound: games.length
+          gamesFound: processedGames.length
         } 
       }
     }
@@ -363,7 +395,7 @@ async function scanForEligibleGames(
     }
 
     // Filter out games with existing picks
-    const availableGames = games.filter((game: any) => !gamesWithPicks.has(game.id))
+    const availableGames = processedGames.filter((game: any) => !gamesWithPicks.has(game.id))
     console.log(`[SHIVA_SCANNER] After filtering existing picks: ${availableGames.length} games`)
 
     if (availableGames.length === 0) {
@@ -373,7 +405,7 @@ async function scanForEligibleGames(
         games: [], 
         debug: { 
           step: 'existing_picks_filter', 
-          gamesFound: games.length,
+          gamesFound: processedGames.length,
           existingPicksCount: existingPicks?.length || 0,
           gamesWithPicks: Array.from(gamesWithPicks),
           availableAfterFilter: 0
@@ -397,7 +429,7 @@ async function scanForEligibleGames(
         debug: { 
           step: 'cooldown_check', 
           error: cooldownError.message,
-          gamesFound: games.length,
+          gamesFound: processedGames.length,
           availableAfterPicksFilter: availableGames.length
         } 
       }
@@ -422,7 +454,7 @@ async function scanForEligibleGames(
         games: [], 
         debug: { 
           step: 'cooldown_filter', 
-          gamesFound: games.length,
+          gamesFound: processedGames.length,
           availableAfterPicksFilter: availableGames.length,
           cooldownCount: cooldownData?.length || 0,
           gamesInCooldown: Array.from(gamesInCooldown),
