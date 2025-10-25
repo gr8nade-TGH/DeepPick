@@ -129,6 +129,25 @@ export default function ShivaManagementPage() {
               <span>⚙️</span>
               Configure Factors
             </button>
+            <button
+              onClick={async () => {
+                try {
+                  const response = await fetch('/api/debug/clear-picks', { method: 'POST' })
+                  const result = await response.json()
+                  if (result.success) {
+                    alert('✅ All SHIVA picks cleared! You can now test Step 1.')
+                  } else {
+                    alert('❌ Error clearing picks: ' + result.error)
+                  }
+                } catch (error) {
+                  alert('❌ Error clearing picks: ' + error)
+                }
+              }}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded font-medium transition flex items-center gap-2"
+            >
+              <span>🧹</span>
+              Clear Picks (Debug)
+            </button>
             <a
               href="/odds"
               target="_blank"
