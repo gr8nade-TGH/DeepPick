@@ -6,10 +6,14 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('[add-test-games] Adding test NBA games...')
+    console.log('[add-test-games] Adding test NBA games for TODAY...')
     
     const supabase = getSupabaseAdmin()
-    const today = new Date().toISOString().split('T')[0]
+    
+    // Use TODAY's date (October 25, 2025) - the games you mentioned are playing tonight
+    const today = '2025-10-25'
+    
+    console.log(`[add-test-games] Adding games for date: ${today}`)
     
     // Add the 4 games you mentioned
     const testGames = [

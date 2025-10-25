@@ -7,11 +7,11 @@ export async function POST(request: NextRequest) {
     
     console.log('[clear-picks] Starting clear operation...')
     
-    // First, count existing picks
+    // First, count existing picks - check both cases
     const { count: beforePicksCount, error: countError } = await supabase
       .from('picks')
       .select('*', { count: 'exact', head: true })
-      .eq('capper', 'shiva')
+      .ilike('capper', 'shiva') // Use case-insensitive match
     
     if (countError) {
       console.error('Error counting picks:', countError)
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     const { count: beforeCooldownCount, error: cooldownCountError } = await supabase
       .from('pick_generation_cooldowns')
       .select('*', { count: 'exact', head: true })
-      .eq('capper', 'shiva')
+      .ilike('capper', 'shiva') // Use case-insensitive match
     
     if (cooldownCountError) {
       console.error('Error counting cooldowns:', cooldownCountError)
@@ -29,32 +29,12 @@ export async function POST(request: NextRequest) {
     
     console.log(`[clear-picks] Found ${beforePicksCount || 0} SHIVA picks and ${beforeCooldownCount || 0} cooldown records to delete`)
     
-    // Clear all SHIVA picks - try both cases and also check what's actually in the database
-    console.log('[clear-picks] Attempting to delete picks with capper = "shiva"')
+    // Clear all SHIVA picks - use case-insensitive match
+    console.log('[clear-picks] Attempting to delete picks with capper ilike "shiva"')
     const { error: picksError, count: deletedPicksCount } = await supabase
       .from('picks')
       .delete({ count: 'exact' })
-      .eq('capper', 'shiva')
-    
-    // If that didn't work, try uppercase
-    if (deletedPicksCount === 0) {
-      console.log('[clear-picks] No picks deleted with "shiva", trying "SHIVA"')
-      const { error: picksError2, count: deletedPicksCount2 } = await supabase
-        .from('picks')
-        .delete({ count: 'exact' })
-        .eq('capper', 'SHIVA')
-      
-      if (picksError2) {
-        console.error('Error deleting picks with SHIVA:', picksError2)
-        return NextResponse.json({ 
-          success: false, 
-          error: picksError2.message,
-          details: 'Failed to delete picks from database with both shiva and SHIVA'
-        }, { status: 500 })
-      }
-      
-      console.log(`[clear-picks] Deleted ${deletedPicksCount2 || 0} picks with "SHIVA"`)
-    }
+      .ilike('capper', 'shiva') // Case-insensitive match
     
     if (picksError) {
       console.error('Error deleting picks:', picksError)
@@ -69,7 +49,7 @@ export async function POST(request: NextRequest) {
     const { error: cooldownError, count: deletedCooldownCount } = await supabase
       .from('pick_generation_cooldowns')
       .delete({ count: 'exact' })
-      .eq('capper', 'shiva')
+      .ilike('capper', 'shiva') // Case-insensitive match
     
     if (cooldownError) {
       console.error('Error deleting cooldowns:', cooldownError)
