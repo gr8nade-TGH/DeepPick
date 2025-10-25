@@ -118,7 +118,7 @@ export async function executeStep2Simple(stepLogs: any, runId: string, postJson:
     console.error('[Step 2] Error:', error)
     return {
       success: false,
-      error: error.message
+      error: error instanceof Error ? error.message : 'Unknown error'
     }
   }
 }

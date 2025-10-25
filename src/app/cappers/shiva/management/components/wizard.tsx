@@ -1074,11 +1074,11 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           setStepLoading(2, false, 'Failed', 0)
           setLog({
             status: 500,
-            json: { error: error.message },
+            json: { error: error instanceof Error ? error.message : 'Unknown error' },
             dryRun: false,
             latencyMs: 0
           })
-          setStepLogs(prev => ({ ...prev, 2: { status: 500, json: { error: error.message }, dryRun: false, latencyMs: 0 } }))
+          setStepLogs(prev => ({ ...prev, 2: { status: 500, json: { error: error instanceof Error ? error.message : 'Unknown error' }, dryRun: false, latencyMs: 0 } }))
         }
         return
       }
