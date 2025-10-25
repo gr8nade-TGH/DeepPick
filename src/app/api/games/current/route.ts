@@ -67,7 +67,21 @@ export async function GET(request: NextRequest) {
 
       const calculateAvgSpread = () => {
         const values = sportsbooks
-          .map(book => game.odds[book]?.spread?.line)
+          .map(book => {
+            const spread = game.odds[book]?.spread
+            if (!spread) return null
+            
+            // Get the home team spread (negative value)
+            const homeTeam = game.home_team?.name
+            const awayTeam = game.away_team?.name
+            
+            if (homeTeam && spread[homeTeam]?.point !== undefined) {
+              return spread[homeTeam].point
+            } else if (awayTeam && spread[awayTeam]?.point !== undefined) {
+              return spread[awayTeam].point
+            }
+            return null
+          })
           .filter(val => val !== undefined && val !== null)
         return values.length > 0 
           ? parseFloat((values.reduce((a, b) => a + b, 0) / values.length).toFixed(1))
@@ -76,7 +90,13 @@ export async function GET(request: NextRequest) {
 
       const calculateAvgTotal = () => {
         const values = sportsbooks
-          .map(book => game.odds[book]?.total?.line)
+          .map(book => {
+            const total = game.odds[book]?.total
+            if (!total) return null
+            
+            // Get the Over point (same as Under point)
+            return total.Over?.point || total.Under?.point || null
+          })
           .filter(val => val !== undefined && val !== null)
         return values.length > 0 
           ? parseFloat((values.reduce((a, b) => a + b, 0) / values.length).toFixed(1))
