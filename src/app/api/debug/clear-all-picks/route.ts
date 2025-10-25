@@ -21,11 +21,11 @@ export async function POST(request: NextRequest) {
     
     console.log(`[clear-all-picks] Found ${beforePicksCount || 0} total picks to delete`)
     
-    // Delete ALL picks (for testing)
+    // Delete ALL picks (for testing) - use IN with all capper values
     const { error: picksError, count: deletedPicksCount } = await supabase
       .from('picks')
       .delete({ count: 'exact' })
-      .neq('id', '00000000-0000-0000-0000-000000000000') // Delete all (dummy condition that's always true)
+      .in('capper', ['shiva', 'cerberus', 'nexus', 'ifrit', 'deeppick', 'oracle']) // All known cappers
     
     if (picksError) {
       console.error('Error deleting picks:', picksError)
@@ -36,11 +36,11 @@ export async function POST(request: NextRequest) {
       }, { status: 500 })
     }
     
-    // Also clear all cooldowns
+    // Also clear all cooldowns - use IN with all capper values
     const { error: cooldownError, count: deletedCooldownCount } = await supabase
       .from('pick_generation_cooldowns')
       .delete({ count: 'exact' })
-      .neq('id', '00000000-0000-0000-0000-000000000000') // Delete all
+      .in('capper', ['shiva', 'cerberus', 'nexus', 'ifrit', 'deeppick', 'oracle']) // All known cappers
     
     if (cooldownError) {
       console.error('Error deleting cooldowns:', cooldownError)
