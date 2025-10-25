@@ -1245,18 +1245,60 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             // Use the game from Step 1 if available
             const step1Game = stepLogs[1]?.json?.selected_game
             if (step1Game) {
+              // Process the complex odds data from Step 1 to extract averages
+              let processedOdds = {
+                ml_home: -110,
+                ml_away: -110,
+                spread_team: step1Game.home_team?.name || 'Home Team',
+                spread_line: step1Game.spread_line || 0,
+                total_line: step1Game.total_line || 0
+              }
+              
+              if (step1Game.odds && typeof step1Game.odds === 'object') {
+                const sportsbooks = Object.keys(step1Game.odds)
+                if (sportsbooks.length > 0) {
+                  // Calculate averages from all sportsbooks
+                  const totals = sportsbooks.map(book => step1Game.odds[book]?.total)
+                    .filter(t => t && t.Over && t.Under)
+                  const spreads = sportsbooks.map(book => step1Game.odds[book]?.spread)
+                    .filter(s => s && Object.keys(s).length > 0)
+                  const moneylines = sportsbooks.map(book => step1Game.odds[book]?.moneyline)
+                    .filter(m => m && m[step1Game.home_team?.name] && m[step1Game.away_team?.name])
+                  
+                  if (totals.length > 0) {
+                    const avgTotal = totals.reduce((sum, t) => sum + (t.Over.point + t.Under.point) / 2, 0) / totals.length
+                    processedOdds.total_line = Math.round(avgTotal * 2) / 2 // Round to nearest 0.5
+                  }
+                  
+                  if (spreads.length > 0) {
+                    const spreadValues = spreads.flatMap(s => Object.values(s).map((v: any) => v.point))
+                    const avgSpread = spreadValues.reduce((sum, val) => sum + val, 0) / spreadValues.length
+                    processedOdds.spread_line = Math.round(avgSpread * 2) / 2 // Round to nearest 0.5
+                  }
+                  
+                  if (moneylines.length > 0) {
+                    const homeMLs = moneylines.map(m => m[step1Game.home_team?.name])
+                    const awayMLs = moneylines.map(m => m[step1Game.away_team?.name])
+                    processedOdds.ml_home = Math.round(homeMLs.reduce((sum, ml) => sum + ml, 0) / homeMLs.length)
+                    processedOdds.ml_away = Math.round(awayMLs.reduce((sum, ml) => sum + ml, 0) / awayMLs.length)
+                  }
+                  
+                  console.log('[Step 2] Processed odds from Step 1:', {
+                    sportsbooks: sportsbooks.length,
+                    total_line: processedOdds.total_line,
+                    spread_line: processedOdds.spread_line,
+                    ml_home: processedOdds.ml_home,
+                    ml_away: processedOdds.ml_away
+                  })
+                }
+              }
+              
               gameData = {
                 game_id: step1Game.id,
                 home: step1Game.home_team?.name || 'Home Team',
                 away: step1Game.away_team?.name || 'Away Team',
                 start_time_utc: step1Game.game_time ? new Date(step1Game.game_time).toISOString() : new Date().toISOString(),
-                odds: step1Game.odds || {
-                  ml_home: -110,
-                  ml_away: -110,
-                  spread_team: step1Game.home_team?.name || 'Home Team',
-                  spread_line: step1Game.spread_line || 0,
-                  total_line: step1Game.total_line || 0
-                }
+                odds: processedOdds
               }
             } else {
               // Fallback only if no Step 1 data
