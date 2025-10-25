@@ -135,7 +135,9 @@ export default function ShivaManagementPage() {
                   const response = await fetch('/api/debug/clear-picks', { method: 'POST' })
                   const result = await response.json()
                   if (result.success) {
-                    alert('✅ All SHIVA picks cleared! You can now test Step 1.')
+                    alert('✅ All SHIVA picks cleared! Refreshing data...')
+                    // Refresh the page to update all data
+                    window.location.reload()
                   } else {
                     alert('❌ Error clearing picks: ' + result.error)
                   }
