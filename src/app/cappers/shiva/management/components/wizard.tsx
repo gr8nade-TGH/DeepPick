@@ -1074,6 +1074,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           console.log('[Step 1] API response status:', step1Response.status)
           const step1Data = await step1Response.json()
           console.log('[Step 1] API response data:', step1Data)
+          console.log('[Step 1] API response debug info:', step1Data.debug)
+          console.log('[Step 1] Full API response JSON:', JSON.stringify(step1Data, null, 2))
           
           // Enhanced client-side debugging
           console.log('🔍 === STEP 1 SCANNER DEBUG INFO (CLIENT) ===')
