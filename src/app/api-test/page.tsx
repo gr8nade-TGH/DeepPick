@@ -14,7 +14,7 @@ export default function APITestPage() {
       const data = await response.json()
       console.log(`🧪 [${name}] Response:`, data)
       
-      setResults(prev => ({
+      setResults((prev: any) => ({
         ...prev,
         [name]: {
           status: response.status,
@@ -25,7 +25,7 @@ export default function APITestPage() {
       }))
     } catch (error) {
       console.error(`🧪 [${name}] Error:`, error)
-      setResults(prev => ({
+      setResults((prev: any) => ({
         ...prev,
         [name]: {
           status: 'ERROR',
@@ -49,7 +49,7 @@ export default function APITestPage() {
       const data = await response.json()
       console.log('🧪 [Odds API Direct] Response:', data)
       
-      setResults(prev => ({
+      setResults((prev: any) => ({
         ...prev,
         'Odds API Direct': {
           status: response.status,
@@ -60,7 +60,7 @@ export default function APITestPage() {
       }))
     } catch (error) {
       console.error('🧪 [Odds API Direct] Error:', error)
-      setResults(prev => ({
+      setResults((prev: any) => ({
         ...prev,
         'Odds API Direct': {
           status: 'ERROR',
