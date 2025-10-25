@@ -1,5 +1,0 @@
----
-alwaysApply: true
----
-
-Follow the established patterns in src/app/api/shiva/ for all SHIVA v1 routes: use Zod validation, withIdempotency wrapper, proper error handling with jsonError/jsonOk, and include mock_data/data_source fields for debugging. Always use getSupabaseAdmin() for database operations.

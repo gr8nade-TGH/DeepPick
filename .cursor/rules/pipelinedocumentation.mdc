@@ -1,5 +1,0 @@
----
-alwaysApply: true
----
-
-When discussing the pick generation pipeline, always reference the 8 steps defined in src/lib/shared/step-definitions.ts. Use the exact step names and descriptions from this file. The pipeline is: Run Intake → Odds Snapshot → Factor Analysis → AI Predictions → Market Analysis → Pick Generation → Insight Card → Debug Report.

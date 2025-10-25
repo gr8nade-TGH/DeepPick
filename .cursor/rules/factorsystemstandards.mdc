@@ -1,5 +1,0 @@
----
-alwaysApply: true
----
-
-Always reference the FACTOR_REGISTRY in src/lib/cappers/shiva-v1/factor-registry.ts for factor keys, names, and metadata. Use the single positive score system where each factor outputs overScore/underScore, not signed signals. Include factor_no and raw_values_json in all FactorComputation objects.
