@@ -5,8 +5,10 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = getSupabase()
     
+    console.log('[clear-picks] Starting clear operation...')
+    
     // First, count existing picks
-    const { count: beforeCount, error: countError } = await supabase
+    const { count: beforePicksCount, error: countError } = await supabase
       .from('picks')
       .select('*', { count: 'exact', head: true })
       .eq('capper', 'shiva')
@@ -15,30 +17,53 @@ export async function POST(request: NextRequest) {
       console.error('Error counting picks:', countError)
     }
     
-    console.log(`[clear-picks] Found ${beforeCount || 0} SHIVA picks to delete`)
+    // Count cooldown records
+    const { count: beforeCooldownCount, error: cooldownCountError } = await supabase
+      .from('pick_generation_cooldowns')
+      .select('*', { count: 'exact', head: true })
+      .eq('capper', 'shiva')
     
-    // Clear all SHIVA picks for testing
-    const { error, count: deletedCount } = await supabase
+    if (cooldownCountError) {
+      console.error('Error counting cooldowns:', cooldownCountError)
+    }
+    
+    console.log(`[clear-picks] Found ${beforePicksCount || 0} SHIVA picks and ${beforeCooldownCount || 0} cooldown records to delete`)
+    
+    // Clear all SHIVA picks
+    const { error: picksError, count: deletedPicksCount } = await supabase
       .from('picks')
       .delete({ count: 'exact' })
       .eq('capper', 'shiva')
     
-    if (error) {
-      console.error('Error deleting picks:', error)
+    if (picksError) {
+      console.error('Error deleting picks:', picksError)
       return NextResponse.json({ 
         success: false, 
-        error: error.message,
+        error: picksError.message,
         details: 'Failed to delete picks from database'
       }, { status: 500 })
     }
     
-    console.log(`[clear-picks] Successfully deleted ${deletedCount || 0} SHIVA picks`)
+    // Clear all SHIVA cooldown records
+    const { error: cooldownError, count: deletedCooldownCount } = await supabase
+      .from('pick_generation_cooldowns')
+      .delete({ count: 'exact' })
+      .eq('capper', 'shiva')
+    
+    if (cooldownError) {
+      console.error('Error deleting cooldowns:', cooldownError)
+      // Don't fail the whole operation if cooldowns fail
+    }
+    
+    console.log(`[clear-picks] Successfully deleted ${deletedPicksCount || 0} SHIVA picks and ${deletedCooldownCount || 0} cooldown records`)
     
     return NextResponse.json({ 
       success: true, 
-      message: `Successfully cleared ${deletedCount || 0} SHIVA picks`,
-      deletedCount: deletedCount || 0,
-      beforeCount: beforeCount || 0
+      message: `Successfully cleared ${deletedPicksCount || 0} SHIVA picks and ${deletedCooldownCount || 0} cooldown records`,
+      deletedPicksCount: deletedPicksCount || 0,
+      deletedCooldownCount: deletedCooldownCount || 0,
+      beforePicksCount: beforePicksCount || 0,
+      beforeCooldownCount: beforeCooldownCount || 0
     })
     
   } catch (error: any) {
