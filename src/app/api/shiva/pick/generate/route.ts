@@ -3,6 +3,7 @@ import { ensureApiEnabled, isWriteAllowed, jsonError, jsonOk, requireIdempotency
 import { withIdempotency } from '@/lib/api/shiva-v1/idempotency'
 export const runtime = 'nodejs'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
+import { pickGenerationService } from '@/lib/services/pick-generation-service'
 
 // Helper to get active snapshot for locking odds
 async function getActiveSnapshot(runId: string) {
@@ -83,6 +84,41 @@ export async function POST(request: Request) {
           latencyMs: Date.now() - startTime,
           status: 200,
         })
+
+        // Record PASS decision with cooldown (need to get game_id from run)
+        if (writeAllowed) {
+          try {
+            // Get game_id from the run record
+            const { data: runData } = await admin
+              .from('runs')
+              .select('game_id')
+              .eq('id', run_id)
+              .single()
+
+            if (runData?.game_id) {
+              const cooldownResult = await pickGenerationService.recordPickGenerationResult({
+                runId: run_id,
+                gameId: runData.game_id,
+                capper: 'shiva',
+                betType: results.decision.pick_type,
+                result: 'PASS',
+                units: 0,
+                confidence: parse.data.inputs.conf_final
+              }, 2) // 2 hour cooldown
+
+              if (cooldownResult.success) {
+                console.log('[SHIVA:PickGenerate] PASS cooldown recorded successfully')
+              } else {
+                console.error('[SHIVA:PickGenerate] Failed to record PASS cooldown:', cooldownResult.error)
+              }
+            } else {
+              console.warn('[SHIVA:PickGenerate] No game_id found for run, skipping cooldown recording')
+            }
+          } catch (error) {
+            console.error('[SHIVA:PickGenerate] Error recording PASS cooldown:', error)
+          }
+        }
+
         return { body: { run_id, decision: 'PASS', confidence: parse.data.inputs.conf_final, pick: null }, status: 200 }
       }
       
@@ -120,6 +156,39 @@ export async function POST(request: Request) {
             .update({ locked_odds: locked_odds })
             .eq('id', run_id)
           if (updateRun.error) throw new Error(updateRun.error.message)
+        }
+
+        // Record PICK_GENERATED result with cooldown
+        try {
+          // Get game_id from the run record
+          const { data: runData } = await admin
+            .from('runs')
+            .select('game_id')
+            .eq('id', run_id)
+            .single()
+
+          if (runData?.game_id) {
+            const cooldownResult = await pickGenerationService.recordPickGenerationResult({
+              runId: run_id,
+              gameId: runData.game_id,
+              capper: 'shiva',
+              betType: results.decision.pick_type,
+              result: 'PICK_GENERATED',
+              units: r.units,
+              confidence: r.confidence,
+              pickId: r.id
+            }, 0) // No cooldown for successful picks
+
+            if (cooldownResult.success) {
+              console.log('[SHIVA:PickGenerate] PICK_GENERATED cooldown recorded successfully')
+            } else {
+              console.error('[SHIVA:PickGenerate] Failed to record PICK_GENERATED cooldown:', cooldownResult.error)
+            }
+          } else {
+            console.warn('[SHIVA:PickGenerate] No game_id found for run, skipping cooldown recording')
+          }
+        } catch (error) {
+          console.error('[SHIVA:PickGenerate] Error recording PICK_GENERATED cooldown:', error)
         }
       }
       

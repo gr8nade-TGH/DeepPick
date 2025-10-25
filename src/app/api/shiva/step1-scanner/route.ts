@@ -10,6 +10,7 @@ import { z } from 'zod'
 import { getSupabase } from '@/lib/supabase/server'
 import { createRequestId, withApiCall } from '@/lib/telemetry/tracing'
 import { logError } from '@/lib/telemetry/logger'
+import { pickGenerationService } from '@/lib/services/pick-generation-service'
 
 const ScannerSchema = z.object({
   sport: z.enum(['NBA', 'NFL', 'MLB']).default('NBA'),
@@ -239,23 +240,16 @@ async function checkGameEligibility(
       return false
     }
 
-    // Check cooldown period
-    const { data: cooldownData, error: cooldownError } = await supabase
-      .from('pick_generation_cooldowns')
-      .select('cooldown_until')
-      .eq('game_id', game.game_id)
-      .eq('capper', 'shiva')
-      .eq('bet_type', betTypeLower)
-      .gt('cooldown_until', new Date().toISOString())
-      .single()
+    // Check cooldown period using the service
+    const canGenerate = await pickGenerationService.canGeneratePick(
+      game.game_id,
+      'shiva',
+      betTypeLower,
+      2 // 2 hour cooldown
+    )
 
-    if (cooldownError && cooldownError.code !== 'PGRST116') { // PGRST116 = no rows found
-      console.log(`[SHIVA_SCANNER] Error checking cooldown:`, cooldownError.message)
-      return false
-    }
-
-    if (cooldownData) {
-      console.log(`[SHIVA_SCANNER] Game is in cooldown until:`, cooldownData.cooldown_until)
+    if (!canGenerate) {
+      console.log(`[SHIVA_SCANNER] Game is not eligible (cooldown or existing pick)`)
       return false
     }
 
