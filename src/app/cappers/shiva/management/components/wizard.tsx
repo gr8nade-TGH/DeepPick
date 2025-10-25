@@ -1549,7 +1549,24 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         setStepLoading(8, true, 'Generating insight card...', 10)
         
         updateStepProgress(8, 30, 'Loading card template...')
-        const fx = (await import('@/../fixtures/shiva-v1/step7-insight-card.json')).default
+        // Use fallback template instead of deleted fixture
+        const fx = {
+          "card_type": "insight_card",
+          "version": "1.0",
+          "game_info": {
+            "matchup": "Team A @ Team B",
+            "sport": "NBA",
+            "game_time": "2024-01-01T20:00:00Z"
+          },
+          "prediction_summary": {
+            "pick_type": "TOTAL",
+            "selection": "Over 225.5",
+            "confidence": 7.5,
+            "units": 2
+          },
+          "factor_breakdown": [],
+          "bold_predictions": []
+        }
         updateStepProgress(8, 60, 'Assembling card data...')
         // Use timestamp-based key to bypass idempotency cache
         const step7IdempotencyKey = `ui-demo-step7-${Date.now()}-${Math.random().toString(36).substring(7)}`
