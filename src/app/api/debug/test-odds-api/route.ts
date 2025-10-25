@@ -8,19 +8,19 @@ export async function GET(request: NextRequest) {
     console.log('[test-odds-api] Testing Odds API connection...')
     
     // Check if we have Odds API key
-    if (!process.env.ODDS_API_KEY) {
+    if (!process.env.THE_ODDS_API_KEY) {
       return NextResponse.json({ 
         success: false, 
-        error: 'ODDS_API_KEY not configured',
-        details: 'The ODDS_API_KEY environment variable is not set'
+        error: 'THE_ODDS_API_KEY not configured',
+        details: 'The THE_ODDS_API_KEY environment variable is not set'
       }, { status: 500 })
     }
     
-    console.log('[test-odds-api] ODDS_API_KEY found, testing API call...')
+    console.log('[test-odds-api] THE_ODDS_API_KEY found, testing API call...')
     
     // Test NBA games fetch
     const response = await fetch(
-      `https://api.the-odds-api.com/v4/sports/basketball_nba/odds/?apiKey=${process.env.ODDS_API_KEY}&regions=us&markets=h2h,spreads,totals&oddsFormat=american&dateFormat=iso`
+      `https://api.the-odds-api.com/v4/sports/basketball_nba/odds/?apiKey=${process.env.THE_ODDS_API_KEY}&regions=us&markets=h2h,spreads,totals&oddsFormat=american&dateFormat=iso`
     )
     
     if (!response.ok) {

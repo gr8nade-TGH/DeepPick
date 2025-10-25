@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     console.log('[env-check] Checking environment variables...')
     
     const envVars = {
-      ODDS_API_KEY: process.env.ODDS_API_KEY ? '✅ Set' : '❌ Missing',
+      THE_ODDS_API_KEY: process.env.THE_ODDS_API_KEY ? '✅ Set' : '❌ Missing',
       SUPABASE_URL: process.env.SUPABASE_URL ? '✅ Set' : '❌ Missing',
       SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY ? '✅ Set' : '❌ Missing',
       SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY ? '✅ Set' : '❌ Missing',

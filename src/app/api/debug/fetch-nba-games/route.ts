@@ -9,16 +9,16 @@ export async function POST(request: NextRequest) {
     console.log('[fetch-nba-games] Starting NBA games fetch...')
     
     // Check if we have Odds API key
-    if (!process.env.ODDS_API_KEY) {
+    if (!process.env.THE_ODDS_API_KEY) {
       return NextResponse.json({ 
         success: false, 
-        error: 'ODDS_API_KEY not configured',
-        details: 'Please add ODDS_API_KEY to your environment variables. Get a free key from https://the-odds-api.com/',
+        error: 'THE_ODDS_API_KEY not configured',
+        details: 'Please add THE_ODDS_API_KEY to your environment variables. Get a free key from https://the-odds-api.com/',
         instructions: [
           '1. Go to https://the-odds-api.com/',
           '2. Sign up for a free account',
           '3. Get your API key',
-          '4. Add ODDS_API_KEY to your Vercel environment variables',
+          '4. Add THE_ODDS_API_KEY to your Vercel environment variables',
           '5. Redeploy your application'
         ]
       }, { status: 500 })
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     
     // Fetch NBA games from Odds API
     const response = await fetch(
-      `https://api.the-odds-api.com/v4/sports/basketball_nba/odds/?apiKey=${process.env.ODDS_API_KEY}&regions=us&markets=h2h,spreads,totals&oddsFormat=american&dateFormat=iso`
+      `https://api.the-odds-api.com/v4/sports/basketball_nba/odds/?apiKey=${process.env.THE_ODDS_API_KEY}&regions=us&markets=h2h,spreads,totals&oddsFormat=american&dateFormat=iso`
     )
     
     if (!response.ok) {

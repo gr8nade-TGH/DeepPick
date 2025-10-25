@@ -69,7 +69,7 @@ export async function GET() {
       try {
         console.log(`\n📊 Processing ${sport.name}...`)
         
-        const response = await fetch(`https://api.the-odds-api.com/v4/sports/${sport.key}/odds/?apiKey=${process.env.ODDS_API_KEY}&regions=us&markets=h2h,spreads,totals&oddsFormat=american&dateFormat=iso`)
+        const response = await fetch(`https://api.the-odds-api.com/v4/sports/${sport.key}/odds/?apiKey=${process.env.THE_ODDS_API_KEY}&regions=us&markets=h2h,spreads,totals&oddsFormat=american&dateFormat=iso`)
         
         if (!response.ok) {
           console.error(`❌ Failed to fetch ${sport.name} odds:`, response.status, response.statusText)
