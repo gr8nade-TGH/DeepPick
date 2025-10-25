@@ -142,31 +142,63 @@ export async function GET() {
               sportsbooks[bookmaker.key] = bookmakerData
             }
             
-            // SIMPLE INSERT (no complex function needed)
-            const { data: gameResult, error: insertError } = await getSupabaseAdmin()
+            // CHECK FOR EXISTING GAME FIRST
+            const { data: existingGame } = await getSupabaseAdmin()
               .from('games')
-              .insert({
-                sport: mapSportKey(sport.key),
-                league: sport.name,
-                home_team: { 
-                  name: event.home_team, 
-                  abbreviation: getTeamAbbreviation(event.home_team)
-                },
-                away_team: { 
-                  name: event.away_team, 
-                  abbreviation: getTeamAbbreviation(event.away_team)
-                },
-                game_date: gameDate,
-                game_time: gameTime,
-                game_start_timestamp: gameStartTimestamp,
-                status: gameStatus,
-                odds: sportsbooks,
-                api_event_id: event.id,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-              })
               .select('id')
+              .eq('sport', mapSportKey(sport.key))
+              .eq('game_date', gameDate)
+              .eq('home_team->>name', event.home_team)
+              .eq('away_team->>name', event.away_team)
               .single()
+
+            let gameResult, insertError
+
+            if (existingGame) {
+              // UPDATE EXISTING GAME
+              const { data: updateResult, error: updateError } = await getSupabaseAdmin()
+                .from('games')
+                .update({
+                  odds: sportsbooks,
+                  status: gameStatus,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', existingGame.id)
+                .select('id')
+                .single()
+              
+              gameResult = updateResult
+              insertError = updateError
+            } else {
+              // INSERT NEW GAME
+              const { data: insertResult, error: insertErr } = await getSupabaseAdmin()
+                .from('games')
+                .insert({
+                  sport: mapSportKey(sport.key),
+                  league: sport.name,
+                  home_team: { 
+                    name: event.home_team, 
+                    abbreviation: getTeamAbbreviation(event.home_team)
+                  },
+                  away_team: { 
+                    name: event.away_team, 
+                    abbreviation: getTeamAbbreviation(event.away_team)
+                  },
+                  game_date: gameDate,
+                  game_time: gameTime,
+                  game_start_timestamp: gameStartTimestamp,
+                  status: gameStatus,
+                  odds: sportsbooks,
+                  api_event_id: event.id,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                })
+                .select('id')
+                .single()
+              
+              gameResult = insertResult
+              insertError = insertErr
+            }
             
             if (insertError) {
               console.error(`❌ Error inserting game ${matchup}:`, insertError.message)
