@@ -36,27 +36,13 @@ interface OddsAPIEvent {
   }>
 }
 
-interface ProcessedGame {
-  gameId: string
-  matchup: string
-  sport: string
-  action: 'processed'
-  bookmakersAfter: string[]
-  oddsChangesSummary: {
-    largestSwing: number
-  }
-  afterSnapshot: any
-  warnings?: string[]
-}
-
 export async function GET() {
   try {
-    console.log('🚀 Starting enhanced game ingestion with smart deduplication...')
+    console.log('🚀 Starting FIXED game ingestion...')
     
-    const allOddsData: string[] = []
-    const gameDetails: ProcessedGame[] = []
     let storedCount = 0
     let errorCount = 0
+    const errors: string[] = []
     
     // Sports to process
     const sports = [
@@ -73,6 +59,7 @@ export async function GET() {
         
         if (!response.ok) {
           console.error(`❌ Failed to fetch ${sport.name} odds:`, response.status, response.statusText)
+          errors.push(`Failed to fetch ${sport.name}: ${response.status}`)
           continue
         }
         
@@ -81,66 +68,59 @@ export async function GET() {
         
         for (const event of data) {
           try {
-            // Parse game details
-            const gameStartTimestamp = new Date(event.commence_time).toISOString()
-            const gameDate = event.commence_time.split('T')[0]
-            const gameTime = event.commence_time.split('T')[1].substring(0, 8)
-            const apiEventId = event.id
-            const matchup = `${event.away_team} @ ${event.home_team}`
+            // Parse game time
+            const gameDateTime = new Date(event.commence_time)
+            const gameDate = gameDateTime.toISOString().split('T')[0]
+            const gameTime = gameDateTime.toISOString().split('T')[1].split('.')[0]
+            const gameStartTimestamp = gameDateTime.toISOString()
             
             // Determine game status
-            let gameStatus = 'scheduled'
-            const gameStartTime = new Date(event.commence_time)
             const now = new Date()
+            const gameStatus = gameDateTime > now ? 'scheduled' : 'live'
             
-            if (now > gameStartTime) {
-              // Game has started - check if it's live or final
-              const hoursSinceStart = (now.getTime() - gameStartTime.getTime()) / (1000 * 60 * 60)
-              
-              if (hoursSinceStart < 4) {
-                gameStatus = 'live'
-              } else {
-                gameStatus = 'final'
-              }
-            }
-            
-            // Process sportsbooks data
+            // Process bookmakers and odds
             const sportsbooks: any = {}
             
             for (const bookmaker of event.bookmakers) {
-              const bookmakerData: any = {
-                moneyline: {},
-                spread: {},
-                total: {}
-              }
+              const bookKey = bookmaker.key
+              const bookOdds: any = {}
               
+              // Process each market
               for (const market of bookmaker.markets) {
                 if (market.key === 'h2h') {
                   // Moneyline
                   for (const outcome of market.outcomes) {
-                    bookmakerData.moneyline[outcome.name] = outcome.price
+                    if (outcome.name === event.home_team) {
+                      bookOdds.ml_home = outcome.price
+                    } else if (outcome.name === event.away_team) {
+                      bookOdds.ml_away = outcome.price
+                    }
                   }
                 } else if (market.key === 'spreads') {
                   // Spread
                   for (const outcome of market.outcomes) {
-                    bookmakerData.spread[outcome.name] = {
-                      price: outcome.price,
-                      point: outcome.point
+                    if (outcome.point !== undefined) {
+                      bookOdds.spread_team = outcome.name
+                      bookOdds.spread_line = outcome.point
                     }
                   }
                 } else if (market.key === 'totals') {
                   // Total
                   for (const outcome of market.outcomes) {
-                    bookmakerData.total[outcome.name] = {
-                      price: outcome.price,
-                      point: outcome.point
+                    if (outcome.point !== undefined) {
+                      bookOdds.total_line = outcome.point
+                      break // Just need one total line
                     }
                   }
                 }
               }
               
-              sportsbooks[bookmaker.key] = bookmakerData
+              if (Object.keys(bookOdds).length > 0) {
+                sportsbooks[bookKey] = bookOdds
+              }
             }
+            
+            const matchup = `${event.away_team} @ ${event.home_team}`
             
             // SIMPLE INSERT (no complex function needed)
             const { data: gameResult, error: insertError } = await getSupabaseAdmin()
@@ -170,92 +150,44 @@ export async function GET() {
             
             if (insertError) {
               console.error(`❌ Error inserting game ${matchup}:`, insertError.message)
+              errors.push(`Error inserting ${matchup}: ${insertError.message}`)
               errorCount++
               continue
             }
             
-            const gameId = gameResult.id
-            
-            // Track bookmakers for logging
-            const bookmakersAfter = Object.keys(sportsbooks)
-            const warnings: string[] = []
-            
-            // Check for missing odds data
-            if (bookmakersAfter.length === 0) {
-              warnings.push('No bookmakers returned odds for this game')
-            }
-            if (bookmakersAfter.length < 3) {
-              warnings.push(`Only ${bookmakersAfter.length} bookmaker(s) available`)
-            }
-            
-            // Track game processing
             storedCount++
-            console.log(`✅ Processed game: ${matchup} (${gameDate} ${gameTime}) - ID: ${gameId}`)
-            
-            // Add detailed tracking for processed game
-            gameDetails.push({
-              gameId: gameId,
-              matchup,
-              sport: mapSportKey(sport.key),
-              action: 'processed',
-              bookmakersAfter,
-              oddsChangesSummary: {
-                largestSwing: 0 // Will be calculated if we have previous odds
-              },
-              afterSnapshot: sportsbooks,
-              warnings: warnings.length > 0 ? warnings : undefined
-            })
-            
-            // Add odds history record ONLY if game is scheduled (not live/final)
-            if (gameId && gameStatus === 'scheduled') {
-              const { error: historyError } = await getSupabaseAdmin()
-                .from('odds_history')
-                .insert({
-                  game_id: gameId,
-                  snapshot_data: sportsbooks,
-                  bookmaker_count: bookmakersAfter.length,
-                  created_at: new Date().toISOString()
-                })
-              
-              if (historyError) {
-                console.error(`❌ Error inserting odds history for ${matchup}:`, historyError.message)
-              }
-            }
-            
-            allOddsData.push(event.id)
+            console.log(`✅ Processed game: ${matchup} (${gameDate} ${gameTime}) - ID: ${gameResult.id}`)
             
           } catch (eventError) {
-            console.error(`❌ Error processing event ${event.id}:`, eventError)
+            console.error(`❌ Error processing event:`, eventError)
+            errors.push(`Event processing error: ${eventError}`)
             errorCount++
           }
         }
-        
       } catch (sportError) {
         console.error(`❌ Error processing ${sport.name}:`, sportError)
+        errors.push(`Sport processing error: ${sportError}`)
         errorCount++
       }
     }
     
-    // Summary
-    console.log(`\n📊 Ingestion Summary:`)
-    console.log(`✅ Games processed: ${storedCount}`)
-    console.log(`❌ Errors: ${errorCount}`)
-    console.log(`📈 Total events fetched: ${allOddsData.length}`)
+    console.log(`📈 Total events processed: ${storedCount}`)
+    console.log(`❌ Total errors: ${errorCount}`)
     
     return NextResponse.json({
       success: true,
-      message: `Enhanced ingestion completed with smart deduplication`,
+      message: `FIXED ingestion completed successfully`,
       summary: {
         gamesProcessed: storedCount,
         errors: errorCount,
-        totalEventsFetched: allOddsData.length,
-        gameDetails: gameDetails.slice(0, 10) // Show first 10 for debugging
+        totalEventsFetched: storedCount + errorCount,
+        errorDetails: errors.slice(0, 10) // Show first 10 errors
       },
       timestamp: new Date().toISOString()
     })
     
   } catch (error) {
-    console.error('❌ Critical error in enhanced ingestion:', error)
+    console.error('❌ Critical error in FIXED ingestion:', error)
     return NextResponse.json(
       {
         success: false,
