@@ -206,7 +206,7 @@ export async function GET() {
               continue
             }
             
-            const gameId = gameResult.id
+            const gameId = gameResult?.id
             
             // Track bookmakers for logging
             const bookmakersAfter = Object.keys(sportsbooks)
