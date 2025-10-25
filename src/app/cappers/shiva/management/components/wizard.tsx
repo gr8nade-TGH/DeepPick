@@ -25,6 +25,14 @@ function DryRunBanner() {
   )
 }
 
+function AutoModeBanner() {
+  return (
+    <div className="mb-3 rounded bg-green-900 border-2 border-green-600 p-3 text-sm font-bold text-green-200">
+      🤖 AUTO Mode - Pick generation runs automatically every 5 minutes via cron job. Cooldown logic prevents duplicate attempts.
+    </div>
+  )
+}
+
 
 function formatSpread(odds: any): number {
   if (!odds?.spread_line) return 0
@@ -343,7 +351,7 @@ function assembleInsightCard({ runCtx, step4, step5, step5_5, step6, step3, step
 export interface SHIVAWizardProps {
   effectiveProfile?: any
   selectedGame?: any
-  mode?: 'dry-run' | 'write'
+  mode?: 'dry-run' | 'write' | 'auto'
   betType?: 'TOTAL' | 'SPREAD/MONEYLINE'
   sport?: 'NBA' | 'NFL' | 'MLB'
 }
@@ -1703,6 +1711,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
   return (
     <div>
       <DryRunBanner />
+      {props.mode === 'auto' && <AutoModeBanner />}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
           <div className="font-bold text-white text-lg">Pick Generator Wizard</div>

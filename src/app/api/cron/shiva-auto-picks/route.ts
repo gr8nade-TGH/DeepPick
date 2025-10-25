@@ -4,8 +4,14 @@ import { getSupabaseAdmin } from '@/lib/supabase/server'
 /**
  * SHIVA AUTO-PICKS CRON
  * 
- * Runs every 30 minutes to automatically generate SHIVA picks
+ * Runs every 5 minutes to automatically generate SHIVA picks
  * Uses the same logic as the manual pick generation wizard
+ * 
+ * Cooldown Logic:
+ * - Step 1 Scanner checks if game is eligible (no existing picks, not in cooldown)
+ * - If PASS (units=0): Records 2-hour cooldown
+ * - If PICK_GENERATED (units>0): Records no cooldown (game has pick)
+ * - Next run skips games with existing picks or in cooldown
  */
 export async function GET() {
   const executionTime = new Date().toISOString()

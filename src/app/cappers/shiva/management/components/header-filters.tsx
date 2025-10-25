@@ -22,7 +22,7 @@ interface GameOption {
 export interface HeaderFiltersProps {
   onProfileChange: (profile: CapperProfile | null, capper: string, sport: string) => void
   onGameChange: (game: any) => void
-  onModeChange: (mode: 'dry-run' | 'write') => void
+  onModeChange: (mode: 'dry-run' | 'write' | 'auto') => void
   onProviderOverrides: (step3?: string, step4?: string) => void
   onBetTypeChange: (betType: 'TOTAL' | 'SPREAD/MONEYLINE') => void
   selectedGame?: any
@@ -260,6 +260,17 @@ export function HeaderFilters(props: HeaderFiltersProps) {
               }`}
             >
               Dry-Run
+            </button>
+            <button
+              onClick={() => handleModeChange('auto')}
+              className={`px-3 py-1 text-sm rounded font-bold ${
+                mode === 'auto'
+                  ? 'bg-green-600 text-white border-2 border-green-400'
+                  : 'bg-gray-700 text-white'
+              }`}
+              title="AUTO mode - runs pick generation automatically (cron job)"
+            >
+              AUTO
             </button>
             <button
               onClick={() => handleModeChange('write')}
