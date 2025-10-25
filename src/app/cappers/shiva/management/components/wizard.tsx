@@ -1148,6 +1148,9 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           raw_payload: gameData.odds
         }
         
+        console.log('[Step 2] Game data processed successfully:', gameData)
+        console.log('[Step 2] Snapshot data constructed successfully:', snapshotData)
+        
         updateStepProgress(2, 60, 'Calling odds API...')
         // Use timestamp-based key to bypass idempotency cache
         const step2IdempotencyKey = `ui-demo-snap-${Date.now()}-${Math.random().toString(36).substring(7)}`
