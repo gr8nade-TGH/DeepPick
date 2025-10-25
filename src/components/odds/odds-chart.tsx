@@ -14,6 +14,8 @@ interface OddsHistory {
 interface OddsChartProps {
   gameId: string
   sportsbooks: string[]
+  homeTeam?: string
+  awayTeam?: string
 }
 
 // Consistent colors for each sportsbook
@@ -28,7 +30,7 @@ const SPORTSBOOK_COLORS: Record<string, string> = {
   'wynnbet': '#DC143C', // WynnBet crimson
 }
 
-export function OddsChart({ gameId, sportsbooks }: OddsChartProps) {
+export function OddsChart({ gameId, sportsbooks, homeTeam, awayTeam }: OddsChartProps) {
   const [history, setHistory] = useState<OddsHistory[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -100,8 +102,7 @@ export function OddsChart({ gameId, sportsbooks }: OddsChartProps) {
     // Add each sportsbook's odds
     sportsbooks.forEach((bookmaker) => {
       const odds = record.odds[bookmaker]
-      const homeTeam = record.home_team?.name
-      if (odds?.moneyline?.[homeTeam]) {
+      if (homeTeam && odds?.moneyline?.[homeTeam]) {
         dataPoint[bookmaker] = odds.moneyline[homeTeam]
       }
     })

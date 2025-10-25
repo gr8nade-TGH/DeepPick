@@ -12,9 +12,9 @@ export interface CapperGame {
   status: string
   odds: {
     [bookmaker: string]: {
-      moneyline?: { home: number; away: number }
-      spread?: { home: number; away: number; line: number }
-      total?: { over: number; under: number; line: number }
+      moneyline?: { [teamName: string]: number }
+      spread?: { [teamName: string]: { price: number; point: number } }
+      total?: { Over: { price: number; point: number }; Under: { price: number; point: number } }
     }
   }
 }

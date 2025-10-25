@@ -66,19 +66,23 @@ export interface Team {
 
 export interface GameOdds {
   moneyline: {
-    home: number
-    away: number
+    [teamName: string]: number
   }
   spread: {
-    home: number
-    away: number
-    home_line: number
-    away_line: number
+    [teamName: string]: {
+      price: number
+      point: number
+    }
   }
   total: {
-    over: number
-    under: number
-    line: number
+    Over: {
+      price: number
+      point: number
+    }
+    Under: {
+      price: number
+      point: number
+    }
   }
   last_updated: string
 }

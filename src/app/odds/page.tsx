@@ -543,7 +543,12 @@ export default function OddsPage() {
                           <TrendingUp className="w-4 h-4 text-neon-green" />
                           <span className="text-sm font-semibold text-neon-green">Odds Movement</span>
                         </div>
-                        <OddsChart gameId={game.id} sportsbooks={game.sportsbooks || []} />
+                        <OddsChart 
+                          gameId={game.id} 
+                          sportsbooks={game.sportsbooks || []} 
+                          homeTeam={game.home_team?.name}
+                          awayTeam={game.away_team?.name}
+                        />
                       </div>
                     </div>
                   </CardContent>
