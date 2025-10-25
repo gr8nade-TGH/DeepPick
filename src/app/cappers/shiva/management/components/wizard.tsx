@@ -1097,6 +1097,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
               }
             }
             
+            console.log('[Step 2] About to construct gameData...')
             gameData = {
               game_id: step1Game.id,
               home: step1Game.home_team?.name || 'Home Team',
@@ -1104,6 +1105,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
               start_time_utc: step1Game.game_time ? new Date(step1Game.game_time).toISOString() : new Date().toISOString(),
               odds: processedOdds
             }
+            console.log('[Step 2] GameData constructed:', gameData)
           } else {
             // Fallback only if no Step 1 data
             gameData = {
