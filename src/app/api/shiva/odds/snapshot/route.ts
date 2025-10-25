@@ -55,7 +55,18 @@ export async function POST(request: Request) {
         if (deact.error) throw new Error(deact.error.message)
         
         const ins = await admin.from('odds_snapshots').insert({ 
-          run_id: runId, 
+          run_id: runId,
+          game_id: parse.data.snapshot.game_id,
+          sport: parse.data.snapshot.sport,
+          home_team: parse.data.snapshot.home_team,
+          away_team: parse.data.snapshot.away_team,
+          start_time_utc: parse.data.snapshot.start_time_utc,
+          captured_at_utc: parse.data.snapshot.captured_at_utc,
+          books_considered: parse.data.snapshot.books_considered,
+          moneyline: parse.data.snapshot.moneyline,
+          spread: parse.data.snapshot.spread,
+          total: parse.data.snapshot.total,
+          raw_payload: parse.data.snapshot.raw_payload,
           payload_json: parse.data.snapshot, 
           is_active: true 
         }).select('snapshot_id, is_active').single()

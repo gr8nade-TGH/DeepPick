@@ -47,6 +47,7 @@ const NBA_FACTOR_METADATA: Record<string, { name: string; description: string; d
 }
 
 export default function ShivaManagementPage() {
+  // Trigger deployment - odds_snapshots table created
   const uiEnabled = true // Force enabled for production
   const [currentProfile, setCurrentProfile] = useState<CapperProfile | null>(null)
   const [effectiveProfile, setEffectiveProfile] = useState<CapperProfile | null>(null)
