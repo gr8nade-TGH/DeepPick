@@ -1152,16 +1152,25 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         // Use timestamp-based key to bypass idempotency cache
         const step2IdempotencyKey = `ui-demo-snap-${Date.now()}-${Math.random().toString(36).substring(7)}`
         console.log('[Step 2] Using idempotency key:', step2IdempotencyKey)
+        console.log('[Step 2] Snapshot data being sent:', JSON.stringify(snapshotData, null, 2))
         
         try {
+          console.log('[Step 2] About to call postJson...')
           const r = await postJson('/api/shiva/odds/snapshot', {
             run_id: runId,
             snapshot: snapshotData
           }, step2IdempotencyKey)
           
-          console.log('[Step 2] API response:', r)
+          console.log('[Step 2] API response received:', r)
+          console.log('[Step 2] API response status:', r.status)
+          console.log('[Step 2] API response json:', r.json)
           
-          if (r.json?.snapshot_id) setSnapId(r.json.snapshot_id)
+          if (r.json?.snapshot_id) {
+            console.log('[Step 2] Setting snapId to:', r.json.snapshot_id)
+            setSnapId(r.json.snapshot_id)
+          }
+          
+          console.log('[Step 2] Setting log and stepLogs...')
           setLog(r)
           setStepLogs(prev => ({ ...prev, 2: r }))
           updateStepProgress(2, 100, 'Odds snapshot captured')
@@ -1169,12 +1178,18 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           console.log('[Step 2] Step 2 completed successfully')
           return
         } catch (error) {
-          console.error('[Step 2] API call failed:', error)
+          console.error('[Step 2] API call failed with error:', error)
+          console.error('[Step 2] Error type:', typeof error)
+          console.error('[Step 2] Error message:', error instanceof Error ? error.message : 'Unknown error')
+          console.error('[Step 2] Error stack:', error instanceof Error ? error.stack : 'No stack')
+          
           const errorResponse = {
             status: 500,
             json: { error: { message: error instanceof Error ? error.message : 'Step 2 API call failed' } },
             dryRun: false
           }
+          
+          console.log('[Step 2] Setting error response:', errorResponse)
           setLog(errorResponse)
           setStepLogs(prev => ({ ...prev, 2: errorResponse }))
           setStepLoading(2, false, 'Failed', 0)
