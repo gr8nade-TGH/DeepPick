@@ -950,255 +950,135 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     try {
       // Validate previous steps before executing current step
       if (current === 2) {
-        const step1Validation = validateStep1()
-        if (!step1Validation.isValid) {
-          console.error('[Step 2] Step 1 validation failed:', step1Validation.error)
-          setStepLoading(2, false, `Cannot proceed: ${step1Validation.error}`, 0)
-          return
-        }
-        console.log('[Step 2] Step 1 validation passed, proceeding...')
-        
-        // Execute Step 2
-        console.log('[Step 2] Starting Step 2 execution...')
+        console.log('[Step 2] Starting SIMPLE Step 2 execution...')
         setStepLoading(2, true, 'Capturing odds snapshot...', 20)
         
-        // Fetch actual game data with multiple sportsbook odds
-        let gameData
-        if (props.selectedGame) {
-          // Fetch full game data with odds from database
-          try {
-            const gameResponse = await fetch(`/api/games/current?gameId=${props.selectedGame.game_id}`)
-            const gameResult = await gameResponse.json()
-            
-            if (gameResult.success && gameResult.data) {
-              const game = gameResult.data
-              
-              // Validate game data structure
-              if (!game || typeof game !== 'object') {
-                throw new Error('Invalid game data structure')
-              }
-              
-              // Calculate averages from multiple sportsbooks (same logic as Games & Odds page)
-              const sportsbooks = Array.isArray(game.sportsbooks) ? game.sportsbooks : []
-              const gameOdds = game.odds || {}
-              
-              const totals = sportsbooks
-                .map((book: string) => gameOdds[book]?.total?.Over?.point)
-                .filter((val: any) => val !== undefined && val !== null)
-              
-              const moneylines = sportsbooks
-                .map((book: string) => gameOdds[book]?.moneyline)
-                .filter((val: any) => val !== undefined && val !== null)
-              
-              const spreads = sportsbooks
-                .map((book: string) => gameOdds[book]?.spread)
-                .filter((val: any) => val !== undefined && val !== null)
-              
-              // Calculate averages
-              const avgTotal = totals.length > 0 ? totals.reduce((a: number, b: number) => a + b, 0) / totals.length : 227.5
-              const avgMLHome = moneylines.length > 0 ? 
-                Math.round(moneylines.reduce((a: number, b: any) => a + (b[game.home_team?.name] || 0), 0) / moneylines.length) : -110
-              const avgMLAway = moneylines.length > 0 ? 
-                Math.round(moneylines.reduce((a: number, b: any) => a + (b[game.away_team?.name] || 0), 0) / moneylines.length) : -110
-              const avgSpread = spreads.length > 0 ? 
-                (spreads.reduce((a: number, b: any) => a + (b[game.home_team?.name]?.point || 0), 0) / spreads.length) : 2.5
-              
-              gameData = {
-                game_id: game.id,
-                home: game.home_team?.name || 'Home Team',
-                away: game.away_team?.name || 'Away Team',
-                start_time_utc: game.game_time,
-                sportsbooks: sportsbooks,
-                odds: {
-                  ml_home: avgMLHome,
-                  ml_away: avgMLAway,
-                  spread_team: game.home_team?.name || 'Home Team',
-                  spread_line: avgSpread,
-                  total_line: avgTotal
-                }
-              }
-              
-              console.log('[Step 2] Using averaged odds from', sportsbooks.length, 'sportsbooks:', {
-                total_line: avgTotal,
-                ml_home: avgMLHome,
-                ml_away: avgMLAway,
-                spread_line: avgSpread
-              })
-            } else {
-              throw new Error('Failed to fetch game data')
-            }
-          } catch (error) {
-            console.warn('[Step 2] Failed to fetch game data, using fallback:', error)
-            // Fallback to hardcoded data
-            gameData = {
-              game_id: 'nba_2025_10_21_den_gsw',
-              home: 'Golden State Warriors',
-              away: 'Denver Nuggets',
-              start_time_utc: '2025-10-21T01:30:00Z',
-              odds: {
-                ml_home: -110,
-                ml_away: -110,
-                spread_team: 'Golden State Warriors',
-                spread_line: 2.5,
-                total_line: 227.5
-              }
-            }
-          }
-        } else {
-          // No selected game - this should not happen in normal flow
-          // Use the game from Step 1 if available
-          const step1Game = stepLogs[1]?.json?.selected_game
-          if (step1Game) {
-            // Process the complex odds data from Step 1 to extract averages
-            let processedOdds = {
-              ml_home: -110,
-              ml_away: -110,
-              spread_team: step1Game.home_team?.name || 'Home Team',
-              spread_line: step1Game.spread_line || 0,
-              total_line: step1Game.total_line || 0
-            }
-            
-            if (step1Game.odds && typeof step1Game.odds === 'object') {
-              const sportsbooks = Object.keys(step1Game.odds)
-              if (sportsbooks.length > 0) {
-                // Calculate averages from all sportsbooks
-                const totals = sportsbooks.map(book => step1Game.odds[book]?.total)
-                  .filter(t => t && t.Over && t.Under)
-                const spreads = sportsbooks.map(book => step1Game.odds[book]?.spread)
-                  .filter(s => s && Object.keys(s).length > 0)
-                const moneylines = sportsbooks.map(book => step1Game.odds[book]?.moneyline)
-                  .filter(m => m && m[step1Game.home_team?.name] && m[step1Game.away_team?.name])
-                
-                if (totals.length > 0) {
-                  const avgTotal = totals.reduce((sum, t) => sum + (t.Over.point + t.Under.point) / 2, 0) / totals.length
-                  processedOdds.total_line = Math.round(avgTotal * 2) / 2 // Round to nearest 0.5
-                }
-                
-                if (spreads.length > 0) {
-                  const spreadValues = spreads.flatMap(s => Object.values(s).map((v: any) => v.point))
-                  const avgSpread = spreadValues.reduce((sum, val) => sum + val, 0) / spreadValues.length
-                  processedOdds.spread_line = Math.round(avgSpread * 2) / 2 // Round to nearest 0.5
-                }
-                
-                if (moneylines.length > 0) {
-                  const homeMLs = moneylines.map(m => m[step1Game.home_team?.name])
-                  const awayMLs = moneylines.map(m => m[step1Game.away_team?.name])
-                  processedOdds.ml_home = Math.round(homeMLs.reduce((sum, ml) => sum + ml, 0) / homeMLs.length)
-                  processedOdds.ml_away = Math.round(awayMLs.reduce((sum, ml) => sum + ml, 0) / awayMLs.length)
-                }
-                
-                console.log('[Step 2] Processed odds from Step 1:', {
-                  sportsbooks: sportsbooks.length,
-                  total_line: processedOdds.total_line,
-                  spread_line: processedOdds.spread_line,
-                  ml_home: processedOdds.ml_home,
-                  ml_away: processedOdds.ml_away
-                })
-              }
-            }
-            
-            console.log('[Step 2] About to construct gameData...')
-            gameData = {
-              game_id: step1Game.id,
-              home: step1Game.home_team?.name || 'Home Team',
-              away: step1Game.away_team?.name || 'Away Team',
-              start_time_utc: step1Game.game_time ? new Date(step1Game.game_time).toISOString() : new Date().toISOString(),
-              odds: processedOdds
-            }
-            console.log('[Step 2] GameData constructed:', gameData)
-          } else {
-            // Fallback only if no Step 1 data
-            gameData = {
-              game_id: 'nba_2025_10_21_den_gsw',
-              home: 'Golden State Warriors',
-              away: 'Denver Nuggets',
-              start_time_utc: '2025-10-21T01:30:00Z',
-              odds: {
-                ml_home: -110,
-                ml_away: -110,
-                spread_team: 'Golden State Warriors',
-                spread_line: 2.5,
-                total_line: 227.5
-              }
-            }
-          }
-        }
-        
-        // Transform to correct API format
-        const snapshotData = {
-          game_id: gameData.game_id,
-          sport: 'NBA' as const,
-          home_team: gameData.home,
-          away_team: gameData.away,
-          start_time_utc: gameData.start_time_utc,
-          captured_at_utc: new Date().toISOString(),
-          books_considered: props.selectedGame ? (gameData.sportsbooks?.length || 4) : 3,
-          moneyline: {
-            home_avg: gameData.odds.ml_home,
-            away_avg: gameData.odds.ml_away
-          },
-          spread: {
-            fav_team: gameData.odds.spread_team,
-            line: gameData.odds.spread_line,
-            odds: -110
-          },
-          total: {
-            line: gameData.odds.total_line,
-            over_odds: -110,
-            under_odds: -110
-          },
-          raw_payload: gameData.odds
-        }
-        
-        console.log('[Step 2] Game data processed successfully:', gameData)
-        console.log('[Step 2] Snapshot data constructed successfully:', snapshotData)
-        
-        updateStepProgress(2, 60, 'Calling odds API...')
-        // Use timestamp-based key to bypass idempotency cache
-        const step2IdempotencyKey = `ui-demo-snap-${Date.now()}-${Math.random().toString(36).substring(7)}`
-        console.log('[Step 2] Using idempotency key:', step2IdempotencyKey)
-        console.log('[Step 2] Snapshot data being sent:', JSON.stringify(snapshotData, null, 2))
-        
         try {
-          console.log('[Step 2] About to call postJson...')
-          const r = await postJson('/api/shiva/odds/snapshot', {
+          // Get game data from Step 1
+          const step1Game = stepLogs[1]?.json?.selected_game
+          if (!step1Game) {
+            throw new Error('No game data from Step 1')
+          }
+          
+          console.log('[Step 2] Processing odds from Step 1 game:', step1Game.home_team?.name, 'vs', step1Game.away_team?.name)
+          
+          // Calculate simple averages from Step 1 odds data
+          let totalLine = 232.5
+          let spreadLine = 0
+          let mlHome = -110
+          let mlAway = -110
+          
+          if (step1Game.odds && typeof step1Game.odds === 'object') {
+            const sportsbooks = Object.keys(step1Game.odds)
+            console.log('[Step 2] Found', sportsbooks.length, 'sportsbooks')
+            
+            if (sportsbooks.length > 0) {
+              // Calculate total line average
+              const totals = sportsbooks
+                .map(book => step1Game.odds[book]?.total?.Over?.point)
+                .filter(val => val !== undefined && val !== null)
+              
+              if (totals.length > 0) {
+                totalLine = Math.round(totals.reduce((sum, val) => sum + val, 0) / totals.length * 2) / 2
+              }
+              
+              // Calculate spread line average
+              const spreads = sportsbooks
+                .map(book => {
+                  const spread = step1Game.odds[book]?.spread
+                  if (spread && step1Game.home_team?.name && spread[step1Game.home_team.name]) {
+                    return spread[step1Game.home_team.name].point
+                  }
+                  return null
+                })
+                .filter(val => val !== null)
+              
+              if (spreads.length > 0) {
+                spreadLine = Math.round(spreads.reduce((sum, val) => sum + val, 0) / spreads.length * 2) / 2
+              }
+              
+              // Calculate moneyline averages
+              const homeMLs = sportsbooks
+                .map(book => step1Game.odds[book]?.moneyline?.[step1Game.home_team?.name])
+                .filter(val => val !== undefined && val !== null)
+              
+              const awayMLs = sportsbooks
+                .map(book => step1Game.odds[book]?.moneyline?.[step1Game.away_team?.name])
+                .filter(val => val !== undefined && val !== null)
+              
+              if (homeMLs.length > 0) {
+                mlHome = Math.round(homeMLs.reduce((sum, val) => sum + val, 0) / homeMLs.length)
+              }
+              
+              if (awayMLs.length > 0) {
+                mlAway = Math.round(awayMLs.reduce((sum, val) => sum + val, 0) / awayMLs.length)
+              }
+            }
+          }
+          
+          console.log('[Step 2] Calculated averages:', {
+            totalLine,
+            spreadLine,
+            mlHome,
+            mlAway
+          })
+          
+          // Create simple snapshot data
+          const snapshotData = {
+            game_id: step1Game.id,
+            sport: 'NBA' as const,
+            home_team: step1Game.home_team?.name || 'Home Team',
+            away_team: step1Game.away_team?.name || 'Away Team',
+            start_time_utc: step1Game.game_time ? new Date(step1Game.game_time).toISOString() : new Date().toISOString(),
+            captured_at_utc: new Date().toISOString(),
+            books_considered: Object.keys(step1Game.odds || {}).length,
+            moneyline: {
+              home_avg: mlHome,
+              away_avg: mlAway
+            },
+            spread: {
+              fav_team: step1Game.home_team?.name || 'Home Team',
+              line: spreadLine,
+              odds: -110
+            },
+            total: {
+              line: totalLine,
+              over_odds: -110,
+              under_odds: -110
+            },
+            raw_payload: step1Game.odds
+          }
+          
+          console.log('[Step 2] Calling odds snapshot API...')
+          updateStepProgress(2, 60, 'Calling odds API...')
+          
+          const step2IdempotencyKey = `ui-demo-snap-${Date.now()}-${Math.random().toString(36).substring(7)}`
+          const response = await postJson('/api/shiva/odds/snapshot', {
             run_id: runId,
             snapshot: snapshotData
           }, step2IdempotencyKey)
           
-          console.log('[Step 2] API response received:', r)
-          console.log('[Step 2] API response status:', r.status)
-          console.log('[Step 2] API response json:', r.json)
+          console.log('[Step 2] API response:', response)
           
-          if (r.json?.snapshot_id) {
-            console.log('[Step 2] Setting snapId to:', r.json.snapshot_id)
-            setSnapId(r.json.snapshot_id)
+          if (response.json?.snapshot_id) {
+            setSnapId(response.json.snapshot_id)
           }
           
-          console.log('[Step 2] Setting log and stepLogs...')
-          setLog(r)
-          setStepLogs(prev => ({ ...prev, 2: r }))
-          updateStepProgress(2, 100, 'Odds snapshot captured')
+          setLog(response)
+          setStepLogs(prev => ({ ...prev, 2: response }))
           setStepLoading(2, false, 'Complete', 100)
           console.log('[Step 2] Step 2 completed successfully')
-          return
+          
         } catch (error) {
-          console.error('[Step 2] API call failed with error:', error)
-          console.error('[Step 2] Error type:', typeof error)
-          console.error('[Step 2] Error message:', error instanceof Error ? error.message : 'Unknown error')
-          console.error('[Step 2] Error stack:', error instanceof Error ? error.stack : 'No stack')
-          
-          const errorResponse = {
-            status: 500,
-            json: { error: { message: error instanceof Error ? error.message : 'Step 2 API call failed' } },
-            dryRun: false
-          }
-          
-          console.log('[Step 2] Setting error response:', errorResponse)
-          setLog(errorResponse)
-          setStepLogs(prev => ({ ...prev, 2: errorResponse }))
+          console.error('[Step 2] Error:', error)
           setStepLoading(2, false, 'Failed', 0)
-          return
+          setLog({
+            status: 500,
+            json: { error: error.message },
+            dryRun: false,
+            latencyMs: 0
+          })
+          setStepLogs(prev => ({ ...prev, 2: { status: 500, json: { error: error.message }, dryRun: false, latencyMs: 0 } }))
         }
         return
       }
