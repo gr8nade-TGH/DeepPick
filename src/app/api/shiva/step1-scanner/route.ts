@@ -195,12 +195,12 @@ async function checkGameEligibility(
       return false
     }
 
-    // Check if game is in the future (at least 30 minutes from now)
+    // Check if game is in the future (at least 5 minutes from now)
     const now = new Date()
-    const thirtyMinutesFromNow = new Date(now.getTime() + 30 * 60 * 1000)
+    const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60 * 1000)
     const gameTime = new Date(gameData.game_time)
     
-    if (gameTime <= thirtyMinutesFromNow) {
+    if (gameTime <= fiveMinutesFromNow) {
       console.log(`[SHIVA_SCANNER] Game is too soon: ${gameTime.toISOString()}`)
       return false
     }
@@ -266,19 +266,21 @@ async function scanForEligibleGames(
     const sportLower = sport.toLowerCase()
     const betTypeLower = betType === 'TOTAL' ? 'total' : 'spread'
     
-    // Get games that are scheduled and in the future
+    // Get games that are scheduled and in the future (but allow games starting soon)
     const now = new Date()
-    const thirtyMinutesFromNow = new Date(now.getTime() + 30 * 60 * 1000)
+    const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60 * 1000) // Only 5 minutes buffer
     
     // Format the time for database comparison (HH:MM:SS format)
-    const timeString = thirtyMinutesFromNow.toTimeString().split(' ')[0] // Gets HH:MM:SS
-    const dateString = thirtyMinutesFromNow.toISOString().split('T')[0] // Gets YYYY-MM-DD
+    const timeString = fiveMinutesFromNow.toTimeString().split(' ')[0] // Gets HH:MM:SS
+    const dateString = fiveMinutesFromNow.toISOString().split('T')[0] // Gets YYYY-MM-DD
     
     console.log(`[SHIVA_SCANNER] Scanning for games with:`)
     console.log(`  - sport: ${sportLower}`)
     console.log(`  - status: scheduled/live`)
     console.log(`  - game_date >= ${dateString} OR (game_date = ${dateString} AND game_time >= ${timeString})`)
     console.log(`  - limit: ${limit * 2}`)
+    console.log(`  - Current time: ${now.toISOString()}`)
+    console.log(`  - Filtering for games after: ${fiveMinutesFromNow.toISOString()}`)
     
     const { data: games, error: gamesError } = await supabase
       .from('games')
