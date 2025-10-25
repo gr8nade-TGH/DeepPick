@@ -213,6 +213,15 @@ export default function ShivaManagementPage() {
               <span>📊</span>
               Games & Odds
             </a>
+            <a
+              href="/api-test"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded font-medium transition flex items-center gap-2"
+            >
+              <span>🧪</span>
+              API Test
+            </a>
           </div>
           
           <SHIVAWizard
