@@ -62,7 +62,7 @@ export default function ShivaManagementPage() {
   }, [selectedGame])
 
   if (!uiEnabled) {
-    return <div className="p-6">SHIVA v1 UI is disabled.</div>
+    return <div className="p-6">SHIVA v1 UI is disabled. Environment: {process.env.NODE_ENV}</div>
   }
 
   const handleProfileChange = (profile: CapperProfile | null, capper: string, sport: string) => {
