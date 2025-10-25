@@ -107,6 +107,14 @@ export default function APITestPage() {
               >
                 {loading === 'Clear ALL Picks' ? 'Loading...' : 'Clear ALL Picks'}
               </button>
+              
+              <button
+                onClick={() => testAPI('Force Clear', '/api/debug/force-clear-picks', 'POST')}
+                disabled={loading === 'Force Clear'}
+                className="w-full px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 rounded text-sm"
+              >
+                {loading === 'Force Clear' ? 'Loading...' : 'Force Clear All Picks'}
+              </button>
             </div>
           </div>
 
