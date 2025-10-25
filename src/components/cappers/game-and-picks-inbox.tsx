@@ -267,8 +267,13 @@ export function GeneratedPicksInbox({ capper }: { capper: capper_type }) {
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
-                    <div className="text-xs font-semibold text-white">
-                      {pick.away_team} @ {pick.home_team}
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="text-xs font-semibold text-white">
+                        {pick.away_team} @ {pick.home_team}
+                      </div>
+                      <span className="px-1.5 py-0.5 bg-purple-600 text-white text-xs rounded uppercase font-bold">
+                        {capper}
+                      </span>
                     </div>
                     <div className="text-xs text-gray-300">
                       {pick.selection} • {pick.units}u • {pick.confidence}/5
