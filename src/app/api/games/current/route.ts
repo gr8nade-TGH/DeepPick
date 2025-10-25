@@ -57,8 +57,9 @@ export async function GET(request: NextRequest) {
       
       // Calculate average odds from all sportsbooks (same as /odds page)
       const calculateAvgMoneyline = (isHome: boolean) => {
+        const teamName = isHome ? game.home_team?.name : game.away_team?.name
         const values = sportsbooks
-          .map(book => game.odds[book]?.moneyline?.[isHome ? 'home' : 'away'])
+          .map(book => game.odds[book]?.moneyline?.[teamName])
           .filter(val => val !== undefined && val !== null)
         return values.length > 0 
           ? Math.round(values.reduce((a, b) => a + b, 0) / values.length)
@@ -71,8 +72,12 @@ export async function GET(request: NextRequest) {
             const spread = game.odds[book]?.spread
             if (!spread) return null
             
-            // Get the spread line (negative value for home team)
-            return spread.line || null
+            // Get the home team spread (negative value)
+            const homeTeam = game.home_team?.name
+            if (homeTeam && spread[homeTeam]?.point !== undefined) {
+              return spread[homeTeam].point
+            }
+            return null
           })
           .filter(val => val !== undefined && val !== null)
         return values.length > 0 
@@ -86,8 +91,8 @@ export async function GET(request: NextRequest) {
             const total = game.odds[book]?.total
             if (!total) return null
             
-            // Get the total line
-            return total.line || null
+            // Get the Over point (same as Under point)
+            return total.Over?.point || total.Under?.point || null
           })
           .filter(val => val !== undefined && val !== null)
         return values.length > 0 
