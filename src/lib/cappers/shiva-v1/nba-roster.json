@@ -1,0 +1,35 @@
+{
+  "Oklahoma City Thunder": {
+    "Shai Gilgeous-Alexander": "star",
+    "Chet Holmgren": "star",
+    "Jalen Williams": "starter",
+    "Josh Giddey": "starter",
+    "Luguentz Dort": "starter",
+    "Isaiah Joe": "bench",
+    "Cason Wallace": "bench"
+  },
+  "Houston Rockets": {
+    "Alperen Sengun": "star",
+    "Jalen Green": "star",
+    "Fred VanVleet": "starter",
+    "Jabari Smith Jr.": "starter",
+    "Dillon Brooks": "starter",
+    "Amen Thompson": "bench",
+    "Tari Eason": "bench"
+  },
+  "Golden State Warriors": {
+    "Stephen Curry": "star",
+    "Klay Thompson": "star",
+    "Draymond Green": "starter",
+    "Andrew Wiggins": "starter",
+    "Chris Paul": "starter"
+  },
+  "Los Angeles Lakers": {
+    "LeBron James": "star",
+    "Anthony Davis": "star",
+    "D'Angelo Russell": "starter",
+    "Austin Reaves": "starter",
+    "Rui Hachimura": "starter"
+  }
+}
+

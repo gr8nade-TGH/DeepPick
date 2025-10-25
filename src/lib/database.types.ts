@@ -9,6 +9,8 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
+export type capper_type = 'nexus' | 'shiva' | 'cerberus' | 'ifrit' | 'deeppick'
+
 export interface Database {
   public: {
     Tables: {

@@ -1,0 +1,5 @@
+[33m3ff6dce[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature/oracle-ai-capper[m[33m, [m[1;31morigin/feature/oracle-ai-capper[m[33m)[m fix: Update PerplexityClient usage to match actual API
+[33me6d0a85[m fix: Match CapperGame type in test endpoint and orchestrator
+[33mced11ad[m fix: Configure Next.js to handle cheerio/undici for Vercel builds
+[33mfb4dba1[m feat: Add AI Testing tab to monitoring page with beautiful UI
+[33mfb17d2a[m docs: Add comprehensive testing guide for AI Shiva

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Factor Config API</title>
+</head>
+<body>
+    <h1>Test Factor Config API</h1>
+    <button onclick="testAPI()">Test API</button>
+    <div id="result"></div>
+
+    <script>
+        async function testAPI() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            const payload = {
+                "capper_code": "SHIVA",
+                "label": "SHIVA NBA TOTAL Default",
+                "config": {
+                    "factors": [
+                        {"id": "pace", "weight": 0.2, "enabled": true},
+                        {"id": "efg", "weight": 0.3, "enabled": true},
+                        {"id": "tov", "weight": 0.2, "enabled": true},
+                        {"id": "orb", "weight": 0.15, "enabled": true},
+                        {"id": "ftr", "weight": 0.15, "enabled": true}
+                    ],
+                    "thresholds": {
+                        "play_abs": 0.55,
+                        "units_map": [[0.55, 1], [0.7, 2], [0.85, 3]]
+                    },
+                    "weights_sum": 1.0
+                }
+            };
+
+            try {
+                const response = await fetch('/api/shiva/factors/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <h3>Response Status: ${response.status}</h3>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <h3>Error:</h3>
+                    <pre>${error.message}</pre>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

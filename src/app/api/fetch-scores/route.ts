@@ -2,6 +2,149 @@ import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { logCronJobExecution } from '@/lib/monitoring/cron-logger'
 
+// Auto-grade all pending picks for a completed game
+async function autoGradePicksForGame(gameId: string, homeScore: number, awayScore: number) {
+  try {
+    console.log(`[AUTO-GRADE] Starting auto-grading for game ${gameId} (${awayScore}-${homeScore})`)
+    
+    const supabase = getSupabaseAdmin()
+    
+    // Find all pending picks for this game
+    const { data: pendingPicks, error: picksError } = await supabase
+      .from('picks')
+      .select('*')
+      .eq('game_id', gameId)
+      .eq('status', 'pending')
+    
+    if (picksError) {
+      console.error(`[AUTO-GRADE] Error fetching picks:`, picksError)
+      return
+    }
+    
+    if (!pendingPicks || pendingPicks.length === 0) {
+      console.log(`[AUTO-GRADE] No pending picks found for game ${gameId}`)
+      return
+    }
+    
+    console.log(`[AUTO-GRADE] Found ${pendingPicks.length} pending picks to grade`)
+    
+    // Grade each pick
+    for (const pick of pendingPicks) {
+      try {
+        const gradeResult = await gradePick(pick, homeScore, awayScore)
+        
+        if (gradeResult) {
+          // Update pick status and net_units
+          const { error: updateError } = await supabase
+            .from('picks')
+            .update({
+              status: gradeResult.result, // Use won/lost/push status
+              net_units: gradeResult.units_delta,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', pick.id)
+          
+          if (updateError) {
+            console.error(`[AUTO-GRADE] Error updating pick ${pick.id}:`, updateError)
+          } else {
+            console.log(`[AUTO-GRADE] Graded pick ${pick.id}: ${gradeResult.result} (${gradeResult.units_delta} units)`)
+          }
+        }
+      } catch (pickError) {
+        console.error(`[AUTO-GRADE] Error grading pick ${pick.id}:`, pickError)
+      }
+    }
+    
+    console.log(`[AUTO-GRADE] Completed auto-grading for game ${gameId}`)
+    
+  } catch (error) {
+    console.error(`[AUTO-GRADE] Error in auto-grading:`, error)
+  }
+}
+
+// Grade a single pick
+function gradePick(pick: any, homeScore: number, awayScore: number) {
+  const { pick_type, selection, units } = pick
+  
+  if (pick_type === 'total') {
+    return gradeTotalPick(selection, units, homeScore, awayScore)
+  } else if (pick_type === 'spread') {
+    return gradeSpreadPick(selection, units, homeScore, awayScore)
+  } else if (pick_type === 'moneyline') {
+    return gradeMoneylinePick(selection, units, homeScore, awayScore)
+  }
+  
+  return null
+}
+
+function gradeTotalPick(selection: string, units: number, homeScore: number, awayScore: number) {
+  const total = homeScore + awayScore
+  
+  // Parse total line from selection (e.g., "Over 228.5" or "Under 228.5")
+  const match = selection.match(/(Over|Under)\s+(\d+\.?\d*)/i)
+  if (!match) return null
+  
+  const [, direction, lineStr] = match
+  const line = parseFloat(lineStr)
+  
+  let result: 'won' | 'lost' | 'push'
+  let unitsDelta: number
+  
+  if (total > line) {
+    result = direction.toLowerCase() === 'over' ? 'won' : 'lost'
+  } else if (total < line) {
+    result = direction.toLowerCase() === 'under' ? 'won' : 'lost'
+  } else {
+    result = 'push'
+  }
+  
+  unitsDelta = result === 'won' ? units : result === 'lost' ? -units : 0
+  
+  return { result, units_delta: unitsDelta }
+}
+
+function gradeSpreadPick(selection: string, units: number, homeScore: number, awayScore: number) {
+  // Parse spread from selection (e.g., "LAL -5.5" or "Home -3")
+  const match = selection.match(/([+-]?\d+\.?\d*)/)
+  if (!match) return null
+  
+  const spread = parseFloat(match[1])
+  const actualMargin = homeScore - awayScore
+  
+  let result: 'won' | 'lost' | 'push'
+  let unitsDelta: number
+  
+  if (actualMargin > spread) {
+    result = 'won'
+  } else if (actualMargin < spread) {
+    result = 'lost'
+  } else {
+    result = 'push'
+  }
+  
+  unitsDelta = result === 'won' ? units : result === 'lost' ? -units : 0
+  
+  return { result, units_delta: unitsDelta }
+}
+
+function gradeMoneylinePick(selection: string, units: number, homeScore: number, awayScore: number) {
+  const winner = homeScore > awayScore ? 'home' : awayScore > homeScore ? 'away' : 'tie'
+  
+  if (winner === 'tie') {
+    return { result: 'push' as const, units_delta: 0 }
+  }
+  
+  const selectionLower = selection.toLowerCase()
+  const pickWon = 
+    (selectionLower.includes('home') && winner === 'home') ||
+    (selectionLower.includes('away') && winner === 'away')
+  
+  const result = pickWon ? 'won' : 'lost'
+  const unitsDelta = pickWon ? units : -units
+  
+  return { result, units_delta: unitsDelta }
+}
+
 // Map API sport keys to database enum values
 function mapSportKey(apiSportKey: string): string {
   const sportMap: Record<string, string> = {
@@ -182,6 +325,12 @@ async function fetchScoresHandler() {
               updatedCount++
               const statusEmoji = gameStatus === 'live' ? '🔴' : '✅'
               console.log(`${statusEmoji} Updated: ${awayTeamName} ${awayPoints} @ ${homeTeamName} ${homePoints} (${gameStatus})`)
+              
+              // AUTO-GRADE PICKS: If game is final, grade all pending picks for this game
+              if (gameStatus === 'final') {
+                console.log(`🎯 Auto-grading picks for completed game: ${awayTeamName} @ ${homeTeamName}`)
+                await autoGradePicksForGame(matchingGame.id, homePoints, awayPoints)
+              }
             }
           } catch (err) {
             errors.push(`Exception processing score: ${err}`)

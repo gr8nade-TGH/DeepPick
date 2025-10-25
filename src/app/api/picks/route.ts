@@ -1,111 +1,96 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabase } from '@/lib/supabase/server'
+import { z } from 'zod'
 
-// Mark this route as dynamic (uses request parameters)
-export const dynamic = 'force-dynamic'
+const GetPicksSchema = z.object({
+  capper: z.string().optional(),
+  status: z.string().optional(),
+  limit: z.string().optional().transform(val => val ? parseInt(val) : 20),
+  offset: z.string().optional().transform(val => val ? parseInt(val) : 0)
+})
 
-// GET /api/picks - Get all picks
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = request.nextUrl
-    const limit = parseInt(searchParams.get('limit') || '50')
-    const offset = parseInt(searchParams.get('offset') || '0')
-    const status = searchParams.get('status')
-    const sport = searchParams.get('sport')
-    const capper = searchParams.get('capper')
+    const { searchParams } = new URL(request.url)
+    const parse = GetPicksSchema.safeParse({
+      capper: searchParams.get('capper') || undefined,
+      status: searchParams.get('status') || undefined,
+      limit: searchParams.get('limit') || undefined,
+      offset: searchParams.get('offset') || undefined
+    })
 
-    let query = getSupabase()
+    if (!parse.success) {
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid query parameters',
+        details: parse.error.issues
+      }, { status: 400 })
+    }
+
+    const { capper, status, limit, offset } = parse.data
+    const supabase = await getSupabase()
+
+    // Build query
+    let query = supabase
       .from('picks')
       .select(`
-        *,
-        games (
-          status,
-          final_score
+        id,
+        game_id,
+        pick_type,
+        selection,
+        units,
+        confidence,
+        status,
+        net_units,
+        created_at,
+        game:games(
+          home_team,
+          away_team
         )
       `)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
 
+    // Filter by capper if provided
+    if (capper) {
+      query = query.eq('capper', capper.toLowerCase())
+    }
+
+    // Filter by status if provided
     if (status) {
-      if (status === 'completed') {
-        // Completed = won, lost, or push
+      if (status === 'pending') {
+        query = query.eq('status', 'pending')
+      } else if (status === 'completed') {
+        // For completed, include won, lost, and push
         query = query.in('status', ['won', 'lost', 'push'])
       } else {
         query = query.eq('status', status)
       }
     }
 
-    if (sport) {
-      query = query.eq('sport', sport)
-    }
-
-    if (capper && capper !== 'all') {
-      query = query.eq('capper', capper)
-    }
-
-    const { data, error, count } = await query
+    const { data: picks, error } = await query
 
     if (error) {
-      console.error('❌ Picks query error:', error)
-      return NextResponse.json({ 
-        error: error.message,
-        details: error,
-        capper: capper
+      console.error('Error fetching picks:', error)
+      return NextResponse.json({
+        success: false,
+        error: 'Failed to fetch picks',
+        details: error.message
       }, { status: 500 })
     }
 
     return NextResponse.json({
       success: true,
-      data: data || [],
-      count: count || 0,
-      pagination: {
-        limit,
-        offset,
-        hasMore: (count || 0) > offset + limit
-      }
+      picks: picks || [],
+      count: picks?.length || 0,
+      capper: capper || 'all'
     })
 
   } catch (error) {
-    return NextResponse.json({ 
-      error: 'Failed to fetch picks',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 })
-  }
-}
-
-// POST /api/picks - Create a new pick
-export async function POST(request: Request) {
-  try {
-    const body = await request.json()
-    
-    const { data, error } = await getSupabase()
-      .from('picks')
-      .insert([{
-        game_id: body.game_id,
-        pick_type: body.pick_type,
-        selection: body.selection,
-        odds: body.odds,
-        units: body.units,
-        game_snapshot: body.game_snapshot,
-        is_system_pick: body.is_system_pick ?? true,
-        confidence: body.confidence,
-        reasoning: body.reasoning,
-        algorithm_version: body.algorithm_version
-      }])
-      .select()
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-
+    console.error('Error in picks API:', error)
     return NextResponse.json({
-      success: true,
-      data: data?.[0]
-    })
-
-  } catch (error) {
-    return NextResponse.json({ 
-      error: 'Failed to create pick',
+      success: false,
+      error: 'Internal server error',
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 })
   }

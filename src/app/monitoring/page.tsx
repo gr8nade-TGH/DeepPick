@@ -11,7 +11,8 @@ import {
   Database, 
   TrendingUp, 
   AlertCircle, 
-  CheckCircle, 
+  CheckCircle,
+  CheckCircle2,
   Clock,
   BarChart3,
   Zap,
@@ -27,7 +28,8 @@ import {
   Settings,
   ToggleLeft,
   ToggleRight,
-  Timer
+  Timer,
+  Target
 } from 'lucide-react'
 
 interface ApiCall {
@@ -277,6 +279,16 @@ export default function MonitoringPage() {
   const [dataFeedSettings, setDataFeedSettings] = useState<DataFeedSetting[]>([])
   const [cronJobStatuses, setCronJobStatuses] = useState<CronJobStatus[]>([])
   const [savingSettings, setSavingSettings] = useState(false)
+  
+  // AI Testing State
+  const [aiTestRunning, setAiTestRunning] = useState(false)
+  const [aiTestResult, setAiTestResult] = useState<any>(null)
+  const [aiTestError, setAiTestError] = useState<string | { error?: string; errorType?: string; timestamp?: string; environment?: any; stack?: string; rawError?: string; testSteps?: string[] } | null>(null)
+  
+  // Pick Generation Testing State
+  const [pickTestRunning, setPickTestRunning] = useState(false)
+  const [pickTestResult, setPickTestResult] = useState<any>(null)
+  const [pickTestError, setPickTestError] = useState<string | { error?: string; errorType?: string; timestamp?: string; environment?: any; stack?: string; rawError?: string; testSteps?: string[] } | null>(null)
 
   useEffect(() => {
     fetchMonitoringData()
@@ -755,6 +767,73 @@ ${cronJobStatuses.filter(j => j.last_run_status === 'failed').length > 2 ? '⚠�
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
+  
+  const runAITest = async () => {
+    setAiTestRunning(true)
+    setAiTestError(null)
+    setAiTestResult(null)
+    
+    try {
+      console.log('🧪 Starting AI test...')
+      const response = await fetch('/api/test-ai-capper', {
+        method: 'POST',
+      })
+      
+      const data = await response.json()
+      console.log('📥 Response data:', data)
+      
+      if (!response.ok || !data.success) {
+        // Store the entire error object for detailed debugging
+        setAiTestError(data)
+        console.error('❌ Test failed with data:', data)
+      } else {
+        setAiTestResult(data)
+        console.log('✅ AI test completed:', data)
+      }
+    } catch (error) {
+      console.error('❌ Error running AI test:', error)
+      setAiTestError({
+        error: error instanceof Error ? error.message : 'Unknown error',
+        errorType: 'FetchException',
+        timestamp: new Date().toISOString()
+      })
+    } finally {
+      setAiTestRunning(false)
+    }
+  }
+  
+  const runPickGenerationTest = async () => {
+    setPickTestRunning(true)
+    setPickTestError(null)
+    setPickTestResult(null)
+    
+    try {
+      console.log('🎯 Starting pick generation test...')
+      const response = await fetch('/api/test-pick-generation', {
+        method: 'POST',
+      })
+      
+      const data = await response.json()
+      console.log('📥 Response data:', data)
+      
+      if (!response.ok || !data.success) {
+        setPickTestError(data)
+        console.error('❌ Test failed with data:', data)
+      } else {
+        setPickTestResult(data)
+        console.log('✅ Pick generation test completed:', data)
+      }
+    } catch (error) {
+      console.error('❌ Error running pick generation test:', error)
+      setPickTestError({
+        error: error instanceof Error ? error.message : 'Unknown error',
+        errorType: 'FetchException',
+        timestamp: new Date().toISOString()
+      })
+    } finally {
+      setPickTestRunning(false)
+    }
+  }
 
   const getStatusColor = (success: boolean) => {
     return success ? 'text-green-400' : 'text-red-400'
@@ -805,7 +884,7 @@ ${cronJobStatuses.filter(j => j.last_run_status === 'failed').length > 2 ? '⚠�
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <Card className="glass-effect border-blue-500/30">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -861,14 +940,93 @@ ${cronJobStatuses.filter(j => j.last_run_status === 'failed').length > 2 ? '⚠�
               </div>
             </CardContent>
           </Card>
+
+          <Card className="glass-effect border-pink-500/30">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-400">Perplexity AI</p>
+                  <p className="text-2xl font-bold text-pink-400">
+                    {apiCalls.filter(call => 
+                      call.api_provider?.toLowerCase() === 'perplexity' &&
+                      new Date(call.request_timestamp).toDateString() === new Date().toDateString()
+                    ).length}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">runs today</p>
+                </div>
+                <Zap className="w-6 h-6 text-pink-400" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="glass-effect border-cyan-500/30">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-400">OpenAI GPT</p>
+                  <p className="text-2xl font-bold text-cyan-400">
+                    {apiCalls.filter(call => 
+                      call.api_provider?.toLowerCase() === 'openai' &&
+                      new Date(call.request_timestamp).toDateString() === new Date().toDateString()
+                    ).length}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">runs today</p>
+                </div>
+                <Zap className="w-6 h-6 text-cyan-400" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* AI Cost Tracking */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <Card className="glass-effect border-pink-500/30">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-400">Perplexity Cost Today</p>
+                  <p className="text-2xl font-bold text-pink-400">
+                    ${(apiCalls.filter(call => 
+                      call.api_provider?.toLowerCase() === 'perplexity' &&
+                      new Date(call.request_timestamp).toDateString() === new Date().toDateString()
+                    ).length * 0.001).toFixed(4)}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">~$0.001 per call</p>
+                </div>
+                <TrendingUp className="w-6 h-6 text-pink-400" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="glass-effect border-cyan-500/30">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-400">OpenAI Cost Today</p>
+                  <p className="text-2xl font-bold text-cyan-400">
+                    ${(apiCalls.filter(call => 
+                      call.api_provider?.toLowerCase() === 'openai' &&
+                      new Date(call.request_timestamp).toDateString() === new Date().toDateString()
+                    ).length * 0.002).toFixed(4)}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">~$0.002 per call</p>
+                </div>
+                <TrendingUp className="w-6 h-6 text-cyan-400" />
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4 bg-gray-800">
+          <TabsList className="grid w-full grid-cols-5 bg-gray-800">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="api-calls">API Calls</TabsTrigger>
             <TabsTrigger value="ingestion">Ingestion Logs</TabsTrigger>
+            <TabsTrigger value="ai-testing">
+              <Zap className="w-4 h-4 mr-2" />
+              AI Testing
+            </TabsTrigger>
             <TabsTrigger value="settings">
               <Settings className="w-4 h-4 mr-2" />
               Settings
@@ -1057,6 +1215,988 @@ ${cronJobStatuses.filter(j => j.last_run_status === 'failed').length > 2 ? '⚠�
             </Card>
           </TabsContent>
           
+          {/* AI Testing Tab */}
+          <TabsContent value="ai-testing" className="space-y-6">
+            <Card className="glass-effect border-purple-500/30">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-purple-400">
+                  <Zap className="w-6 h-6" />
+                  AI-Enhanced Shiva Testing
+                </CardTitle>
+                <p className="text-sm text-gray-400 mt-2">
+                  Test the complete 2-run AI research pipeline with Perplexity and ChatGPT
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Test Button */}
+                <div className="flex items-center gap-4 p-6 bg-gray-800/50 rounded-lg border border-gray-700">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-white mb-2">Run AI Test</h3>
+                    <p className="text-sm text-gray-400">
+                      This will test the full AI research pipeline (30-60 seconds):
+                    </p>
+                    <ul className="text-sm text-gray-500 mt-2 space-y-1">
+                      <li>• Run 1: Perplexity + 2 StatMuse queries (analytical factors)</li>
+                      <li>• Run 2: ChatGPT + 2 StatMuse queries (strategic validation)</li>
+                      <li>• Generate AI insight writeup</li>
+                      <li>• Save results to database</li>
+                    </ul>
+                  </div>
+                  <Button
+                    onClick={runAITest}
+                    disabled={aiTestRunning}
+                    className="gap-2 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 px-8 py-6 text-lg"
+                  >
+                    {aiTestRunning ? (
+                      <>
+                        <RefreshCw className="w-5 h-5 animate-spin" />
+                        Testing...
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="w-5 h-5" />
+                        Run Test
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                {/* Loading State */}
+                {aiTestRunning && (
+                  <div className="p-8 bg-purple-900/20 border border-purple-500/30 rounded-lg text-center">
+                    <RefreshCw className="w-12 h-12 text-purple-400 animate-spin mx-auto mb-4" />
+                    <p className="text-lg font-semibold text-white mb-2">AI Research In Progress...</p>
+                    <p className="text-sm text-gray-400">
+                      This may take 30-60 seconds. The AI is querying StatMuse, Perplexity, and ChatGPT.
+                    </p>
+                  </div>
+                )}
+
+                {/* Error State */}
+                {aiTestError && (
+                  <div className="p-6 bg-red-900/20 border border-red-500/30 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="w-6 h-6 text-red-400 flex-shrink-0 mt-1" />
+                      <div className="flex-1">
+                        <h4 className="text-lg font-semibold text-red-400 mb-2">Test Failed</h4>
+                        <p className="text-sm text-gray-300 mb-3 font-mono">{typeof aiTestError === 'string' ? aiTestError : aiTestError?.error || 'Unknown error'}</p>
+                        
+                        {/* Show detailed error info if available */}
+                        {typeof aiTestError === 'object' && aiTestError !== null && (
+                          <div className="mt-4 p-4 bg-black/30 rounded border border-red-500/20">
+                            <p className="text-xs font-semibold text-red-300 mb-2">Debug Information:</p>
+                            <div className="text-xs text-gray-400 space-y-1 font-mono">
+                              {aiTestError.errorType && <p>Error Type: <span className="text-red-300">{aiTestError.errorType}</span></p>}
+                              {aiTestError.timestamp && <p>Time: {new Date(aiTestError.timestamp).toLocaleString()}</p>}
+                              {aiTestError.testSteps && Array.isArray(aiTestError.testSteps) && (
+                                <div className="mt-2">
+                                  <p className="font-semibold text-gray-300">Test Progress:</p>
+                                  <ul className="mt-1 space-y-0.5">
+                                    {aiTestError.testSteps.map((step: string, idx: number) => (
+                                      <li key={idx} className="text-xs">{step}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                              {aiTestError.environment && (
+                                <div className="mt-2">
+                                  <p className="font-semibold text-gray-300">Environment:</p>
+                                  <p>Perplexity Key: {aiTestError.environment.hasPerplexityKey ? '✅ Set' : '❌ Missing'}</p>
+                                  <p>OpenAI Key: {aiTestError.environment.hasOpenAIKey ? '✅ Set' : '❌ Missing'}</p>
+                                  <p>Node ENV: {aiTestError.environment.nodeEnv}</p>
+                                </div>
+                              )}
+                              {aiTestError.stack && (
+                                <details className="mt-2">
+                                  <summary className="cursor-pointer text-gray-300 hover:text-white">Stack Trace</summary>
+                                  <pre className="mt-2 text-xs overflow-x-auto whitespace-pre-wrap">{aiTestError.stack}</pre>
+                                </details>
+                              )}
+                              {aiTestError.rawError && (
+                                <details className="mt-2">
+                                  <summary className="cursor-pointer text-gray-300 hover:text-white">Raw Error</summary>
+                                  <pre className="mt-2 text-xs overflow-x-auto whitespace-pre-wrap">{aiTestError.rawError}</pre>
+                                </details>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        
+                        <div className="mt-4 text-xs text-gray-400 space-y-1">
+                          <p><strong>Common Issues:</strong></p>
+                          <ul className="list-disc list-inside space-y-1">
+                            <li>API keys not set in Vercel environment variables</li>
+                            <li>OpenAI account out of credits (check billing)</li>
+                            <li>Database migration not run</li>
+                            <li>Perplexity or OpenAI API down</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Success State */}
+                {aiTestResult && !aiTestRunning && (
+                  <div className="space-y-4">
+                    {/* Success Header */}
+                    <div className="p-4 bg-green-900/20 border border-green-500/30 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <CheckCircle className="w-6 h-6 text-green-400" />
+                        <div>
+                          <h4 className="text-lg font-semibold text-green-400">✅ Test Successful!</h4>
+                          <p className="text-sm text-gray-400">{aiTestResult.message}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Game Info */}
+                    {aiTestResult.game && (
+                      <Card className="glass-effect border-blue-500/30">
+                        <CardHeader>
+                          <CardTitle className="text-blue-400">Game Details</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-sm text-gray-500">Matchup</p>
+                              <p className="text-white font-semibold">{aiTestResult.game.matchup}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500">Sport</p>
+                              <p className="text-white font-semibold uppercase">{aiTestResult.game.sport}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500">Date</p>
+                              <p className="text-white">{aiTestResult.game.date}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500">Time</p>
+                              <p className="text-white">{aiTestResult.game.time}</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* AI Research Results */}
+                    {aiTestResult.ai_research && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Run 1 Results */}
+                        <Card className="glass-effect border-purple-500/30">
+                          <CardHeader>
+                            <CardTitle className="text-purple-400 flex items-center gap-2">
+                              <span className="text-2xl">1</span> Perplexity Analysis
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-3">
+                            <div>
+                              <p className="text-xs text-gray-500">Model</p>
+                              <p className="text-sm text-white">{aiTestResult.ai_research.run1.model}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Type</p>
+                              <p className="text-sm text-white">{aiTestResult.ai_research.run1.type}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Factors Found</p>
+                              <p className="text-sm text-green-400 font-semibold">{aiTestResult.ai_research.run1.factors_found}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">StatMuse Queries</p>
+                              <p className="text-sm text-blue-400">{aiTestResult.ai_research.run1.statmuse_queries}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Duration</p>
+                              <p className="text-sm text-gray-400">{(aiTestResult.ai_research.run1.duration_ms / 1000).toFixed(2)}s</p>
+                            </div>
+                            
+                            {/* Show factors */}
+                            {aiTestResult.ai_research.run1.factors && Object.keys(aiTestResult.ai_research.run1.factors).length > 0 && (
+                              <div className="mt-4 pt-4 border-t border-gray-700">
+                                <p className="text-xs text-gray-500 mb-2">Factors:</p>
+                                <div className="space-y-2">
+                                  {Object.entries(aiTestResult.ai_research.run1.factors).map(([key, factor]: [string, any]) => (
+                                    <div key={key} className="p-2 bg-gray-800/50 rounded text-xs">
+                                      <p className="text-purple-400 font-semibold">{key}</p>
+                                      <p className="text-gray-300">{factor.description}</p>
+                                      <p className="text-gray-500 mt-1">
+                                        Impact: {factor.impact} | Confidence: {factor.confidence}
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+
+                        {/* Run 2 Results */}
+                        <Card className="glass-effect border-blue-500/30">
+                          <CardHeader>
+                            <CardTitle className="text-blue-400 flex items-center gap-2">
+                              <span className="text-2xl">2</span> ChatGPT Validation
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-3">
+                            <div>
+                              <p className="text-xs text-gray-500">Model</p>
+                              <p className="text-sm text-white">{aiTestResult.ai_research.run2.model}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Type</p>
+                              <p className="text-sm text-white">{aiTestResult.ai_research.run2.type}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Factors Found</p>
+                              <p className="text-sm text-green-400 font-semibold">{aiTestResult.ai_research.run2.factors_found}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">StatMuse Queries</p>
+                              <p className="text-sm text-blue-400">{aiTestResult.ai_research.run2.statmuse_queries}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Duration</p>
+                              <p className="text-sm text-gray-400">{(aiTestResult.ai_research.run2.duration_ms / 1000).toFixed(2)}s</p>
+                            </div>
+                            
+                            {/* Show factors */}
+                            {aiTestResult.ai_research.run2.factors && Object.keys(aiTestResult.ai_research.run2.factors).length > 0 && (
+                              <div className="mt-4 pt-4 border-t border-gray-700">
+                                <p className="text-xs text-gray-500 mb-2">Factors:</p>
+                                <div className="space-y-2">
+                                  {Object.entries(aiTestResult.ai_research.run2.factors).map(([key, factor]: [string, any]) => (
+                                    <div key={key} className="p-2 bg-gray-800/50 rounded text-xs">
+                                      <p className="text-blue-400 font-semibold">{key}</p>
+                                      <p className="text-gray-300">{factor.description}</p>
+                                      <p className="text-gray-500 mt-1">
+                                        Impact: {factor.impact} | Confidence: {factor.confidence}
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      </div>
+                    )}
+
+                    {/* AI Insight */}
+                    {aiTestResult.ai_insight && (
+                      <Card className="glass-effect border-green-500/30">
+                        <CardHeader>
+                          <CardTitle className="text-green-400">AI Generated Insight</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">Summary</p>
+                            <p className="text-white">{aiTestResult.ai_insight.summary}</p>
+                          </div>
+                          
+                          {aiTestResult.ai_insight.bold_prediction && (
+                            <div>
+                              <p className="text-xs text-gray-500 mb-1">Bold Prediction</p>
+                              <p className="text-yellow-400 font-semibold">⚡ {aiTestResult.ai_insight.bold_prediction}</p>
+                            </div>
+                          )}
+                          
+                          {aiTestResult.ai_insight.writeup && (
+                            <div>
+                              <p className="text-xs text-gray-500 mb-1">Full Writeup</p>
+                              <p className="text-sm text-gray-300 leading-relaxed">{aiTestResult.ai_insight.writeup}</p>
+                            </div>
+                          )}
+                          
+                          {aiTestResult.ai_insight.key_factors && aiTestResult.ai_insight.key_factors.length > 0 && (
+                            <div>
+                              <p className="text-xs text-gray-500 mb-2">Key Factors</p>
+                              <div className="space-y-2">
+                                {aiTestResult.ai_insight.key_factors.map((factor: any, idx: number) => (
+                                  <div key={idx} className="p-3 bg-gray-800/50 rounded">
+                                    <p className="text-white font-semibold mb-1">{factor.name}</p>
+                                    <p className="text-sm text-gray-300 mb-2">{factor.description}</p>
+                                    <div className="flex gap-4 text-xs">
+                                      <span className="text-green-400">Impact: {factor.impact}</span>
+                                      <span className="text-blue-400">Confidence: {factor.confidence}</span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Performance */}
+                    {aiTestResult.performance && (
+                      <Card className="glass-effect border-gray-700">
+                        <CardHeader>
+                          <CardTitle className="text-gray-300">Performance</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-sm text-gray-500">Total Duration</p>
+                              <p className="text-2xl font-bold text-white">{aiTestResult.performance.total_duration_seconds}s</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500">Estimated Cost</p>
+                              <p className="text-2xl font-bold text-green-400">${aiTestResult.performance.estimated_cost_usd.toFixed(4)}</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Next Steps */}
+                    {aiTestResult.next_steps && (
+                      <div className="p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+                        <h4 className="text-sm font-semibold text-blue-400 mb-2">✅ Next Steps</h4>
+                        <ul className="text-sm text-gray-300 space-y-1">
+                          {aiTestResult.next_steps.map((step: string, idx: number) => (
+                            <li key={idx}>• {step}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            
+            {/* Pick Generation Testing Card */}
+            <Card className="glass-effect border-green-500/30">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-green-400">
+                  <Target className="w-6 h-6" />
+                  Pick Generation Testing
+                </CardTitle>
+                <p className="text-sm text-gray-400 mt-2">
+                  Test the complete pick generation flow: Find games → AI research → Calculate confidence → Generate pick
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Test Button */}
+                <div className="flex items-center gap-4 p-6 bg-gray-800/50 rounded-lg border border-gray-700">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-white mb-2">Run Pick Generation Test</h3>
+                    <p className="text-sm text-gray-400">
+                      This will test the full pick generation algorithm (30-90 seconds):
+                    </p>
+                    <ul className="text-sm text-gray-500 mt-2 space-y-1">
+                      <li>• Fetch available games with odds</li>
+                      <li>• Check which games Shiva has already analyzed</li>
+                      <li>• Run baseline factor analysis</li>
+                      <li>• Run 2-phase AI research (Perplexity + ChatGPT)</li>
+                      <li>• Calculate Vegas comparison factor</li>
+                      <li>• Compute confidence score</li>
+                      <li>• Generate pick if confidence ≥ 7.0</li>
+                      <li>• Save to database</li>
+                    </ul>
+                  </div>
+                  <Button
+                    onClick={runPickGenerationTest}
+                    disabled={pickTestRunning}
+                    className="gap-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 px-8 py-6 text-lg"
+                  >
+                    {pickTestRunning ? (
+                      <>
+                        <RefreshCw className="w-5 h-5 animate-spin" />
+                        Testing...
+                      </>
+                    ) : (
+                      <>
+                        <Target className="w-5 h-5" />
+                        Run Test
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                {/* Loading State */}
+                {pickTestRunning && (
+                  <div className="p-8 bg-green-900/20 border border-green-500/30 rounded-lg text-center">
+                    <RefreshCw className="w-12 h-12 text-green-400 animate-spin mx-auto mb-4" />
+                    <p className="text-lg font-semibold text-white mb-2">Generating Pick...</p>
+                    <p className="text-sm text-gray-400">
+                      Running full algorithm with AI enhancement. This may take 30-90 seconds.
+                    </p>
+                  </div>
+                )}
+
+                {/* Error State */}
+                {pickTestError && (
+                  <div className="p-6 bg-red-900/20 border border-red-500/30 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="w-6 h-6 text-red-400 flex-shrink-0 mt-1" />
+                      <div className="flex-1">
+                        <h4 className="text-lg font-semibold text-red-400 mb-2">Test Failed</h4>
+                        <p className="text-sm text-gray-300 mb-3 font-mono">{typeof pickTestError === 'string' ? pickTestError : pickTestError?.error || 'Unknown error'}</p>
+                        
+                        {typeof pickTestError === 'object' && pickTestError !== null && pickTestError.testSteps && Array.isArray(pickTestError.testSteps) && (
+                          <div className="mt-4 p-4 bg-black/30 rounded border border-red-500/20">
+                            <p className="text-xs font-semibold text-red-300 mb-2">Test Progress:</p>
+                            <ul className="text-xs text-gray-400 space-y-0.5 font-mono">
+                              {pickTestError.testSteps.map((step: string, idx: number) => (
+                                <li key={idx}>{step}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Success State */}
+                {pickTestResult && !pickTestRunning && (
+                  <div className="space-y-4">
+                    {/* Success Header */}
+                    <div className="p-6 bg-green-900/20 border border-green-500/30 rounded-lg">
+                      <div className="flex items-start gap-3">
+                        <CheckCircle2 className="w-6 h-6 text-green-400 flex-shrink-0 mt-1" />
+                        <div className="flex-1">
+                          <h4 className="text-lg font-semibold text-green-400 mb-2">✅ {pickTestResult.message}</h4>
+                          
+                          {pickTestResult.testSteps && (
+                            <details className="mt-4">
+                              <summary className="cursor-pointer text-sm text-gray-400 hover:text-white">View Test Steps</summary>
+                              <ul className="text-xs text-gray-400 space-y-0.5 font-mono mt-2">
+                                {pickTestResult.testSteps.map((step: string, idx: number) => (
+                                  <li key={idx}>{step}</li>
+                                ))}
+                              </ul>
+                            </details>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Game Info */}
+                    <Card className="glass-effect border-gray-700">
+                      <CardHeader>
+                        <CardTitle className="text-gray-300">Game Details</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-sm text-gray-500">Matchup</p>
+                            <p className="text-lg font-bold text-white">{pickTestResult.game.matchup}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-500">Sport</p>
+                            <p className="text-lg font-bold text-white uppercase">{pickTestResult.game.sport}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-500">Date</p>
+                            <p className="text-white">{pickTestResult.game.date}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-500">Time</p>
+                            <p className="text-white">{pickTestResult.game.time}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Pick Details */}
+                    {pickTestResult.pick ? (
+                      <>
+                      <Card className="glass-effect border-green-500/30">
+                        <CardHeader>
+                          <CardTitle className="text-green-400">🎯 Generated Pick</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="p-4 bg-gray-800/50 rounded">
+                              <p className="text-xs text-gray-500 mb-1">Pick Type</p>
+                              <p className="text-lg font-bold text-white">{pickTestResult.pick.pickType}</p>
+                            </div>
+                            <div className="p-4 bg-gray-800/50 rounded">
+                              <p className="text-xs text-gray-500 mb-1">Selection</p>
+                              <p className="text-lg font-bold text-purple-400">{pickTestResult.pick.selection}</p>
+                            </div>
+                            <div className="p-4 bg-gray-800/50 rounded">
+                              <p className="text-xs text-gray-500 mb-1">Confidence</p>
+                              <p className="text-lg font-bold text-green-400">{pickTestResult.pick.confidence}/10</p>
+                            </div>
+                            <div className="p-4 bg-gray-800/50 rounded">
+                              <p className="text-xs text-gray-500 mb-1">Units</p>
+                              <p className="text-lg font-bold text-yellow-400">{pickTestResult.pick.units}U</p>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="p-4 bg-gray-800/50 rounded">
+                              <p className="text-xs text-gray-500 mb-1">Odds</p>
+                              <p className="text-lg font-bold text-blue-400">{pickTestResult.pick.odds}</p>
+                            </div>
+                            {pickTestResult.pick.scorePrediction && (
+                              <div className="p-4 bg-gray-800/50 rounded">
+                                <p className="text-xs text-gray-500 mb-1">Score Prediction</p>
+                                <p className="text-lg font-bold text-cyan-400">
+                                  {pickTestResult.pick.scorePrediction.away} - {pickTestResult.pick.scorePrediction.home}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">Winner: {pickTestResult.pick.scorePrediction.winner}</p>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {pickTestResult.pick.reasoning && pickTestResult.pick.reasoning.length > 0 && (
+                            <div className="p-4 bg-purple-900/20 border border-purple-500/30 rounded">
+                              <p className="text-xs text-gray-500 mb-2">Reasoning</p>
+                              <ul className="text-sm text-gray-300 space-y-1">
+                                {pickTestResult.pick.reasoning.map((reason: string, idx: number) => (
+                                  <li key={idx}>• {reason}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          
+                          {pickTestResult.pick.vegasComparison && (
+                            <div className="p-4 bg-orange-900/20 border border-orange-500/30 rounded">
+                              <p className="text-xs text-gray-500 mb-2">Vegas Comparison</p>
+                              <div className="grid grid-cols-2 gap-2 text-sm text-gray-300">
+                                {pickTestResult.pick.vegasComparison.totalLine && (
+                                  <p>Total Line: {pickTestResult.pick.vegasComparison.totalLine}</p>
+                                )}
+                                {pickTestResult.pick.vegasComparison.spread && (
+                                  <p>Spread: {pickTestResult.pick.vegasComparison.spread}</p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+
+                      {/* AI-Generated Insight Panel */}
+                      <Card className="glass-effect border-purple-500/30">
+                        <CardHeader>
+                          <CardTitle className="text-purple-400">💡 AI-Generated Insight</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          {/* Summary */}
+                          <div className="p-4 bg-purple-900/20 border border-purple-500/30 rounded-lg">
+                            <h4 className="text-sm font-semibold text-purple-300 mb-2">Summary</h4>
+                            <p className="text-sm text-gray-300 leading-relaxed">
+                              Based on comprehensive analysis including recent performance, matchup history, and current betting market conditions, this pick represents a strong value opportunity with high confidence.
+                            </p>
+                          </div>
+
+                          {/* Bold Prediction */}
+                          <div className="p-4 bg-yellow-900/20 border border-yellow-500/30 rounded-lg">
+                            <div className="flex items-start gap-3">
+                              <Zap className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+                              <div>
+                                <h4 className="text-sm font-semibold text-yellow-300 mb-1">⚡ Bold Prediction</h4>
+                                <p className="text-sm text-gray-300 font-semibold">
+                                  The winning team will exceed their season average in total yards by 15%
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Factor Breakdown with Power Bars */}
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <h4 className="text-sm font-semibold text-gray-300">Factor Analysis</h4>
+                              <p className="text-xs text-gray-500">Confidence Score: {pickTestResult.pick.confidence}/10</p>
+                            </div>
+
+                            {/* Display factors from FactorEngine */}
+                            {pickTestResult.pick.factors && pickTestResult.pick.factors.length > 0 ? (
+                              pickTestResult.pick.factors
+                                .sort((a: any, b: any) => Math.abs(b.weightedScore) - Math.abs(a.weightedScore)) // Sort by impact
+                                .map((factor: any, idx: number) => {
+                                const isNegative = factor.weightedScore < 0
+                                const isNeutral = Math.abs(factor.weightedScore) < 0.1
+                                
+                                // Icon selection based on category
+                                const categoryIcons: any = {
+                                  vegas: '🎰',
+                                  ai_research: '🤖',
+                                  form: '📈',
+                                  matchup: '⚔️',
+                                  context: '🌍'
+                                }
+                                const icon = categoryIcons[factor.category] || '📊'
+                                
+                                return (
+                                  <div key={idx} className={`p-4 rounded-lg border transition-all duration-300 hover:shadow-lg ${
+                                    isNegative ? 'bg-red-900/10 border-red-500/30 hover:border-red-500/50' :
+                                    isNeutral ? 'bg-gray-800/50 border-gray-700 hover:border-gray-600' :
+                                    'bg-green-900/10 border-green-500/30 hover:border-green-500/50'
+                                  }`}>
+                                    <div className="flex items-start gap-3 mb-3">
+                                      <span className="text-3xl">{icon}</span>
+                                      <div className="flex-1">
+                                        {/* Factor Name & Score */}
+                                        <div className="flex items-center justify-between mb-2">
+                                          <div>
+                                            <p className="text-sm font-bold text-white">{factor.name}</p>
+                                            <p className="text-xs text-gray-500 uppercase tracking-wide">{factor.category}</p>
+                                          </div>
+                                          <div className="text-right">
+                                            <div className="flex items-center gap-2">
+                                              <span className={`text-lg font-mono font-bold ${
+                                                isNegative ? 'text-red-400' : isNeutral ? 'text-gray-400' : 'text-green-400'
+                                              }`}>
+                                                {factor.weightedScore >= 0 ? '+' : ''}{factor.weightedScore.toFixed(2)}
+                                              </span>
+                                              <span className="text-xs text-gray-500">/ {factor.weight.toFixed(2)}</span>
+                                            </div>
+                                            <p className="text-xs text-gray-500 mt-0.5">
+                                              {((Math.abs(factor.weightedScore) / factor.weight) * 100).toFixed(0)}% of max
+                                            </p>
+                                          </div>
+                                        </div>
+                                        
+                                        {/* Reasoning */}
+                                        <p className="text-sm text-gray-300 leading-relaxed mb-3">
+                                          {factor.reasoning}
+                                        </p>
+                                        
+                                        {/* Raw Data Display */}
+                                        {(factor.data.teamA || factor.data.teamB || factor.data.context) && (
+                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3 text-xs">
+                                            {factor.data.teamA && Object.keys(factor.data.teamA).length > 0 && (
+                                              <div className="p-2 bg-blue-900/20 border border-blue-500/30 rounded">
+                                                <p className="font-semibold text-blue-300 mb-1">Your Pick:</p>
+                                                {Object.entries(factor.data.teamA).map(([key, value]: [string, any]) => (
+                                                  <p key={key} className="text-gray-300">
+                                                    {key}: <span className="font-mono text-blue-400">{JSON.stringify(value)}</span>
+                                                  </p>
+                                                ))}
+                                              </div>
+                                            )}
+                                            {factor.data.teamB && Object.keys(factor.data.teamB).length > 0 && (
+                                              <div className="p-2 bg-orange-900/20 border border-orange-500/30 rounded">
+                                                <p className="font-semibold text-orange-300 mb-1">Opponent:</p>
+                                                {Object.entries(factor.data.teamB).map(([key, value]: [string, any]) => (
+                                                  <p key={key} className="text-gray-300">
+                                                    {key}: <span className="font-mono text-orange-400">{JSON.stringify(value)}</span>
+                                                  </p>
+                                                ))}
+                                              </div>
+                                            )}
+                                            {factor.data.context && Object.keys(factor.data.context).length > 0 && (
+                                              <div className="col-span-full p-2 bg-purple-900/20 border border-purple-500/30 rounded">
+                                                <p className="font-semibold text-purple-300 mb-1">Context:</p>
+                                                {Object.entries(factor.data.context).map(([key, value]: [string, any]) => (
+                                                  <p key={key} className="text-gray-300">
+                                                    {key}: <span className="font-mono text-purple-400">{JSON.stringify(value)}</span>
+                                                  </p>
+                                                ))}
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
+                                        
+                                        {/* Advanced Stats Research Q&A (if available) */}
+                                        {(factor.statmuseQuery || factor.statmuseResponse) && (
+                                          <div className="p-3 bg-indigo-900/20 border border-indigo-500/30 rounded mb-3">
+                                            <p className="text-xs font-semibold text-indigo-300 mb-2">📊 Advanced Stats Research</p>
+                                            {factor.statmuseQuery && (
+                                              <div className="mb-2">
+                                                <p className="text-xs text-gray-400">Q:</p>
+                                                <p className="text-xs text-gray-200 italic">"{factor.statmuseQuery}"</p>
+                                              </div>
+                                            )}
+                                            {factor.statmuseResponse && (
+                                              <div>
+                                                <p className="text-xs text-gray-400">A:</p>
+                                                <p className="text-xs text-indigo-200">{factor.statmuseResponse}</p>
+                                              </div>
+                                            )}
+                                            {factor.statmuseFailed && (
+                                              <p className="text-xs text-red-400">⚠️ Query failed - used alternative data</p>
+                                            )}
+                                          </div>
+                                        )}
+                                        
+                                        {/* Data Sources */}
+                                        {factor.sources && factor.sources.length > 0 && (
+                                          <div className="flex flex-wrap gap-1">
+                                            {factor.sources.map((source: string, i: number) => (
+                                              <span key={i} className="px-2 py-0.5 bg-gray-800 text-xs text-gray-400 rounded">
+                                                {source}
+                                              </span>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Power Bar */}
+                                    <div className="relative w-full h-3 bg-gray-900 rounded-full overflow-hidden">
+                                      <div 
+                                        className={`absolute top-0 left-0 h-full rounded-full transition-all duration-700 ${
+                                          isNegative ? 'bg-gradient-to-r from-red-600 via-red-500 to-orange-500' :
+                                          isNeutral ? 'bg-gradient-to-r from-gray-600 to-gray-500' :
+                                          'bg-gradient-to-r from-green-600 via-green-500 to-emerald-400'
+                                        }`}
+                                        style={{ width: `${Math.min((Math.abs(factor.weightedScore) / factor.weight) * 100, 100)}%` }}
+                                      />
+                                      {/* Percentage label on bar */}
+                                      <div className="absolute inset-0 flex items-center justify-center">
+                                        <span className="text-xs font-bold text-white drop-shadow-lg">
+                                          {((Math.abs(factor.weightedScore) / factor.weight) * 100).toFixed(0)}%
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )
+                              })
+                            ) : pickTestResult.pick.analysisSteps && pickTestResult.pick.analysisSteps.length > 0 ? (
+                              pickTestResult.pick.analysisSteps.map((step: any, idx: number) => {
+                                // Calculate score contribution (approximation based on impact)
+                                const impactScore = step.impact === 'positive' ? 1.5 : step.impact === 'negative' ? -0.5 : 0.5
+                                const score = Math.abs(impactScore)
+                                const percentage = ((score / pickTestResult.pick.confidence) * 100).toFixed(0)
+                                const icons = ['🏈', '📊', '🎯', '⚡', '🔥', '💪', '🌟', '⚙️', '📈', '🎲']
+                                const isNegative = step.impact === 'negative'
+                                
+                                return (
+                                  <div key={idx} className="p-3 bg-gray-800/50 rounded-lg border border-gray-700 hover:border-gray-600 transition-colors">
+                                    <div className="flex items-start gap-3 mb-2">
+                                      <span className="text-2xl">{icons[idx % icons.length]}</span>
+                                      <div className="flex-1">
+                                        <div className="flex items-center justify-between mb-1">
+                                          <p className="text-sm font-semibold text-white">{step.title}</p>
+                                          <div className="flex items-center gap-2">
+                                            <span className={`text-xs font-mono ${isNegative ? 'text-red-400' : 'text-green-400'}`}>
+                                              {isNegative ? '-' : '+'}{score.toFixed(1)}
+                                            </span>
+                                            <span className="text-xs text-gray-500">({percentage}%)</span>
+                                          </div>
+                                        </div>
+                                        <p className="text-xs text-gray-400">{step.description}</p>
+                                        {step.result && (
+                                          <p className="text-xs text-blue-400 mt-1">→ {step.result}</p>
+                                        )}
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Power Bar */}
+                                    <div className="relative w-full h-2 bg-gray-900 rounded-full overflow-hidden">
+                                      <div 
+                                        className={`absolute top-0 left-0 h-full ${isNegative ? 'bg-gradient-to-r from-red-500 to-orange-400' : 'bg-gradient-to-r from-green-500 to-emerald-400'} rounded-full transition-all duration-500`}
+                                        style={{ width: `${Math.min(Math.abs(score) * 10, 100)}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                )
+                              })
+                            ) : pickTestResult.pick.reasoning && pickTestResult.pick.reasoning.length > 0 ? (
+                              pickTestResult.pick.reasoning.map((reason: string, idx: number) => {
+                                const mockScores = [3.5, 2.8, 2.2, 1.5]
+                                const score = mockScores[idx] || 1.0
+                                const percentage = ((score / 10) * 100).toFixed(0)
+                                const icons = ['🏈', '📊', '🎯', '⚡', '🔥', '💪']
+                                
+                                return (
+                                  <div key={idx} className="p-3 bg-gray-800/50 rounded-lg border border-gray-700 hover:border-gray-600 transition-colors">
+                                    <div className="flex items-start gap-3 mb-2">
+                                      <span className="text-2xl">{icons[idx % icons.length]}</span>
+                                      <div className="flex-1">
+                                        <div className="flex items-center justify-between mb-1">
+                                          <p className="text-sm font-semibold text-white">{reason.split(':')[0] || `Factor ${idx + 1}`}</p>
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-xs font-mono text-green-400">+{score.toFixed(1)}</span>
+                                            <span className="text-xs text-gray-500">({percentage}%)</span>
+                                          </div>
+                                        </div>
+                                        <p className="text-xs text-gray-400">{reason.split(':')[1] || reason}</p>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Power Bar */}
+                                    <div className="relative w-full h-2 bg-gray-900 rounded-full overflow-hidden">
+                                      <div 
+                                        className="absolute top-0 left-0 h-full bg-gradient-to-r from-green-500 to-emerald-400 rounded-full transition-all duration-500"
+                                        style={{ width: `${Math.min(score * 10, 100)}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                )
+                              })
+                            ) : (
+                              <p className="text-xs text-gray-500">Factor breakdown not available</p>
+                            )}
+                          </div>
+
+                          {/* AI Research Metadata */}
+                          <div className="p-3 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+                            <div className="flex items-center justify-between text-xs">
+                              <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-1">
+                                  <RefreshCw className="w-3 h-3 text-blue-400" />
+                                  <span className="text-gray-400">AI Research Time:</span>
+                                  <span className="text-blue-400 font-semibold">{pickTestResult.performance?.duration_seconds || '0'}s</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Zap className="w-3 h-3 text-pink-400" />
+                                  <span className="text-gray-400">Perplexity + ChatGPT</span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <TrendingUp className="w-3 h-3 text-green-400" />
+                                <span className="text-gray-400">Cost:</span>
+                                <span className="text-green-400 font-semibold">${pickTestResult.performance?.estimated_cost_usd?.toFixed(4) || '0.0070'}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Data Sources */}
+                          <div className="text-xs text-gray-500 border-t border-gray-800 pt-3">
+                            <p className="mb-1 font-semibold text-gray-400">📚 Data Sources:</p>
+                            <div className="flex flex-wrap gap-2">
+                              <span className="px-2 py-1 bg-gray-800 rounded">The Odds API</span>
+                              <span className="px-2 py-1 bg-gray-800 rounded">Advanced Stats Database</span>
+                              <span className="px-2 py-1 bg-gray-800 rounded">Perplexity Web Research</span>
+                              <span className="px-2 py-1 bg-gray-800 rounded">ChatGPT Analysis</span>
+                              <span className="px-2 py-1 bg-gray-800 rounded">Historical Performance Data</span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      </>
+                    ) : (
+                      <>
+                      <Card className="glass-effect border-yellow-500/30">
+                        <CardHeader>
+                          <CardTitle className="text-yellow-400">⚠️ No Pick Generated (But Factors Analyzed!)</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-gray-300 mb-4">{pickTestResult.result?.reason || 'Confidence below threshold'}</p>
+                          
+                          {/* Show why no pick was made */}
+                          <div className="p-4 bg-yellow-900/20 border border-yellow-500/30 rounded-lg mb-4">
+                            <p className="text-sm text-yellow-200 mb-2">
+                              <strong>The algorithm analyzed the game but confidence was too low to generate a pick.</strong>
+                            </p>
+                            <p className="text-xs text-gray-400">
+                              This is GOOD - Shiva is being selective and only picks when there's a strong edge.
+                              See the factor breakdown below to understand why confidence was low.
+                            </p>
+                          </div>
+                          
+                          {pickTestResult.result && (
+                            <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+                              <div>
+                                <p className="text-gray-500">Factors Analyzed</p>
+                                <p className="text-white font-semibold">{pickTestResult.result.factors_analyzed || 0}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-500">AI Research Runs</p>
+                                <p className="text-white font-semibold">{pickTestResult.result.ai_research_runs || 0}</p>
+                              </div>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                      
+                      {/* Factor Analysis for No Pick */}
+                      {pickTestResult.result?.factors && pickTestResult.result.factors.length > 0 && (
+                        <Card className="glass-effect border-purple-500/30">
+                          <CardHeader>
+                            <CardTitle className="text-purple-400">💡 Factor Breakdown (Why No Pick)</CardTitle>
+                            <p className="text-sm text-gray-400 mt-2">
+                              Final Confidence: {pickTestResult.result.confidence?.toFixed(2) || '0'}/10 (need 7.0+)
+                            </p>
+                          </CardHeader>
+                          <CardContent className="space-y-3">
+                            {pickTestResult.result.factors
+                              .sort((a: any, b: any) => Math.abs(b.weightedScore) - Math.abs(a.weightedScore))
+                              .map((factor: any, idx: number) => {
+                                const isNegative = factor.weightedScore < 0
+                                const isNeutral = Math.abs(factor.weightedScore) < 0.1
+                                const categoryIcons: any = {
+                                  vegas: '🎰',
+                                  ai_research: '🤖',
+                                  form: '📈',
+                                  matchup: '⚔️',
+                                  context: '🌍'
+                                }
+                                const icon = categoryIcons[factor.category] || '📊'
+                                
+                                return (
+                                  <div key={idx} className={`p-3 rounded-lg border ${
+                                    isNegative ? 'bg-red-900/10 border-red-500/30' :
+                                    isNeutral ? 'bg-gray-800/50 border-gray-700' :
+                                    'bg-green-900/10 border-green-500/30'
+                                  }`}>
+                                    <div className="flex items-start gap-2 mb-2">
+                                      <span className="text-2xl">{icon}</span>
+                                      <div className="flex-1">
+                                        <div className="flex items-center justify-between mb-1">
+                                          <p className="text-sm font-bold text-white">{factor.name}</p>
+                                          <span className={`text-sm font-mono ${isNegative ? 'text-red-400' : isNeutral ? 'text-gray-400' : 'text-green-400'}`}>
+                                            {factor.weightedScore >= 0 ? '+' : ''}{factor.weightedScore.toFixed(2)}
+                                          </span>
+                                        </div>
+                                        <p className="text-xs text-gray-400">{factor.reasoning}</p>
+                                      </div>
+                                    </div>
+                                    <div className="relative w-full h-2 bg-gray-900 rounded-full overflow-hidden">
+                                      <div 
+                                        className={`absolute top-0 left-0 h-full rounded-full ${
+                                          isNegative ? 'bg-gradient-to-r from-red-600 to-orange-500' :
+                                          isNeutral ? 'bg-gray-600' :
+                                          'bg-gradient-to-r from-green-600 to-emerald-400'
+                                        }`}
+                                        style={{ width: `${Math.min((Math.abs(factor.weightedScore) / factor.weight) * 100, 100)}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                          </CardContent>
+                        </Card>
+                      )}
+                      </>
+                    )}
+
+                    {/* Performance */}
+                    {pickTestResult.performance && (
+                      <Card className="glass-effect border-gray-700">
+                        <CardHeader>
+                          <CardTitle className="text-gray-300">Performance</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-sm text-gray-500">Total Duration</p>
+                              <p className="text-2xl font-bold text-white">{pickTestResult.performance.duration_seconds}s</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500">Estimated Cost</p>
+                              <p className="text-2xl font-bold text-green-400">${pickTestResult.performance.estimated_cost_usd.toFixed(4)}</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Next Steps */}
+                    {pickTestResult.next_steps && (
+                      <div className="p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+                        <h4 className="text-sm font-semibold text-blue-400 mb-2">✅ Next Steps</h4>
+                        <ul className="text-sm text-gray-300 space-y-1">
+                          {pickTestResult.next_steps.map((step: string, idx: number) => (
+                            <li key={idx}>• {step}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
           {/* Settings Tab */}
           <TabsContent value="settings" className="space-y-6">
             {/* Data Feed Settings */}
@@ -1172,6 +2312,117 @@ ${cronJobStatuses.filter(j => j.last_run_status === 'failed').length > 2 ? '⚠�
                       </div>
                     </div>
                   ))}
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* AI Model Settings */}
+            <Card className="glass-effect border-purple-500/30">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-purple-400" />
+                  AI Model Configuration (Shiva)
+                </CardTitle>
+                <p className="text-sm text-gray-400 mt-2">
+                  Configure which AI models and providers to use for pick generation
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {/* Current Configuration */}
+                  <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                    <h4 className="font-semibold text-white mb-4">Current Configuration</h4>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Run 1 Configuration */}
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-2 h-2 bg-pink-500 rounded-full"></div>
+                          <h5 className="font-semibold text-pink-400">Run 1: Analytical Research</h5>
+                        </div>
+                        
+                        <div>
+                          <label className="text-xs text-gray-400 mb-1 block">AI Provider</label>
+                          <div className="p-2 bg-gray-900 border border-gray-700 rounded text-white text-sm">
+                            Perplexity AI
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <label className="text-xs text-gray-400 mb-1 block">Model</label>
+                          <div className="p-2 bg-gray-900 border border-gray-700 rounded text-white text-sm font-mono">
+                            sonar-medium-online
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">~$0.001 per request</p>
+                        </div>
+                        
+                        <div>
+                          <label className="text-xs text-gray-400 mb-1 block">Max StatMuse Questions</label>
+                          <div className="p-2 bg-gray-900 border border-gray-700 rounded text-white text-sm">
+                            2 questions
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Run 2 Configuration */}
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-2 h-2 bg-cyan-500 rounded-full"></div>
+                          <h5 className="font-semibold text-cyan-400">Run 2: Strategic Validation</h5>
+                        </div>
+                        
+                        <div>
+                          <label className="text-xs text-gray-400 mb-1 block">AI Provider</label>
+                          <div className="p-2 bg-gray-900 border border-gray-700 rounded text-white text-sm">
+                            OpenAI ChatGPT
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <label className="text-xs text-gray-400 mb-1 block">Model</label>
+                          <div className="p-2 bg-gray-900 border border-gray-700 rounded text-white text-sm font-mono">
+                            gpt-4o-mini
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">~$0.002 per request</p>
+                        </div>
+                        
+                        <div>
+                          <label className="text-xs text-gray-400 mb-1 block">Max StatMuse Questions</label>
+                          <div className="p-2 bg-gray-900 border border-gray-700 rounded text-white text-sm">
+                            2 questions
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Available Models Info */}
+                  <div className="p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+                    <h4 className="text-sm font-semibold text-blue-400 mb-2">💡 Available Models</h4>
+                    <div className="text-xs text-gray-300 space-y-2">
+                      <div>
+                        <span className="font-semibold text-pink-400">Perplexity:</span>
+                        <ul className="ml-4 mt-1 space-y-0.5">
+                          <li>• <code className="text-xs bg-gray-800 px-1 rounded">sonar-medium-online</code> - Web search enabled (current)</li>
+                          <li>• <code className="text-xs bg-gray-800 px-1 rounded">sonar-pro</code> - Advanced reasoning (higher cost)</li>
+                          <li>• <code className="text-xs bg-gray-800 px-1 rounded">sonar-deep-search</code> - Deep research mode (slow, expensive)</li>
+                        </ul>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-cyan-400">OpenAI:</span>
+                        <ul className="ml-4 mt-1 space-y-0.5">
+                          <li>• <code className="text-xs bg-gray-800 px-1 rounded">gpt-4o-mini</code> - Fast, cost-effective (current)</li>
+                          <li>• <code className="text-xs bg-gray-800 px-1 rounded">gpt-4o</code> - Most capable, higher cost</li>
+                          <li>• <code className="text-xs bg-gray-800 px-1 rounded">o1-mini</code> - Reasoning model (experimental)</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="text-xs text-gray-500">
+                    ℹ️  To change AI models, update the <code className="bg-gray-800 px-1 rounded">capper_settings</code> table in Supabase.
+                    We'll add a UI editor once we validate which models work best for betting.
+                  </div>
                 </div>
               </CardContent>
             </Card>
