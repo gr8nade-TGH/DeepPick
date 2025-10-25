@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
+import { logCronJobExecution } from '@/lib/monitoring/cron-logger'
 
 // Auto-grade all pending picks for a completed game
 async function autoGradePicksForGame(gameId: string, homeScore: number, awayScore: number) {
@@ -156,16 +157,22 @@ function mapSportKey(apiSportKey: string): string {
   return sportMap[apiSportKey] || apiSportKey
 }
 
-export async function POST() {
+async function fetchScoresHandler() {
+  const cronStartTime = Date.now()
+  let cronSuccess = false
+  let cronError: string | undefined
+  
   try {
     console.log('🏆 Starting score fetch process...')
     
     const oddsApiKey = process.env.THE_ODDS_API_KEY
 
     if (!oddsApiKey) {
+      cronError = 'THE_ODDS_API_KEY not found'
+      await logCronJobExecution('score_fetching', false, Date.now() - cronStartTime, cronError)
       return NextResponse.json({
         success: false,
-        error: 'THE_ODDS_API_KEY not found'
+        error: cronError
       }, { status: 500 })
     }
 
@@ -334,6 +341,10 @@ export async function POST() {
       }
     }
 
+    // Log successful cron execution
+    cronSuccess = true
+    await logCronJobExecution('score_fetching', true, Date.now() - cronStartTime)
+    
     return NextResponse.json({
       success: true,
       message: `Updated ${updatedCount} games with final scores`,
@@ -344,10 +355,21 @@ export async function POST() {
 
   } catch (error) {
     console.error('❌ Error:', error)
+    cronError = error instanceof Error ? error.message : 'Unknown error'
+    await logCronJobExecution('score_fetching', false, Date.now() - cronStartTime, cronError)
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: cronError
     }, { status: 500 })
   }
+}
+
+// Support both GET (Vercel Cron) and POST (manual trigger)
+export async function GET() {
+  return fetchScoresHandler()
+}
+
+export async function POST() {
+  return fetchScoresHandler()
 }
 
