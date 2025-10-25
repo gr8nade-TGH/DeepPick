@@ -919,6 +919,11 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     if (![0, 1, 2, 3, 5].includes(step5Data.units)) {
       return { isValid: false, error: `Step 5 units ${step5Data.units} not in expected range [0,1,2,3,5]` }
     }
+    
+    // Check if this is a PASS decision (units === 0) - should halt pipeline
+    if (step5Data.units === 0) {
+      return { isValid: false, error: 'PASS decision - no units allocated' }
+    }
     if (!step5Data.final_pick || !step5Data.final_pick.selection) {
       return { isValid: false, error: 'Step 5 missing final_pick selection' }
     }
