@@ -132,23 +132,53 @@ export default function ShivaManagementPage() {
             <button
               onClick={async () => {
                 try {
+                  console.log('🧹 [CLEAR PICKS] Button clicked, calling API...')
                   const response = await fetch('/api/debug/clear-picks', { method: 'POST' })
+                  console.log('🧹 [CLEAR PICKS] API response status:', response.status)
                   const result = await response.json()
+                  console.log('🧹 [CLEAR PICKS] API response data:', result)
+                  
                   if (result.success) {
-                    alert('✅ All SHIVA picks cleared! Refreshing data...')
+                    alert(`✅ ${result.message}! Refreshing data...`)
+                    console.log('🧹 [CLEAR PICKS] Success, refreshing page...')
                     // Refresh the page to update all data
                     window.location.reload()
                   } else {
-                    alert('❌ Error clearing picks: ' + result.error)
+                    alert('❌ Error clearing picks: ' + (result.error || 'Unknown error'))
+                    console.error('🧹 [CLEAR PICKS] API error:', result)
                   }
                 } catch (error) {
                   alert('❌ Error clearing picks: ' + error)
+                  console.error('🧹 [CLEAR PICKS] Network error:', error)
                 }
               }}
               className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded font-medium transition flex items-center gap-2"
             >
               <span>🧹</span>
               Clear Picks (Debug)
+            </button>
+            <button
+              onClick={async () => {
+                try {
+                  console.log('🔍 [CHECK DB] Button clicked, checking database...')
+                  const response = await fetch('/api/debug/check-database')
+                  const result = await response.json()
+                  console.log('🔍 [CHECK DB] Database state:', result)
+                  
+                  if (result.success) {
+                    alert(`📊 Database State:\nPicks: ${result.counts.picks}\nCooldowns: ${result.counts.cooldowns}\nGames: ${result.counts.games}`)
+                  } else {
+                    alert('❌ Error checking database: ' + result.error)
+                  }
+                } catch (error) {
+                  alert('❌ Error checking database: ' + error)
+                  console.error('🔍 [CHECK DB] Network error:', error)
+                }
+              }}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium transition flex items-center gap-2"
+            >
+              <span>🔍</span>
+              Check DB
             </button>
             <a
               href="/odds"
