@@ -21,38 +21,45 @@ export async function POST(request: NextRequest) {
     
     console.log(`[clear-all-picks] Found ${beforePicksCount || 0} total picks to delete`)
     
-    // Delete ALL picks (for testing) - use IN with all capper values
-    const { error: picksError, count: deletedPicksCount } = await supabase
-      .from('picks')
-      .delete({ count: 'exact' })
-      .in('capper', ['shiva', 'cerberus', 'nexus', 'ifrit', 'deeppick', 'oracle']) // All known cappers
+    // Delete picks one capper at a time to avoid enum operator issues
+    let totalDeletedPicks = 0
+    const cappers = ['shiva', 'cerberus', 'nexus', 'ifrit', 'deeppick', 'oracle']
     
-    if (picksError) {
-      console.error('Error deleting picks:', picksError)
-      return NextResponse.json({ 
-        success: false, 
-        error: picksError.message,
-        details: 'Failed to delete picks from database'
-      }, { status: 500 })
+    for (const capper of cappers) {
+      const { error, count } = await supabase
+        .from('picks')
+        .delete({ count: 'exact' })
+        .eq('capper', capper)
+      
+      if (!error && count) {
+        totalDeletedPicks += count
+        console.log(`[clear-all-picks] Deleted ${count} picks from ${capper}`)
+      } else if (error) {
+        console.error(`[clear-all-picks] Error deleting ${capper} picks:`, error.message)
+      }
     }
     
-    // Also clear all cooldowns - use IN with all capper values
-    const { error: cooldownError, count: deletedCooldownCount } = await supabase
-      .from('pick_generation_cooldowns')
-      .delete({ count: 'exact' })
-      .in('capper', ['shiva', 'cerberus', 'nexus', 'ifrit', 'deeppick', 'oracle']) // All known cappers
-    
-    if (cooldownError) {
-      console.error('Error deleting cooldowns:', cooldownError)
+    // Also clear all cooldowns one capper at a time
+    let totalDeletedCooldowns = 0
+    for (const capper of cappers) {
+      const { error, count } = await supabase
+        .from('pick_generation_cooldowns')
+        .delete({ count: 'exact' })
+        .eq('capper', capper)
+      
+      if (!error && count) {
+        totalDeletedCooldowns += count
+        console.log(`[clear-all-picks] Deleted ${count} cooldowns from ${capper}`)
+      }
     }
     
-    console.log(`[clear-all-picks] Successfully deleted ${deletedPicksCount || 0} picks and ${deletedCooldownCount || 0} cooldown records`)
+    console.log(`[clear-all-picks] Successfully deleted ${totalDeletedPicks} picks and ${totalDeletedCooldowns} cooldown records`)
     
     return NextResponse.json({ 
       success: true, 
-      message: `Successfully cleared ${deletedPicksCount || 0} picks and ${deletedCooldownCount || 0} cooldown records`,
-      deletedPicksCount: deletedPicksCount || 0,
-      deletedCooldownCount: deletedCooldownCount || 0,
+      message: `Successfully cleared ${totalDeletedPicks} picks and ${totalDeletedCooldowns} cooldown records`,
+      deletedPicksCount: totalDeletedPicks,
+      deletedCooldownCount: totalDeletedCooldowns,
       beforePicksCount: beforePicksCount || 0
     })
     
