@@ -93,6 +93,14 @@ export default function APITestPage() {
               </button>
               
               <button
+                onClick={() => testAPI('Inspect Picks', '/api/debug/inspect-picks')}
+                disabled={loading === 'Inspect Picks'}
+                className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 rounded text-sm"
+              >
+                {loading === 'Inspect Picks' ? 'Loading...' : 'Inspect All Picks'}
+              </button>
+              
+              <button
                 onClick={() => testAPI('Clear Picks', '/api/debug/clear-picks', 'POST')}
                 disabled={loading === 'Clear Picks'}
                 className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 rounded text-sm"
