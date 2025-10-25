@@ -156,6 +156,7 @@ function assembleInsightCard({ runCtx, step4, step5, step5_5, step6, step3, step
   console.debug('[card:odds.keys]', Object.keys(step2?.json?.snapshot ?? {}))
   
   const odds = 
+    step2?.json?.snapshot?.raw_payload ??
     step2?.json?.snapshot?.odds ??
     step2?.json?.odds ??
     runCtx?.game?.odds ??
@@ -1240,18 +1241,37 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
               }
             }
           } else {
-            // No selected game - use fallback
-            gameData = {
-              game_id: 'nba_2025_10_21_den_gsw',
-              home: 'Golden State Warriors',
-              away: 'Denver Nuggets',
-              start_time_utc: '2025-10-21T01:30:00Z',
-              odds: {
-                ml_home: -110,
-                ml_away: -110,
-                spread_team: 'Golden State Warriors',
-                spread_line: 2.5,
-                total_line: 227.5
+            // No selected game - this should not happen in normal flow
+            // Use the game from Step 1 if available
+            const step1Game = stepLogs[1]?.json?.selected_game
+            if (step1Game) {
+              gameData = {
+                game_id: step1Game.id,
+                home: step1Game.home_team?.name || 'Home Team',
+                away: step1Game.away_team?.name || 'Away Team',
+                start_time_utc: step1Game.game_time ? new Date(step1Game.game_time).toISOString() : new Date().toISOString(),
+                odds: step1Game.odds || {
+                  ml_home: -110,
+                  ml_away: -110,
+                  spread_team: step1Game.home_team?.name || 'Home Team',
+                  spread_line: step1Game.spread_line || 0,
+                  total_line: step1Game.total_line || 0
+                }
+              }
+            } else {
+              // Fallback only if no Step 1 data
+              gameData = {
+                game_id: 'nba_2025_10_21_den_gsw',
+                home: 'Golden State Warriors',
+                away: 'Denver Nuggets',
+                start_time_utc: '2025-10-21T01:30:00Z',
+                odds: {
+                  ml_home: -110,
+                  ml_away: -110,
+                  spread_team: 'Golden State Warriors',
+                  spread_line: 2.5,
+                  total_line: 227.5
+                }
               }
             }
           }

@@ -72,12 +72,13 @@ export async function POST(request: Request) {
     exec: async () => {
       const admin = getSupabaseAdmin()
       
-      if (!results.persistence?.picks_row) {
-        // PASS decision
+      if (!results.persistence?.picks_row || results.persistence.picks_row.units === 0) {
+        // PASS decision - no pick row or zero units
         console.log('[SHIVA:PickGenerate]', {
           run_id,
           decision: 'PASS',
           confidence: parse.data.inputs.conf_final,
+          reason: !results.persistence?.picks_row ? 'No picks_row' : 'Zero units',
           writeAllowed,
           latencyMs: Date.now() - startTime,
           status: 200,
