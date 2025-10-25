@@ -29,11 +29,32 @@ export async function POST(request: NextRequest) {
     
     console.log(`[clear-picks] Found ${beforePicksCount || 0} SHIVA picks and ${beforeCooldownCount || 0} cooldown records to delete`)
     
-    // Clear all SHIVA picks - use lowercase 'shiva' as per database enum
+    // Clear all SHIVA picks - try both cases and also check what's actually in the database
+    console.log('[clear-picks] Attempting to delete picks with capper = "shiva"')
     const { error: picksError, count: deletedPicksCount } = await supabase
       .from('picks')
       .delete({ count: 'exact' })
       .eq('capper', 'shiva')
+    
+    // If that didn't work, try uppercase
+    if (deletedPicksCount === 0) {
+      console.log('[clear-picks] No picks deleted with "shiva", trying "SHIVA"')
+      const { error: picksError2, count: deletedPicksCount2 } = await supabase
+        .from('picks')
+        .delete({ count: 'exact' })
+        .eq('capper', 'SHIVA')
+      
+      if (picksError2) {
+        console.error('Error deleting picks with SHIVA:', picksError2)
+        return NextResponse.json({ 
+          success: false, 
+          error: picksError2.message,
+          details: 'Failed to delete picks from database with both shiva and SHIVA'
+        }, { status: 500 })
+      }
+      
+      console.log(`[clear-picks] Deleted ${deletedPicksCount2 || 0} picks with "SHIVA"`)
+    }
     
     if (picksError) {
       console.error('Error deleting picks:', picksError)

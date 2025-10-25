@@ -204,6 +204,30 @@ export default function ShivaManagementPage() {
               <span>🔄</span>
               Fetch NBA Games
             </button>
+            <button
+              onClick={async () => {
+                try {
+                  console.log('🎮 [ADD TEST GAMES] Button clicked, adding test games...')
+                  const response = await fetch('/api/debug/add-test-games', { method: 'POST' })
+                  const result = await response.json()
+                  console.log('🎮 [ADD TEST GAMES] Response:', result)
+                  
+                  if (result.success) {
+                    alert(`✅ ${result.message}! Refreshing page...`)
+                    window.location.reload()
+                  } else {
+                    alert('❌ Error adding test games: ' + result.error)
+                  }
+                } catch (error) {
+                  alert('❌ Error adding test games: ' + error)
+                  console.error('🎮 [ADD TEST GAMES] Network error:', error)
+                }
+              }}
+              className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded font-medium transition flex items-center gap-2"
+            >
+              <span>🎮</span>
+              Add Test Games
+            </button>
             <a
               href="/odds"
               target="_blank"

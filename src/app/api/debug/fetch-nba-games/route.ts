@@ -12,7 +12,15 @@ export async function POST(request: NextRequest) {
     if (!process.env.ODDS_API_KEY) {
       return NextResponse.json({ 
         success: false, 
-        error: 'ODDS_API_KEY not configured' 
+        error: 'ODDS_API_KEY not configured',
+        details: 'Please add ODDS_API_KEY to your environment variables. Get a free key from https://the-odds-api.com/',
+        instructions: [
+          '1. Go to https://the-odds-api.com/',
+          '2. Sign up for a free account',
+          '3. Get your API key',
+          '4. Add ODDS_API_KEY to your Vercel environment variables',
+          '5. Redeploy your application'
+        ]
       }, { status: 500 })
     }
     
