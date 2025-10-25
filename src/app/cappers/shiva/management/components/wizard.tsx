@@ -983,7 +983,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
               const gameOdds = game.odds || {}
               
               const totals = sportsbooks
-                .map((book: string) => gameOdds[book]?.total?.line)
+                .map((book: string) => gameOdds[book]?.total?.Over?.point)
                 .filter((val: any) => val !== undefined && val !== null)
               
               const moneylines = sportsbooks
@@ -997,11 +997,11 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
               // Calculate averages
               const avgTotal = totals.length > 0 ? totals.reduce((a: number, b: number) => a + b, 0) / totals.length : 227.5
               const avgMLHome = moneylines.length > 0 ? 
-                Math.round(moneylines.reduce((a: number, b: any) => a + (b.home || 0), 0) / moneylines.length) : -110
+                Math.round(moneylines.reduce((a: number, b: any) => a + (b[game.home_team?.name] || 0), 0) / moneylines.length) : -110
               const avgMLAway = moneylines.length > 0 ? 
-                Math.round(moneylines.reduce((a: number, b: any) => a + (b.away || 0), 0) / moneylines.length) : -110
+                Math.round(moneylines.reduce((a: number, b: any) => a + (b[game.away_team?.name] || 0), 0) / moneylines.length) : -110
               const avgSpread = spreads.length > 0 ? 
-                (spreads.reduce((a: number, b: any) => a + (b.line || 0), 0) / spreads.length) : 2.5
+                (spreads.reduce((a: number, b: any) => a + (b[game.home_team?.name]?.point || 0), 0) / spreads.length) : 2.5
               
               gameData = {
                 game_id: game.id,
