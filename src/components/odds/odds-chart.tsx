@@ -100,8 +100,9 @@ export function OddsChart({ gameId, sportsbooks }: OddsChartProps) {
     // Add each sportsbook's odds
     sportsbooks.forEach((bookmaker) => {
       const odds = record.odds[bookmaker]
-      if (odds?.moneyline?.home) {
-        dataPoint[bookmaker] = odds.moneyline.home
+      const homeTeam = record.home_team?.name
+      if (odds?.moneyline?.[homeTeam]) {
+        dataPoint[bookmaker] = odds.moneyline[homeTeam]
       }
     })
 

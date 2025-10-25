@@ -77,14 +77,18 @@ export function getAverageOdds(
     const bookmakerOdds = game.odds[bookmaker]
     
     if (market === 'moneyline' && bookmakerOdds.moneyline) {
-      if (side === 'home') validOdds.push(bookmakerOdds.moneyline.home)
-      if (side === 'away') validOdds.push(bookmakerOdds.moneyline.away)
+      const homeTeam = game.home_team?.name
+      const awayTeam = game.away_team?.name
+      if (side === 'home' && homeTeam) validOdds.push(bookmakerOdds.moneyline[homeTeam])
+      if (side === 'away' && awayTeam) validOdds.push(bookmakerOdds.moneyline[awayTeam])
     } else if (market === 'spread' && bookmakerOdds.spread) {
-      if (side === 'home') validOdds.push(bookmakerOdds.spread.home)
-      if (side === 'away') validOdds.push(bookmakerOdds.spread.away)
+      const homeTeam = game.home_team?.name
+      const awayTeam = game.away_team?.name
+      if (side === 'home' && homeTeam) validOdds.push(bookmakerOdds.spread[homeTeam]?.price)
+      if (side === 'away' && awayTeam) validOdds.push(bookmakerOdds.spread[awayTeam]?.price)
     } else if (market === 'total' && bookmakerOdds.total) {
-      if (side === 'over') validOdds.push(bookmakerOdds.total.over)
-      if (side === 'under') validOdds.push(bookmakerOdds.total.under)
+      if (side === 'over') validOdds.push(bookmakerOdds.total.Over?.price)
+      if (side === 'under') validOdds.push(bookmakerOdds.total.Under?.price)
     }
   }
 
@@ -109,11 +113,15 @@ export function getBestOdds(
     let currentOdds: number | undefined
 
     if (market === 'moneyline' && bookmakerOdds.moneyline) {
-      currentOdds = side === 'home' ? bookmakerOdds.moneyline.home : bookmakerOdds.moneyline.away
+      const homeTeam = game.home_team?.name
+      const awayTeam = game.away_team?.name
+      currentOdds = side === 'home' ? bookmakerOdds.moneyline[homeTeam] : bookmakerOdds.moneyline[awayTeam]
     } else if (market === 'spread' && bookmakerOdds.spread) {
-      currentOdds = side === 'home' ? bookmakerOdds.spread.home : bookmakerOdds.spread.away
+      const homeTeam = game.home_team?.name
+      const awayTeam = game.away_team?.name
+      currentOdds = side === 'home' ? bookmakerOdds.spread[homeTeam]?.price : bookmakerOdds.spread[awayTeam]?.price
     } else if (market === 'total' && bookmakerOdds.total) {
-      currentOdds = side === 'over' ? bookmakerOdds.total.over : bookmakerOdds.total.under
+      currentOdds = side === 'over' ? bookmakerOdds.total.Over?.price : bookmakerOdds.total.Under?.price
     }
 
     if (currentOdds !== undefined && currentOdds > bestOdds) {
@@ -136,8 +144,8 @@ export function getTotalLine(game: CapperGame): number | null {
 
   for (const bookmaker of bookmakers) {
     const bookmakerOdds = game.odds[bookmaker]
-    if (bookmakerOdds.total?.line !== undefined) {
-      lines.push(bookmakerOdds.total.line)
+    if (bookmakerOdds.total?.Over?.point !== undefined) {
+      lines.push(bookmakerOdds.total.Over.point)
     }
   }
 
@@ -181,8 +189,9 @@ export function getSpreadLine(game: CapperGame): number | null {
 
   for (const bookmaker of bookmakers) {
     const bookmakerOdds = game.odds[bookmaker]
-    if (bookmakerOdds.spread?.line !== undefined) {
-      lines.push(bookmakerOdds.spread.line)
+    const homeTeam = game.home_team?.name
+    if (homeTeam && bookmakerOdds.spread?.[homeTeam]?.point !== undefined) {
+      lines.push(bookmakerOdds.spread[homeTeam].point)
     }
   }
 

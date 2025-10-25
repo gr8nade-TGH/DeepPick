@@ -150,29 +150,32 @@ function extractAverageOdds(game: CapperGame): {
     // Debug: Log the book structure
     console.log('🔍 Book structure:', JSON.stringify(book, null, 2))
     
-    // ACTUAL STRUCTURE: bookmaker.spread.line, bookmaker.total.line, bookmaker.moneyline.home/away
-    if (book?.spread?.line !== undefined) {
-      spreadSum += book.spread.line
+    // ACTUAL STRUCTURE: bookmaker.spread[team].point, bookmaker.total.Over.point, bookmaker.moneyline[team]
+    const homeTeam = game.home_team?.name
+    const awayTeam = game.away_team?.name
+    
+    if (homeTeam && book?.spread?.[homeTeam]?.point !== undefined) {
+      spreadSum += book.spread[homeTeam].point
       spreadCount++
-      console.log('✅ Found spread (actual structure):', book.spread.line)
+      console.log('✅ Found spread (actual structure):', book.spread[homeTeam].point)
     }
 
-    if (book?.total?.line !== undefined) {
-      totalSum += book.total.line
+    if (book?.total?.Over?.point !== undefined) {
+      totalSum += book.total.Over.point
       totalCount++
-      console.log('✅ Found total (actual structure):', book.total.line)
+      console.log('✅ Found total (actual structure):', book.total.Over.point)
     }
 
-    if (book?.moneyline?.home !== undefined) {
-      homeMLSum += book.moneyline.home
+    if (homeTeam && book?.moneyline?.[homeTeam] !== undefined) {
+      homeMLSum += book.moneyline[homeTeam]
       homeMLCount++
-      console.log('✅ Found home ML (actual structure):', book.moneyline.home)
+      console.log('✅ Found home ML (actual structure):', book.moneyline[homeTeam])
     }
 
-    if (book?.moneyline?.away !== undefined) {
-      awayMLSum += book.moneyline.away
+    if (awayTeam && book?.moneyline?.[awayTeam] !== undefined) {
+      awayMLSum += book.moneyline[awayTeam]
       awayMLCount++
-      console.log('✅ Found away ML (actual structure):', book.moneyline.away)
+      console.log('✅ Found away ML (actual structure):', book.moneyline[awayTeam])
     }
   }
 

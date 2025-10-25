@@ -39,8 +39,9 @@ export default function TestPickPage() {
       const milOdds: number[] = []
       milGame.sportsbooks?.forEach((book: string) => {
         const odds = milGame.odds[book]
-        if (odds?.moneyline?.away) {
-          milOdds.push(odds.moneyline.away)
+        const awayTeam = milGame.away_team?.name
+        if (odds?.moneyline?.[awayTeam]) {
+          milOdds.push(odds.moneyline[awayTeam])
         }
       })
 

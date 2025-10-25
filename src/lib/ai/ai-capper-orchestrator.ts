@@ -477,17 +477,20 @@ Make it engaging, professional, and data-driven. Example:
 
       bookmakers.forEach(book => {
         const odds = this.game.odds[book]
-        if (odds.moneyline) {
-          mlHome.push(odds.moneyline.home)
-          mlAway.push(odds.moneyline.away)
+        const homeTeam = this.game.home_team?.name
+        const awayTeam = this.game.away_team?.name
+        
+        if (odds.moneyline && homeTeam && awayTeam) {
+          mlHome.push(odds.moneyline[homeTeam])
+          mlAway.push(odds.moneyline[awayTeam])
         }
-        if (odds.spread) {
-          spreadLines.push(Math.abs(odds.spread.line))
-          spreadOdds.push(odds.spread.home)
+        if (odds.spread && homeTeam) {
+          spreadLines.push(Math.abs(odds.spread[homeTeam]?.point || 0))
+          spreadOdds.push(odds.spread[homeTeam]?.price || 0)
         }
         if (odds.total) {
-          totalLines.push(odds.total.line)
-          totalOdds.push(odds.total.over)
+          totalLines.push(odds.total.Over?.point || 0)
+          totalOdds.push(odds.total.Over?.price || 0)
         }
       })
 
