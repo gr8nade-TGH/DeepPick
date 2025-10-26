@@ -148,16 +148,32 @@ export async function POST(request: Request) {
       const capsApplied = factorsToProcess.filter(f => f.caps_applied).length
       
       if (writeAllowed) {
+        // Get game_id from the run (it was stored during Step 1 or Step 2)
+        const { data: runData } = await admin
+          .from('runs')
+          .select('game_id')
+          .eq('id', run_id)
+          .single()
+        
+        const game_id = runData?.game_id || null
+        
         // Single transaction: insert all factors
         for (const f of factorsToProcess) {
+          const normalizedVal = f.normalized_value || 0
+          const weightPct = f.weight_total_pct || 0
+          const contribution = (normalizedVal * weightPct) / 100
+          
           const ins = await admin.from('factors').insert({
             run_id,
+            game_id,
             factor_no: f.factor_no,
             raw_values_json: f.raw_values_json,
             parsed_values_json: f.parsed_values_json,
-            normalized_value: f.normalized_value,
-            weight_applied: f.weight_total_pct || 0,
-            caps_applied: f.caps_applied,
+            normalized_value: normalizedVal,
+            factor_value: normalizedVal, // Map normalized_value to factor_value
+            factor_contribution: contribution, // Calculate contribution
+            weight_applied: weightPct,
+            caps_applied: f.caps_applied || false,
             cap_reason: f.cap_reason ?? null,
             notes: f.notes ?? null,
           })
