@@ -32,7 +32,17 @@ export function HeaderFilters(props: HeaderFiltersProps) {
   const [capper, setCapper] = useState('SHIVA')
   const [sport, setSport] = useState('NBA')
   const [betType, setBetType] = useState<'TOTAL' | 'SPREAD/MONEYLINE'>('TOTAL')
-  const [mode, setMode] = useState<'dry-run' | 'write' | 'auto'>('dry-run')
+  const [mode, setMode] = useState<'dry-run' | 'write' | 'auto'>(() => {
+    // Load saved mode from localStorage on mount
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('shiva-mode')
+      if (saved === 'dry-run' || saved === 'write' || saved === 'auto') {
+        return saved
+      }
+    }
+    return 'dry-run'
+  })
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
   const [step3Provider, setStep3Provider] = useState<string>('')
   const [step4Provider, setStep4Provider] = useState<string>('')
   const [profile, setProfile] = useState<CapperProfile | null>(null)
@@ -152,6 +162,20 @@ export function HeaderFilters(props: HeaderFiltersProps) {
   const handleModeChange = (newMode: 'dry-run' | 'write' | 'auto') => {
     setMode(newMode)
     props.onModeChange(newMode)
+    // Auto-save mode change to localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('shiva-mode', newMode)
+    }
+  }
+
+  const handleSaveMode = () => {
+    setSaveStatus('saving')
+    // Save current mode to localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('shiva-mode', mode)
+      setSaveStatus('saved')
+      setTimeout(() => setSaveStatus('idle'), 2000) // Reset after 2 seconds
+    }
   }
 
   const handleGameSelect = (game: GameOption) => {
@@ -282,6 +306,20 @@ export function HeaderFilters(props: HeaderFiltersProps) {
               title="Write mode - actually creates picks and records cooldowns"
             >
               Write
+            </button>
+            <button
+              onClick={handleSaveMode}
+              disabled={saveStatus === 'saving' || saveStatus === 'saved'}
+              className={`px-3 py-1 text-xs rounded font-bold transition-all ${
+                saveStatus === 'saved'
+                  ? 'bg-green-600 text-white'
+                  : saveStatus === 'saving'
+                  ? 'bg-yellow-600 text-white animate-pulse'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
+              title="Save current mode to localStorage"
+            >
+              {saveStatus === 'saved' ? '✓ Saved' : saveStatus === 'saving' ? 'Saving...' : 'Save Mode'}
             </button>
           </div>
         </div>
