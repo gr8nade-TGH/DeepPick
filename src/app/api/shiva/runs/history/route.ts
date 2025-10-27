@@ -58,13 +58,14 @@ export async function GET(request: NextRequest) {
     })
 
     // Merge cooldown data into runs and format matchup
-    const runs = (runsData || []).map(run => {
+    const runs = (runsData || []).map((run: any) => {
       const cooldown = cooldownMap.get(run.run_id)
       
       // Format matchup from game data
       let matchup = run.game_id
-      if (run.games && run.games.home_team && run.games.away_team) {
-        matchup = `${run.games.away_team} @ ${run.games.home_team}`
+      const game = Array.isArray(run.games) ? run.games[0] : run.games
+      if (game && game.home_team && game.away_team) {
+        matchup = `${game.away_team} @ ${game.home_team}`
       }
       
       return {
