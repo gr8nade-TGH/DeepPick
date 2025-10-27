@@ -106,6 +106,25 @@ export async function POST(request: Request) {
             const activeSnapshot = await getActiveSnapshot(run_id)
             const totalLine = activeSnapshot?.total?.line || null
 
+            // Save the run record to runs table even for PASS decisions
+            if (run_id && gameId) {
+              await admin
+                .from('runs')
+                .upsert({
+                  id: run_id,
+                  run_id: run_id,
+                  game_id: gameId,
+                  capper: 'shiva',
+                  bet_type: results.decision.pick_type,
+                  units: 0,
+                  confidence: parse.data.inputs.conf_final,
+                  pick_type: results.decision.pick_type,
+                  selection: results.decision.selection,
+                  updated_at: new Date().toISOString()
+                })
+              console.log('[SHIVA:PickGenerate] PASS run saved to runs table:', run_id)
+            }
+
             if (gameId) {
               const cooldownResult = await pickGenerationService.recordPickGenerationResult({
                 runId: run_id,

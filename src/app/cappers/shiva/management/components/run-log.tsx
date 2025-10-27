@@ -88,23 +88,24 @@ export function RunLogTable() {
 
   if (loading) {
     return (
-      <div className="border-2 border-red-500 rounded p-3 bg-gray-900">
-        <h3 className="text-lg font-bold text-white mb-3">🔄 Run Log - Loading...</h3>
-        <div className="text-gray-400 text-sm">Fetching run history...</div>
+      <div className="border border-gray-700 rounded p-3 bg-gray-900">
+        <h3 className="text-lg font-bold text-white mb-3">Run Log</h3>
+        <div className="text-gray-400 text-sm">Loading...</div>
       </div>
-    )
   }
 
   console.log('[RunLogTable] Rendering with', runs.length, 'runs')
 
   return (
-    <div className="border-2 border-yellow-500 rounded p-3 bg-gray-900">
-      <h3 className="text-lg font-bold text-yellow-400 mb-3">📋 Run Log ({runs.length} runs)</h3>
+    <div className="border border-gray-700 rounded bg-gray-900 overflow-hidden flex flex-col" style={{ height: '400px' }}>
+      <div className="p-3 border-b border-gray-700 flex-shrink-0">
+        <h3 className="text-lg font-bold text-white">📋 Run Log ({runs.length})</h3>
+      </div>
       
       {runs.length === 0 ? (
-        <div className="text-red-400 text-sm font-bold">⚠️ No runs found. Run pick generation in Write mode to see results.</div>
+        <div className="p-3 text-gray-400 text-sm">No runs found. Run pick generation in Write mode to see results.</div>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="overflow-y-auto overflow-x-auto flex-1">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-700">
