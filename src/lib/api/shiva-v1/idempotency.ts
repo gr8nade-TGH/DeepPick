@@ -66,6 +66,17 @@ export async function withIdempotency<TBody>(args: IdempotencyExecArgs<TBody>): 
         key: args.idempotencyKey,
         hasCachedResponse: !!existing.data.response_json
       })
+      
+      // Delete existing idempotency record so we can re-execute
+      await admin
+        .from('idempotency_keys')
+        .delete()
+        .eq('run_id', args.runId)
+        .eq('step', args.step)
+        .eq('key', args.idempotencyKey)
+      
+      console.log(`[Idempotency:${args.step}] Deleted existing idempotency record for fresh execution`)
+      
       // Continue to execution instead of returning cached response
     } else {
       console.log(`[Idempotency:${args.step}] Returning cached response:`, {
