@@ -12,6 +12,11 @@ import { getSupabaseAdmin } from '@/lib/supabase/server'
  * - If PASS (units=0): Records 2-hour cooldown
  * - If PICK_GENERATED (units>0): Records no cooldown (game has pick)
  * - Next run skips games with existing picks or in cooldown
+ * 
+ * Retry Logic:
+ * - Attempts up to 5 games per execution
+ * - If a game results in PASS, automatically tries the next eligible game
+ * - Tracks which games have been attempted to avoid duplicates
  */
 export async function GET() {
   const executionTime = new Date().toISOString()
@@ -22,57 +27,100 @@ export async function GET() {
   try {
     console.log('🤖 [SHIVA-AUTO-PICKS] Starting automated SHIVA pick generation...')
     const startTime = Date.now()
+    const maxRetries = 5 // Maximum number of games to try
+    let attempts = 0
+    const gamesAttempted: string[] = [] // Track games we've already tried
+    let pickGenerated = false
+    let finalResult: any = null
 
-    // Step 1: Find eligible games (same logic as Step 1 scanner)
-    console.log('🎯 [SHIVA-AUTO-PICKS] Step 1: Finding eligible games...')
-    const scannerResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/shiva/step1-scanner`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ selectedGame: null }) // Scan all games
-    })
-    
-    const scannerResult = await scannerResponse.json()
-    console.log('📊 [SHIVA-AUTO-PICKS] Scanner result:', scannerResult)
+    // Loop until we generate a pick or exhaust retries
+    while (attempts < maxRetries && !pickGenerated) {
+      attempts++
+      console.log(`\n🔄 [SHIVA-AUTO-PICKS] Attempt ${attempts}/${maxRetries}`)
 
-    if (!scannerResult.success || !scannerResult.selected_game) {
-      console.log('⚠️ [SHIVA-AUTO-PICKS] No eligible games found')
-      return NextResponse.json({
-        success: true,
-        message: 'No eligible games found for SHIVA pick generation',
-        picksGenerated: 0,
-        duration: `${Date.now() - startTime}ms`,
-        timestamp: executionTime
+      // Step 1: Find eligible games (excludes games in cooldown or already picked)
+      console.log('🎯 [SHIVA-AUTO-PICKS] Finding eligible games...')
+      const scannerResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/shiva/step1-scanner`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ selectedGame: null }) // Scan all games
       })
+      
+      const scannerResult = await scannerResponse.json()
+      console.log('📊 [SHIVA-AUTO-PICKS] Scanner result:', scannerResult)
+
+      if (!scannerResult.success || !scannerResult.selected_game) {
+        console.log('⚠️ [SHIVA-AUTO-PICKS] No eligible games found')
+        break // Exit loop if no games available
+      }
+
+      const selectedGame = scannerResult.selected_game
+      const gameId = selectedGame.id
+      
+      // Skip if we've already tried this game in this execution
+      if (gamesAttempted.includes(gameId)) {
+        console.log(`⚠️ [SHIVA-AUTO-PICKS] Already tried game ${gameId}, skipping`)
+        continue
+      }
+      
+      gamesAttempted.push(gameId)
+      console.log(`🎮 [SHIVA-AUTO-PICKS] Selected game: ${selectedGame.away_team.name} @ ${selectedGame.home_team.name}`)
+
+      // Step 2: Run full pick generation pipeline
+      console.log('⚡ [SHIVA-AUTO-PICKS] Running pick generation...')
+      const pickResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/shiva/generate-pick`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ selectedGame })
+      })
+      
+      const pickResult = await pickResponse.json()
+      console.log('📈 [SHIVA-AUTO-PICKS] Pick generation result:', pickResult)
+
+      // Check if a pick was generated (not a PASS)
+      if (pickResult.decision === 'PICK' && pickResult.pick) {
+        pickGenerated = true
+        console.log('✅ [SHIVA-AUTO-PICKS] Pick generated successfully!')
+        finalResult = {
+          success: true,
+          message: 'SHIVA pick generated successfully',
+          picksGenerated: 1,
+          game: `${selectedGame.away_team.name} @ ${selectedGame.home_team.name}`,
+          pickDetails: pickResult,
+          attempts,
+          timestamp: executionTime
+        }
+      } else if (pickResult.decision === 'PASS') {
+        console.log('⚠️ [SHIVA-AUTO-PICKS] Game resulted in PASS, will try next game')
+        // Continue to next iteration to try another game
+      } else {
+        console.log('❌ [SHIVA-AUTO-PICKS] Unexpected result, will try next game')
+        // Continue to next iteration
+      }
     }
-
-    const selectedGame = scannerResult.selected_game
-    console.log(`🎮 [SHIVA-AUTO-PICKS] Selected game: ${selectedGame.away_team.name} @ ${selectedGame.home_team.name}`)
-
-    // Step 2: Run full pick generation pipeline
-    console.log('⚡ [SHIVA-AUTO-PICKS] Step 2: Running full pick generation...')
-    const pickResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/shiva/generate-pick`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ selectedGame })
-    })
-    
-    const pickResult = await pickResponse.json()
-    console.log('📈 [SHIVA-AUTO-PICKS] Pick generation result:', pickResult)
 
     const duration = Date.now() - startTime
     
     console.log(`\n${'='.repeat(80)}`)
-    console.log(`✅ [SHIVA-AUTO-PICKS] EXECUTION COMPLETE: ${duration}ms`)
+    if (pickGenerated) {
+      console.log(`✅ [SHIVA-AUTO-PICKS] EXECUTION COMPLETE: Pick generated in ${attempts} attempt(s)`)
+    } else {
+      console.log(`⚠️ [SHIVA-AUTO-PICKS] EXECUTION COMPLETE: No pick generated after ${attempts} attempts`)
+    }
+    console.log(`Duration: ${duration}ms`)
     console.log(`${'='.repeat(80)}\n`)
 
     return NextResponse.json({
-      success: true,
-      message: 'SHIVA auto-picks completed successfully',
-      picksGenerated: pickResult.success ? 1 : 0,
-      game: selectedGame ? `${selectedGame.away_team.name} @ ${selectedGame.home_team.name}` : 'None',
-      pickDetails: pickResult,
+      success: pickGenerated,
+      message: pickGenerated 
+        ? 'SHIVA pick generated successfully' 
+        : `No pick generated after ${attempts} attempts`,
+      picksGenerated: pickGenerated ? 1 : 0,
+      attempts,
+      gamesAttempted,
       duration: `${duration}ms`,
-      timestamp: executionTime
+      timestamp: executionTime,
+      ...(finalResult || {})
     })
 
   } catch (error) {
