@@ -18,9 +18,12 @@ export async function GET(request: NextRequest) {
     // Fetch runs from the runs table
     const { data: runsData, error: runsError } = await supabase
       .from('runs')
-      .select('id, run_id, game_id, pick_type, selection, units, confidence, created_at')
+      .select('id, run_id, game_id, capper, pick_type, selection, units, confidence, created_at')
+      .eq('capper', 'shiva') // Filter for SHIVA only
       .order('created_at', { ascending: false })
       .limit(limit)
+    
+    console.log('[Run History] Fetched', runsData?.length || 0, 'SHIVA runs from database')
 
     if (runsError) {
       console.error('[Run History] Error fetching runs:', runsError)
