@@ -108,7 +108,7 @@ export async function POST(request: Request) {
                   units: 0,
                   confidence: parse.data.inputs.conf_final,
                   pick_type: results.decision.pick_type,
-                  selection: results.decision.selection,
+                  selection: `${results.decision.pick_side} ${results.decision.line}`,
                   updated_at: new Date().toISOString()
                 })
               console.log('[SHIVA:PickGenerate] PASS run saved to runs table:', run_id)
