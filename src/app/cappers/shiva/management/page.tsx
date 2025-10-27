@@ -4,6 +4,7 @@ import { HeaderFilters } from './components/header-filters'
 import { SHIVAManagementInbox } from './components/inbox'
 import { SHIVAWizard } from './components/wizard'
 import { FactorConfigModal } from './components/factor-config-modal'
+import { RunLogTable } from './components/run-log'
 import type { CapperProfile } from '@/lib/cappers/shiva-v1/profile'
 import type { CapperProfile as FactorCapperProfile } from '@/types/factor-config'
 
@@ -52,15 +53,15 @@ export default function ShivaManagementPage() {
   const [currentProfile, setCurrentProfile] = useState<CapperProfile | null>(null)
   const [effectiveProfile, setEffectiveProfile] = useState<CapperProfile | null>(null)
   const [selectedGame, setSelectedGame] = useState<any>(null)
-  // Load mode from localStorage on mount
-  const [mode, setMode] = useState<'dry-run' | 'write' | 'auto'>(() => {
+  // Load mode from localStorage on mount (Write mode by default)
+  const [mode, setMode] = useState<'write' | 'auto'>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('shiva-mode')
-      if (saved === 'dry-run' || saved === 'write' || saved === 'auto') {
+      if (saved === 'write' || saved === 'auto') {
         return saved
       }
     }
-    return 'dry-run'
+    return 'write' // Default to Write mode
   })
   const [betType, setBetType] = useState<'TOTAL' | 'SPREAD/MONEYLINE'>('TOTAL')
   const [providerOverrides, setProviderOverrides] = useState<{ step3?: string; step4?: string }>({})
@@ -260,6 +261,11 @@ export default function ShivaManagementPage() {
               <span>🧪</span>
               API Test
             </a>
+          </div>
+          
+          {/* Run Log Table */}
+          <div className="mb-4">
+            <RunLogTable />
           </div>
           
           <SHIVAWizard

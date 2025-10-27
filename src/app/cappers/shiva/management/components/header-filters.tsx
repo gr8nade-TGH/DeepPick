@@ -22,11 +22,11 @@ interface GameOption {
 export interface HeaderFiltersProps {
   onProfileChange: (profile: CapperProfile | null, capper: string, sport: string) => void
   onGameChange: (game: any) => void
-  onModeChange: (mode: 'dry-run' | 'write' | 'auto') => void
+  onModeChange: (mode: 'write' | 'auto') => void
   onProviderOverrides: (step3?: string, step4?: string) => void
   onBetTypeChange: (betType: 'TOTAL' | 'SPREAD/MONEYLINE') => void
   selectedGame?: any
-  mode?: 'dry-run' | 'write' | 'auto' // Add mode prop from parent
+  mode?: 'write' | 'auto' // Add mode prop from parent
 }
 
 export function HeaderFilters(props: HeaderFiltersProps) {
@@ -34,18 +34,18 @@ export function HeaderFilters(props: HeaderFiltersProps) {
   const [sport, setSport] = useState('NBA')
   const [betType, setBetType] = useState<'TOTAL' | 'SPREAD/MONEYLINE'>('TOTAL')
   // Use mode from props if provided, otherwise use localStorage or default
-  const [mode, setMode] = useState<'dry-run' | 'write' | 'auto'>(() => {
+  const [mode, setMode] = useState<'write' | 'auto'>(() => {
     // Priority 1: Use prop from parent
     if (props.mode) return props.mode
     // Priority 2: Load from localStorage
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('shiva-mode')
-      if (saved === 'dry-run' || saved === 'write' || saved === 'auto') {
+      if (saved === 'write' || saved === 'auto') {
         return saved
       }
     }
-    // Priority 3: Default
-    return 'dry-run'
+    // Priority 3: Default to Write
+    return 'write'
   })
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
 
@@ -172,7 +172,7 @@ export function HeaderFilters(props: HeaderFiltersProps) {
     props.onBetTypeChange(newBetType)
   }
 
-  const handleModeChange = (newMode: 'dry-run' | 'write' | 'auto') => {
+  const handleModeChange = (newMode: 'write' | 'auto') => {
     setMode(newMode)
     props.onModeChange(newMode)
     // Auto-save mode change to localStorage
@@ -289,14 +289,15 @@ export function HeaderFilters(props: HeaderFiltersProps) {
           <label className="text-xs font-bold text-white">Mode</label>
           <div className="flex gap-2">
             <button
-              onClick={() => handleModeChange('dry-run')}
+              onClick={() => handleModeChange('write')}
               className={`px-3 py-1 text-sm rounded font-bold ${
-                mode === 'dry-run'
-                  ? 'bg-blue-600 text-white border-2 border-blue-400'
+                mode === 'write'
+                  ? 'bg-orange-600 text-white border-2 border-orange-400'
                   : 'bg-gray-700 text-white'
               }`}
+              title="Write mode - actually creates picks and records cooldowns"
             >
-              Dry-Run
+              Write
             </button>
             <button
               onClick={() => handleModeChange('auto')}
@@ -308,17 +309,6 @@ export function HeaderFilters(props: HeaderFiltersProps) {
               title="AUTO mode - runs pick generation automatically (cron job)"
             >
               AUTO
-            </button>
-            <button
-              onClick={() => handleModeChange('write')}
-              className={`px-3 py-1 text-sm rounded font-bold ${
-                mode === 'write'
-                  ? 'bg-orange-600 text-white border-2 border-orange-400'
-                  : 'bg-gray-700 text-white'
-              }`}
-              title="Write mode - actually creates picks and records cooldowns"
-            >
-              Write
             </button>
             <button
               onClick={handleSaveMode}

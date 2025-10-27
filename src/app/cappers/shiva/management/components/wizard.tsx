@@ -351,7 +351,7 @@ function assembleInsightCard({ runCtx, step4, step5, step5_5, step6, step3, step
 export interface SHIVAWizardProps {
   effectiveProfile?: any
   selectedGame?: any
-  mode?: 'dry-run' | 'write' | 'auto'
+  mode?: 'write' | 'auto'
   betType?: 'TOTAL' | 'SPREAD/MONEYLINE'
   sport?: 'NBA' | 'NFL' | 'MLB'
 }
