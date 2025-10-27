@@ -54,6 +54,12 @@ export function HeaderFilters(props: HeaderFiltersProps) {
   const searchTimeoutRef = useRef<NodeJS.Timeout>()
   const dropdownRef = useRef<HTMLDivElement>(null)
 
+  // Notify parent of loaded mode on mount (this syncs localStorage with parent state)
+  useEffect(() => {
+    console.log('[HeaderFilters] Notifying parent of loaded mode:', mode)
+    props.onModeChange(mode)
+  }, []) // Only run on mount
+
   // Update selectedGame when prop changes
   useEffect(() => {
     console.log('HeaderFilters: selectedGame prop changed:', props.selectedGame)
