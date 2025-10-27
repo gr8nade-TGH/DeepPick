@@ -10,7 +10,7 @@ async function getActiveSnapshot(runId: string) {
   const admin = getSupabaseAdmin()
   const { data } = await admin
     .from('odds_snapshots')
-    .select('game_id, odds, total')
+    .select('game_id, moneyline, spread, total, raw_payload')
     .eq('run_id', runId)
     .order('created_at', { ascending: false })
     .limit(1)
@@ -160,7 +160,7 @@ export async function POST(request: Request) {
       
       // Lock odds at pick-time from active Step-2 snapshot
       const activeSnapshot = await getActiveSnapshot(run_id)
-      const locked_odds = activeSnapshot?.odds ?? results.locked_odds ?? null
+      const locked_odds = activeSnapshot?.raw_payload ?? results.locked_odds ?? null
       
       if (writeAllowed) {
         // Single transaction: insert pick with locked odds and update runs
