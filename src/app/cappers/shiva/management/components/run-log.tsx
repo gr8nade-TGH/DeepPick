@@ -92,6 +92,7 @@ export function RunLogTable() {
         <h3 className="text-lg font-bold text-white mb-3">Run Log</h3>
         <div className="text-gray-400 text-sm">Loading...</div>
       </div>
+    )
   }
 
   console.log('[RunLogTable] Rendering with', runs.length, 'runs')
