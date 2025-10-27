@@ -10,7 +10,7 @@ async function getActiveSnapshot(runId: string) {
   const admin = getSupabaseAdmin()
   const { data } = await admin
     .from('odds_snapshots')
-    .select('odds, total')
+    .select('game_id, odds, total')
     .eq('run_id', runId)
     .order('created_at', { ascending: false })
     .limit(1)
@@ -88,23 +88,12 @@ export async function POST(request: Request) {
         // Record PASS decision with cooldown (get game_id from the run's context)
         if (writeAllowed) {
           try {
-            // Get the run record to find game_id
-            const { data: runData } = await admin
-              .from('runs')
-              .select('game_id, metadata')
-              .eq('id', run_id)
-              .single()
-
-            // Try to get game_id from run record, or from metadata, or from request body
-            let gameId = runData?.game_id
-            if (!gameId && runData?.metadata) {
-              // Try to extract game_id from metadata
-              gameId = runData.metadata?.game_id || runData.metadata?.selected_game?.id
-            }
-
-            // Get the total line from the snapshot
+            // Get the game_id and total line from the snapshot (most reliable source)
             const activeSnapshot = await getActiveSnapshot(run_id)
             const totalLine = activeSnapshot?.total?.line || null
+            let gameId = activeSnapshot?.game_id
+            
+            console.log('[SHIVA:PickGenerate] PASS - game_id from snapshot:', gameId)
 
             // Save the run record to runs table even for PASS decisions
             if (run_id && gameId) {
@@ -191,18 +180,11 @@ export async function POST(request: Request) {
 
         // Record PICK_GENERATED result with cooldown
         try {
-          // Get game_id from the run record (check metadata if needed)
-          const { data: runData } = await admin
-            .from('runs')
-            .select('game_id, metadata')
-            .eq('id', run_id)
-            .single()
+          // Get game_id from the snapshot (most reliable source)
+          const activeSnapshot = await getActiveSnapshot(run_id)
+          const gameId = activeSnapshot?.game_id
 
-          // Try to get game_id from run record, or from metadata
-          let gameId = runData?.game_id
-          if (!gameId && runData?.metadata) {
-            gameId = runData.metadata?.game_id || runData.metadata?.selected_game?.id
-          }
+          console.log('[SHIVA:PickGenerate] PICK_GENERATED - game_id from snapshot:', gameId)
 
           if (gameId) {
             const cooldownResult = await pickGenerationService.recordPickGenerationResult({
