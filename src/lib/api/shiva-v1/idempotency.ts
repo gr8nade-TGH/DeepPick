@@ -49,13 +49,22 @@ export async function withIdempotency<TBody>(args: IdempotencyExecArgs<TBody>): 
 
   if (existing.data && existing.data.response_json) {
     // TEMPORARY FIX: Always execute Steps 3, 4, 5 and pick fresh to bypass cached empty responses
-    if (args.step === 'step3' || args.step === 'step4' || args.step === 'step5' || args.step === 'pick') {
+    if (args.step === 'step3' || args.step === 'step4' || args.step === 'step5') {
       console.log(`[Idempotency:${args.step}] Bypassing cached response for ${args.step}:`, {
         runId: args.runId,
         step: args.step,
         key: args.idempotencyKey,
         cachedResponse: existing.data.response_json,
         statusCode: existing.data.status_code
+      })
+      // Continue to execution instead of returning cached response
+    } else if (args.step === 'pick') {
+      // For pick step, always execute to ensure PASS runs are saved
+      console.log(`[Idempotency:${args.step}] Bypassing cached response for pick step (executing to save PASS runs):`, {
+        runId: args.runId,
+        step: args.step,
+        key: args.idempotencyKey,
+        hasCachedResponse: !!existing.data.response_json
       })
       // Continue to execution instead of returning cached response
     } else {
