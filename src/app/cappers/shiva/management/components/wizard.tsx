@@ -1408,6 +1408,42 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           setStepLogs(prev => ({ ...prev, 5: r }))
           updateStepProgress(5, 100, 'Market analysis complete')
           setStepLoading(5, false, 'Complete', 100)
+          
+          // If this is a PASS decision (units === 0), save the run to database
+          if (r.json?.units === 0 && props.mode === 'write') {
+            console.log('[Wizard:Step5] PASS detected - saving run to database...')
+            try {
+              const step1Game = stepLogs[1]?.json?.selected_game
+              const savePassBody = {
+                run_id: runId,
+                inputs: {
+                  conf_final: r.json.conf_final || 0,
+                  edge_dominant: 'total',
+                  total_data: {
+                    total_pred: predictedTotal,
+                    market_total: marketTotal
+                  }
+                },
+                results: {
+                  decision: {
+                    pick_type: 'TOTAL',
+                    pick_side: pickDirection,
+                    line: marketTotal,
+                    units: 0,
+                    reason: 'Low confidence - PASS'
+                  },
+                  persistence: {
+                    picks_row: null // No pick row for PASS
+                  }
+                }
+              }
+              console.log('[Wizard:Step5] Saving PASS to pick/generate controller...')
+              const saveResponse = await postJson('/api/shiva/pick/generate', savePassBody, `ui-demo-save-pass-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`)
+              console.log('[Wizard:Step5] PASS save response:', saveResponse)
+            } catch (passError) {
+              console.error('[Wizard:Step5] Error saving PASS:', passError)
+            }
+          }
         } catch (error) {
           console.error('[Wizard:Step5] API Error:', error)
           setStepLoading(5, false, 'Error', 0)
