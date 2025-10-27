@@ -95,6 +95,10 @@ export async function POST(request: Request) {
               .eq('id', run_id)
               .single()
 
+            // Get the total line from the snapshot
+            const activeSnapshot = await getActiveSnapshot(run_id)
+            const totalLine = activeSnapshot?.total?.line || null
+
             if (runData?.game_id) {
               const cooldownResult = await pickGenerationService.recordPickGenerationResult({
                 runId: run_id,
@@ -103,7 +107,8 @@ export async function POST(request: Request) {
                 betType: results.decision.pick_type,
                 result: 'PASS',
                 units: 0,
-                confidence: parse.data.inputs.conf_final
+                confidence: parse.data.inputs.conf_final,
+                totalLine: totalLine // Pass the total line for cooldown tracking
               }, 2) // 2 hour cooldown
 
               if (cooldownResult.success) {

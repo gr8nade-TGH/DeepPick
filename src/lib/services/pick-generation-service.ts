@@ -9,6 +9,7 @@ export interface PickGenerationResult {
   units: number
   confidence?: number
   pickId?: string
+  totalLine?: number // For TOTAL bets, track the line at time of PASS
 }
 
 export class PickGenerationService {
@@ -61,6 +62,12 @@ export class PickGenerationService {
         cooldownHours
       })
 
+      // If this is a TOTAL bet, get the total line from the snapshot or game
+      let totalLine = null
+      if (result.betType === 'TOTAL' && result.totalLine) {
+        totalLine = result.totalLine
+      }
+
       const { error } = await this.supabase
         .rpc('record_pick_generation_result', {
           p_run_id: result.runId,
@@ -73,6 +80,25 @@ export class PickGenerationService {
           p_pick_id: result.pickId || null,
           p_cooldown_hours: cooldownHours
         })
+
+      // Store total_line in cooldowns table (bypass RPC since it doesn't support this yet)
+      if (error && error.message?.includes('total_line')) {
+        // Function doesn't support total_line yet, insert directly
+        const { data: existingCooldown } = await this.supabase
+          .from('pick_generation_cooldowns')
+          .select('id')
+          .eq('game_id', result.gameId)
+          .eq('capper', result.capper)
+          .eq('bet_type', result.betType)
+          .single()
+
+        if (existingCooldown) {
+          await this.supabase
+            .from('pick_generation_cooldowns')
+            .update({ total_line: totalLine })
+            .eq('id', existingCooldown.id)
+        }
+      }
 
       if (error) {
         console.error('[PickGenerationService] Error recording result:', error)

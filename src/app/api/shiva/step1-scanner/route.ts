@@ -250,6 +250,42 @@ async function checkGameEligibility(
 
     if (!canGenerate) {
       console.log(`[SHIVA_SCANNER] Game is not eligible (cooldown or existing pick)`)
+      
+      // Special logic for TOTAL picks: Check if the total line has changed
+      if (betTypeLower === 'total' && game.total_line) {
+        const { data: cooldownRecord } = await supabase
+          .from('pick_generation_cooldowns')
+          .select('total_line, cooldown_until')
+          .eq('game_id', game.game_id)
+          .eq('capper', 'shiva')
+          .eq('bet_type', 'total')
+          .gt('cooldown_until', new Date().toISOString())
+          .single()
+        
+        if (cooldownRecord) {
+          console.log(`[SHIVA_SCANNER] Found active cooldown with total_line: ${cooldownRecord.total_line}`)
+          console.log(`[SHIVA_SCANNER] Current game total_line: ${game.total_line}`)
+          
+          // If the total line has changed, allow the prediction
+          if (cooldownRecord.total_line !== game.total_line) {
+            console.log(`[SHIVA_SCANNER] Total line has changed (${cooldownRecord.total_line} -> ${game.total_line}), allowing prediction`)
+            // Delete the old cooldown and allow the new prediction
+            await supabase
+              .from('pick_generation_cooldowns')
+              .delete()
+              .eq('game_id', game.game_id)
+              .eq('capper', 'shiva')
+              .eq('bet_type', 'total')
+            
+            console.log(`[SHIVA_SCANNER] Game is eligible for processing (total line changed)`)
+            return true
+          } else {
+            console.log(`[SHIVA_SCANNER] Total line has not changed, game is still in cooldown`)
+            return false
+          }
+        }
+      }
+      
       return false
     }
 
