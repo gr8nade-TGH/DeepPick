@@ -89,11 +89,13 @@ export async function POST(request: Request) {
           status: 200,
         })
 
+        // Get the game_id and total line from the snapshot (most reliable source) - fetch outside writeAllowed check for response debug
+        const activeSnapshot = await getActiveSnapshot(run_id)
+        console.log('[SHIVA:PickGenerate] PASS - activeSnapshot result:', activeSnapshot ? 'found' : 'not found')
+
         // Record PASS decision with cooldown (get game_id from the run's context)
         if (writeAllowed) {
           try {
-            // Get the game_id and total line from the snapshot (most reliable source)
-            const activeSnapshot = await getActiveSnapshot(run_id)
             const totalLine = activeSnapshot?.total?.line || null
             let gameId = activeSnapshot?.game_id
             
@@ -163,7 +165,7 @@ export async function POST(request: Request) {
           }
         }
 
-        return { body: { run_id, decision: 'PASS', confidence: parse.data.inputs.conf_final, pick: null, writeAllowed }, status: 200 }
+        return { body: { run_id, decision: 'PASS', confidence: parse.data.inputs.conf_final, pick: null, writeAllowed, debug: { hasSnapshot: !!activeSnapshot, gameId: activeSnapshot?.game_id, snapshotGameId: activeSnapshot?.game_id || null } }, status: 200 }
       }
       
       const r = results.persistence.picks_row
