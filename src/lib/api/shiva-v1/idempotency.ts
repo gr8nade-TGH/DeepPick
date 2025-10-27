@@ -46,8 +46,22 @@ export async function withIdempotency<TBody>(args: IdempotencyExecArgs<TBody>): 
     .eq('step', args.step)
     .eq('key', args.idempotencyKey)
     .maybeSingle()
+  
+  if (existing.error) {
+    console.error(`[Idempotency:${args.step}] Error checking idempotency keys table:`, existing.error.message)
+    // If table doesn't exist, continue without idempotency check
+    console.log(`[Idempotency:${args.step}] Table error - continuing without idempotency check`)
+  } else {
+    console.log(`[Idempotency:${args.step}] Checked for existing record:`, {
+      runId: args.runId,
+      step: args.step,
+      found: !!existing.data,
+      hasResponse: !!existing.data?.response_json
+    })
+  }
 
-  if (existing.data && existing.data.response_json) {
+  // Only check for cached response if no error occurred
+  if (!existing.error && existing.data && existing.data.response_json) {
     // TEMPORARY FIX: Always execute Steps 3, 4, 5 and pick fresh to bypass cached empty responses
     if (args.step === 'step3' || args.step === 'step4' || args.step === 'step5') {
       console.log(`[Idempotency:${args.step}] Bypassing cached response for ${args.step}:`, {
@@ -164,6 +178,14 @@ export async function withIdempotency<TBody>(args: IdempotencyExecArgs<TBody>): 
     response_hash: responseHash,
   })
   if (ins.error) {
+    console.error(`[Idempotency:${args.step}] Error inserting idempotency record:`, ins.error.message)
+    
+    // If table doesn't exist, just skip the error handling and continue
+    if (ins.error.message?.includes('Could not find the table')) {
+      console.log(`[Idempotency:${args.step}] Idempotency_keys table not found - skipping cache, returning response`)
+      // Continue to return the response below
+    }
+    
     // If conflict, re-read and return stored
     const reread = await admin
       .from('idempotency_keys')
