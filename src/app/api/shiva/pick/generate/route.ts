@@ -10,7 +10,7 @@ async function getActiveSnapshot(runId: string) {
   const admin = getSupabaseAdmin()
   const { data } = await admin
     .from('odds_snapshots')
-    .select('odds')
+    .select('odds, total')
     .eq('run_id', runId)
     .order('created_at', { ascending: false })
     .limit(1)
