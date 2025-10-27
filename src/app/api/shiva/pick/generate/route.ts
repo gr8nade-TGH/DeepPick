@@ -85,24 +85,31 @@ export async function POST(request: Request) {
           status: 200,
         })
 
-        // Record PASS decision with cooldown (need to get game_id from run)
+        // Record PASS decision with cooldown (get game_id from the run's context)
         if (writeAllowed) {
           try {
-            // Get game_id from the run record
+            // Get the run record to find game_id
             const { data: runData } = await admin
               .from('runs')
-              .select('game_id')
+              .select('game_id, metadata')
               .eq('id', run_id)
               .single()
+
+            // Try to get game_id from run record, or from metadata, or from request body
+            let gameId = runData?.game_id
+            if (!gameId && runData?.metadata) {
+              // Try to extract game_id from metadata
+              gameId = runData.metadata?.game_id || runData.metadata?.selected_game?.id
+            }
 
             // Get the total line from the snapshot
             const activeSnapshot = await getActiveSnapshot(run_id)
             const totalLine = activeSnapshot?.total?.line || null
 
-            if (runData?.game_id) {
+            if (gameId) {
               const cooldownResult = await pickGenerationService.recordPickGenerationResult({
                 runId: run_id,
-                gameId: runData.game_id,
+                gameId: gameId,
                 capper: 'shiva',
                 betType: results.decision.pick_type,
                 result: 'PASS',
@@ -112,12 +119,12 @@ export async function POST(request: Request) {
               }, 2) // 2 hour cooldown
 
               if (cooldownResult.success) {
-                console.log('[SHIVA:PickGenerate] PASS cooldown recorded successfully')
+                console.log('[SHIVA:PickGenerate] PASS cooldown recorded successfully for game:', gameId)
               } else {
                 console.error('[SHIVA:PickGenerate] Failed to record PASS cooldown:', cooldownResult.error)
               }
             } else {
-              console.warn('[SHIVA:PickGenerate] No game_id found for run, skipping cooldown recording')
+              console.warn('[SHIVA:PickGenerate] No game_id found for run:', run_id, 'Skipping cooldown recording')
             }
           } catch (error) {
             console.error('[SHIVA:PickGenerate] Error recording PASS cooldown:', error)
@@ -165,17 +172,23 @@ export async function POST(request: Request) {
 
         // Record PICK_GENERATED result with cooldown
         try {
-          // Get game_id from the run record
+          // Get game_id from the run record (check metadata if needed)
           const { data: runData } = await admin
             .from('runs')
-            .select('game_id')
+            .select('game_id, metadata')
             .eq('id', run_id)
             .single()
 
-          if (runData?.game_id) {
+          // Try to get game_id from run record, or from metadata
+          let gameId = runData?.game_id
+          if (!gameId && runData?.metadata) {
+            gameId = runData.metadata?.game_id || runData.metadata?.selected_game?.id
+          }
+
+          if (gameId) {
             const cooldownResult = await pickGenerationService.recordPickGenerationResult({
               runId: run_id,
-              gameId: runData.game_id,
+              gameId: gameId,
               capper: 'shiva',
               betType: results.decision.pick_type,
               result: 'PICK_GENERATED',
@@ -185,12 +198,12 @@ export async function POST(request: Request) {
             }, 0) // No cooldown for successful picks
 
             if (cooldownResult.success) {
-              console.log('[SHIVA:PickGenerate] PICK_GENERATED cooldown recorded successfully')
+              console.log('[SHIVA:PickGenerate] PICK_GENERATED cooldown recorded successfully for game:', gameId)
             } else {
               console.error('[SHIVA:PickGenerate] Failed to record PICK_GENERATED cooldown:', cooldownResult.error)
             }
           } else {
-            console.warn('[SHIVA:PickGenerate] No game_id found for run, skipping cooldown recording')
+            console.warn('[SHIVA:PickGenerate] No game_id found for run:', run_id, 'Skipping cooldown recording')
           }
         } catch (error) {
           console.error('[SHIVA:PickGenerate] Error recording PICK_GENERATED cooldown:', error)
