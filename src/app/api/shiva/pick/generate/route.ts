@@ -94,15 +94,17 @@ export async function POST(request: Request) {
             let gameId = activeSnapshot?.game_id
             
             console.log('[SHIVA:PickGenerate] PASS - game_id from snapshot:', gameId)
+            console.log('[SHIVA:PickGenerate] PASS - activeSnapshot:', JSON.stringify(activeSnapshot))
 
             // Save the run record to runs table even for PASS decisions
-            if (run_id && gameId) {
+            // Save even if gameId is null/undefined - use placeholder
+            if (run_id) {
               await admin
                 .from('runs')
                 .upsert({
                   id: run_id,
                   run_id: run_id,
-                  game_id: gameId,
+                  game_id: gameId || 'unknown',
                   capper: 'shiva',
                   bet_type: results.decision.pick_type,
                   units: 0,
@@ -111,7 +113,9 @@ export async function POST(request: Request) {
                   selection: `${results.decision.pick_side} ${results.decision.line}`,
                   updated_at: new Date().toISOString()
                 })
-              console.log('[SHIVA:PickGenerate] PASS run saved to runs table:', run_id)
+              console.log('[SHIVA:PickGenerate] PASS run saved to runs table:', run_id, 'with gameId:', gameId || 'unknown')
+            } else {
+              console.log('[SHIVA:PickGenerate] PASS - cannot save run, run_id is null/undefined')
             }
 
             if (gameId) {
