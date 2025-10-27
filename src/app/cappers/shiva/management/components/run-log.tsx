@@ -19,20 +19,23 @@ export function RunLogTable() {
   const [runs, setRuns] = useState<RunLogEntry[]>([])
   const [loading, setLoading] = useState(true)
 
-  console.log('[RunLogTable] Component rendered, loading:', loading, 'runs:', runs.length)
+  console.log('[RunLogTable] Component mounted/rendered')
 
   useEffect(() => {
     async function fetchRunLog() {
       try {
+        console.log('[RunLogTable] Fetching run history...')
         const response = await fetch('/api/shiva/runs/history?limit=50')
+        console.log('[RunLogTable] Response status:', response.status)
         if (response.ok) {
           const data = await response.json()
+          console.log('[RunLogTable] Data received:', data)
           setRuns(data.runs || [])
         } else {
-          console.error('Failed to fetch run log:', response.status)
+          console.error('[RunLogTable] Failed to fetch run log:', response.status)
         }
       } catch (error) {
-        console.error('Failed to fetch run log:', error)
+        console.error('[RunLogTable] Failed to fetch run log:', error)
       } finally {
         setLoading(false)
       }
@@ -85,19 +88,21 @@ export function RunLogTable() {
 
   if (loading) {
     return (
-      <div className="border border-gray-700 rounded p-3 bg-gray-900">
-        <h3 className="text-lg font-bold text-white mb-3">Run Log</h3>
-        <div className="text-gray-400 text-sm">Loading...</div>
+      <div className="border-2 border-red-500 rounded p-3 bg-gray-900">
+        <h3 className="text-lg font-bold text-white mb-3">🔄 Run Log - Loading...</h3>
+        <div className="text-gray-400 text-sm">Fetching run history...</div>
       </div>
     )
   }
 
+  console.log('[RunLogTable] Rendering with', runs.length, 'runs')
+
   return (
-    <div className="border border-gray-700 rounded p-3 bg-gray-900">
-      <h3 className="text-lg font-bold text-white mb-3">Run Log</h3>
+    <div className="border-2 border-yellow-500 rounded p-3 bg-gray-900">
+      <h3 className="text-lg font-bold text-yellow-400 mb-3">📋 Run Log ({runs.length} runs)</h3>
       
       {runs.length === 0 ? (
-        <div className="text-gray-400 text-sm">No runs found. Run pick generation in Write mode to see results.</div>
+        <div className="text-red-400 text-sm font-bold">⚠️ No runs found. Run pick generation in Write mode to see results.</div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
