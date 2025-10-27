@@ -1441,8 +1441,12 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
               console.log('[Wizard:Step5] PASS body:', JSON.stringify(savePassBody, null, 2))
               const saveResponse = await postJson('/api/shiva/pick/generate', savePassBody, `ui-demo-save-pass-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`)
               console.log('[Wizard:Step5] PASS save response:', JSON.stringify(saveResponse, null, 2))
+              console.log('[Wizard:Step5] writeAllowed from server:', saveResponse?.json?.writeAllowed)
               if (saveResponse?.json?.error) {
                 console.error('[Wizard:Step5] PASS save ERROR:', saveResponse.json.error)
+              }
+              if (saveResponse?.json?.writeAllowed === false) {
+                console.error('[Wizard:Step5] WRITE IS DISABLED ON SERVER! Enable NEXT_PUBLIC_SHIVA_V1_WRITE_ENABLED=true')
               }
             } catch (passError) {
               console.error('[Wizard:Step5] Error saving PASS:', passError)

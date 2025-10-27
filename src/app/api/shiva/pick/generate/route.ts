@@ -145,7 +145,7 @@ export async function POST(request: Request) {
           }
         }
 
-        return { body: { run_id, decision: 'PASS', confidence: parse.data.inputs.conf_final, pick: null }, status: 200 }
+        return { body: { run_id, decision: 'PASS', confidence: parse.data.inputs.conf_final, pick: null, writeAllowed }, status: 200 }
       }
       
       const r = results.persistence.picks_row
