@@ -15,10 +15,11 @@ export async function GET(request: NextRequest) {
 
     const supabase = getSupabaseAdmin()
 
-    // Fetch runs from the runs table
+    // Fetch runs from the runs table (filter by shiva capper)
     const { data: runsData, error: runsError } = await supabase
       .from('runs')
-      .select('id, run_id, game_id, pick_type, selection, units, confidence, created_at')
+      .select('id, run_id, game_id, capper, pick_type, selection, units, confidence, created_at')
+      .eq('capper', 'shiva')
       .order('created_at', { ascending: false })
       .limit(limit)
 
