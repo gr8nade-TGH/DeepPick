@@ -74,6 +74,7 @@ export async function POST(request: Request) {
     idempotencyKey: key,
     writeAllowed,
     exec: async () => {
+      console.log('[SHIVA:PickGenerate] EXEC FUNCTION CALLED for run:', run_id)
       const admin = getSupabaseAdmin()
       
       if (!results.persistence?.picks_row || results.persistence.picks_row.units === 0) {
@@ -96,6 +97,7 @@ export async function POST(request: Request) {
             const totalLine = activeSnapshot?.total?.line || null
             let gameId = activeSnapshot?.game_id
             
+            console.log('[SHIVA:PickGenerate] PASS - Executing database write...')
             console.log('[SHIVA:PickGenerate] PASS - game_id from snapshot:', gameId)
             console.log('[SHIVA:PickGenerate] PASS - activeSnapshot:', JSON.stringify(activeSnapshot))
 
@@ -103,6 +105,14 @@ export async function POST(request: Request) {
             // Save even if gameId is null/undefined - use placeholder
             if (run_id) {
               const now = new Date().toISOString()
+              console.log('[SHIVA:PickGenerate] PASS - Attempting to upsert run:', {
+                id: run_id,
+                game_id: gameId || 'unknown',
+                capper: 'shiva',
+                bet_type: results.decision.pick_type,
+                units: 0
+              })
+              
               const { data, error } = await admin
                 .from('runs')
                 .upsert({
