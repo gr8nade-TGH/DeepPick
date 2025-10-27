@@ -128,6 +128,9 @@ export default function ShivaManagementPage() {
               selectedGame={selectedGame}
             />
           </div>
+          
+          {/* Run Log Table - Under Generated Picks */}
+          <RunLogTable />
         </div>
 
         {/* Right: Wizard */}
@@ -261,11 +264,6 @@ export default function ShivaManagementPage() {
               <span>🧪</span>
               API Test
             </a>
-          </div>
-          
-          {/* Run Log Table */}
-          <div className="mb-4">
-            <RunLogTable />
           </div>
           
           <SHIVAWizard
