@@ -274,9 +274,12 @@ export function HeaderFilters(props: HeaderFiltersProps) {
             </button>
             <button
               onClick={() => handleModeChange('write')}
-              disabled
-              title="Admin only - not enabled"
-              className="px-3 py-1 text-sm rounded bg-gray-700 text-gray-400 cursor-not-allowed"
+              className={`px-3 py-1 text-sm rounded font-bold ${
+                mode === 'write'
+                  ? 'bg-orange-600 text-white border-2 border-orange-400'
+                  : 'bg-gray-700 text-white'
+              }`}
+              title="Write mode - actually creates picks and records cooldowns"
             >
               Write
             </button>
