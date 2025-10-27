@@ -26,23 +26,36 @@ export interface HeaderFiltersProps {
   onProviderOverrides: (step3?: string, step4?: string) => void
   onBetTypeChange: (betType: 'TOTAL' | 'SPREAD/MONEYLINE') => void
   selectedGame?: any
+  mode?: 'dry-run' | 'write' | 'auto' // Add mode prop from parent
 }
 
 export function HeaderFilters(props: HeaderFiltersProps) {
   const [capper, setCapper] = useState('SHIVA')
   const [sport, setSport] = useState('NBA')
   const [betType, setBetType] = useState<'TOTAL' | 'SPREAD/MONEYLINE'>('TOTAL')
+  // Use mode from props if provided, otherwise use localStorage or default
   const [mode, setMode] = useState<'dry-run' | 'write' | 'auto'>(() => {
-    // Load saved mode from localStorage on mount
+    // Priority 1: Use prop from parent
+    if (props.mode) return props.mode
+    // Priority 2: Load from localStorage
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('shiva-mode')
       if (saved === 'dry-run' || saved === 'write' || saved === 'auto') {
         return saved
       }
     }
+    // Priority 3: Default
     return 'dry-run'
   })
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
+
+  // Sync with prop when it changes
+  useEffect(() => {
+    if (props.mode && props.mode !== mode) {
+      console.log('[HeaderFilters] Syncing mode from prop:', props.mode)
+      setMode(props.mode)
+    }
+  }, [props.mode])
   const [step3Provider, setStep3Provider] = useState<string>('')
   const [step4Provider, setStep4Provider] = useState<string>('')
   const [profile, setProfile] = useState<CapperProfile | null>(null)
@@ -53,12 +66,6 @@ export function HeaderFilters(props: HeaderFiltersProps) {
   const [loadingGames, setLoadingGames] = useState(false)
   const searchTimeoutRef = useRef<NodeJS.Timeout>()
   const dropdownRef = useRef<HTMLDivElement>(null)
-
-  // Notify parent of loaded mode on mount (this syncs localStorage with parent state)
-  useEffect(() => {
-    console.log('[HeaderFilters] Notifying parent of loaded mode:', mode)
-    props.onModeChange(mode)
-  }, []) // Only run on mount
 
   // Update selectedGame when prop changes
   useEffect(() => {

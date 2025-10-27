@@ -52,7 +52,16 @@ export default function ShivaManagementPage() {
   const [currentProfile, setCurrentProfile] = useState<CapperProfile | null>(null)
   const [effectiveProfile, setEffectiveProfile] = useState<CapperProfile | null>(null)
   const [selectedGame, setSelectedGame] = useState<any>(null)
-  const [mode, setMode] = useState<'dry-run' | 'write' | 'auto'>('dry-run')
+  // Load mode from localStorage on mount
+  const [mode, setMode] = useState<'dry-run' | 'write' | 'auto'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('shiva-mode')
+      if (saved === 'dry-run' || saved === 'write' || saved === 'auto') {
+        return saved
+      }
+    }
+    return 'dry-run'
+  })
   const [betType, setBetType] = useState<'TOTAL' | 'SPREAD/MONEYLINE'>('TOTAL')
   const [providerOverrides, setProviderOverrides] = useState<{ step3?: string; step4?: string }>({})
   const [showFactorConfig, setShowFactorConfig] = useState(false)
@@ -100,11 +109,12 @@ export default function ShivaManagementPage() {
   return (
     <div className="min-h-screen bg-black">
       <HeaderFilters
+        mode={mode}
         onProfileChange={handleProfileChange}
         onGameChange={handleGameSelect}
         onModeChange={setMode}
-        onProviderOverrides={(step3, step4) => setProviderOverrides({ step3, step4 })}
         onBetTypeChange={handleBetTypeChange}
+        onProviderOverrides={(step3, step4) => setProviderOverrides({ step3, step4 })}
         selectedGame={selectedGame}
       />
       
