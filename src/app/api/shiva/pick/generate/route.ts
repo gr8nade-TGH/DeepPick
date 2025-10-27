@@ -41,13 +41,16 @@ const PickSchema = z.object({
 
 export async function POST(request: Request) {
   const startTime = Date.now()
+  console.log('[SHIVA:PickGenerate] POST called')
   const apiErr = ensureApiEnabled()
   if (apiErr) return apiErr
   const writeAllowed = isWriteAllowed()
+  console.log('[SHIVA:PickGenerate] writeAllowed:', writeAllowed)
   const key = requireIdempotencyKey(request)
   if (typeof key !== 'string') return key
 
   const body = await request.json().catch(() => null)
+  console.log('[SHIVA:PickGenerate] Body parsed:', body ? 'success' : 'failed')
   const parse = PickSchema.safeParse(body)
   if (!parse.success) {
     console.error('[SHIVA:PickGenerate]', {
