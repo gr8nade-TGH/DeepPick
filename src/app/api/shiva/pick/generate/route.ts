@@ -99,6 +99,7 @@ export async function POST(request: Request) {
             // Save the run record to runs table even for PASS decisions
             // Save even if gameId is null/undefined - use placeholder
             if (run_id) {
+              const now = new Date().toISOString()
               await admin
                 .from('runs')
                 .upsert({
@@ -111,7 +112,8 @@ export async function POST(request: Request) {
                   confidence: parse.data.inputs.conf_final,
                   pick_type: results.decision.pick_type,
                   selection: `${results.decision.pick_side} ${results.decision.line}`,
-                  updated_at: new Date().toISOString()
+                  created_at: now,
+                  updated_at: now
                 })
               console.log('[SHIVA:PickGenerate] PASS run saved to runs table:', run_id, 'with gameId:', gameId || 'unknown')
             } else {
