@@ -1438,8 +1438,12 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                 }
               }
               console.log('[Wizard:Step5] Saving PASS to pick/generate controller...')
+              console.log('[Wizard:Step5] PASS body:', JSON.stringify(savePassBody, null, 2))
               const saveResponse = await postJson('/api/shiva/pick/generate', savePassBody, `ui-demo-save-pass-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`)
-              console.log('[Wizard:Step5] PASS save response:', saveResponse)
+              console.log('[Wizard:Step5] PASS save response:', JSON.stringify(saveResponse, null, 2))
+              if (saveResponse?.json?.error) {
+                console.error('[Wizard:Step5] PASS save ERROR:', saveResponse.json.error)
+              }
             } catch (passError) {
               console.error('[Wizard:Step5] Error saving PASS:', passError)
             }
