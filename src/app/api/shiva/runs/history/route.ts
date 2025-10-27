@@ -15,10 +15,21 @@ export async function GET(request: NextRequest) {
 
     const supabase = getSupabaseAdmin()
 
-    // Fetch runs from the runs table
+    // Fetch runs from the runs table with game matchup info
     const { data: runsData, error: runsError } = await supabase
       .from('runs')
-      .select('id, run_id, game_id, capper, pick_type, selection, units, confidence, created_at')
+      .select(`
+        id, 
+        run_id, 
+        game_id, 
+        capper, 
+        pick_type, 
+        selection, 
+        units, 
+        confidence, 
+        created_at,
+        games!left(home_team, away_team, game_date)
+      `)
       .eq('capper', 'shiva') // Filter for SHIVA only
       .order('created_at', { ascending: false })
       .limit(limit)
@@ -46,11 +57,19 @@ export async function GET(request: NextRequest) {
       cooldownMap.set(cd.run_id, cd)
     })
 
-    // Merge cooldown data into runs
+    // Merge cooldown data into runs and format matchup
     const runs = (runsData || []).map(run => {
       const cooldown = cooldownMap.get(run.run_id)
+      
+      // Format matchup from game data
+      let matchup = run.game_id
+      if (run.games && run.games.home_team && run.games.away_team) {
+        matchup = `${run.games.away_team} @ ${run.games.home_team}`
+      }
+      
       return {
         ...run,
+        matchup: matchup,
         cooldown_result: cooldown?.result || null,
         // Override units and confidence if cooldown has more accurate data
         units: cooldown?.units !== undefined ? cooldown.units : run.units,

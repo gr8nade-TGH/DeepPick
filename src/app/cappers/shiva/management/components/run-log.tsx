@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 interface RunLogEntry {
   run_id: string
   game_id: string
+  matchup?: string
   pick_type: string | null
   selection: string | null
   units: number | null
@@ -129,7 +130,7 @@ export function RunLogTable() {
                   <tr key={idx} className="border-b border-gray-800 hover:bg-gray-800">
                     <td className="py-2 px-2 text-gray-300">{formatDateTime(run.created_at)}</td>
                     <td className="py-2 px-2 text-gray-400 font-mono text-xs">{shortRunId}</td>
-                    <td className="py-2 px-2 text-gray-300 text-xs">{run.game_id.substring(0, 8)}...</td>
+                    <td className="py-2 px-2 text-gray-300 text-xs">{run.matchup || run.game_id?.substring(0, 8) + '...'}</td>
                     <td className="py-2 px-2 text-gray-300">{betType}</td>
                     <td className={`py-2 px-2 font-bold ${getOutcomeColor(outcome)}`}>
                       {outcome}
