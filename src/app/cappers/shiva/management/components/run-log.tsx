@@ -19,6 +19,8 @@ export function RunLogTable() {
   const [runs, setRuns] = useState<RunLogEntry[]>([])
   const [loading, setLoading] = useState(true)
 
+  console.log('[RunLogTable] Component rendered, loading:', loading, 'runs:', runs.length)
+
   useEffect(() => {
     async function fetchRunLog() {
       try {
