@@ -83,6 +83,9 @@ async function fetchLastNGames(teamAbbrev: string, n: number = 5): Promise<any> 
     
     const data = await response.json()
     
+    console.log(`[MySportsFeeds] API Response keys:`, Object.keys(data))
+    console.log(`[MySportsFeeds] Response structure:`, JSON.stringify(data).substring(0, 500))
+    
     // Limit to last N games
     if (data.gamelogs && data.gamelogs.length > n) {
       data.gamelogs = data.gamelogs.slice(0, n)
