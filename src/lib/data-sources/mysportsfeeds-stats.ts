@@ -57,7 +57,13 @@ function getAuthHeader(): string {
  * Fetch last N games for a team by checking recent dates
  */
 async function fetchLastNGames(teamAbbrev: string, n: number = 5): Promise<any> {
-  const url = `${MYSPORTSFEEDS_BASE_URL}/latest/date/team_gamelogs.json?team=${teamAbbrev}`
+  // Get today's date in YYYYMMDD format
+  const today = new Date()
+  const dateStr = today.getFullYear().toString() + 
+                  (today.getMonth() + 1).toString().padStart(2, '0') + 
+                  today.getDate().toString().padStart(2, '0')
+  
+  const url = `${MYSPORTSFEEDS_BASE_URL}/latest/date/${dateStr}/team_gamelogs.json?team=${teamAbbrev}`
   
   console.log(`[MySportsFeeds] Fetching game logs for ${teamAbbrev}...`)
   
