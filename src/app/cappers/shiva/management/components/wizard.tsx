@@ -975,8 +975,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         setStepLoading(2, true, 'Capturing odds snapshot...', 20)
         
         try {
-          // Get game data from Step 1
-          const step1Game = stepLogs[1]?.json?.selected_game
+          // Get game data from Step 1 (use ref for fresh data in AUTO mode)
+          const step1Game = stepLogsRef.current[1]?.json?.selected_game || stepLogs[1]?.json?.selected_game
           if (!step1Game) {
             throw new Error('No game data from Step 1')
           }
@@ -1311,8 +1311,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         console.log('[Step 3] Starting Step 3 execution...')
         setStepLoading(3, true, 'Computing NBA factors...', 10)
         
-        // Get the selected game from Step 1
-        const step1Game = stepLogs[1]?.json?.selected_game
+        // Get the selected game from Step 1 (use ref for fresh data in AUTO mode)
+        const step1Game = stepLogsRef.current[1]?.json?.selected_game || stepLogs[1]?.json?.selected_game
         if (!step1Game) {
           throw new Error('Step 1 must be completed before Step 3')
         }
@@ -1358,8 +1358,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         console.log('[Step 4] Starting Step 4 execution...')
         setStepLoading(4, true, 'Generating AI predictions...', 10)
         
-        // Use actual Step 3 results instead of fixture
-        const step3Results = stepLogs[3]?.json
+        // Use actual Step 3 results instead of fixture (use ref for fresh data in AUTO mode)
+        const step3Results = stepLogsRef.current[3]?.json || stepLogs[3]?.json
         if (!step3Results?.factors) {
           throw new Error('Step 3 must be completed before Step 4')
         }
@@ -1398,8 +1398,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         console.log('[Step 5] Starting Step 5 execution...')
         setStepLoading(5, true, 'Calculating market edge...', 10)
         
-        // Use actual Step 4 results instead of fixture
-        const step4Results = stepLogs[4]?.json
+        // Use actual Step 4 results instead of fixture (use ref for fresh data in AUTO mode)
+        const step4Results = stepLogsRef.current[4]?.json || stepLogs[4]?.json
         console.log('[Wizard:Step5] Step 4 results:', step4Results)
         console.log('[Wizard:Step5] Has predictions?', !!step4Results?.predictions)
         
@@ -1411,7 +1411,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         // Use fallback values when Step 4 data is missing
         const baseConfidence = step4Results?.predictions?.conf7_score || 0
         const predictedTotal = step4Results?.predictions?.total_pred_points || 225
-        const marketTotal = stepLogs[2]?.json?.snapshot?.total?.line || 225
+        const marketTotal = (stepLogsRef.current[2]?.json || stepLogs[2]?.json)?.snapshot?.total?.line || 225
         const pickDirection = predictedTotal > marketTotal ? 'OVER' : 'UNDER'
         
         const step5Body = {
@@ -1814,12 +1814,15 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       console.log('[AUTO] Starting automatic pick generation cycle...')
 
       try {
-        // Helper to wait for step to complete
+        // Helper to wait for step to complete with data validation
         const waitForStep = async (stepNum: number, maxWaitMs: number = 15000) => {
           const startTime = Date.now()
           while (Date.now() - startTime < maxWaitMs) {
-            if (stepLogsRef.current[stepNum]) {
-              console.log(`[AUTO] Step ${stepNum} confirmed complete`)
+            const stepData = stepLogsRef.current[stepNum]
+            if (stepData && stepData.json) {
+              // Additional delay to ensure React state has fully propagated
+              await new Promise(resolve => setTimeout(resolve, 500))
+              console.log(`[AUTO] Step ${stepNum} confirmed complete with data`)
               return true
             }
             await new Promise(resolve => setTimeout(resolve, 100))
