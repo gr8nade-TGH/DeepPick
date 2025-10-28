@@ -113,7 +113,18 @@ export async function POST() {
         
         if (error) {
           console.error(`[Sync Games] Error upserting game ${gameId}:`, error)
+          console.error(`[Sync Games] Data being upserted:`, {
+            id: `msf_${gameId}`,
+            sport: 'nba',
+            home_team: { name: homeTeam, abbreviation: homeTeam },
+            away_team: { name: awayTeam, abbreviation: awayTeam },
+            game_date: startTime.split('T')[0],
+            game_time: startTime.split('T')[1]?.split('.')[0],
+            status: 'scheduled',
+            odds: oddsData
+          })
         } else {
+          console.log(`[Sync Games] Successfully synced game ${gameId}`)
           synced++
         }
       } catch (error) {
