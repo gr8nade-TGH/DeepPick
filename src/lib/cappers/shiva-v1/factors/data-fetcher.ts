@@ -2,17 +2,18 @@
  * NBA Totals Data Fetcher
  * 
  * Handles all external data fetching for NBA totals factors
- * Now uses The Odds API scores to calculate recent form (last 5 games)
+ * Uses ONLY The Odds API scores to calculate stats (last 5-10 games)
+ * Removed unreliable NBA Stats API entirely
  */
 
 import { fetchTeamRecentForm, convertRecentFormToStats } from '@/lib/data-sources/odds-api-scores'
-import { fetchNBATeamStats } from '@/lib/data-sources/nba-stats-api'
 import { searchInjuries } from '../news'
 import { RunCtx, NBAStatsBundle, InjuryImpact } from './types'
 
 /**
  * Fetch all required data for NBA totals factor computation
- * Uses The Odds API scores endpoint to calculate stats from last 5 games
+ * Uses ONLY The Odds API scores endpoint to calculate stats from last 5 games
+ * Removed dependency on NBA Stats API
  */
 export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<NBAStatsBundle> {
   console.log('[NBA_STATS_BUNDLE:FETCH_START]', { away: ctx.away, home: ctx.home })
@@ -76,19 +77,15 @@ export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<NBAStatsBundle> 
   }
   
   try {
-    // Fetch both NBA Stats API (season data) and Odds API (recent form)
-    const [awayForm, homeForm, awaySeason, homeSeason] = await Promise.allSettled([
+    // Fetch ONLY The Odds API (recent form) - removed NBA Stats API dependency
+    const [awayForm, homeForm] = await Promise.allSettled([
       fetchTeamRecentForm(ctx.away, 5),  // Odds API - recent form
-      fetchTeamRecentForm(ctx.home, 5),  // Odds API - recent form
-      fetchNBATeamStats(ctx.away),       // NBA Stats API - season data
-      fetchNBATeamStats(ctx.home)        // NBA Stats API - season data
+      fetchTeamRecentForm(ctx.home, 5)   // Odds API - recent form
     ])
     
     // Extract data with fallbacks
     const awayFormData = awayForm.status === 'fulfilled' ? awayForm.value : null
     const homeFormData = homeForm.status === 'fulfilled' ? homeForm.value : null
-    const awaySeasonData = awaySeason.status === 'fulfilled' ? awaySeason.value : null
-    const homeSeasonData = homeSeason.status === 'fulfilled' ? homeSeason.value : null
     
     // Debug: Log API call results
     console.log('[NBA_STATS_BUNDLE:API_RESULTS]', {

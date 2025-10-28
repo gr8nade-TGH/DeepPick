@@ -6,7 +6,7 @@
  */
 
 const MYSPORTSFEEDS_API_KEY = process.env.MYSPORTSFEEDS_API_KEY
-const MYSPORTSFEEDS_BASE_URL = 'https://api.mysportsfeeds.com/v2.1/pull/nba'
+const MYSPORTSFEEDS_BASE_URL = 'https://api.mysportsfeeds.com/v2.1/pull/nba/latest/date'
 
 /**
  * Calculate Base64 encoded Basic Auth credentials for MySportsFeeds API v2.x
