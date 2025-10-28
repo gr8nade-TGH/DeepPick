@@ -115,7 +115,11 @@ export async function POST() {
       message: `Synced ${synced} games from MySportsFeeds`,
       date: dateStr,
       gamesProcessed: games.length,
-      gamesSynced: synced
+      gamesSynced: synced,
+      debug: {
+        responseSample: JSON.stringify(odds).substring(0, 500),
+        firstGameSample: games.length > 0 ? games[0] : null
+      }
     })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
