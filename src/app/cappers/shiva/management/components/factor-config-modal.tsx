@@ -43,13 +43,13 @@ export function FactorConfigModal({
   const isWeightValid = Math.abs(remainingWeight) < 0.01 || Math.abs(totalWeight - 250) < 0.01
   
   // Debug logging
-  console.log('[Weight Debug]', {
-    weightFactors: weightFactors.map(f => ({ key: f.key, weight: f.weight })),
-    rawTotalWeight,
-    totalWeight,
-    remainingWeight,
-    isWeightValid
-  })
+  // console.log('[Weight Debug]', {
+  //   weightFactors: weightFactors.map(f => ({ key: f.key, weight: f.weight })),
+  //   rawTotalWeight,
+  //   totalWeight,
+  //   remainingWeight,
+  //   isWeightValid
+  // })
   
   // Force exact 250% if very close (within 0.01%)
   const displayTotalWeight = Math.abs(totalWeight - 250) < 0.01 ? 250 : totalWeight
