@@ -112,6 +112,39 @@ export function RunLogTable() {
     return 'text-gray-400'
   }
 
+  // Factor key to short name mapping
+  const getFactorShortName = (key: string): string => {
+    const mapping: Record<string, string> = {
+      'edgeVsMarket': 'EM',
+      'paceIndex': 'PI',
+      'offForm': 'OF',
+      'defErosion': 'DE',
+      'threeEnv': '3E',
+      'whistleEnv': 'WE',
+      'injuryAvailability': 'IA'
+    }
+    return mapping[key] || key.substring(0, 2).toUpperCase()
+  }
+
+  // Format factor contribution with O/U indicator
+  const formatFactorContribution = (contribution: number): string => {
+    if (contribution === 0) return '0'
+    const sign = contribution > 0 ? '+' : ''
+    const value = contribution.toFixed(2)
+    const direction = contribution > 0 ? 'O' : 'U'
+    return `${sign}${value}${direction}`
+  }
+
+  // Get a specific factor's contribution value
+  const getFactorValue = (run: RunLogEntry, key: string): number | null => {
+    if (!run.factor_contributions) return null
+    const factor = run.factor_contributions.find(f => f.key === key)
+    return factor ? factor.contribution : null
+  }
+
+  // Define factor keys in order
+  const factorKeys = ['edgeVsMarket', 'paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv', 'injuryAvailability']
+
   if (loading) {
     return (
       <div className="border border-gray-700 rounded p-3 bg-gray-900">
@@ -137,12 +170,16 @@ export function RunLogTable() {
             <thead>
               <tr className="border-b border-gray-700">
                 <th className="text-left py-2 px-2 text-gray-400 font-bold">Time</th>
-                <th className="text-left py-2 px-2 text-gray-400 font-bold">Run ID</th>
                 <th className="text-left py-2 px-2 text-gray-400 font-bold">Game</th>
-                <th className="text-left py-2 px-2 text-gray-400 font-bold">Bet Type</th>
                 <th className="text-left py-2 px-2 text-gray-400 font-bold">Outcome</th>
                 <th className="text-left py-2 px-2 text-gray-400 font-bold">Units</th>
                 <th className="text-left py-2 px-2 text-gray-400 font-bold">Conf</th>
+                {factorKeys.map(key => (
+                  <th key={key} className="text-center py-2 px-1 text-gray-400 font-bold text-xs">
+                    {getFactorShortName(key)}
+                  </th>
+                ))}
+                <th className="text-left py-2 px-2 text-gray-400 font-bold">Proj</th>
               </tr>
             </thead>
             <tbody>
@@ -154,15 +191,24 @@ export function RunLogTable() {
                 return (
                   <tr key={idx} className="border-b border-gray-800 hover:bg-gray-800">
                     <td className="py-2 px-2 text-gray-300">{formatDateTime(run.created_at)}</td>
-                    <td className="py-2 px-2 text-gray-400 font-mono text-xs">{shortRunId}</td>
                     <td className="py-2 px-2 text-gray-300 text-xs">{run.matchup || run.game_id?.substring(0, 8) + '...'}</td>
-                    <td className="py-2 px-2 text-gray-300">{betType}</td>
                     <td className={`py-2 px-2 font-bold ${getOutcomeColor(outcome)}`}>
                       {outcome}
                     </td>
                     <td className="py-2 px-2 text-gray-300">{run.units || 0}</td>
                     <td className="py-2 px-2 text-gray-300">
                       {run.confidence !== null && run.confidence !== undefined ? run.confidence.toFixed(3) : '—'}
+                    </td>
+                    {factorKeys.map(key => {
+                      const value = getFactorValue(run, key)
+                      return (
+                        <td key={key} className={`py-2 px-1 text-center text-xs font-mono ${value !== null && value > 0 ? 'text-green-400' : value !== null && value < 0 ? 'text-red-400' : 'text-gray-500'}`}>
+                          {value !== null ? formatFactorContribution(value) : '—'}
+                        </td>
+                      )
+                    })}
+                    <td className="py-2 px-2 text-gray-300 font-mono text-xs">
+                      {run.predicted_total ? run.predicted_total.toFixed(1) : '—'}
                     </td>
                   </tr>
                 )
