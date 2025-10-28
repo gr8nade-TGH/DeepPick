@@ -1540,6 +1540,64 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
               console.error('[Wizard:Step5] Error saving PASS:', passError)
             }
           }
+          
+          // Also save successful picks (units > 0) to database
+          if (r.json?.units > 0 && (props.mode === 'write' || props.mode === 'auto')) {
+            console.log('[Wizard:Step5] Pick generated (units > 0) - saving run to database...')
+            console.log('[Wizard:Step5] step4Results confidence:', step4Results?.confidence)
+            console.log('[Wizard:Step5] step4Results factor_contributions:', step4Results?.confidence?.factor_contributions)
+            try {
+              const step1Game = stepLogsRef.current[1]?.json?.selected_game || stepLogs[1]?.json?.selected_game
+              // Generate a pick ID for the picks_row
+              const pickId = `pick_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+              
+              const savePickBody = {
+                run_id: effectiveRunId,
+                inputs: {
+                  conf_final: r.json.conf_final || 0,
+                  edge_dominant: 'total',
+                  total_data: {
+                    total_pred: predictedTotal,
+                    market_total: marketTotal,
+                    // Include factor data from Step 4
+                    factor_contributions: step4Results?.confidence?.factor_contributions || [],
+                    predicted_total: predictedTotal
+                  }
+                },
+                results: {
+                  decision: {
+                    pick_type: 'TOTAL',
+                    pick_side: pickDirection,
+                    line: marketTotal,
+                    units: r.json.units,
+                    reason: 'Pick generated successfully'
+                  },
+                  persistence: {
+                    picks_row: {
+                      id: pickId,
+                      run_id: effectiveRunId,
+                      sport: 'NBA',
+                      matchup: `${step1Game?.away_team?.name || 'Away'} @ ${step1Game?.home_team?.name || 'Home'}`,
+                      confidence: r.json.conf_final,
+                      units: r.json.units,
+                      pick_type: 'TOTAL',
+                      selection: `${pickDirection} ${marketTotal}`,
+                      created_at_utc: new Date().toISOString()
+                    }
+                  }
+                }
+              }
+              console.log('[Wizard:Step5] Saving PICK to pick/generate controller...')
+              console.log('[Wizard:Step5] PICK body:', JSON.stringify(savePickBody, null, 2))
+              const saveResponse = await postJson('/api/shiva/pick/generate', savePickBody, `ui-demo-save-pick-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`)
+              console.log('[Wizard:Step5] PICK save response:', JSON.stringify(saveResponse, null, 2))
+              if (saveResponse?.json?.error) {
+                console.error('[Wizard:Step5] PICK save ERROR:', saveResponse.json.error)
+              }
+            } catch (pickError) {
+              console.error('[Wizard:Step5] Error saving PICK:', pickError)
+            }
+          }
         } catch (error) {
           console.error('[Wizard:Step5] API Error:', error)
           setStepLoading(5, false, 'Error', 0)

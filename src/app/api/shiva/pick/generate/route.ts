@@ -217,13 +217,34 @@ export async function POST(request: Request) {
         })
         if (ins.error) throw new Error(ins.error.message)
 
-        // Update runs table with locked odds
+        // Update runs table with locked odds and factor data
+        const totalData = parse.data.inputs.total_data
+        const factorContributions = totalData?.factor_contributions || null
+        const predictedTotal = totalData?.predicted_total || null
+        
+        const updateData: any = {}
         if (locked_odds) {
+          updateData.locked_odds = locked_odds
+        }
+        if (factorContributions) {
+          updateData.factor_contributions = factorContributions
+        }
+        if (predictedTotal) {
+          updateData.predicted_total = predictedTotal
+        }
+        
+        if (Object.keys(updateData).length > 0) {
+          updateData.updated_at = new Date().toISOString()
           const updateRun = await admin
             .from('runs')
-            .update({ locked_odds: locked_odds })
+            .update(updateData)
             .eq('id', run_id)
           if (updateRun.error) throw new Error(updateRun.error.message)
+          
+          console.log('[SHIVA:PickGenerate] Updated runs table with factor data:', {
+            hasFactorContributions: !!factorContributions,
+            predictedTotal
+          })
         }
 
         // Record PICK_GENERATED result with cooldown
