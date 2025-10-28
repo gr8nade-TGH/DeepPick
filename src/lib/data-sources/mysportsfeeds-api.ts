@@ -11,9 +11,10 @@ const MYSPORTSFEEDS_BASE_URL = 'https://api.mysportsfeeds.com/v2.1/pull/nba'
 /**
  * Calculate Base64 encoded Basic Auth credentials for MySportsFeeds API v2.x
  */
-function getAuthHeader(): string {
+function getAuthHeader(): string | null {
   if (!MYSPORTSFEEDS_API_KEY) {
-    throw new Error('MYSPORTSFEEDS_API_KEY environment variable not set')
+    console.warn('[MySportsFeeds] MYSPORTSFEEDS_API_KEY environment variable not set')
+    return null
   }
   
   // v2.x uses "MYSPORTSFEEDS" as the password
