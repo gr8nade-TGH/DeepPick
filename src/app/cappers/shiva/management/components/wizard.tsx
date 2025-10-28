@@ -2026,8 +2026,20 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     }
 
     // Run immediately on mount, then every 10 minutes
-    runAutoCycle()
-    const interval = setInterval(runAutoCycle, 600000) // 10 minutes
+    // BUT only if not already running
+    if (!autoRunningRef.current) {
+      runAutoCycle()
+    } else {
+      console.log('[AUTO] Skipping initial run - already running from previous mount')
+    }
+    
+    const interval = setInterval(() => {
+      if (!autoRunningRef.current) {
+        runAutoCycle()
+      } else {
+        console.log('[AUTO] Skipping scheduled run - cycle already in progress')
+      }
+    }, 600000) // 10 minutes
 
     return () => {
       clearInterval(interval)
