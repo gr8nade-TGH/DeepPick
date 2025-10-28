@@ -14,11 +14,9 @@ export async function POST() {
     
     const supabase = getSupabase()
     
-    // Get today's date in YYYYMMDD format
+    // Get today's date in YYYY-MM-DD format (required by MySportsFeeds v2.0)
     const today = new Date()
-    const dateStr = today.getFullYear().toString() + 
-                    (today.getMonth() + 1).toString().padStart(2, '0') + 
-                    today.getDate().toString().padStart(2, '0')
+    const dateStr = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`
     
     console.log(`[Sync Games] Fetching MySportsFeeds odds data for ${dateStr}...`)
     
