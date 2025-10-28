@@ -58,12 +58,12 @@ export async function POST() {
         
         // Parse game odds if available
         const gameOdds = oddsMap.get(game.id)
-        let oddsData = null
+        let oddsData: any = null
         
         if (gameOdds?.lines) {
           // Extract lines from the first available sportsbook
           const lines = gameOdds.lines[0]
-          oddsData = {}
+          oddsData = {} as any
           
           // Add spread, total, moneylines if available
           if (lines.spreads) {
