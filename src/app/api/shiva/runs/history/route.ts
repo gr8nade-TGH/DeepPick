@@ -70,7 +70,9 @@ export async function GET(request: NextRequest) {
       let matchup = run.game_id
       const game = gamesMap.get(run.game_id)
       if (game && game.home_team && game.away_team) {
-        matchup = `${game.away_team} @ ${game.home_team}`
+        const homeName = typeof game.home_team === 'string' ? game.home_team : game.home_team.name
+        const awayName = typeof game.away_team === 'string' ? game.away_team : game.away_team.name
+        matchup = `${awayName} @ ${homeName}`
       }
       
       return {
