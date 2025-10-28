@@ -10,6 +10,8 @@ import { fetchOddsGameLines } from '@/lib/data-sources/mysportsfeeds-api'
 
 export async function POST() {
   try {
+    console.log(`[Sync Games] Starting...`)
+    
     const supabase = getSupabase()
     
     // Get today's date in YYYYMMDD format
@@ -21,10 +23,17 @@ export async function POST() {
     console.log(`[Sync Games] Fetching MySportsFeeds odds data for ${dateStr}...`)
     
     // Fetch odds (which includes game information)
-    const odds = await fetchOddsGameLines(dateStr)
-    
-    console.log(`[Sync Games] Got ${odds.gameLines?.length || 0} games with odds`)
-    console.log(`[Sync Games] Raw response sample:`, JSON.stringify(odds).substring(0, 500))
+    let odds
+    try {
+      odds = await fetchOddsGameLines(dateStr)
+      console.log(`[Sync Games] Got ${odds.gameLines?.length || 0} games with odds`)
+    } catch (fetchError) {
+      console.error('[Sync Games] Error fetching odds:', fetchError)
+      return NextResponse.json({
+        success: false,
+        error: `Failed to fetch odds: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`
+      }, { status: 500 })
+    }
     
     // Process games from odds data
     const games = odds.gameLines || []
