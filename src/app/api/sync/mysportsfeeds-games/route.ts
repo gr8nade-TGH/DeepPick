@@ -30,22 +30,18 @@ export async function POST() {
     const games = odds.gameLines || []
     let synced = 0
     
+    const errors: string[] = []
+    
     for (const gameLine of games) {
       try {
-        console.log(`[Sync Games] Processing gameLine:`, JSON.stringify(gameLine).substring(0, 300))
-        
         const gameData = gameLine.game
-        console.log(`[Sync Games] gameData:`, gameData)
-        
         const gameId = gameData?.id?.toString()
         const homeTeam = gameData?.homeTeamAbbreviation
         const awayTeam = gameData?.awayTeamAbbreviation
         const startTime = gameData?.startTime
         
-        console.log(`[Sync Games] Extracted: gameId=${gameId}, home=${homeTeam}, away=${awayTeam}, time=${startTime}`)
-        
         if (!gameId || !homeTeam || !awayTeam || !startTime) {
-          console.warn(`[Sync Games] Skipping game ${gameId} - missing required fields`)
+          errors.push(`Skipping game ${gameId} - missing required fields`)
           continue
         }
         
@@ -112,23 +108,12 @@ export async function POST() {
           })
         
         if (error) {
-          console.error(`[Sync Games] Error upserting game ${gameId}:`, error)
-          console.error(`[Sync Games] Data being upserted:`, {
-            id: `msf_${gameId}`,
-            sport: 'nba',
-            home_team: { name: homeTeam, abbreviation: homeTeam },
-            away_team: { name: awayTeam, abbreviation: awayTeam },
-            game_date: startTime.split('T')[0],
-            game_time: startTime.split('T')[1]?.split('.')[0],
-            status: 'scheduled',
-            odds: oddsData
-          })
+          errors.push(`Error upserting game ${gameId}: ${error.message}`)
         } else {
-          console.log(`[Sync Games] Successfully synced game ${gameId}`)
           synced++
         }
       } catch (error) {
-        console.error(`[Sync Games] Error processing game:`, error)
+        errors.push(`Error processing game: ${error instanceof Error ? error.message : String(error)}`)
       }
     }
     
@@ -138,6 +123,7 @@ export async function POST() {
       date: dateStr,
       gamesProcessed: games.length,
       gamesSynced: synced,
+      errors: errors,
       debug: {
         responseSample: JSON.stringify(odds).substring(0, 500),
         firstGameSample: games.length > 0 ? games[0] : null
