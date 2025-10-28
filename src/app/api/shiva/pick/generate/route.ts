@@ -197,7 +197,7 @@ export async function POST(request: Request) {
       const locked_odds = activeSnapshot?.raw_payload ?? results.locked_odds ?? null
       
       if (writeAllowed) {
-        // Single transaction: insert pick with locked odds and update runs
+        // Single transaction: insert pick and update runs
         const ins = await admin.from('picks').insert({
           id: r.id,
           game_id: null,
@@ -206,26 +206,22 @@ export async function POST(request: Request) {
           selection: r.selection,
           odds: 0,
           units: r.units,
-          game_snapshot: {},
+          game_snapshot: locked_odds || {}, // Store locked_odds in game_snapshot
           status: 'pending',
           is_system_pick: true,
           confidence: r.confidence,
           reasoning: results.decision.reason,
           algorithm_version: 'shiva_v1',
-          run_id,
-          locked_odds: locked_odds,
+          run_id
         })
         if (ins.error) throw new Error(ins.error.message)
 
-        // Update runs table with locked odds and factor data
+        // Update runs table with factor data
         const totalData = parse.data.inputs.total_data
         const factorContributions = totalData?.factor_contributions || null
         const predictedTotal = totalData?.predicted_total || null
         
         const updateData: any = {}
-        if (locked_odds) {
-          updateData.locked_odds = locked_odds
-        }
         if (factorContributions) {
           updateData.factor_contributions = factorContributions
         }
