@@ -980,43 +980,49 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           let spreadLine = 0
           let mlHome = -110
           let mlAway = -110
+          let avgOverOdds = -110
+          let avgUnderOdds = -110
           
           if (step1Game.odds && typeof step1Game.odds === 'object') {
             const sportsbooks = Object.keys(step1Game.odds)
             console.log('[Step 2] Found', sportsbooks.length, 'sportsbooks')
             
             if (sportsbooks.length > 0) {
-              // Calculate total line average
+              // Calculate total line average (CORRECTED: use .line not .Over.point)
               const totals = sportsbooks
-                .map(book => step1Game.odds[book]?.total?.Over?.point)
+                .map(book => step1Game.odds[book]?.total?.line)
                 .filter(val => val !== undefined && val !== null)
               
               if (totals.length > 0) {
                 totalLine = Math.round(totals.reduce((sum, val) => sum + val, 0) / totals.length * 2) / 2
               }
               
-              // Calculate spread line average
+              // Calculate average over/under odds
+              const overOdds = sportsbooks
+                .map(book => step1Game.odds[book]?.total?.over)
+                .filter(val => val !== undefined && val !== null)
+              const underOdds = sportsbooks
+                .map(book => step1Game.odds[book]?.total?.under)
+                .filter(val => val !== undefined && val !== null)
+              avgOverOdds = overOdds.length > 0 ? Math.round(overOdds.reduce((sum, val) => sum + val, 0) / overOdds.length) : -110
+              avgUnderOdds = underOdds.length > 0 ? Math.round(underOdds.reduce((sum, val) => sum + val, 0) / underOdds.length) : -110
+              
+              // Calculate spread line average (CORRECTED: use .line not nested path)
               const spreads = sportsbooks
-                .map(book => {
-                  const spread = step1Game.odds[book]?.spread
-                  if (spread && step1Game.home_team?.name && spread[step1Game.home_team.name]) {
-                    return spread[step1Game.home_team.name].point
-                  }
-                  return null
-                })
-                .filter(val => val !== null)
+                .map(book => step1Game.odds[book]?.spread?.line)
+                .filter(val => val !== undefined && val !== null)
               
               if (spreads.length > 0) {
                 spreadLine = Math.round(spreads.reduce((sum, val) => sum + val, 0) / spreads.length * 2) / 2
               }
               
-              // Calculate moneyline averages
+              // Calculate moneyline averages (CORRECTED: use .home/.away not team names)
               const homeMLs = sportsbooks
-                .map(book => step1Game.odds[book]?.moneyline?.[step1Game.home_team?.name])
+                .map(book => step1Game.odds[book]?.moneyline?.home)
                 .filter(val => val !== undefined && val !== null)
               
               const awayMLs = sportsbooks
-                .map(book => step1Game.odds[book]?.moneyline?.[step1Game.away_team?.name])
+                .map(book => step1Game.odds[book]?.moneyline?.away)
                 .filter(val => val !== undefined && val !== null)
               
               if (homeMLs.length > 0) {
@@ -1058,8 +1064,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             },
             total: {
               line: totalLine,
-              over_odds: -110,
-              under_odds: -110
+              over_odds: avgOverOdds,
+              under_odds: avgUnderOdds
             },
             raw_payload: step1Game.odds
           }
