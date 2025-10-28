@@ -31,10 +31,24 @@ interface RunLogEntry {
   market_total?: number
 }
 
+interface CooldownEntry {
+  id: string
+  game_id: string
+  capper: string
+  bet_type: string
+  cooldown_until: string
+  result: string
+  units: number
+  matchup?: string
+}
+
 export function RunLogTable() {
   const [runs, setRuns] = useState<RunLogEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedRuns, setExpandedRuns] = useState<Set<string>>(new Set())
+  const [cooldowns, setCooldowns] = useState<CooldownEntry[]>([])
+  const [clearingCooldown, setClearingCooldown] = useState<string | null>(null)
+  const [now, setNow] = useState(Date.now())
 
   console.log('[RunLogTable] Component mounted/rendered')
 
@@ -57,12 +71,37 @@ export function RunLogTable() {
         setLoading(false)
       }
     }
+    
+    async function fetchCooldowns() {
+      try {
+        const response = await fetch('/api/shiva/cooldowns')
+        if (response.ok) {
+          const data = await response.json()
+          setCooldowns(data.cooldowns || [])
+        }
+      } catch (error) {
+        console.error('[RunLogTable] Failed to fetch cooldowns:', error)
+      }
+    }
 
     fetchRunLog()
+    fetchCooldowns()
     
     // Refresh every 30 seconds to see new runs
-    const interval = setInterval(fetchRunLog, 30000)
-    return () => clearInterval(interval)
+    const runInterval = setInterval(fetchRunLog, 30000)
+    const cooldownInterval = setInterval(fetchCooldowns, 30000)
+    return () => {
+      clearInterval(runInterval)
+      clearInterval(cooldownInterval)
+    }
+  }, [])
+  
+  // Update timer every second for countdown
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(Date.now())
+    }, 1000)
+    return () => clearInterval(timer)
   }, [])
 
   const formatDateTime = (isoString: string) => {
@@ -154,6 +193,35 @@ export function RunLogTable() {
     return factor ? factor.contribution : null
   }
 
+  // Format countdown timer
+  const formatCountdown = (until: string): string => {
+    const untilTime = new Date(until).getTime()
+    const remaining = untilTime - now
+    if (remaining <= 0) return 'Expired'
+    const hours = Math.floor(remaining / 3600000)
+    const minutes = Math.floor((remaining % 3600000) / 60000)
+    const seconds = Math.floor((remaining % 60000) / 1000)
+    return `${hours}h ${minutes}m ${seconds}s`
+  }
+  
+  // Clear cooldown
+  const handleClearCooldown = async (cooldownId: string) => {
+    setClearingCooldown(cooldownId)
+    try {
+      const response = await fetch(`/api/shiva/cooldowns/${cooldownId}`, { method: 'DELETE' })
+      if (response.ok) {
+        // Refresh cooldowns
+        const data = await fetch('/api/shiva/cooldowns')
+        const json = await data.json()
+        setCooldowns(json.cooldowns || [])
+      }
+    } catch (error) {
+      console.error('Failed to clear cooldown:', error)
+    } finally {
+      setClearingCooldown(null)
+    }
+  }
+
   // Define factor keys in order
   const factorKeys = ['edgeVsMarket', 'paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv', 'injuryAvailability']
 
@@ -169,10 +237,12 @@ export function RunLogTable() {
   console.log('[RunLogTable] Rendering with', runs.length, 'runs')
 
   return (
-    <div className="border border-gray-700 rounded bg-gray-900 overflow-hidden flex flex-col" style={{ height: '300px' }}>
-      <div className="p-3 border-b border-gray-700 flex-shrink-0">
-        <h3 className="text-lg font-bold text-white">📋 Run Log ({runs.length})</h3>
-      </div>
+    <div className="flex flex-col gap-4">
+      {/* Run Log Table */}
+      <div className="border border-gray-700 rounded bg-gray-900 overflow-hidden flex flex-col" style={{ height: '300px' }}>
+        <div className="p-3 border-b border-gray-700 flex-shrink-0">
+          <h3 className="text-lg font-bold text-white">📋 Run Log ({runs.length})</h3>
+        </div>
       
       {runs.length === 0 ? (
         <div className="p-3 text-gray-400 text-sm">No runs found. Run pick generation in Write mode to see results.</div>
@@ -241,6 +311,52 @@ export function RunLogTable() {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+      </div>
+      
+      {/* Cooldown Management Table */}
+      {cooldowns.length > 0 && (
+        <div className="border border-gray-700 rounded bg-gray-900 overflow-hidden">
+          <div className="p-3 border-b border-gray-700">
+            <h3 className="text-lg font-bold text-white">⏸️ Cooldowns ({cooldowns.length})</h3>
+          </div>
+          <div className="overflow-y-auto" style={{ maxHeight: '200px' }}>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-700">
+                  <th className="text-left py-2 px-3 text-gray-400 font-bold">Game</th>
+                  <th className="text-left py-2 px-3 text-gray-400 font-bold">Result</th>
+                  <th className="text-left py-2 px-3 text-gray-400 font-bold">Units</th>
+                  <th className="text-left py-2 px-3 text-gray-400 font-bold">Time Remaining</th>
+                  <th className="text-center py-2 px-3 text-gray-400 font-bold">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cooldowns.map((cd, idx) => (
+                  <tr key={idx} className="border-b border-gray-800 hover:bg-gray-800">
+                    <td className="py-2 px-3 text-gray-300 text-xs">{cd.matchup || cd.game_id?.substring(0, 12)}</td>
+                    <td className="py-2 px-3">
+                      <span className={`font-bold ${cd.result === 'PASS' ? 'text-yellow-400' : 'text-green-400'}`}>
+                        {cd.result}
+                      </span>
+                    </td>
+                    <td className="py-2 px-3 text-gray-300">{cd.units || 0}</td>
+                    <td className="py-2 px-3 font-mono text-orange-400">{formatCountdown(cd.cooldown_until)}</td>
+                    <td className="py-2 px-3 text-center">
+                      <button
+                        onClick={() => handleClearCooldown(cd.id)}
+                        disabled={clearingCooldown === cd.id}
+                        className="px-3 py-1 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white text-xs rounded"
+                      >
+                        {clearingCooldown === cd.id ? 'Clearing...' : 'Clear'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
