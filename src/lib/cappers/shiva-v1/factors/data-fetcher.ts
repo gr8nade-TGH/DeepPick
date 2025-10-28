@@ -17,10 +17,13 @@ import { RunCtx, StatMuseBundle, InjuryImpact } from './types'
 export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<StatMuseBundle> {
   console.log('[NBA_STATS_BUNDLE:FETCH_START]', { away: ctx.away, home: ctx.home })
   
-  // Check if we're in a build environment (Vercel, etc.)
-  const isBuildTime = process.env.NODE_ENV === 'production' && process.env.VERCEL === '1'
+  // REMOVED: Build-time bypass that was causing identical stats for all teams
+  // Previously, when VERCEL === '1', it returned hardcoded values for only 2 teams,
+  // causing most games to have identical factors. Now always fetching real data.
   
-  if (isBuildTime) {
+  // const isBuildTime = process.env.NODE_ENV === 'production' && process.env.VERCEL === '1'
+  
+  if (false) { // Always skip tea bypass - fetch real stats
     console.log('[NBA_STATS_BUNDLE:BUILD_TIME] Skipping NBA Stats API calls during build, using realistic fallbacks')
     // Use realistic team-specific fallbacks instead of league averages
     const bundle: StatMuseBundle = {

@@ -24,41 +24,79 @@ export async function executeStep2Simple(stepLogs: any, runId: string, postJson:
       console.log('[Step 2] Found', sportsbooks.length, 'sportsbooks')
       
       if (sportsbooks.length > 0) {
-        // Calculate total line average
+        // Calculate total line average - handle both formats
         const totals = sportsbooks
-          .map(book => step1Game.odds[book]?.total?.line)
+          .map(book => {
+            const bookOdds = step1Game.odds[book]?.total
+            // Try new format first (total.line)
+            if (bookOdds?.line !== undefined) return bookOdds.line
+            // Try old format (total.Over.point)
+            if (bookOdds?.Over?.point !== undefined) return bookOdds.Over.point
+            return null
+          })
           .filter(val => val !== undefined && val !== null)
         
         if (totals.length > 0) {
           totalLine = Math.round(totals.reduce((sum, val) => sum + val, 0) / totals.length * 2) / 2
         }
         
-        // Calculate average over/under odds
+        // Calculate average over/under odds - handle both formats
         const overOdds = sportsbooks
-          .map(book => step1Game.odds[book]?.total?.over)
+          .map(book => {
+            const bookOdds = step1Game.odds[book]?.total
+            if (bookOdds?.over !== undefined) return bookOdds.over
+            if (bookOdds?.Over?.price !== undefined) return bookOdds.Over.price
+            return null
+          })
           .filter(val => val !== undefined && val !== null)
         const underOdds = sportsbooks
-          .map(book => step1Game.odds[book]?.total?.under)
+          .map(book => {
+            const bookOdds = step1Game.odds[book]?.total
+            if (bookOdds?.under !== undefined) return bookOdds.under
+            if (bookOdds?.Under?.price !== undefined) return bookOdds.Under.price
+            return null
+          })
           .filter(val => val !== undefined && val !== null)
         avgOverOdds = overOdds.length > 0 ? Math.round(overOdds.reduce((sum, val) => sum + val, 0) / overOdds.length) : -110
         avgUnderOdds = underOdds.length > 0 ? Math.round(underOdds.reduce((sum, val) => sum + val, 0) / underOdds.length) : -110
         
-        // Calculate spread line average
+        // Calculate spread line average - handle both formats
         const spreads = sportsbooks
-          .map(book => step1Game.odds[book]?.spread?.line)
+          .map(book => {
+            const bookOdds = step1Game.odds[book]?.spread
+            if (bookOdds?.line !== undefined) return bookOdds.line
+            // Try to extract from team-specific point values
+            if (step1Game.home_team?.name && bookOdds?.[step1Game.home_team.name]?.point !== undefined) {
+              return Math.abs(bookOdds[step1Game.home_team.name].point)
+            }
+            if (step1Game.away_team?.name && bookOdds?.[step1Game.away_team.name]?.point !== undefined) {
+              return Math.abs(bookOdds[step1Game.away_team.name].point)
+            }
+            return null
+          })
           .filter(val => val !== undefined && val !== null)
         
         if (spreads.length > 0) {
           spreadLine = Math.round(spreads.reduce((sum, val) => sum + val, 0) / spreads.length * 2) / 2
         }
         
-        // Calculate moneyline averages
+        // Calculate moneyline averages - handle both formats
         const homeMLs = sportsbooks
-          .map(book => step1Game.odds[book]?.moneyline?.home)
+          .map(book => {
+            const ml = step1Game.odds[book]?.moneyline
+            if (ml?.home !== undefined) return ml.home
+            if (step1Game.home_team?.name && ml?.[step1Game.home_team.name] !== undefined) return ml[step1Game.home_team.name]
+            return null
+          })
           .filter(val => val !== undefined && val !== null)
         
         const awayMLs = sportsbooks
-          .map(book => step1Game.odds[book]?.moneyline?.away)
+          .map(book => {
+            const ml = step1Game.odds[book]?.moneyline
+            if (ml?.away !== undefined) return ml.away
+            if (step1Game.away_team?.name && ml?.[step1Game.away_team.name] !== undefined) return ml[step1Game.away_team.name]
+            return null
+          })
           .filter(val => val !== undefined && val !== null)
         
         if (homeMLs.length > 0) {
