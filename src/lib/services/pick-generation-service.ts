@@ -68,36 +68,49 @@ export class PickGenerationService {
         totalLine = result.totalLine
       }
 
-      const { error } = await this.supabase
-        .rpc('record_pick_generation_result', {
-          p_run_id: result.runId,
-          p_game_id: result.gameId,
-          p_capper: result.capper,
-          p_bet_type: result.betType,
-          p_result: result.result,
-          p_units: result.units,
-          p_confidence: result.confidence || null,
-          p_pick_id: result.pickId || null,
-          p_cooldown_hours: cooldownHours
-        })
+      // Calculate cooldown_until
+      const cooldownUntil = new Date()
+      cooldownUntil.setHours(cooldownUntil.getHours() + cooldownHours)
 
-      // Store total_line in cooldowns table (bypass RPC since it doesn't support this yet)
-      if (error && error.message?.includes('total_line')) {
-        // Function doesn't support total_line yet, insert directly
-        const { data: existingCooldown } = await this.supabase
+      // Insert or update cooldown record directly (bypass RPC for now)
+      const { data: existingCooldown } = await this.supabase
+        .from('pick_generation_cooldowns')
+        .select('id')
+        .eq('game_id', result.gameId)
+        .eq('capper', result.capper)
+        .eq('bet_type', result.betType)
+        .maybeSingle()
+
+      let error
+      if (existingCooldown) {
+        // Update existing record
+        const updateResult = await this.supabase
           .from('pick_generation_cooldowns')
-          .select('id')
-          .eq('game_id', result.gameId)
-          .eq('capper', result.capper)
-          .eq('bet_type', result.betType)
-          .single()
-
-        if (existingCooldown) {
-          await this.supabase
-            .from('pick_generation_cooldowns')
-            .update({ total_line: totalLine })
-            .eq('id', existingCooldown.id)
-        }
+          .update({
+            run_id: result.runId,
+            result: result.result,
+            units: result.units,
+            confidence_score: result.confidence || null,
+            cooldown_until: cooldownUntil.toISOString(),
+            created_at: new Date().toISOString()
+          })
+          .eq('id', existingCooldown.id)
+        error = updateResult.error
+      } else {
+        // Insert new record
+        const insertResult = await this.supabase
+          .from('pick_generation_cooldowns')
+          .insert({
+            game_id: result.gameId,
+            capper: result.capper,
+            bet_type: result.betType,
+            run_id: result.runId,
+            result: result.result,
+            units: result.units,
+            confidence_score: result.confidence || null,
+            cooldown_until: cooldownUntil.toISOString()
+          })
+        error = insertResult.error
       }
 
       if (error) {
