@@ -149,7 +149,14 @@ export async function POST(request: Request) {
               if (error) {
                 console.error('[SHIVA:PickGenerate] Error saving PASS run:', error)
               } else {
-                console.log('[SHIVA:PickGenerate] PASS run saved to runs table:', run_id, 'with gameId:', gameId || 'unknown', 'data:', data)
+                console.log('[SHIVA:PickGenerate] PASS run saved successfully!', {
+                  run_id,
+                  gameId: gameId || 'unknown',
+                  hasFactorContributions: !!factorContributions,
+                  hasPredictedTotal: !!predictedTotal,
+                  factorContributionsLength: factorContributions?.length || 0,
+                  predictedTotal
+                })
               }
             } else {
               console.log('[SHIVA:PickGenerate] PASS - cannot save run, run_id is null/undefined')

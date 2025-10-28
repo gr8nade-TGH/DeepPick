@@ -1495,6 +1495,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           // If this is a PASS decision (units === 0), save the run to database
           if (r.json?.units === 0 && (props.mode === 'write' || props.mode === 'auto')) {
             console.log('[Wizard:Step5] PASS detected - saving run to database...')
+            console.log('[Wizard:Step5] step4Results confidence:', step4Results?.confidence)
+            console.log('[Wizard:Step5] step4Results factor_contributions:', step4Results?.confidence?.factor_contributions)
             try {
               const step1Game = stepLogsRef.current[1]?.json?.selected_game || stepLogs[1]?.json?.selected_game
               const savePassBody = {

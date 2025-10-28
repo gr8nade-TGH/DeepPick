@@ -24,6 +24,17 @@ export async function GET(request: NextRequest) {
       .limit(limit)
     
     console.log('[Run History] Fetched', runsData?.length || 0, 'SHIVA runs from database')
+    
+    // Log sample of first run to debug factor data
+    if (runsData && runsData.length > 0) {
+      console.log('[Run History] Sample run:', {
+        run_id: runsData[0].run_id,
+        has_factor_contributions: !!runsData[0].factor_contributions,
+        has_predicted_total: !!runsData[0].predicted_total,
+        factor_contributions: runsData[0].factor_contributions,
+        predicted_total: runsData[0].predicted_total
+      })
+    }
 
     if (runsError) {
       console.error('[Run History] Error fetching runs:', runsError)
