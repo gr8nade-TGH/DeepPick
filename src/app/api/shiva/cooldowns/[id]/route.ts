@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { getSupabaseAdmin } from '@/lib/supabase/server'
 
 export async function DELETE(
   request: Request,
@@ -15,7 +15,7 @@ export async function DELETE(
       )
     }
 
-    const supabase = await createClient()
+    const supabase = getSupabaseAdmin()
     
     // Delete the cooldown
     const { error } = await supabase

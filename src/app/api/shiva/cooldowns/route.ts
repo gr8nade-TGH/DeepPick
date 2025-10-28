@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { getSupabaseAdmin } from '@/lib/supabase/server'
 
 export async function GET() {
   try {
-    const supabase = await createClient()
+    const supabase = getSupabaseAdmin()
     
     // Get active cooldowns (where cooldown_until is in the future)
     const { data: cooldowns, error } = await supabase
