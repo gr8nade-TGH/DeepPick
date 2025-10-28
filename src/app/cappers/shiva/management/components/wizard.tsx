@@ -1971,13 +1971,14 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     }
 
     const runAutoCycle = async () => {
-      // Skip if already running
-      if (autoRunningRef.current) {
-        console.log('[AUTO] Skipping cycle - already running')
+      // Skip if already running (check both ref and global lock)
+      if (autoRunningRef.current || globalAutoRunning) {
+        console.log('[AUTO] Skipping cycle - already running (ref:', autoRunningRef.current, 'global:', globalAutoRunning, ')')
         return
       }
 
       autoRunningRef.current = true
+      globalAutoRunning = true
       console.log('[AUTO] Starting automatic pick generation cycle...')
 
       try {
@@ -2024,6 +2025,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         console.error('[AUTO] Error in auto cycle:', error)
       } finally {
         autoRunningRef.current = false
+        globalAutoRunning = false
         console.log('[AUTO] Cycle finished, next run in 10 minutes')
       }
     }
@@ -2047,6 +2049,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     return () => {
       clearInterval(interval)
       autoRunningRef.current = false
+      globalAutoRunning = false
     }
   }, [props.mode]) // Only depend on mode to avoid infinite loops
 
