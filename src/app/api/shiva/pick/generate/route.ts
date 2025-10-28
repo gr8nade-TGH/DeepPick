@@ -28,7 +28,9 @@ const PickSchema = z.object({
       total_pred: z.number(), 
       market_total: z.number(),
       factor_contributions: z.any().optional(),
-      predicted_total: z.number().optional()
+      predicted_total: z.number().optional(),
+      baseline_avg: z.number().optional(),
+      market_total_line: z.number().optional()
     }).optional(),
   }).strict(),
   results: z.object({
@@ -117,6 +119,8 @@ export async function POST(request: Request) {
               const totalData = parse.data.inputs.total_data
               const factorContributions = totalData?.factor_contributions || null
               const predictedTotal = totalData?.predicted_total || null
+              const baselineAvg = totalData?.baseline_avg || null
+              const marketTotal = totalData?.market_total_line || null
               
               console.log('[SHIVA:PickGenerate] PASS - Attempting to upsert run:', {
                 id: run_id,
@@ -142,6 +146,8 @@ export async function POST(request: Request) {
                   selection: `${results.decision.pick_side} ${results.decision.line}`,
                   factor_contributions: factorContributions,
                   predicted_total: predictedTotal,
+                  baseline_avg: baselineAvg,
+                  market_total: marketTotal,
                   created_at: now,
                   updated_at: now
                 }, { onConflict: 'id' })
@@ -220,6 +226,8 @@ export async function POST(request: Request) {
         const totalData = parse.data.inputs.total_data
         const factorContributions = totalData?.factor_contributions || null
         const predictedTotal = totalData?.predicted_total || null
+        const baselineAvg = totalData?.baseline_avg || null
+        const marketTotal = totalData?.market_total_line || null
         
         const updateData: any = {}
         if (factorContributions) {
@@ -227,6 +235,12 @@ export async function POST(request: Request) {
         }
         if (predictedTotal) {
           updateData.predicted_total = predictedTotal
+        }
+        if (baselineAvg) {
+          updateData.baseline_avg = baselineAvg
+        }
+        if (marketTotal) {
+          updateData.market_total = marketTotal
         }
         
         if (Object.keys(updateData).length > 0) {

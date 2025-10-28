@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     // Fetch runs from the runs table
     const { data: runsData, error: runsError } = await supabase
       .from('runs')
-      .select('id, run_id, game_id, capper, pick_type, selection, units, confidence, created_at, factor_contributions, factor_adjustments, predicted_total')
+      .select('id, run_id, game_id, capper, pick_type, selection, units, confidence, created_at, factor_contributions, factor_adjustments, predicted_total, baseline_avg, market_total')
       .eq('capper', 'shiva') // Filter for SHIVA only
       .order('created_at', { ascending: false })
       .limit(limit)

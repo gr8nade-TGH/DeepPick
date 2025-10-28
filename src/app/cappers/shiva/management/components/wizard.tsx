@@ -1425,6 +1425,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           results: {
             factors: step3Results.factors,
             factor_version: step3Results.factor_version || 'nba_totals_v1',
+            baseline: step3Results.baseline, // Pass baseline from Step 3 to Step 4
             meta: {
               conf_source: props.betType === 'TOTAL' ? 'nba_totals_v1' : 'legacy_v1'
             }
@@ -1514,6 +1515,10 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                 }
               ]
               
+              // Get baseline from Step 3 results
+              const step3Results = stepLogsRef.current[3]?.json || stepLogs[3]?.json
+              const baselineAvg = step3Results?.baseline?.matchupBaseline || null
+              
               const savePassBody = {
                 run_id: effectiveRunId,
                 inputs: {
@@ -1524,7 +1529,9 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                     market_total: marketTotal,
                     // Include factor data from Step 4 + Step 5 edge
                     factor_contributions: allContributions,
-                    predicted_total: predictedTotal
+                    predicted_total: predictedTotal,
+                    baseline_avg: baselineAvg,
+                    market_total_line: marketTotal
                   }
                 },
                 results: {
@@ -1578,6 +1585,10 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                 }
               ]
               
+              // Get baseline from Step 3 results
+              const step3Results = stepLogsRef.current[3]?.json || stepLogs[3]?.json
+              const baselineAvg = step3Results?.baseline?.matchupBaseline || null
+              
               // Generate a pick ID for the picks_row
               const pickId = `pick_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
               
@@ -1591,7 +1602,9 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                     market_total: marketTotal,
                     // Include factor data from Step 4 + Step 5 edge
                     factor_contributions: allContributions,
-                    predicted_total: predictedTotal
+                    predicted_total: predictedTotal,
+                    baseline_avg: baselineAvg,
+                    market_total_line: marketTotal
                   }
                 },
                 results: {

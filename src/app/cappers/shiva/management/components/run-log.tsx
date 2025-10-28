@@ -26,6 +26,9 @@ interface RunLogEntry {
   factor_contributions?: FactorContribution[]
   factor_adjustments?: Record<string, number>
   predicted_total?: number
+  // Baseline and market data
+  baseline_avg?: number
+  market_total?: number
 }
 
 export function RunLogTable() {
@@ -190,6 +193,8 @@ export function RunLogTable() {
                   </th>
                 ))}
                 <th className="text-left py-2 px-2 text-gray-400 font-bold">Proj</th>
+                <th className="text-left py-2 px-2 text-gray-400 font-bold">Avg</th>
+                <th className="text-left py-2 px-2 text-gray-400 font-bold">Mkt</th>
               </tr>
             </thead>
             <tbody>
@@ -224,6 +229,12 @@ export function RunLogTable() {
                     })}
                     <td className="py-2 px-2 text-gray-300 font-mono text-xs">
                       {run.predicted_total ? run.predicted_total.toFixed(1) : '—'}
+                    </td>
+                    <td className="py-2 px-2 text-gray-300 font-mono text-xs">
+                      {run.baseline_avg ? run.baseline_avg.toFixed(1) : '—'}
+                    </td>
+                    <td className="py-2 px-2 text-gray-300 font-mono text-xs">
+                      {run.market_total ? run.market_total.toFixed(1) : '—'}
                     </td>
                   </tr>
                 )
