@@ -7,8 +7,8 @@
 
 const MYSPORTSFEEDS_API_KEY = process.env.MYSPORTSFEEDS_API_KEY
 // MySportsFeeds v2.0+ uses /pull/{league}/{season}/date/{date}/endpoint.json
-// For latest data, we'll use the current season (2024-25)
-const MYSPORTSFEEDS_BASE_URL = 'https://api.mysportsfeeds.com/v2.0/pull/nba/2024-25'
+// Season format: 2024-2025-regular (not 2024-25)
+const MYSPORTSFEEDS_BASE_URL = 'https://api.mysportsfeeds.com/v2.0/pull/nba/2024-2025-regular'
 
 /**
  * Calculate Base64 encoded Basic Auth credentials for MySportsFeeds API v2.x
@@ -104,7 +104,7 @@ export async function testMySportsFeedsConnection(): Promise<void> {
 
 /**
  * Fetch game scoreboard for a specific date
- * Format: YYYY-MM-DD (e.g., 2025-01-28)
+ * Format: YYYYMMDD (e.g., 20250128)
  */
 export async function fetchScoreboard(date: string): Promise<any> {
   return await fetchMySportsFeeds(`date/${date}/scoreboard.json`)
@@ -119,7 +119,7 @@ export async function fetchGameBoxscore(gameId: string): Promise<any> {
 
 /**
  * Fetch odds game lines for a specific date
- * Format: YYYY-MM-DD (e.g., 2025-01-28)
+ * Format: YYYYMMDD (e.g., 20250128)
  */
 export async function fetchOddsGameLines(date: string): Promise<any> {
   return await fetchMySportsFeeds(`date/${date}/odds_gamelines.json`)
@@ -127,7 +127,7 @@ export async function fetchOddsGameLines(date: string): Promise<any> {
 
 /**
  * Fetch team game log for a specific date
- * Format: YYYY-MM-DD (e.g., 2025-01-28)
+ * Format: YYYYMMDD (e.g., 20250128)
  */
 export async function fetchTeamGameLogByDate(date: string, teamAbbrev: string): Promise<any> {
   return await fetchMySportsFeeds(`date/${date}/team_gamelogs.json?team=${teamAbbrev}`)
