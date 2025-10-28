@@ -24,6 +24,7 @@ export async function POST() {
     const odds = await fetchOddsGameLines(dateStr)
     
     console.log(`[Sync Games] Got ${odds.gameLines?.length || 0} games with odds`)
+    console.log(`[Sync Games] Raw response sample:`, JSON.stringify(odds).substring(0, 500))
     
     // Process games from odds data
     const games = odds.gameLines || []
@@ -31,11 +32,17 @@ export async function POST() {
     
     for (const gameLine of games) {
       try {
+        console.log(`[Sync Games] Processing gameLine:`, JSON.stringify(gameLine).substring(0, 300))
+        
         const gameData = gameLine.game
+        console.log(`[Sync Games] gameData:`, gameData)
+        
         const gameId = gameData?.id?.toString()
         const homeTeam = gameData?.homeTeamAbbreviation
         const awayTeam = gameData?.awayTeamAbbreviation
         const startTime = gameData?.startTime
+        
+        console.log(`[Sync Games] Extracted: gameId=${gameId}, home=${homeTeam}, away=${awayTeam}, time=${startTime}`)
         
         if (!gameId || !homeTeam || !awayTeam || !startTime) {
           console.warn(`[Sync Games] Skipping game ${gameId} - missing required fields`)
