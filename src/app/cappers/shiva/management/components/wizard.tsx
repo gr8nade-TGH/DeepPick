@@ -28,7 +28,7 @@ function DryRunBanner() {
 function AutoModeBanner() {
   return (
     <div className="mb-3 rounded bg-green-900 border-2 border-green-600 p-3 text-sm font-bold text-green-200">
-      🤖 AUTO Mode - Pick generation runs automatically every 3 minutes. Cooldown logic prevents duplicate attempts.
+      🤖 AUTO Mode - Pick generation runs automatically every 6 hours. Cooldown logic prevents duplicate attempts.
     </div>
   )
 }
@@ -1959,7 +1959,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     }
   }
 
-  // AUTO mode: Automatically run steps every 3 minutes
+  // AUTO mode: Automatically run steps every 6 hours
   useEffect(() => {
     if (props.mode !== 'auto') {
       return // Only run in AUTO mode
@@ -2016,18 +2016,18 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         await handleStepClick(5)
         await waitForStep(5, 10000)
 
-        console.log('[AUTO] Pick generation cycle complete - will run again in 3 minutes')
+        console.log('[AUTO] Pick generation cycle complete - will run again in 6 hours')
       } catch (error) {
         console.error('[AUTO] Error in auto cycle:', error)
       } finally {
         isRunning = false
-        console.log('[AUTO] Cycle finished, next run in 3 minutes')
+        console.log('[AUTO] Cycle finished, next run in 6 hours')
       }
     }
 
-    // Run immediately on mount, then every 3 minutes
+    // Run immediately on mount, then every 6 hours
     runAutoCycle()
-    const interval = setInterval(runAutoCycle, 180000) // 3 minutes
+    const interval = setInterval(runAutoCycle, 21600000) // 6 hours
 
     return () => {
       clearInterval(interval)
