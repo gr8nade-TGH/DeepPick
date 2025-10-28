@@ -88,7 +88,9 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
             league3PAR: 0.39,
             league3Pct: 0.35,
             leagueFTr: 0.22,
-            league3Pstdev: 0.036
+            league3Pstdev: 0.036,
+            awayPointsPerGame: 110.0,
+            homePointsPerGame: 110.0
           },
           rows_z_points: []
         },
