@@ -37,6 +37,10 @@ export function SHIVAManagementInbox({ onGameSelect, selectedGame }: SHIVAManage
       
       if (data.success) {
         console.log(`[Game Inbox] Synced ${data.gamesSynced} games`)
+        console.log(`[Game Inbox] Full sync response:`, data)
+        if (data.debug) {
+          console.log(`[Game Inbox] Debug info:`, data.debug)
+        }
         // Refresh games after sync
         fetchGames()
       } else {
