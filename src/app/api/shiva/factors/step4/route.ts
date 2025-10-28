@@ -25,6 +25,11 @@ const Step4Schema = z.object({
       notes: z.string().nullable().optional(),
     }).strict()),
     factor_version: z.string(),
+    baseline: z.object({
+      awayPointsPerGame: z.number(),
+      homePointsPerGame: z.number(),
+      matchupBaseline: z.number(),
+    }).optional(),
     meta: z.object({
       conf_source: z.string(),
     }).optional(),
@@ -123,7 +128,11 @@ export async function POST(request: Request) {
           })
           
           // Generate real score predictions from factor signals
-          const leagueAverageTotal = 225.0 // NBA league average total
+          // NEW: Use matchup baseline (team averages) instead of league average
+          const matchupBaseline = results.baseline?.matchupBaseline || 225.0
+          const awayPts = results.baseline?.awayPointsPerGame || 111.5
+          const homePts = results.baseline?.homePointsPerGame || 111.5
+          console.log('[SHIVA:Step4] Using matchup baseline:', { matchupBaseline, awayPts, homePts })
           
           // Calculate factor adjustments to the total
           let totalAdjustment = 0
@@ -140,13 +149,17 @@ export async function POST(request: Request) {
             factorAdjustments[factor.key] = adjustment
           }
           
-          // Calculate predicted total
-          const predictedTotal = Math.max(180, Math.min(280, leagueAverageTotal + totalAdjustment))
+          // Calculate predicted total using matchup baseline
+          const predictedTotal = Math.max(180, Math.min(280, matchupBaseline + totalAdjustment))
           
-          // Split into home/away scores with proper home court advantage
+          // Split predicted total based on team averages with home court advantage
           const homeCourtAdvantage = 2.5 // NBA home court advantage
-          const baseHomeScore = predictedTotal / 2 + homeCourtAdvantage
-          const baseAwayScore = predictedTotal / 2 - homeCourtAdvantage
+          const totalTeamAvg = awayPts + homePts
+          const awayRatio = awayPts / totalTeamAvg
+          const homeRatio = homePts / totalTeamAvg
+          
+          const baseHomeScore = predictedTotal * homeRatio + homeCourtAdvantage
+          const baseAwayScore = predictedTotal * awayRatio - homeCourtAdvantage
           
           // Add realistic variance (±2-3 points) but ensure no ties
           const variance = (Math.random() - 0.5) * 4 // ±2 point variance

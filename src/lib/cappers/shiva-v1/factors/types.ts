@@ -28,6 +28,10 @@ export interface StatMuseBundle {
   homePaceSeason: number
   homePaceLast10: number
   
+  // Team scoring averages (last 5 games)
+  awayPointsPerGame: number
+  homePointsPerGame: number
+  
   // Offensive/Defensive ratings
   awayORtgLast10: number
   homeORtgLast10: number

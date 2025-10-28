@@ -181,11 +181,20 @@ export async function POST(request: Request) {
         }
       }
       
+      // Extract baseline data from totalsDebug for Step 4
+      const bundle = totalsDebug?.console_logs?.bundle
+      const baselineData = bundle ? {
+        awayPointsPerGame: bundle.awayPointsPerGame || 111.5,
+        homePointsPerGame: bundle.homePointsPerGame || 111.5,
+        matchupBaseline: (bundle.awayPointsPerGame || 111.5) + (bundle.homePointsPerGame || 111.5)
+      } : null
+      
       const responseBody = { 
         run_id, 
         factors: factorsToProcess,
         factor_count: factorsToProcess.length,
         factor_version: factorVersion,
+        baseline: baselineData,
         _debug: totalsDebug ? {
           totals: totalsDebug,
           ai_provider: inputs.ai_provider,

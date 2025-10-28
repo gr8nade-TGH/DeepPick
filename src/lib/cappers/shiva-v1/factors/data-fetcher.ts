@@ -33,6 +33,9 @@ export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<StatMuseBundle> 
       homePaceSeason: ctx.home === 'Golden State Warriors' ? 102.1 : 99.8,
       homePaceLast10: ctx.home === 'Golden State Warriors' ? 102.1 : 99.8,
       
+      awayPointsPerGame: ctx.away === 'Denver Nuggets' ? 115.0 : 108.0,
+      homePointsPerGame: ctx.home === 'Golden State Warriors' ? 112.0 : 109.0,
+      
       awayORtgLast10: ctx.away === 'Denver Nuggets' ? 115.2 : 108.7,
       homeORtgLast10: ctx.home === 'Golden State Warriors' ? 112.8 : 109.3,
       
@@ -190,6 +193,10 @@ export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<StatMuseBundle> 
       awayPaceLast10: awayStats?.pace || awaySeasonStats?.pace || ctx.leagueAverages.pace,
       homePaceSeason: homeSeasonStats?.pace || homeStats?.pace || ctx.leagueAverages.pace,
       homePaceLast10: homeStats?.pace || homeSeasonStats?.pace || ctx.leagueAverages.pace,
+      
+      // Team scoring averages (last 5 games) - NEW BASELINE DATA
+      awayPointsPerGame: awayFormData?.data?.pointsPerGame || 111.5, // Fallback to league avg/2
+      homePointsPerGame: homeFormData?.data?.pointsPerGame || 111.5, // Fallback to league avg/2
       
       // Offensive ratings (NBA Stats API season data, with recent form fallback)
       awayORtgLast10: awayStats?.offensiveRating || awaySeasonStats?.offensiveRating || ctx.leagueAverages.ORtg,
