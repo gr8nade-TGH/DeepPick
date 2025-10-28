@@ -24,7 +24,12 @@ const PickSchema = z.object({
     conf_final: z.number(),
     edge_dominant: z.enum(['side', 'total']),
     side_data: z.object({ pick_team: z.string(), spread_pred: z.number(), market_spread: z.number() }).optional(),
-    total_data: z.object({ total_pred: z.number(), market_total: z.number() }).optional(),
+    total_data: z.object({ 
+      total_pred: z.number(), 
+      market_total: z.number(),
+      factor_contributions: z.any().optional(),
+      predicted_total: z.number().optional()
+    }).optional(),
   }).strict(),
   results: z.object({
     decision: z.object({ pick_type: z.enum(['SPREAD', 'MONEYLINE', 'TOTAL']), pick_side: z.string(), line: z.number(), units: z.number(), reason: z.string() }).strict(),
