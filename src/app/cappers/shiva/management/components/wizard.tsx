@@ -1504,7 +1504,10 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                   edge_dominant: 'total',
                   total_data: {
                     total_pred: predictedTotal,
-                    market_total: marketTotal
+                    market_total: marketTotal,
+                    // Include factor data from Step 4
+                    factor_contributions: step4Results?.confidence?.factor_contributions || [],
+                    predicted_total: predictedTotal
                   }
                 },
                 results: {

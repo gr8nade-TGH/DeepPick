@@ -107,12 +107,20 @@ export async function POST(request: Request) {
             // Save even if gameId is null/undefined - use placeholder
             if (run_id) {
               const now = new Date().toISOString()
+              
+              // Extract factor data from total_data if available
+              const totalData = parse.data.inputs.total_data
+              const factorContributions = totalData?.factor_contributions || null
+              const predictedTotal = totalData?.predicted_total || null
+              
               console.log('[SHIVA:PickGenerate] PASS - Attempting to upsert run:', {
                 id: run_id,
                 game_id: gameId || 'unknown',
                 capper: 'shiva',
                 bet_type: results.decision.pick_type,
-                units: 0
+                units: 0,
+                hasFactors: !!factorContributions,
+                predictedTotal
               })
               
               const { data, error } = await admin
@@ -127,6 +135,8 @@ export async function POST(request: Request) {
                   confidence: parse.data.inputs.conf_final,
                   pick_type: results.decision.pick_type,
                   selection: `${results.decision.pick_side} ${results.decision.line}`,
+                  factor_contributions: factorContributions,
+                  predicted_total: predictedTotal,
                   created_at: now,
                   updated_at: now
                 }, { onConflict: 'id' })
