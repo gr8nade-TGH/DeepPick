@@ -4,6 +4,9 @@ import { InsightCard } from './insight-card'
 import { getFactorMeta } from '@/lib/cappers/shiva-v1/factor-registry'
 import { registerStep } from '@/lib/shared/dynamic-step-registry'
 
+// Module-level lock to prevent multiple AUTO cycles across all component instances
+let globalAutoRunning = false
+
 async function postJson(path: string, body: unknown, idempo: string) {
   const res = await fetch(path, {
     method: 'POST',

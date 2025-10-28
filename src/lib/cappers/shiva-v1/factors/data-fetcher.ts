@@ -214,45 +214,50 @@ export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<NBAStatsBundle> 
     // NO FALLBACKS - throw error if we can't get required real data
     
     // Helper to get required value or throw
-    const getRequired = <T>(value: T | null | undefined, field: string, team: string): T => {
+    const requireValue = (value: number | null | undefined, field: string, team: string): number => {
       if (value === null || value === undefined) {
         throw new Error(`Missing required data: ${field} for ${team}`)
       }
       return value
     }
     
+    // Helper to get pace from any source or throw
+    const getPace = (season: number | null | undefined, form: number | null | undefined, field: string, team: string): number => {
+      return season ?? form ?? requireValue(null, field, team)
+    }
+    
     const bundle: NBAStatsBundle = {
       // Pace data - must have at least one source
-      awayPaceSeason: awaySeasonStats?.pace ?? awayStats?.pace ?? getRequired(null, 'pace', ctx.away),
-      awayPaceLast10: awayStats?.pace ?? awaySeasonStats?.pace ?? getRequired(null, 'pace (last 10)', ctx.away),
-      homePaceSeason: homeSeasonStats?.pace ?? homeStats?.pace ?? getRequired(null, 'pace', ctx.home),
-      homePaceLast10: homeStats?.pace ?? homeSeasonStats?.pace ?? getRequired(null, 'pace (last 10)', ctx.home),
+      awayPaceSeason: getPace(awaySeasonStats?.pace, awayStats?.pace, 'pace', ctx.away),
+      awayPaceLast10: getPace(awayStats?.pace, awaySeasonStats?.pace, 'pace (last 10)', ctx.away),
+      homePaceSeason: getPace(homeSeasonStats?.pace, homeStats?.pace, 'pace', ctx.home),
+      homePaceLast10: getPace(homeStats?.pace, homeSeasonStats?.pace, 'pace (last 10)', ctx.home),
       
       // Team scoring averages (last 5 games) - REQUIRED
-      awayPointsPerGame: getRequired(awayFormData?.data?.pointsPerGame, 'pointsPerGame', ctx.away),
-      homePointsPerGame: getRequired(homeFormData?.data?.pointsPerGame, 'pointsPerGame', ctx.home),
+      awayPointsPerGame: requireValue(awayFormData?.data?.pointsPerGame, 'pointsPerGame', ctx.away),
+      homePointsPerGame: requireValue(homeFormData?.data?.pointsPerGame, 'pointsPerGame', ctx.home),
       
       // Offensive ratings - must have at least one source
-      awayORtgLast10: awayStats?.offensiveRating ?? awaySeasonStats?.offensiveRating ?? getRequired(null, 'offensiveRating', ctx.away),
-      homeORtgLast10: homeStats?.offensiveRating ?? homeSeasonStats?.offensiveRating ?? getRequired(null, 'offensiveRating', ctx.home),
+      awayORtgLast10: getPace(awayStats?.offensiveRating, awaySeasonStats?.offensiveRating, 'offensiveRating', ctx.away),
+      homeORtgLast10: getPace(homeStats?.offensiveRating, homeSeasonStats?.offensiveRating, 'offensiveRating', ctx.home),
       
       // Defensive ratings - must have at least one source
-      awayDRtgSeason: awaySeasonStats?.defensiveRating ?? awayStats?.defensiveRating ?? getRequired(null, 'defensiveRating', ctx.away),
-      homeDRtgSeason: homeSeasonStats?.defensiveRating ?? homeStats?.defensiveRating ?? getRequired(null, 'defensiveRating', ctx.home),
+      awayDRtgSeason: getPace(awaySeasonStats?.defensiveRating, awayStats?.defensiveRating, 'defensiveRating', ctx.away),
+      homeDRtgSeason: getPace(homeSeasonStats?.defensiveRating, homeStats?.defensiveRating, 'defensiveRating', ctx.home),
       
       // 3-Point environment - must have season data
-      away3PAR: getRequired(awaySeasonStats?.threePointAttemptRate, 'threePointAttemptRate', ctx.away),
-      home3PAR: getRequired(homeSeasonStats?.threePointAttemptRate, 'threePointAttemptRate', ctx.home),
+      away3PAR: requireValue(awaySeasonStats?.threePointAttemptRate, 'threePointAttemptRate', ctx.away),
+      home3PAR: requireValue(homeSeasonStats?.threePointAttemptRate, 'threePointAttemptRate', ctx.home),
       awayOpp3PAR: homeSeasonStats?.threePointAttemptRate ?? awaySeasonStats?.threePointAttemptRate ?? 0.35,
       homeOpp3PAR: awaySeasonStats?.threePointAttemptRate ?? homeSeasonStats?.threePointAttemptRate ?? 0.35,
-      away3Pct: getRequired(awaySeasonStats?.threePointPercentage, 'threePointPercentage', ctx.away),
-      home3Pct: getRequired(homeSeasonStats?.threePointPercentage, 'threePointPercentage', ctx.home),
+      away3Pct: requireValue(awaySeasonStats?.threePointPercentage, 'threePointPercentage', ctx.away),
+      home3Pct: requireValue(homeSeasonStats?.threePointPercentage, 'threePointPercentage', ctx.home),
       away3PctLast10: awayStats?.threePointPercentage ?? awaySeasonStats?.threePointPercentage ?? 0.35,
       home3PctLast10: homeStats?.threePointPercentage ?? homeSeasonStats?.threePointPercentage ?? 0.35,
       
       // Free throw environment - must have season data
-      awayFTr: getRequired(awaySeasonStats?.freeThrowRate, 'freeThrowRate', ctx.away),
-      homeFTr: getRequired(homeSeasonStats?.freeThrowRate, 'freeThrowRate', ctx.home),
+      awayFTr: requireValue(awaySeasonStats?.freeThrowRate, 'freeThrowRate', ctx.away),
+      homeFTr: requireValue(homeSeasonStats?.freeThrowRate, 'freeThrowRate', ctx.home),
       awayOppFTr: homeSeasonStats?.freeThrowRate ?? awaySeasonStats?.freeThrowRate ?? 0.25,
       homeOppFTr: awaySeasonStats?.freeThrowRate ?? homeSeasonStats?.freeThrowRate ?? 0.25,
       
