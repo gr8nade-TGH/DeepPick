@@ -26,13 +26,13 @@ export async function POST() {
       fetchOddsGameLines(dateStr)
     ])
     
-    console.log(`[Sync Games] Got ${scoreboard.scoreboard?.games?.length || 0} games from scoreboard`)
-    console.log(`[Sync Games] Got ${odds.gamelines?.length || 0} games with odds`)
+    console.log(`[Sync Games] Got ${scoreboard.games?.length || 0} games from scoreboard`)
+    console.log(`[Sync Games] Got ${odds.gameLines?.length || 0} games with odds`)
     
     // Create a map of odds by game ID
     const oddsMap = new Map()
-    if (odds.gamelines) {
-      for (const gameLine of odds.gamelines) {
+    if (odds.gameLines) {
+      for (const gameLine of odds.gameLines) {
         const gameId = gameLine.game?.id
         if (gameId) {
           oddsMap.set(gameId, gameLine)
@@ -41,7 +41,7 @@ export async function POST() {
     }
     
     // Process games from scoreboard
-    const games = scoreboard.scoreboard?.games || []
+    const games = scoreboard.games || []
     let synced = 0
     
     for (const game of games) {

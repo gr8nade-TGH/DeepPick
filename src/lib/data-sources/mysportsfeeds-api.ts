@@ -77,7 +77,7 @@ export async function testMySportsFeedsConnection(): Promise<void> {
  * Format: YYYYMMDD (e.g., 20250128)
  */
 export async function fetchScoreboard(date: string): Promise<any> {
-  return await fetchMySportsFeeds(`scoreboard/${date}.json`)
+  return await fetchMySportsFeeds(`${date}/scoreboard.json`)
 }
 
 /**
