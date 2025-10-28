@@ -1089,6 +1089,11 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           
           console.log('[Step 2] API response:', response)
           
+          // Check if the response was successful (status 2xx)
+          if (response.status >= 400) {
+            throw new Error(`API returned status ${response.status}: ${JSON.stringify(response.json)}`)
+          }
+          
           if (response.json?.snapshot_id) {
             setSnapId(response.json.snapshot_id)
           }
