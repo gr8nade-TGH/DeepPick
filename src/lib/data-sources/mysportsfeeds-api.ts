@@ -88,6 +88,14 @@ export async function fetchGameBoxscore(gameId: string): Promise<any> {
 }
 
 /**
+ * Fetch odds game lines for a specific date
+ * Format: YYYYMMDD
+ */
+export async function fetchOddsGameLines(date: string): Promise<any> {
+  return await fetchMySportsFeeds(`${date}/odds_gamelines.json`)
+}
+
+/**
  * Fetch team game log for a specific date
  * Format: YYYYMMDD
  */

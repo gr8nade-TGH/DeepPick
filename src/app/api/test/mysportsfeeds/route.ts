@@ -3,55 +3,26 @@
  * GET /api/test/mysportsfeeds
  */
 
+import { fetchOddsGameLines } from '@/lib/data-sources/mysportsfeeds-api'
 import { NextResponse } from 'next/server'
-
-const MYSPORTSFEEDS_API_KEY = process.env.MYSPORTSFEEDS_API_KEY
 
 export async function GET(request: Request) {
   try {
-    // Get yesterday's date in YYYYMMDD format
-    const yesterday = new Date()
-    yesterday.setDate(yesterday.getDate() - 1)
-    const dateStr = yesterday.toISOString().split('T')[0].replace(/-/g, '')
+    // Get today's date in YYYYMMDD format
+    const today = new Date().toISOString().split('T')[0].replace(/-/g, '')
     
-    console.log(`[MySportsFeeds Test] Testing with date: ${dateStr}...`)
+    console.log(`[MySportsFeeds Test] Testing odds for date: ${today}...`)
     
-    // Test basic auth
-    const credentials = `${MYSPORTSFEEDS_API_KEY}:MYSPORTSFEEDS`
-    const encoded = Buffer.from(credentials).toString('base64')
-    
-    // Try to fetch team game logs
-    const url = `https://api.mysportsfeeds.com/v2.1/pull/nba/latest/date/${dateStr}/team_gamelogs.json?team=BOS`
-    
-    console.log(`[MySportsFeeds Test] Fetching: ${url}`)
-    
-    const response = await fetch(url, {
-      headers: {
-        'Authorization': `Basic ${encoded}`,
-        'Accept': 'application/json'
-      }
-    })
-    
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error(`[MySportsFeeds Test] API Error (${response.status}):`, errorText)
-      
-      return NextResponse.json({
-        success: false,
-        status: response.status,
-        error: errorText,
-        url,
-        timestamp: new Date().toISOString()
-      }, { status: response.status })
-    }
-    
-    const data = await response.json()
+    // Try to fetch odds game lines
+    const oddsData = await fetchOddsGameLines(today)
     
     return NextResponse.json({
       success: true,
-      message: 'MySportsFeeds API connection successful!',
-      testDate: dateStr,
-      sampleData: data,
+      message: 'MySportsFeeds Odds API successful!',
+      testDate: today,
+      lastUpdatedOn: oddsData.lastUpdatedOn,
+      gamesWithOdds: oddsData.gamelines?.length || 0,
+      sampleData: oddsData,
       timestamp: new Date().toISOString()
     })
   } catch (error) {
