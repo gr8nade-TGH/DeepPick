@@ -1375,6 +1375,19 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         const step3IdempotencyKey = `ui-demo-step3-${Date.now()}-${Math.random().toString(36).substring(7)}`
         console.log('[Step 3] Using idempotency key:', step3IdempotencyKey)
         const r = await postJson('/api/shiva/factors/step3', step3Body, step3IdempotencyKey)
+        console.log('[Step 3] API response:', r)
+        
+        // Check if the response was successful (status 2xx)
+        if (r.status >= 400) {
+          const errorMsg = r.json?.error || r.json?.message || JSON.stringify(r.json)
+          console.error('[Step 3] Factors API failed:', {
+            status: r.status,
+            error: errorMsg,
+            body: r.json
+          })
+          throw new Error(`Factors API returned status ${r.status}: ${errorMsg}`)
+        }
+        
         updateStepProgress(3, 80, 'Computing factor signals...')
         setLog(r)
         setStepLogs(prev => ({ ...prev, 3: r }))
