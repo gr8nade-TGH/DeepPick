@@ -1297,6 +1297,17 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         console.log('[Step 3] Starting Step 3 execution...')
         setStepLoading(3, true, 'Computing NBA factors...', 10)
         
+        // Get the selected game from Step 1
+        const step1Game = stepLogs[1]?.json?.selected_game
+        if (!step1Game) {
+          throw new Error('Step 1 must be completed before Step 3')
+        }
+        
+        const awayTeam = step1Game.away_team?.name || 'Unknown Away'
+        const homeTeam = step1Game.home_team?.name || 'Unknown Home'
+        
+        console.log('[Step 3] Using teams from Step 1:', { awayTeam, homeTeam })
+        
         // Real API call for Step 3 - NBA Totals factors
         // Note: For NBA TOTAL, the API will compute factors via computeTotalsFactors()
         // The results object is required by schema but will be replaced by computed factors
@@ -1304,8 +1315,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           run_id: runId,
           inputs: {
             teams: {
-              away: 'Denver Nuggets',
-              home: 'Golden State Warriors'
+              away: awayTeam,
+              home: homeTeam
             },
             sport: 'NBA',
             betType: props.betType || 'TOTAL',
