@@ -206,15 +206,20 @@ export function RunLogTable() {
   
   // Clear cooldown
   const handleClearCooldown = async (cooldownId: string) => {
+    console.log('[RunLogTable] Clearing cooldown:', cooldownId)
     setClearingCooldown(cooldownId)
     try {
       const response = await fetch(`/api/shiva/cooldowns/${cooldownId}`, { method: 'DELETE' })
+      const json = await response.json()
+      console.log('[RunLogTable] Clear response:', json)
       if (response.ok) {
         // Remove from local state immediately - no refetch needed
         setCooldowns(prev => prev.filter(cd => cd.id !== cooldownId))
+      } else {
+        console.error('[RunLogTable] Failed to clear cooldown:', json)
       }
     } catch (error) {
-      console.error('Failed to clear cooldown:', error)
+      console.error('[RunLogTable] Failed to clear cooldown:', error)
     } finally {
       setClearingCooldown(null)
     }

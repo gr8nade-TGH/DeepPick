@@ -18,10 +18,11 @@ export async function DELETE(
     const supabase = getSupabaseAdmin()
     
     // Delete the cooldown
-    const { error } = await supabase
+    const { error, data } = await supabase
       .from('pick_generation_cooldowns')
       .delete()
       .eq('id', id)
+      .select()
 
     if (error) {
       console.error('[CooldownsAPI] Error deleting cooldown:', error)
@@ -31,9 +32,12 @@ export async function DELETE(
       )
     }
 
+    console.log('[CooldownsAPI] Deleted cooldown:', { id, deletedRows: data?.length || 0 })
+
     return NextResponse.json({
       success: true,
-      message: 'Cooldown cleared successfully'
+      message: 'Cooldown cleared successfully',
+      deletedCount: data?.length || 0
     })
   } catch (error: any) {
     console.error('[CooldownsAPI] Unexpected error:', error)

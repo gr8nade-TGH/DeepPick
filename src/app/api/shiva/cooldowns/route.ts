@@ -49,6 +49,11 @@ export async function GET() {
       matchup: gameMap.get(cd.game_id)
     })) || []
 
+    console.log('[CooldownsAPI] Fetching cooldowns:', { 
+      count: cooldownsWithMatchups.length, 
+      ids: cooldownsWithMatchups.map(c => c.id) 
+    })
+
     return NextResponse.json({
       success: true,
       cooldowns: cooldownsWithMatchups,
