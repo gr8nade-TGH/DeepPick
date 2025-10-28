@@ -21,7 +21,7 @@ export interface RunCtx {
   factorWeights?: Record<string, number> // weight percentages (0-100)
 }
 
-export interface StatMuseBundle {
+export interface NBAStatsBundle {
   // Team pace data
   awayPaceSeason: number
   awayPaceLast10: number
@@ -87,7 +87,7 @@ export interface FactorComputationResult {
     factor_keys: string[]
     console_logs: {
       branch_used: { sport: string; betType: string }
-      bundle: StatMuseBundle
+      bundle: NBAStatsBundle
       rows_z_points: Array<{ key: string; z: number; pts: number }>
     }
     nba_stats_api_debug: {

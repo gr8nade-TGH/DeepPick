@@ -5,7 +5,7 @@
  */
 
 import { FactorComputation } from '@/types/factors'
-import { RunCtx, StatMuseBundle, InjuryImpact, FactorComputationResult } from './types'
+import { RunCtx, NBAStatsBundle, InjuryImpact, FactorComputationResult } from './types'
 import { fetchNBAStatsBundle, summarizeAvailabilityWithLLM } from './data-fetcher'
 import { computePaceIndex } from './f1-pace-index'
 import { computeOffensiveForm } from './f2-offensive-form'
@@ -115,7 +115,7 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
   }
   
   // Fetch NBA Stats API data bundle (only if needed)
-  let bundle: StatMuseBundle | null = null
+  let bundle: NBAStatsBundle | null = null
   let nbaStatsDebugInfo = {
     condition_check: nbaStatsConditionCheck,
     enabled_factors: enabledFactorKeys,
@@ -294,7 +294,9 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
           league3PAR: 0.39,
           league3Pct: 0.35,
           leagueFTr: 0.22,
-          league3Pstdev: 0.036
+          league3Pstdev: 0.036,
+          awayPointsPerGame: 110.0,
+          homePointsPerGame: 110.0
         },
         rows_z_points: rowsZPoints
       },

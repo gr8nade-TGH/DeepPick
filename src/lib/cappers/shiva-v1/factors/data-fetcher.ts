@@ -8,13 +8,13 @@
 import { fetchTeamRecentForm, convertRecentFormToStats } from '@/lib/data-sources/odds-api-scores'
 import { fetchNBATeamStats } from '@/lib/data-sources/nba-stats-api'
 import { searchInjuries } from '../news'
-import { RunCtx, StatMuseBundle, InjuryImpact } from './types'
+import { RunCtx, NBAStatsBundle, InjuryImpact } from './types'
 
 /**
  * Fetch all required data for NBA totals factor computation
  * Uses The Odds API scores endpoint to calculate stats from last 5 games
  */
-export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<StatMuseBundle> {
+export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<NBAStatsBundle> {
   console.log('[NBA_STATS_BUNDLE:FETCH_START]', { away: ctx.away, home: ctx.home })
   
   // REMOVED: Build-time bypass that was causing identical stats for all teams
@@ -26,7 +26,7 @@ export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<StatMuseBundle> 
   if (false) { // Always skip tea bypass - fetch real stats
     console.log('[NBA_STATS_BUNDLE:BUILD_TIME] Skipping NBA Stats API calls during build, using realistic fallbacks')
     // Use realistic team-specific fallbacks instead of league averages
-    const bundle: StatMuseBundle = {
+    const bundle: NBAStatsBundle = {
       // Use realistic team-specific data instead of league averages
       awayPaceSeason: ctx.away === 'Denver Nuggets' ? 98.5 : 101.2,
       awayPaceLast10: ctx.away === 'Denver Nuggets' ? 98.5 : 101.2,
@@ -187,7 +187,7 @@ export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<StatMuseBundle> 
     
     // Build bundle using NBA Stats API (season data) and Odds API (recent form)
     // Priority: NBA Stats API for season data, Odds API for recent form, fallback to league averages
-    const bundle: StatMuseBundle = {
+    const bundle: NBAStatsBundle = {
       // Pace data (NBA Stats API season data, with recent form fallback)
       awayPaceSeason: awaySeasonStats?.pace || awayStats?.pace || ctx.leagueAverages.pace,
       awayPaceLast10: awayStats?.pace || awaySeasonStats?.pace || ctx.leagueAverages.pace,

@@ -6,7 +6,7 @@
  */
 
 // Re-export types
-export type { RunCtx, StatMuseBundle, InjuryImpact, FactorComputationResult } from './types'
+export type { RunCtx, NBAStatsBundle, InjuryImpact, FactorComputationResult } from './types'
 
 // Re-export the main orchestrator function
 export { computeTotalsFactors } from './nba-totals-orchestrator'
