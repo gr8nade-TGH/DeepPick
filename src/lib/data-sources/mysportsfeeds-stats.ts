@@ -54,9 +54,9 @@ function getAuthHeader(): string {
 }
 
 /**
- * Fetch team game log from MySportsFeeds
+ * Fetch last N games for a team by checking recent dates
  */
-async function fetchTeamGameLog(teamAbbrev: string): Promise<any> {
+async function fetchLastNGames(teamAbbrev: string, n: number = 5): Promise<any> {
   const url = `${MYSPORTSFEEDS_BASE_URL}/latest/date/team_gamelogs.json?team=${teamAbbrev}`
   
   console.log(`[MySportsFeeds] Fetching game logs for ${teamAbbrev}...`)
@@ -76,6 +76,12 @@ async function fetchTeamGameLog(teamAbbrev: string): Promise<any> {
     }
     
     const data = await response.json()
+    
+    // Limit to last N games
+    if (data.gamelogs && data.gamelogs.length > n) {
+      data.gamelogs = data.gamelogs.slice(0, n)
+    }
+    
     return data
   } catch (error) {
     console.error('[MySportsFeeds] Request failed:', error)
@@ -123,13 +129,39 @@ export async function getTeamFormData(teamAbbrev: string): Promise<TeamFormData>
   
   try {
     // Fetch game logs
-    const gameLogsData = await fetchTeamGameLog(teamAbbrev)
+    const gameLogsData = await fetchLastNGames(teamAbbrev, 5)
     
-    // Parse and extract last 5 completed games
-    const gameLogs = parseGameLogs(gameLogsData, teamAbbrev)
-    const last5Games = gameLogs.slice(0, 5)
+    // Parse the raw data into usable format
+    const gameLogs = gameLogsData.gamelogs || []
     
-    console.log(`[MySportsFeeds] Found ${last5Games.length} recent games for ${teamAbbrev}`)
+    if (gameLogs.length === 0) {
+      throw new Error(`No game logs found for ${teamAbbrev}`)
+    }
+    
+    console.log(`[MySportsFeeds] Found ${gameLogs.length} recent games for ${teamAbbrev}`)
+    
+    // Collect opponent abbreviations from the games
+    const opponents = new Set<string>()
+    for (const gl of gameLogs) {
+      const game = gl.game
+      if (gl.team.abbreviation === teamAbbrev) {
+        const opponent = game.awayTeamAbbreviation === teamAbbrev 
+          ? game.homeTeamAbbreviation 
+          : game.awayTeamAbbreviation
+        opponents.add(opponent)
+      }
+    }
+    
+    // Fetch opponent stats for the same games
+    const opponentStatsMap = new Map<string, any>()
+    for (const opponent of opponents) {
+      try {
+        const oppData = await fetchLastNGames(opponent, 10)
+        opponentStatsMap.set(opponent, oppData.gamelogs || [])
+      } catch (error) {
+        console.warn(`[MySportsFeeds] Failed to fetch stats for opponent ${opponent}:`, error)
+      }
+    }
     
     // Calculate averages over last 5 games
     let totalPace = 0
@@ -140,24 +172,63 @@ export async function getTeamFormData(teamAbbrev: string): Promise<TeamFormData>
     let totalFTA = 0
     let totalFGA = 0
     
-    last5Games.forEach((game: any) => {
-      const teamPoss = calculatePossessions(game.stats.FGA, game.stats.FTA, game.stats.OREB, game.stats.TOV)
-      const oppPoss = calculatePossessions(game.stats.opponentFGA, game.stats.opponentFTA, game.stats.opponentOREB, game.stats.opponentTOV)
+    for (const gameLog of gameLogs) {
+      const stats = gameLog.stats
+      if (!stats) continue
+      
+      // Get team stats
+      const teamFGA = stats.fieldGoals?.fgAtt || 0
+      const teamFTA = stats.freeThrows?.ftAtt || 0
+      const teamOREB = stats.rebounds?.offReb || 0
+      const teamTOV = stats.defense?.tov || 0
+      const team3PA = stats.fieldGoals?.fg3PtAtt || 0
+      const team3PM = stats.fieldGoals?.fg3PtMade || 0
+      const teamPTS = stats.offense?.pts || 0
+      
+      // Calculate team possessions
+      const teamPoss = calculatePossessions(teamFGA, teamFTA, teamOREB, teamTOV)
+      
+      // Try to get opponent stats for DRtg calculation
+      let oppPoss = teamPoss // Default to same as team if we can't find opponent
+      const game = gameLog.game
+      const opponent = game.awayTeamAbbreviation === teamAbbrev 
+        ? game.homeTeamAbbreviation 
+        : game.awayTeamAbbreviation
+      
+      const oppGameLogs = opponentStatsMap.get(opponent)
+      if (oppGameLogs) {
+        // Find the matching game
+        const oppGame = oppGameLogs.find((gl: any) => 
+          (gl.game.awayTeamAbbreviation === opponent && gl.game.homeTeamAbbreviation === teamAbbrev) ||
+          (gl.game.homeTeamAbbreviation === opponent && gl.game.awayTeamAbbreviation === teamAbbrev)
+        )
+        
+        if (oppGame && oppGame.stats) {
+          const oppFGA = oppGame.stats.fieldGoals?.fgAtt || 0
+          const oppFTA = oppGame.stats.freeThrows?.ftAtt || 0
+          const oppOREB = oppGame.stats.rebounds?.offReb || 0
+          const oppTOV = oppGame.stats.defense?.tov || 0
+          oppPoss = calculatePossessions(oppFGA, oppFTA, oppOREB, oppTOV)
+        }
+      }
       
       const pace = calculatePace(teamPoss, oppPoss)
-      const ortg = calculateORtg(game.stats.PTS, teamPoss)
-      const drtg = calculateDRtg(game.stats.opponentPTS, oppPoss)
+      const ortg = calculateORtg(teamPTS, teamPoss)
+      
+      // For DRtg, use ptsAgainst from the game log
+      const oppPTS = stats.defense?.ptsAgainst || 0
+      const drtg = calculateDRtg(oppPTS, oppPoss)
       
       totalPace += pace
       totalORtg += ortg
       totalDRtg += drtg
-      totalThreePA += game.stats.threePA
-      totalThreePM += game.stats.threePM
-      totalFTA += game.stats.FTA
-      totalFGA += game.stats.FGA
-    })
+      totalThreePA += team3PA
+      totalThreePM += team3PM
+      totalFTA += teamFTA
+      totalFGA += teamFGA
+    }
     
-    const gameCount = last5Games.length
+    const gameCount = gameLogs.length
     
     // Calculate averages
     const avgPace = totalPace / gameCount
@@ -189,10 +260,56 @@ export async function getTeamFormData(teamAbbrev: string): Promise<TeamFormData>
 /**
  * Parse MySportsFeeds game logs response
  */
-function parseGameLogs(data: any, teamAbbrev: string): any[] {
-  // TODO: Implement actual parsing based on MSF response structure
-  // This will need to be updated once we see the actual API response
-  return []
+function parseGameLogs(data: any, teamAbbrev: string): GameLogEntry[] {
+  if (!data || !data.gamelogs) {
+    console.warn('[MySportsFeeds] No gamelogs in response')
+    return []
+  }
+  
+  const parsed: GameLogEntry[] = []
+  
+  // Loop through all games
+  for (const gameLog of data.gamelogs) {
+    const game = gameLog.game
+    const team = gameLog.team
+    const stats = gameLog.stats
+    
+    // Skip if not the requested team or incomplete stats
+    if (team.abbreviation !== teamAbbrev || !stats) {
+      continue
+    }
+    
+      // Determine opponent
+      const isHomeGame = game.homeTeam.id === team.id
+      const opponentAbbrev = isHomeGame ? game.awayTeam.abbreviation : game.homeTeam.abbreviation
+      
+      // Extract stats we need
+      const entry: GameLogEntry = {
+        teamAbbrev: team.abbreviation,
+        opponentAbbrev,
+        date: game.startTime,
+        stats: {
+          FGA: stats.fieldGoals?.fgAtt || 0,
+          FTA: stats.freeThrows?.ftAtt || 0,
+          OREB: stats.rebounds?.offReb || 0,
+          TOV: stats.defense?.tov || 0,
+          threePA: stats.fieldGoals?.fg3PtAtt || 0,
+          threePM: stats.fieldGoals?.fg3PtMade || 0,
+          PTS: stats.offense?.pts || 0,
+          // Opponent stats - we only have ptsAgainst, will need to fetch opponent log for others
+          opponentFGA: 0, // Need to get from opponent game log
+          opponentFTA: 0,
+          opponentOREB: 0,
+          opponentTOV: 0,
+          opponentPTS: stats.defense?.ptsAgainst || 0
+        }
+      }
+    
+    parsed.push(entry)
+  }
+  
+  console.log(`[MySportsFeeds] Parsed ${parsed.length} games for ${teamAbbrev}`)
+  return parsed
 }
 
 /**

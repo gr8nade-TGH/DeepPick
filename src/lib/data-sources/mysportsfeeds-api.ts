@@ -88,10 +88,11 @@ export async function fetchGameBoxscore(gameId: string): Promise<any> {
 }
 
 /**
- * Fetch team game log (recent games)
+ * Fetch team game log for a specific date
+ * Format: YYYYMMDD
  */
-export async function fetchTeamGameLog(teamAbbrev: string, season: string = '2024-25'): Promise<any> {
-  return await fetchMySportsFeeds(`team_gamelogs.json?team=${teamAbbrev}&season=${season}`)
+export async function fetchTeamGameLogByDate(date: string, teamAbbrev: string): Promise<any> {
+  return await fetchMySportsFeeds(`${date}/team_gamelogs.json?team=${teamAbbrev}`)
 }
 
 // Export for testing
