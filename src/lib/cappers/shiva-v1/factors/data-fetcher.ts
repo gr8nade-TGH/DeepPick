@@ -16,7 +16,8 @@ import { RunCtx, NBAStatsBundle, InjuryImpact } from './types'
  * Removed dependency on NBA Stats API
  */
 export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<NBAStatsBundle> {
-  console.log('[NBA_STATS_BUNDLE:FETCH_START]', { away: ctx.away, home: ctx.home })
+  // TODO: This file needs to be completely refactored to use MySportsFeeds instead of NBA Stats API
+  throw new Error('fetchNBAStatsBundle is being refactored to use MySportsFeeds. Not yet implemented.')
   
   // REMOVED: Build-time bypass that was causing identical stats for all teams
   // Previously, when VERCEL === '1', it returned hardcoded values for only 2 teams,
@@ -91,8 +92,6 @@ export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<NBAStatsBundle> 
     console.log('[NBA_STATS_BUNDLE:API_RESULTS]', {
       awayForm: awayForm.status,
       homeForm: homeForm.status,
-      awaySeason: awaySeason.status,
-      homeSeason: homeSeason.status,
       awayFormData: awayFormData ? { 
         ok: awayFormData.ok, 
         gamesPlayed: awayFormData.data?.gamesPlayed,
@@ -104,32 +103,10 @@ export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<NBAStatsBundle> 
         gamesPlayed: homeFormData.data?.gamesPlayed,
         cached: homeFormData.cached, 
         latencyMs: homeFormData.latencyMs 
-      } : null,
-      awaySeasonData: awaySeasonData ? {
-        ok: awaySeasonData.ok,
-        pace: awaySeasonData.data?.pace,
-        offensiveRating: awaySeasonData.data?.offensiveRating,
-        defensiveRating: awaySeasonData.data?.defensiveRating,
-        cached: awaySeasonData.cached,
-        latencyMs: awaySeasonData.latencyMs
-      } : null,
-      homeSeasonData: homeSeasonData ? {
-        ok: homeSeasonData.ok,
-        pace: homeSeasonData.data?.pace,
-        offensiveRating: homeSeasonData.data?.offensiveRating,
-        defensiveRating: homeSeasonData.data?.defensiveRating,
-        cached: homeSeasonData.cached,
-        latencyMs: homeSeasonData.latencyMs
       } : null
     })
     
     // Debug: Log any rejected promises
-    if (awaySeason.status === 'rejected') {
-      console.error('[NBA_STATS_BUNDLE:ERROR] Away season API failed:', awaySeason.reason)
-    }
-    if (homeSeason.status === 'rejected') {
-      console.error('[NBA_STATS_BUNDLE:ERROR] Home season API failed:', homeSeason.reason)
-    }
     if (awayForm.status === 'rejected') {
       console.error('[NBA_STATS_BUNDLE:ERROR] Away form API failed:', awayForm.reason)
     }
@@ -141,17 +118,11 @@ export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<NBAStatsBundle> 
     const awayStats = awayFormData?.ok && awayFormData.data ? convertRecentFormToStats(awayFormData.data) : null
     const homeStats = homeFormData?.ok && homeFormData.data ? convertRecentFormToStats(homeFormData.data) : null
     
-    // Extract NBA Stats API data - CHECK IF WE GOT VALID DATA
-    const awaySeasonStats = awaySeasonData?.ok && awaySeasonData.data ? awaySeasonData.data : null
-    const homeSeasonStats = homeSeasonData?.ok && homeSeasonData.data ? homeSeasonData.data : null
-    
     // VALIDATION: Require real data from at least one source
-    const hasAwaySeasonData = awaySeasonData?.ok && awaySeasonData.data
-    const hasHomeSeasonData = homeSeasonData?.ok && homeSeasonData.data
     const hasAwayFormData = awayFormData?.ok && awayFormData.data
     const hasHomeFormData = homeFormData?.ok && homeFormData.data
     
-    const hasAnyData = hasAwaySeasonData || hasHomeSeasonData || hasAwayFormData || hasHomeFormData
+    const hasAnyData = hasAwayFormData || hasHomeFormData
     
     if (!hasAnyData) {
       console.error('[NBA_STATS_BUNDLE:NO_DATA] All API calls failed, cannot generate pick without real stats')
@@ -160,12 +131,8 @@ export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<NBAStatsBundle> 
     
     // Log which data sources succeeded
     console.log('[NBA_STATS_BUNDLE:DATA_AVAILABILITY]', {
-      hasAwaySeasonData,
-      hasHomeSeasonData,
       hasAwayFormData,
       hasHomeFormData,
-      awaySeasonError: awaySeasonData?.error,
-      homeSeasonError: homeSeasonData?.error,
       awayFormError: awayFormData?.error,
       homeFormError: homeFormData?.error
     })
