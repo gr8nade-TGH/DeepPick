@@ -774,12 +774,14 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
   }
 
   function validateStep2(): { isValid: boolean; error?: string; data?: any } {
-    const step2Data = stepLogs[2]?.json
+    // Use ref for fresh data in AUTO mode
+    const step2Data = stepLogsRef.current[2]?.json || stepLogs[2]?.json
+    const step2Status = stepLogsRef.current[2]?.status || stepLogs[2]?.status
     if (!step2Data) {
       return { isValid: false, error: 'Step 2 not executed' }
     }
-    if (stepLogs[2]?.status < 200 || stepLogs[2]?.status >= 300) {
-      return { isValid: false, error: `Step 2 failed with status ${stepLogs[2]?.status}` }
+    if (step2Status && (step2Status < 200 || step2Status >= 300)) {
+      return { isValid: false, error: `Step 2 failed with status ${step2Status}` }
     }
     if (!step2Data.snapshot_id) {
       return { isValid: false, error: 'Step 2 did not generate snapshot_id' }
@@ -807,12 +809,14 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
   }
 
   function validateStep3(): { isValid: boolean; error?: string; data?: any } {
-    const step3Data = stepLogs[3]?.json
+    // Use ref for fresh data in AUTO mode
+    const step3Data = stepLogsRef.current[3]?.json || stepLogs[3]?.json
+    const step3Status = stepLogsRef.current[3]?.status || stepLogs[3]?.status
     if (!step3Data) {
       return { isValid: false, error: 'Step 3 not executed' }
     }
-    if (stepLogs[3]?.status < 200 || stepLogs[3]?.status >= 300) {
-      return { isValid: false, error: `Step 3 failed with status ${stepLogs[3]?.status}` }
+    if (step3Status && (step3Status < 200 || step3Status >= 300)) {
+      return { isValid: false, error: `Step 3 failed with status ${step3Status}` }
     }
     if (!step3Data.factors || !Array.isArray(step3Data.factors)) {
       return { isValid: false, error: 'Step 3 did not generate factors array' }
@@ -870,12 +874,14 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
   }
 
   function validateStep4(): { isValid: boolean; error?: string; data?: any } {
-    const step4Data = stepLogs[4]?.json
+    // Use ref for fresh data in AUTO mode
+    const step4Data = stepLogsRef.current[4]?.json || stepLogs[4]?.json
+    const step4Status = stepLogsRef.current[4]?.status || stepLogs[4]?.status
     if (!step4Data) {
       return { isValid: false, error: 'Step 4 not executed' }
     }
-    if (stepLogs[4]?.status < 200 || stepLogs[4]?.status >= 300) {
-      return { isValid: false, error: `Step 4 failed with status ${stepLogs[4]?.status}` }
+    if (step4Status && (step4Status < 200 || step4Status >= 300)) {
+      return { isValid: false, error: `Step 4 failed with status ${step4Status}` }
     }
     if (!step4Data.predictions) {
       return { isValid: false, error: 'Step 4 did not generate predictions' }
@@ -914,12 +920,14 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
   }
 
   function validateStep5(): { isValid: boolean; error?: string; data?: any } {
-    const step5Data = stepLogs[5]?.json
+    // Use ref for fresh data in AUTO mode
+    const step5Data = stepLogsRef.current[5]?.json || stepLogs[5]?.json
+    const step5Status = stepLogsRef.current[5]?.status || stepLogs[5]?.status
     if (!step5Data) {
       return { isValid: false, error: 'Step 5 not executed' }
     }
-    if (stepLogs[5]?.status < 200 || stepLogs[5]?.status >= 300) {
-      return { isValid: false, error: `Step 5 failed with status ${stepLogs[5]?.status}` }
+    if (step5Status && (step5Status < 200 || step5Status >= 300)) {
+      return { isValid: false, error: `Step 5 failed with status ${step5Status}` }
     }
     if (typeof step5Data.conf_final !== 'number') {
       return { isValid: false, error: 'Step 5 missing conf_final' }
