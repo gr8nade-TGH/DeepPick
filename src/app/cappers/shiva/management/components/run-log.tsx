@@ -1,6 +1,14 @@
 "use client"
 import { useEffect, useState } from 'react'
 
+interface FactorContribution {
+  key: string
+  name: string
+  z: number
+  weight: number
+  contribution: number
+}
+
 interface RunLogEntry {
   run_id: string
   game_id: string
@@ -14,11 +22,16 @@ interface RunLogEntry {
   // From cooldowns table
   cooldown_result?: string
   cooldown_until?: string
+  // Factor data
+  factor_contributions?: FactorContribution[]
+  factor_adjustments?: Record<string, number>
+  predicted_total?: number
 }
 
 export function RunLogTable() {
   const [runs, setRuns] = useState<RunLogEntry[]>([])
   const [loading, setLoading] = useState(true)
+  const [expandedRuns, setExpandedRuns] = useState<Set<string>>(new Set())
 
   console.log('[RunLogTable] Component mounted/rendered')
 
@@ -78,6 +91,18 @@ export function RunLogTable() {
     if (type === 'TOTAL') return 'TOTALS'
     if (type === 'SPREAD' || type === 'MONEYLINE' || type === 'ML') return 'ML/ATS'
     return type
+  }
+
+  const toggleExpand = (runId: string) => {
+    setExpandedRuns(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(runId)) {
+        newSet.delete(runId)
+      } else {
+        newSet.add(runId)
+      }
+      return newSet
+    })
   }
 
   const getOutcomeColor = (outcome: string) => {

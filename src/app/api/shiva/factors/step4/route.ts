@@ -184,10 +184,13 @@ export async function POST(request: Request) {
           const winner = homeScore > awayScore ? 'home' : 'away'
           
           if (writeAllowed) {
-            // Store confidence calculation
+            // Store confidence calculation and factor data
             const upd = await admin.from('runs').update({ 
               conf7: confidenceResult.confScore,
-              conf_source: confidenceResult.confSource
+              conf_source: confidenceResult.confSource,
+              factor_contributions: confidenceResult.factorContributions,
+              factor_adjustments: factorAdjustments,
+              predicted_total: predictedTotal
             }).eq('run_id', run_id)
             if (upd.error) throw new Error(upd.error.message)
           }
