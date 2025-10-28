@@ -1809,28 +1809,29 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         // Run steps 1-5 automatically with delays
         console.log('[AUTO] Running Step 1...')
         await handleStepClick(1)
-        await new Promise(resolve => setTimeout(resolve, 2000)) // 2 second delay
+        await new Promise(resolve => setTimeout(resolve, 3000)) // 3 second delay for state updates
         
         console.log('[AUTO] Running Step 2...')
         await handleStepClick(2)
-        await new Promise(resolve => setTimeout(resolve, 2000))
+        await new Promise(resolve => setTimeout(resolve, 3000))
         
         console.log('[AUTO] Running Step 3...')
         await handleStepClick(3)
-        await new Promise(resolve => setTimeout(resolve, 2000))
+        await new Promise(resolve => setTimeout(resolve, 5000)) // Longer for AI calls
         
         console.log('[AUTO] Running Step 4...')
         await handleStepClick(4)
-        await new Promise(resolve => setTimeout(resolve, 2000))
+        await new Promise(resolve => setTimeout(resolve, 3000))
         
         console.log('[AUTO] Running Step 5...')
         await handleStepClick(5)
 
-        console.log('[AUTO] Pick generation cycle complete')
+        console.log('[AUTO] Pick generation cycle complete - will run again in 3 minutes')
       } catch (error) {
         console.error('[AUTO] Error in auto cycle:', error)
       } finally {
         isRunning = false
+        console.log('[AUTO] Cycle finished, next run in 3 minutes')
       }
     }
 
