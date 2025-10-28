@@ -1088,10 +1088,17 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           }, step2IdempotencyKey)
           
           console.log('[Step 2] API response:', response)
+          console.log('[Step 2] Full response details:', JSON.stringify(response, null, 2))
           
           // Check if the response was successful (status 2xx)
           if (response.status >= 400) {
-            throw new Error(`API returned status ${response.status}: ${JSON.stringify(response.json)}`)
+            const errorMsg = response.json?.error || response.json?.message || JSON.stringify(response.json)
+            console.error('[Step 2] Snapshot API failed:', {
+              status: response.status,
+              error: errorMsg,
+              body: response.json
+            })
+            throw new Error(`Snapshot API returned status ${response.status}: ${errorMsg}`)
           }
           
           if (response.json?.snapshot_id) {
