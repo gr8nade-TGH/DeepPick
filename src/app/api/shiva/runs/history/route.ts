@@ -74,8 +74,24 @@ export async function GET(request: NextRequest) {
     })
 
     // Merge cooldown data into runs and format matchup
-    const runs = (runsData || []).map((run: any) => {
+    const runs = (runsData || []).map((run: any, idx: number) => {
       const cooldown = cooldownMap.get(run.run_id)
+      
+      // Debug: Log first run to inspect factor_contributions
+      if (idx === 0) {
+        console.log('[Run History] First run from DB:', {
+          run_id: run.run_id,
+          has_factor_contributions: !!run.factor_contributions,
+          factor_contributions_type: typeof run.factor_contributions,
+          factor_contributions: run.factor_contributions,
+          has_predicted_total: !!run.predicted_total,
+          predicted_total: run.predicted_total,
+          has_baseline_avg: !!run.baseline_avg,
+          baseline_avg: run.baseline_avg,
+          has_market_total: !!run.market_total,
+          market_total: run.market_total
+        })
+      }
       
       // Format matchup from game data
       let matchup = run.game_id

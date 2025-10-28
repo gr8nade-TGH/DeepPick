@@ -391,6 +391,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
   
   // Track step logs in a ref to avoid stale closures in AUTO mode
   const stepLogsRef = useRef<Record<number, any>>({})
+  // Track if AUTO mode is currently running to prevent duplicate cycles
+  const autoRunningRef = useRef<boolean>(false)
   
   // Keep ref in sync with state
   useEffect(() => {
@@ -1965,16 +1967,14 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       return // Only run in AUTO mode
     }
 
-    let isRunning = false
-
     const runAutoCycle = async () => {
       // Skip if already running
-      if (isRunning) {
+      if (autoRunningRef.current) {
         console.log('[AUTO] Skipping cycle - already running')
         return
       }
 
-      isRunning = true
+      autoRunningRef.current = true
       console.log('[AUTO] Starting automatic pick generation cycle...')
 
       try {
@@ -2020,7 +2020,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       } catch (error) {
         console.error('[AUTO] Error in auto cycle:', error)
       } finally {
-        isRunning = false
+        autoRunningRef.current = false
         console.log('[AUTO] Cycle finished, next run in 6 hours')
       }
     }
@@ -2031,7 +2031,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
 
     return () => {
       clearInterval(interval)
-      isRunning = false
+      autoRunningRef.current = false
     }
   }, [props.mode]) // Only depend on mode to avoid infinite loops
 
