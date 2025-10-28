@@ -121,10 +121,10 @@ export default function ShivaManagementPage() {
       
       <div className="p-4 flex flex-col gap-4 h-[calc(100vh-120px)]">
         {/* Top row: Inbox + Wizard */}
-        <div className="flex gap-4 flex-1 min-h-0 overflow-hidden">
-          {/* Left: Inbox */}
-          <div className="w-96 flex flex-col space-y-4">
-            <div className="border border-gray-700 rounded p-3 bg-gray-900">
+        <div className="flex gap-4 h-[550px] overflow-hidden">
+          {/* Left: Inbox - matches height of Generated Picks would be */}
+          <div className="w-96 flex flex-col">
+            <div className="border border-gray-700 rounded p-3 bg-gray-900 h-full">
               <SHIVAManagementInbox 
                 onGameSelect={handleGameSelect}
                 selectedGame={selectedGame}
@@ -132,8 +132,8 @@ export default function ShivaManagementPage() {
             </div>
           </div>
 
-          {/* Right: Wizard */}
-          <div className="flex-1 border border-gray-700 rounded p-3 bg-gray-900 overflow-hidden flex flex-col">
+          {/* Right: Wizard - matches left column height */}
+          <div className="flex-1 border border-gray-700 rounded p-3 bg-gray-900 overflow-hidden flex flex-col h-full">
           {/* Action Buttons */}
           <div className="mb-4 flex gap-3 flex-shrink-0">
             <button
