@@ -136,8 +136,17 @@ export async function POST(request: Request) {
           factorVersion = totalsResult.factor_version
           totalsDebug = totalsResult.totals_debug
         } catch (error) {
-          console.error('[Step3:NBA-Totals] Error:', error)
-          throw new Error(`NBA Totals computation failed: ${error instanceof Error ? error.message : String(error)}`)
+          const errorMsg = error instanceof Error ? error.message : String(error)
+          console.error('[Step3:NBA-Totals] Error details:', {
+            message: errorMsg,
+            stack: error instanceof Error ? error.stack : undefined,
+            fullError: error
+          })
+          // Return proper error response instead of throwing
+          return jsonError('NBA_TOTALS_COMPUTATION_FAILED', errorMsg, 500, {
+            error: errorMsg,
+            details: 'NBA Stats API may be unavailable or returning invalid data'
+          })
         }
       } else {
         // Use legacy factors (existing logic)
