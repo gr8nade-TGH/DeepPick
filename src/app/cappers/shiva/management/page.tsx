@@ -119,24 +119,26 @@ export default function ShivaManagementPage() {
         selectedGame={selectedGame}
       />
       
-      <div className="p-4 grid grid-cols-12 gap-4">
+      <div className="p-4 flex gap-4 h-[calc(100vh-200px)]">
         {/* Left: Inbox */}
-        <div className="col-span-4 space-y-4">
-          <div className="border border-gray-700 rounded p-3 bg-gray-900">
+        <div className="w-80 flex flex-col space-y-4">
+          <div className="border border-gray-700 rounded p-3 bg-gray-900 flex-shrink-0">
             <SHIVAManagementInbox 
               onGameSelect={handleGameSelect}
               selectedGame={selectedGame}
             />
           </div>
           
-          {/* Run Log Table - Under Generated Picks */}
-          <RunLogTable />
+          {/* Run Log Table - Full height */}
+          <div className="flex-1 min-h-0">
+            <RunLogTable />
+          </div>
         </div>
 
         {/* Right: Wizard */}
-        <div className="col-span-8 border border-gray-700 rounded p-3 bg-gray-900">
+        <div className="flex-1 border border-gray-700 rounded p-3 bg-gray-900 overflow-hidden flex flex-col">
           {/* Action Buttons */}
-          <div className="mb-4 flex gap-3">
+          <div className="mb-4 flex gap-3 flex-shrink-0">
             <button
               onClick={() => setShowFactorConfig(true)}
               className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded font-medium transition flex items-center gap-2"
@@ -266,12 +268,15 @@ export default function ShivaManagementPage() {
             </a>
           </div>
           
-          <SHIVAWizard
-            effectiveProfile={effectiveProfile}
-            selectedGame={selectedGame}
-            mode={mode}
-            betType={betType}
-          />
+          {/* Wizard with scroll */}
+          <div className="flex-1 overflow-y-auto min-h-0">
+            <SHIVAWizard
+              effectiveProfile={effectiveProfile}
+              selectedGame={selectedGame}
+              mode={mode}
+              betType={betType}
+            />
+          </div>
         </div>
       </div>
       

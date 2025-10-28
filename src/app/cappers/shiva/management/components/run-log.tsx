@@ -124,7 +124,7 @@ export function RunLogTable() {
   console.log('[RunLogTable] Rendering with', runs.length, 'runs')
 
   return (
-    <div className="border border-gray-700 rounded bg-gray-900 overflow-hidden flex flex-col" style={{ height: '400px' }}>
+    <div className="border border-gray-700 rounded bg-gray-900 overflow-hidden flex flex-col h-full">
       <div className="p-3 border-b border-gray-700 flex-shrink-0">
         <h3 className="text-lg font-bold text-white">📋 Run Log ({runs.length})</h3>
       </div>
