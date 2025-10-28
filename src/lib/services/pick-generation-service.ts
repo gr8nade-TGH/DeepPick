@@ -4,7 +4,7 @@ export interface PickGenerationResult {
   runId: string
   gameId: string
   capper: 'shiva' | 'nexus' | 'cerberus' | 'ifrit' | 'deeppick'
-  betType: 'TOTAL' | 'SPREAD' | 'MONEYLINE'
+  betType: 'TOTAL' | 'SPREAD' | 'MONEYLINE' | 'total' | 'spread' | 'moneyline'
   result: 'PICK_GENERATED' | 'PASS' | 'ERROR'
   units: number
   confidence?: number
@@ -71,6 +71,9 @@ export class PickGenerationService {
       // Calculate cooldown_until
       const cooldownUntil = new Date()
       cooldownUntil.setHours(cooldownUntil.getHours() + cooldownHours)
+      
+      // Normalize bet_type to lowercase for consistency
+      const betTypeNormalized = result.betType.toLowerCase()
 
       // Insert or update cooldown record directly (bypass RPC for now)
       const { data: existingCooldown } = await this.supabase
@@ -78,7 +81,7 @@ export class PickGenerationService {
         .select('id')
         .eq('game_id', result.gameId)
         .eq('capper', result.capper)
-        .eq('bet_type', result.betType)
+        .eq('bet_type', betTypeNormalized)
         .maybeSingle()
 
       let error
@@ -103,7 +106,7 @@ export class PickGenerationService {
           .insert({
             game_id: result.gameId,
             capper: result.capper,
-            bet_type: result.betType,
+            bet_type: betTypeNormalized,
             run_id: result.runId,
             result: result.result,
             units: result.units,

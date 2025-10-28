@@ -145,7 +145,7 @@ export async function POST(request: Request) {
                 runId: run_id,
                 gameId: gameId,
                 capper: 'shiva',
-                betType: results.decision.pick_type,
+                betType: results.decision.pick_type.toLowerCase() as 'TOTAL' | 'SPREAD',
                 result: 'PASS',
                 units: 0,
                 confidence: parse.data.inputs.conf_final,
@@ -213,16 +213,16 @@ export async function POST(request: Request) {
           console.log('[SHIVA:PickGenerate] PICK_GENERATED - game_id from snapshot:', gameId)
 
           if (gameId) {
-            const cooldownResult = await pickGenerationService.recordPickGenerationResult({
-              runId: run_id,
-              gameId: gameId,
-              capper: 'shiva',
-              betType: results.decision.pick_type,
-              result: 'PICK_GENERATED',
-              units: r.units,
-              confidence: r.confidence,
-              pickId: r.id
-            }, 0) // No cooldown for successful picks
+                const cooldownResult = await pickGenerationService.recordPickGenerationResult({
+                runId: run_id,
+                gameId: gameId,
+                capper: 'shiva',
+                betType: results.decision.pick_type.toLowerCase() as 'TOTAL' | 'SPREAD',
+                result: 'PICK_GENERATED',
+                units: r.units,
+                confidence: r.confidence,
+                pickId: r.id
+              }, 0) // No cooldown for successful picks
 
             if (cooldownResult.success) {
               console.log('[SHIVA:PickGenerate] PICK_GENERATED cooldown recorded successfully for game:', gameId)
