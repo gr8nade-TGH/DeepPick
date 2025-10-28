@@ -1499,6 +1499,21 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             console.log('[Wizard:Step5] step4Results factor_contributions:', step4Results?.confidence?.factor_contributions)
             try {
               const step1Game = stepLogsRef.current[1]?.json?.selected_game || stepLogs[1]?.json?.selected_game
+              // Add edgeVsMarket factor from Step 5 to factor_contributions
+              const baseContributions = step4Results?.confidence?.factor_contributions || []
+              const edgeFactor = r.json.final_factor?.edge_factor || 0
+              const edgeContribution = edgeFactor * 0.4 // Weight for edgeVsMarket is 0.4
+              const allContributions = [
+                ...baseContributions,
+                {
+                  key: 'edgeVsMarket',
+                  name: 'Edge vs Market',
+                  z: edgeFactor,
+                  weight: 0.4,
+                  contribution: edgeContribution
+                }
+              ]
+              
               const savePassBody = {
                 run_id: effectiveRunId,
                 inputs: {
@@ -1507,8 +1522,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                   total_data: {
                     total_pred: predictedTotal,
                     market_total: marketTotal,
-                    // Include factor data from Step 4
-                    factor_contributions: step4Results?.confidence?.factor_contributions || [],
+                    // Include factor data from Step 4 + Step 5 edge
+                    factor_contributions: allContributions,
                     predicted_total: predictedTotal
                   }
                 },
@@ -1548,6 +1563,21 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             console.log('[Wizard:Step5] step4Results factor_contributions:', step4Results?.confidence?.factor_contributions)
             try {
               const step1Game = stepLogsRef.current[1]?.json?.selected_game || stepLogs[1]?.json?.selected_game
+              // Add edgeVsMarket factor from Step 5 to factor_contributions
+              const baseContributions = step4Results?.confidence?.factor_contributions || []
+              const edgeFactor = r.json.final_factor?.edge_factor || 0
+              const edgeContribution = edgeFactor * 0.4 // Weight for edgeVsMarket is 0.4
+              const allContributions = [
+                ...baseContributions,
+                {
+                  key: 'edgeVsMarket',
+                  name: 'Edge vs Market',
+                  z: edgeFactor,
+                  weight: 0.4,
+                  contribution: edgeContribution
+                }
+              ]
+              
               // Generate a pick ID for the picks_row
               const pickId = `pick_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
               
@@ -1559,8 +1589,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                   total_data: {
                     total_pred: predictedTotal,
                     market_total: marketTotal,
-                    // Include factor data from Step 4
-                    factor_contributions: step4Results?.confidence?.factor_contributions || [],
+                    // Include factor data from Step 4 + Step 5 edge
+                    factor_contributions: allContributions,
                     predicted_total: predictedTotal
                   }
                 },
