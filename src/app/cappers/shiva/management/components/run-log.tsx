@@ -137,7 +137,7 @@ export function RunLogTable() {
                     </td>
                     <td className="py-2 px-2 text-gray-300">{run.units || 0}</td>
                     <td className="py-2 px-2 text-gray-300">
-                      {run.confidence ? run.confidence.toFixed(2) : '—'}
+                      {run.confidence !== null && run.confidence !== undefined ? run.confidence.toFixed(3) : '—'}
                     </td>
                   </tr>
                 )
