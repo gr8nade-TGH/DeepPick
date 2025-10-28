@@ -126,12 +126,22 @@ export function RunLogTable() {
     return mapping[key] || key.substring(0, 2).toUpperCase()
   }
 
-  // Format factor contribution with O/U indicator
+  // Format factor contribution with O/U indicator (3 decimal places for precision)
   const formatFactorContribution = (contribution: number): string => {
     if (contribution === 0) return '0O'
     const absValue = Math.abs(contribution)
     const direction = contribution > 0 ? 'O' : 'U'
-    return `+${absValue.toFixed(2)}${direction}`
+    // Use 3 decimal places to show small values better
+    return `+${absValue.toFixed(3)}${direction}`
+  }
+  
+  // Extract pick type from selection string
+  const getPickType = (run: RunLogEntry): string => {
+    if (run.units === 0 || run.units === null) return 'PASS'
+    if (!run.selection) return '—'
+    if (run.selection.toUpperCase().includes('OVER')) return 'OVER'
+    if (run.selection.toUpperCase().includes('UNDER')) return 'UNDER'
+    return run.selection.split(' ')[0]?.toUpperCase() || '—'
   }
 
   // Get a specific factor's contribution value
@@ -171,6 +181,7 @@ export function RunLogTable() {
                 <th className="text-left py-2 px-2 text-gray-400 font-bold">Time</th>
                 <th className="text-left py-2 px-2 text-gray-400 font-bold">Game</th>
                 <th className="text-left py-2 px-2 text-gray-400 font-bold">Outcome</th>
+                <th className="text-left py-2 px-2 text-gray-400 font-bold">Pick</th>
                 <th className="text-left py-2 px-2 text-gray-400 font-bold">Units</th>
                 <th className="text-left py-2 px-2 text-gray-400 font-bold">Conf</th>
                 {factorKeys.map(key => (
@@ -194,6 +205,9 @@ export function RunLogTable() {
                     <td className={`py-2 px-2 font-bold ${getOutcomeColor(outcome)}`}>
                       {outcome}
                     </td>
+                    <td className={`py-2 px-2 font-bold ${getPickType(run) === 'PASS' ? 'text-yellow-400' : getPickType(run) === 'OVER' ? 'text-green-400' : 'text-red-400'}`}>
+                      {getPickType(run)}
+                    </td>
                     <td className="py-2 px-2 text-gray-300">{run.units || 0}</td>
                     <td className="py-2 px-2 text-gray-300">
                       {run.confidence !== null && run.confidence !== undefined ? run.confidence.toFixed(3) : '—'}
@@ -201,8 +215,9 @@ export function RunLogTable() {
                     {factorKeys.map(key => {
                       const value = getFactorValue(run, key)
                       const absValue = value !== null ? Math.abs(value) : 0
+                      // Use 0.1 threshold for 3 decimal places (instead of 1 for 2 decimal places)
                       return (
-                        <td key={key} className={`py-2 px-1 text-center text-xs font-mono ${value !== null ? (absValue > 1 ? 'text-green-400' : 'text-gray-300') : 'text-gray-500'}`}>
+                        <td key={key} className={`py-2 px-1 text-center text-xs font-mono ${value !== null ? (absValue > 0.1 ? 'text-green-400' : 'text-gray-300') : 'text-gray-500'}`}>
                           {value !== null ? formatFactorContribution(value) : '—'}
                         </td>
                       )
