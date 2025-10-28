@@ -142,11 +142,8 @@ export async function POST(request: Request) {
             stack: error instanceof Error ? error.stack : undefined,
             fullError: error
           })
-          // Return proper error response instead of throwing
-          return jsonError('NBA_TOTALS_COMPUTATION_FAILED', errorMsg, 500, {
-            error: errorMsg,
-            details: 'NBA Stats API may be unavailable or returning invalid data'
-          })
+          // Log detailed error and throw for withIdempotency to handle
+          throw new Error(`NBA Totals computation failed: ${errorMsg}. NBA Stats API may be unavailable or returning invalid data.`)
         }
       } else {
         // Use legacy factors (existing logic)
