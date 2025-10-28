@@ -50,17 +50,17 @@ export function RunLogTable() {
   const [clearingCooldown, setClearingCooldown] = useState<string | null>(null)
   const [now, setNow] = useState(Date.now())
 
-  console.log('[RunLogTable] Component mounted/rendered')
+  // console.log('[RunLogTable] Component mounted/rendered')
 
   useEffect(() => {
     async function fetchRunLog() {
       try {
-        console.log('[RunLogTable] Fetching run history...')
+        // console.log('[RunLogTable] Fetching run history...')
         const response = await fetch('/api/shiva/runs/history?limit=50')
-        console.log('[RunLogTable] Response status:', response.status)
+        // console.log('[RunLogTable] Response status:', response.status)
         if (response.ok) {
           const data = await response.json()
-          console.log('[RunLogTable] Data received:', data)
+          // console.log('[RunLogTable] Data received:', data)
           setRuns(data.runs || [])
         } else {
           console.error('[RunLogTable] Failed to fetch run log:', response.status)
@@ -232,7 +232,7 @@ export function RunLogTable() {
     )
   }
 
-  console.log('[RunLogTable] Rendering with', runs.length, 'runs')
+  // console.log('[RunLogTable] Rendering with', runs.length, 'runs')
 
   return (
     <div className="flex flex-col gap-4">
