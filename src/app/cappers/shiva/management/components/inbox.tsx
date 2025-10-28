@@ -26,31 +26,54 @@ interface SHIVAManagementInboxProps {
 export function SHIVAManagementInbox({ onGameSelect, selectedGame }: SHIVAManagementInboxProps = {}) {
   const [games, setGames] = useState<GameInboxItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [syncing, setSyncing] = useState(false)
   const [selectedSport, setSelectedSport] = useState('NBA')
 
-  useEffect(() => {
-    async function fetchGames() {
-      try {
-        const response = await fetch(`/api/games/current?league=${selectedSport}&limit=50`)
-        if (response.ok) {
-          const data = await response.json()
-          const allGames = data.games || []
-          
-          // Deduplicate games by team matchup (home vs away)
-          const deduplicatedGames = deduplicateGamesByMatchup(allGames)
-          
-          console.log(`[Game Inbox] Fetched ${allGames.length} games, deduplicated to ${deduplicatedGames.length}`)
-          setGames(deduplicatedGames)
-        } else {
-          console.error('Failed to fetch games:', response.status, response.statusText)
-        }
-      } catch (error) {
-        console.error('Failed to fetch games:', error)
-      } finally {
-        setLoading(false)
+  const syncGames = async () => {
+    setSyncing(true)
+    try {
+      const response = await fetch('/api/sync/mysportsfeeds-games', { method: 'POST' })
+      const data = await response.json()
+      
+      if (data.success) {
+        console.log(`[Game Inbox] Synced ${data.gamesSynced} games`)
+        // Refresh games after sync
+        fetchGames()
+      } else {
+        console.error('[Game Inbox] Sync failed:', data.error)
+        alert(`Sync failed: ${data.error}`)
       }
+    } catch (error) {
+      console.error('[Game Inbox] Sync error:', error)
+      alert('Failed to sync games')
+    } finally {
+      setSyncing(false)
     }
-    
+  }
+
+  const fetchGames = async () => {
+    try {
+      const response = await fetch(`/api/games/current?league=${selectedSport}&limit=50`)
+      if (response.ok) {
+        const data = await response.json()
+        const allGames = data.games || []
+        
+        // Deduplicate games by team matchup (home vs away)
+        const deduplicatedGames = deduplicateGamesByMatchup(allGames)
+        
+        console.log(`[Game Inbox] Fetched ${allGames.length} games, deduplicated to ${deduplicatedGames.length}`)
+        setGames(deduplicatedGames)
+      } else {
+        console.error('Failed to fetch games:', response.status, response.statusText)
+      }
+    } catch (error) {
+      console.error('Failed to fetch games:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
     fetchGames()
   }, [selectedSport])
 
@@ -132,6 +155,13 @@ export function SHIVAManagementInbox({ onGameSelect, selectedGame }: SHIVAManage
               <option value="MLB">MLB</option>
             </select>
             <div className="text-xs text-gray-300 font-semibold">• SHIVA</div>
+            <button
+              onClick={syncGames}
+              disabled={syncing}
+              className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-500 disabled:opacity-50"
+            >
+              {syncing ? '⏳ Syncing...' : '🔄 Sync Games'}
+            </button>
           </div>
         </div>
         
