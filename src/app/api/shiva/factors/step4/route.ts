@@ -211,7 +211,7 @@ export async function POST(request: Request) {
           const responseBody = {
             run_id,
             predictions: {
-              league_average_total: leagueAverageTotal,
+              league_average_total: matchupBaseline,
               total_adjustment: totalAdjustment,
               factor_adjustments: factorAdjustments,
               total_pred_points: predictedTotal,
