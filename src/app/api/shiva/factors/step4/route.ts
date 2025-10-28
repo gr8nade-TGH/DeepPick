@@ -235,7 +235,7 @@ export async function POST(request: Request) {
             run_id,
             inputs: { sport, betType },
             outputs: {
-              league_average_total: leagueAverageTotal,
+              league_average_total: matchupBaseline,
               total_adjustment: totalAdjustment,
               predicted_total: predictedTotal,
               predicted_scores: predictedScores,
