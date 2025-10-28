@@ -3,7 +3,7 @@ import { z } from 'zod'
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   SPORTS_DATA_API_KEY: z.string().min(1).optional(),
-  MYSPORTSFEEDS_API_KEY: z.string().min(1),
+  MYSPORTSFEEDS_API_KEY: z.string().min(1).optional(),
   ESPN_API_KEY: z.string().min(1).optional(),
   REDIS_URL: z.string().url().optional(),
   REDIS_TOKEN: z.string().min(1).optional(),
