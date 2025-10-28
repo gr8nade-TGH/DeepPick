@@ -39,14 +39,28 @@ async function fetchMySportsFeeds(endpoint: string): Promise<any> {
       }
     })
     
+    console.log(`[MySportsFeeds] Response status: ${response.status}`)
+    
+    const text = await response.text()
+    
     if (!response.ok) {
-      const errorText = await response.text()
-      console.error(`[MySportsFeeds] API Error (${response.status}):`, errorText)
-      throw new Error(`MySportsFeeds API returned ${response.status}: ${errorText}`)
+      console.error(`[MySportsFeeds] API Error (${response.status}):`, text.substring(0, 500))
+      throw new Error(`MySportsFeeds API returned ${response.status}: ${text.substring(0, 200)}`)
     }
     
-    const data = await response.json()
-    console.log(`[MySportsFeeds] Success: ${JSON.stringify(data).substring(0, 200)}...`)
+    if (!text) {
+      throw new Error('Empty response from MySportsFeeds')
+    }
+    
+    let data
+    try {
+      data = JSON.parse(text)
+      console.log(`[MySportsFeeds] Success: ${JSON.stringify(data).substring(0, 200)}...`)
+    } catch (parseError) {
+      console.error('[MySportsFeeds] JSON parse error:', parseError)
+      console.error('[MySportsFeeds] Response text:', text)
+      throw new Error(`Failed to parse JSON: ${parseError instanceof Error ? parseError.message : String(parseError)}`)
+    }
     
     return data
   } catch (error) {
