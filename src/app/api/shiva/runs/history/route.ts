@@ -15,21 +15,10 @@ export async function GET(request: NextRequest) {
 
     const supabase = getSupabaseAdmin()
 
-    // Fetch runs from the runs table with game matchup info
+    // Fetch runs from the runs table
     const { data: runsData, error: runsError } = await supabase
       .from('runs')
-      .select(`
-        id, 
-        run_id, 
-        game_id, 
-        capper, 
-        pick_type, 
-        selection, 
-        units, 
-        confidence, 
-        created_at,
-        games!left(home_team, away_team, game_date)
-      `)
+      .select('id, run_id, game_id, capper, pick_type, selection, units, confidence, created_at')
       .eq('capper', 'shiva') // Filter for SHIVA only
       .order('created_at', { ascending: false })
       .limit(limit)
@@ -43,6 +32,22 @@ export async function GET(request: NextRequest) {
         error: 'Failed to fetch runs',
         details: runsError.message
       }, { status: 500 })
+    }
+
+    // Extract unique game IDs (excluding 'unknown')
+    const gameIds = [...new Set((runsData || []).map(run => run.game_id).filter(id => id && id !== 'unknown'))]
+    
+    // Fetch games data
+    let gamesMap = new Map()
+    if (gameIds.length > 0) {
+      const { data: gamesData } = await supabase
+        .from('games')
+        .select('id, home_team, away_team')
+        .in('id', gameIds)
+      
+      gamesData?.forEach(game => {
+        gamesMap.set(game.id, game)
+      })
     }
 
     // Fetch cooldown records to get PASS/PICK_GENERATED outcomes
@@ -63,7 +68,7 @@ export async function GET(request: NextRequest) {
       
       // Format matchup from game data
       let matchup = run.game_id
-      const game = Array.isArray(run.games) ? run.games[0] : run.games
+      const game = gamesMap.get(run.game_id)
       if (game && game.home_team && game.away_team) {
         matchup = `${game.away_team} @ ${game.home_team}`
       }
