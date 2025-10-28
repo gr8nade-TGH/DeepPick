@@ -128,11 +128,10 @@ export function RunLogTable() {
 
   // Format factor contribution with O/U indicator
   const formatFactorContribution = (contribution: number): string => {
-    if (contribution === 0) return '0'
-    const sign = contribution > 0 ? '+' : ''
-    const value = contribution.toFixed(2)
+    if (contribution === 0) return '0O'
+    const absValue = Math.abs(contribution)
     const direction = contribution > 0 ? 'O' : 'U'
-    return `${sign}${value}${direction}`
+    return `+${absValue.toFixed(2)}${direction}`
   }
 
   // Get a specific factor's contribution value
@@ -201,8 +200,9 @@ export function RunLogTable() {
                     </td>
                     {factorKeys.map(key => {
                       const value = getFactorValue(run, key)
+                      const absValue = value !== null ? Math.abs(value) : 0
                       return (
-                        <td key={key} className={`py-2 px-1 text-center text-xs font-mono ${value !== null && value > 0 ? 'text-green-400' : value !== null && value < 0 ? 'text-red-400' : 'text-gray-500'}`}>
+                        <td key={key} className={`py-2 px-1 text-center text-xs font-mono ${value !== null ? (absValue > 1 ? 'text-green-400' : 'text-gray-300') : 'text-gray-500'}`}>
                           {value !== null ? formatFactorContribution(value) : '—'}
                         </td>
                       )
