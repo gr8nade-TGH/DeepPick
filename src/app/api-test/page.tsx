@@ -30,7 +30,7 @@ export default function APITestPage() {
       setResults(prev => ({
         ...prev,
         [factorName]: {
-          online: data.success ? 'success' : 'error',
+          status: data.success ? 'success' : 'error',
           data: data.data,
           error: data.error,
           formula: data.formula
