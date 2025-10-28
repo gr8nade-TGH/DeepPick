@@ -21,7 +21,7 @@ export async function GET(request: Request) {
       message: 'MySportsFeeds Odds API successful!',
       testDate: today,
       lastUpdatedOn: oddsData.lastUpdatedOn,
-      gamesWithOdds: oddsData.gamelines?.length || 0,
+      gamesWithOdds: oddsData.gameLines?.length || 0,
       sampleData: oddsData,
       timestamp: new Date().toISOString()
     })
