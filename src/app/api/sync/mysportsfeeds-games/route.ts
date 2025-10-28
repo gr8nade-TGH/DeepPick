@@ -5,7 +5,7 @@
 
 import { NextResponse } from 'next/server'
 import { getSupabase } from '@/lib/supabase/server'
-import { fetchOddsGameLines, fetchScoreboard } from '@/lib/data-sources/mysportsfeeds-api'
+import { fetchOddsGameLines } from '@/lib/data-sources/mysportsfeeds-api'
 
 
 export async function POST() {
@@ -18,51 +18,36 @@ export async function POST() {
                     (today.getMonth() + 1).toString().padStart(2, '0') + 
                     today.getDate().toString().padStart(2, '0')
     
-    console.log(`[Sync Games] Fetching MySportsFeeds data for ${dateStr}...`)
+    console.log(`[Sync Games] Fetching MySportsFeeds odds data for ${dateStr}...`)
     
-    // Fetch scoreboard and odds
-    const [scoreboard, odds] = await Promise.all([
-      fetchScoreboard(dateStr),
-      fetchOddsGameLines(dateStr)
-    ])
+    // Fetch odds (which includes game information)
+    const odds = await fetchOddsGameLines(dateStr)
     
-    console.log(`[Sync Games] Got ${scoreboard.games?.length || 0} games from scoreboard`)
     console.log(`[Sync Games] Got ${odds.gameLines?.length || 0} games with odds`)
     
-    // Create a map of odds by game ID
-    const oddsMap = new Map()
-    if (odds.gameLines) {
-      for (const gameLine of odds.gameLines) {
-        const gameId = gameLine.game?.id
-        if (gameId) {
-          oddsMap.set(gameId, gameLine)
-        }
-      }
-    }
-    
-    // Process games from scoreboard
-    const games = scoreboard.games || []
+    // Process games from odds data
+    const games = odds.gameLines || []
     let synced = 0
     
-    for (const game of games) {
+    for (const gameLine of games) {
       try {
-        const gameId = game.id.toString()
-        const homeTeam = game.homeTeam?.abbreviation
-        const awayTeam = game.awayTeam?.abbreviation
-        const startTime = game.startTime
+        const gameData = gameLine.game
+        const gameId = gameData?.id?.toString()
+        const homeTeam = gameData?.homeTeamAbbreviation
+        const awayTeam = gameData?.awayTeamAbbreviation
+        const startTime = gameData?.startTime
         
-        if (!homeTeam || !awayTeam || !startTime) {
+        if (!gameId || !homeTeam || !awayTeam || !startTime) {
           console.warn(`[Sync Games] Skipping game ${gameId} - missing required fields`)
           continue
         }
         
         // Parse game odds if available
-        const gameOdds = oddsMap.get(game.id)
         let oddsData: any = null
         
-        if (gameOdds?.lines) {
+        if (gameLine.lines && gameLine.lines.length > 0) {
           // Extract lines from the first available sportsbook
-          const lines = gameOdds.lines[0]
+          const lines = gameLine.lines[0]
           oddsData = {} as any
           
           // Add spread, total, moneylines if available
