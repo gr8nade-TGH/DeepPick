@@ -119,24 +119,21 @@ export default function ShivaManagementPage() {
         selectedGame={selectedGame}
       />
       
-      <div className="p-4 flex gap-4 h-[calc(100vh-200px)]">
-        {/* Left: Inbox */}
-        <div className="w-80 flex flex-col space-y-4">
-          <div className="border border-gray-700 rounded p-3 bg-gray-900 flex-shrink-0">
-            <SHIVAManagementInbox 
-              onGameSelect={handleGameSelect}
-              selectedGame={selectedGame}
-            />
+      <div className="p-4 flex flex-col gap-4 h-[calc(100vh-120px)]">
+        {/* Top row: Inbox + Wizard */}
+        <div className="flex gap-4 flex-1 min-h-0 overflow-hidden">
+          {/* Left: Inbox */}
+          <div className="w-96 flex flex-col space-y-4">
+            <div className="border border-gray-700 rounded p-3 bg-gray-900">
+              <SHIVAManagementInbox 
+                onGameSelect={handleGameSelect}
+                selectedGame={selectedGame}
+              />
+            </div>
           </div>
-          
-          {/* Run Log Table - Full height */}
-          <div className="flex-1 min-h-0">
-            <RunLogTable />
-          </div>
-        </div>
 
-        {/* Right: Wizard */}
-        <div className="flex-1 border border-gray-700 rounded p-3 bg-gray-900 overflow-hidden flex flex-col">
+          {/* Right: Wizard */}
+          <div className="flex-1 border border-gray-700 rounded p-3 bg-gray-900 overflow-hidden flex flex-col">
           {/* Action Buttons */}
           <div className="mb-4 flex gap-3 flex-shrink-0">
             <button
@@ -277,6 +274,12 @@ export default function ShivaManagementPage() {
               betType={betType}
             />
           </div>
+        </div>
+        </div>
+        
+        {/* Bottom: Run Log - Full Width */}
+        <div className="w-full">
+          <RunLogTable />
         </div>
       </div>
       
