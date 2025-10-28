@@ -981,6 +981,12 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             throw new Error('No game data from Step 1')
           }
           
+          // Get run_id from Step 1 (use ref for fresh data in AUTO mode)
+          const effectiveRunId = stepLogsRef.current[1]?.json?.run_id || runId
+          if (!effectiveRunId) {
+            throw new Error('No run_id available from Step 1')
+          }
+          console.log('[Step 2] Using runId:', effectiveRunId)
           console.log('[Step 2] Processing odds from Step 1 game:', step1Game.home_team?.name, 'vs', step1Game.away_team?.name)
           
           // Calculate simple averages from Step 1 odds data
@@ -1083,7 +1089,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           
           const step2IdempotencyKey = `ui-demo-snap-${Date.now()}-${Math.random().toString(36).substring(7)}`
           const response = await postJson('/api/shiva/odds/snapshot', {
-            run_id: runId,
+            run_id: effectiveRunId,
             snapshot: snapshotData
           }, step2IdempotencyKey)
           
