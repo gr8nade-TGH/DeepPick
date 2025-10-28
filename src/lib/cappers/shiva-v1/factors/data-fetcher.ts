@@ -144,9 +144,34 @@ export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<NBAStatsBundle> 
     const awayStats = awayFormData?.ok && awayFormData.data ? convertRecentFormToStats(awayFormData.data) : null
     const homeStats = homeFormData?.ok && homeFormData.data ? convertRecentFormToStats(homeFormData.data) : null
     
-    // Extract NBA Stats API data
+    // Extract NBA Stats API data - CHECK IF WE GOT VALID DATA
     const awaySeasonStats = awaySeasonData?.ok && awaySeasonData.data ? awaySeasonData.data : null
     const homeSeasonStats = homeSeasonData?.ok && homeSeasonData.data ? homeSeasonData.data : null
+    
+    // VALIDATION: Require real data from at least one source
+    const hasAwaySeasonData = awaySeasonData?.ok && awaySeasonData.data
+    const hasHomeSeasonData = homeSeasonData?.ok && homeSeasonData.data
+    const hasAwayFormData = awayFormData?.ok && awayFormData.data
+    const hasHomeFormData = homeFormData?.ok && homeFormData.data
+    
+    const hasAnyData = hasAwaySeasonData || hasHomeSeasonData || hasAwayFormData || hasHomeFormData
+    
+    if (!hasAnyData) {
+      console.error('[NBA_STATS_BUNDLE:NO_DATA] All API calls failed, cannot generate pick without real stats')
+      throw new Error('Failed to fetch NBA statistics - all data sources returned errors. Cannot compute factors.')
+    }
+    
+    // Log which data sources succeeded
+    console.log('[NBA_STATS_BUNDLE:DATA_AVAILABILITY]', {
+      hasAwaySeasonData,
+      hasHomeSeasonData,
+      hasAwayFormData,
+      hasHomeFormData,
+      awaySeasonError: awaySeasonData?.error,
+      homeSeasonError: homeSeasonData?.error,
+      awayFormError: awayFormData?.error,
+      homeFormError: homeFormData?.error
+    })
     
     console.log('[NBA_STATS_BUNDLE:CONVERTED_STATS]', {
       away: {
@@ -186,48 +211,57 @@ export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<NBAStatsBundle> 
     })
     
     // Build bundle using NBA Stats API (season data) and Odds API (recent form)
-    // Priority: NBA Stats API for season data, Odds API for recent form, fallback to league averages
+    // NO FALLBACKS - throw error if we can't get required real data
+    
+    // Helper to get required value or throw
+    const getRequired = <T>(value: T | null | undefined, field: string, team: string): T => {
+      if (value === null || value === undefined) {
+        throw new Error(`Missing required data: ${field} for ${team}`)
+      }
+      return value
+    }
+    
     const bundle: NBAStatsBundle = {
-      // Pace data (NBA Stats API season data, with recent form fallback)
-      awayPaceSeason: awaySeasonStats?.pace || awayStats?.pace || ctx.leagueAverages.pace,
-      awayPaceLast10: awayStats?.pace || awaySeasonStats?.pace || ctx.leagueAverages.pace,
-      homePaceSeason: homeSeasonStats?.pace || homeStats?.pace || ctx.leagueAverages.pace,
-      homePaceLast10: homeStats?.pace || homeSeasonStats?.pace || ctx.leagueAverages.pace,
+      // Pace data - must have at least one source
+      awayPaceSeason: awaySeasonStats?.pace ?? awayStats?.pace ?? getRequired(null, 'pace', ctx.away),
+      awayPaceLast10: awayStats?.pace ?? awaySeasonStats?.pace ?? getRequired(null, 'pace (last 10)', ctx.away),
+      homePaceSeason: homeSeasonStats?.pace ?? homeStats?.pace ?? getRequired(null, 'pace', ctx.home),
+      homePaceLast10: homeStats?.pace ?? homeSeasonStats?.pace ?? getRequired(null, 'pace (last 10)', ctx.home),
       
-      // Team scoring averages (last 5 games) - NEW BASELINE DATA
-      awayPointsPerGame: awayFormData?.data?.pointsPerGame || 111.5, // Fallback to league avg/2
-      homePointsPerGame: homeFormData?.data?.pointsPerGame || 111.5, // Fallback to league avg/2
+      // Team scoring averages (last 5 games) - REQUIRED
+      awayPointsPerGame: getRequired(awayFormData?.data?.pointsPerGame, 'pointsPerGame', ctx.away),
+      homePointsPerGame: getRequired(homeFormData?.data?.pointsPerGame, 'pointsPerGame', ctx.home),
       
-      // Offensive ratings (NBA Stats API season data, with recent form fallback)
-      awayORtgLast10: awayStats?.offensiveRating || awaySeasonStats?.offensiveRating || ctx.leagueAverages.ORtg,
-      homeORtgLast10: homeStats?.offensiveRating || homeSeasonStats?.offensiveRating || ctx.leagueAverages.ORtg,
+      // Offensive ratings - must have at least one source
+      awayORtgLast10: awayStats?.offensiveRating ?? awaySeasonStats?.offensiveRating ?? getRequired(null, 'offensiveRating', ctx.away),
+      homeORtgLast10: homeStats?.offensiveRating ?? homeSeasonStats?.offensiveRating ?? getRequired(null, 'offensiveRating', ctx.home),
       
-      // Defensive ratings (NBA Stats API season data, with recent form fallback)
-      awayDRtgSeason: awaySeasonStats?.defensiveRating || awayStats?.defensiveRating || ctx.leagueAverages.DRtg,
-      homeDRtgSeason: homeSeasonStats?.defensiveRating || homeStats?.defensiveRating || ctx.leagueAverages.DRtg,
+      // Defensive ratings - must have at least one source
+      awayDRtgSeason: awaySeasonStats?.defensiveRating ?? awayStats?.defensiveRating ?? getRequired(null, 'defensiveRating', ctx.away),
+      homeDRtgSeason: homeSeasonStats?.defensiveRating ?? homeStats?.defensiveRating ?? getRequired(null, 'defensiveRating', ctx.home),
       
-      // 3-Point environment (NBA Stats API season data, with fallback)
-      away3PAR: awaySeasonStats?.threePointAttemptRate || ctx.leagueAverages.threePAR,
-      home3PAR: homeSeasonStats?.threePointAttemptRate || ctx.leagueAverages.threePAR,
-      awayOpp3PAR: homeSeasonStats?.threePointAttemptRate || ctx.leagueAverages.threePAR,
-      homeOpp3PAR: awaySeasonStats?.threePointAttemptRate || ctx.leagueAverages.threePAR,
-      away3Pct: awaySeasonStats?.threePointPercentage || 0.35,
-      home3Pct: homeSeasonStats?.threePointPercentage || 0.35,
-      away3PctLast10: awayStats?.threePointPercentage || awaySeasonStats?.threePointPercentage || 0.35,
-      home3PctLast10: homeStats?.threePointPercentage || homeSeasonStats?.threePointPercentage || 0.35,
+      // 3-Point environment - must have season data
+      away3PAR: getRequired(awaySeasonStats?.threePointAttemptRate, 'threePointAttemptRate', ctx.away),
+      home3PAR: getRequired(homeSeasonStats?.threePointAttemptRate, 'threePointAttemptRate', ctx.home),
+      awayOpp3PAR: homeSeasonStats?.threePointAttemptRate ?? awaySeasonStats?.threePointAttemptRate ?? 0.35,
+      homeOpp3PAR: awaySeasonStats?.threePointAttemptRate ?? homeSeasonStats?.threePointAttemptRate ?? 0.35,
+      away3Pct: getRequired(awaySeasonStats?.threePointPercentage, 'threePointPercentage', ctx.away),
+      home3Pct: getRequired(homeSeasonStats?.threePointPercentage, 'threePointPercentage', ctx.home),
+      away3PctLast10: awayStats?.threePointPercentage ?? awaySeasonStats?.threePointPercentage ?? 0.35,
+      home3PctLast10: homeStats?.threePointPercentage ?? homeSeasonStats?.threePointPercentage ?? 0.35,
       
-      // Free throw environment (NBA Stats API season data, with fallback)
-      awayFTr: awaySeasonStats?.freeThrowRate || ctx.leagueAverages.FTr,
-      homeFTr: homeSeasonStats?.freeThrowRate || ctx.leagueAverages.FTr,
-      awayOppFTr: homeSeasonStats?.freeThrowRate || ctx.leagueAverages.FTr,
-      homeOppFTr: awaySeasonStats?.freeThrowRate || ctx.leagueAverages.FTr,
+      // Free throw environment - must have season data
+      awayFTr: getRequired(awaySeasonStats?.freeThrowRate, 'freeThrowRate', ctx.away),
+      homeFTr: getRequired(homeSeasonStats?.freeThrowRate, 'freeThrowRate', ctx.home),
+      awayOppFTr: homeSeasonStats?.freeThrowRate ?? awaySeasonStats?.freeThrowRate ?? 0.25,
+      homeOppFTr: awaySeasonStats?.freeThrowRate ?? homeSeasonStats?.freeThrowRate ?? 0.25,
       
       // League anchors
       leaguePace: ctx.leagueAverages.pace,
       leagueORtg: ctx.leagueAverages.ORtg,
       leagueDRtg: ctx.leagueAverages.DRtg,
       league3PAR: ctx.leagueAverages.threePAR,
-      league3Pct: 0.35, // League average 3P percentage
+      league3Pct: 0.35,
       leagueFTr: ctx.leagueAverages.FTr,
       league3Pstdev: ctx.leagueAverages.threePstdev
     }

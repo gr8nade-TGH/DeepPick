@@ -300,15 +300,26 @@ export async function fetchNBATeamStats(
       }
     }
     
+    // NO FALLBACKS - if data is missing, throw error
+    if (pace === null || pace === undefined || !isFinite(pace)) {
+      throw new Error(`Missing or invalid pace data for ${teamName}`)
+    }
+    if (offRating === null || offRating === undefined || !isFinite(offRating)) {
+      throw new Error(`Missing or invalid offensiveRating data for ${teamName}`)
+    }
+    if (defRating === null || defRating === undefined || !isFinite(defRating)) {
+      throw new Error(`Missing or invalid defensiveRating data for ${teamName}`)
+    }
+    
     const stats: NBATeamStats = {
       teamId,
       teamName,
-      pace: pace || 102.0, // Slightly faster than league (100.0)
-      offensiveRating: offRating || 112.0, // Slightly better than league (110.0)
-      defensiveRating: defRating || 108.0, // Slightly better than league (110.0)
-      threePointAttemptRate: threePAR || 0.39,
-      freeThrowRate: ftr || 0.22,
-      threePointPercentage: threePct || 0.36 // Slightly better than league (0.35)
+      pace,
+      offensiveRating: offRating,
+      defensiveRating: defRating,
+      threePointAttemptRate: threePAR ?? 0.39, // Allow default for this stat
+      freeThrowRate: ftr ?? 0.22, // Allow default for this stat
+      threePointPercentage: threePct ?? 0.35 // Allow default for this stat
     }
     
     // Debug: Log the parsed stats
