@@ -1346,13 +1346,20 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         const awayTeam = step1Game.away_team?.name || 'Unknown Away'
         const homeTeam = step1Game.home_team?.name || 'Unknown Home'
         
+        // Get run_id from Step 1 (use ref for fresh data in AUTO mode)
+        const effectiveRunId = stepLogsRef.current[1]?.json?.run_id || runId
+        if (!effectiveRunId) {
+          throw new Error('No run_id available from Step 1')
+        }
+        
+        console.log('[Step 3] Using runId:', effectiveRunId)
         console.log('[Step 3] Using teams from Step 1:', { awayTeam, homeTeam })
         
         // Real API call for Step 3 - NBA Totals factors
         // Note: For NBA TOTAL, the API will compute factors via computeTotalsFactors()
         // The results object is required by schema but will be replaced by computed factors
         const step3Body = {
-          run_id: runId,
+          run_id: effectiveRunId,
           inputs: {
             teams: {
               away: awayTeam,
@@ -1403,8 +1410,14 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           throw new Error('Step 3 must be completed before Step 4')
         }
         
+        // Get run_id from Step 1 (use ref for fresh data in AUTO mode)
+        const effectiveRunId = stepLogsRef.current[1]?.json?.run_id || runId
+        if (!effectiveRunId) {
+          throw new Error('No run_id available from Step 1')
+        }
+        
         const step4Body = {
-          run_id: runId,
+          run_id: effectiveRunId,
           inputs: { 
             sport: props.sport || 'NBA', 
             betType: props.betType || 'TOTAL' 
@@ -1453,8 +1466,14 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         const marketTotal = (stepLogsRef.current[2]?.json || stepLogs[2]?.json)?.snapshot?.total?.line || 225
         const pickDirection = predictedTotal > marketTotal ? 'OVER' : 'UNDER'
         
+        // Get run_id from Step 1 (use ref for fresh data in AUTO mode)
+        const effectiveRunId = stepLogsRef.current[1]?.json?.run_id || runId
+        if (!effectiveRunId) {
+          throw new Error('No run_id available from Step 1')
+        }
+        
         const step5Body = {
-          run_id: runId,
+          run_id: effectiveRunId,
           inputs: {
             base_confidence: baseConfidence,
             predicted_total: predictedTotal,
