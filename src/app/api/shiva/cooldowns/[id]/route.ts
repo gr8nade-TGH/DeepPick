@@ -17,6 +17,17 @@ export async function DELETE(
 
     const supabase = getSupabaseAdmin()
     
+    console.log('[CooldownsAPI] Attempting to delete cooldown with ID:', id)
+    
+    // First, check if the record exists
+    const { data: existing } = await supabase
+      .from('pick_generation_cooldowns')
+      .select('id, game_id, capper, bet_type')
+      .eq('id', id)
+      .single()
+    
+    console.log('[CooldownsAPI] Existing record:', existing)
+    
     // Delete the cooldown
     const { error, data } = await supabase
       .from('pick_generation_cooldowns')
