@@ -28,7 +28,7 @@ function DryRunBanner() {
 function AutoModeBanner() {
   return (
     <div className="mb-3 rounded bg-green-900 border-2 border-green-600 p-3 text-sm font-bold text-green-200">
-      🤖 AUTO Mode - Pick generation runs automatically every 5 minutes via cron job. Cooldown logic prevents duplicate attempts.
+      🤖 AUTO Mode - Pick generation runs automatically every 3 minutes. Cooldown logic prevents duplicate attempts.
     </div>
   )
 }
@@ -1786,6 +1786,67 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       setLog({ status: 0, json: { error: { message: (e as Error).message } } })
     }
   }
+
+  // AUTO mode: Automatically run steps every 3 minutes
+  useEffect(() => {
+    if (props.mode !== 'auto') {
+      return // Only run in AUTO mode
+    }
+
+    let isRunning = false
+
+    const runAutoCycle = async () => {
+      // Skip if already running or if any step is loading
+      if (isRunning || loadingSteps.size > 0) {
+        console.log('[AUTO] Skipping cycle - already running or step in progress')
+        return
+      }
+
+      isRunning = true
+      console.log('[AUTO] Starting automatic pick generation cycle...')
+
+      try {
+        // Run steps 1-5 automatically
+        await handleStepClick(1)
+        await new Promise(resolve => setTimeout(resolve, 500)) // Small delay between steps
+        
+        if (stepLogs[1]) {
+          await handleStepClick(2)
+          await new Promise(resolve => setTimeout(resolve, 500))
+        }
+        
+        if (stepLogs[2]) {
+          await handleStepClick(3)
+          await new Promise(resolve => setTimeout(resolve, 500))
+        }
+        
+        if (stepLogs[3]) {
+          await handleStepClick(4)
+          await new Promise(resolve => setTimeout(resolve, 500))
+        }
+        
+        if (stepLogs[4]) {
+          await handleStepClick(5)
+        }
+
+        console.log('[AUTO] Pick generation cycle complete')
+      } catch (error) {
+        console.error('[AUTO] Error in auto cycle:', error)
+      } finally {
+        isRunning = false
+      }
+    }
+
+    // Run immediately on mount, then every 3 minutes
+    runAutoCycle()
+    const interval = setInterval(runAutoCycle, 180000) // 3 minutes
+
+    return () => {
+      clearInterval(interval)
+      isRunning = false
+    }
+  }, [props.mode]) // Only depend on mode to avoid infinite loops
+
   return (
     <div>
       <DryRunBanner />
