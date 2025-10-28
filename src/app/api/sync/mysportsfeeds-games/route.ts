@@ -57,28 +57,39 @@ export async function POST() {
           const lines = gameLine.lines[0]
           oddsData = {} as any
           
-          // Add spread, total, moneylines if available
-          if (lines.spreads) {
-            const spread = lines.spreads[0]
-            oddsData.spread = {
-              home: spread?.spread?.homeLine?.point,
-              away: spread?.spread?.awayLine?.point
+          // Add spread, total, moneylines if available (MySportsFeeds structure)
+          if (lines.pointSpreads && lines.pointSpreads.length > 0) {
+            // Get the most recent FULL game segment spread
+            const fullSpread = lines.pointSpreads.find((s: any) => s.pointSpread?.gameSegment === 'FULL')
+            if (fullSpread) {
+              oddsData.spread = {
+                home: fullSpread.pointSpread?.homeLine?.decimal,
+                away: fullSpread.pointSpread?.awayLine?.decimal,
+                line: fullSpread.pointSpread?.homeSpread || -fullSpread.pointSpread?.awaySpread
+              }
             }
           }
           
-          if (lines.totals) {
-            const total = lines.totals[0]
-            oddsData.total = {
-              over: total?.total?.overLine?.point,
-              under: total?.total?.underLine?.point
+          if (lines.overUnders && lines.overUnders.length > 0) {
+            // Get the most recent FULL game segment total
+            const fullOverUnder = lines.overUnders.find((o: any) => o.overUnder?.gameSegment === 'FULL')
+            if (fullOverUnder) {
+              oddsData.total = {
+                over: fullOverUnder.overUnder?.overLine?.decimal,
+                under: fullOverUnder.overUnder?.underLine?.decimal,
+                line: fullOverUnder.overUnder?.overUnder
+              }
             }
           }
           
-          if (lines.moneyLines) {
-            const ml = lines.moneyLines[0]
-            oddsData.moneyline = {
-              home: ml?.moneyLine?.homeLine?.decimal,
-              away: ml?.moneyLine?.awayLine?.decimal
+          if (lines.moneyLines && lines.moneyLines.length > 0) {
+            // Get the most recent FULL game segment moneyline
+            const fullML = lines.moneyLines.find((m: any) => m.moneyLine?.gameSegment === 'FULL')
+            if (fullML) {
+              oddsData.moneyline = {
+                home: fullML.moneyLine?.homeLine?.decimal,
+                away: fullML.moneyLine?.awayLine?.decimal
+              }
             }
           }
         }
