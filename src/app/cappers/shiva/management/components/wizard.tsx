@@ -1796,9 +1796,9 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     let isRunning = false
 
     const runAutoCycle = async () => {
-      // Skip if already running or if any step is loading
-      if (isRunning || loadingSteps.size > 0) {
-        console.log('[AUTO] Skipping cycle - already running or step in progress')
+      // Skip if already running
+      if (isRunning) {
+        console.log('[AUTO] Skipping cycle - already running')
         return
       }
 
@@ -1806,28 +1806,25 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       console.log('[AUTO] Starting automatic pick generation cycle...')
 
       try {
-        // Run steps 1-5 automatically
+        // Run steps 1-5 automatically with delays
+        console.log('[AUTO] Running Step 1...')
         await handleStepClick(1)
-        await new Promise(resolve => setTimeout(resolve, 500)) // Small delay between steps
+        await new Promise(resolve => setTimeout(resolve, 2000)) // 2 second delay
         
-        if (stepLogs[1]) {
-          await handleStepClick(2)
-          await new Promise(resolve => setTimeout(resolve, 500))
-        }
+        console.log('[AUTO] Running Step 2...')
+        await handleStepClick(2)
+        await new Promise(resolve => setTimeout(resolve, 2000))
         
-        if (stepLogs[2]) {
-          await handleStepClick(3)
-          await new Promise(resolve => setTimeout(resolve, 500))
-        }
+        console.log('[AUTO] Running Step 3...')
+        await handleStepClick(3)
+        await new Promise(resolve => setTimeout(resolve, 2000))
         
-        if (stepLogs[3]) {
-          await handleStepClick(4)
-          await new Promise(resolve => setTimeout(resolve, 500))
-        }
+        console.log('[AUTO] Running Step 4...')
+        await handleStepClick(4)
+        await new Promise(resolve => setTimeout(resolve, 2000))
         
-        if (stepLogs[4]) {
-          await handleStepClick(5)
-        }
+        console.log('[AUTO] Running Step 5...')
+        await handleStepClick(5)
 
         console.log('[AUTO] Pick generation cycle complete')
       } catch (error) {
