@@ -303,12 +303,12 @@ export async function fetchNBATeamStats(
     const stats: NBATeamStats = {
       teamId,
       teamName,
-      pace: pace || 100.1,
-      offensiveRating: offRating || 110.0,
-      defensiveRating: defRating || 110.0,
+      pace: pace || 102.0, // Slightly faster than league (100.0)
+      offensiveRating: offRating || 112.0, // Slightly better than league (110.0)
+      defensiveRating: defRating || 108.0, // Slightly better than league (110.0)
       threePointAttemptRate: threePAR || 0.39,
       freeThrowRate: ftr || 0.22,
-      threePointPercentage: threePct || 0.35
+      threePointPercentage: threePct || 0.36 // Slightly better than league (0.35)
     }
     
     // Debug: Log the parsed stats
