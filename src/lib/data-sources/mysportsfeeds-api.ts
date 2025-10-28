@@ -31,25 +31,38 @@ async function fetchMySportsFeeds(endpoint: string): Promise<any> {
   
   console.log(`[MySportsFeeds] Fetching: ${url}`)
   
+  const authHeader = getAuthHeader()
+  console.log(`[MySportsFeeds] Auth header present: ${!!authHeader}`)
+  
   try {
-    const response = await fetch(url, {
-      headers: {
-        'Authorization': getAuthHeader(),
-        'Accept': 'application/json'
-      }
-    })
+    const headers: Record<string, string> = {
+      'Accept': 'application/json'
+    }
+    
+    if (authHeader) {
+      headers['Authorization'] = authHeader
+    }
+    
+    console.log(`[MySportsFeeds] Request headers:`, Object.keys(headers))
+    
+    const response = await fetch(url, { headers })
     
     console.log(`[MySportsFeeds] Response status: ${response.status}`)
+    console.log(`[MySportsFeeds] Response headers:`, Object.fromEntries(response.headers.entries()))
     
     const text = await response.text()
+    
+    console.log(`[MySportsFeeds] Response text length: ${text.length}`)
+    console.log(`[MySportsFeeds] Response text (first 500 chars): ${text.substring(0, 500)}`)
     
     if (!response.ok) {
       console.error(`[MySportsFeeds] API Error (${response.status}):`, text.substring(0, 500))
       throw new Error(`MySportsFeeds API returned ${response.status}: ${text.substring(0, 200)}`)
     }
     
-    if (!text) {
-      throw new Error('Empty response from MySportsFeeds')
+    if (!text || text.trim().length === 0) {
+      console.error('[MySportsFeeds] Empty response from API')
+      throw new Error('Empty response from MySportsFeeds API')
     }
     
     let data
