@@ -1,5 +1,5 @@
 "use client"
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useRef } from 'react'
 import { InsightCard } from './insight-card'
 import { getFactorMeta } from '@/lib/cappers/shiva-v1/factor-registry'
 import { registerStep } from '@/lib/shared/dynamic-step-registry'
@@ -388,6 +388,14 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
   const [effectiveProfileSnapshot, setEffectiveProfileSnapshot] = useState<any>(null)
   const [loadingSteps, setLoadingSteps] = useState<Set<number>>(new Set())
   const [stepProgress, setStepProgress] = useState<Record<number, { progress: number; status: string }>>({})
+  
+  // Track step logs in a ref to avoid stale closures in AUTO mode
+  const stepLogsRef = useRef<Record<number, any>>({})
+  
+  // Keep ref in sync with state
+  useEffect(() => {
+    stepLogsRef.current = stepLogs
+  }, [stepLogs])
 
   // Loading state management
   const setStepLoading = (stepNum: number, loading: boolean, status: string = 'Processing...', progress: number = 0) => {
@@ -1806,25 +1814,40 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       console.log('[AUTO] Starting automatic pick generation cycle...')
 
       try {
-        // Run steps 1-5 automatically with delays
+        // Helper to wait for step to complete
+        const waitForStep = async (stepNum: number, maxWaitMs: number = 15000) => {
+          const startTime = Date.now()
+          while (Date.now() - startTime < maxWaitMs) {
+            if (stepLogsRef.current[stepNum]) {
+              console.log(`[AUTO] Step ${stepNum} confirmed complete`)
+              return true
+            }
+            await new Promise(resolve => setTimeout(resolve, 100))
+          }
+          console.log(`[AUTO] Step ${stepNum} did not complete in time`)
+          return false
+        }
+
+        // Run steps 1-5 automatically with verification
         console.log('[AUTO] Running Step 1...')
         await handleStepClick(1)
-        await new Promise(resolve => setTimeout(resolve, 3000)) // 3 second delay for state updates
+        await waitForStep(1, 10000)
         
         console.log('[AUTO] Running Step 2...')
         await handleStepClick(2)
-        await new Promise(resolve => setTimeout(resolve, 3000))
+        await waitForStep(2, 10000)
         
         console.log('[AUTO] Running Step 3...')
         await handleStepClick(3)
-        await new Promise(resolve => setTimeout(resolve, 5000)) // Longer for AI calls
+        await waitForStep(3, 20000) // Longer for AI calls
         
         console.log('[AUTO] Running Step 4...')
         await handleStepClick(4)
-        await new Promise(resolve => setTimeout(resolve, 3000))
+        await waitForStep(4, 10000)
         
         console.log('[AUTO] Running Step 5...')
         await handleStepClick(5)
+        await waitForStep(5, 10000)
 
         console.log('[AUTO] Pick generation cycle complete - will run again in 3 minutes')
       } catch (error) {
