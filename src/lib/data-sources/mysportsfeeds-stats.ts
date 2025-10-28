@@ -57,15 +57,11 @@ function getAuthHeader(): string {
  * Fetch last N games for a team by checking recent dates
  */
 async function fetchLastNGames(teamAbbrev: string, n: number = 5): Promise<any> {
-  // Get today's date in YYYYMMDD format
-  const today = new Date()
-  const dateStr = today.getFullYear().toString() + 
-                  (today.getMonth() + 1).toString().padStart(2, '0') + 
-                  today.getDate().toString().padStart(2, '0')
+  // Instead of date-specific endpoint, use cumulative season stats
+  // The team_gamelogs endpoint requires completed games, not future games
+  const url = `${MYSPORTSFEEDS_BASE_URL}/latest/date/team_stats_totals.json?team=${teamAbbrev}`
   
-  const url = `${MYSPORTSFEEDS_BASE_URL}/latest/date/${dateStr}/team_gamelogs.json?team=${teamAbbrev}`
-  
-  console.log(`[MySportsFeeds] Fetching game logs for ${teamAbbrev}...`)
+  console.log(`[MySportsFeeds] Fetching team stats for ${teamAbbrev}...`)
   
   try {
     const response = await fetch(url, {
@@ -85,11 +81,6 @@ async function fetchLastNGames(teamAbbrev: string, n: number = 5): Promise<any> 
     
     console.log(`[MySportsFeeds] API Response keys:`, Object.keys(data))
     console.log(`[MySportsFeeds] Response structure:`, JSON.stringify(data).substring(0, 500))
-    
-    // Limit to last N games
-    if (data.gamelogs && data.gamelogs.length > n) {
-      data.gamelogs = data.gamelogs.slice(0, n)
-    }
     
     return data
   } catch (error) {
