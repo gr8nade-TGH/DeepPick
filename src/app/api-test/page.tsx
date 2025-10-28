@@ -30,6 +30,7 @@ export default function APITestPage() {
       setResults(prev => ({
         ...prev,
         [factorName]: {
+          factorName,
           status: data.success ? 'success' : 'error',
           data: data.data,
           error: data.error,
@@ -40,6 +41,7 @@ export default function APITestPage() {
       setResults(prev => ({
         ...prev,
         [factorName]: {
+          factorName,
           status: 'error',
           error: error instanceof Error ? error.message : 'Unknown error'
         }
