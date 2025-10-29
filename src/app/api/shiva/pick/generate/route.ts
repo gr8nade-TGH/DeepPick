@@ -218,47 +218,43 @@ export async function POST(request: Request) {
 
         const now = new Date().toISOString()
 
-        console.log('[SHIVA:PickGenerate] STEP 1: Creating/updating runs table record with run_id:', run_id)
+        console.log('[SHIVA:PickGenerate] STEP 1: Creating runs table record with run_id:', run_id)
 
-        // First, check if a run already exists for this game/capper/bet_type
-        const existingRun = await admin
+        // CRITICAL FIX: Check if a run with THIS EXACT run_id already exists
+        // This prevents duplicate inserts if the same run_id is processed multiple times
+        const existingRunWithSameId = await admin
           .from('runs')
           .select('id, run_id')
-          .eq('game_id', gameId || 'unknown')
-          .eq('capper', 'shiva')
-          .eq('bet_type', results.decision.pick_type)
+          .eq('run_id', run_id)
           .maybeSingle()
 
-        if (existingRun.data) {
-          console.log('[SHIVA:PickGenerate] Run already exists for this game, updating:', {
-            existing_run_id: existingRun.data.run_id,
-            game_id: gameId,
-            bet_type: results.decision.pick_type
+        if (existingRunWithSameId.data) {
+          console.log('[SHIVA:PickGenerate] ⚠️ Run with this exact run_id already exists - skipping insert:', {
+            run_id: existingRunWithSameId.data.run_id,
+            game_id: gameId
           })
-
-          // Update existing run
-          const updateRun = await admin
-            .from('runs')
-            .update({
-              units: r.units,
-              confidence: r.confidence,
-              pick_type: results.decision.pick_type,
-              selection: r.selection,
-              factor_contributions: factorContributions,
-              predicted_total: predictedTotal,
-              baseline_avg: baselineAvg,
-              market_total: marketTotal,
-              updated_at: now
-            })
-            .eq('id', existingRun.data.id)
-
-          if (updateRun.error) {
-            console.error('[SHIVA:PickGenerate] ERROR updating runs table:', updateRun.error.message)
-            throw new Error(updateRun.error.message)
-          }
-          console.log('[SHIVA:PickGenerate] ✓ Successfully updated runs table')
+          // Don't insert again - the run already exists
         } else {
-          // Create new run
+          // Check if ANY run exists for this game (for logging purposes only)
+          const anyExistingRun = await admin
+            .from('runs')
+            .select('id, run_id')
+            .eq('game_id', gameId || 'unknown')
+            .eq('capper', 'shiva')
+            .eq('bet_type', results.decision.pick_type)
+            .maybeSingle()
+
+          if (anyExistingRun.data) {
+            console.log('[SHIVA:PickGenerate] ⚠️ WARNING: Another run exists for this game, but creating NEW run anyway:', {
+              existing_run_id: anyExistingRun.data.run_id,
+              new_run_id: run_id,
+              game_id: gameId,
+              bet_type: results.decision.pick_type,
+              reason: 'Data integrity - never update existing runs with picks'
+            })
+          }
+
+          // Create new run with current run_id
           console.log('[SHIVA:PickGenerate] Creating new run with id:', run_id)
           const insertRun = await admin
             .from('runs')
@@ -298,10 +294,11 @@ export async function POST(request: Request) {
         })
 
         // STEP 2: Now insert into picks table (child record) with run_id foreign key
-        console.log('[SHIVA:PickGenerate] STEP 2: Inserting into picks table with run_id:', run_id)
+        console.log('[SHIVA:PickGenerate] STEP 2: Inserting into picks table with run_id:', run_id, 'game_id:', gameId)
         // NOTE: Do NOT provide 'id' - let database generate UUID automatically
+        // CRITICAL: Must include game_id so game selection logic can filter out games with existing picks
         const ins = await admin.from('picks').insert({
-          game_id: null,
+          game_id: gameId || null, // Use gameId from snapshot (CRITICAL for game selection filtering)
           capper: 'shiva', // Add capper field so picks show up on dashboard
           pick_type: results.decision.pick_type.toLowerCase(),
           selection: r.selection,
@@ -319,38 +316,51 @@ export async function POST(request: Request) {
           console.error('[SHIVA:PickGenerate] ERROR inserting into picks table:', ins.error.message)
           throw new Error(ins.error.message)
         }
-        console.log('[SHIVA:PickGenerate] ✓ Successfully inserted into picks table')
+        console.log('[SHIVA:PickGenerate] ✓ Successfully inserted into picks table with game_id:', gameId)
 
         // Record PICK_GENERATED result with cooldown
+        console.log('[SHIVA:PickGenerate] 🔄 Starting cooldown creation for PICK_GENERATED...')
         try {
-          // Get game_id from the snapshot (most reliable source)
-          const activeSnapshot = await getActiveSnapshot(run_id)
-          const gameId = activeSnapshot?.game_id
-
-          console.log('[SHIVA:PickGenerate] PICK_GENERATED - game_id from snapshot:', gameId)
+          // gameId is already available from line 217
+          console.log('[SHIVA:PickGenerate] PICK_GENERATED - using game_id:', gameId)
 
           if (gameId) {
-                const cooldownResult = await pickGenerationService.recordPickGenerationResult({
-                runId: run_id,
-                gameId: gameId,
-                capper: 'shiva',
-                betType: results.decision.pick_type.toLowerCase() as 'TOTAL' | 'SPREAD',
-                result: 'PICK_GENERATED',
-                units: r.units,
-                confidence: r.confidence,
-                pickId: r.id
-              }, 0) // No cooldown for successful picks
+            console.log('[SHIVA:PickGenerate] Calling recordPickGenerationResult with:', {
+              runId: run_id,
+              gameId: gameId,
+              capper: 'shiva',
+              betType: results.decision.pick_type.toLowerCase(),
+              result: 'PICK_GENERATED',
+              units: r.units,
+              confidence: r.confidence,
+              pickId: r.id,
+              cooldownHours: 0
+            })
+
+            const cooldownResult = await pickGenerationService.recordPickGenerationResult({
+              runId: run_id,
+              gameId: gameId,
+              capper: 'shiva',
+              betType: results.decision.pick_type.toLowerCase() as 'TOTAL' | 'SPREAD',
+              result: 'PICK_GENERATED',
+              units: r.units,
+              confidence: r.confidence,
+              pickId: r.id
+            }, 0) // No cooldown for successful picks
+
+            console.log('[SHIVA:PickGenerate] recordPickGenerationResult returned:', cooldownResult)
 
             if (cooldownResult.success) {
-              console.log('[SHIVA:PickGenerate] PICK_GENERATED cooldown recorded successfully for game:', gameId)
+              console.log('[SHIVA:PickGenerate] ✅ PICK_GENERATED cooldown recorded successfully for game:', gameId)
             } else {
-              console.error('[SHIVA:PickGenerate] Failed to record PICK_GENERATED cooldown:', cooldownResult.error)
+              console.error('[SHIVA:PickGenerate] ❌ Failed to record PICK_GENERATED cooldown:', cooldownResult.error)
             }
           } else {
-            console.warn('[SHIVA:PickGenerate] No game_id found for run:', run_id, 'Skipping cooldown recording')
+            console.warn('[SHIVA:PickGenerate] ⚠️ No game_id found for run:', run_id, 'Skipping cooldown recording')
           }
         } catch (error) {
-          console.error('[SHIVA:PickGenerate] Error recording PICK_GENERATED cooldown:', error)
+          console.error('[SHIVA:PickGenerate] ❌ Exception recording PICK_GENERATED cooldown:', error)
+          console.error('[SHIVA:PickGenerate] Error stack:', error instanceof Error ? error.stack : 'No stack trace')
         }
       }
       
