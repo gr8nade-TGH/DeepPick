@@ -171,9 +171,12 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
     
     for (const gameLog of gameLogs) {
       const stats = gameLog.stats
-      if (!stats) continue
-      
-      // Get team stats
+      if (!stats) {
+        console.warn(`[MySportsFeeds Stats] Game log missing stats field for ${teamAbbrev}`)
+        continue
+      }
+
+      // Get team stats - VALIDATE that we have actual data, not just zeros
       const teamFGA = stats.fieldGoals?.fgAtt || 0
       const teamFTA = stats.freeThrows?.ftAtt || 0
       const teamOREB = stats.rebounds?.offReb || 0
@@ -181,6 +184,13 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
       const team3PA = stats.fieldGoals?.fg3PtAtt || 0
       const team3PM = stats.fieldGoals?.fg3PtMade || 0
       const teamPTS = stats.offense?.pts || 0
+
+      // CRITICAL: Skip games with missing/zero stats (incomplete data from API)
+      if (teamFGA === 0 && teamFTA === 0 && teamPTS === 0) {
+        console.warn(`[MySportsFeeds Stats] Game log has zero stats for ${teamAbbrev} - skipping incomplete game`)
+        console.warn(`[MySportsFeeds Stats] Game ID: ${gameLog.game?.id}, Date: ${gameLog.game?.startTime}`)
+        continue
+      }
       
       // Calculate team possessions
       const teamPoss = calculatePossessions(teamFGA, teamFTA, teamOREB, teamTOV)
@@ -226,7 +236,18 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
     }
     
     const gameCount = gameLogs.length
-    
+
+    // CRITICAL: Validate we have enough valid games with actual stats
+    // If totalPace is 0, it means all games had zero stats (incomplete data)
+    if (totalPace === 0 || totalORtg === 0 || gameCount === 0) {
+      throw new Error(
+        `Insufficient valid game data for ${teamAbbrev}. ` +
+        `Found ${gameCount} games but all had incomplete/zero stats. ` +
+        `This likely means the MySportsFeeds API returned game logs without stats data. ` +
+        `Total stats: Pace=${totalPace}, ORtg=${totalORtg}, DRtg=${totalDRtg}`
+      )
+    }
+
     // Calculate averages
     const avgPace = totalPace / gameCount
     const avgORtg = totalORtg / gameCount
