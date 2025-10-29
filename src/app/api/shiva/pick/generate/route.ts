@@ -233,27 +233,64 @@ export async function POST(request: Request) {
         const gameId = activeSnapshot?.game_id
 
         const now = new Date().toISOString()
-        const upsertRun = await admin
-          .from('runs')
-          .upsert({
-            id: run_id,
-            run_id: run_id,
-            game_id: gameId || 'unknown',
-            capper: 'shiva',
-            bet_type: results.decision.pick_type,
-            units: r.units,
-            confidence: r.confidence,
-            pick_type: results.decision.pick_type,
-            selection: r.selection,
-            factor_contributions: factorContributions,
-            predicted_total: predictedTotal,
-            baseline_avg: baselineAvg,
-            market_total: marketTotal,
-            created_at: now,
-            updated_at: now
-          }, { onConflict: 'id' })
 
-        if (upsertRun.error) throw new Error(upsertRun.error.message)
+        // First, check if a run already exists for this game/capper/bet_type
+        const existingRun = await admin
+          .from('runs')
+          .select('id, run_id')
+          .eq('game_id', gameId || 'unknown')
+          .eq('capper', 'shiva')
+          .eq('bet_type', results.decision.pick_type)
+          .maybeSingle()
+
+        if (existingRun.data) {
+          console.log('[SHIVA:PickGenerate] Run already exists for this game, updating:', {
+            existing_run_id: existingRun.data.run_id,
+            game_id: gameId,
+            bet_type: results.decision.pick_type
+          })
+
+          // Update existing run
+          const updateRun = await admin
+            .from('runs')
+            .update({
+              units: r.units,
+              confidence: r.confidence,
+              pick_type: results.decision.pick_type,
+              selection: r.selection,
+              factor_contributions: factorContributions,
+              predicted_total: predictedTotal,
+              baseline_avg: baselineAvg,
+              market_total: marketTotal,
+              updated_at: now
+            })
+            .eq('id', existingRun.data.id)
+
+          if (updateRun.error) throw new Error(updateRun.error.message)
+        } else {
+          // Create new run
+          const insertRun = await admin
+            .from('runs')
+            .insert({
+              id: run_id,
+              run_id: run_id,
+              game_id: gameId || 'unknown',
+              capper: 'shiva',
+              bet_type: results.decision.pick_type,
+              units: r.units,
+              confidence: r.confidence,
+              pick_type: results.decision.pick_type,
+              selection: r.selection,
+              factor_contributions: factorContributions,
+              predicted_total: predictedTotal,
+              baseline_avg: baselineAvg,
+              market_total: marketTotal,
+              created_at: now,
+              updated_at: now
+            })
+
+          if (insertRun.error) throw new Error(insertRun.error.message)
+        }
 
         console.log('[SHIVA:PickGenerate] Upserted runs table with factor data:', {
           run_id,

@@ -34,11 +34,12 @@ function getAuthHeader(): string | null {
 }
 
 /**
- * Make authenticated request to MySportsFeeds API
+ * Make authenticated request to MySportsFeeds API with retry logic
  * @param endpoint - The endpoint path (can include season or will use current season)
  * @param season - Optional season override (e.g., "2024-2025-regular")
+ * @param maxRetries - Maximum number of retry attempts for rate limits (default: 3)
  */
-async function fetchMySportsFeeds(endpoint: string, season?: string): Promise<any> {
+async function fetchMySportsFeeds(endpoint: string, season?: string, maxRetries: number = 3): Promise<any> {
   // If endpoint already includes full URL path, use it as-is
   // Otherwise, prepend the season
   let url: string
@@ -60,71 +61,101 @@ async function fetchMySportsFeeds(endpoint: string, season?: string): Promise<an
     throw new Error('MySportsFeeds API key not configured. Set MYSPORTSFEEDS_API_KEY environment variable.')
   }
 
-  try {
-    const headers: Record<string, string> = {
-      'Accept': 'application/json',
-      'Authorization': authHeader
-    }
-
-    const response = await fetch(url, { headers })
-
-    console.log(`[MySportsFeeds] Response status: ${response.status}`)
-
-    // Handle 204 No Content - this is a valid response when no data is available
-    if (response.status === 204) {
-      console.log('[MySportsFeeds] 204 No Content - no data available for this request')
-      return {
-        gameLines: [],
-        lastUpdatedOn: new Date().toISOString(),
-        references: null,
-        message: 'No data available for the requested date/season'
-      }
-    }
-
-    const text = await response.text()
-    console.log(`[MySportsFeeds] Response length: ${text.length} bytes`)
-
-    if (!response.ok) {
-      const errorPreview = text.substring(0, 500)
-      console.error(`[MySportsFeeds] API Error (${response.status}):`, errorPreview)
-
-      // Provide helpful error messages
-      if (response.status === 401) {
-        throw new Error('MySportsFeeds authentication failed. Check your API key.')
-      } else if (response.status === 403) {
-        throw new Error('MySportsFeeds access forbidden. Check your subscription tier and API permissions.')
-      } else if (response.status === 404) {
-        throw new Error(`MySportsFeeds endpoint not found: ${url}. This may indicate no data available for the requested date/season.`)
-      } else {
-        throw new Error(`MySportsFeeds API error ${response.status}: ${errorPreview}`)
-      }
-    }
-
-    if (!text || text.trim().length === 0) {
-      console.warn('[MySportsFeeds] Empty response body (but 200 OK) - treating as no data')
-      return {
-        gameLines: [],
-        lastUpdatedOn: new Date().toISOString(),
-        references: null,
-        message: 'Empty response from API'
-      }
-    }
-
-    let data
+  // Retry loop for rate limit handling
+  let lastError: Error | null = null
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      data = JSON.parse(text)
-      console.log(`[MySportsFeeds] Success - Response keys:`, Object.keys(data))
-    } catch (parseError) {
-      console.error('[MySportsFeeds] JSON parse error:', parseError)
-      console.error('[MySportsFeeds] Response text (first 1000 chars):', text.substring(0, 1000))
-      throw new Error(`Failed to parse JSON response: ${parseError instanceof Error ? parseError.message : String(parseError)}`)
-    }
+      const headers: Record<string, string> = {
+        'Accept': 'application/json',
+        'Authorization': authHeader
+      }
 
-    return data
-  } catch (error) {
-    console.error('[MySportsFeeds] Request failed:', error)
-    throw error
+      const response = await fetch(url, { headers })
+
+      console.log(`[MySportsFeeds] Response status: ${response.status} (attempt ${attempt + 1}/${maxRetries + 1})`)
+
+      // Handle 204 No Content - this is a valid response when no data is available
+      if (response.status === 204) {
+        console.log('[MySportsFeeds] 204 No Content - no data available for this request')
+        return {
+          gameLines: [],
+          lastUpdatedOn: new Date().toISOString(),
+          references: null,
+          message: 'No data available for the requested date/season'
+        }
+      }
+
+      const text = await response.text()
+      console.log(`[MySportsFeeds] Response length: ${text.length} bytes`)
+
+      if (!response.ok) {
+        const errorPreview = text.substring(0, 500)
+        console.error(`[MySportsFeeds] API Error (${response.status}):`, errorPreview)
+
+        // Handle 429 Rate Limit - retry with exponential backoff
+        if (response.status === 429) {
+          if (attempt < maxRetries) {
+            // Exponential backoff: 2s, 5s, 10s
+            const backoffMs = Math.min(2000 * Math.pow(2, attempt), 10000)
+            console.warn(`[MySportsFeeds] Rate limit hit (429). Retrying in ${backoffMs}ms... (attempt ${attempt + 1}/${maxRetries})`)
+            console.warn(`[MySportsFeeds] Endpoint: ${endpoint}`)
+            await new Promise(resolve => setTimeout(resolve, backoffMs))
+            continue // Retry the request
+          } else {
+            // Max retries exceeded
+            throw new Error(`MySportsFeeds rate limit exceeded (429). Max retries (${maxRetries}) reached. Please wait 60 seconds before trying again. Endpoint: ${endpoint}`)
+          }
+        }
+
+        // Provide helpful error messages for other errors
+        if (response.status === 401) {
+          throw new Error('MySportsFeeds authentication failed. Check your API key.')
+        } else if (response.status === 403) {
+          throw new Error('MySportsFeeds access forbidden. Check your subscription tier and API permissions.')
+        } else if (response.status === 404) {
+          throw new Error(`MySportsFeeds endpoint not found: ${url}. This may indicate no data available for the requested date/season.`)
+        } else {
+          throw new Error(`MySportsFeeds API error ${response.status}: ${errorPreview}`)
+        }
+      }
+
+      if (!text || text.trim().length === 0) {
+        console.warn('[MySportsFeeds] Empty response body (but 200 OK) - treating as no data')
+        return {
+          gameLines: [],
+          lastUpdatedOn: new Date().toISOString(),
+          references: null,
+          message: 'Empty response from API'
+        }
+      }
+
+      let data
+      try {
+        data = JSON.parse(text)
+        console.log(`[MySportsFeeds] Success - Response keys:`, Object.keys(data))
+      } catch (parseError) {
+        console.error('[MySportsFeeds] JSON parse error:', parseError)
+        console.error('[MySportsFeeds] Response text (first 1000 chars):', text.substring(0, 1000))
+        throw new Error(`Failed to parse JSON response: ${parseError instanceof Error ? parseError.message : String(parseError)}`)
+      }
+
+      return data
+    } catch (error) {
+      lastError = error as Error
+
+      // If it's a rate limit error and we have retries left, continue to next iteration
+      if (error instanceof Error && error.message.includes('429') && attempt < maxRetries) {
+        continue
+      }
+
+      // For other errors, throw immediately
+      console.error('[MySportsFeeds] Request failed:', error)
+      throw error
+    }
   }
+
+  // If we get here, all retries failed
+  throw lastError || new Error('MySportsFeeds request failed after all retries')
 }
 
 /**

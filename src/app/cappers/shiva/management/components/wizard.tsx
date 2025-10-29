@@ -986,14 +986,21 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       if (current === 2) {
         console.log('[Step 2] Starting SIMPLE Step 2 execution...')
         setStepLoading(2, true, 'Capturing odds snapshot...', 20)
-        
+
         try {
+          // Validate Step 1 first
+          const step1Validation = validateStep1()
+          if (!step1Validation.isValid) {
+            console.error('[Step 2] Step 1 validation failed:', step1Validation.error)
+            throw new Error(`Cannot proceed with Step 2: ${step1Validation.error}`)
+          }
+
           // Get game data from Step 1 (use ref for fresh data in AUTO mode)
           const step1Game = stepLogsRef.current[1]?.json?.selected_game || stepLogs[1]?.json?.selected_game
           if (!step1Game) {
             throw new Error('No game data from Step 1')
           }
-          
+
           // Get run_id from Step 1 (use ref for fresh data in AUTO mode)
           const effectiveRunId = stepLogsRef.current[1]?.json?.run_id || runId
           if (!effectiveRunId) {
@@ -1999,34 +2006,104 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           return false
         }
 
-        // Run steps 1-5 automatically with verification
-        console.log('[AUTO] Running Step 1...')
-        await handleStepClick(1)
-        await waitForStep(1, 10000)
-        
-        console.log('[AUTO] Running Step 2...')
-        await handleStepClick(2)
-        await waitForStep(2, 10000)
-        
-        console.log('[AUTO] Running Step 3...')
-        await handleStepClick(3)
-        await waitForStep(3, 20000) // Longer for AI calls
-        
-        console.log('[AUTO] Running Step 4...')
-        await handleStepClick(4)
-        await waitForStep(4, 10000)
-        
-        console.log('[AUTO] Running Step 5...')
-        await handleStepClick(5)
-        await waitForStep(5, 10000)
+        // Try up to 5 games before giving up (prevents infinite loops)
+        const MAX_ATTEMPTS = 5
+        let attemptCount = 0
+        let pickGenerated = false
 
-        console.log('[AUTO] Pick generation cycle complete - will run again in 10 minutes')
+        while (attemptCount < MAX_ATTEMPTS && !pickGenerated) {
+          attemptCount++
+          console.log(`[AUTO] Attempt ${attemptCount}/${MAX_ATTEMPTS} - Analyzing game...`)
+
+          // Clear previous step logs for fresh attempt
+          if (attemptCount > 1) {
+            setStepLogs({})
+            stepLogsRef.current = {}
+            console.log('[AUTO] Cleared previous step logs for new attempt')
+          }
+
+          // Run steps 1-5 automatically with verification
+          console.log('[AUTO] Running Step 1...')
+          await handleStepClick(1)
+          const step1Complete = await waitForStep(1, 10000)
+
+          // Check if Step 1 returned NO_AVAILABLE_GAMES
+          const step1Data = stepLogsRef.current[1]?.json
+          if (step1Data?.state === 'NO_AVAILABLE_GAMES' || !step1Data?.selected_game) {
+            console.log('[AUTO] No available games found - ending cycle')
+            console.log('[AUTO] Reason:', step1Data?.message || 'No games available')
+            console.log('[AUTO] Debug:', step1Data?.debug)
+            break // Exit the while loop
+          }
+
+          if (!step1Complete) {
+            console.log('[AUTO] Step 1 did not complete - aborting cycle')
+            break
+          }
+
+          console.log('[AUTO] Running Step 2...')
+          await handleStepClick(2)
+          const step2Complete = await waitForStep(2, 10000)
+          if (!step2Complete) {
+            console.log('[AUTO] Step 2 did not complete - aborting cycle')
+            break
+          }
+
+          console.log('[AUTO] Running Step 3...')
+          await handleStepClick(3)
+          const step3Complete = await waitForStep(3, 20000) // Longer for AI calls
+          if (!step3Complete) {
+            console.log('[AUTO] Step 3 did not complete - aborting cycle')
+            break
+          }
+
+          console.log('[AUTO] Running Step 4...')
+          await handleStepClick(4)
+          const step4Complete = await waitForStep(4, 10000)
+          if (!step4Complete) {
+            console.log('[AUTO] Step 4 did not complete - aborting cycle')
+            break
+          }
+
+          console.log('[AUTO] Running Step 5...')
+          await handleStepClick(5)
+          const step5Complete = await waitForStep(5, 10000)
+          if (!step5Complete) {
+            console.log('[AUTO] Step 5 did not complete - aborting cycle')
+            break
+          }
+
+          // Check Step 5 result - PASS or PICK_GENERATED?
+          const step5Data = stepLogsRef.current[5]?.json
+          const units = step5Data?.units || 0
+          const gameMatchup = step1Data?.selected_game?.home_team?.name
+            ? `${step1Data.selected_game.away_team?.name} @ ${step1Data.selected_game.home_team?.name}`
+            : 'Unknown matchup'
+
+          if (units === 0) {
+            console.log(`[AUTO] PASS decision for ${gameMatchup} (units = 0)`)
+            console.log('[AUTO] Game is now on cooldown. Trying next available game...')
+            // Continue to next iteration - try another game
+          } else {
+            console.log(`[AUTO] ✅ PICK GENERATED for ${gameMatchup} (units = ${units})`)
+            console.log('[AUTO] Pick generation successful - ending cycle')
+            pickGenerated = true
+            // Break out of loop - wait for next 10-minute trigger
+          }
+        }
+
+        if (attemptCount >= MAX_ATTEMPTS && !pickGenerated) {
+          console.log(`[AUTO] Reached max attempts (${MAX_ATTEMPTS}) without generating a pick`)
+          console.log('[AUTO] All analyzed games resulted in PASS - will try again in 10 minutes')
+        }
+
+        console.log('[AUTO] Cycle complete - next run in 10 minutes')
       } catch (error) {
         console.error('[AUTO] Error in auto cycle:', error)
       } finally {
         autoRunningRef.current = false
         globalAutoRunning = false
-        console.log('[AUTO] Cycle finished, next run in 10 minutes')
+        console.log('[AUTO] Cycle finished')
       }
     }
 

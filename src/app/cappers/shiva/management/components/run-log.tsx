@@ -239,12 +239,59 @@ export function RunLogTable() {
 
   // console.log('[RunLogTable] Rendering with', runs.length, 'runs')
 
+  // Copy debug info to clipboard
+  const handleCopyDebugInfo = async () => {
+    const debugInfo = {
+      total_runs: runs.length,
+      runs: runs.map(run => ({
+        run_id: run.run_id,
+        game_id: run.game_id,
+        matchup: run.matchup,
+        created_at: run.created_at,
+        pick_type: run.pick_type,
+        selection: run.selection,
+        units: run.units,
+        confidence: run.confidence,
+        cooldown_result: run.cooldown_result,
+        factor_contributions: run.factor_contributions,
+        predicted_total: run.predicted_total,
+        baseline_avg: run.baseline_avg,
+        market_total: run.market_total
+      })),
+      cooldowns: cooldowns.map(cd => ({
+        id: cd.id,
+        game_id: cd.game_id,
+        capper: cd.capper,
+        bet_type: cd.bet_type,
+        cooldown_until: cd.cooldown_until,
+        result: cd.result,
+        units: cd.units,
+        matchup: cd.matchup
+      }))
+    }
+
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(debugInfo, null, 2))
+      alert('Debug info copied to clipboard!')
+    } catch (error) {
+      console.error('Failed to copy debug info:', error)
+      alert('Failed to copy debug info. Check console for details.')
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4">
       {/* Run Log Table */}
       <div className="border border-gray-700 rounded bg-gray-900 overflow-hidden flex flex-col" style={{ height: '300px' }}>
-        <div className="p-3 border-b border-gray-700 flex-shrink-0">
+        <div className="p-3 border-b border-gray-700 flex-shrink-0 flex justify-between items-center">
           <h3 className="text-lg font-bold text-white">📋 Run Log ({runs.length})</h3>
+          <button
+            onClick={handleCopyDebugInfo}
+            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors"
+            title="Copy debug info to clipboard"
+          >
+            🐛 Copy Debug Info
+          </button>
         </div>
       
       {runs.length === 0 ? (

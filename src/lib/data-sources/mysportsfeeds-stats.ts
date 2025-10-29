@@ -41,6 +41,39 @@ export interface TeamFormData {
 }
 
 /**
+ * Cache for team form data to reduce API calls
+ */
+interface TeamFormCacheEntry {
+  data: TeamFormData
+  timestamp: number
+}
+
+const teamFormCache = new Map<string, TeamFormCacheEntry>()
+const CACHE_TTL_MS = 10 * 60 * 1000 // 10 minutes (team stats don't change frequently during a game day)
+
+function getCachedTeamForm(cacheKey: string): TeamFormData | null {
+  const cached = teamFormCache.get(cacheKey)
+  if (!cached) return null
+
+  const age = Date.now() - cached.timestamp
+  if (age > CACHE_TTL_MS) {
+    teamFormCache.delete(cacheKey)
+    return null
+  }
+
+  console.log(`[MySportsFeeds Stats] Cache HIT for ${cacheKey} (age: ${(age / 1000).toFixed(1)}s)`)
+  return cached.data
+}
+
+function setCachedTeamForm(cacheKey: string, data: TeamFormData): void {
+  teamFormCache.set(cacheKey, {
+    data,
+    timestamp: Date.now()
+  })
+  console.log(`[MySportsFeeds Stats] Cached team form for ${cacheKey}`)
+}
+
+/**
  * Calculate possessions using simplified formula
  * Poss = FGA + 0.44 * FTA - OREB + TOV
  */
@@ -82,7 +115,14 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
   // Resolve team abbreviation
   const teamAbbrev = getTeamAbbrev(teamInput)
 
-  console.log(`[MySportsFeeds Stats] Getting form data for ${teamAbbrev} (last ${n} games)...`)
+  // Check cache first
+  const cacheKey = `${teamAbbrev}:${n}`
+  const cached = getCachedTeamForm(cacheKey)
+  if (cached) {
+    return cached
+  }
+
+  console.log(`[MySportsFeeds Stats] Cache MISS for ${cacheKey} - fetching from API...`)
 
   try {
     // Fetch game logs using the centralized API function
@@ -226,6 +266,9 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
     if (avgDRtg < 80 || avgDRtg > 140) {
       throw new Error(`Invalid DRtg calculated for ${teamAbbrev}: ${avgDRtg.toFixed(1)}. Expected range: 80-140.`)
     }
+
+    // Cache the result before returning
+    setCachedTeamForm(cacheKey, formData)
 
     return formData
   } catch (error) {
