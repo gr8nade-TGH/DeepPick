@@ -1,13 +1,13 @@
 /**
  * MySportsFeeds NBA Stats Fetcher
- * 
+ *
  * Fetches team game logs and calculates derived factors:
  * - Pace, ORtg, DRtg from box scores
  * - 3P%, 3PAR, FTr from shooting stats
  */
 
-const MYSPORTSFEEDS_API_KEY = process.env.MYSPORTSFEEDS_API_KEY
-const MYSPORTSFEEDS_BASE_URL = 'https://api.mysportsfeeds.com/v2.1/pull/nba'
+import { fetchTeamGameLogs } from './mysportsfeeds-api'
+import { getTeamAbbrev } from './team-mappings'
 
 interface GameLogEntry {
   teamAbbrev: string
@@ -37,56 +37,7 @@ export interface TeamFormData {
   threeP_pct: number
   threeP_rate: number // 3PAR
   ft_rate: number     // FTr
-}
-
-/**
- * Calculate Base64 encoded Basic Auth credentials for MySportsFeeds API v2.x
- */
-function getAuthHeader(): string {
-  if (!MYSPORTSFEEDS_API_KEY) {
-    throw new Error('MYSPORTSFEEDS_API_KEY environment variable not set')
-  }
-  
-  const credentials = `${MYSPORTSFEEDS_API_KEY}:MYSPORTSFEEDS`
-  const encoded = Buffer.from(credentials).toString('base64')
-  
-  return `Basic ${encoded}`
-}
-
-/**
- * Fetch last N games for a team by checking recent dates
- */
-async function fetchLastNGames(teamAbbrev: string, n: number = 5): Promise<any> {
-  // Instead of date-specific endpoint, use cumulative season stats
-  // The team_gamelogs endpoint requires completed games, not future games
-  const url = `${MYSPORTSFEEDS_BASE_URL}/latest/date/team_stats_totals.json?team=${teamAbbrev}`
-  
-  console.log(`[MySportsFeeds] Fetching team stats for ${teamAbbrev}...`)
-  
-  try {
-    const response = await fetch(url, {
-      headers: {
-        'Authorization': getAuthHeader(),
-        'Accept': 'application/json'
-      }
-    })
-    
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error(`[MySportsFeeds] API Error (${response.status}):`, errorText)
-      throw new Error(`MySportsFeeds API returned ${response.status}`)
-    }
-    
-    const data = await response.json()
-    
-    console.log(`[MySportsFeeds] API Response keys:`, Object.keys(data))
-    console.log(`[MySportsFeeds] Response structure:`, JSON.stringify(data).substring(0, 500))
-    
-    return data
-  } catch (error) {
-    console.error('[MySportsFeeds] Request failed:', error)
-    throw error
-  }
+  gamesAnalyzed: number // Number of games used in calculation
 }
 
 /**
@@ -122,23 +73,29 @@ function calculateDRtg(oppPts: number, oppPoss: number): number {
 }
 
 /**
- * Get last 5 completed games for a team and calculate averaged stats
+ * Get last N completed games for a team and calculate averaged stats
+ * @param teamInput - Team abbreviation or full name
+ * @param n - Number of games to analyze (default: 10)
+ * @throws Error if no game data is available or API fails
  */
-export async function getTeamFormData(teamAbbrev: string): Promise<TeamFormData> {
-  console.log(`[MySportsFeeds] Getting form data for ${teamAbbrev}...`)
-  
+export async function getTeamFormData(teamInput: string, n: number = 10): Promise<TeamFormData> {
+  // Resolve team abbreviation
+  const teamAbbrev = getTeamAbbrev(teamInput)
+
+  console.log(`[MySportsFeeds Stats] Getting form data for ${teamAbbrev} (last ${n} games)...`)
+
   try {
-    // Fetch game logs
-    const gameLogsData = await fetchLastNGames(teamAbbrev, 5)
-    
+    // Fetch game logs using the centralized API function
+    const gameLogsData = await fetchTeamGameLogs(teamAbbrev, n)
+
     // Parse the raw data into usable format
     const gameLogs = gameLogsData.gamelogs || []
-    
-    if (gameLogs.length === 0) {
-      throw new Error(`No game logs found for ${teamAbbrev}`)
+
+    if (!gameLogs || gameLogs.length === 0) {
+      throw new Error(`No game logs found for ${teamAbbrev}. Team may not have played ${n} games yet this season, or the season may not have started.`)
     }
-    
-    console.log(`[MySportsFeeds] Found ${gameLogs.length} recent games for ${teamAbbrev}`)
+
+    console.log(`[MySportsFeeds Stats] Found ${gameLogs.length} games for ${teamAbbrev}`)
     
     // Collect opponent abbreviations from the games
     const opponents = new Set<string>()
@@ -245,15 +202,36 @@ export async function getTeamFormData(teamAbbrev: string): Promise<TeamFormData>
       drtg: avgDRtg,
       threeP_pct,
       threeP_rate,
-      ft_rate
+      ft_rate,
+      gamesAnalyzed: gameCount
     }
-    
-    console.log(`[MySportsFeeds] Form data for ${teamAbbrev}:`, formData)
-    
+
+    console.log(`[MySportsFeeds Stats] Form data for ${teamAbbrev}:`, {
+      pace: avgPace.toFixed(1),
+      ortg: avgORtg.toFixed(1),
+      drtg: avgDRtg.toFixed(1),
+      threeP_pct: (threeP_pct * 100).toFixed(1) + '%',
+      threeP_rate: (threeP_rate * 100).toFixed(1) + '%',
+      ft_rate: (ft_rate * 100).toFixed(1) + '%',
+      games: gameCount
+    })
+
+    // Validate the data - throw error if values are unrealistic
+    if (avgPace < 80 || avgPace > 120) {
+      throw new Error(`Invalid pace calculated for ${teamAbbrev}: ${avgPace.toFixed(1)}. Expected range: 80-120.`)
+    }
+    if (avgORtg < 80 || avgORtg > 140) {
+      throw new Error(`Invalid ORtg calculated for ${teamAbbrev}: ${avgORtg.toFixed(1)}. Expected range: 80-140.`)
+    }
+    if (avgDRtg < 80 || avgDRtg > 140) {
+      throw new Error(`Invalid DRtg calculated for ${teamAbbrev}: ${avgDRtg.toFixed(1)}. Expected range: 80-140.`)
+    }
+
     return formData
   } catch (error) {
-    console.error(`[MySportsFeeds] Failed to get form data for ${teamAbbrev}:`, error)
-    throw error
+    console.error(`[MySportsFeeds Stats] Failed to get form data for ${teamAbbrev}:`, error)
+    // Re-throw the error - DO NOT return default values
+    throw new Error(`Failed to fetch stats for ${teamAbbrev}: ${error instanceof Error ? error.message : String(error)}`)
   }
 }
 

@@ -1,14 +1,21 @@
 /**
  * MySportsFeeds NBA API Integration
- * 
+ *
  * Replaces both The Odds API and NBA Stats API
  * Uses past 5 box scores to calculate advanced statistics
  */
 
+import { getNBASeason, getNBASeasonForDateString } from './season-utils'
+
 const MYSPORTSFEEDS_API_KEY = process.env.MYSPORTSFEEDS_API_KEY
-// MySportsFeeds v2.0+ uses /pull/{league}/{season}/date/{date}/endpoint.json
-// Season format: 2024-2025-regular (not 2024-25)
-const MYSPORTSFEEDS_BASE_URL = 'https://api.mysportsfeeds.com/v2.0/pull/nba/2024-2025-regular'
+const MYSPORTSFEEDS_BASE_URL = 'https://api.mysportsfeeds.com/v2.0/pull/nba'
+
+/**
+ * Get the base URL for a specific season
+ */
+function getSeasonBaseURL(season: string): string {
+  return `${MYSPORTSFEEDS_BASE_URL}/${season}`
+}
 
 /**
  * Calculate Base64 encoded Basic Auth credentials for MySportsFeeds API v2.x
@@ -28,56 +35,91 @@ function getAuthHeader(): string | null {
 
 /**
  * Make authenticated request to MySportsFeeds API
+ * @param endpoint - The endpoint path (can include season or will use current season)
+ * @param season - Optional season override (e.g., "2024-2025-regular")
  */
-async function fetchMySportsFeeds(endpoint: string): Promise<any> {
-  const url = `${MYSPORTSFEEDS_BASE_URL}/${endpoint}`
-  
+async function fetchMySportsFeeds(endpoint: string, season?: string): Promise<any> {
+  // If endpoint already includes full URL path, use it as-is
+  // Otherwise, prepend the season
+  let url: string
+  if (endpoint.startsWith('http')) {
+    url = endpoint
+  } else if (endpoint.includes('/nba/')) {
+    // Endpoint already has season in it
+    url = `https://api.mysportsfeeds.com/v2.0/pull/${endpoint}`
+  } else {
+    // Need to add season
+    const seasonToUse = season || getNBASeason().season
+    url = `${getSeasonBaseURL(seasonToUse)}/${endpoint}`
+  }
+
   console.log(`[MySportsFeeds] Fetching: ${url}`)
-  
+
   const authHeader = getAuthHeader()
-  console.log(`[MySportsFeeds] Auth header present: ${!!authHeader}`)
-  
+  if (!authHeader) {
+    throw new Error('MySportsFeeds API key not configured. Set MYSPORTSFEEDS_API_KEY environment variable.')
+  }
+
   try {
     const headers: Record<string, string> = {
-      'Accept': 'application/json'
+      'Accept': 'application/json',
+      'Authorization': authHeader
     }
-    
-    if (authHeader) {
-      headers['Authorization'] = authHeader
-    }
-    
-    console.log(`[MySportsFeeds] Request headers:`, Object.keys(headers))
-    
+
     const response = await fetch(url, { headers })
-    
+
     console.log(`[MySportsFeeds] Response status: ${response.status}`)
-    console.log(`[MySportsFeeds] Response headers:`, Object.fromEntries(response.headers.entries()))
-    
+
+    // Handle 204 No Content - this is a valid response when no data is available
+    if (response.status === 204) {
+      console.log('[MySportsFeeds] 204 No Content - no data available for this request')
+      return {
+        gameLines: [],
+        lastUpdatedOn: new Date().toISOString(),
+        references: null,
+        message: 'No data available for the requested date/season'
+      }
+    }
+
     const text = await response.text()
-    
-    console.log(`[MySportsFeeds] Response text length: ${text.length}`)
-    console.log(`[MySportsFeeds] Response text (first 500 chars): ${text.substring(0, 500)}`)
-    
+    console.log(`[MySportsFeeds] Response length: ${text.length} bytes`)
+
     if (!response.ok) {
-      console.error(`[MySportsFeeds] API Error (${response.status}):`, text.substring(0, 500))
-      throw new Error(`MySportsFeeds API returned ${response.status}: ${text.substring(0, 200)}`)
+      const errorPreview = text.substring(0, 500)
+      console.error(`[MySportsFeeds] API Error (${response.status}):`, errorPreview)
+
+      // Provide helpful error messages
+      if (response.status === 401) {
+        throw new Error('MySportsFeeds authentication failed. Check your API key.')
+      } else if (response.status === 403) {
+        throw new Error('MySportsFeeds access forbidden. Check your subscription tier and API permissions.')
+      } else if (response.status === 404) {
+        throw new Error(`MySportsFeeds endpoint not found: ${url}. This may indicate no data available for the requested date/season.`)
+      } else {
+        throw new Error(`MySportsFeeds API error ${response.status}: ${errorPreview}`)
+      }
     }
-    
+
     if (!text || text.trim().length === 0) {
-      console.error('[MySportsFeeds] Empty response from API')
-      throw new Error('Empty response from MySportsFeeds API')
+      console.warn('[MySportsFeeds] Empty response body (but 200 OK) - treating as no data')
+      return {
+        gameLines: [],
+        lastUpdatedOn: new Date().toISOString(),
+        references: null,
+        message: 'Empty response from API'
+      }
     }
-    
+
     let data
     try {
       data = JSON.parse(text)
-      console.log(`[MySportsFeeds] Success: ${JSON.stringify(data).substring(0, 200)}...`)
+      console.log(`[MySportsFeeds] Success - Response keys:`, Object.keys(data))
     } catch (parseError) {
       console.error('[MySportsFeeds] JSON parse error:', parseError)
-      console.error('[MySportsFeeds] Response text:', text)
-      throw new Error(`Failed to parse JSON: ${parseError instanceof Error ? parseError.message : String(parseError)}`)
+      console.error('[MySportsFeeds] Response text (first 1000 chars):', text.substring(0, 1000))
+      throw new Error(`Failed to parse JSON response: ${parseError instanceof Error ? parseError.message : String(parseError)}`)
     }
-    
+
     return data
   } catch (error) {
     console.error('[MySportsFeeds] Request failed:', error)
@@ -105,24 +147,48 @@ export async function testMySportsFeedsConnection(): Promise<void> {
 /**
  * Fetch game scoreboard for a specific date
  * Format: YYYYMMDD (e.g., 20250128)
+ * Automatically determines the correct season based on the date
  */
 export async function fetchScoreboard(date: string): Promise<any> {
-  return await fetchMySportsFeeds(`date/${date}/scoreboard.json`)
+  const season = getNBASeasonForDateString(date).season
+  console.log(`[MySportsFeeds] Fetching scoreboard for ${date} (season: ${season})`)
+  return await fetchMySportsFeeds(`date/${date}/scoreboard.json`, season)
 }
 
 /**
  * Fetch game box score for a specific game
  */
 export async function fetchGameBoxscore(gameId: string): Promise<any> {
-  return await fetchMySportsFeeds(`game_boxscore/${gameId}.json`)
+  const season = getNBASeason().season
+  return await fetchMySportsFeeds(`game_boxscore/${gameId}.json`, season)
 }
 
 /**
  * Fetch odds game lines for a specific date
  * Format: YYYYMMDD (e.g., 20250128)
+ * Uses 'current' season keyword for live data by default
  */
-export async function fetchOddsGameLines(date: string): Promise<any> {
-  return await fetchMySportsFeeds(`date/${date}/odds_gamelines.json`)
+export async function fetchOddsGameLines(date: string, useCurrentSeason: boolean = true): Promise<any> {
+  // Use 'current' keyword for live data (recommended for today/upcoming games)
+  // or calculate season for historical data
+  const season = useCurrentSeason ? 'current' : getNBASeasonForDateString(date).season
+  console.log(`[MySportsFeeds] Fetching odds for ${date} (season: ${season})`)
+
+  const data = await fetchMySportsFeeds(`date/${date}/odds_gamelines.json`, season)
+
+  // Log detailed information about the response
+  if (data.gameLines && data.gameLines.length > 0) {
+    console.log(`[MySportsFeeds] Found ${data.gameLines.length} games with odds`)
+    console.log(`[MySportsFeeds] First game sample:`, JSON.stringify(data.gameLines[0]).substring(0, 300))
+  } else {
+    console.warn(`[MySportsFeeds] No games found for date ${date} in season ${season}`)
+    console.warn(`[MySportsFeeds] This may indicate:`)
+    console.warn(`  - No games scheduled for this date`)
+    console.warn(`  - Date is outside the regular season`)
+    console.warn(`  - API subscription doesn't include odds data`)
+  }
+
+  return data
 }
 
 /**
@@ -130,7 +196,19 @@ export async function fetchOddsGameLines(date: string): Promise<any> {
  * Format: YYYYMMDD (e.g., 20250128)
  */
 export async function fetchTeamGameLogByDate(date: string, teamAbbrev: string): Promise<any> {
-  return await fetchMySportsFeeds(`date/${date}/team_gamelogs.json?team=${teamAbbrev}`)
+  const season = getNBASeasonForDateString(date).season
+  return await fetchMySportsFeeds(`date/${date}/team_gamelogs.json?team=${teamAbbrev}`, season)
+}
+
+/**
+ * Fetch team game logs for last N games
+ * @param teamAbbrev - Team abbreviation (e.g., "BOS", "LAL")
+ * @param limit - Number of games to fetch (default: 10)
+ */
+export async function fetchTeamGameLogs(teamAbbrev: string, limit: number = 10): Promise<any> {
+  const season = getNBASeason().season
+  console.log(`[MySportsFeeds] Fetching last ${limit} games for ${teamAbbrev} (season: ${season})`)
+  return await fetchMySportsFeeds(`team_gamelogs.json?team=${teamAbbrev}&limit=${limit}`, season)
 }
 
 // Export for testing

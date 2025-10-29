@@ -1,22 +1,106 @@
 /**
  * NBA Totals Data Fetcher
- * 
+ *
  * Handles all external data fetching for NBA totals factors
- * Uses ONLY The Odds API scores to calculate stats (last 5-10 games)
- * Removed unreliable NBA Stats API entirely
+ * Uses MySportsFeeds API to fetch team statistics
  */
 
 import { searchInjuries } from '../news'
 import { RunCtx, NBAStatsBundle, InjuryImpact } from './types'
+import { getTeamFormData } from '@/lib/data-sources/mysportsfeeds-stats'
+import { getTeamAbbrev } from '@/lib/data-sources/team-mappings'
 
 /**
  * Fetch all required data for NBA totals factor computation
- * Uses ONLY The Odds API scores endpoint to calculate stats from last 5 games
- * Removed dependency on NBA Stats API
+ * Uses MySportsFeeds API to get team game logs and calculate advanced stats
+ *
+ * @throws Error if data cannot be fetched - NO FALLBACK TO DEFAULTS
  */
 export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<NBAStatsBundle> {
-  // TODO: This file needs to be completely refactored to use MySportsFeeds instead of NBA Stats API
-  throw new Error('fetchNBAStatsBundle is being refactored to use MySportsFeeds. Not yet implemented.')
+  console.log('[DATA_FETCHER] Starting NBA stats bundle fetch')
+  console.log(`[DATA_FETCHER] Away: ${ctx.away}, Home: ${ctx.home}`)
+
+  try {
+    // Resolve team abbreviations
+    const awayAbbrev = getTeamAbbrev(ctx.away)
+    const homeAbbrev = getTeamAbbrev(ctx.home)
+
+    console.log(`[DATA_FETCHER] Resolved teams: ${awayAbbrev} @ ${homeAbbrev}`)
+
+    // Fetch recent form (last 10 games) and season stats (last 30 games) in parallel
+    console.log('[DATA_FETCHER] Fetching team statistics from MySportsFeeds...')
+
+    const [awayRecent, homeRecent, awaySeason, homeSeason] = await Promise.all([
+      getTeamFormData(awayAbbrev, 10),
+      getTeamFormData(homeAbbrev, 10),
+      getTeamFormData(awayAbbrev, 30),
+      getTeamFormData(homeAbbrev, 30)
+    ])
+
+    console.log('[DATA_FETCHER] Successfully fetched all team statistics')
+    console.log(`[DATA_FETCHER] ${awayAbbrev} recent: Pace=${awayRecent.pace.toFixed(1)}, ORtg=${awayRecent.ortg.toFixed(1)}`)
+    console.log(`[DATA_FETCHER] ${homeAbbrev} recent: Pace=${homeRecent.pace.toFixed(1)}, ORtg=${homeRecent.ortg.toFixed(1)}`)
+
+    // Build the stats bundle
+    const bundle: NBAStatsBundle = {
+      // Pace stats
+      awayPaceSeason: awaySeason.pace,
+      awayPaceLast10: awayRecent.pace,
+      homePaceSeason: homeSeason.pace,
+      homePaceLast10: homeRecent.pace,
+      leaguePace: 100.1, // NBA league average (static)
+
+      // Offensive Rating
+      awayORtgLast10: awayRecent.ortg,
+      homeORtgLast10: homeRecent.ortg,
+      leagueORtg: 110.0, // NBA league average (static)
+
+      // Defensive Rating
+      awayDRtgSeason: awaySeason.drtg,
+      homeDRtgSeason: homeSeason.drtg,
+      leagueDRtg: 110.0, // NBA league average (static)
+
+      // 3-Point Stats
+      away3PAR: awayRecent.threeP_rate,
+      home3PAR: homeRecent.threeP_rate,
+      awayOpp3PAR: 0.39, // TODO: Fetch opponent stats in future enhancement
+      homeOpp3PAR: 0.39,
+      away3Pct: awayRecent.threeP_pct,
+      home3Pct: homeRecent.threeP_pct,
+      away3PctLast10: awayRecent.threeP_pct,
+      home3PctLast10: homeRecent.threeP_pct,
+      league3PAR: 0.39, // NBA league average (static)
+      league3Pct: 0.35, // NBA league average (static)
+      league3Pstdev: 0.036, // NBA league standard deviation (static)
+
+      // Free Throw Rate
+      awayFTr: awayRecent.ft_rate,
+      homeFTr: homeRecent.ft_rate,
+      awayOppFTr: 0.22, // TODO: Fetch opponent stats in future enhancement
+      homeOppFTr: 0.22,
+      leagueFTr: 0.22, // NBA league average (static)
+
+      // Points Per Game (calculated from ORtg and Pace)
+      awayPointsPerGame: (awayRecent.ortg * awayRecent.pace) / 100,
+      homePointsPerGame: (homeRecent.ortg * homeRecent.pace) / 100
+    }
+
+    console.log('[DATA_FETCHER] Stats bundle created successfully')
+    console.log(`[DATA_FETCHER] Predicted pace: ${((bundle.awayPaceLast10 + bundle.homePaceLast10) / 2).toFixed(1)}`)
+    console.log(`[DATA_FETCHER] Away PPG: ${bundle.awayPointsPerGame.toFixed(1)}, Home PPG: ${bundle.homePointsPerGame.toFixed(1)}`)
+
+    return bundle
+
+  } catch (error) {
+    console.error('[DATA_FETCHER] CRITICAL ERROR - Failed to fetch NBA stats bundle')
+    console.error('[DATA_FETCHER] Error details:', error)
+
+    // DO NOT return default values - throw the error so it's visible
+    throw new Error(
+      `Failed to fetch NBA statistics: ${error instanceof Error ? error.message : String(error)}. ` +
+      `Cannot generate pick without real data.`
+    )
+  }
 }
 
 /**
