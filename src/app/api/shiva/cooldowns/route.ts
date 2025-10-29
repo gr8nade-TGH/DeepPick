@@ -4,8 +4,10 @@ import { getSupabaseAdmin } from '@/lib/supabase/server'
 export async function GET() {
   try {
     const supabase = getSupabaseAdmin()
-    
-    // Get active cooldowns (where cooldown_until is in the future)
+
+    // Get ALL cooldowns (both active and expired) for visibility
+    // CHANGED: Removed .gt('cooldown_until', ...) filter to show all cooldowns including expired ones
+    // This allows the Run Log to display cooldown history, not just active cooldowns
     const { data: cooldowns, error } = await supabase
       .from('pick_generation_cooldowns')
       .select(`
@@ -15,10 +17,11 @@ export async function GET() {
         bet_type,
         cooldown_until,
         result,
-        units
+        units,
+        created_at
       `)
-      .gt('cooldown_until', new Date().toISOString())
-      .order('cooldown_until', { ascending: true })
+      .order('created_at', { ascending: false })
+      .limit(50) // Limit to most recent 50 cooldowns
 
     if (error) {
       console.error('[CooldownsAPI] Error fetching cooldowns:', error)

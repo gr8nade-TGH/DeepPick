@@ -422,27 +422,33 @@ export function RunLogTable() {
                 </tr>
               </thead>
               <tbody>
-                {cooldowns.map((cd, idx) => (
-                  <tr key={idx} className="border-b border-gray-800 hover:bg-gray-800">
-                    <td className="py-2 px-3 text-gray-300 text-xs">{cd.matchup || cd.game_id?.substring(0, 12)}</td>
-                    <td className="py-2 px-3">
-                      <span className={`font-bold ${cd.result === 'PASS' ? 'text-yellow-400' : 'text-green-400'}`}>
-                        {cd.result}
-                      </span>
-                    </td>
-                    <td className="py-2 px-3 text-gray-300">{cd.units || 0}</td>
-                    <td className="py-2 px-3 font-mono text-orange-400">{formatCountdown(cd.cooldown_until)}</td>
-                    <td className="py-2 px-3 text-center">
-                      <button
-                        onClick={() => handleClearCooldown(cd.id)}
-                        disabled={clearingCooldown === cd.id}
-                        className="px-3 py-1 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white text-xs rounded"
-                      >
-                        {clearingCooldown === cd.id ? 'Clearing...' : 'Clear'}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {cooldowns.map((cd, idx) => {
+                  const isExpired = new Date(cd.cooldown_until).getTime() <= now
+                  return (
+                    <tr key={idx} className={`border-b border-gray-800 hover:bg-gray-800 ${isExpired ? 'opacity-50' : ''}`}>
+                      <td className="py-2 px-3 text-gray-300 text-xs">{cd.matchup || cd.game_id?.substring(0, 12)}</td>
+                      <td className="py-2 px-3">
+                        <span className={`font-bold ${cd.result === 'PASS' ? 'text-yellow-400' : 'text-green-400'}`}>
+                          {cd.result}
+                        </span>
+                        {isExpired && <span className="ml-2 text-xs text-gray-500">(EXPIRED)</span>}
+                      </td>
+                      <td className="py-2 px-3 text-gray-300">{cd.units || 0}</td>
+                      <td className="py-2 px-3 font-mono text-orange-400">
+                        {isExpired ? 'EXPIRED' : formatCountdown(cd.cooldown_until)}
+                      </td>
+                      <td className="py-2 px-3 text-center">
+                        <button
+                          onClick={() => handleClearCooldown(cd.id)}
+                          disabled={clearingCooldown === cd.id}
+                          className="px-3 py-1 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white text-xs rounded"
+                        >
+                          {clearingCooldown === cd.id ? 'Clearing...' : 'Clear'}
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>

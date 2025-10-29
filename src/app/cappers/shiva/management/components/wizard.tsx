@@ -2207,59 +2207,26 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                         total_line: stepLogs[2]?.json?.snapshot?.total?.line || 0,
                       }
                     },
-                    // Step-specific debug information
+                    // Step-specific debug information (DRASTICALLY REDUCED to prevent massive debug reports)
       step_debug: {
-        step3_totals: stepLogs[3]?.json?._debug || null,
-        step3_factors_detail: stepLogs[3]?.json?.factors?.map((f: any) => ({
-          key: f.key,
-          name: f.name,
-          z: f.normalized_value,
-          points: f.parsed_values_json?.points,
-          awayContribution: f.parsed_values_json?.awayContribution,
-          homeContribution: f.parsed_values_json?.homeContribution,
-          weight: f.weight_total_pct,
-          capped: f.caps_applied,
-          notes: f.notes
-        })) || [],
-        nba_stats_api_debug: {
-          condition_check: stepLogs[3]?.json?._debug?.totals?.console_logs?.nba_stats_condition_check || 'Not found in debug logs',
-          enabled_factors: stepLogs[3]?.json?._debug?.totals?.console_logs?.enabled_factors || 'Not found in debug logs',
-          nba_stats_fetched: stepLogs[3]?.json?._debug?.totals?.console_logs?.nba_stats_fetched || 'Not found in debug logs',
-          team_names: stepLogs[3]?.json?._debug?.totals?.console_logs?.team_names || 'Not found in debug logs',
-          bundle_keys: stepLogs[3]?.json?._debug?.totals?.console_logs?.bundle ? Object.keys(stepLogs[3].json._debug.totals.console_logs.bundle) : 'Not found in debug logs',
-          bundle_sample: stepLogs[3]?.json?._debug?.totals?.console_logs?.bundle ? {
-            awayPaceSeason: stepLogs[3].json._debug.totals.console_logs.bundle.awayPaceSeason,
-            homePaceSeason: stepLogs[3].json._debug.totals.console_logs.bundle.homePaceSeason,
-            awayORtgLast10: stepLogs[3].json._debug.totals.console_logs.bundle.awayORtgLast10,
-            homeORtgLast10: stepLogs[3].json._debug.totals.console_logs.bundle.homeORtgLast10,
-            leaguePace: stepLogs[3].json._debug.totals.console_logs.bundle.leaguePace,
-            leagueORtg: stepLogs[3].json._debug.totals.console_logs.bundle.leagueORtg
-          } : 'Not found in debug logs',
-          api_calls_made: stepLogs[3]?.json?._debug?.totals?.console_logs?.api_calls || 'Not found in debug logs'
-        },
-        step4_predictions: stepLogs[4]?.json || null,
-        step5_confidence: stepLogs[5]?.json || null,
-        step6_pick: stepLogs[6]?.json?.pick || null,
-        confidence_calculation: {
-          // New signal-based confidence calculation
-          factor_signals: stepLogs[3]?.json?.factors?.map((f: any) => ({
-            key: f.key,
-            name: f.name,
-            signal: f.normalized_value, // sᵢ ∈ [-1, +1]
-            weight: f.weight_total_pct,
-            contribution: (f.normalized_value || 0) * ((f.weight_total_pct || 0) / 100)
-          })) || [],
-          signed_sum: stepLogs[3]?.json?.factors?.reduce((sum: number, f: any) => 
-            sum + ((f.normalized_value || 0) * ((f.weight_total_pct || 0) / 100)), 0) || 0,
-          base_confidence: Math.abs(stepLogs[3]?.json?.factors?.reduce((sum: number, f: any) => 
-            sum + ((f.normalized_value || 0) * ((f.weight_total_pct || 0) / 100)), 0) || 0) * 5,
-          weight_validation: {
-            total_weight: stepLogs[3]?.json?.factors?.reduce((sum: number, f: any) => 
-              sum + (f.weight_total_pct || 0), 0) || 0,
-            expected_weight: 250,
-            is_valid: Math.abs((stepLogs[3]?.json?.factors?.reduce((sum: number, f: any) => 
-              sum + (f.weight_total_pct || 0), 0) || 0) - 250) < 0.01
-          }
+        // REMOVED: step3_totals (was causing 1000+ line debug reports)
+        // REMOVED: step3_factors_detail (visible in summary.factor_contributions)
+        // REMOVED: nba_stats_api_debug (too verbose)
+        // REMOVED: step4_predictions (too verbose)
+        // REMOVED: step5_confidence (too verbose)
+        // REMOVED: step6_pick (visible in summary)
+        // REMOVED: confidence_calculation (too verbose)
+
+        // Only keep essential summary info
+        step3_factor_count: stepLogs[3]?.json?.factors?.length || 0,
+        step3_has_debug: !!stepLogs[3]?.json?._debug,
+        step4_prediction_exists: !!stepLogs[4]?.json,
+        step5_confidence_exists: !!stepLogs[5]?.json,
+
+        // Keep only top-level summary for debugging
+        nba_stats_summary: {
+          api_calls_made: stepLogs[3]?.json?._debug?.totals?.console_logs?.api_calls || 'Not found',
+          team_names: stepLogs[3]?.json?._debug?.totals?.console_logs?.team_names || 'Not found'
         }
       },
       // Pick Generation Cooldown Information
