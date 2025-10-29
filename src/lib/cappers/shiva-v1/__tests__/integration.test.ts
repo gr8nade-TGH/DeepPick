@@ -138,19 +138,7 @@ describe('SHIVA v1 Integration Tests', () => {
       expect(expectedError.code).toBe('PRECONDITION_FAILED')
     })
 
-    it('bypasses precondition check in dry-run mode', async () => {
-      // Test scenario:
-      // 1. Run Step 5 with WRITE=false
-      // 2. No active snapshot check performed
-      // 3. Returns 200 with simulated response
-      
-      const dryRunBehavior = {
-        snapshotCheckSkipped: true,
-        expectedStatus: 200,
-      }
 
-      expect(dryRunBehavior.snapshotCheckSkipped).toBe(true)
-    })
   })
 
   describe('Market Mismatch Math', () => {
@@ -208,23 +196,6 @@ describe('SHIVA v1 Integration Tests', () => {
     })
   })
 
-  describe('Headers Verification', () => {
-    it('all POSTs include X-Dry-Run header', () => {
-      const allRoutes = [
-        '/api/shiva/runs',
-        '/api/shiva/odds/snapshot',
-        '/api/shiva/factors/step3',
-        '/api/shiva/factors/step4',
-        '/api/shiva/factors/step5',
-        '/api/shiva/pick/generate',
-        '/api/shiva/insight-card',
-      ]
 
-      allRoutes.forEach(route => {
-        // Each route sets X-Dry-Run via withIdempotency helper
-        expect(route).toContain('/api/shiva')
-      })
-    })
-  })
 })
 

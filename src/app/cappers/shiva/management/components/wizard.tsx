@@ -14,18 +14,7 @@ async function postJson(path: string, body: unknown, idempo: string) {
     body: JSON.stringify(body),
   })
   const json = await res.json().catch(() => ({}))
-  const dryRunHeader = res.headers.get('X-Dry-Run')
-  return { status: res.status, json, dryRun: dryRunHeader === '1' }
-}
-
-function DryRunBanner() {
-  const dryRun = (process.env.NEXT_PUBLIC_SHIVA_V1_WRITE_ENABLED || '').toLowerCase() !== 'true'
-  if (!dryRun) return null
-  return (
-    <div className="mb-3 rounded bg-yellow-900 border-2 border-yellow-600 p-3 text-sm font-bold text-yellow-200">
-      Dry-Run (no writes). Responses may include X-Dry-Run header.
-    </div>
-  )
+  return { status: res.status, json }
 }
 
 function AutoModeBanner() {
@@ -331,9 +320,6 @@ function assembleInsightCard({ runCtx, step4, step5, step5_5, step6, step3, step
       confFinal,
       dominant: (step5?.json?.dominant || 'side') as 'side' | 'total',
     },
-    state: {
-      dryRun: true,
-    },
     // Debug information for troubleshooting
     _debug: {
       step3_totals: step3?.json?._debug || null,
@@ -635,7 +621,6 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         .map(([stepNum, response]: [string, any]) => ({
           step: parseInt(stepNum),
           status: response.status,
-          dryRun: response.dryRun,
           latencyMs: response.latencyMs || 0,
           response: response.json || null, // Include actual response data
           error: response.error || null,
@@ -662,7 +647,6 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           totalSteps: stepsArray.length,
           successfulSteps: stepsArray.filter((s) => s.status >= 200 && s.status < 300).length,
           errorSteps: stepsArray.filter((s) => s.status >= 400).length,
-          dryRunSteps: stepsArray.filter((s) => s.dryRun === true).length,
           step1Executed,
           step1Status,
         },
@@ -743,7 +727,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         }
       }
       console.log('Debug report generated (comprehensive):', debugReport)
-      setLog({ status: 200, json: debugReport, dryRun: false })
+      setLog({ status: 200, json: debugReport })
     }
   }, [step, stepLogs, effectiveProfileSnapshot, runId, snapId, props.effectiveProfile])
 
@@ -1144,10 +1128,9 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           setLog({
             status: 500,
             json: { error: error instanceof Error ? error.message : 'Unknown error' },
-            dryRun: false,
             latencyMs: 0
           })
-          setStepLogs(prev => ({ ...prev, 2: { status: 500, json: { error: error instanceof Error ? error.message : 'Unknown error' }, dryRun: false, latencyMs: 0 } }))
+          setStepLogs(prev => ({ ...prev, 2: { status: 500, json: { error: error instanceof Error ? error.message : 'Unknown error' }, latencyMs: 0 } }))
         }
         return
       }
@@ -1295,10 +1278,9 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                 state: step1Data.state,
                 message: step1Data.message,
                 filters: step1Data.filters
-              },
-              dryRun: true
+              }
             }
-            
+
             setLog(noGamesResponse)
             setStepLogs(prev => ({ ...prev, [1]: noGamesResponse }))
             return
@@ -1317,7 +1299,6 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           const step1LogEntry = {
             status: step1Response.status,
             json: step1Data,
-            dryRun: false,
             latencyMs: 0 // Will be calculated properly later
           }
           
@@ -1338,8 +1319,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           console.error('[Step 1] Error during Step 1 execution:', error)
           const errorResponse = {
             status: 500,
-            json: { error: { message: error instanceof Error ? error.message : 'Unknown error' } },
-            dryRun: false
+            json: { error: { message: error instanceof Error ? error.message : 'Unknown error' } }
           }
           setLog(errorResponse)
           setStepLogs(prev => ({ ...prev, [1]: errorResponse }))
@@ -1742,10 +1722,9 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
               reason: 'Skipped - no units allocated (PASS)',
               skipped: true
             },
-            dryRun: true,
             latencyMs: 0
           }
-          
+
           setLog(skipResult)
           setStepLogs(prev => ({ ...prev, 6: skipResult }))
           setStepLoading(6, false, 'Skipped', 100)
@@ -1883,7 +1862,6 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           .map(([stepNum, response]: [string, any]) => ({
             step: parseInt(stepNum),
             status: response.status,
-            dryRun: response.dryRun,
             latencyMs: response.latencyMs || 0,
             response: response.json || null, // Include actual response data
             error: response.error || null,
@@ -1897,14 +1875,12 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           environment: {
             SHIVA_V1_API_ENABLED: process.env.NEXT_PUBLIC_SHIVA_V1_API_ENABLED,
             SHIVA_V1_UI_ENABLED: process.env.NEXT_PUBLIC_SHIVA_V1_UI_ENABLED,
-            SHIVA_V1_WRITE_ENABLED: process.env.NEXT_PUBLIC_SHIVA_V1_WRITE_ENABLED,
           },
           steps: stepsArray,
           summary: {
             totalSteps: stepsArray.length,
             successfulSteps: stepsArray.filter((s) => s.status >= 200 && s.status < 300).length,
             errorSteps: stepsArray.filter((s) => s.status >= 400).length,
-            dryRunSteps: stepsArray.filter((s) => s.dryRun === true).length,
           },
           // Enhanced debugging information
           factor_count: stepLogs[3]?.json?.factor_count || 0,
@@ -1923,7 +1899,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           stepLogsRaw: stepLogs, // Include raw step logs for debugging
         }
         console.log('Debug report generated (comprehensive):', debugReport)
-        setLog({ status: 200, json: debugReport, dryRun: false })
+        setLog({ status: 200, json: debugReport })
         updateStepProgress(8, 100, 'Debug report generated')
         setStepLoading(8, false, 'Complete', 100)
         // DO NOT add to stepLogs to prevent recursion
@@ -1943,7 +1919,6 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           .map(([stepNum, response]: [string, any]) => ({
             step: parseInt(stepNum),
             status: response.status,
-            dryRun: response.dryRun,
             latencyMs: response.latencyMs || 0,
             response: response.json || null, // Include actual response data
             error: response.error || null,
@@ -1964,7 +1939,6 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             totalSteps: stepsArray.length,
             successfulSteps: stepsArray.filter(s => s.status >= 200 && s.status < 300).length,
             errorSteps: stepsArray.filter(s => s.status >= 400).length,
-            dryRunSteps: stepsArray.filter(s => s.dryRun).length,
             step1Executed: stepLogs[1]?.status === 201,
             step1Status: stepLogs[1]?.status || 'NOT_EXECUTED',
             stepLogs: stepLogs
@@ -1987,7 +1961,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           stepLogsRaw: stepLogs, // Include raw step logs for debugging
         }
         console.log('Debug report generated (comprehensive):', debugReport)
-        setLog({ status: 200, json: debugReport, dryRun: false })
+        setLog({ status: 200, json: debugReport })
         updateStepProgress(9, 100, 'Debug report generated')
         setStepLoading(9, false, 'Complete', 100)
         // DO NOT add to stepLogs to prevent recursion
@@ -2158,7 +2132,6 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
 
   return (
     <div>
-      <DryRunBanner />
       {props.mode === 'auto' && <AutoModeBanner />}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
@@ -2205,7 +2178,6 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                       .map(([stepNum, response]: [string, any]) => ({
                         step: parseInt(stepNum),
                         status: response.status,
-                        dryRun: response.dryRun,
                         latencyMs: response.latencyMs || 0,
                         // NOTE: Removed full response to reduce debug report size
                         // Full step responses are visible in the Step Responses table below
@@ -2215,7 +2187,6 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                       totalSteps: Object.keys(stepLogs).length,
                       successfulSteps: Object.values(stepLogs).filter((s: any) => s.status >= 200 && s.status < 300).length,
                       errorSteps: Object.values(stepLogs).filter((s: any) => s.status >= 400).length,
-                      dryRunSteps: Object.values(stepLogs).filter((s: any) => s.dryRun === true).length,
                     },
                     // Enhanced debugging information
                     factor_count: stepLogs[3]?.json?.factor_count || 0,
@@ -2307,7 +2278,6 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                   <th className="text-left p-1 text-white">Name</th>
                   <th className="text-left p-1 text-white">Status</th>
                   <th className="text-left p-1 text-white">AI Used</th>
-                  <th className="text-left p-1 text-white">Dry Run</th>
                   <th className="text-left p-1 text-white">Data Type</th>
                   <th className="text-left p-1 text-white">Response</th>
                 </tr>
@@ -2350,19 +2320,6 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                         {isExecuted && usesAI ? (
                           <span className="px-1 rounded text-xs bg-purple-600 text-white">
                             🤖 {aiProvider}
-                          </span>
-                        ) : (
-                          <span className="px-1 rounded text-xs bg-gray-600 text-gray-400">
-                            —
-                          </span>
-                        )}
-                      </td>
-                      <td className="p-1">
-                        {isExecuted ? (
-                          <span className={`px-1 rounded text-xs ${
-                            response.dryRun ? 'bg-blue-600 text-white' : 'bg-gray-600 text-white'
-                          }`}>
-                            {response.dryRun ? 'Yes' : 'No'}
                           </span>
                         ) : (
                           <span className="px-1 rounded text-xs bg-gray-600 text-gray-400">

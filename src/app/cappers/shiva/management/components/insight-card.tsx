@@ -72,14 +72,11 @@ export interface InsightCardProps {
     weightAppliedPct: number
     rationale?: string
   }>
-  market: { 
+  market: {
     conf7: number
     confAdj: number
     confFinal: number
     dominant: 'side' | 'total'
-  }
-  state: { 
-    dryRun: boolean
   }
   results?: {
     status: 'pending' | 'win' | 'loss' | 'push'

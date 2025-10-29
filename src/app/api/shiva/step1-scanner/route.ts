@@ -467,14 +467,14 @@ async function scanForEligibleGames(
 
     // Check cooldown periods for remaining games
     console.log(`[SHIVA_SCANNER] Checking cooldowns for ${availableGames.length} games...`)
-    const now = new Date().toISOString()
+    const nowIso = new Date().toISOString()
     const { data: cooldownData, error: cooldownError } = await supabase
       .from('pick_generation_cooldowns')
       .select('game_id, cooldown_until, result, units, created_at')
       .in('game_id', availableGames.map((g: any) => g.id))
       .eq('capper', 'shiva')
       .eq('bet_type', betTypeLower)
-      .gt('cooldown_until', now)
+      .gt('cooldown_until', nowIso)
 
     if (cooldownError) {
       console.error(`[SHIVA_SCANNER] Error fetching cooldown data:`, cooldownError)
