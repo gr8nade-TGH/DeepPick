@@ -749,12 +749,14 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
 
   // Step validation helper functions
   function validateStep1(): { isValid: boolean; error?: string; data?: any } {
-    const step1Data = stepLogs[1]?.json
+    // Use ref for fresh data in AUTO mode (same pattern as validateStep2/validateStep3)
+    const step1Data = stepLogsRef.current[1]?.json || stepLogs[1]?.json
+    const step1Status = stepLogsRef.current[1]?.status || stepLogs[1]?.status
     if (!step1Data) {
       return { isValid: false, error: 'Step 1 not executed' }
     }
-    if (stepLogs[1]?.status < 200 || stepLogs[1]?.status >= 300) {
-      return { isValid: false, error: `Step 1 failed with status ${stepLogs[1]?.status}` }
+    if (step1Status && (step1Status < 200 || step1Status >= 300)) {
+      return { isValid: false, error: `Step 1 failed with status ${step1Status}` }
     }
     if (!step1Data.selected_game) {
       return { isValid: false, error: 'Step 1 did not select a game' }
@@ -762,7 +764,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     if (!step1Data.run_id) {
       return { isValid: false, error: 'Step 1 did not generate run_id' }
     }
-    
+
     // Data anomaly checks
     const game = step1Data.selected_game
     if (!game.home_team?.name || !game.away_team?.name) {
@@ -774,7 +776,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     if (!game.odds || Object.keys(game.odds).length === 0) {
       return { isValid: false, error: 'Step 1 game missing odds data' }
     }
-    
+
     return { isValid: true, data: step1Data }
   }
 
