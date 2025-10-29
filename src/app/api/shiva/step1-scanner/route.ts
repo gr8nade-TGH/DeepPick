@@ -466,38 +466,46 @@ async function scanForEligibleGames(
     }
 
     // Check cooldown periods for remaining games
+    console.log(`[SHIVA_SCANNER] Checking cooldowns for ${availableGames.length} games...`)
+    const now = new Date().toISOString()
     const { data: cooldownData, error: cooldownError } = await supabase
       .from('pick_generation_cooldowns')
-      .select('game_id, cooldown_until')
+      .select('game_id, cooldown_until, result, units, created_at')
       .in('game_id', availableGames.map((g: any) => g.id))
       .eq('capper', 'shiva')
       .eq('bet_type', betTypeLower)
-      .gt('cooldown_until', new Date().toISOString())
+      .gt('cooldown_until', now)
 
     if (cooldownError) {
       console.error(`[SHIVA_SCANNER] Error fetching cooldown data:`, cooldownError)
-      return { 
-        games: [], 
-        debug: { 
-          step: 'cooldown_check', 
+      return {
+        games: [],
+        debug: {
+          step: 'cooldown_check',
           error: cooldownError.message,
           gamesFound: processedGames.length,
           availableAfterPicksFilter: availableGames.length
-        } 
+        }
       }
     }
+
+    console.log(`[SHIVA_SCANNER] Found ${cooldownData?.length || 0} active cooldowns:`, cooldownData)
 
     // Create a set of game IDs in cooldown
     const gamesInCooldown = new Set()
     if (cooldownData) {
       cooldownData.forEach((cooldown: any) => {
         gamesInCooldown.add(cooldown.game_id)
+        console.log(`[SHIVA_SCANNER] Game ${cooldown.game_id} is in cooldown until ${cooldown.cooldown_until} (result: ${cooldown.result}, units: ${cooldown.units})`)
       })
     }
 
     // Filter out games in cooldown
     const finalGames = availableGames.filter((game: any) => !gamesInCooldown.has(game.id))
-    console.log(`[SHIVA_SCANNER] After filtering cooldown: ${finalGames.length} games`)
+    console.log(`[SHIVA_SCANNER] After filtering cooldown: ${finalGames.length} games available`)
+    if (finalGames.length > 0) {
+      console.log(`[SHIVA_SCANNER] Available games:`, finalGames.map((g: any) => `${g.away_team?.name || 'Unknown'} @ ${g.home_team?.name || 'Unknown'} (${g.id})`))
+    }
     
     if (finalGames.length === 0) {
       console.log(`[SHIVA_SCANNER] No games available after filtering cooldown`)

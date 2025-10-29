@@ -87,6 +87,12 @@ export class PickGenerationService {
       let error
       if (existingCooldown) {
         // Update existing record
+        console.log('[PickGenerationService] Updating existing cooldown record:', {
+          cooldownId: existingCooldown.id,
+          gameId: result.gameId,
+          cooldownUntil: cooldownUntil.toISOString(),
+          cooldownHours
+        })
         const updateResult = await this.supabase
           .from('pick_generation_cooldowns')
           .update({
@@ -99,8 +105,18 @@ export class PickGenerationService {
           })
           .eq('id', existingCooldown.id)
         error = updateResult.error
+        if (!error) {
+          console.log('[PickGenerationService] ✅ Cooldown record UPDATED successfully')
+        }
       } else {
         // Insert new record
+        console.log('[PickGenerationService] Creating NEW cooldown record:', {
+          gameId: result.gameId,
+          capper: result.capper,
+          betType: betTypeNormalized,
+          cooldownUntil: cooldownUntil.toISOString(),
+          cooldownHours
+        })
         const insertResult = await this.supabase
           .from('pick_generation_cooldowns')
           .insert({
@@ -114,14 +130,17 @@ export class PickGenerationService {
             cooldown_until: cooldownUntil.toISOString()
           })
         error = insertResult.error
+        if (!error) {
+          console.log('[PickGenerationService] ✅ Cooldown record CREATED successfully')
+        }
       }
 
       if (error) {
-        console.error('[PickGenerationService] Error recording result:', error)
+        console.error('[PickGenerationService] ❌ Error recording result:', error)
         return { success: false, error: error.message }
       }
 
-      console.log('[PickGenerationService] Successfully recorded pick generation result')
+      console.log('[PickGenerationService] ✅ Successfully recorded pick generation result with cooldown')
       return { success: true }
     } catch (error) {
       console.error('[PickGenerationService] Error in recordPickGenerationResult:', error)

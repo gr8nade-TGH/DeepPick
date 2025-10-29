@@ -1514,9 +1514,19 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             console.log('[Wizard:Step5] step4Results factor_contributions:', step4Results?.confidence?.factor_contributions)
             try {
               const step1Game = stepLogsRef.current[1]?.json?.selected_game || stepLogs[1]?.json?.selected_game
-              // Use ONLY base factor contributions from Step 4
-              // Do NOT add edgeVsMarket here - it's an adjustment applied in Step 5, not a factor
               const factorContributions = step4Results?.confidence?.factor_contributions || []
+
+              // Add edgeVsMarket to factor_contributions for visibility (even though it's an adjustment, not a base factor)
+              const step5Results = stepLogsRef.current[5]?.json || stepLogs[5]?.json
+              if (step5Results?.edge_factor !== undefined) {
+                factorContributions.push({
+                  key: 'edgeVsMarket',
+                  name: 'Edge vs Market',
+                  z: step5Results.edge_factor,
+                  weight: 0.4, // Display weight (not used in calculation)
+                  contribution: step5Results.edge_factor * 0.4
+                })
+              }
 
               // Get baseline from Step 3 results
               const step3Results = stepLogsRef.current[3]?.json || stepLogs[3]?.json
@@ -1586,10 +1596,20 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             console.log('[Wizard:Step5] step4Results factor_contributions:', step4Results?.confidence?.factor_contributions)
             try {
               const step1Game = stepLogsRef.current[1]?.json?.selected_game || stepLogs[1]?.json?.selected_game
-              // Use ONLY base factor contributions from Step 4
-              // Do NOT add edgeVsMarket here - it's an adjustment applied in Step 5, not a factor
               const factorContributions = step4Results?.confidence?.factor_contributions || []
-              
+
+              // Add edgeVsMarket to factor_contributions for visibility (even though it's an adjustment, not a base factor)
+              const step5Results = stepLogsRef.current[5]?.json || stepLogs[5]?.json
+              if (step5Results?.edge_factor !== undefined) {
+                factorContributions.push({
+                  key: 'edgeVsMarket',
+                  name: 'Edge vs Market',
+                  z: step5Results.edge_factor,
+                  weight: 0.4, // Display weight (not used in calculation)
+                  contribution: step5Results.edge_factor * 0.4
+                })
+              }
+
               // Get baseline from Step 3 results
               const step3Results = stepLogsRef.current[3]?.json || stepLogs[3]?.json
               const baselineAvg = step3Results?.baseline?.matchupBaseline || null

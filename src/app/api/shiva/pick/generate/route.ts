@@ -343,7 +343,7 @@ export async function POST(request: Request) {
               units: r.units,
               confidence: r.confidence,
               pickId: r.id,
-              cooldownHours: 0
+              cooldownHours: 2
             })
 
             const cooldownResult = await pickGenerationService.recordPickGenerationResult({
@@ -355,7 +355,7 @@ export async function POST(request: Request) {
               units: r.units,
               confidence: r.confidence,
               pickId: r.id
-            }, 0) // No cooldown for successful picks
+            }, 2) // 2-hour cooldown for all pick generation attempts (both PICK_GENERATED and PASS)
 
             console.log('[SHIVA:PickGenerate] recordPickGenerationResult returned:', cooldownResult)
 
