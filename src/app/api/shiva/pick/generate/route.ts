@@ -197,32 +197,16 @@ export async function POST(request: Request) {
       }
       
       const r = results.persistence.picks_row
-      
+
       // Lock odds at pick-time from active Step-2 snapshot
       const activeSnapshot = await getActiveSnapshot(run_id)
       const locked_odds = activeSnapshot?.raw_payload ?? results.locked_odds ?? null
-      
-      if (writeAllowed) {
-        // Single transaction: insert pick and update runs
-        // NOTE: Do NOT provide 'id' - let database generate UUID automatically
-        const ins = await admin.from('picks').insert({
-          game_id: null,
-          capper: 'shiva', // Add capper field so picks show up on dashboard
-          pick_type: results.decision.pick_type.toLowerCase(),
-          selection: r.selection,
-          odds: 0,
-          units: r.units,
-          game_snapshot: locked_odds || {}, // Store locked_odds in game_snapshot
-          status: 'pending',
-          is_system_pick: true,
-          confidence: r.confidence,
-          reasoning: results.decision.reason,
-          algorithm_version: 'shiva_v1',
-          run_id
-        })
-        if (ins.error) throw new Error(ins.error.message)
 
-        // Upsert runs table with factor data (create if doesn't exist)
+      if (writeAllowed) {
+        // CRITICAL: Insert into runs table FIRST (parent record) before picks table (child record)
+        // This respects the foreign key constraint: picks.run_id REFERENCES runs.run_id
+
+        // Prepare factor data for runs table
         const totalData = parse.data.inputs.total_data
         const factorContributions = totalData?.factor_contributions || null
         const predictedTotal = totalData?.predicted_total || null
@@ -233,6 +217,8 @@ export async function POST(request: Request) {
         const gameId = activeSnapshot?.game_id
 
         const now = new Date().toISOString()
+
+        console.log('[SHIVA:PickGenerate] STEP 1: Creating/updating runs table record with run_id:', run_id)
 
         // First, check if a run already exists for this game/capper/bet_type
         const existingRun = await admin
@@ -266,9 +252,14 @@ export async function POST(request: Request) {
             })
             .eq('id', existingRun.data.id)
 
-          if (updateRun.error) throw new Error(updateRun.error.message)
+          if (updateRun.error) {
+            console.error('[SHIVA:PickGenerate] ERROR updating runs table:', updateRun.error.message)
+            throw new Error(updateRun.error.message)
+          }
+          console.log('[SHIVA:PickGenerate] ✓ Successfully updated runs table')
         } else {
           // Create new run
+          console.log('[SHIVA:PickGenerate] Creating new run with id:', run_id)
           const insertRun = await admin
             .from('runs')
             .insert({
@@ -289,7 +280,11 @@ export async function POST(request: Request) {
               updated_at: now
             })
 
-          if (insertRun.error) throw new Error(insertRun.error.message)
+          if (insertRun.error) {
+            console.error('[SHIVA:PickGenerate] ERROR inserting into runs table:', insertRun.error.message)
+            throw new Error(insertRun.error.message)
+          }
+          console.log('[SHIVA:PickGenerate] ✓ Successfully inserted into runs table')
         }
 
         console.log('[SHIVA:PickGenerate] Upserted runs table with factor data:', {
@@ -301,6 +296,30 @@ export async function POST(request: Request) {
           baselineAvg,
           marketTotal
         })
+
+        // STEP 2: Now insert into picks table (child record) with run_id foreign key
+        console.log('[SHIVA:PickGenerate] STEP 2: Inserting into picks table with run_id:', run_id)
+        // NOTE: Do NOT provide 'id' - let database generate UUID automatically
+        const ins = await admin.from('picks').insert({
+          game_id: null,
+          capper: 'shiva', // Add capper field so picks show up on dashboard
+          pick_type: results.decision.pick_type.toLowerCase(),
+          selection: r.selection,
+          odds: 0,
+          units: r.units,
+          game_snapshot: locked_odds || {}, // Store locked_odds in game_snapshot
+          status: 'pending',
+          is_system_pick: true,
+          confidence: r.confidence,
+          reasoning: results.decision.reason,
+          algorithm_version: 'shiva_v1',
+          run_id
+        })
+        if (ins.error) {
+          console.error('[SHIVA:PickGenerate] ERROR inserting into picks table:', ins.error.message)
+          throw new Error(ins.error.message)
+        }
+        console.log('[SHIVA:PickGenerate] ✓ Successfully inserted into picks table')
 
         // Record PICK_GENERATED result with cooldown
         try {
