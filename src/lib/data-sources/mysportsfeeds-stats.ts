@@ -136,6 +136,22 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
     }
 
     console.log(`[MySportsFeeds Stats] Found ${gameLogs.length} games for ${teamAbbrev}`)
+
+    // DIAGNOSTIC: Log first game to see what data we're getting
+    if (gameLogs.length > 0) {
+      const firstGame = gameLogs[0]
+      console.log(`[MySportsFeeds Stats] DIAGNOSTIC - First game for ${teamAbbrev}:`, {
+        gameId: firstGame.game?.id,
+        startTime: firstGame.game?.startTime,
+        hasStats: !!firstGame.stats,
+        statsKeys: firstGame.stats ? Object.keys(firstGame.stats) : [],
+        fieldGoals: firstGame.stats?.fieldGoals,
+        freeThrows: firstGame.stats?.freeThrows,
+        offense: firstGame.stats?.offense,
+        defense: firstGame.stats?.defense,
+        rebounds: firstGame.stats?.rebounds
+      })
+    }
     
     // Collect opponent abbreviations from the games
     const opponents = new Set<string>()
@@ -275,6 +291,21 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
       threeP_rate: (threeP_rate * 100).toFixed(1) + '%',
       ft_rate: (ft_rate * 100).toFixed(1) + '%',
       games: gameCount
+    })
+
+    // DIAGNOSTIC: Log raw totals to help debug zero stats issue
+    console.log(`[MySportsFeeds Stats] DIAGNOSTIC - Raw totals for ${teamAbbrev}:`, {
+      totalPace,
+      totalORtg,
+      totalDRtg,
+      totalThreePA,
+      totalThreePM,
+      totalFTA,
+      totalFGA,
+      gameCount,
+      avgPace: (totalPace / gameCount).toFixed(1),
+      avgORtg: (totalORtg / gameCount).toFixed(1),
+      avgDRtg: (totalDRtg / gameCount).toFixed(1)
     })
 
     // Validate the data - throw error if values are unrealistic
