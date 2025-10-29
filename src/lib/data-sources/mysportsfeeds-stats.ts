@@ -113,7 +113,7 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
     const opponentStatsMap = new Map<string, any>()
     for (const opponent of opponents) {
       try {
-        const oppData = await fetchLastNGames(opponent, 10)
+        const oppData = await fetchTeamGameLogs(opponent, 10)
         opponentStatsMap.set(opponent, oppData.gamelogs || [])
       } catch (error) {
         console.warn(`[MySportsFeeds] Failed to fetch stats for opponent ${opponent}:`, error)
