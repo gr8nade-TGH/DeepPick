@@ -2183,7 +2183,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                         status: response.status,
                         dryRun: response.dryRun,
                         latencyMs: response.latencyMs || 0,
-                        response: response.json || null,
+                        // NOTE: Removed full response to reduce debug report size
+                        // Full step responses are visible in the Step Responses table below
                         error: response.error || null,
                       })),
                     summary: {
