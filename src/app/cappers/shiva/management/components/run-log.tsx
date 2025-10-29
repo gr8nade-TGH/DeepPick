@@ -423,18 +423,19 @@ export function RunLogTable() {
               </thead>
               <tbody>
                 {cooldowns.map((cd, idx) => {
+                  // Use 'now' state for consistent rendering (updated every second)
                   const isExpired = new Date(cd.cooldown_until).getTime() <= now
                   return (
                     <tr key={idx} className={`border-b border-gray-800 hover:bg-gray-800 ${isExpired ? 'opacity-50' : ''}`}>
                       <td className="py-2 px-3 text-gray-300 text-xs">{cd.matchup || cd.game_id?.substring(0, 12)}</td>
-                      <td className="py-2 px-3">
+                      <td className="py-2 px-3" suppressHydrationWarning>
                         <span className={`font-bold ${cd.result === 'PASS' ? 'text-yellow-400' : 'text-green-400'}`}>
                           {cd.result}
                         </span>
                         {isExpired && <span className="ml-2 text-xs text-gray-500">(EXPIRED)</span>}
                       </td>
                       <td className="py-2 px-3 text-gray-300">{cd.units || 0}</td>
-                      <td className="py-2 px-3 font-mono text-orange-400">
+                      <td className="py-2 px-3 font-mono text-orange-400" suppressHydrationWarning>
                         {isExpired ? 'EXPIRED' : formatCountdown(cd.cooldown_until)}
                       </td>
                       <td className="py-2 px-3 text-center">
