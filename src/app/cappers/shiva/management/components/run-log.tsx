@@ -48,6 +48,7 @@ export function RunLogTable() {
   const [expandedRuns, setExpandedRuns] = useState<Set<string>>(new Set())
   const [cooldowns, setCooldowns] = useState<CooldownEntry[]>([])
   const [clearingCooldown, setClearingCooldown] = useState<string | null>(null)
+  const [clearingAllRuns, setClearingAllRuns] = useState(false)
   const [now, setNow] = useState(Date.now())
 
   // console.log('[RunLogTable] Component mounted/rendered')
@@ -225,6 +226,34 @@ export function RunLogTable() {
     }
   }
 
+  // Clear all runs
+  const handleClearAllRuns = async () => {
+    if (!confirm('Are you sure you want to clear ALL runs? This cannot be undone.')) {
+      return
+    }
+
+    console.log('[RunLogTable] Clearing all runs...')
+    setClearingAllRuns(true)
+    try {
+      const response = await fetch('/api/shiva/runs/clear', { method: 'DELETE' })
+      const json = await response.json()
+      console.log('[RunLogTable] Clear all runs response:', json)
+      if (response.ok) {
+        // Clear local state immediately
+        setRuns([])
+        alert(`Successfully cleared ${json.deletedCount || 0} runs!`)
+      } else {
+        console.error('[RunLogTable] Failed to clear runs:', json)
+        alert(`Failed to clear runs: ${json.error || 'Unknown error'}`)
+      }
+    } catch (error) {
+      console.error('[RunLogTable] Failed to clear runs:', error)
+      alert('Failed to clear runs. Check console for details.')
+    } finally {
+      setClearingAllRuns(false)
+    }
+  }
+
   // Define factor keys in order
   const factorKeys = ['edgeVsMarket', 'paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv', 'injuryAvailability']
 
@@ -285,13 +314,23 @@ export function RunLogTable() {
       <div className="border border-gray-700 rounded bg-gray-900 overflow-hidden flex flex-col" style={{ height: '300px' }}>
         <div className="p-3 border-b border-gray-700 flex-shrink-0 flex justify-between items-center">
           <h3 className="text-lg font-bold text-white">📋 Run Log ({runs.length})</h3>
-          <button
-            onClick={handleCopyDebugInfo}
-            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors"
-            title="Copy debug info to clipboard"
-          >
-            🐛 Copy Debug Info
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleClearAllRuns}
+              disabled={clearingAllRuns || runs.length === 0}
+              className="px-3 py-1 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white text-sm rounded transition-colors"
+              title="Clear all runs from the database"
+            >
+              {clearingAllRuns ? '🗑️ Clearing...' : '🗑️ Clear All Runs'}
+            </button>
+            <button
+              onClick={handleCopyDebugInfo}
+              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors"
+              title="Copy debug info to clipboard"
+            >
+              🐛 Copy Debug Info
+            </button>
+          </div>
         </div>
       
       {runs.length === 0 ? (
