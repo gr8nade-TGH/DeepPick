@@ -1532,7 +1532,20 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
               // Get baseline from Step 3 results
               const step3Results = stepLogsRef.current[3]?.json || stepLogs[3]?.json
               const baselineAvg = step3Results?.baseline?.matchupBaseline || null
-              
+
+              // Get market total from Step 2 results
+              const step2Results = stepLogsRef.current[2]?.json || stepLogs[2]?.json
+              const marketTotalFromStep2 = step2Results?.snapshot?.total?.line || null
+
+              console.log('[Wizard:Step5] PASS - Data extraction:', {
+                baselineAvg,
+                marketTotalFromStep2,
+                predictedTotal,
+                step3HasBaseline: !!step3Results?.baseline,
+                step2HasSnapshot: !!step2Results?.snapshot,
+                step2TotalLine: step2Results?.snapshot?.total?.line
+              })
+
               const savePassBody = {
                 run_id: effectiveRunId,
                 inputs: {
@@ -1540,12 +1553,12 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                   edge_dominant: 'total',
                   total_data: {
                     total_pred: predictedTotal,
-                    market_total: marketTotal,
+                    market_total: marketTotalFromStep2, // Use actual market total from Step 2, not fallback
                     // Include factor data from Step 4 + Step 5 edge
                     factor_contributions: allContributions,
                     predicted_total: predictedTotal,
                     baseline_avg: baselineAvg,
-                    market_total_line: marketTotal
+                    market_total_line: marketTotalFromStep2 // Use actual market total from Step 2, not fallback
                   }
                 },
                 results: {
@@ -1602,7 +1615,20 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
               // Get baseline from Step 3 results
               const step3Results = stepLogsRef.current[3]?.json || stepLogs[3]?.json
               const baselineAvg = step3Results?.baseline?.matchupBaseline || null
-              
+
+              // Get market total from Step 2 results
+              const step2Results = stepLogsRef.current[2]?.json || stepLogs[2]?.json
+              const marketTotalFromStep2 = step2Results?.snapshot?.total?.line || null
+
+              console.log('[Wizard:Step5] PICK - Data extraction:', {
+                baselineAvg,
+                marketTotalFromStep2,
+                predictedTotal,
+                step3HasBaseline: !!step3Results?.baseline,
+                step2HasSnapshot: !!step2Results?.snapshot,
+                step2TotalLine: step2Results?.snapshot?.total?.line
+              })
+
               // Generate a pick ID for the picks_row
               const pickId = `pick_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
               
@@ -1613,12 +1639,12 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                   edge_dominant: 'total',
                   total_data: {
                     total_pred: predictedTotal,
-                    market_total: marketTotal,
+                    market_total: marketTotalFromStep2, // Use actual market total from Step 2, not fallback
                     // Include factor data from Step 4 + Step 5 edge
                     factor_contributions: allContributions,
                     predicted_total: predictedTotal,
                     baseline_avg: baselineAvg,
-                    market_total_line: marketTotal
+                    market_total_line: marketTotalFromStep2 // Use actual market total from Step 2, not fallback
                   }
                 },
                 results: {

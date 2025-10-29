@@ -213,6 +213,15 @@ export async function POST(request: Request) {
         const baselineAvg = totalData?.baseline_avg || null
         const marketTotal = totalData?.market_total_line || null
 
+        console.log('[SHIVA:PickGenerate] Extracted data for runs table:', {
+          hasFactorContributions: !!factorContributions,
+          factorContributionsCount: factorContributions?.length || 0,
+          predictedTotal,
+          baselineAvg,
+          marketTotal,
+          totalDataKeys: totalData ? Object.keys(totalData) : []
+        })
+
         // Get game_id from snapshot for the run record
         const gameId = activeSnapshot?.game_id
 

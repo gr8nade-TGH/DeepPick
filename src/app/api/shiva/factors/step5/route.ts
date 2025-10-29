@@ -59,19 +59,42 @@ export async function POST(request: Request) {
       
       // Calculate market edge
       const marketEdgePts = predicted_total - market_total_line
-      
+
       // Calculate edge factor: clamp(edgePts / 3, -2, 2) - more aggressive scaling
       const edgeFactor = Math.max(-2, Math.min(2, marketEdgePts / 3))
-      
+
       // Adjust confidence: allow negative values for UNDER picks, clamp to reasonable range
-      const adjustedConfidence = Math.max(-2, Math.min(5, base_confidence + (edgeFactor * 1.5)))
-      
+      const rawAdjustedConfidence = base_confidence + (edgeFactor * 1.5)
+      const adjustedConfidence = Math.max(-2, Math.min(5, rawAdjustedConfidence))
+
+      console.log('[SHIVA:Step5] Confidence calculation:', {
+        base_confidence,
+        predicted_total,
+        market_total_line,
+        marketEdgePts,
+        edgeFactor,
+        edgeAdjustment: edgeFactor * 1.5,
+        rawAdjustedConfidence,
+        adjustedConfidence,
+        wasClamped: rawAdjustedConfidence !== adjustedConfidence,
+        clampedTo: rawAdjustedConfidence > 5 ? 'MAX (5)' : rawAdjustedConfidence < -2 ? 'MIN (-2)' : 'NONE'
+      })
+
       // Calculate units based on final confidence
       let units = 0
       if (adjustedConfidence >= 4.5) units = 5
       else if (adjustedConfidence >= 4.0) units = 3
       else if (adjustedConfidence >= 3.5) units = 2
       else if (adjustedConfidence >= 2.5) units = 1
+
+      console.log('[SHIVA:Step5] Units allocation:', {
+        adjustedConfidence,
+        units,
+        threshold: adjustedConfidence >= 4.5 ? '>=4.5 (5 units)' :
+                   adjustedConfidence >= 4.0 ? '>=4.0 (3 units)' :
+                   adjustedConfidence >= 3.5 ? '>=3.5 (2 units)' :
+                   adjustedConfidence >= 2.5 ? '>=2.5 (1 unit)' : '<2.5 (PASS)'
+      })
       
       // Generate final pick
       const line = market_total_line.toFixed(1)
