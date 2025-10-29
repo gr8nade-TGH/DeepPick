@@ -25,6 +25,64 @@ export async function GET() {
   console.log(`${'='.repeat(80)}\n`)
 
   try {
+    // CRITICAL: Check for concurrent execution using database lock
+    // This prevents multiple cron jobs or manual triggers from running simultaneously
+    const { getSupabaseAdmin } = await import('@/lib/supabase/server')
+    const supabase = getSupabaseAdmin()
+
+    const lockKey = 'shiva_auto_picks_lock'
+    const lockTimeout = 5 * 60 * 1000 // 5 minutes
+    const now = new Date()
+
+    // Try to acquire lock
+    const { data: existingLock, error: lockCheckError } = await supabase
+      .from('system_locks')
+      .select('locked_at, locked_by')
+      .eq('lock_key', lockKey)
+      .maybeSingle()
+
+    if (lockCheckError && lockCheckError.code !== 'PGRST116') {
+      console.error('🤖 [SHIVA-AUTO-PICKS] Error checking lock:', lockCheckError)
+      // Continue anyway - don't let lock check failures block execution
+    }
+
+    if (existingLock) {
+      const lockedAt = new Date(existingLock.locked_at)
+      const lockAge = now.getTime() - lockedAt.getTime()
+
+      if (lockAge < lockTimeout) {
+        console.log(`🤖 [SHIVA-AUTO-PICKS] ⚠️ SKIPPING - Another instance is running (locked ${Math.round(lockAge / 1000)}s ago by ${existingLock.locked_by})`)
+        return NextResponse.json({
+          success: false,
+          message: 'Another instance is already running',
+          lockedBy: existingLock.locked_by,
+          lockedAt: existingLock.locked_at,
+          lockAge: `${Math.round(lockAge / 1000)}s`,
+          timestamp: executionTime
+        })
+      } else {
+        console.log(`🤖 [SHIVA-AUTO-PICKS] ⚠️ Stale lock detected (${Math.round(lockAge / 1000)}s old) - will override`)
+      }
+    }
+
+    // Acquire lock
+    const lockId = `cron_${Date.now()}`
+    const { error: lockError } = await supabase
+      .from('system_locks')
+      .upsert({
+        lock_key: lockKey,
+        locked_at: now.toISOString(),
+        locked_by: lockId,
+        expires_at: new Date(now.getTime() + lockTimeout).toISOString()
+      }, { onConflict: 'lock_key' })
+
+    if (lockError) {
+      console.error('🤖 [SHIVA-AUTO-PICKS] Error acquiring lock:', lockError)
+      // Continue anyway - don't let lock failures block execution
+    } else {
+      console.log(`🤖 [SHIVA-AUTO-PICKS] ✅ Lock acquired: ${lockId}`)
+    }
+
     console.log('🤖 [SHIVA-AUTO-PICKS] Starting automated SHIVA pick generation...')
     const startTime = Date.now()
 
@@ -73,11 +131,31 @@ export async function GET() {
 
     const duration = Date.now() - startTime
 
+    // Release lock before returning
+    const releaseLock = async () => {
+      try {
+        const { error } = await supabase
+          .from('system_locks')
+          .delete()
+          .eq('lock_key', lockKey)
+
+        if (error) {
+          console.error('🤖 [SHIVA-AUTO-PICKS] Error releasing lock:', error)
+        } else {
+          console.log('🤖 [SHIVA-AUTO-PICKS] ✅ Lock released')
+        }
+      } catch (err) {
+        console.error('🤖 [SHIVA-AUTO-PICKS] Error in releaseLock:', err)
+      }
+    }
+
     console.log(`\n${'='.repeat(80)}`)
     if (pickResult.decision === 'PICK' && pickResult.pick) {
       console.log(`✅ [SHIVA-AUTO-PICKS] EXECUTION COMPLETE: Pick generated`)
       console.log(`Duration: ${duration}ms`)
       console.log(`${'='.repeat(80)}\n`)
+
+      await releaseLock()
 
       return NextResponse.json({
         success: true,
@@ -94,6 +172,8 @@ export async function GET() {
       console.log(`Duration: ${duration}ms`)
       console.log(`${'='.repeat(80)}\n`)
 
+      await releaseLock()
+
       return NextResponse.json({
         success: false,
         message: 'Game resulted in PASS - cooldown recorded',
@@ -109,6 +189,8 @@ export async function GET() {
       console.log(`Duration: ${duration}ms`)
       console.log(`${'='.repeat(80)}\n`)
 
+      await releaseLock()
+
       return NextResponse.json({
         success: false,
         message: 'Unexpected pick generation result',
@@ -123,6 +205,20 @@ export async function GET() {
 
   } catch (error) {
     console.error('❌ [SHIVA-AUTO-PICKS] Error:', error)
+
+    // Release lock on error
+    try {
+      const { getSupabaseAdmin } = await import('@/lib/supabase/server')
+      const supabase = getSupabaseAdmin()
+      await supabase
+        .from('system_locks')
+        .delete()
+        .eq('lock_key', 'shiva_auto_picks_lock')
+      console.log('🤖 [SHIVA-AUTO-PICKS] ✅ Lock released (error path)')
+    } catch (lockErr) {
+      console.error('🤖 [SHIVA-AUTO-PICKS] Error releasing lock on error:', lockErr)
+    }
+
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',

@@ -299,31 +299,10 @@ export function HeaderFilters(props: HeaderFiltersProps) {
             >
               Write
             </button>
-            <button
-              onClick={() => handleModeChange('auto')}
-              className={`px-3 py-1 text-sm rounded font-bold ${
-                mode === 'auto'
-                  ? 'bg-green-600 text-white border-2 border-green-400'
-                  : 'bg-gray-700 text-white'
-              }`}
-              title="AUTO mode - runs pick generation automatically (cron job)"
-            >
-              AUTO
-            </button>
-            <button
-              onClick={handleSaveMode}
-              disabled={saveStatus === 'saving' || saveStatus === 'saved'}
-              className={`px-3 py-1 text-xs rounded font-bold transition-all ${
-                saveStatus === 'saved'
-                  ? 'bg-green-600 text-white'
-                  : saveStatus === 'saving'
-                  ? 'bg-yellow-600 text-white animate-pulse'
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
-              }`}
-              title="Save current mode to localStorage"
-            >
-              {saveStatus === 'saved' ? '✓ Saved' : saveStatus === 'saving' ? 'Saving...' : 'Save Mode'}
-            </button>
+            {/* AUTO mode removed - AUTO picks should ONLY run via cron endpoint to prevent duplicate picks from multiple browser tabs */}
+            <div className="px-3 py-1 text-xs text-gray-400 italic">
+              AUTO mode runs via cron only
+            </div>
           </div>
         </div>
 

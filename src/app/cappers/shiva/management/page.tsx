@@ -53,16 +53,10 @@ export default function ShivaManagementPage() {
   const [currentProfile, setCurrentProfile] = useState<CapperProfile | null>(null)
   const [effectiveProfile, setEffectiveProfile] = useState<CapperProfile | null>(null)
   const [selectedGame, setSelectedGame] = useState<any>(null)
-  // Load mode from localStorage on mount (Write mode by default)
-  const [mode, setMode] = useState<'write' | 'auto'>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('shiva-mode')
-      if (saved === 'write' || saved === 'auto') {
-        return saved
-      }
-    }
-    return 'write' // Default to Write mode
-  })
+  // ALWAYS use 'write' mode - AUTO mode is disabled in the wizard
+  // AUTO picks should ONLY run via the cron endpoint (/api/cron/shiva-auto-picks)
+  // This prevents multiple browser tabs from creating duplicate picks
+  const [mode, setMode] = useState<'write' | 'auto'>('write')
   const [betType, setBetType] = useState<'TOTAL' | 'SPREAD/MONEYLINE'>('TOTAL')
   const [providerOverrides, setProviderOverrides] = useState<{ step3?: string; step4?: string }>({})
   const [showFactorConfig, setShowFactorConfig] = useState(false)
