@@ -204,8 +204,8 @@ export async function POST(request: Request) {
       
       if (writeAllowed) {
         // Single transaction: insert pick and update runs
+        // NOTE: Do NOT provide 'id' - let database generate UUID automatically
         const ins = await admin.from('picks').insert({
-          id: r.id,
           game_id: null,
           capper: 'shiva', // Add capper field so picks show up on dashboard
           pick_type: results.decision.pick_type.toLowerCase(),
