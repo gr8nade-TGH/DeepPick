@@ -1514,21 +1514,10 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             console.log('[Wizard:Step5] step4Results factor_contributions:', step4Results?.confidence?.factor_contributions)
             try {
               const step1Game = stepLogsRef.current[1]?.json?.selected_game || stepLogs[1]?.json?.selected_game
-              // Add edgeVsMarket factor from Step 5 to factor_contributions
-              const baseContributions = step4Results?.confidence?.factor_contributions || []
-              const edgeFactor = r.json.final_factor?.edge_factor || 0
-              const edgeContribution = edgeFactor * 0.4 // Weight for edgeVsMarket is 0.4
-              const allContributions = [
-                ...baseContributions,
-                {
-                  key: 'edgeVsMarket',
-                  name: 'Edge vs Market',
-                  z: edgeFactor,
-                  weight: 0.4,
-                  contribution: edgeContribution
-                }
-              ]
-              
+              // Use ONLY base factor contributions from Step 4
+              // Do NOT add edgeVsMarket here - it's an adjustment applied in Step 5, not a factor
+              const factorContributions = step4Results?.confidence?.factor_contributions || []
+
               // Get baseline from Step 3 results
               const step3Results = stepLogsRef.current[3]?.json || stepLogs[3]?.json
               const baselineAvg = step3Results?.baseline?.matchupBaseline || null
@@ -1554,8 +1543,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                   total_data: {
                     total_pred: predictedTotal,
                     market_total: marketTotalFromStep2, // Use actual market total from Step 2, not fallback
-                    // Include factor data from Step 4 + Step 5 edge
-                    factor_contributions: allContributions,
+                    // Include ONLY base factor contributions from Step 4 (edge adjustment is separate)
+                    factor_contributions: factorContributions,
                     predicted_total: predictedTotal,
                     baseline_avg: baselineAvg,
                     market_total_line: marketTotalFromStep2 // Use actual market total from Step 2, not fallback
@@ -1597,20 +1586,9 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             console.log('[Wizard:Step5] step4Results factor_contributions:', step4Results?.confidence?.factor_contributions)
             try {
               const step1Game = stepLogsRef.current[1]?.json?.selected_game || stepLogs[1]?.json?.selected_game
-              // Add edgeVsMarket factor from Step 5 to factor_contributions
-              const baseContributions = step4Results?.confidence?.factor_contributions || []
-              const edgeFactor = r.json.final_factor?.edge_factor || 0
-              const edgeContribution = edgeFactor * 0.4 // Weight for edgeVsMarket is 0.4
-              const allContributions = [
-                ...baseContributions,
-                {
-                  key: 'edgeVsMarket',
-                  name: 'Edge vs Market',
-                  z: edgeFactor,
-                  weight: 0.4,
-                  contribution: edgeContribution
-                }
-              ]
+              // Use ONLY base factor contributions from Step 4
+              // Do NOT add edgeVsMarket here - it's an adjustment applied in Step 5, not a factor
+              const factorContributions = step4Results?.confidence?.factor_contributions || []
               
               // Get baseline from Step 3 results
               const step3Results = stepLogsRef.current[3]?.json || stepLogs[3]?.json
@@ -1640,8 +1618,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                   total_data: {
                     total_pred: predictedTotal,
                     market_total: marketTotalFromStep2, // Use actual market total from Step 2, not fallback
-                    // Include factor data from Step 4 + Step 5 edge
-                    factor_contributions: allContributions,
+                    // Include ONLY base factor contributions from Step 4 (edge adjustment is separate)
+                    factor_contributions: factorContributions,
                     predicted_total: predictedTotal,
                     baseline_avg: baselineAvg,
                     market_total_line: marketTotalFromStep2 // Use actual market total from Step 2, not fallback

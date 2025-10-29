@@ -50,8 +50,14 @@ export function RunLogTable() {
   const [clearingCooldown, setClearingCooldown] = useState<string | null>(null)
   const [clearingAllRuns, setClearingAllRuns] = useState(false)
   const [now, setNow] = useState(Date.now())
+  const [isMounted, setIsMounted] = useState(false)
 
   // console.log('[RunLogTable] Component mounted/rendered')
+
+  // Track when component is mounted to avoid hydration mismatches
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   useEffect(() => {
     async function fetchRunLog() {
@@ -423,20 +429,20 @@ export function RunLogTable() {
               </thead>
               <tbody>
                 {cooldowns.map((cd, idx) => {
-                  // Use 'now' state for consistent rendering (updated every second)
-                  const isExpired = new Date(cd.cooldown_until).getTime() <= now
+                  // Only calculate isExpired after component is mounted to avoid hydration mismatch
+                  const isExpired = isMounted ? new Date(cd.cooldown_until).getTime() <= now : false
                   return (
                     <tr key={idx} className={`border-b border-gray-800 hover:bg-gray-800 ${isExpired ? 'opacity-50' : ''}`}>
                       <td className="py-2 px-3 text-gray-300 text-xs">{cd.matchup || cd.game_id?.substring(0, 12)}</td>
-                      <td className="py-2 px-3" suppressHydrationWarning>
+                      <td className="py-2 px-3">
                         <span className={`font-bold ${cd.result === 'PASS' ? 'text-yellow-400' : 'text-green-400'}`}>
                           {cd.result}
                         </span>
-                        {isExpired && <span className="ml-2 text-xs text-gray-500">(EXPIRED)</span>}
+                        {isMounted && isExpired && <span className="ml-2 text-xs text-gray-500">(EXPIRED)</span>}
                       </td>
                       <td className="py-2 px-3 text-gray-300">{cd.units || 0}</td>
-                      <td className="py-2 px-3 font-mono text-orange-400" suppressHydrationWarning>
-                        {isExpired ? 'EXPIRED' : formatCountdown(cd.cooldown_until)}
+                      <td className="py-2 px-3 font-mono text-orange-400">
+                        {!isMounted ? 'Loading...' : isExpired ? 'EXPIRED' : formatCountdown(cd.cooldown_until)}
                       </td>
                       <td className="py-2 px-3 text-center">
                         <button
