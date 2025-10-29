@@ -175,13 +175,13 @@ export function RunLogTable() {
     return mapping[key] || key.substring(0, 2).toUpperCase()
   }
 
-  // Format factor contribution with O/U indicator (3 decimal places for precision)
+  // Format factor contribution with OVER/UNDER indicator (3 decimal places for precision)
   const formatFactorContribution = (contribution: number): string => {
-    if (contribution === 0) return '0O'
+    if (contribution === 0) return '0 OVER'
     const absValue = Math.abs(contribution)
-    const direction = contribution > 0 ? 'O' : 'U'
+    const direction = contribution > 0 ? 'OVER' : 'UNDER'
     // Use 3 decimal places to show small values better
-    return `+${absValue.toFixed(3)}${direction}`
+    return `+${absValue.toFixed(3)} ${direction}`
   }
   
   // Extract pick type from selection string

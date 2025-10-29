@@ -1506,8 +1506,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                   key: 'edgeVsMarket',
                   name: 'Edge vs Market',
                   z: step5Results.edge_factor,
-                  weight: 0.4, // Display weight (not used in calculation)
-                  contribution: step5Results.edge_factor * 0.4
+                  weight: 1.5, // Actual multiplier used in Step 5 calculation
+                  contribution: step5Results.edge_factor * 1.5
                 })
               }
 
@@ -1588,8 +1588,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                   key: 'edgeVsMarket',
                   name: 'Edge vs Market',
                   z: step5Results.edge_factor,
-                  weight: 0.4, // Display weight (not used in calculation)
-                  contribution: step5Results.edge_factor * 0.4
+                  weight: 1.5, // Actual multiplier used in Step 5 calculation
+                  contribution: step5Results.edge_factor * 1.5
                 })
               }
 
