@@ -222,40 +222,48 @@ export async function POST(request: Request) {
         })
         if (ins.error) throw new Error(ins.error.message)
 
-        // Update runs table with factor data
+        // Upsert runs table with factor data (create if doesn't exist)
         const totalData = parse.data.inputs.total_data
         const factorContributions = totalData?.factor_contributions || null
         const predictedTotal = totalData?.predicted_total || null
         const baselineAvg = totalData?.baseline_avg || null
         const marketTotal = totalData?.market_total_line || null
-        
-        const updateData: any = {}
-        if (factorContributions) {
-          updateData.factor_contributions = factorContributions
-        }
-        if (predictedTotal) {
-          updateData.predicted_total = predictedTotal
-        }
-        if (baselineAvg) {
-          updateData.baseline_avg = baselineAvg
-        }
-        if (marketTotal) {
-          updateData.market_total = marketTotal
-        }
-        
-        if (Object.keys(updateData).length > 0) {
-          updateData.updated_at = new Date().toISOString()
-          const updateRun = await admin
-            .from('runs')
-            .update(updateData)
-            .eq('id', run_id)
-          if (updateRun.error) throw new Error(updateRun.error.message)
-          
-          console.log('[SHIVA:PickGenerate] Updated runs table with factor data:', {
-            hasFactorContributions: !!factorContributions,
-            predictedTotal
-          })
-        }
+
+        // Get game_id from snapshot for the run record
+        const gameId = activeSnapshot?.game_id
+
+        const now = new Date().toISOString()
+        const upsertRun = await admin
+          .from('runs')
+          .upsert({
+            id: run_id,
+            run_id: run_id,
+            game_id: gameId || 'unknown',
+            capper: 'shiva',
+            bet_type: results.decision.pick_type,
+            units: r.units,
+            confidence: r.confidence,
+            pick_type: results.decision.pick_type,
+            selection: r.selection,
+            factor_contributions: factorContributions,
+            predicted_total: predictedTotal,
+            baseline_avg: baselineAvg,
+            market_total: marketTotal,
+            created_at: now,
+            updated_at: now
+          }, { onConflict: 'id' })
+
+        if (upsertRun.error) throw new Error(upsertRun.error.message)
+
+        console.log('[SHIVA:PickGenerate] Upserted runs table with factor data:', {
+          run_id,
+          gameId: gameId || 'unknown',
+          hasFactorContributions: !!factorContributions,
+          factorContributionsLength: factorContributions?.length || 0,
+          predictedTotal,
+          baselineAvg,
+          marketTotal
+        })
 
         // Record PICK_GENERATED result with cooldown
         try {
