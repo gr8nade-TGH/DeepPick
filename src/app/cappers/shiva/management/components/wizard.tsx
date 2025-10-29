@@ -999,26 +999,47 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           console.log('[Step 2] Processing odds from Step 1 game:', step1Game.home_team?.name, 'vs', step1Game.away_team?.name)
           
           // Calculate simple averages from Step 1 odds data
-          let totalLine = 232.5
+          let totalLine: number | null = null
           let spreadLine = 0
           let mlHome = -110
           let mlAway = -110
           let avgOverOdds = -110
           let avgUnderOdds = -110
-          
+
           if (step1Game.odds && typeof step1Game.odds === 'object') {
             const sportsbooks = Object.keys(step1Game.odds)
             console.log('[Step 2] Found', sportsbooks.length, 'sportsbooks')
-            
+            console.log('[Step 2] Sportsbook names:', sportsbooks)
+            console.log('[Step 2] Full odds structure:', JSON.stringify(step1Game.odds, null, 2))
+
             if (sportsbooks.length > 0) {
               // Calculate total line average (CORRECTED: use .line not .Over.point)
               const totals = sportsbooks
-                .map(book => step1Game.odds[book]?.total?.line)
-                .filter(val => val !== undefined && val !== null)
-              
+                .map(book => {
+                  const totalLine = step1Game.odds[book]?.total?.line
+                  console.log(`[Step 2] ${book} total line:`, totalLine)
+                  return totalLine
+                })
+                .filter(val => val !== undefined && val !== null && typeof val === 'number')
+
+              console.log('[Step 2] Valid total lines found:', totals)
+
               if (totals.length > 0) {
                 totalLine = Math.round(totals.reduce((sum, val) => sum + val, 0) / totals.length * 2) / 2
+                console.log('[Step 2] ✅ Calculated average total line:', totalLine)
+              } else {
+                console.error('[Step 2] ❌ CRITICAL ERROR: NO VALID TOTAL LINES FOUND')
+                console.error('[Step 2] ❌ Odds structure:', JSON.stringify(step1Game.odds, null, 2))
+                throw new Error('CRITICAL: No valid total lines found in odds data. Cannot proceed without market total.')
               }
+            } else {
+              console.error('[Step 2] ❌ CRITICAL ERROR: No sportsbooks found in odds data')
+              throw new Error('CRITICAL: No sportsbooks found in odds data. Cannot proceed without market total.')
+            }
+          } else {
+            console.error('[Step 2] ❌ CRITICAL ERROR: No odds data found in game')
+            throw new Error('CRITICAL: No odds data found in game. Cannot proceed without market total.')
+          }
               
               // Calculate average over/under odds
               const overOdds = sportsbooks
@@ -1058,21 +1079,27 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             }
           }
           
-          console.log('[Step 2] Calculated averages:', {
+          // Validate total line before proceeding
+          if (totalLine === null || typeof totalLine !== 'number' || totalLine < 150 || totalLine > 300) {
+            console.error('[Step 2] ❌ CRITICAL ERROR: Invalid total line:', totalLine)
+            throw new Error(`CRITICAL: Invalid total line (${totalLine}). Expected a number between 150-300.`)
+          }
+
+          console.log('[Step 2] ✅ Validated averages:', {
             totalLine,
             spreadLine,
             mlHome,
             mlAway
           })
-          
+
           // Create simple snapshot data
           const snapshotData = {
             game_id: step1Game.id,
             sport: 'NBA' as const,
             home_team: step1Game.home_team?.name || 'Home Team',
             away_team: step1Game.away_team?.name || 'Away Team',
-            start_time_utc: step1Game.game_date && step1Game.game_time ? 
-              new Date(`${step1Game.game_date}T${step1Game.game_time}`).toISOString() : 
+            start_time_utc: step1Game.game_date && step1Game.game_time ?
+              new Date(`${step1Game.game_date}T${step1Game.game_time}`).toISOString() :
               new Date().toISOString(),
             captured_at_utc: new Date().toISOString(),
             books_considered: Object.keys(step1Game.odds || {}).length,
