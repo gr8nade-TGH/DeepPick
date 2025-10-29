@@ -8,6 +8,7 @@ import { registerStep } from '@/lib/shared/dynamic-step-registry'
 let globalAutoRunning = false
 let lastCycleStartTime = 0
 const MIN_CYCLE_INTERVAL_MS = 60000 // Minimum 1 minute between cycle starts
+let instanceCounter = 0 // Track how many component instances have been created
 
 async function postJson(path: string, body: unknown, idempo: string) {
   const res = await fetch(path, {
@@ -1979,10 +1980,15 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       return // Only run in AUTO mode
     }
 
+    // Track this component instance
+    instanceCounter++
+    const thisInstanceId = instanceCounter
+    console.log(`[AUTO] Component mounted - Instance #${thisInstanceId}`)
+
     const runAutoCycle = async () => {
       // Skip if already running (check both ref and global lock)
       if (autoRunningRef.current || globalAutoRunning) {
-        console.log('[AUTO] Skipping cycle - already running (ref:', autoRunningRef.current, 'global:', globalAutoRunning, ')')
+        console.log(`[AUTO:Instance#${thisInstanceId}] Skipping cycle - already running (ref:`, autoRunningRef.current, 'global:', globalAutoRunning, ')')
         return
       }
 
@@ -1990,14 +1996,14 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       const now = Date.now()
       const timeSinceLastCycle = now - lastCycleStartTime
       if (timeSinceLastCycle < MIN_CYCLE_INTERVAL_MS) {
-        console.log(`[AUTO] Skipping cycle - too soon (${Math.round(timeSinceLastCycle / 1000)}s since last cycle, minimum ${MIN_CYCLE_INTERVAL_MS / 1000}s)`)
+        console.log(`[AUTO:Instance#${thisInstanceId}] Skipping cycle - too soon (${Math.round(timeSinceLastCycle / 1000)}s since last cycle, minimum ${MIN_CYCLE_INTERVAL_MS / 1000}s)`)
         return
       }
 
       autoRunningRef.current = true
       globalAutoRunning = true
       lastCycleStartTime = now
-      console.log('[AUTO] Starting automatic pick generation cycle...')
+      console.log(`[AUTO:Instance#${thisInstanceId}] Starting automatic pick generation cycle...`)
 
       try {
         // Helper to wait for step to complete with data validation
@@ -2099,7 +2105,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             console.log(`[AUTO] ✅ PICK GENERATED for ${gameMatchup} (units = ${units})`)
             console.log('[AUTO] Pick generation successful - ending cycle')
             pickGenerated = true
-            // Break out of loop - wait for next 10-minute trigger
+            break // CRITICAL: Exit the while loop immediately after successful pick generation
           }
         }
 
