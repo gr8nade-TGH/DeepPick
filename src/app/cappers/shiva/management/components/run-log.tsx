@@ -326,9 +326,9 @@ export function RunLogTable() {
             <button
               onClick={handleCopyDebugInfo}
               className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors"
-              title="Copy debug info to clipboard"
+              title="Copy Run Log debug info to clipboard"
             >
-              🐛 Copy Debug Info
+              📋 Copy Run Log Debug
             </button>
           </div>
         </div>

@@ -2294,24 +2294,12 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                       step4_used: stepLogs[4]?.json?.conf_source || 'unknown',
                       step7_used: stepLogs[7]?.status === 200,
                     },
-                    stepLogsRaw: stepLogs,
+                    // NOTE: stepLogsRaw removed to reduce debug report size
+                    // Full step logs are visible in the Step Responses table below
                   }
 
-                  // Truncate large fields to prevent 500k line reports
-                  const truncatedReport = JSON.parse(JSON.stringify(debugReport, (key, value) => {
-                    // Truncate AI responses and large text fields
-                    if (typeof value === 'string' && value.length > 5000) {
-                      return value.substring(0, 5000) + `... [TRUNCATED - ${value.length} total chars]`
-                    }
-                    // Truncate large arrays
-                    if (Array.isArray(value) && value.length > 50) {
-                      return [...value.slice(0, 50), `... [TRUNCATED - ${value.length} total items]`]
-                    }
-                    return value
-                  }))
-
-                  navigator.clipboard.writeText(JSON.stringify(truncatedReport, null, 2))
-                  alert('📋 Step Responses debug report copied to clipboard!')
+                  navigator.clipboard.writeText(JSON.stringify(debugReport, null, 2))
+                  alert('📋 Compact debug report copied to clipboard!')
                 }}
               >
                 📋 Copy Step Responses Debug
