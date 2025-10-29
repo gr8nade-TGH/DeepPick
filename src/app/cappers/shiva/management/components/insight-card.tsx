@@ -587,7 +587,6 @@ export function InsightCard(props: InsightCardProps) {
                   writeups: props.writeups,
                   factors: props.factors,
                   market: props.market,
-                  state: props.state,
                   results: props.results,
                 }
                 navigator.clipboard.writeText(JSON.stringify(cardData, null, 2))
