@@ -27,14 +27,13 @@ export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<NBAStatsBundle> 
 
     console.log(`[DATA_FETCHER] Resolved teams: ${awayAbbrev} @ ${homeAbbrev}`)
 
-    // Fetch recent form (last 10 games) and season stats (last 30 games) in parallel
-    console.log('[DATA_FETCHER] Fetching team statistics from MySportsFeeds...')
+    // Fetch recent form (last 10 games) - REDUCED API CALLS to avoid rate limits
+    // Using 10-game stats for both recent and season to reduce from 4 calls to 2 calls per game
+    console.log('[DATA_FETCHER] Fetching team statistics from MySportsFeeds (10-game window)...')
 
-    const [awayRecent, homeRecent, awaySeason, homeSeason] = await Promise.all([
+    const [awayRecent, homeRecent] = await Promise.all([
       getTeamFormData(awayAbbrev, 10),
-      getTeamFormData(homeAbbrev, 10),
-      getTeamFormData(awayAbbrev, 30),
-      getTeamFormData(homeAbbrev, 30)
+      getTeamFormData(homeAbbrev, 10)
     ])
 
     console.log('[DATA_FETCHER] Successfully fetched all team statistics')
@@ -42,11 +41,13 @@ export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<NBAStatsBundle> 
     console.log(`[DATA_FETCHER] ${homeAbbrev} recent: Pace=${homeRecent.pace.toFixed(1)}, ORtg=${homeRecent.ortg.toFixed(1)}`)
 
     // Build the stats bundle
+    // NOTE: Using 10-game stats for both recent and season to reduce API calls
+    // This is a trade-off between data accuracy and rate limit avoidance
     const bundle: NBAStatsBundle = {
-      // Pace stats
-      awayPaceSeason: awaySeason.pace,
+      // Pace stats (using 10-game for both)
+      awayPaceSeason: awayRecent.pace,
       awayPaceLast10: awayRecent.pace,
-      homePaceSeason: homeSeason.pace,
+      homePaceSeason: homeRecent.pace,
       homePaceLast10: homeRecent.pace,
       leaguePace: 100.1, // NBA league average (static)
 
@@ -55,9 +56,9 @@ export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<NBAStatsBundle> 
       homeORtgLast10: homeRecent.ortg,
       leagueORtg: 110.0, // NBA league average (static)
 
-      // Defensive Rating
-      awayDRtgSeason: awaySeason.drtg,
-      homeDRtgSeason: homeSeason.drtg,
+      // Defensive Rating (using 10-game for season)
+      awayDRtgSeason: awayRecent.drtg,
+      homeDRtgSeason: homeRecent.drtg,
       leagueDRtg: 110.0, // NBA league average (static)
 
       // 3-Point Stats

@@ -196,11 +196,16 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
   if (enabledFactorKeys.includes('injuryAvailability')) {
     console.log('[TOTALS:COMPUTING_INJURY_AI]', 'Key Injuries & Availability enabled, running AI analysis...')
     try {
-      const injuryFactor = await computeInjuryAvailabilityAsync(ctx)
+      // Use today's date as default (injury data is current)
+      // TODO: Extract game date from game_id or pass it in RunCtx
+      const gameDate = new Date().toISOString().split('T')[0]
+
+      const injuryFactor = await computeInjuryAvailabilityAsync(ctx, 'perplexity', gameDate)
       factors.push(injuryFactor)
-      console.log('[TOTALS:INJURY_AI_SUCCESS]', { 
+      console.log('[TOTALS:INJURY_AI_SUCCESS]', {
         signal: injuryFactor.normalized_value,
-        keyInjuries: injuryFactor.parsed_values_json.keyInjuries?.length || 0
+        keyInjuries: injuryFactor.parsed_values_json.keyInjuries?.length || 0,
+        dataSourcesUsed: injuryFactor.raw_values_json.dataSourcesUsed || []
       })
     } catch (error) {
       console.error('[TOTALS:INJURY_AI_ERROR]', error)
@@ -209,9 +214,19 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
         key: 'injuryAvailability',
         name: 'Key Injuries & Availability - Totals',
         normalized_value: 0,
+        raw_values_json: {
+          awayImpact: 0,
+          homeImpact: 0,
+          totalImpact: 0,
+          keyInjuries: [],
+          reasoning: 'AI analysis failed',
+          dataSourcesUsed: [],
+          error: error instanceof Error ? error.message : 'Unknown error'
+        },
         parsed_values_json: {
           overScore: 0,
           underScore: 0,
+          signal: 0,
           awayContribution: 0,
           homeContribution: 0,
           reasoning: 'AI analysis failed'
