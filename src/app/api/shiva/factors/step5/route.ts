@@ -63,9 +63,9 @@ export async function POST(request: Request) {
       // Calculate edge factor: clamp(edgePts / 3, -2, 2) - more aggressive scaling
       const edgeFactor = Math.max(-2, Math.min(2, marketEdgePts / 3))
 
-      // Adjust confidence: allow negative values for UNDER picks, clamp to reasonable range
+      // Adjust confidence: allow negative values for UNDER picks, NO UPPER LIMIT (only lower limit of -2)
       const rawAdjustedConfidence = base_confidence + (edgeFactor * 1.5)
-      const adjustedConfidence = Math.max(-2, Math.min(5, rawAdjustedConfidence))
+      const adjustedConfidence = Math.max(-2, rawAdjustedConfidence) // Only clamp minimum, no maximum
 
       console.log('[SHIVA:Step5] Confidence calculation:', {
         base_confidence,
@@ -77,7 +77,7 @@ export async function POST(request: Request) {
         rawAdjustedConfidence,
         adjustedConfidence,
         wasClamped: rawAdjustedConfidence !== adjustedConfidence,
-        clampedTo: rawAdjustedConfidence > 5 ? 'MAX (5)' : rawAdjustedConfidence < -2 ? 'MIN (-2)' : 'NONE'
+        clampedTo: rawAdjustedConfidence < -2 ? 'MIN (-2)' : 'NONE'
       })
 
       // Calculate units based on final confidence

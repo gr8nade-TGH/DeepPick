@@ -6,6 +6,8 @@ import { registerStep } from '@/lib/shared/dynamic-step-registry'
 
 // Module-level lock to prevent multiple AUTO cycles across all component instances
 let globalAutoRunning = false
+let lastCycleStartTime = 0
+const MIN_CYCLE_INTERVAL_MS = 60000 // Minimum 1 minute between cycle starts
 
 async function postJson(path: string, body: unknown, idempo: string) {
   const res = await fetch(path, {
@@ -1984,8 +1986,17 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         return
       }
 
+      // Check minimum interval between cycles
+      const now = Date.now()
+      const timeSinceLastCycle = now - lastCycleStartTime
+      if (timeSinceLastCycle < MIN_CYCLE_INTERVAL_MS) {
+        console.log(`[AUTO] Skipping cycle - too soon (${Math.round(timeSinceLastCycle / 1000)}s since last cycle, minimum ${MIN_CYCLE_INTERVAL_MS / 1000}s)`)
+        return
+      }
+
       autoRunningRef.current = true
       globalAutoRunning = true
+      lastCycleStartTime = now
       console.log('[AUTO] Starting automatic pick generation cycle...')
 
       try {
