@@ -145,7 +145,17 @@ export async function GET(request: Request) {
 
     // Step 1: Find eligible games (excludes games in cooldown or already picked)
     console.log('🎯 [SHIVA-AUTO-PICKS] Finding eligible games...')
-    const scannerResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/shiva/step1-scanner`, {
+
+    // Determine the base URL for API calls
+    // In production: use VERCEL_URL (automatically set by Vercel)
+    // In development: use localhost
+    const baseUrl = process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+
+    console.log(`🌐 [SHIVA-AUTO-PICKS] Using base URL: ${baseUrl}`)
+
+    const scannerResponse = await fetch(`${baseUrl}/api/shiva/step1-scanner`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ selectedGame: null }) // Scan all games
@@ -177,7 +187,7 @@ export async function GET(request: Request) {
 
     // Step 2: Run full pick generation pipeline
     console.log('⚡ [SHIVA-AUTO-PICKS] Running pick generation...')
-    const pickResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/shiva/generate-pick`, {
+    const pickResponse = await fetch(`${baseUrl}/api/shiva/generate-pick`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ selectedGame })
