@@ -24,6 +24,16 @@ export async function GET() {
   console.log(`🤖 [SHIVA-AUTO-PICKS] EXECUTION START: ${executionTime}`)
   console.log(`${'='.repeat(80)}\n`)
 
+  // KILL SWITCH: Check if cron is disabled via environment variable
+  if (process.env.DISABLE_SHIVA_CRON === 'true') {
+    console.log('🤖 [SHIVA-AUTO-PICKS] ⛔ KILL SWITCH ACTIVE - Cron is disabled via DISABLE_SHIVA_CRON env var')
+    return NextResponse.json({
+      success: false,
+      message: 'Cron is disabled via environment variable',
+      timestamp: executionTime
+    })
+  }
+
   try {
     // CRITICAL: Check for concurrent execution using database lock
     // This prevents multiple cron jobs or manual triggers from running simultaneously
