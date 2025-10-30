@@ -18,10 +18,21 @@ import { getSupabaseAdmin } from '@/lib/supabase/server'
  * - No retry logic - if the game results in PASS, wait for next cycle
  * - This ensures controlled, predictable pick generation
  */
-export async function GET() {
+export async function GET(request: Request) {
   const executionTime = new Date().toISOString()
+
+  // LOG REQUEST DETAILS TO IDENTIFY CALLER
+  const headers = Object.fromEntries(request.headers.entries())
   console.log(`\n${'='.repeat(80)}`)
   console.log(`🤖 [SHIVA-AUTO-PICKS] EXECUTION START: ${executionTime}`)
+  console.log(`🔍 [SHIVA-AUTO-PICKS] REQUEST HEADERS:`, JSON.stringify({
+    'user-agent': headers['user-agent'],
+    'x-vercel-id': headers['x-vercel-id'],
+    'x-vercel-deployment-url': headers['x-vercel-deployment-url'],
+    'x-forwarded-for': headers['x-forwarded-for'],
+    'referer': headers['referer'],
+    'origin': headers['origin']
+  }, null, 2))
   console.log(`${'='.repeat(80)}\n`)
 
   // KILL SWITCH: Check if cron is disabled via environment variable
@@ -30,7 +41,11 @@ export async function GET() {
     return NextResponse.json({
       success: false,
       message: 'Cron is disabled via environment variable',
-      timestamp: executionTime
+      timestamp: executionTime,
+      caller_info: {
+        'user-agent': headers['user-agent'],
+        'x-vercel-id': headers['x-vercel-id']
+      }
     })
   }
 
