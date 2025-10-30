@@ -285,6 +285,6 @@ export async function GET(request: Request) {
 }
 
 // Also allow POST for manual triggers
-export async function POST() {
-  return GET()
+export async function POST(request: Request) {
+  return GET(request)
 }
