@@ -42,8 +42,15 @@ export async function GET() {
       .maybeSingle()
 
     if (lockCheckError && lockCheckError.code !== 'PGRST116') {
-      console.error('🤖 [SHIVA-AUTO-PICKS] Error checking lock:', lockCheckError)
-      // Continue anyway - don't let lock check failures block execution
+      console.error('🤖 [SHIVA-AUTO-PICKS] ❌ CRITICAL ERROR: Lock check failed:', lockCheckError)
+      console.error('🤖 [SHIVA-AUTO-PICKS] ❌ This likely means system_locks table does not exist!')
+      console.error('🤖 [SHIVA-AUTO-PICKS] ❌ Run the migration: supabase/migrations/20250129_create_system_locks.sql')
+      return NextResponse.json({
+        success: false,
+        error: 'Lock check failed - system_locks table may not exist',
+        details: lockCheckError.message,
+        timestamp: executionTime
+      }, { status: 500 })
     }
 
     if (existingLock) {
@@ -77,11 +84,16 @@ export async function GET() {
       }, { onConflict: 'lock_key' })
 
     if (lockError) {
-      console.error('🤖 [SHIVA-AUTO-PICKS] Error acquiring lock:', lockError)
-      // Continue anyway - don't let lock failures block execution
-    } else {
-      console.log(`🤖 [SHIVA-AUTO-PICKS] ✅ Lock acquired: ${lockId}`)
+      console.error('🤖 [SHIVA-AUTO-PICKS] ❌ CRITICAL ERROR: Failed to acquire lock:', lockError)
+      return NextResponse.json({
+        success: false,
+        error: 'Failed to acquire lock',
+        details: lockError.message,
+        timestamp: executionTime
+      }, { status: 500 })
     }
+
+    console.log(`🤖 [SHIVA-AUTO-PICKS] ✅ Lock acquired: ${lockId}`)
 
     console.log('🤖 [SHIVA-AUTO-PICKS] Starting automated SHIVA pick generation...')
     const startTime = Date.now()

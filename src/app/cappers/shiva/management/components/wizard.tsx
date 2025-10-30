@@ -990,12 +990,22 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             throw new Error('No game data from Step 1')
           }
 
+          // CRITICAL: Validate game_id exists
+          console.log('[Step 2] Step 1 game data:', JSON.stringify(step1Game, null, 2))
+          console.log('[Step 2] Game ID from Step 1:', step1Game.id)
+          if (!step1Game.id) {
+            console.error('[Step 2] ❌ CRITICAL ERROR: No game_id in Step 1 data')
+            console.error('[Step 2] ❌ Full Step 1 game object:', step1Game)
+            throw new Error('CRITICAL: No game_id found in Step 1 data. Cannot create snapshot without game_id.')
+          }
+
           // Get run_id from Step 1 (use ref for fresh data in AUTO mode)
           const effectiveRunId = stepLogsRef.current[1]?.json?.run_id || runId
           if (!effectiveRunId) {
             throw new Error('No run_id available from Step 1')
           }
           console.log('[Step 2] Using runId:', effectiveRunId)
+          console.log('[Step 2] Using game_id:', step1Game.id)
           console.log('[Step 2] Processing odds from Step 1 game:', step1Game.home_team?.name, 'vs', step1Game.away_team?.name)
           
           // Calculate simple averages from Step 1 odds data
