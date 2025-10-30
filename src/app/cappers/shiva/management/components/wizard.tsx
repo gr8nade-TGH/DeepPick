@@ -1036,48 +1036,49 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
               console.error('[Step 2] ❌ CRITICAL ERROR: No sportsbooks found in odds data')
               throw new Error('CRITICAL: No sportsbooks found in odds data. Cannot proceed without market total.')
             }
-          } else {
-            console.error('[Step 2] ❌ CRITICAL ERROR: No odds data found in game')
-            throw new Error('CRITICAL: No odds data found in game. Cannot proceed without market total.')
-          }
-              
-              // Calculate average over/under odds
-              const overOdds = sportsbooks
-                .map(book => step1Game.odds[book]?.total?.over)
-                .filter(val => val !== undefined && val !== null)
-              const underOdds = sportsbooks
-                .map(book => step1Game.odds[book]?.total?.under)
-                .filter(val => val !== undefined && val !== null)
-              avgOverOdds = overOdds.length > 0 ? Math.round(overOdds.reduce((sum, val) => sum + val, 0) / overOdds.length) : -110
-              avgUnderOdds = underOdds.length > 0 ? Math.round(underOdds.reduce((sum, val) => sum + val, 0) / underOdds.length) : -110
-              
-              // Calculate spread line average (CORRECTED: use .line not nested path)
-              const spreads = sportsbooks
-                .map(book => step1Game.odds[book]?.spread?.line)
-                .filter(val => val !== undefined && val !== null)
-              
-              if (spreads.length > 0) {
-                spreadLine = Math.round(spreads.reduce((sum, val) => sum + val, 0) / spreads.length * 2) / 2
-              }
-              
-              // Calculate moneyline averages (CORRECTED: use .home/.away not team names)
-              const homeMLs = sportsbooks
-                .map(book => step1Game.odds[book]?.moneyline?.home)
-                .filter(val => val !== undefined && val !== null)
-              
-              const awayMLs = sportsbooks
-                .map(book => step1Game.odds[book]?.moneyline?.away)
-                .filter(val => val !== undefined && val !== null)
-              
-              if (homeMLs.length > 0) {
-                mlHome = Math.round(homeMLs.reduce((sum, val) => sum + val, 0) / homeMLs.length)
-              }
-              
-              if (awayMLs.length > 0) {
-                mlAway = Math.round(awayMLs.reduce((sum, val) => sum + val, 0) / awayMLs.length)
-              }
+            // Calculate average over/under odds
+            const overOdds = sportsbooks
+              .map(book => step1Game.odds[book]?.total?.over)
+              .filter(val => val !== undefined && val !== null)
+            const underOdds = sportsbooks
+              .map(book => step1Game.odds[book]?.total?.under)
+              .filter(val => val !== undefined && val !== null)
+            avgOverOdds = overOdds.length > 0 ? Math.round(overOdds.reduce((sum, val) => sum + val, 0) / overOdds.length) : -110
+            avgUnderOdds = underOdds.length > 0 ? Math.round(underOdds.reduce((sum, val) => sum + val, 0) / underOdds.length) : -110
+
+            // Calculate spread line average (CORRECTED: use .line not nested path)
+            const spreads = sportsbooks
+              .map(book => step1Game.odds[book]?.spread?.line)
+              .filter(val => val !== undefined && val !== null)
+
+            if (spreads.length > 0) {
+              spreadLine = Math.round(spreads.reduce((sum, val) => sum + val, 0) / spreads.length * 2) / 2
             }
+
+            // Calculate moneyline averages (CORRECTED: use .home/.away not team names)
+            const homeMLs = sportsbooks
+              .map(book => step1Game.odds[book]?.moneyline?.home)
+              .filter(val => val !== undefined && val !== null)
+
+            const awayMLs = sportsbooks
+              .map(book => step1Game.odds[book]?.moneyline?.away)
+              .filter(val => val !== undefined && val !== null)
+
+            if (homeMLs.length > 0) {
+              mlHome = Math.round(homeMLs.reduce((sum, val) => sum + val, 0) / homeMLs.length)
+            }
+
+            if (awayMLs.length > 0) {
+              mlAway = Math.round(awayMLs.reduce((sum, val) => sum + val, 0) / awayMLs.length)
+            }
+          } else {
+            console.error('[Step 2] ❌ CRITICAL ERROR: No sportsbooks found in odds data')
+            throw new Error('CRITICAL: No sportsbooks found in odds data. Cannot proceed without market total.')
           }
+        } else {
+          console.error('[Step 2] ❌ CRITICAL ERROR: No odds data found in game')
+          throw new Error('CRITICAL: No odds data found in game. Cannot proceed without market total.')
+        }
           
           // Validate total line before proceeding
           if (totalLine === null || typeof totalLine !== 'number' || totalLine < 150 || totalLine > 300) {
