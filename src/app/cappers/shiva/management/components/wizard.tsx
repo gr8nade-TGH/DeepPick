@@ -20,13 +20,8 @@ async function postJson(path: string, body: unknown, idempo: string) {
   return { status: res.status, json }
 }
 
-function AutoModeBanner() {
-  return (
-    <div className="mb-3 rounded bg-green-900 border-2 border-green-600 p-3 text-sm font-bold text-green-200">
-      🤖 AUTO Mode - Pick generation runs automatically every 10 minutes. Cooldown logic prevents duplicate attempts.
-    </div>
-  )
-}
+// AUTO MODE REMOVED - All automated picks now run via /api/cron/shiva-auto-picks
+// This wizard is for MANUAL testing/debugging only (WRITE mode)
 
 
 function formatSpread(odds: any): number {
@@ -343,7 +338,7 @@ function assembleInsightCard({ runCtx, step4, step5, step5_5, step6, step3, step
 export interface SHIVAWizardProps {
   effectiveProfile?: any
   selectedGame?: any
-  mode?: 'write' | 'auto'
+  // mode prop removed - wizard is always in WRITE mode (manual testing only)
   betType?: 'TOTAL' | 'SPREAD/MONEYLINE'
   sport?: 'NBA' | 'NFL' | 'MLB'
 }
@@ -380,11 +375,9 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
   const [effectiveProfileSnapshot, setEffectiveProfileSnapshot] = useState<any>(null)
   const [loadingSteps, setLoadingSteps] = useState<Set<number>>(new Set())
   const [stepProgress, setStepProgress] = useState<Record<number, { progress: number; status: string }>>({})
-  
-  // Track step logs in a ref to avoid stale closures in AUTO mode
+
+  // Track step logs in a ref for consistent data access
   const stepLogsRef = useRef<Record<number, any>>({})
-  // Track if AUTO mode is currently running to prevent duplicate cycles
-  const autoRunningRef = useRef<boolean>(false)
   
   // Keep ref in sync with state
   useEffect(() => {
@@ -1526,7 +1519,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           setStepLoading(5, false, 'Complete', 100)
           
           // If this is a PASS decision (units === 0), save the run to database
-          if (r.json?.units === 0 && (props.mode === 'write' || props.mode === 'auto')) {
+          // Wizard is always in WRITE mode (manual testing) - AUTO mode removed
+          if (r.json?.units === 0) {
             console.log('[Wizard:Step5] PASS detected - saving run to database...')
             console.log('[Wizard:Step5] step4Results confidence:', step4Results?.confidence)
             console.log('[Wizard:Step5] step4Results factor_contributions:', step4Results?.confidence?.factor_contributions)
@@ -1608,7 +1602,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           }
           
           // Also save successful picks (units > 0) to database
-          if (r.json?.units > 0 && (props.mode === 'write' || props.mode === 'auto')) {
+          // Wizard is always in WRITE mode (manual testing) - AUTO mode removed
+          if (r.json?.units > 0) {
             console.log('[Wizard:Step5] Pick generated (units > 0) - saving run to database...')
             console.log('[Wizard:Step5] step4Results confidence:', step4Results?.confidence)
             console.log('[Wizard:Step5] step4Results factor_contributions:', step4Results?.confidence?.factor_contributions)
@@ -2009,182 +2004,12 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     }
   }
 
-  // AUTO mode: Automatically run steps every 10 minutes
-  useEffect(() => {
-    if (props.mode !== 'auto') {
-      return // Only run in AUTO mode
-    }
-
-    // Track this component instance
-    instanceCounter++
-    const thisInstanceId = instanceCounter
-    console.log(`[AUTO] Component mounted - Instance #${thisInstanceId}`)
-
-    const runAutoCycle = async () => {
-      // Skip if already running (check both ref and global lock)
-      if (autoRunningRef.current || globalAutoRunning) {
-        console.log(`[AUTO:Instance#${thisInstanceId}] Skipping cycle - already running (ref:`, autoRunningRef.current, 'global:', globalAutoRunning, ')')
-        return
-      }
-
-      // Check minimum interval between cycles
-      const now = Date.now()
-      const timeSinceLastCycle = now - lastCycleStartTime
-      if (timeSinceLastCycle < MIN_CYCLE_INTERVAL_MS) {
-        console.log(`[AUTO:Instance#${thisInstanceId}] Skipping cycle - too soon (${Math.round(timeSinceLastCycle / 1000)}s since last cycle, minimum ${MIN_CYCLE_INTERVAL_MS / 1000}s)`)
-        return
-      }
-
-      autoRunningRef.current = true
-      globalAutoRunning = true
-      lastCycleStartTime = now
-      console.log(`[AUTO:Instance#${thisInstanceId}] Starting automatic pick generation cycle...`)
-
-      try {
-        // Helper to wait for step to complete with data validation
-        const waitForStep = async (stepNum: number, maxWaitMs: number = 15000) => {
-          const startTime = Date.now()
-          while (Date.now() - startTime < maxWaitMs) {
-            const stepData = stepLogsRef.current[stepNum]
-            if (stepData && stepData.json) {
-              // Additional delay to ensure React state has fully propagated
-              await new Promise(resolve => setTimeout(resolve, 500))
-              console.log(`[AUTO] Step ${stepNum} confirmed complete with data`)
-              return true
-            }
-            await new Promise(resolve => setTimeout(resolve, 100))
-          }
-          console.log(`[AUTO] Step ${stepNum} did not complete in time`)
-          return false
-        }
-
-        // Try up to 5 games before giving up (prevents infinite loops)
-        const MAX_ATTEMPTS = 5
-        let attemptCount = 0
-        let pickGenerated = false
-
-        while (attemptCount < MAX_ATTEMPTS && !pickGenerated) {
-          attemptCount++
-          console.log(`[AUTO] Attempt ${attemptCount}/${MAX_ATTEMPTS} - Analyzing game...`)
-
-          // Clear previous step logs for fresh attempt
-          if (attemptCount > 1) {
-            setStepLogs({})
-            stepLogsRef.current = {}
-            console.log('[AUTO] Cleared previous step logs for new attempt')
-          }
-
-          // Run steps 1-5 automatically with verification
-          console.log('[AUTO] Running Step 1...')
-          await handleStepClick(1)
-          const step1Complete = await waitForStep(1, 10000)
-
-          // Check if Step 1 returned NO_AVAILABLE_GAMES
-          const step1Data = stepLogsRef.current[1]?.json
-          if (step1Data?.state === 'NO_AVAILABLE_GAMES' || !step1Data?.selected_game) {
-            console.log('[AUTO] No available games found - ending cycle')
-            console.log('[AUTO] Reason:', step1Data?.message || 'No games available')
-            console.log('[AUTO] Debug:', step1Data?.debug)
-            break // Exit the while loop
-          }
-
-          if (!step1Complete) {
-            console.log('[AUTO] Step 1 did not complete - aborting cycle')
-            break
-          }
-
-          console.log('[AUTO] Running Step 2...')
-          await handleStepClick(2)
-          const step2Complete = await waitForStep(2, 10000)
-          if (!step2Complete) {
-            console.log('[AUTO] Step 2 did not complete - aborting cycle')
-            break
-          }
-
-          console.log('[AUTO] Running Step 3...')
-          await handleStepClick(3)
-          const step3Complete = await waitForStep(3, 20000) // Longer for AI calls
-          if (!step3Complete) {
-            console.log('[AUTO] Step 3 did not complete - aborting cycle')
-            break
-          }
-
-          console.log('[AUTO] Running Step 4...')
-          await handleStepClick(4)
-          const step4Complete = await waitForStep(4, 10000)
-          if (!step4Complete) {
-            console.log('[AUTO] Step 4 did not complete - aborting cycle')
-            break
-          }
-
-          console.log('[AUTO] Running Step 5...')
-          await handleStepClick(5)
-          const step5Complete = await waitForStep(5, 10000)
-          if (!step5Complete) {
-            console.log('[AUTO] Step 5 did not complete - aborting cycle')
-            break
-          }
-
-          // Check Step 5 result - PASS or PICK_GENERATED?
-          const step5Data = stepLogsRef.current[5]?.json
-          const units = step5Data?.units || 0
-          const gameMatchup = step1Data?.selected_game?.home_team?.name
-            ? `${step1Data.selected_game.away_team?.name} @ ${step1Data.selected_game.home_team?.name}`
-            : 'Unknown matchup'
-
-          if (units === 0) {
-            console.log(`[AUTO] PASS decision for ${gameMatchup} (units = 0)`)
-            console.log('[AUTO] Game is now on cooldown. Trying next available game...')
-            // Continue to next iteration - try another game
-          } else {
-            console.log(`[AUTO] ✅ PICK GENERATED for ${gameMatchup} (units = ${units})`)
-            console.log('[AUTO] Pick generation successful - ending cycle')
-            pickGenerated = true
-            break // CRITICAL: Exit the while loop immediately after successful pick generation
-          }
-        }
-
-        if (attemptCount >= MAX_ATTEMPTS && !pickGenerated) {
-          console.log(`[AUTO] Reached max attempts (${MAX_ATTEMPTS}) without generating a pick`)
-          console.log('[AUTO] All analyzed games resulted in PASS - will try again in 10 minutes')
-        }
-
-        console.log('[AUTO] Cycle complete - next run in 10 minutes')
-      } catch (error) {
-        console.error('[AUTO] Error in auto cycle:', error)
-      } finally {
-        autoRunningRef.current = false
-        globalAutoRunning = false
-        console.log('[AUTO] Cycle finished')
-      }
-    }
-
-    // Run immediately on mount, then every 10 minutes
-    // BUT only if not already running
-    if (!autoRunningRef.current) {
-      runAutoCycle()
-    } else {
-      console.log('[AUTO] Skipping initial run - already running from previous mount')
-    }
-    
-    const interval = setInterval(() => {
-      if (!autoRunningRef.current) {
-        runAutoCycle()
-      } else {
-        console.log('[AUTO] Skipping scheduled run - cycle already in progress')
-      }
-    }, 600000) // 10 minutes
-
-    return () => {
-      clearInterval(interval)
-      autoRunningRef.current = false
-      globalAutoRunning = false
-    }
-  }, [props.mode]) // Only depend on mode to avoid infinite loops
+  // AUTO MODE REMOVED - All automated picks now run via /api/cron/shiva-auto-picks
+  // This wizard is for MANUAL testing/debugging only
 
   return (
     <div>
-      {props.mode === 'auto' && <AutoModeBanner />}
+      {/* AUTO MODE REMOVED - Banner removed */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
           <div className="font-bold text-white text-lg">Pick Generator Wizard</div>
