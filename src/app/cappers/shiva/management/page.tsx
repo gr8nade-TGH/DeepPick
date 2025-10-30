@@ -260,7 +260,6 @@ export default function ShivaManagementPage() {
             <SHIVAWizard
               effectiveProfile={effectiveProfile}
               selectedGame={selectedGame}
-              mode={mode}
               betType={betType}
             />
           </div>
