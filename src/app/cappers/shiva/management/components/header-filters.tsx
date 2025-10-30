@@ -22,7 +22,7 @@ interface GameOption {
 export interface HeaderFiltersProps {
   onProfileChange: (profile: CapperProfile | null, capper: string, sport: string) => void
   onGameChange: (game: any) => void
-  onModeChange: (mode: 'write' | 'auto') => void
+  onModeChange?: (mode: 'write' | 'auto') => void // Optional - AUTO mode removed
   onProviderOverrides: (step3?: string, step4?: string) => void
   onBetTypeChange: (betType: 'TOTAL' | 'SPREAD/MONEYLINE') => void
   selectedGame?: any
@@ -174,7 +174,7 @@ export function HeaderFilters(props: HeaderFiltersProps) {
 
   const handleModeChange = (newMode: 'write' | 'auto') => {
     setMode(newMode)
-    props.onModeChange(newMode)
+    props.onModeChange?.(newMode) // Optional chaining since AUTO mode is removed
     // Auto-save mode change to localStorage
     if (typeof window !== 'undefined') {
       localStorage.setItem('shiva-mode', newMode)
