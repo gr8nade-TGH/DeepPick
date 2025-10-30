@@ -7,6 +7,10 @@
     {
       "path": "/api/archive-games",
       "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/shiva-auto-picks",
+      "schedule": "*/10 * * * *"
     }
   ]
 }
