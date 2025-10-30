@@ -111,33 +111,39 @@ export async function POST(request: Request) {
             console.log('[SHIVA:PickGenerate] PASS - activeSnapshot:', JSON.stringify(activeSnapshot))
 
             // Save the run record to runs table even for PASS decisions
-            // Save even if gameId is null/undefined - use placeholder
             if (run_id) {
               const now = new Date().toISOString()
-              
+
+              // CRITICAL: Validate game_id exists - fail loudly if missing
+              if (!gameId) {
+                console.error('[SHIVA:PickGenerate] ❌ CRITICAL ERROR: No game_id found in snapshot')
+                console.error('[SHIVA:PickGenerate] ❌ activeSnapshot:', JSON.stringify(activeSnapshot))
+                throw new Error('CRITICAL: No game_id found in odds snapshot. Cannot save run without game_id.')
+              }
+
               // Extract factor data from total_data if available
               const totalData = parse.data.inputs.total_data
               const factorContributions = totalData?.factor_contributions || null
               const predictedTotal = totalData?.predicted_total || null
               const baselineAvg = totalData?.baseline_avg || null
               const marketTotal = totalData?.market_total_line || null
-              
+
               console.log('[SHIVA:PickGenerate] PASS - Attempting to upsert run:', {
                 id: run_id,
-                game_id: gameId || 'unknown',
+                game_id: gameId,
                 capper: 'shiva',
                 bet_type: results.decision.pick_type,
                 units: 0,
                 hasFactors: !!factorContributions,
                 predictedTotal
               })
-              
+
               const { data, error } = await admin
                 .from('runs')
                 .upsert({
                   id: run_id,
                   run_id: run_id,
-                  game_id: gameId || 'unknown',
+                  game_id: gameId,
                   capper: 'shiva',
                   bet_type: results.decision.pick_type,
                   units: 0,
@@ -263,6 +269,13 @@ export async function POST(request: Request) {
             })
           }
 
+          // CRITICAL: Validate game_id exists - fail loudly if missing
+          if (!gameId) {
+            console.error('[SHIVA:PickGenerate] ❌ CRITICAL ERROR: No game_id found for PICK')
+            console.error('[SHIVA:PickGenerate] ❌ activeSnapshot:', JSON.stringify(activeSnapshot))
+            throw new Error('CRITICAL: No game_id found. Cannot save pick without game_id.')
+          }
+
           // Create new run with current run_id
           console.log('[SHIVA:PickGenerate] Creating new run with id:', run_id)
           const insertRun = await admin
@@ -270,7 +283,7 @@ export async function POST(request: Request) {
             .insert({
               id: run_id,
               run_id: run_id,
-              game_id: gameId || 'unknown',
+              game_id: gameId,
               capper: 'shiva',
               bet_type: results.decision.pick_type,
               units: r.units,
