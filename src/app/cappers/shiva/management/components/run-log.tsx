@@ -314,6 +314,34 @@ export function RunLogTable() {
     }
   }
 
+  // Copy cooldown debug info to clipboard
+  const handleCopyCooldownDebug = async () => {
+    const cooldownDebugInfo = {
+      total_cooldowns: cooldowns.length,
+      current_time: new Date().toISOString(),
+      cooldowns: cooldowns.map(cd => ({
+        id: cd.id,
+        game_id: cd.game_id,
+        capper: cd.capper,
+        bet_type: cd.bet_type,
+        cooldown_until: cd.cooldown_until,
+        result: cd.result,
+        units: cd.units,
+        matchup: cd.matchup,
+        is_expired: new Date(cd.cooldown_until).getTime() <= Date.now(),
+        time_remaining_ms: new Date(cd.cooldown_until).getTime() - Date.now()
+      }))
+    }
+
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(cooldownDebugInfo, null, 2))
+      alert('Cooldown debug info copied to clipboard!')
+    } catch (error) {
+      console.error('Failed to copy cooldown debug info:', error)
+      alert('Failed to copy cooldown debug info. Check console for details.')
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4">
       {/* Run Log Table */}
@@ -413,8 +441,15 @@ export function RunLogTable() {
       {/* Cooldown Management Table */}
       {cooldowns.length > 0 && (
         <div className="border border-gray-700 rounded bg-gray-900 overflow-hidden">
-          <div className="p-3 border-b border-gray-700">
+          <div className="p-3 border-b border-gray-700 flex justify-between items-center">
             <h3 className="text-lg font-bold text-white">⏸️ Cooldowns ({cooldowns.length})</h3>
+            <button
+              onClick={handleCopyCooldownDebug}
+              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors"
+              title="Copy Cooldown debug info to clipboard"
+            >
+              📋 Copy Cooldown Debug
+            </button>
           </div>
           <div className="overflow-y-auto" style={{ maxHeight: '200px' }}>
             <table className="w-full text-sm">
