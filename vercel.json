@@ -1,12 +1,8 @@
 {
   "crons": [
     {
-      "path": "/api/simple-ingest",
+      "path": "/api/cron/sync-mysportsfeeds-odds",
       "schedule": "*/5 * * * *"
-    },
-    {
-      "path": "/api/fetch-scores", 
-      "schedule": "*/15 * * * *"
     },
     {
       "path": "/api/archive-games",

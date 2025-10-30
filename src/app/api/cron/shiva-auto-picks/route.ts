@@ -33,64 +33,84 @@ export async function GET() {
     const lockKey = 'shiva_auto_picks_lock'
     const lockTimeout = 5 * 60 * 1000 // 5 minutes
     const now = new Date()
+    const lockId = `cron_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
 
-    // Try to acquire lock
-    const { data: existingLock, error: lockCheckError } = await supabase
-      .from('system_locks')
-      .select('locked_at, locked_by')
-      .eq('lock_key', lockKey)
-      .maybeSingle()
+    console.log(`🤖 [SHIVA-AUTO-PICKS] Attempting to acquire lock: ${lockId}`)
 
-    if (lockCheckError && lockCheckError.code !== 'PGRST116') {
-      console.error('🤖 [SHIVA-AUTO-PICKS] ❌ CRITICAL ERROR: Lock check failed:', lockCheckError)
-      console.error('🤖 [SHIVA-AUTO-PICKS] ❌ This likely means system_locks table does not exist!')
-      console.error('🤖 [SHIVA-AUTO-PICKS] ❌ Run the migration: supabase/migrations/20250129_create_system_locks.sql')
-      return NextResponse.json({
-        success: false,
-        error: 'Lock check failed - system_locks table may not exist',
-        details: lockCheckError.message,
-        timestamp: executionTime
-      }, { status: 500 })
-    }
-
-    if (existingLock) {
-      const lockedAt = new Date(existingLock.locked_at)
-      const lockAge = now.getTime() - lockedAt.getTime()
-
-      if (lockAge < lockTimeout) {
-        console.log(`🤖 [SHIVA-AUTO-PICKS] ⚠️ SKIPPING - Another instance is running (locked ${Math.round(lockAge / 1000)}s ago by ${existingLock.locked_by})`)
-        return NextResponse.json({
-          success: false,
-          message: 'Another instance is already running',
-          lockedBy: existingLock.locked_by,
-          lockedAt: existingLock.locked_at,
-          lockAge: `${Math.round(lockAge / 1000)}s`,
-          timestamp: executionTime
-        })
-      } else {
-        console.log(`🤖 [SHIVA-AUTO-PICKS] ⚠️ Stale lock detected (${Math.round(lockAge / 1000)}s old) - will override`)
-      }
-    }
-
-    // Acquire lock
-    const lockId = `cron_${Date.now()}`
-    const { error: lockError } = await supabase
-      .from('system_locks')
-      .upsert({
-        lock_key: lockKey,
-        locked_at: now.toISOString(),
-        locked_by: lockId,
-        expires_at: new Date(now.getTime() + lockTimeout).toISOString()
-      }, { onConflict: 'lock_key' })
+    // ATOMIC LOCK ACQUISITION: Use PostgreSQL's INSERT ... ON CONFLICT to ensure only one instance can acquire the lock
+    // This prevents race conditions where multiple instances check the lock at the same time
+    const { data: lockResult, error: lockError } = await supabase.rpc('acquire_shiva_lock', {
+      p_lock_key: lockKey,
+      p_locked_by: lockId,
+      p_timeout_seconds: 300 // 5 minutes
+    })
 
     if (lockError) {
-      console.error('🤖 [SHIVA-AUTO-PICKS] ❌ CRITICAL ERROR: Failed to acquire lock:', lockError)
+      console.error('🤖 [SHIVA-AUTO-PICKS] ❌ CRITICAL ERROR: Lock acquisition failed:', lockError)
+      console.error('🤖 [SHIVA-AUTO-PICKS] ❌ This likely means the acquire_shiva_lock function does not exist!')
+      console.error('🤖 [SHIVA-AUTO-PICKS] ❌ Falling back to manual lock check...')
+
+      // Fallback to manual lock check
+      const { data: existingLock, error: lockCheckError } = await supabase
+        .from('system_locks')
+        .select('locked_at, locked_by')
+        .eq('lock_key', lockKey)
+        .maybeSingle()
+
+      if (lockCheckError && lockCheckError.code !== 'PGRST116') {
+        console.error('🤖 [SHIVA-AUTO-PICKS] ❌ CRITICAL ERROR: Lock check failed:', lockCheckError)
+        return NextResponse.json({
+          success: false,
+          error: 'Lock check failed',
+          details: lockCheckError.message,
+          timestamp: executionTime
+        }, { status: 500 })
+      }
+
+      if (existingLock) {
+        const lockedAt = new Date(existingLock.locked_at)
+        const lockAge = now.getTime() - lockedAt.getTime()
+
+        if (lockAge < lockTimeout) {
+          console.log(`🤖 [SHIVA-AUTO-PICKS] ⚠️ SKIPPING - Another instance is running (locked ${Math.round(lockAge / 1000)}s ago by ${existingLock.locked_by})`)
+          return NextResponse.json({
+            success: false,
+            message: 'Another instance is already running',
+            lockedBy: existingLock.locked_by,
+            lockedAt: existingLock.locked_at,
+            lockAge: `${Math.round(lockAge / 1000)}s`,
+            timestamp: executionTime
+          })
+        }
+      }
+
+      // Try to acquire lock manually
+      const { error: upsertError } = await supabase
+        .from('system_locks')
+        .upsert({
+          lock_key: lockKey,
+          locked_at: now.toISOString(),
+          locked_by: lockId,
+          expires_at: new Date(now.getTime() + lockTimeout).toISOString()
+        }, { onConflict: 'lock_key' })
+
+      if (upsertError) {
+        console.error('🤖 [SHIVA-AUTO-PICKS] ❌ CRITICAL ERROR: Failed to acquire lock:', upsertError)
+        return NextResponse.json({
+          success: false,
+          error: 'Failed to acquire lock',
+          details: upsertError.message,
+          timestamp: executionTime
+        }, { status: 500 })
+      }
+    } else if (!lockResult) {
+      // Lock was not acquired (another instance is running)
+      console.log(`🤖 [SHIVA-AUTO-PICKS] ⚠️ SKIPPING - Lock already held by another instance`)
       return NextResponse.json({
         success: false,
-        error: 'Failed to acquire lock',
-        details: lockError.message,
+        message: 'Another instance is already running (atomic lock check)',
         timestamp: executionTime
-      }, { status: 500 })
+      })
     }
 
     console.log(`🤖 [SHIVA-AUTO-PICKS] ✅ Lock acquired: ${lockId}`)
