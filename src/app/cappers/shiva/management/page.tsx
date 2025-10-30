@@ -53,10 +53,8 @@ export default function ShivaManagementPage() {
   const [currentProfile, setCurrentProfile] = useState<CapperProfile | null>(null)
   const [effectiveProfile, setEffectiveProfile] = useState<CapperProfile | null>(null)
   const [selectedGame, setSelectedGame] = useState<any>(null)
-  // ALWAYS use 'write' mode - AUTO mode is disabled in the wizard
-  // AUTO picks should ONLY run via the cron endpoint (/api/cron/shiva-auto-picks)
-  // This prevents multiple browser tabs from creating duplicate picks
-  const [mode, setMode] = useState<'write' | 'auto'>('write')
+  // AUTO mode REMOVED - all automated picks run via /api/cron/shiva-auto-picks
+  // This wizard is for MANUAL testing/debugging only
   const [betType, setBetType] = useState<'TOTAL' | 'SPREAD/MONEYLINE'>('TOTAL')
   const [providerOverrides, setProviderOverrides] = useState<{ step3?: string; step4?: string }>({})
   const [showFactorConfig, setShowFactorConfig] = useState(false)
@@ -104,10 +102,8 @@ export default function ShivaManagementPage() {
   return (
     <div className="min-h-screen bg-black">
       <HeaderFilters
-        mode={mode}
         onProfileChange={handleProfileChange}
         onGameChange={handleGameSelect}
-        onModeChange={setMode}
         onBetTypeChange={handleBetTypeChange}
         onProviderOverrides={(step3, step4) => setProviderOverrides({ step3, step4 })}
         selectedGame={selectedGame}

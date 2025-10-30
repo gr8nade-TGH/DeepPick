@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 
+// Disable caching for this endpoint - cooldowns change frequently
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export async function GET() {
   try {
     const supabase = getSupabaseAdmin()
