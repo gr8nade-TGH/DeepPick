@@ -159,6 +159,13 @@ export async function executeWizardPipeline(input: WizardOrchestratorInput): Pro
     console.log('[WizardOrchestrator] Step 7: Pick finalized')
 
     // Build result
+    // CRITICAL: Add weight_applied field to all factors for database storage
+    // The factors from step3 have weight_total_pct, but we need weight_applied as decimal
+    const factorsWithWeights = [...(steps.step3.factors || []), steps.step5.edgeVsMarketFactor].map(factor => ({
+      ...factor,
+      weight_applied: (factor.weight_total_pct || 0) / 100 // Convert percentage to decimal
+    }))
+
     const result: WizardOrchestratorResult = {
       success: true,
       runId,
@@ -171,7 +178,7 @@ export async function executeWizardPipeline(input: WizardOrchestratorInput): Pro
         lockedOdds: steps.step2.snapshot
       } : undefined,
       log: {
-        factors: [...(steps.step3.factors || []), steps.step5.edgeVsMarketFactor], // Add Edge vs Market to factors
+        factors: factorsWithWeights, // Use factors with weight_applied field
         finalPrediction: {
           total: predictedTotal,
           home: steps.step4.predictions?.scores?.home || 0,

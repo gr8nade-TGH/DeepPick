@@ -95,7 +95,12 @@ export async function GET(request: NextRequest) {
       // Parse factor contributions with detailed breakdown
       const factorContributions = (metadata.factor_contributions || []).map((factor: any) => {
         const parsedValues = factor.parsed_values_json || {}
-        const weight = factor.weight_applied || 0
+
+        // CRITICAL: Try weight_applied first (new format), fallback to weight_total_pct (old format)
+        let weight = factor.weight_applied || 0
+        if (weight === 0 && factor.weight_total_pct) {
+          weight = factor.weight_total_pct / 100 // Convert percentage to decimal
+        }
         const weightPct = Math.round(weight * 100)
 
         // Calculate weighted contributions
@@ -123,14 +128,17 @@ export async function GET(request: NextRequest) {
           parsed_values_json: parsedValues,
           raw_values_json: factor.raw_values_json || {},
           normalized_value: factor.normalized_value || 0,
-          notes: factor.notes || ''
+          notes: factor.notes || '',
+          // Include both fields for debugging
+          weight_total_pct: factor.weight_total_pct,
+          weight_applied: factor.weight_applied
         }
       })
 
       // Calculate confidence breakdown
-      const totalWeightedOver = factorContributions.reduce((sum: number, f: any) => 
+      const totalWeightedOver = factorContributions.reduce((sum: number, f: any) =>
         sum + (f.weighted_contributions?.overScore || 0), 0)
-      const totalWeightedUnder = factorContributions.reduce((sum: number, f: any) => 
+      const totalWeightedUnder = factorContributions.reduce((sum: number, f: any) =>
         sum + (f.weighted_contributions?.underScore || 0), 0)
       const calculatedConfidence = totalWeightedOver + totalWeightedUnder
 
@@ -140,16 +148,16 @@ export async function GET(request: NextRequest) {
         id: run.id,
         game_id: run.game_id,
         created_at: run.created_at,
-        
+
         // Game details
         matchup,
         game_time: game?.game_time || metadata.game_time,
-        
+
         // Pick details
         pick_type: metadata.pick_type || run.pick_type,
         selection: metadata.selection || run.selection,
         units: cooldown?.units !== undefined ? cooldown.units : (metadata.units || run.units),
-        
+
         // Confidence and predictions
         confidence: {
           final: cooldown?.confidence_score !== undefined ? cooldown.confidence_score : (metadata.confidence || run.confidence),
@@ -159,31 +167,31 @@ export async function GET(request: NextRequest) {
           base_confidence: metadata.base_confidence,
           market_edge_adjustment: metadata.conf_market_adj || run.conf_market_adj
         },
-        
+
         // Totals
         predicted_total: metadata.predicted_total,
         baseline_avg: metadata.baseline_avg,
         market_total: metadata.market_total,
-        
+
         // Factor analysis
         factors: factorContributions,
         factor_summary: {
           total_factors: factorContributions.length,
-          factors_favoring_over: factorContributions.filter((f: any) => 
+          factors_favoring_over: factorContributions.filter((f: any) =>
             (f.weighted_contributions?.overScore || 0) > (f.weighted_contributions?.underScore || 0)).length,
-          factors_favoring_under: factorContributions.filter((f: any) => 
+          factors_favoring_under: factorContributions.filter((f: any) =>
             (f.weighted_contributions?.underScore || 0) > (f.weighted_contributions?.overScore || 0)).length,
-          total_weight_percentage: factorContributions.reduce((sum: number, f: any) => 
+          total_weight_percentage: factorContributions.reduce((sum: number, f: any) =>
             sum + (f.weight_percentage || 0), 0)
         },
-        
+
         // Step JSONs (if available from metadata)
         step_data: {
           step3_json: metadata.step3_json || null,
           step4_json: metadata.step4_json || null,
           step5_json: metadata.step5_json || null
         },
-        
+
         // Cooldown data
         cooldown: cooldown ? {
           id: cooldown.id,
@@ -191,12 +199,12 @@ export async function GET(request: NextRequest) {
           cooldown_until: cooldown.cooldown_until,
           created_at: cooldown.created_at
         } : null,
-        
+
         // Additional metadata
         state: run.state,
         capper: metadata.capper || run.capper,
         sport: metadata.sport || run.sport,
-        
+
         // Raw metadata for debugging
         raw_metadata: metadata,
         shiva_run_metadata: shivaRun?.metadata || null
