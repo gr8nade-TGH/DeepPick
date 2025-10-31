@@ -90,7 +90,7 @@ export async function POST(request: Request) {
         .insert({
           game_id: game.id,
           capper: 'shiva',
-          pick_type: 'TOTAL',
+          bet_type: 'total', // lowercase to match database convention
           result: 'ERROR',
           reason: result.error || 'Pipeline execution failed',
           cooldown_until: cooldownUntil.toISOString(),
@@ -159,6 +159,29 @@ export async function POST(request: Request) {
 
     if (!result.pick) {
       console.log('[SHIVA:GeneratePick] Pipeline decided to PASS')
+
+      // Create cooldown for PASS decision
+      const cooldownUntil = new Date(Date.now() + 2 * 60 * 60 * 1000) // 2 hours
+      const { error: cooldownError } = await supabase
+        .from('pick_generation_cooldowns')
+        .insert({
+          game_id: game.id,
+          capper: 'shiva',
+          bet_type: 'total',
+          result: 'PASS',
+          units: 0,
+          confidence_score: confidence,
+          reason: `Low confidence: ${confidence.toFixed(2)}`,
+          cooldown_until: cooldownUntil.toISOString(),
+          created_at: new Date().toISOString()
+        })
+
+      if (cooldownError) {
+        console.error('[SHIVA:GeneratePick] Error creating PASS cooldown:', cooldownError)
+      } else {
+        console.log(`[SHIVA:GeneratePick] ✅ PASS cooldown created until ${cooldownUntil.toISOString()}`)
+      }
+
       return NextResponse.json({
         success: false,
         decision: 'PASS',
@@ -166,6 +189,7 @@ export async function POST(request: Request) {
         confidence,
         runId,
         factors: result.log?.factors || [],
+        cooldown_until: cooldownUntil.toISOString(),
         duration: `${duration}ms`
       })
     }
@@ -211,6 +235,28 @@ export async function POST(request: Request) {
 
     console.log(`💾 [SHIVA:GeneratePick] Pick saved to database: ${savedPick.id}`)
 
+    // Create cooldown for PICK_GENERATED decision
+    const cooldownUntil = new Date(Date.now() + 2 * 60 * 60 * 1000) // 2 hours
+    const { error: cooldownError } = await supabase
+      .from('pick_generation_cooldowns')
+      .insert({
+        game_id: game.id,
+        capper: 'shiva',
+        bet_type: 'total',
+        result: 'PICK_GENERATED',
+        units: pick.units,
+        confidence_score: confidence,
+        reason: `Pick generated: ${pick.selection}`,
+        cooldown_until: cooldownUntil.toISOString(),
+        created_at: new Date().toISOString()
+      })
+
+    if (cooldownError) {
+      console.error('[SHIVA:GeneratePick] Error creating PICK_GENERATED cooldown:', cooldownError)
+    } else {
+      console.log(`[SHIVA:GeneratePick] ✅ PICK_GENERATED cooldown created until ${cooldownUntil.toISOString()}`)
+    }
+
     return NextResponse.json({
       success: true,
       decision: 'PICK',
@@ -225,6 +271,7 @@ export async function POST(request: Request) {
         odds: pick.lockedOdds?.total?.over_odds || -110
       },
       factors: result.log?.factors || [],
+      cooldown_until: cooldownUntil.toISOString(),
       duration: `${duration}ms`
     })
 
