@@ -14,63 +14,66 @@ export async function DELETE(request: NextRequest) {
 
     console.log('[ClearRuns] Starting clear operation...')
 
-    // Count runs before deletion
-    const { count: beforeCount, error: countError } = await supabase
-      .from('runs')
-      .select('*', { count: 'exact', head: true })
-      .eq('capper', 'shiva')
+    // CRITICAL: The 'capper' field is inside metadata JSONB column, not a direct column
+    // We need to fetch all runs and filter in JavaScript, just like the history endpoint does
 
-    if (countError) {
-      console.error('[ClearRuns] Error counting runs:', countError)
+    // Step 1: Fetch ALL runs with metadata
+    const { data: allRuns, error: fetchError } = await supabase
+      .from('runs')
+      .select('run_id, metadata')
+
+    if (fetchError) {
+      console.error('[ClearRuns] Error fetching runs:', fetchError)
+      return NextResponse.json({
+        success: false,
+        error: fetchError.message,
+        details: 'Failed to fetch runs from database'
+      }, { status: 500 })
     }
 
-    console.log(`[ClearRuns] Found ${beforeCount || 0} SHIVA runs to delete`)
+    // Step 2: Filter for SHIVA runs in JavaScript (capper is in metadata)
+    const shivaRuns = (allRuns || []).filter((run: any) => run.metadata?.capper === 'shiva')
+    const runIds = shivaRuns.map(r => r.run_id)
+
+    console.log(`[ClearRuns] Found ${runIds.length} SHIVA runs to delete (out of ${allRuns?.length || 0} total runs)`)
+
+    if (runIds.length === 0) {
+      console.log('[ClearRuns] No SHIVA runs found to delete')
+      return NextResponse.json({
+        success: true,
+        message: 'No SHIVA runs found to delete',
+        deletedCount: 0,
+        beforeCount: 0,
+        shivaRunsDeleted: 0,
+        cooldownsDeleted: 0
+      })
+    }
 
     // CRITICAL: Delete picks FIRST (child records) before deleting runs (parent records)
     // This respects the foreign key constraint: picks.run_id REFERENCES runs.run_id ON DELETE RESTRICT
 
-    // Step 1: Get all run_ids for SHIVA runs
-    const { data: runsToDelete, error: fetchError } = await supabase
-      .from('runs')
-      .select('run_id')
-      .eq('capper', 'shiva')
+    // Step 3: Delete all picks associated with these runs
+    const { error: deletePicksError, count: deletedPicksCount } = await supabase
+      .from('picks')
+      .delete({ count: 'exact' })
+      .in('run_id', runIds)
 
-    if (fetchError) {
-      console.error('[ClearRuns] Error fetching run_ids:', fetchError)
+    if (deletePicksError) {
+      console.error('[ClearRuns] Error deleting picks:', deletePicksError)
       return NextResponse.json({
         success: false,
-        error: fetchError.message,
-        details: 'Failed to fetch run_ids from database'
+        error: deletePicksError.message,
+        details: 'Failed to delete picks from database'
       }, { status: 500 })
     }
 
-    const runIds = runsToDelete?.map(r => r.run_id) || []
-    console.log(`[ClearRuns] Found ${runIds.length} run_ids to delete:`, runIds)
+    console.log(`[ClearRuns] Successfully deleted ${deletedPicksCount || 0} picks`)
 
-    // Step 2: Delete all picks associated with these runs
-    if (runIds.length > 0) {
-      const { error: deletePicksError, count: deletedPicksCount } = await supabase
-        .from('picks')
-        .delete({ count: 'exact' })
-        .in('run_id', runIds)
-
-      if (deletePicksError) {
-        console.error('[ClearRuns] Error deleting picks:', deletePicksError)
-        return NextResponse.json({
-          success: false,
-          error: deletePicksError.message,
-          details: 'Failed to delete picks from database'
-        }, { status: 500 })
-      }
-
-      console.log(`[ClearRuns] Successfully deleted ${deletedPicksCount || 0} picks`)
-    }
-
-    // Step 3: Now delete all SHIVA runs (parent records)
+    // Step 4: Now delete all SHIVA runs (parent records) by run_id
     const { error: deleteError, count: deletedCount } = await supabase
       .from('runs')
       .delete({ count: 'exact' })
-      .eq('capper', 'shiva')
+      .in('run_id', runIds)
 
     if (deleteError) {
       console.error('[ClearRuns] Error deleting runs:', deleteError)
@@ -83,7 +86,7 @@ export async function DELETE(request: NextRequest) {
 
     console.log(`[ClearRuns] Successfully deleted ${deletedCount || 0} SHIVA runs from runs table`)
 
-    // Step 4: Also clear shiva_runs table (SHIVA-specific run log)
+    // Step 5: Also clear shiva_runs table (SHIVA-specific run log)
     const { error: shivaRunsError, count: shivaRunsCount } = await supabase
       .from('shiva_runs')
       .delete({ count: 'exact' })
@@ -96,7 +99,7 @@ export async function DELETE(request: NextRequest) {
       console.log(`[ClearRuns] Successfully deleted ${shivaRunsCount || 0} entries from shiva_runs table`)
     }
 
-    // Step 5: Clear shiva_cooldowns table
+    // Step 6: Clear shiva_cooldowns table
     const { error: cooldownsError, count: cooldownsCount } = await supabase
       .from('shiva_cooldowns')
       .delete({ count: 'exact' })
@@ -113,7 +116,7 @@ export async function DELETE(request: NextRequest) {
       success: true,
       message: `Successfully cleared ${deletedCount || 0} runs, ${shivaRunsCount || 0} shiva_runs, and ${cooldownsCount || 0} cooldowns`,
       deletedCount: deletedCount || 0,
-      beforeCount: beforeCount || 0,
+      beforeCount: runIds.length, // Use the count we found before deletion
       shivaRunsDeleted: shivaRunsCount || 0,
       cooldownsDeleted: cooldownsCount || 0
     })
