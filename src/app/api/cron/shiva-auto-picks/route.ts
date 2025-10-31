@@ -147,16 +147,16 @@ export async function GET(request: Request) {
     console.log('🎯 [SHIVA-AUTO-PICKS] Finding eligible games...')
 
     // Determine the base URL for API calls
-    // In production: use VERCEL_URL (automatically set by Vercel)
-    // In development: use localhost
-    // VERCEL_URL doesn't include protocol, so we add https://
-    const baseUrl = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
+    // CRITICAL: Use production URL to avoid Vercel deployment protection on preview URLs
+    // VERCEL_PROJECT_PRODUCTION_URL is the production domain (e.g., deep-pick.vercel.app)
+    // VERCEL_URL could be a preview URL which has authentication enabled
+    const baseUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
       : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 
     console.log(`🌐 [SHIVA-AUTO-PICKS] Using base URL: ${baseUrl}`)
-    console.log(`🌐 [SHIVA-AUTO-PICKS] VERCEL_URL env var: ${process.env.VERCEL_URL}`)
-    console.log(`🌐 [SHIVA-AUTO-PICKS] NEXT_PUBLIC_SITE_URL env var: ${process.env.NEXT_PUBLIC_SITE_URL}`)
+    console.log(`🌐 [SHIVA-AUTO-PICKS] VERCEL_PROJECT_PRODUCTION_URL: ${process.env.VERCEL_PROJECT_PRODUCTION_URL}`)
+    console.log(`🌐 [SHIVA-AUTO-PICKS] VERCEL_URL: ${process.env.VERCEL_URL}`)
 
     const scannerUrl = `${baseUrl}/api/shiva/step1-scanner`
     console.log(`🌐 [SHIVA-AUTO-PICKS] Calling scanner at: ${scannerUrl}`)
