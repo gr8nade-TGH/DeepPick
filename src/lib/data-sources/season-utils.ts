@@ -13,19 +13,28 @@ export interface SeasonInfo {
 /**
  * Get the NBA season for a given date
  * NBA season runs from October to June
- *
- * CRITICAL: MySportsFeeds uses the ACTUAL current season, not future seasons
- * - As of Oct 31, 2024 (real world), we're in the 2024-2025 season
- * - MySportsFeeds won't have data for 2025-2026 until that season actually starts
- *
- * HARDCODED FIX: Always return 2024-2025 season for now
- * TODO: Update this when the actual 2025-2026 season starts
+ * - October-December: Current year is start year (e.g., Oct 2024 = 2024-2025 season)
+ * - January-June: Previous year is start year (e.g., Jan 2025 = 2024-2025 season)
+ * - July-September: Next season (e.g., July 2025 = 2025-2026 season)
  */
 export function getNBASeason(date: Date = new Date()): SeasonInfo {
-  // HARDCODED: Always use 2024-2025 season
-  // This is the current active NBA season as of Oct 2024
-  const startYear = 2024
-  const endYear = 2025
+  const year = date.getFullYear()
+  const month = date.getMonth() + 1 // 1-12
+
+  let startYear: number
+
+  if (month >= 10) {
+    // October-December: Season starts this year
+    startYear = year
+  } else if (month >= 1 && month <= 6) {
+    // January-June: Season started last year
+    startYear = year - 1
+  } else {
+    // July-September: Off-season, next season starts in October
+    startYear = year
+  }
+
+  const endYear = startYear + 1
 
   return {
     season: `${startYear}-${endYear}-regular`,
