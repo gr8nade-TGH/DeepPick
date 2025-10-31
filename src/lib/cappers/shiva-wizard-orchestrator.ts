@@ -236,15 +236,18 @@ async function captureOddsSnapshot(runId: string, game: any, sport: string) {
     .map(book => odds[book]?.total?.line)
     .filter(line => line !== undefined && line !== null)
 
-  const avgTotalLine = totalLines.length > 0
-    ? parseFloat((totalLines.reduce((a, b) => a + b, 0) / totalLines.length).toFixed(1))
-    : (gameData.total_line || 220) // Fallback to total_line column or default
+  // REQUIRE valid odds data - no fallbacks!
+  if (totalLines.length === 0) {
+    throw new Error(`No valid total line data available from sportsbooks. Cannot generate pick without accurate market odds. Game: ${homeTeam} vs ${awayTeam}`)
+  }
+
+  const avgTotalLine = parseFloat((totalLines.reduce((a, b) => a + b, 0) / totalLines.length).toFixed(1))
 
   console.log('[WizardOrchestrator:Step2] Total line calculation:', {
     sportsbooks: sportsbooks.length,
     totalLines,
     avgTotalLine,
-    fallbackUsed: totalLines.length === 0
+    booksConsidered: totalLines.length
   })
 
   // Build snapshot from game data
