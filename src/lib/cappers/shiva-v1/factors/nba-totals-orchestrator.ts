@@ -19,14 +19,14 @@ import { computeInjuryAvailabilityAsync } from './f6-injury-availability'
  */
 export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputationResult> {
   console.log('[TOTALS:COMPUTE_START]', { away: ctx.away, home: ctx.home, sport: ctx.sport, betType: ctx.betType })
-  
+
   const branchLog = { sport: ctx.sport, betType: ctx.betType }
   console.debug('[totals:branch-used]', branchLog)
-  
+
   // Get enabled factors from profile
   const enabledFactorKeys = Object.keys(ctx.factorWeights || {})
   console.log('[TOTALS:ENABLED_FACTORS]', { enabledFactorKeys, totalEnabled: enabledFactorKeys.length })
-  console.log('[TOTALS:INJURY_FACTOR_CHECK]', { 
+  console.log('[TOTALS:INJURY_FACTOR_CHECK]', {
     hasInjuryFactor: enabledFactorKeys.includes('injuryAvailability'),
     allKeys: enabledFactorKeys,
     factorWeights: ctx.factorWeights
@@ -41,7 +41,7 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
     whistleEnv: enabledFactorKeys.includes('whistleEnv')
   }
   console.log('[TOTALS:NBA_STATS_CONDITION_CHECK]', nbaStatsConditionCheck)
-  
+
   // Only fetch data if we have enabled factors
   if (enabledFactorKeys.length === 0) {
     console.warn('[TOTALS:NO_ENABLED_FACTORS]', 'No factors enabled, returning empty result')
@@ -59,8 +59,8 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
         },
         injury_impact: { defenseImpactA: 0, defenseImpactB: 0, summary: 'No factors enabled', rawResponse: '' },
         factor_keys: [],
-        console_logs: { 
-          branch_used: branchLog, 
+        console_logs: {
+          branch_used: branchLog,
           bundle: {
             awayPaceSeason: 100.1,
             awayPaceLast10: 100.1,
@@ -113,7 +113,7 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
       }
     }
   }
-  
+
   // Fetch NBA Stats API data bundle (only if needed)
   let bundle: NBAStatsBundle | null = null
   let nbaStatsDebugInfo = {
@@ -125,7 +125,7 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
     bundle_sample: {} as any,
     api_calls_made: false
   }
-  
+
   console.log('[TOTALS:CONDITION_CHECK]', {
     enabledFactorKeys,
     conditionCheck: enabledFactorKeys.some(key => ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv'].includes(key)),
@@ -135,12 +135,12 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
     threeEnv: enabledFactorKeys.includes('threeEnv'),
     whistleEnv: enabledFactorKeys.includes('whistleEnv')
   })
-  
+
   if (enabledFactorKeys.some(key => ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv'].includes(key))) {
     console.log('[TOTALS:ABOUT_TO_FETCH_NBA_STATS]', 'Starting NBA Stats API fetch...')
-    console.log('[TOTALS:ENABLED_FACTORS_FOR_DATA]', { 
+    console.log('[TOTALS:ENABLED_FACTORS_FOR_DATA]', {
       paceIndex: enabledFactorKeys.includes('paceIndex'),
-      offForm: enabledFactorKeys.includes('offForm'), 
+      offForm: enabledFactorKeys.includes('offForm'),
       defErosion: enabledFactorKeys.includes('defErosion'),
       threeEnv: enabledFactorKeys.includes('threeEnv'),
       whistleEnv: enabledFactorKeys.includes('whistleEnv')
@@ -149,7 +149,7 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
     bundle = await fetchNBAStatsBundle(ctx)
     console.log('[TOTALS:NBA_STATS_FETCHED]', 'NBA Stats bundle received:', Object.keys(bundle))
     console.debug('[totals:bundle]', bundle)
-    
+
     // Update debug info
     nbaStatsDebugInfo.nba_stats_fetched = true
     nbaStatsDebugInfo.bundle_keys = Object.keys(bundle)
@@ -163,7 +163,7 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
     }
     nbaStatsDebugInfo.api_calls_made = true
   }
-  
+
   // Fetch injury impact via LLM (only if Defensive Erosion is enabled)
   let injuryImpact: InjuryImpact = { defenseImpactA: 0, defenseImpactB: 0, summary: 'Not needed', rawResponse: '' }
   if (enabledFactorKeys.includes('defErosion')) {
@@ -172,10 +172,10 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
   } else {
     console.log('[TOTALS:SKIPPING_INJURY_DATA]', 'Defensive Erosion disabled, skipping injury data fetch')
   }
-  
+
   // Compute only enabled factors
   const factors: any[] = []
-  
+
   if (enabledFactorKeys.includes('paceIndex')) {
     factors.push(computePaceIndex(bundle!, ctx))
   }
@@ -191,7 +191,7 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
   if (enabledFactorKeys.includes('whistleEnv')) {
     factors.push(computeWhistleEnv(bundle!, ctx))
   }
-  
+
   // Handle AI-powered injury factor (async)
   if (enabledFactorKeys.includes('injuryAvailability')) {
     console.log('[TOTALS:COMPUTING_INJURY_AI]', 'Key Injuries & Availability enabled, running AI analysis...')
@@ -237,12 +237,12 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
       })
     }
   }
-  
+
   // Apply factor weights for display purposes (confidence calculation happens separately)
   const factorWeights = ctx.factorWeights || {}
   const weightedFactors = factors.map(factor => {
     const weight = factorWeights[factor.key] || 20 // Default 20% if not specified
-    
+
     return {
       ...factor,
       weight_total_pct: weight,
@@ -250,7 +250,7 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
       // uses the raw signals and applies weights separately
     }
   })
-  
+
   // Log factor results
   const rowsZPoints = weightedFactors.map(f => ({
     key: f.key,
@@ -258,10 +258,14 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
     pts: f.parsed_values_json.points
   }))
   console.debug('[totals:rows:z-points]', rowsZPoints)
-  
+
+  // Calculate baseline_avg (sum of both teams' PPG)
+  const baselineAvg = bundle ? bundle.awayPointsPerGame + bundle.homePointsPerGame : 220
+
   return {
     factors: weightedFactors,
     factor_version: 'nba_totals_v1',
+    baseline_avg: baselineAvg, // Add baseline_avg to return value
     totals_debug: {
       league_anchors: bundle ? {
         pace: bundle.leaguePace,

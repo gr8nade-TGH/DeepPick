@@ -336,7 +336,8 @@ async function computeFactors(
   return {
     factors: result.factors || [],
     factorWeights,
-    factor_version: 'nba_totals_v1'
+    factor_version: 'nba_totals_v1',
+    baseline_avg: result.baseline_avg || 220 // Pass through baseline_avg
   }
 }
 
