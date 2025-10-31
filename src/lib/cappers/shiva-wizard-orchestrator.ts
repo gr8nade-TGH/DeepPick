@@ -117,9 +117,37 @@ export async function executeWizardPipeline(input: WizardOrchestratorInput): Pro
     const predictedTotal = steps.step4.predictions?.total_pred_points || 220
     const baseConfidence = steps.step4.predictions?.conf7_score || 0
     const pickDirection = predictedTotal > marketTotalLine ? 'OVER' : 'UNDER'
+    const marketEdgePts = predictedTotal - marketTotalLine
 
-    steps.step5 = await applyMarketEdge(runId, baseConfidence, predictedTotal, marketTotalLine, pickDirection)
-    console.log('[WizardOrchestrator] Step 5: Market edge calculated')
+    // Create Edge vs Market factor (100% weight, max 5.0 points)
+    const edgeVsMarketFactor = createEdgeVsMarketFactor(predictedTotal, marketTotalLine, marketEdgePts)
+
+    // Add Edge vs Market to factors array for confidence calculation
+    const allFactors = [...(steps.step3.factors || []), edgeVsMarketFactor]
+
+    // Recalculate confidence with Edge vs Market included
+    const { calculateConfidence } = await import('@/lib/cappers/shiva-v1/confidence-calculator')
+    const factorWeights = {
+      ...steps.step3.factorWeights,
+      edgeVsMarket: 100 // 100% weight (fixed)
+    }
+    const confidenceResult = calculateConfidence({
+      factors: allFactors,
+      factorWeights,
+      confSource: 'nba_totals_v1'
+    })
+
+    const finalConfidence = confidenceResult.confScore
+
+    steps.step5 = {
+      run_id: runId,
+      conf_final: finalConfidence,
+      dominant: 'total',
+      conf_market_adj: finalConfidence - baseConfidence,
+      edgeVsMarketFactor,
+      confidenceResult
+    }
+    console.log('[WizardOrchestrator] Step 5: Market edge calculated, final confidence:', finalConfidence)
 
     // Step 6: Bold Player Predictions (SKIP for cron - this is AI-powered player props)
     console.log('[WizardOrchestrator] Step 6: Skipped (player predictions not needed for cron)')
@@ -130,31 +158,6 @@ export async function executeWizardPipeline(input: WizardOrchestratorInput): Pro
     const finalConfidence = steps.step5.conf_final || 0
     steps.step7 = await finalizePick(runId, finalConfidence, predictedTotal, marketTotalLine, pickDirection, steps.step2.snapshot)
     console.log('[WizardOrchestrator] Step 7: Pick finalized')
-
-    // Build Edge vs Market factor for run log display
-    const marketEdgePts = predictedTotal - marketTotalLine
-    const edgeVsMarketFactor = {
-      key: 'edgeVsMarket',
-      name: 'Edge vs Market',
-      factor_no: 6,
-      normalized_value: marketEdgePts / marketTotalLine, // Percentage edge
-      weight_total_pct: 0, // Not weighted like other factors
-      raw_values_json: {
-        predictedTotal,
-        marketTotal: marketTotalLine,
-        edgePts: marketEdgePts,
-        edgePct: (marketEdgePts / marketTotalLine) * 100
-      },
-      parsed_values_json: {
-        signal: marketEdgePts / marketTotalLine,
-        overScore: marketEdgePts > 0 ? Math.abs(marketEdgePts) : 0,
-        underScore: marketEdgePts < 0 ? Math.abs(marketEdgePts) : 0,
-        edgePts: marketEdgePts
-      },
-      notes: `Edge: ${marketEdgePts > 0 ? '+' : ''}${marketEdgePts.toFixed(1)} pts (Pred: ${predictedTotal.toFixed(1)} vs Mkt: ${marketTotalLine})`,
-      caps_applied: false,
-      cap_reason: null
-    }
 
     // Build result
     const result: WizardOrchestratorResult = {
@@ -169,7 +172,7 @@ export async function executeWizardPipeline(input: WizardOrchestratorInput): Pro
         lockedOdds: steps.step2.snapshot
       } : undefined,
       log: {
-        factors: [...(steps.step3.factors || []), edgeVsMarketFactor], // Add Edge vs Market to factors
+        factors: [...(steps.step3.factors || []), steps.step5.edgeVsMarketFactor], // Add Edge vs Market to factors
         finalPrediction: {
           total: predictedTotal,
           home: steps.step4.predictions?.scores?.home || 0,
@@ -289,6 +292,7 @@ async function computeFactors(
   const supabase = getSupabaseAdmin()
 
   // Get factor weights from profile
+  // NOTE: These are weight PERCENTAGES (0-100), not decimal weights
   let factorWeights: Record<string, number> = {
     paceIndex: 20,
     offForm: 20,
@@ -384,47 +388,53 @@ async function generatePredictions(runId: string, step3Result: any, sport: strin
 }
 
 /**
- * Step 5: Apply market edge adjustment
+ * Helper: Create Edge vs Market factor
+ * This factor has 100% weight and max 5.0 points
  */
-async function applyMarketEdge(
-  runId: string,
-  baseConfidence: number,
-  predictedTotal: number,
-  marketTotalLine: number,
-  pickDirection: 'OVER' | 'UNDER'
-) {
-  // Calculate market edge
-  const marketEdgePts = predictedTotal - marketTotalLine
+function createEdgeVsMarketFactor(predictedTotal: number, marketTotalLine: number, marketEdgePts: number) {
+  const MAX_POINTS = 5.0
 
-  // Calculate edge factor: clamp(edgePts / 3, -2, 2) - more aggressive scaling
-  const edgeFactor = Math.max(-2, Math.min(2, marketEdgePts / 3))
+  // Calculate signal: normalize edge by market total
+  // Example: +4.1 pts on 238.5 line = +1.72% edge
+  const edgePct = marketEdgePts / marketTotalLine
 
-  // Adjust confidence: allow negative values for UNDER picks, NO UPPER LIMIT (only lower limit of -2)
-  const rawAdjustedConfidence = baseConfidence + (edgeFactor * 1.5)
-  const adjustedConfidence = Math.max(-2, rawAdjustedConfidence) // Only clamp minimum, no maximum
+  // Scale signal to [-1, 1] range using tanh
+  // This gives smooth saturation for extreme edges
+  const signal = Math.tanh(edgePct * 10) // Scale by 10 to make ±10% edge approach ±1.0
 
-  console.log('[WizardOrchestrator:Step5] Confidence calculation:', {
-    baseConfidence,
-    predictedTotal,
-    marketTotalLine,
-    marketEdgePts,
-    edgeFactor,
-    edgeAdjustment: edgeFactor * 1.5,
-    rawAdjustedConfidence,
-    adjustedConfidence
-  })
+  // Convert to overScore/underScore based on MAX_POINTS
+  let overScore = 0
+  let underScore = 0
+
+  if (signal > 0) {
+    // Positive edge favors OVER
+    overScore = Math.abs(signal) * MAX_POINTS
+  } else if (signal < 0) {
+    // Negative edge favors UNDER
+    underScore = Math.abs(signal) * MAX_POINTS
+  }
 
   return {
-    run_id: runId,
-    conf_final: adjustedConfidence,
-    dominant: 'total',
-    conf_market_adj: adjustedConfidence - baseConfidence,
-    finalFactor: {
-      name: 'Edge vs Market',
+    key: 'edgeVsMarket',
+    name: 'Edge vs Market',
+    factor_no: 6,
+    normalized_value: signal,
+    weight_total_pct: 100, // 100% weight (fixed)
+    raw_values_json: {
+      predictedTotal,
+      marketTotal: marketTotalLine,
       edgePts: marketEdgePts,
-      confidenceBefore: baseConfidence,
-      confidenceAfter: adjustedConfidence
-    }
+      edgePct: edgePct * 100
+    },
+    parsed_values_json: {
+      signal,
+      overScore,
+      underScore,
+      edgePts: marketEdgePts
+    },
+    notes: `Edge: ${marketEdgePts > 0 ? '+' : ''}${marketEdgePts.toFixed(1)} pts (Pred: ${predictedTotal.toFixed(1)} vs Mkt: ${marketTotalLine})`,
+    caps_applied: Math.abs(signal) >= 0.99,
+    cap_reason: Math.abs(signal) >= 0.99 ? 'signal saturated' : null
   }
 }
 

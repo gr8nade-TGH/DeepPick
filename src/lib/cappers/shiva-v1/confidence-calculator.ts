@@ -56,31 +56,37 @@ export function calculateConfidence(input: ConfidenceInput): ConfidenceOutput {
   })
 
   // Sum overScore and underScore across all factors
-  // NOTE: The factors already return WEIGHTED scores (overScore/underScore are pre-multiplied by weight)
-  // So we just sum them directly without multiplying by weight again
+  // NOTE: Factors return scores based on MAX_POINTS = 5.0
+  // We need to scale by (weight / 100) to get effective max points
+  // Example: Pace Index with weight=20% → Effective max = 5.0 × 0.20 = 1.0 point
   let totalOverScore = 0
   let totalUnderScore = 0
   const factorContributions: ConfidenceOutput['factorContributions'] = []
 
   for (const factor of factors) {
-    const weight = normalizedWeights[factor.key] || 0
+    const weightPct = factorWeights[factor.key] || 0 // Weight percentage (0-100)
+    const weightDecimal = weightPct / 100 // Convert to decimal (0-1)
     const parsedValues = factor.parsed_values_json || {}
 
     // Get overScore and underScore from parsed_values_json
-    // These are ALREADY weighted by the factor computation
-    const overScore = parsedValues.overScore || 0
-    const underScore = parsedValues.underScore || 0
+    // These are based on MAX_POINTS = 5.0, so we scale by weight to get effective contribution
+    const rawOverScore = parsedValues.overScore || 0
+    const rawUnderScore = parsedValues.underScore || 0
 
-    // Sum directly - DO NOT multiply by weight again (would be double-weighting)
-    totalOverScore += overScore
-    totalUnderScore += underScore
+    // Scale by weight to get effective contribution
+    // Example: rawOverScore = 3.5 (from signal 0.7 × 5.0), weight = 20% → effective = 3.5 × 0.20 = 0.7
+    const effectiveOverScore = rawOverScore * weightDecimal
+    const effectiveUnderScore = rawUnderScore * weightDecimal
+
+    totalOverScore += effectiveOverScore
+    totalUnderScore += effectiveUnderScore
 
     factorContributions.push({
       key: factor.key,
       name: factor.name,
       z: factor.normalized_value || 0, // Keep signal for reference
-      weight,
-      contribution: overScore - underScore // Net contribution (already weighted)
+      weight: weightDecimal,
+      contribution: effectiveOverScore - effectiveUnderScore // Net contribution
     })
   }
 
