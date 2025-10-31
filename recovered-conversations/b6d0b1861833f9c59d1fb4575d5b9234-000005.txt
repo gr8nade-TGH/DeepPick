@@ -1,0 +1,35 @@
+﻿=== Workspace: b6d0b1861833f9c59d1fb4575d5b9234 ===
+=== File: 000005.ldb ===
+=== Last Modified: 10/30/2025 18:33:49 ===
+=== Size: 28.09 KB ===
+
+--- Conversation Fragment ---
+P","request_message":" psponse_text":"## Summary & Ac d�O Plan:\n\n✅ **I've created `.augmentignore` files** in both projects that will!K�lude:\n- `node_modules/` (dependencies) "@.next/`, `.vercel swc 0,build output 1$checkpoint R ML model �
+
+--- Conversation Fragment ---
+P","request_message":" �Xsponse_text":"Let me try a different approach - I'll create the files using PowerShell:\n ^ s��
+
+--- Conversation Fragment ---
+P","request_message":" �Rsponse_text":"Perfect! Now let me verify the files were created and check how many &0ould be index *pfter excluding these folders: � �� �$nodes":[{" > 1,"type" $ool_result & ":{!D ten � The comma �Hompleted.\nHere are �
+
+--- Conversation Fragment ---
+P","request_message":" �asponse_text":"Good, both project folders exist. Now let me check the size and structure of these p H,s to underst *Twhat might be causing M$crashes:\n � ��" �$nodes":[{" > 1,"type" $ool_result & ":{!X ten! Here's � files �4directories up �x2 levels deep in Documents\\aug
+
+--- Conversation Fragment ---
+�","request_message":"should i make a VS profile per $ject? this d for example? any benefit? c�sponse_text":"That's a thoughtful q �\ion! Let me give you the fXs and cons:\n\n## **For #8r specific situ% 0: NO, not nec � ry** 9$Here's why H I`The `.augmentignore` fix - 8work across all � jects S - >hcrash was caused by **too m! Pfiles being indexed** �HVS settings\n- Each `< now has its ownN�
+
+--- Conversation Fragment ---
+�i","request_message":"My projects are crashing in VS when i use the Augment AI extension, when I click augm #<, Visual Studio [tes. We were working on it beca hDit was only happen $ in one �l, but now i cant open either $ without Q {Ding. we ramped up �Lspecs to try and fix ^Dthat didnt do anyt B8 apparently. so �8reated this new �@called Optimize P1h so �Xcan troubleshoot both. !u@orks smooth until g
+
+--- Conversation Fragment ---
+P","request_message":" �qsponse_text":"**Found the likely culprit!** The DeepPick App has **35,857 files totaling 509 MB** - this is extrem U large and f�>ausing VS to crash when Augment AI tries to index it. Here are �xprobable issues:\n\n## Diagnosi 1. **D � **: 3.�
+
+--- Conversation Fragment ---
+P","request_message":" �qsponse_text":"**Found the likely culprit!** The DeepPick App has **35,857 files totaling 509 MB** - this is extrem U large and f�>ausing VS to crash when Augment AI tries to index it. Here are �xprobable issues:\n\n## Diagnosi 1. **D � **: 3.�
+
+--- Conversation Fragment ---
+P","request_message":" �qsponse_text":"**Found the likely culprit!** The DeepPick App has **35,857 files totaling 509 MB** - this is extrem U large and f�>ausing VS to crash when Augment AI tries to index it. Here are �xprobable issues:\n\n## Diagnosi 1. **D � **: 3.�
+
+--- Conversation Fragment ---
+�i","request_message":"My projects are crashing in VS when i use the Augment AI extension, when I click augm #<, Visual Studio [tes. We were working on it beca hDit was only happen $ in one �l, but now i cant open either $ without Q {Ding. we ramped up �Lspecs to try and fix ^Dthat didnt do anyt B8 apparently. so �8reated this new �@called Optimize P1h so �Xcan troubleshoot both. !u@orks smooth until g
+

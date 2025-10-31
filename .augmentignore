@@ -1,0 +1,52 @@
+﻿# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+.next/
+out/
+build/
+dist/
+.vercel/
+.swc/
+
+# Model checkpoints and large binary files
+checkpoints/
+*.ckpt
+*.pth
+*.pt
+*.bin
+*.safetensors
+*.h5
+*.pb
+
+# Cache and temporary files
+.cache/
+.temp/
+.tmp/
+*.log
+logs/
+
+# IDE
+.vscode/
+.idea/
+.cursor/
+
+# Git
+.git/
+.github/
+
+# Environment
+.env.local
+.env.*.local
+
+# Testing
+coverage/
+.nyc_output/
+
+# Misc
+.DS_Store
+*.swp
+*.swo
+*~
