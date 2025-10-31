@@ -361,11 +361,23 @@ async function generatePredictions(runId: string, step3Result: any, sport: strin
     confSource: 'nba_totals_v1'
   })
 
-  // Calculate predicted total based on factors
-  // This is a simplified version - the real wizard might have more sophisticated logic
-  const baseTotal = 220 // NBA average
-  const factorAdjustment = confidenceResult.edgeRaw * 10 // Scale edge to points
-  const predictedTotal = baseTotal + factorAdjustment
+  // Calculate predicted total based on baseline_avg (sum of team PPG) + factor adjustments
+  // baseline_avg comes from Step 3 factor computation (awayPPG + homePPG)
+  const baselineAvg = step3Result.baseline_avg || 220 // Fallback to NBA average if missing
+
+  // Factor adjustment: Use edgeRaw but scale it appropriately
+  // edgeRaw is the net confidence (overScore - underScore), typically in range [-10, +10]
+  // We scale by 2.0 to convert confidence points to total points adjustment
+  // Example: edgeRaw = +5.0 → adjustment = +10 points → predicted = 230 (if baseline = 220)
+  const factorAdjustment = confidenceResult.edgeRaw * 2.0
+  const predictedTotal = Math.max(180, Math.min(280, baselineAvg + factorAdjustment))
+
+  console.log('[WizardOrchestrator:Step4] Prediction calculation:', {
+    baselineAvg,
+    edgeRaw: confidenceResult.edgeRaw,
+    factorAdjustment,
+    predictedTotal
+  })
 
   return {
     run_id: runId,
