@@ -1,22 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabaseAdmin } from '@/lib/supabase/admin'
+import { getSupabaseAdmin } from '@/lib/supabase/server'
 
 /**
  * DEBUG: Test SHIVA scanner to see what games are available
  */
 export async function GET(request: NextRequest) {
   const supabase = getSupabaseAdmin()
-  
+
   try {
     const now = new Date()
     const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60 * 1000)
-    
+
     console.log('='.repeat(80))
     console.log('SHIVA SCANNER DEBUG TEST')
     console.log('='.repeat(80))
     console.log(`Current time: ${now.toISOString()}`)
     console.log(`5 minutes from now: ${fiveMinutesFromNow.toISOString()}`)
-    
+
     // Step 1: Get ALL NBA games
     const { data: allGames, error: allGamesError } = await supabase
       .from('games')
@@ -24,12 +24,12 @@ export async function GET(request: NextRequest) {
       .eq('sport', 'nba')
       .order('game_date', { ascending: true })
       .order('game_time', { ascending: true })
-    
+
     console.log(`\nStep 1: ALL NBA games in database: ${allGames?.length || 0}`)
     if (allGamesError) {
       console.error('Error fetching all games:', allGamesError)
     }
-    
+
     // Step 2: Get SCHEDULED games only
     const { data: scheduledGames, error: scheduledError } = await supabase
       .from('games')
@@ -38,16 +38,16 @@ export async function GET(request: NextRequest) {
       .eq('status', 'scheduled')
       .order('game_date', { ascending: true })
       .order('game_time', { ascending: true })
-    
+
     console.log(`\nStep 2: SCHEDULED NBA games: ${scheduledGames?.length || 0}`)
     if (scheduledError) {
       console.error('Error fetching scheduled games:', scheduledError)
     }
-    
+
     // Step 3: Get games starting in the future (5+ minutes from now)
     const timeString = fiveMinutesFromNow.toTimeString().split(' ')[0]
     const dateString = fiveMinutesFromNow.toISOString().split('T')[0]
-    
+
     const { data: futureGames, error: futureError } = await supabase
       .from('games')
       .select('id, home_team, away_team, game_date, game_time, status, total_line, spread_line')
@@ -56,12 +56,12 @@ export async function GET(request: NextRequest) {
       .or(`game_date.gte.${dateString},and(game_date.eq.${dateString},game_time.gte.${timeString})`)
       .order('game_date', { ascending: true })
       .order('game_time', { ascending: true })
-    
+
     console.log(`\nStep 3: Future games (5+ min from now): ${futureGames?.length || 0}`)
     if (futureError) {
       console.error('Error fetching future games:', futureError)
     }
-    
+
     // Step 4: Check for existing picks
     const gameIds = futureGames?.map(g => g.id) || []
     const { data: existingPicks, error: picksError } = await supabase
@@ -70,17 +70,17 @@ export async function GET(request: NextRequest) {
       .in('game_id', gameIds)
       .eq('capper', 'shiva')
       .eq('pick_type', 'total')
-    
+
     console.log(`\nStep 4: Existing SHIVA TOTAL picks: ${existingPicks?.length || 0}`)
     if (picksError) {
       console.error('Error fetching picks:', picksError)
     }
-    
+
     const gamesWithPicks = new Set(existingPicks?.map(p => p.game_id) || [])
     const gamesWithoutPicks = futureGames?.filter(g => !gamesWithPicks.has(g.id)) || []
-    
+
     console.log(`\nStep 5: Games WITHOUT picks: ${gamesWithoutPicks.length}`)
-    
+
     // Step 6: Check cooldowns
     const { data: cooldowns, error: cooldownError } = await supabase
       .from('pick_generation_cooldowns')
@@ -89,18 +89,18 @@ export async function GET(request: NextRequest) {
       .eq('capper', 'shiva')
       .eq('bet_type', 'total')
       .gt('cooldown_until', now.toISOString())
-    
+
     console.log(`\nStep 6: Active cooldowns: ${cooldowns?.length || 0}`)
     if (cooldownError) {
       console.error('Error fetching cooldowns:', cooldownError)
     }
-    
+
     const gamesInCooldown = new Set(cooldowns?.map(c => c.game_id) || [])
     const eligibleGames = gamesWithoutPicks.filter(g => !gamesInCooldown.has(g.id))
-    
+
     console.log(`\nStep 7: ELIGIBLE games (final): ${eligibleGames.length}`)
     console.log('='.repeat(80))
-    
+
     // Build detailed response
     return NextResponse.json({
       timestamp: now.toISOString(),
@@ -162,7 +162,7 @@ export async function GET(request: NextRequest) {
         total_line: eligibleGames[0].total_line
       } : null
     })
-    
+
   } catch (error: any) {
     console.error('Error in scanner test:', error)
     return NextResponse.json({
