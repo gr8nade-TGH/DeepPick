@@ -4,9 +4,10 @@ import { getSupabaseAdmin } from '@/lib/supabase/server'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    
+
     const {
       game_id,
+      capper,
       pick_type,
       selection,
       odds,
@@ -17,11 +18,11 @@ export async function POST(request: NextRequest) {
       algorithm_version
     } = body
 
-    // Validate required fields
-    if (!game_id || !pick_type || !selection || !odds) {
+    // Validate required fields (including capper to prevent defaulting to 'deeppick')
+    if (!game_id || !capper || !pick_type || !selection || !odds) {
       return NextResponse.json({
         success: false,
-        error: 'Missing required fields: game_id, pick_type, selection, odds'
+        error: 'Missing required fields: game_id, capper, pick_type, selection, odds'
       }, { status: 400 })
     }
 
@@ -56,6 +57,7 @@ export async function POST(request: NextRequest) {
       .from('picks')
       .insert({
         game_id,
+        capper,
         pick_type,
         selection,
         odds,
