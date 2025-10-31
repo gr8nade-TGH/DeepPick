@@ -82,9 +82,15 @@ export async function POST(request: Request) {
     if (!result.success) {
       console.error('[SHIVA:GeneratePick] Pipeline failed:', result.error)
 
-      // Create cooldown for failed games (missing odds data, etc.)
-      // This prevents the cron from retrying the same game immediately
-      const cooldownUntil = new Date(Date.now() + 2 * 60 * 60 * 1000) // 2 hours
+      // Determine cooldown duration based on error type
+      // Rate limit errors (429) get shorter cooldown to allow retry sooner
+      // Other errors (missing data, etc.) get longer cooldown
+      const isRateLimitError = result.error?.includes('429') || result.error?.includes('rate limit')
+      const cooldownMinutes = isRateLimitError ? 5 : 120 // 5 minutes for rate limits, 2 hours for other errors
+      const cooldownUntil = new Date(Date.now() + cooldownMinutes * 60 * 1000)
+
+      console.log(`[SHIVA:GeneratePick] Error type: ${isRateLimitError ? 'RATE_LIMIT' : 'OTHER'}, cooldown: ${cooldownMinutes} minutes`)
+
       const { error: cooldownError } = await supabase
         .from('pick_generation_cooldowns')
         .insert({
@@ -100,7 +106,7 @@ export async function POST(request: Request) {
       if (cooldownError) {
         console.error('[SHIVA:GeneratePick] Error creating cooldown:', cooldownError)
       } else {
-        console.log(`[SHIVA:GeneratePick] ✅ Cooldown created until ${cooldownUntil.toISOString()}`)
+        console.log(`[SHIVA:GeneratePick] ✅ Cooldown created until ${cooldownUntil.toISOString()} (${cooldownMinutes} minutes)`)
       }
 
       return NextResponse.json({

@@ -49,7 +49,7 @@ interface TeamFormCacheEntry {
 }
 
 const teamFormCache = new Map<string, TeamFormCacheEntry>()
-const CACHE_TTL_MS = 10 * 60 * 1000 // 10 minutes (team stats don't change frequently during a game day)
+const CACHE_TTL_MS = 60 * 60 * 1000 // 60 minutes (1 hour) - team stats don't change frequently, reduces API calls
 
 function getCachedTeamForm(cacheKey: string): TeamFormData | null {
   const cached = teamFormCache.get(cacheKey)
@@ -152,19 +152,19 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
         rebounds: firstGame.stats?.rebounds
       })
     }
-    
+
     // Collect opponent abbreviations from the games
     const opponents = new Set<string>()
     for (const gl of gameLogs) {
       const game = gl.game
       if (gl.team.abbreviation === teamAbbrev) {
-        const opponent = game.awayTeamAbbreviation === teamAbbrev 
-          ? game.homeTeamAbbreviation 
+        const opponent = game.awayTeamAbbreviation === teamAbbrev
+          ? game.homeTeamAbbreviation
           : game.awayTeamAbbreviation
         opponents.add(opponent)
       }
     }
-    
+
     // Fetch opponent stats for the same games
     const opponentStatsMap = new Map<string, any>()
     for (const opponent of opponents) {
@@ -175,7 +175,7 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
         console.warn(`[MySportsFeeds] Failed to fetch stats for opponent ${opponent}:`, error)
       }
     }
-    
+
     // Calculate averages over last 5 games
     let totalPace = 0
     let totalORtg = 0
@@ -184,7 +184,7 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
     let totalThreePM = 0
     let totalFTA = 0
     let totalFGA = 0
-    
+
     for (const gameLog of gameLogs) {
       const stats = gameLog.stats
       if (!stats) {
@@ -207,25 +207,25 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
         console.warn(`[MySportsFeeds Stats] Game ID: ${gameLog.game?.id}, Date: ${gameLog.game?.startTime}`)
         continue
       }
-      
+
       // Calculate team possessions
       const teamPoss = calculatePossessions(teamFGA, teamFTA, teamOREB, teamTOV)
-      
+
       // Try to get opponent stats for DRtg calculation
       let oppPoss = teamPoss // Default to same as team if we can't find opponent
       const game = gameLog.game
-      const opponent = game.awayTeamAbbreviation === teamAbbrev 
-        ? game.homeTeamAbbreviation 
+      const opponent = game.awayTeamAbbreviation === teamAbbrev
+        ? game.homeTeamAbbreviation
         : game.awayTeamAbbreviation
-      
+
       const oppGameLogs = opponentStatsMap.get(opponent)
       if (oppGameLogs) {
         // Find the matching game
-        const oppGame = oppGameLogs.find((gl: any) => 
+        const oppGame = oppGameLogs.find((gl: any) =>
           (gl.game.awayTeamAbbreviation === opponent && gl.game.homeTeamAbbreviation === teamAbbrev) ||
           (gl.game.homeTeamAbbreviation === opponent && gl.game.awayTeamAbbreviation === teamAbbrev)
         )
-        
+
         if (oppGame && oppGame.stats) {
           const oppFGA = oppGame.stats.fieldGoals?.fgAtt || 0
           const oppFTA = oppGame.stats.freeThrows?.ftAtt || 0
@@ -234,14 +234,14 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
           oppPoss = calculatePossessions(oppFGA, oppFTA, oppOREB, oppTOV)
         }
       }
-      
+
       const pace = calculatePace(teamPoss, oppPoss)
       const ortg = calculateORtg(teamPTS, teamPoss)
-      
+
       // For DRtg, use ptsAgainst from the game log
       const oppPTS = stats.defense?.ptsAgainst || 0
       const drtg = calculateDRtg(oppPTS, oppPoss)
-      
+
       totalPace += pace
       totalORtg += ortg
       totalDRtg += drtg
@@ -250,7 +250,7 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
       totalFTA += teamFTA
       totalFGA += teamFGA
     }
-    
+
     const gameCount = gameLogs.length
 
     // CRITICAL: Validate we have enough valid games with actual stats
@@ -271,7 +271,7 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
     const threeP_pct = totalThreePA > 0 ? totalThreePM / totalThreePA : 0
     const threeP_rate = totalFGA > 0 ? totalThreePA / totalFGA : 0
     const ft_rate = totalFGA > 0 ? totalFTA / totalFGA : 0
-    
+
     const formData: TeamFormData = {
       team: teamAbbrev,
       pace: avgPace,
@@ -338,49 +338,49 @@ function parseGameLogs(data: any, teamAbbrev: string): GameLogEntry[] {
     console.warn('[MySportsFeeds] No gamelogs in response')
     return []
   }
-  
+
   const parsed: GameLogEntry[] = []
-  
+
   // Loop through all games
   for (const gameLog of data.gamelogs) {
     const game = gameLog.game
     const team = gameLog.team
     const stats = gameLog.stats
-    
+
     // Skip if not the requested team or incomplete stats
     if (team.abbreviation !== teamAbbrev || !stats) {
       continue
     }
-    
-      // Determine opponent
-      const isHomeGame = game.homeTeam.id === team.id
-      const opponentAbbrev = isHomeGame ? game.awayTeam.abbreviation : game.homeTeam.abbreviation
-      
-      // Extract stats we need
-      const entry: GameLogEntry = {
-        teamAbbrev: team.abbreviation,
-        opponentAbbrev,
-        date: game.startTime,
-        stats: {
-          FGA: stats.fieldGoals?.fgAtt || 0,
-          FTA: stats.freeThrows?.ftAtt || 0,
-          OREB: stats.rebounds?.offReb || 0,
-          TOV: stats.defense?.tov || 0,
-          threePA: stats.fieldGoals?.fg3PtAtt || 0,
-          threePM: stats.fieldGoals?.fg3PtMade || 0,
-          PTS: stats.offense?.pts || 0,
-          // Opponent stats - we only have ptsAgainst, will need to fetch opponent log for others
-          opponentFGA: 0, // Need to get from opponent game log
-          opponentFTA: 0,
-          opponentOREB: 0,
-          opponentTOV: 0,
-          opponentPTS: stats.defense?.ptsAgainst || 0
-        }
+
+    // Determine opponent
+    const isHomeGame = game.homeTeam.id === team.id
+    const opponentAbbrev = isHomeGame ? game.awayTeam.abbreviation : game.homeTeam.abbreviation
+
+    // Extract stats we need
+    const entry: GameLogEntry = {
+      teamAbbrev: team.abbreviation,
+      opponentAbbrev,
+      date: game.startTime,
+      stats: {
+        FGA: stats.fieldGoals?.fgAtt || 0,
+        FTA: stats.freeThrows?.ftAtt || 0,
+        OREB: stats.rebounds?.offReb || 0,
+        TOV: stats.defense?.tov || 0,
+        threePA: stats.fieldGoals?.fg3PtAtt || 0,
+        threePM: stats.fieldGoals?.fg3PtMade || 0,
+        PTS: stats.offense?.pts || 0,
+        // Opponent stats - we only have ptsAgainst, will need to fetch opponent log for others
+        opponentFGA: 0, // Need to get from opponent game log
+        opponentFTA: 0,
+        opponentOREB: 0,
+        opponentTOV: 0,
+        opponentPTS: stats.defense?.ptsAgainst || 0
       }
-    
+    }
+
     parsed.push(entry)
   }
-  
+
   console.log(`[MySportsFeeds] Parsed ${parsed.length} games for ${teamAbbrev}`)
   return parsed
 }
@@ -396,7 +396,7 @@ export async function getMatchupFormData(awayTeam: string, homeTeam: string): Pr
     getTeamFormData(awayTeam),
     getTeamFormData(homeTeam)
   ])
-  
+
   return { away: awayForm, home: homeForm }
 }
 
