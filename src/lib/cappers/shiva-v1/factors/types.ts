@@ -27,17 +27,17 @@ export interface NBAStatsBundle {
   awayPaceLast10: number
   homePaceSeason: number
   homePaceLast10: number
-  
+
   // Team scoring averages (last 5 games)
   awayPointsPerGame: number
   homePointsPerGame: number
-  
+
   // Offensive/Defensive ratings
   awayORtgLast10: number
   homeORtgLast10: number
   awayDRtgSeason: number
   homeDRtgSeason: number
-  
+
   // 3-Point environment
   away3PAR: number
   home3PAR: number
@@ -47,13 +47,13 @@ export interface NBAStatsBundle {
   home3Pct: number
   away3PctLast10: number
   home3PctLast10: number
-  
+
   // Free throw environment
   awayFTr: number
   homeFTr: number
   awayOppFTr: number
   homeOppFTr: number
-  
+
   // League anchors
   leaguePace: number
   leagueORtg: number
@@ -74,6 +74,7 @@ export interface InjuryImpact {
 export interface FactorComputationResult {
   factors: any[]
   factor_version: string
+  baseline_avg: number // Sum of both teams' PPG (away + home)
   totals_debug: {
     league_anchors: {
       pace: number
