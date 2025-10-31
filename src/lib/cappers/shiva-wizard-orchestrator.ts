@@ -131,6 +131,31 @@ export async function executeWizardPipeline(input: WizardOrchestratorInput): Pro
     steps.step7 = await finalizePick(runId, finalConfidence, predictedTotal, marketTotalLine, pickDirection, steps.step2.snapshot)
     console.log('[WizardOrchestrator] Step 7: Pick finalized')
 
+    // Build Edge vs Market factor for run log display
+    const marketEdgePts = predictedTotal - marketTotalLine
+    const edgeVsMarketFactor = {
+      key: 'edgeVsMarket',
+      name: 'Edge vs Market',
+      factor_no: 6,
+      normalized_value: marketEdgePts / marketTotalLine, // Percentage edge
+      weight_total_pct: 0, // Not weighted like other factors
+      raw_values_json: {
+        predictedTotal,
+        marketTotal: marketTotalLine,
+        edgePts: marketEdgePts,
+        edgePct: (marketEdgePts / marketTotalLine) * 100
+      },
+      parsed_values_json: {
+        signal: marketEdgePts / marketTotalLine,
+        overScore: marketEdgePts > 0 ? Math.abs(marketEdgePts) : 0,
+        underScore: marketEdgePts < 0 ? Math.abs(marketEdgePts) : 0,
+        edgePts: marketEdgePts
+      },
+      notes: `Edge: ${marketEdgePts > 0 ? '+' : ''}${marketEdgePts.toFixed(1)} pts (Pred: ${predictedTotal.toFixed(1)} vs Mkt: ${marketTotalLine})`,
+      caps_applied: false,
+      cap_reason: null
+    }
+
     // Build result
     const result: WizardOrchestratorResult = {
       success: true,
@@ -144,7 +169,7 @@ export async function executeWizardPipeline(input: WizardOrchestratorInput): Pro
         lockedOdds: steps.step2.snapshot
       } : undefined,
       log: {
-        factors: steps.step3.factors || [],
+        factors: [...(steps.step3.factors || []), edgeVsMarketFactor], // Add Edge vs Market to factors
         finalPrediction: {
           total: predictedTotal,
           home: steps.step4.predictions?.scores?.home || 0,
