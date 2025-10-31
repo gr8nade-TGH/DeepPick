@@ -182,8 +182,17 @@ export function RunLogTable() {
     if (!factor) return <span>—</span>
 
     const parsedValues = factor.parsed_values_json || {}
-    const overScore = parsedValues.overScore || 0
-    const underScore = parsedValues.underScore || 0
+
+    // Safely parse scores with fallback to 0
+    // Use Number() to handle string numbers and ensure valid number
+    const overScore = Number(parsedValues.overScore) || 0
+    const underScore = Number(parsedValues.underScore) || 0
+
+    // Validate that we have valid numbers
+    if (isNaN(overScore) || isNaN(underScore)) {
+      console.warn('[RunLog] Invalid factor scores:', { factor: factor.key, overScore, underScore, parsedValues })
+      return <span className="text-red-400">ERR</span>
+    }
 
     // Determine which score is higher
     if (overScore > underScore) {
