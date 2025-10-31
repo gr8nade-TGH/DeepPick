@@ -28,53 +28,79 @@ export interface ConfidenceOutput {
 }
 
 /**
- * Calculate confidence using new weighted signal model
- * 
- * Formula: confidence = |Σ(wᵢ × sᵢ)| × 5
- * Where: wᵢ = normalized weights (sum to 1.0), sᵢ = signals (-1 to +1)
+ * Calculate confidence using Over/Under score model
+ *
+ * Logic (per factor chart examples):
+ * 1. Each factor has overScore and underScore (both positive or 0)
+ * 2. Sum all overScore values across factors
+ * 3. Sum all underScore values across factors
+ * 4. Pick direction = whichever total is higher
+ * 5. Confidence = the higher total
+ *
+ * Example: If total overScore = 8.5 and total underScore = 3.2
+ *   → Pick OVER with confidence 8.5
  */
 export function calculateConfidence(input: ConfidenceInput): ConfidenceOutput {
   const { factors, factorWeights, confSource = 'nba_totals_v1' } = input
-  
+
   // Normalize weights to sum to 1.0
   const totalWeight = Object.values(factorWeights).reduce((sum, w) => sum + w, 0)
-  const normalizedWeights = totalWeight > 0 
+  const normalizedWeights = totalWeight > 0
     ? Object.fromEntries(Object.entries(factorWeights).map(([k, v]) => [k, v / totalWeight]))
     : {}
-  
+
   console.log('[ConfidenceCalculator] Weight normalization:', {
     factorWeights,
     totalWeight,
     normalizedWeights
   })
-  
-  // Calculate signed sum: Σ(wᵢ × sᵢ)
-  let signedSum = 0
+
+  // Sum overScore and underScore across all factors
+  let totalOverScore = 0
+  let totalUnderScore = 0
   const factorContributions: ConfidenceOutput['factorContributions'] = []
-  
+
   for (const factor of factors) {
     const weight = normalizedWeights[factor.key] || 0
-    const signal = factor.normalized_value || 0 // This is our sᵢ signal
-    const contribution = weight * signal
-    
-    signedSum += contribution
-    
+    const parsedValues = factor.parsed_values_json || {}
+
+    // Get overScore and underScore from parsed_values_json
+    const overScore = parsedValues.overScore || 0
+    const underScore = parsedValues.underScore || 0
+
+    // Apply weight to scores (weight is already normalized to sum to 1.0)
+    const weightedOverScore = overScore * weight
+    const weightedUnderScore = underScore * weight
+
+    totalOverScore += weightedOverScore
+    totalUnderScore += weightedUnderScore
+
     factorContributions.push({
       key: factor.key,
       name: factor.name,
-      z: signal, // Rename to signal for clarity
+      z: factor.normalized_value || 0, // Keep signal for reference
       weight,
-      contribution
+      contribution: weightedOverScore - weightedUnderScore // Net contribution
     })
   }
-  
-  // Confidence = |signedSum| × 5
-  const confScore = Math.abs(signedSum) * 5
-  
-  return {
-    edgeRaw: signedSum, // Renamed from edgeRaw to signedSum
-    edgePct: Math.abs(signedSum), // Magnitude of the signal
+
+  // Determine pick direction and confidence
+  const pickOver = totalOverScore > totalUnderScore
+  const confScore = pickOver ? totalOverScore : totalUnderScore
+  const edgeRaw = totalOverScore - totalUnderScore // Positive = OVER, Negative = UNDER
+
+  console.log('[ConfidenceCalculator] Score calculation:', {
+    totalOverScore,
+    totalUnderScore,
+    pickDirection: pickOver ? 'OVER' : 'UNDER',
     confScore,
+    edgeRaw
+  })
+
+  return {
+    edgeRaw, // Positive = OVER bias, Negative = UNDER bias
+    edgePct: Math.abs(edgeRaw), // Magnitude of the edge
+    confScore, // Always positive - the confidence in the pick
     confSource,
     factorContributions
   }
@@ -92,14 +118,14 @@ function sigmoid(x: number): number {
  */
 export function getFactorWeightsFromProfile(profile: any): Record<string, number> {
   if (!profile?.factors) return {}
-  
+
   const weights: Record<string, number> = {}
   for (const factor of profile.factors) {
     if (factor.enabled) {
       weights[factor.key] = factor.weight
     }
   }
-  
+
   return weights
 }
 
@@ -114,6 +140,6 @@ export function validateWeights(weights: Record<string, number>): {
   const totalWeight = Object.values(weights).reduce((sum, weight) => sum + weight, 0)
   const remainingWeight = 250 - totalWeight
   const isValid = Math.abs(remainingWeight) < 0.01 // Allow tiny floating point errors
-  
+
   return { isValid, totalWeight, remainingWeight }
 }
