@@ -82,38 +82,17 @@ export async function POST(request: Request) {
     if (!result.success) {
       console.error('[SHIVA:GeneratePick] Pipeline failed:', result.error)
 
-      // Determine cooldown duration based on error type
-      // Rate limit errors (429) get shorter cooldown to allow retry sooner
-      // Other errors (missing data, etc.) get longer cooldown
-      const isRateLimitError = result.error?.includes('429') || result.error?.includes('rate limit')
-      const cooldownMinutes = isRateLimitError ? 5 : 120 // 5 minutes for rate limits, 2 hours for other errors
-      const cooldownUntil = new Date(Date.now() + cooldownMinutes * 60 * 1000)
+      // NOTE: We do NOT create cooldowns for ERROR results because:
+      // 1. The database constraint only allows 'PASS' and 'PICK_GENERATED' (migration 044 not yet applied)
+      // 2. Errors should be retried on next cron cycle (10 minutes)
+      // 3. If the error persists, it will keep failing until fixed
 
-      console.log(`[SHIVA:GeneratePick] Error type: ${isRateLimitError ? 'RATE_LIMIT' : 'OTHER'}, cooldown: ${cooldownMinutes} minutes`)
-
-      const { error: cooldownError } = await supabase
-        .from('pick_generation_cooldowns')
-        .insert({
-          game_id: game.id,
-          capper: 'shiva',
-          bet_type: 'total', // lowercase to match database convention
-          result: 'ERROR',
-          reason: result.error || 'Pipeline execution failed',
-          cooldown_until: cooldownUntil.toISOString(),
-          created_at: new Date().toISOString()
-        })
-
-      if (cooldownError) {
-        console.error('[SHIVA:GeneratePick] Error creating cooldown:', cooldownError)
-      } else {
-        console.log(`[SHIVA:GeneratePick] ✅ Cooldown created until ${cooldownUntil.toISOString()} (${cooldownMinutes} minutes)`)
-      }
+      console.log('[SHIVA:GeneratePick] ⚠️ No cooldown created for ERROR - game will be retried on next cron cycle')
 
       return NextResponse.json({
         success: false,
         decision: 'ERROR',
         message: result.error || 'Pipeline execution failed',
-        cooldown_until: cooldownUntil.toISOString(),
         duration: `${duration}ms`
       }, { status: 500 })
     }
