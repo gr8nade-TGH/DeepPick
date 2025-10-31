@@ -119,6 +119,11 @@ export async function POST(request: Request) {
 
     // Production schema (033_fix_runs_table.sql): id, run_id, game_id, state, metadata
     // Store all extra data in metadata JSONB column
+    // Get market total from Step 2 snapshot (always available, even for PASS)
+    const marketTotal = result.steps?.step2?.snapshot?.total?.line ||
+      result.pick?.lockedOdds?.total?.line ||
+      0
+
     const metadata = {
       capper: 'shiva',
       sport: 'NBA',
@@ -130,7 +135,7 @@ export async function POST(request: Request) {
       factor_contributions: result.log?.factors || [], // Now contains F1-F5 factors!
       predicted_total: result.log?.finalPrediction?.total || 0,
       baseline_avg: result.log?.finalPrediction?.total || 0,
-      market_total: result.pick?.lockedOdds?.total?.line || 0,
+      market_total: marketTotal,
       game: {
         home_team: typeof game.home_team === 'string' ? game.home_team : game.home_team?.name,
         away_team: typeof game.away_team === 'string' ? game.away_team : game.away_team?.name

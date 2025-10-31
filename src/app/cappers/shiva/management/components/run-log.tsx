@@ -177,8 +177,9 @@ export function RunLogTable() {
 
   // Format factor contribution with OVER/UNDER indicator (3 decimal places for precision)
   // Now uses overScore/underScore from parsed_values_json instead of net contribution
-  const formatFactorContribution = (factor: any): string => {
-    if (!factor) return '—'
+  // Returns JSX with colored OVER/UNDER text
+  const formatFactorContribution = (factor: any): JSX.Element => {
+    if (!factor) return <span>—</span>
 
     const parsedValues = factor.parsed_values_json || {}
     const overScore = parsedValues.overScore || 0
@@ -186,11 +187,19 @@ export function RunLogTable() {
 
     // Determine which score is higher
     if (overScore > underScore) {
-      return `+${overScore.toFixed(2)} OVER`
+      return (
+        <span>
+          +{overScore.toFixed(2)} <span className="text-blue-400">OVER</span>
+        </span>
+      )
     } else if (underScore > overScore) {
-      return `+${underScore.toFixed(2)} UNDER`
+      return (
+        <span>
+          +{underScore.toFixed(2)} <span className="text-orange-400">UNDER</span>
+        </span>
+      )
     } else {
-      return '0 NEUTRAL'
+      return <span>0 NEUTRAL</span>
     }
   }
 
