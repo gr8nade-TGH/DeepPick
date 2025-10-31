@@ -394,6 +394,51 @@ export function RunLogTable() {
     }
   }
 
+  // Download full debug export as JSON file
+  const handleDownloadFullDebug = async () => {
+    try {
+      console.log('[RunLogTable] Fetching full debug export...')
+      const timestamp = Date.now()
+      const response = await fetch(`/api/shiva/runs/debug-export?limit=100&_t=${timestamp}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch debug export: ${response.status}`)
+      }
+
+      const data = await response.json()
+      console.log('[RunLogTable] Debug export received:', data.summary)
+
+      // Create formatted JSON string
+      const jsonString = JSON.stringify(data, null, 2)
+
+      // Create blob and download
+      const blob = new Blob([jsonString], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+
+      // Generate filename with timestamp
+      const dateStr = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)
+      link.download = `shiva-run-log-debug-${dateStr}.json`
+
+      // Trigger download
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      alert(`✅ Downloaded debug export with ${data.runs?.length || 0} runs!\n\nSummary:\n- Pick Generated: ${data.summary?.pick_generated_count || 0}\n- Pass: ${data.summary?.pass_count || 0}\n- Avg Confidence: ${data.summary?.average_confidence?.toFixed(2) || 'N/A'}`)
+    } catch (error) {
+      console.error('[RunLogTable] Failed to download debug export:', error)
+      alert('❌ Failed to download debug export. Check console for details.')
+    }
+  }
+
   // Copy cooldown debug info to clipboard
   const handleCopyCooldownDebug = async () => {
     const cooldownDebugInfo = {
@@ -443,6 +488,14 @@ export function RunLogTable() {
               title="Copy Run Log debug info to clipboard"
             >
               📋 Copy Run Log Debug
+            </button>
+            <button
+              onClick={handleDownloadFullDebug}
+              disabled={runs.length === 0}
+              className="px-3 py-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white text-sm rounded transition-colors"
+              title="Download comprehensive debug export with all factor calculations and step data"
+            >
+              💾 Download Full Debug JSON
             </button>
           </div>
         </div>
