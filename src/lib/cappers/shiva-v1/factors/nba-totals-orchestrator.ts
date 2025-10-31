@@ -48,6 +48,7 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
     return {
       factors: [],
       factor_version: 'nba_totals_v1',
+      baseline_avg: 220, // Default NBA average
       totals_debug: {
         league_anchors: {
           pace: 100.1,
