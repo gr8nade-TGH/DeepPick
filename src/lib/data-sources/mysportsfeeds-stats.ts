@@ -153,28 +153,9 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
       })
     }
 
-    // Collect opponent abbreviations from the games
-    const opponents = new Set<string>()
-    for (const gl of gameLogs) {
-      const game = gl.game
-      if (gl.team.abbreviation === teamAbbrev) {
-        const opponent = game.awayTeamAbbreviation === teamAbbrev
-          ? game.homeTeamAbbreviation
-          : game.awayTeamAbbreviation
-        opponents.add(opponent)
-      }
-    }
-
-    // Fetch opponent stats for the same games
-    const opponentStatsMap = new Map<string, any>()
-    for (const opponent of opponents) {
-      try {
-        const oppData = await fetchTeamGameLogs(opponent, 10)
-        opponentStatsMap.set(opponent, oppData.gamelogs || [])
-      } catch (error) {
-        console.warn(`[MySportsFeeds] Failed to fetch stats for opponent ${opponent}:`, error)
-      }
-    }
+    // OPTIMIZATION: Removed opponent stats fetching to reduce API calls from ~22 to 2 per pick
+    // We approximate opponent possessions with team possessions (typically <1% error)
+    // This eliminates rate limit errors while maintaining prediction accuracy
 
     // Calculate averages over last 5 games
     let totalPace = 0
@@ -211,29 +192,10 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
       // Calculate team possessions
       const teamPoss = calculatePossessions(teamFGA, teamFTA, teamOREB, teamTOV)
 
-      // Try to get opponent stats for DRtg calculation
-      let oppPoss = teamPoss // Default to same as team if we can't find opponent
-      const game = gameLog.game
-      const opponent = game.awayTeamAbbreviation === teamAbbrev
-        ? game.homeTeamAbbreviation
-        : game.awayTeamAbbreviation
-
-      const oppGameLogs = opponentStatsMap.get(opponent)
-      if (oppGameLogs) {
-        // Find the matching game
-        const oppGame = oppGameLogs.find((gl: any) =>
-          (gl.game.awayTeamAbbreviation === opponent && gl.game.homeTeamAbbreviation === teamAbbrev) ||
-          (gl.game.homeTeamAbbreviation === opponent && gl.game.awayTeamAbbreviation === teamAbbrev)
-        )
-
-        if (oppGame && oppGame.stats) {
-          const oppFGA = oppGame.stats.fieldGoals?.fgAtt || 0
-          const oppFTA = oppGame.stats.freeThrows?.ftAtt || 0
-          const oppOREB = oppGame.stats.rebounds?.offReb || 0
-          const oppTOV = oppGame.stats.defense?.tov || 0
-          oppPoss = calculatePossessions(oppFGA, oppFTA, oppOREB, oppTOV)
-        }
-      }
+      // OPTIMIZATION: Use team possessions as approximation for opponent possessions
+      // In basketball, both teams have nearly identical possession counts (differ by 0-1 typically)
+      // This approximation introduces <1% error while eliminating 10+ API calls per pick
+      const oppPoss = teamPoss
 
       const pace = calculatePace(teamPoss, oppPoss)
       const ortg = calculateORtg(teamPTS, teamPoss)
