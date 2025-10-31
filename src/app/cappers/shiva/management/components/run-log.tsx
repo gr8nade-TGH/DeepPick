@@ -387,13 +387,13 @@ export function RunLogTable() {
                   <th className="text-left py-2 px-2 text-gray-400 font-bold">Game</th>
                   <th className="text-left py-2 px-2 text-gray-400 font-bold">Outcome</th>
                   <th className="text-left py-2 px-2 text-gray-400 font-bold">Pick</th>
-                  <th className="text-left py-2 px-2 text-gray-400 font-bold">Units</th>
-                  <th className="text-left py-2 px-2 text-gray-400 font-bold">Conf</th>
                   {factorKeys.map(key => (
                     <th key={key} className="text-center py-2 px-1 text-gray-400 font-bold text-xs">
                       {getFactorShortName(key)}
                     </th>
                   ))}
+                  <th className="text-left py-2 px-2 text-gray-400 font-bold">Conf</th>
+                  <th className="text-left py-2 px-2 text-gray-400 font-bold">Units</th>
                   <th className="text-left py-2 px-2 text-gray-400 font-bold">Proj</th>
                   <th className="text-left py-2 px-2 text-gray-400 font-bold">Avg</th>
                   <th className="text-left py-2 px-2 text-gray-400 font-bold">Mkt</th>
@@ -415,10 +415,6 @@ export function RunLogTable() {
                       <td className={`py-2 px-2 font-bold ${getPickType(run) === 'PASS' ? 'text-yellow-400' : getPickType(run) === 'OVER' ? 'text-green-400' : 'text-red-400'}`}>
                         {getPickType(run)}
                       </td>
-                      <td className="py-2 px-2 text-gray-300">{run.units || 0}</td>
-                      <td className="py-2 px-2 text-gray-300">
-                        {run.confidence !== null && run.confidence !== undefined ? run.confidence.toFixed(3) : '—'}
-                      </td>
                       {factorKeys.map(key => {
                         const factor = getFactor(run, key)
                         const parsedValues = factor?.parsed_values_json || {}
@@ -433,6 +429,10 @@ export function RunLogTable() {
                           </td>
                         )
                       })}
+                      <td className="py-2 px-2 text-gray-300">
+                        {run.confidence !== null && run.confidence !== undefined ? run.confidence.toFixed(3) : '—'}
+                      </td>
+                      <td className="py-2 px-2 text-gray-300">{run.units || 0}</td>
                       <td className="py-2 px-2 text-gray-300 font-mono text-xs">
                         {run.predicted_total ? run.predicted_total.toFixed(1) : '—'}
                       </td>

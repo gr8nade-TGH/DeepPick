@@ -229,6 +229,24 @@ async function captureOddsSnapshot(runId: string, game: any, sport: string) {
   const homeTeam = typeof game.home_team === 'string' ? game.home_team : game.home_team.name
   const awayTeam = typeof game.away_team === 'string' ? game.away_team : game.away_team.name
 
+  // Calculate average total line from all sportsbooks
+  const odds = gameData.odds || {}
+  const sportsbooks = Object.keys(odds)
+  const totalLines = sportsbooks
+    .map(book => odds[book]?.total?.line)
+    .filter(line => line !== undefined && line !== null)
+
+  const avgTotalLine = totalLines.length > 0
+    ? parseFloat((totalLines.reduce((a, b) => a + b, 0) / totalLines.length).toFixed(1))
+    : (gameData.total_line || 220) // Fallback to total_line column or default
+
+  console.log('[WizardOrchestrator:Step2] Total line calculation:', {
+    sportsbooks: sportsbooks.length,
+    totalLines,
+    avgTotalLine,
+    fallbackUsed: totalLines.length === 0
+  })
+
   // Build snapshot from game data
   const snapshot = {
     game_id: game.id,
@@ -237,10 +255,10 @@ async function captureOddsSnapshot(runId: string, game: any, sport: string) {
     away_team: awayTeam,
     start_time_utc: gameData.game_time || new Date().toISOString(),
     captured_at_utc: new Date().toISOString(),
-    books_considered: gameData.odds?.books_considered || 0,
+    books_considered: sportsbooks.length,
     moneyline: gameData.odds?.moneyline || { home_avg: -150, away_avg: 130 },
     spread: gameData.odds?.spread || { fav_team: homeTeam, line: -5.5, odds: -110 },
-    total: gameData.odds?.total || { line: game.total_line || 220, over_odds: -110, under_odds: -110 },
+    total: { line: avgTotalLine, over_odds: -110, under_odds: -110 },
     raw_payload: gameData.odds || {}
   }
 
