@@ -63,7 +63,14 @@ export function RunLogTable() {
     async function fetchRunLog() {
       try {
         // console.log('[RunLogTable] Fetching run history...')
-        const response = await fetch('/api/shiva/runs/history?limit=50')
+        // Add cache-busting timestamp to prevent stale data
+        const timestamp = Date.now()
+        const response = await fetch(`/api/shiva/runs/history?limit=50&_t=${timestamp}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache'
+          }
+        })
         // console.log('[RunLogTable] Response status:', response.status)
         if (response.ok) {
           const data = await response.json()
@@ -81,7 +88,14 @@ export function RunLogTable() {
 
     async function fetchCooldowns() {
       try {
-        const response = await fetch('/api/shiva/cooldowns')
+        // Add cache-busting timestamp to prevent stale data
+        const timestamp = Date.now()
+        const response = await fetch(`/api/shiva/cooldowns?_t=${timestamp}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache'
+          }
+        })
         if (response.ok) {
           const data = await response.json()
           setCooldowns(data.cooldowns || [])
@@ -287,7 +301,33 @@ export function RunLogTable() {
       if (response.ok) {
         // Clear local state immediately
         setRuns([])
-        alert(`Successfully cleared ${json.deletedCount || 0} runs!`)
+        setCooldowns([])
+
+        // Force refetch with cache-busting to verify deletion
+        setTimeout(async () => {
+          const timestamp = Date.now()
+          const verifyResponse = await fetch(`/api/shiva/runs/history?limit=50&_t=${timestamp}`, {
+            cache: 'no-store',
+            headers: { 'Cache-Control': 'no-cache' }
+          })
+          if (verifyResponse.ok) {
+            const data = await verifyResponse.json()
+            setRuns(data.runs || [])
+            console.log('[RunLogTable] Verified runs after clear:', data.runs?.length || 0)
+          }
+
+          const cooldownResponse = await fetch(`/api/shiva/cooldowns?_t=${timestamp}`, {
+            cache: 'no-store',
+            headers: { 'Cache-Control': 'no-cache' }
+          })
+          if (cooldownResponse.ok) {
+            const data = await cooldownResponse.json()
+            setCooldowns(data.cooldowns || [])
+            console.log('[RunLogTable] Verified cooldowns after clear:', data.cooldowns?.length || 0)
+          }
+        }, 500) // Wait 500ms for database to propagate
+
+        alert(`Successfully cleared ${json.deletedCount || 0} runs, ${json.shivaRunsDeleted || 0} shiva_runs, and ${json.cooldownsDeleted || 0} cooldowns!`)
       } else {
         console.error('[RunLogTable] Failed to clear runs:', json)
         alert(`Failed to clear runs: ${json.error || 'Unknown error'}`)

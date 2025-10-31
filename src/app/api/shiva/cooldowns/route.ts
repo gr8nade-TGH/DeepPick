@@ -56,16 +56,23 @@ export async function GET() {
       matchup: gameMap.get(cd.game_id)
     })) || []
 
-    console.log('[CooldownsAPI] Fetching cooldowns:', { 
-      count: cooldownsWithMatchups.length, 
-      ids: cooldownsWithMatchups.map(c => c.id) 
+    console.log('[CooldownsAPI] Fetching cooldowns:', {
+      count: cooldownsWithMatchups.length,
+      ids: cooldownsWithMatchups.map(c => c.id)
     })
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       cooldowns: cooldownsWithMatchups,
       count: cooldownsWithMatchups.length
     })
+
+    // Add explicit no-cache headers to prevent stale data
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+    response.headers.set('Pragma', 'no-cache')
+    response.headers.set('Expires', '0')
+
+    return response
   } catch (error: any) {
     console.error('[CooldownsAPI] Unexpected error:', error)
     return NextResponse.json(

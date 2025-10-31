@@ -3,6 +3,7 @@ import { getSupabaseAdmin } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
+export const revalidate = 0 // Disable caching completely
 
 /**
  * GET /api/shiva/runs/history
@@ -118,11 +119,18 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       runs: runs,
       count: runs.length
     })
+
+    // Add explicit no-cache headers to prevent stale data
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+    response.headers.set('Pragma', 'no-cache')
+    response.headers.set('Expires', '0')
+
+    return response
 
   } catch (error: any) {
     console.error('[Run History] Error:', error)
