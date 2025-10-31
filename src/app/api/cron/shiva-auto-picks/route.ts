@@ -149,19 +149,39 @@ export async function GET(request: Request) {
     // Determine the base URL for API calls
     // In production: use VERCEL_URL (automatically set by Vercel)
     // In development: use localhost
+    // VERCEL_URL doesn't include protocol, so we add https://
     const baseUrl = process.env.VERCEL_URL
       ? `https://${process.env.VERCEL_URL}`
       : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 
     console.log(`🌐 [SHIVA-AUTO-PICKS] Using base URL: ${baseUrl}`)
+    console.log(`🌐 [SHIVA-AUTO-PICKS] VERCEL_URL env var: ${process.env.VERCEL_URL}`)
+    console.log(`🌐 [SHIVA-AUTO-PICKS] NEXT_PUBLIC_SITE_URL env var: ${process.env.NEXT_PUBLIC_SITE_URL}`)
 
-    const scannerResponse = await fetch(`${baseUrl}/api/shiva/step1-scanner`, {
+    const scannerUrl = `${baseUrl}/api/shiva/step1-scanner`
+    console.log(`🌐 [SHIVA-AUTO-PICKS] Calling scanner at: ${scannerUrl}`)
+
+    const scannerResponse = await fetch(scannerUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ selectedGame: null }) // Scan all games
     })
 
-    const scannerResult = await scannerResponse.json()
+    console.log(`📡 [SHIVA-AUTO-PICKS] Scanner response status: ${scannerResponse.status}`)
+    console.log(`📡 [SHIVA-AUTO-PICKS] Scanner response headers:`, Object.fromEntries(scannerResponse.headers.entries()))
+
+    const responseText = await scannerResponse.text()
+    console.log(`📡 [SHIVA-AUTO-PICKS] Scanner response body (first 500 chars):`, responseText.substring(0, 500))
+
+    let scannerResult
+    try {
+      scannerResult = JSON.parse(responseText)
+    } catch (parseError) {
+      console.error('❌ [SHIVA-AUTO-PICKS] Failed to parse scanner response as JSON:', parseError)
+      console.error('❌ [SHIVA-AUTO-PICKS] Response was:', responseText.substring(0, 1000))
+      throw new Error(`Scanner returned non-JSON response: ${responseText.substring(0, 200)}`)
+    }
+
     console.log('📊 [SHIVA-AUTO-PICKS] Scanner result:', scannerResult)
 
     if (!scannerResult.success || !scannerResult.selected_game) {
