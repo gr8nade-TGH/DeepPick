@@ -20,13 +20,13 @@ export const maxDuration = 300 // 5 minutes for full pick generation
  */
 export async function POST(request: Request) {
   const startTime = Date.now()
-  
+
   try {
     console.log('🎯 [SHIVA:GeneratePick] Starting pick generation...')
-    
+
     const body = await request.json()
     const { selectedGame } = body
-    
+
     if (!selectedGame || !selectedGame.id) {
       return NextResponse.json({
         success: false,
@@ -34,19 +34,19 @@ export async function POST(request: Request) {
         decision: 'ERROR'
       }, { status: 400 })
     }
-    
+
     console.log(`🎮 [SHIVA:GeneratePick] Processing game: ${selectedGame.away_team?.name || selectedGame.away_team} @ ${selectedGame.home_team?.name || selectedGame.home_team}`)
-    
+
     // Get Supabase client
     const supabase = getSupabaseAdmin()
-    
+
     // Fetch the full game data from database
     const { data: game, error: gameError } = await supabase
       .from('games')
       .select('*')
       .eq('id', selectedGame.id)
       .single()
-    
+
     if (gameError || !game) {
       console.error('[SHIVA:GeneratePick] Game not found:', gameError)
       return NextResponse.json({
@@ -55,18 +55,18 @@ export async function POST(request: Request) {
         decision: 'ERROR'
       }, { status: 404 })
     }
-    
+
     console.log('[SHIVA:GeneratePick] Running Shiva algorithm...')
-    
+
     // Prepare game for analysis
     const maxPicks = 1
     const existingPicksByGame = new Map<string, Set<string>>()
-    
+
     // Run Shiva algorithm
     const results = await analyzeBatch([game], maxPicks, existingPicksByGame, { skipTimeValidation: true })
-    
+
     const duration = Date.now() - startTime
-    
+
     if (!results || results.length === 0) {
       console.log('[SHIVA:GeneratePick] No results from algorithm')
       return NextResponse.json({
@@ -76,24 +76,24 @@ export async function POST(request: Request) {
         duration: `${duration}ms`
       })
     }
-    
+
     const result = results[0]
-    
+
     if (!result.pick) {
       console.log('[SHIVA:GeneratePick] Algorithm decided to PASS')
       return NextResponse.json({
         success: false,
         decision: 'PASS',
         message: 'Algorithm decided not to pick this game',
-        confidence: result.log?.confidence || 0,
+        confidence: result.log?.confidenceBreakdown?.finalConfidence || 0,
         duration: `${duration}ms`
       })
     }
-    
+
     const pick = result.pick
-    
+
     console.log(`✅ [SHIVA:GeneratePick] Pick generated: ${pick.selection} (${pick.units} units, ${pick.confidence}% confidence)`)
-    
+
     // Save pick to database
     const { data: savedPick, error: saveError } = await supabase
       .from('picks')
@@ -118,7 +118,7 @@ export async function POST(request: Request) {
       })
       .select()
       .single()
-    
+
     if (saveError) {
       console.error('[SHIVA:GeneratePick] Error saving pick:', saveError)
       return NextResponse.json({
@@ -128,9 +128,9 @@ export async function POST(request: Request) {
         decision: 'ERROR'
       }, { status: 500 })
     }
-    
+
     console.log(`💾 [SHIVA:GeneratePick] Pick saved to database: ${savedPick.id}`)
-    
+
     return NextResponse.json({
       success: true,
       decision: 'PICK',
@@ -146,10 +146,10 @@ export async function POST(request: Request) {
       },
       duration: `${duration}ms`
     })
-    
+
   } catch (error) {
     console.error('❌ [SHIVA:GeneratePick] Error:', error)
-    
+
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
