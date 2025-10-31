@@ -155,7 +155,6 @@ export async function executeWizardPipeline(input: WizardOrchestratorInput): Pro
 
     // Step 7: Pick Finalization
     console.log('[WizardOrchestrator] Step 7: Finalizing pick...')
-    const finalConfidence = steps.step5.conf_final || 0
     steps.step7 = await finalizePick(runId, finalConfidence, predictedTotal, marketTotalLine, pickDirection, steps.step2.snapshot)
     console.log('[WizardOrchestrator] Step 7: Pick finalized')
 
