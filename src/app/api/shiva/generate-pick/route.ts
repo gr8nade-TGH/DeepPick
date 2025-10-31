@@ -78,6 +78,37 @@ export async function POST(request: Request) {
     }
 
     const result = results[0]
+    const confidence = result.log?.confidenceBreakdown?.finalConfidence || 0
+    const runId = `shiva_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
+
+    // CRITICAL: Save run to database (for run log table)
+    console.log('[SHIVA:GeneratePick] Saving run to database...')
+    const { error: runError } = await supabase
+      .from('runs')
+      .insert({
+        id: runId,
+        run_id: runId,
+        game_id: game.id,
+        capper: 'shiva',
+        sport: 'NBA',
+        bet_type: 'TOTAL',
+        state: result.pick ? 'COMPLETE' : 'VOIDED',
+        units: result.pick?.units || 0,
+        confidence: confidence,
+        pick_type: result.pick?.pickType || 'TOTAL',
+        selection: result.pick?.selection || 'PASS',
+        factor_contributions: result.log?.factors || [],
+        predicted_total: result.log?.finalPrediction?.total || 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+
+    if (runError) {
+      console.error('[SHIVA:GeneratePick] Error saving run:', runError)
+      // Don't fail the whole request, just log the error
+    } else {
+      console.log(`✅ [SHIVA:GeneratePick] Run saved to database: ${runId}`)
+    }
 
     if (!result.pick) {
       console.log('[SHIVA:GeneratePick] Algorithm decided to PASS')
@@ -85,7 +116,8 @@ export async function POST(request: Request) {
         success: false,
         decision: 'PASS',
         message: 'Algorithm decided not to pick this game',
-        confidence: result.log?.confidenceBreakdown?.finalConfidence || 0,
+        confidence,
+        runId,
         duration: `${duration}ms`
       })
     }
