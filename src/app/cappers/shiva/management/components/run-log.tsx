@@ -78,7 +78,7 @@ export function RunLogTable() {
         setLoading(false)
       }
     }
-    
+
     async function fetchCooldowns() {
       try {
         const response = await fetch('/api/shiva/cooldowns')
@@ -93,7 +93,7 @@ export function RunLogTable() {
 
     fetchRunLog()
     fetchCooldowns()
-    
+
     // Refresh every 30 seconds to see new runs
     const runInterval = setInterval(fetchRunLog, 30000)
     const cooldownInterval = setInterval(fetchCooldowns, 30000)
@@ -102,7 +102,7 @@ export function RunLogTable() {
       clearInterval(cooldownInterval)
     }
   }, [])
-  
+
   // Update timer every second for countdown
   useEffect(() => {
     const timer = setInterval(() => {
@@ -113,12 +113,12 @@ export function RunLogTable() {
 
   const formatDateTime = (isoString: string) => {
     const date = new Date(isoString)
-    return date.toLocaleString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      hour: 'numeric', 
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
       minute: '2-digit',
-      hour12: true 
+      hour12: true
     })
   }
 
@@ -176,14 +176,24 @@ export function RunLogTable() {
   }
 
   // Format factor contribution with OVER/UNDER indicator (3 decimal places for precision)
-  const formatFactorContribution = (contribution: number): string => {
-    if (contribution === 0) return '0 OVER'
-    const absValue = Math.abs(contribution)
-    const direction = contribution > 0 ? 'OVER' : 'UNDER'
-    // Use 3 decimal places to show small values better
-    return `+${absValue.toFixed(3)} ${direction}`
+  // Now uses overScore/underScore from parsed_values_json instead of net contribution
+  const formatFactorContribution = (factor: any): string => {
+    if (!factor) return '—'
+
+    const parsedValues = factor.parsed_values_json || {}
+    const overScore = parsedValues.overScore || 0
+    const underScore = parsedValues.underScore || 0
+
+    // Determine which score is higher
+    if (overScore > underScore) {
+      return `+${overScore.toFixed(2)} OVER`
+    } else if (underScore > overScore) {
+      return `+${underScore.toFixed(2)} UNDER`
+    } else {
+      return '0 NEUTRAL'
+    }
   }
-  
+
   // Extract pick type from selection string
   const getPickType = (run: RunLogEntry): string => {
     if (run.units === 0 || run.units === null) return 'PASS'
@@ -193,11 +203,10 @@ export function RunLogTable() {
     return run.selection.split(' ')[0]?.toUpperCase() || '—'
   }
 
-  // Get a specific factor's contribution value
-  const getFactorValue = (run: RunLogEntry, key: string): number | null => {
+  // Get a specific factor object (not just the contribution value)
+  const getFactor = (run: RunLogEntry, key: string): any | null => {
     if (!run.factor_contributions) return null
-    const factor = run.factor_contributions.find(f => f.key === key)
-    return factor ? factor.contribution : null
+    return run.factor_contributions.find(f => f.key === key) || null
   }
 
   // Format countdown timer
@@ -210,7 +219,7 @@ export function RunLogTable() {
     const seconds = Math.floor((remaining % 60000) / 1000)
     return `${hours}h ${minutes}m ${seconds}s`
   }
-  
+
   // Clear cooldown
   const handleClearCooldown = async (cooldownId: string) => {
     console.log('[RunLogTable] Clearing cooldown:', cooldownId)
@@ -366,78 +375,82 @@ export function RunLogTable() {
             </button>
           </div>
         </div>
-      
-      {runs.length === 0 ? (
-        <div className="p-3 text-gray-400 text-sm">No runs found. Run pick generation in Write mode to see results.</div>
-      ) : (
-        <div className="overflow-y-auto overflow-x-auto flex-1">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-700">
-                <th className="text-left py-2 px-2 text-gray-400 font-bold">Time</th>
-                <th className="text-left py-2 px-2 text-gray-400 font-bold">Game</th>
-                <th className="text-left py-2 px-2 text-gray-400 font-bold">Outcome</th>
-                <th className="text-left py-2 px-2 text-gray-400 font-bold">Pick</th>
-                <th className="text-left py-2 px-2 text-gray-400 font-bold">Units</th>
-                <th className="text-left py-2 px-2 text-gray-400 font-bold">Conf</th>
-                {factorKeys.map(key => (
-                  <th key={key} className="text-center py-2 px-1 text-gray-400 font-bold text-xs">
-                    {getFactorShortName(key)}
-                  </th>
-                ))}
-                <th className="text-left py-2 px-2 text-gray-400 font-bold">Proj</th>
-                <th className="text-left py-2 px-2 text-gray-400 font-bold">Avg</th>
-                <th className="text-left py-2 px-2 text-gray-400 font-bold">Mkt</th>
-              </tr>
-            </thead>
-            <tbody>
-              {runs.map((run, idx) => {
-                const outcome = getOutcome(run)
-                const betType = getBetType(run)
-                const shortRunId = run.run_id.length > 12 ? run.run_id.substring(0, 12) + '...' : run.run_id
-                
-                return (
-                  <tr key={idx} className="border-b border-gray-800 hover:bg-gray-800">
-                    <td className="py-2 px-2 text-gray-300">{formatDateTime(run.created_at)}</td>
-                    <td className="py-2 px-2 text-gray-300 text-xs">{run.matchup || run.game_id?.substring(0, 8) + '...'}</td>
-                    <td className={`py-2 px-2 font-bold ${getOutcomeColor(outcome)}`}>
-                      {outcome}
-                    </td>
-                    <td className={`py-2 px-2 font-bold ${getPickType(run) === 'PASS' ? 'text-yellow-400' : getPickType(run) === 'OVER' ? 'text-green-400' : 'text-red-400'}`}>
-                      {getPickType(run)}
-                    </td>
-                    <td className="py-2 px-2 text-gray-300">{run.units || 0}</td>
-                    <td className="py-2 px-2 text-gray-300">
-                      {run.confidence !== null && run.confidence !== undefined ? run.confidence.toFixed(3) : '—'}
-                    </td>
-                    {factorKeys.map(key => {
-                      const value = getFactorValue(run, key)
-                      const absValue = value !== null ? Math.abs(value) : 0
-                      // Use 0.1 threshold for 3 decimal places (instead of 1 for 2 decimal places)
-                      return (
-                        <td key={key} className={`py-2 px-1 text-center text-xs font-mono ${value !== null ? (absValue > 0.1 ? 'text-green-400' : 'text-gray-300') : 'text-gray-500'}`}>
-                          {value !== null ? formatFactorContribution(value) : '—'}
-                        </td>
-                      )
-                    })}
-                    <td className="py-2 px-2 text-gray-300 font-mono text-xs">
-                      {run.predicted_total ? run.predicted_total.toFixed(1) : '—'}
-                    </td>
-                    <td className="py-2 px-2 text-gray-300 font-mono text-xs">
-                      {run.baseline_avg ? run.baseline_avg.toFixed(1) : '—'}
-                    </td>
-                    <td className="py-2 px-2 text-gray-300 font-mono text-xs">
-                      {run.market_total ? run.market_total.toFixed(1) : '—'}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+
+        {runs.length === 0 ? (
+          <div className="p-3 text-gray-400 text-sm">No runs found. Run pick generation in Write mode to see results.</div>
+        ) : (
+          <div className="overflow-y-auto overflow-x-auto flex-1">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-700">
+                  <th className="text-left py-2 px-2 text-gray-400 font-bold">Time</th>
+                  <th className="text-left py-2 px-2 text-gray-400 font-bold">Game</th>
+                  <th className="text-left py-2 px-2 text-gray-400 font-bold">Outcome</th>
+                  <th className="text-left py-2 px-2 text-gray-400 font-bold">Pick</th>
+                  <th className="text-left py-2 px-2 text-gray-400 font-bold">Units</th>
+                  <th className="text-left py-2 px-2 text-gray-400 font-bold">Conf</th>
+                  {factorKeys.map(key => (
+                    <th key={key} className="text-center py-2 px-1 text-gray-400 font-bold text-xs">
+                      {getFactorShortName(key)}
+                    </th>
+                  ))}
+                  <th className="text-left py-2 px-2 text-gray-400 font-bold">Proj</th>
+                  <th className="text-left py-2 px-2 text-gray-400 font-bold">Avg</th>
+                  <th className="text-left py-2 px-2 text-gray-400 font-bold">Mkt</th>
+                </tr>
+              </thead>
+              <tbody>
+                {runs.map((run, idx) => {
+                  const outcome = getOutcome(run)
+                  const betType = getBetType(run)
+                  const shortRunId = run.run_id.length > 12 ? run.run_id.substring(0, 12) + '...' : run.run_id
+
+                  return (
+                    <tr key={idx} className="border-b border-gray-800 hover:bg-gray-800">
+                      <td className="py-2 px-2 text-gray-300">{formatDateTime(run.created_at)}</td>
+                      <td className="py-2 px-2 text-gray-300 text-xs">{run.matchup || run.game_id?.substring(0, 8) + '...'}</td>
+                      <td className={`py-2 px-2 font-bold ${getOutcomeColor(outcome)}`}>
+                        {outcome}
+                      </td>
+                      <td className={`py-2 px-2 font-bold ${getPickType(run) === 'PASS' ? 'text-yellow-400' : getPickType(run) === 'OVER' ? 'text-green-400' : 'text-red-400'}`}>
+                        {getPickType(run)}
+                      </td>
+                      <td className="py-2 px-2 text-gray-300">{run.units || 0}</td>
+                      <td className="py-2 px-2 text-gray-300">
+                        {run.confidence !== null && run.confidence !== undefined ? run.confidence.toFixed(3) : '—'}
+                      </td>
+                      {factorKeys.map(key => {
+                        const factor = getFactor(run, key)
+                        const parsedValues = factor?.parsed_values_json || {}
+                        const overScore = parsedValues.overScore || 0
+                        const underScore = parsedValues.underScore || 0
+                        const maxScore = Math.max(overScore, underScore)
+                        const isSignificant = maxScore > 0.1
+
+                        return (
+                          <td key={key} className={`py-2 px-1 text-center text-xs font-mono ${factor ? (isSignificant ? 'text-green-400' : 'text-gray-300') : 'text-gray-500'}`}>
+                            {formatFactorContribution(factor)}
+                          </td>
+                        )
+                      })}
+                      <td className="py-2 px-2 text-gray-300 font-mono text-xs">
+                        {run.predicted_total ? run.predicted_total.toFixed(1) : '—'}
+                      </td>
+                      <td className="py-2 px-2 text-gray-300 font-mono text-xs">
+                        {run.baseline_avg ? run.baseline_avg.toFixed(1) : '—'}
+                      </td>
+                      <td className="py-2 px-2 text-gray-300 font-mono text-xs">
+                        {run.market_total ? run.market_total.toFixed(1) : '—'}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
-      
+
       {/* Cooldown Management Table */}
       {cooldowns.length > 0 && (
         <div className="border border-gray-700 rounded bg-gray-900 overflow-hidden">
