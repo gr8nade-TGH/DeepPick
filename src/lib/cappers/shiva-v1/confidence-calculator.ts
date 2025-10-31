@@ -56,6 +56,8 @@ export function calculateConfidence(input: ConfidenceInput): ConfidenceOutput {
   })
 
   // Sum overScore and underScore across all factors
+  // NOTE: The factors already return WEIGHTED scores (overScore/underScore are pre-multiplied by weight)
+  // So we just sum them directly without multiplying by weight again
   let totalOverScore = 0
   let totalUnderScore = 0
   const factorContributions: ConfidenceOutput['factorContributions'] = []
@@ -65,22 +67,20 @@ export function calculateConfidence(input: ConfidenceInput): ConfidenceOutput {
     const parsedValues = factor.parsed_values_json || {}
 
     // Get overScore and underScore from parsed_values_json
+    // These are ALREADY weighted by the factor computation
     const overScore = parsedValues.overScore || 0
     const underScore = parsedValues.underScore || 0
 
-    // Apply weight to scores (weight is already normalized to sum to 1.0)
-    const weightedOverScore = overScore * weight
-    const weightedUnderScore = underScore * weight
-
-    totalOverScore += weightedOverScore
-    totalUnderScore += weightedUnderScore
+    // Sum directly - DO NOT multiply by weight again (would be double-weighting)
+    totalOverScore += overScore
+    totalUnderScore += underScore
 
     factorContributions.push({
       key: factor.key,
       name: factor.name,
       z: factor.normalized_value || 0, // Keep signal for reference
       weight,
-      contribution: weightedOverScore - weightedUnderScore // Net contribution
+      contribution: overScore - underScore // Net contribution (already weighted)
     })
   }
 
