@@ -218,6 +218,8 @@ export async function POST(request: Request) {
         units: pick.units,
         confidence: pick.confidence,
         game_snapshot: {
+          sport: game.sport,
+          league: game.league,
           home_team: game.home_team,
           away_team: game.away_team,
           game_date: game.game_date,

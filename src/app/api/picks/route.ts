@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
       .select(`
         id,
         game_id,
+        capper,
         pick_type,
         selection,
         units,
@@ -43,9 +44,12 @@ export async function GET(request: NextRequest) {
         status,
         net_units,
         created_at,
+        game_snapshot,
         game:games(
           home_team,
-          away_team
+          away_team,
+          status,
+          final_score
         )
       `)
       .order('created_at', { ascending: false })
