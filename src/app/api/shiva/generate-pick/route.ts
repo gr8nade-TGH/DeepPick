@@ -83,28 +83,40 @@ export async function POST(request: Request) {
 
     // CRITICAL: Save run to database (for run log table)
     console.log('[SHIVA:GeneratePick] Saving run to database...')
-    const { error: runError } = await supabase
+
+    // Try to insert run - handle both schema variations (id+run_id vs just run_id)
+    const runData: any = {
+      game_id: game.id,
+      capper: 'shiva',
+      sport: 'NBA',
+      bet_type: 'TOTAL',
+      state: result.pick ? 'COMPLETE' : 'VOIDED',
+      units: result.pick?.units || 0,
+      confidence,
+      pick_type: result.pick?.pickType || 'TOTAL',
+      selection: result.pick?.selection || 'PASS',
+      factor_contributions: result.log?.factors || [],
+      predicted_total: result.log?.finalPrediction?.total || 0
+    }
+
+    // Try with just run_id first (015_shiva_v1.sql schema)
+    let runError = await supabase
       .from('runs')
-      .insert({
-        id: runId,
-        run_id: runId,
-        game_id: game.id,
-        capper: 'shiva',
-        sport: 'NBA',
-        bet_type: 'TOTAL',
-        state: result.pick ? 'COMPLETE' : 'VOIDED',
-        units: result.pick?.units || 0,
-        confidence: confidence,
-        pick_type: result.pick?.pickType || 'TOTAL',
-        selection: result.pick?.selection || 'PASS',
-        factor_contributions: result.log?.factors || [],
-        predicted_total: result.log?.finalPrediction?.total || 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
+      .insert({ ...runData, run_id: runId })
+      .then(r => r.error)
+
+    // If that fails, try with id + run_id (033_fix_runs_table.sql schema)
+    if (runError) {
+      console.log('[SHIVA:GeneratePick] First insert failed, trying with id column...')
+      runError = await supabase
+        .from('runs')
+        .insert({ ...runData, id: runId, run_id: runId })
+        .then(r => r.error)
+    }
 
     if (runError) {
       console.error('[SHIVA:GeneratePick] Error saving run:', runError)
+      console.error('[SHIVA:GeneratePick] Run data:', runData)
       // Don't fail the whole request, just log the error
     } else {
       console.log(`✅ [SHIVA:GeneratePick] Run saved to database: ${runId}`)
