@@ -100,7 +100,9 @@ async function getFactorWeights(capperId: string, sport: string, betType: string
     .eq('sport', sport)
     .eq('bet_type', betType)
     .eq('is_active', true)
-    .single()
+    .eq('is_default', true)
+    .limit(1)
+    .maybeSingle()
 
   if (profileRes.error || !profileRes.data?.factors) {
     throw new Error(

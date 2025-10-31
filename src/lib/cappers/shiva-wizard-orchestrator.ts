@@ -308,7 +308,9 @@ async function computeFactors(
     .eq('sport', sport)
     .eq('bet_type', betType)
     .eq('is_active', true)
-    .single()
+    .eq('is_default', true)
+    .limit(1)
+    .maybeSingle()
 
   if (profileError || !profileData?.factors) {
     throw new Error(

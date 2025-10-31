@@ -170,7 +170,9 @@ async function computeFactors(runId: string, input: PipelineInput, oddsSnapshot:
       .eq('sport', input.sport)
       .eq('bet_type', input.betType)
       .eq('is_active', true)
-      .single()
+      .eq('is_default', true)
+      .limit(1)
+      .maybeSingle()
 
     if (profileRes.error || !profileRes.data?.factors) {
       throw new Error(
