@@ -24,14 +24,14 @@ import { validateGameTiming } from './game-time-validator'
 import { AICapperOrchestrator } from '@/lib/ai/ai-capper-orchestrator'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { CapperSettings, AIRunResult, AIRunFactors } from '@/types'
-import { 
-  FactorEngine, 
+import {
+  FactorEngine,
   Factor,
-  scoreRecentForm, 
-  scoreInjuries, 
-  scoreWeather, 
-  scoreOffensiveVsDefensive, 
-  scoreVegasEdge 
+  scoreRecentForm,
+  scoreInjuries,
+  scoreWeather,
+  scoreOffensiveVsDefensive,
+  scoreVegasEdge
 } from './factor-engine'
 
 export interface PredictionLog {
@@ -194,10 +194,10 @@ function calculateAIConfidenceBoost(aiRuns: AIRunResult[]): number {
  */
 function predictGameScore(game: CapperGame, log: PredictionLog): ScorePrediction {
   let stepNum = 1
-  
+
   const vegasTotal = getTotalLine(game) || 200
   const vegasSpread = getSpreadLine(game) || 0
-  
+
   log.steps.push({
     step: stepNum++,
     title: 'Initializing Three Models',
@@ -206,7 +206,7 @@ function predictGameScore(game: CapperGame, log: PredictionLog): ScorePrediction
     result: `Three models initialized`,
     impact: 'neutral'
   })
-  
+
   // Model A: Aggressive (predicts higher scoring)
   const modelA = vegasTotal + (Math.random() * 10 - 2) // +/- variance, biased high
   log.steps.push({
@@ -217,7 +217,7 @@ function predictGameScore(game: CapperGame, log: PredictionLog): ScorePrediction
     result: `Model A Total: ${modelA.toFixed(1)}`,
     impact: 'positive'
   })
-  
+
   // Model B: Conservative (predicts lower scoring)
   const modelB = vegasTotal + (Math.random() * 10 - 8) // +/- variance, biased low
   log.steps.push({
@@ -228,7 +228,7 @@ function predictGameScore(game: CapperGame, log: PredictionLog): ScorePrediction
     result: `Model B Total: ${modelB.toFixed(1)}`,
     impact: 'negative'
   })
-  
+
   // Model C: Balanced (close to Vegas)
   const modelC = vegasTotal + (Math.random() * 6 - 3) // +/- small variance
   log.steps.push({
@@ -239,11 +239,11 @@ function predictGameScore(game: CapperGame, log: PredictionLog): ScorePrediction
     result: `Model C Total: ${modelC.toFixed(1)}`,
     impact: 'neutral'
   })
-  
+
   // Consensus: Average of three models
   const predictedTotal = (modelA + modelB + modelC) / 3
   const consensus = Math.abs(modelA - modelB) < 10 && Math.abs(modelB - modelC) < 10
-  
+
   log.steps.push({
     step: stepNum++,
     title: 'Model Consensus Check',
@@ -252,12 +252,12 @@ function predictGameScore(game: CapperGame, log: PredictionLog): ScorePrediction
     result: consensus ? 'CONSENSUS REACHED' : 'Models diverge',
     impact: consensus ? 'positive' : 'negative'
   })
-  
+
   // Calculate spread-based score prediction
   const homeScore = (predictedTotal / 2) - (vegasSpread / 2)
   const awayScore = (predictedTotal / 2) + (vegasSpread / 2)
   const marginOfVictory = vegasSpread
-  
+
   log.steps.push({
     step: stepNum++,
     title: 'Final Score Prediction',
@@ -266,7 +266,7 @@ function predictGameScore(game: CapperGame, log: PredictionLog): ScorePrediction
     result: `${game.home_team.name} ${homeScore.toFixed(0)}, ${game.away_team.name} ${awayScore.toFixed(0)}`,
     impact: 'neutral'
   })
-  
+
   log.finalPrediction = {
     homeScore: Math.round(homeScore),
     awayScore: Math.round(awayScore),
@@ -274,7 +274,7 @@ function predictGameScore(game: CapperGame, log: PredictionLog): ScorePrediction
     margin: Math.round(marginOfVictory),
     winner: marginOfVictory < 0 ? game.home_team.name : game.away_team.name
   }
-  
+
   return {
     homeScore: Math.round(homeScore),
     awayScore: Math.round(awayScore),
@@ -303,7 +303,7 @@ async function analyzeGame(
     decisionFactors: { passedFavoriteRule: false, passedMinConfidence: false, bestOddsAvailable: 0, unitsAllocated: 0 },
     factors: [] // NEW: Will be populated by FactorEngine
   }
-  
+
   // Initialize FactorEngine for bipolar factor scoring
   const factorEngine = new FactorEngine()
 
@@ -339,14 +339,14 @@ async function analyzeGame(
 
   // Step 2: Predict game score using three-model consensus
   const scorePrediction = predictGameScore(game, log)
-  
+
   const vegasTotal = getTotalLine(game)
   const vegasSpread = getSpreadLine(game)
-  
+
   // Step 3: Add Vegas Edge Factor (30% weight, most important)
   const totalGap = vegasTotal ? scorePrediction.totalPoints - vegasTotal : null
   const spreadGap = vegasSpread ? scorePrediction.marginOfVictory - vegasSpread : null
-  
+
   log.vegasComparison = {
     totalLine: vegasTotal,
     spreadLine: vegasSpread,
@@ -354,7 +354,7 @@ async function analyzeGame(
     spreadGap,
     vegasEdgeFactor: null // Will be calculated by FactorEngine
   }
-  
+
   // Use the larger gap (total or spread) for Vegas edge factor
   const vegasGap = Math.abs(totalGap || 0) > Math.abs(spreadGap || 0) ? (totalGap || 0) : (spreadGap || 0)
   const vegasEdgeRawScore = scoreVegasEdge(
@@ -362,37 +362,37 @@ async function analyzeGame(
     vegasGap > 0 ? vegasTotal! : vegasSpread!,
     15 // Max expected difference
   )
-  
+
   factorEngine.addFactor({
     name: 'Vegas Edge Comparison',
     category: 'vegas',
     weight: 0.30, // 30% of total confidence
     data: {
-      teamA: { 
+      teamA: {
         predictedTotal: scorePrediction.totalPoints,
         predictedSpread: scorePrediction.marginOfVictory
       },
-      teamB: { 
+      teamB: {
         predictedTotal: scorePrediction.totalPoints,
         predictedSpread: scorePrediction.marginOfVictory
       },
-      context: { 
-        vegasTotal, 
-        vegasSpread, 
-        totalGap, 
+      context: {
+        vegasTotal,
+        vegasSpread,
+        totalGap,
         spreadGap,
         largestGap: vegasGap
       }
     },
     rawScore: vegasEdgeRawScore,
-    reasoning: vegasGap > 0 
+    reasoning: vegasGap > 0
       ? `Prediction ${Math.abs(vegasGap).toFixed(1)} points higher than Vegas (${vegasGap > 0 ? 'OVER' : 'UNDER'} ${vegasTotal})`
       : vegasGap < 0
-      ? `Prediction ${Math.abs(vegasGap).toFixed(1)} points lower than Vegas (favorable for ${scorePrediction.winner})`
-      : 'Prediction aligns with Vegas line',
+        ? `Prediction ${Math.abs(vegasGap).toFixed(1)} points lower than Vegas (favorable for ${scorePrediction.winner})`
+        : 'Prediction aligns with Vegas line',
     sources: ['Shiva Three-Model Consensus', 'The Odds API']
   })
-  
+
   log.steps.push({
     step: log.steps.length + 1,
     title: 'Vegas Edge Factor',
@@ -401,12 +401,12 @@ async function analyzeGame(
     result: vegasEdgeRawScore > 0 ? `Edge found: ${vegasGap.toFixed(1)} points` : 'No significant edge',
     impact: vegasEdgeRawScore > 0 ? 'positive' : vegasEdgeRawScore < 0 ? 'negative' : 'neutral'
   })
-  
+
   // Step 4: Add AI Research Factors (if available)
   if (aiRuns && aiRuns.length > 0) {
     const aiBoost = calculateAIConfidenceBoost(aiRuns)
     const aiFactorCount = Object.keys(aiRuns[0].factors).length + (aiRuns[1] ? Object.keys(aiRuns[1].factors).length : 0)
-    
+
     factorEngine.addFactor({
       name: 'AI Research Analysis',
       category: 'ai_research',
@@ -414,7 +414,7 @@ async function analyzeGame(
       data: {
         teamA: aiRuns[0]?.factors || {},
         teamB: aiRuns[1]?.factors || {},
-        context: { 
+        context: {
           run1Count: Object.keys(aiRuns[0]?.factors || {}).length,
           run2Count: Object.keys(aiRuns[1]?.factors || {}).length,
           totalImpact: aiBoost
@@ -424,7 +424,7 @@ async function analyzeGame(
       reasoning: `AI analysis found ${aiFactorCount} factors across ${aiRuns.length} research runs`,
       sources: ['Perplexity AI', 'ChatGPT', 'StatMuse']
     })
-    
+
     log.confidenceBreakdown = {
       totalConfidence: null, // Will be calculated by FactorEngine
       spreadConfidence: null,
@@ -443,10 +443,10 @@ async function analyzeGame(
       aiBoost: null
     }
   }
-  
+
   // Step 5: Add placeholder factors (will be enhanced with real data in future iterations)
   // For now, add neutral factors to show the system works
-  
+
   // Model Consensus factor (15% weight)
   factorEngine.addFactor({
     name: 'Three-Model Consensus',
@@ -461,7 +461,7 @@ async function analyzeGame(
     reasoning: 'All three prediction models reached consensus on game outcome',
     sources: ['Shiva Internal Models']
   })
-  
+
   // Home advantage placeholder (10% weight)
   const isHomeTeamPicked = scorePrediction.winner === 'home'
   factorEngine.addFactor({
@@ -477,13 +477,13 @@ async function analyzeGame(
     reasoning: isHomeTeamPicked ? 'Picking home team (advantage)' : 'Picking away team (slight disadvantage)',
     sources: ['Historical Home/Away Data']
   })
-  
+
   // Step 6: Calculate total confidence from FactorEngine
   const totalConfidence = factorEngine.getTotalConfidence()
-  
+
   // Store all factors in log for database and UI
   log.factors = factorEngine.getAllFactors()
-  
+
   log.steps.push({
     step: log.steps.length + 1,
     title: 'Factor-Based Confidence Calculated',
@@ -491,13 +491,13 @@ async function analyzeGame(
     result: `Final confidence: ${totalConfidence.toFixed(1)}/10`,
     impact: totalConfidence >= 7.0 ? 'positive' : totalConfidence < 5.0 ? 'negative' : 'neutral'
   })
-  
+
   // Generate pick selections based on prediction
-  const totalPick = vegasTotal && scorePrediction.totalPoints > vegasTotal ? `OVER ${vegasTotal}` : 
-                    vegasTotal ? `UNDER ${vegasTotal}` : null
+  const totalPick = vegasTotal && scorePrediction.totalPoints > vegasTotal ? `OVER ${vegasTotal}` :
+    vegasTotal ? `UNDER ${vegasTotal}` : null
   const spreadPick = vegasSpread ? `${game.home_team.abbreviation} ${vegasSpread > 0 ? '+' : ''}${vegasSpread}` : null
   const moneylinePick = scorePrediction.winner === 'home' ? game.home_team.abbreviation : game.away_team.abbreviation
-  
+
   // Use the same confidence for all bet types (FactorEngine calculates overall confidence)
   const availableBets = [
     { type: 'total', confidence: totalConfidence, pick: totalPick },
@@ -507,7 +507,7 @@ async function analyzeGame(
     .filter(bet => bet.confidence !== null && bet.pick !== null)
     .filter(bet => !existingPickTypes.has(bet.type))
     .sort((a, b) => (b.confidence || 0) - (a.confidence || 0))
-  
+
   if (availableBets.length === 0) {
     log.steps.push({
       step: log.steps.length + 1,
@@ -518,18 +518,18 @@ async function analyzeGame(
     })
     return { pick: null, log }
   }
-  
+
   const bestBet = availableBets[0]
   const confidence = bestBet.confidence!
   const selection = bestBet.pick!
-  
+
   log.confidenceBreakdown.selectedBet = bestBet.type
   log.confidenceBreakdown.finalConfidence = confidence
-  
+
   // Determine market and side from bet type and selection
   let market: 'moneyline' | 'spread' | 'total'
   let side: 'home' | 'away' | 'over' | 'under'
-  
+
   if (bestBet.type === 'total') {
     market = 'total'
     side = selection.includes('OVER') ? 'over' : 'under'
@@ -540,14 +540,14 @@ async function analyzeGame(
     market = 'moneyline'
     side = selection === game.home_team.abbreviation ? 'home' : 'away'
   }
-  
+
   const avgOdds = getAverageOdds(game, market, side) || -110
   const passedFavoriteRule = isValidFavoriteOdds(avgOdds, confidence)
-  
+
   log.decisionFactors.passedFavoriteRule = passedFavoriteRule
-  log.decisionFactors.passedMinConfidence = confidence >= 6.5
+  log.decisionFactors.passedMinConfidence = confidence >= 4.0  // Lowered from 6.5 to 4.0 for more picks
   log.decisionFactors.bestOddsAvailable = avgOdds
-  
+
   if (!passedFavoriteRule) {
     log.steps.push({
       step: log.steps.length + 1,
@@ -559,22 +559,22 @@ async function analyzeGame(
     })
     return { pick: null, log }
   }
-  
-  if (confidence < 6.5) {
+
+  if (confidence < 4.0) {  // Lowered from 6.5 to 4.0 for more picks
     log.steps.push({
       step: log.steps.length + 1,
       title: 'Insufficient Confidence',
       description: 'Confidence below minimum threshold',
-      calculation: `Confidence: ${confidence.toFixed(1)} | Required: 6.5`,
+      calculation: `Confidence: ${confidence.toFixed(1)} | Required: 4.0`,
       result: 'PASS',
       impact: 'negative'
     })
     return { pick: null, log }
   }
-  
+
   const units = confidence >= 8.5 ? 3 : confidence >= 7.5 ? 2 : 1
   log.decisionFactors.unitsAllocated = units
-  
+
   log.steps.push({
     step: log.steps.length + 1,
     title: 'Pick Generated',
@@ -583,7 +583,7 @@ async function analyzeGame(
     result: 'PICK MADE',
     impact: 'positive'
   })
-  
+
   const pick: CapperPick = {
     gameId: game.id,
     selection,
@@ -599,7 +599,7 @@ async function analyzeGame(
       spreadLine: vegasSpread ?? undefined,
     }
   }
-  
+
   return { pick, log }
 }
 
@@ -613,7 +613,7 @@ export async function analyzeBatch(
   options?: { skipTimeValidation?: boolean }
 ): Promise<Array<{ pick: CapperPick | null; log: PredictionLog }>> {
   const results: Array<{ pick: CapperPick | null; log: PredictionLog }> = []
-  
+
   for (const game of games) {
     // CRITICAL: Validate game timing before analysis (unless testing)
     if (!options?.skipTimeValidation) {
@@ -625,27 +625,27 @@ export async function analyzeBatch(
     } else {
       console.log(`[SHIVA TEST MODE] Bypassing timing validation for ${game.away_team?.name} @ ${game.home_team?.name}`)
     }
-    
+
     const existingPickTypes = existingPicksByGame.get(game.id) || new Set()
     const result = await analyzeGame(game, existingPickTypes)
-    
+
     // ALWAYS push the result, even if no pick was generated
     // This allows us to see factors and analysis even when confidence is too low
     results.push({ pick: result.pick, log: result.log })
   }
-  
+
   // Only sort and limit picks that were actually generated
   const picksOnly = results
     .filter(r => r.pick !== null)
     .sort((a, b) => b.pick!.confidence - a.pick!.confidence)
     .slice(0, maxPicks)
-  
+
   // For testing, return all results (including non-picks) so we can see analysis
   // In production (run-shiva), we only return actual picks
   if (options?.skipTimeValidation) {
     return results // Return everything for testing
   }
-  
+
   return picksOnly
 }
 

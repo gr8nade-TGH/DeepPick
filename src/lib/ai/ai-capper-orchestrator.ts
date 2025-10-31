@@ -81,15 +81,15 @@ export class AICapperOrchestrator {
         // Factor 1: Head-to-Head Scoring
         `${this.game.home_team.name} average points per game vs ${this.game.away_team.name} this season`,
         `${this.game.away_team.name} average points per game vs ${this.game.home_team.name} this season`,
-        
+
         // Factor 2: Opponent Defensive Quality  
         `${this.game.home_team.name} defensive rating this season`,
         `${this.game.away_team.name} defensive rating this season`,
-        
+
         // Factor 3: Pace
         `${this.game.home_team.name} pace this season`,
         `${this.game.away_team.name} pace this season`,
-        
+
         // Factor 4: Recent Form
         `${this.game.home_team.name} net rating last 10 games`,
         `${this.game.away_team.name} net rating last 10 games`
@@ -100,7 +100,7 @@ export class AICapperOrchestrator {
         const result = await this.queryStatMuseWithRetry(query)
         statMuseQuestions.push(query)
         statMuseAnswers.push({ question: query, answer: result.text })
-        
+
         // Log if question failed
         if (result.failed) {
           console.warn(`[${this.capperName}] StatMuse query failed: "${query}"`)
@@ -139,18 +139,18 @@ Format your response to clearly separate:
       let injuryAnalysis = ''
       if (injuryResponse?.choices?.[0]?.message?.content) {
         injuryAnalysis = injuryResponse.choices[0].message.content
-        
+
         // Validate that injury analysis contains only the correct teams
         const homeTeamName = this.game.home_team.name.toLowerCase()
         const awayTeamName = this.game.away_team.name.toLowerCase()
         const analysisText = injuryAnalysis.toLowerCase()
-        
+
         // Check if analysis mentions the correct teams
-        const mentionsHomeTeam = analysisText.includes(homeTeamName) || 
-                               analysisText.includes(this.game.home_team.abbreviation.toLowerCase())
-        const mentionsAwayTeam = analysisText.includes(awayTeamName) || 
-                               analysisText.includes(this.game.away_team.abbreviation.toLowerCase())
-        
+        const mentionsHomeTeam = analysisText.includes(homeTeamName) ||
+          analysisText.includes(this.game.home_team.abbreviation.toLowerCase())
+        const mentionsAwayTeam = analysisText.includes(awayTeamName) ||
+          analysisText.includes(this.game.away_team.abbreviation.toLowerCase())
+
         if (mentionsHomeTeam && mentionsAwayTeam) {
           console.log(`[${this.capperName}] Injury analysis validated for correct teams`)
         } else {
@@ -159,12 +159,12 @@ Format your response to clearly separate:
           const lines = injuryAnalysis.split('\n')
           const filteredLines = lines.filter(line => {
             const lowerLine = line.toLowerCase()
-            return lowerLine.includes(homeTeamName) || 
-                   lowerLine.includes(awayTeamName) ||
-                   lowerLine.includes(this.game.home_team.abbreviation.toLowerCase()) ||
-                   lowerLine.includes(this.game.away_team.abbreviation.toLowerCase()) ||
-                   lowerLine.includes('injury') || lowerLine.includes('out') || 
-                   lowerLine.includes('questionable') || lowerLine.includes('doubtful')
+            return lowerLine.includes(homeTeamName) ||
+              lowerLine.includes(awayTeamName) ||
+              lowerLine.includes(this.game.home_team.abbreviation.toLowerCase()) ||
+              lowerLine.includes(this.game.away_team.abbreviation.toLowerCase()) ||
+              lowerLine.includes('injury') || lowerLine.includes('out') ||
+              lowerLine.includes('questionable') || lowerLine.includes('doubtful')
           })
           injuryAnalysis = filteredLines.join('\n')
         }
@@ -219,10 +219,13 @@ Format your output as a JSON object with factor names as keys. Example:
 
       if (perplexityAnalysis?.choices?.[0]?.message?.content) {
         try {
-          const parsedFactors = JSON.parse(perplexityAnalysis.choices[0].message.content)
+          // Fix: Strip leading + signs from numbers before parsing (Perplexity sometimes returns "+1.0" which breaks JSON)
+          const cleanedContent = perplexityAnalysis.choices[0].message.content.replace(/:\s*\+(\d)/g, ': $1')
+          const parsedFactors = JSON.parse(cleanedContent)
           Object.assign(factors, parsedFactors)
         } catch (e) {
           console.error('Failed to parse Perplexity analysis JSON:', e)
+          console.error('Raw content:', perplexityAnalysis.choices[0].message.content)
           factors.perplexity_raw_analysis = {
             description: 'Raw Perplexity analysis due to JSON parse error',
             value: perplexityAnalysis.choices[0].message.content,
@@ -272,11 +275,11 @@ Format your output as a JSON object with factor names as keys. Example:
         // Factor 5: Rest / 0 Days Rest
         `${this.game.home_team.name} record on 0 days rest this season`,
         `${this.game.away_team.name} record on 0 days rest this season`,
-        
+
         // Factor 6: Role Split (Favorites/Underdogs)
         `${this.game.home_team.name} record this season as favorites`,
         `${this.game.away_team.name} record this season as underdogs`,
-        
+
         // Factor 7: 3-Point Environment Allowed
         `${this.game.home_team.name} opponent 3 point attempts per game this season`,
         `${this.game.away_team.name} opponent 3 point attempts per game this season`
@@ -287,7 +290,7 @@ Format your output as a JSON object with factor names as keys. Example:
         const result = await this.queryStatMuseWithRetry(query)
         statMuseQuestions.push(query)
         statMuseAnswers.push({ question: query, answer: result.text })
-        
+
         // Log if question failed
         if (result.failed) {
           console.warn(`[${this.capperName}] StatMuse query failed: "${query}"`)
@@ -479,7 +482,7 @@ Make it engaging, professional, and data-driven. Example:
         const odds = this.game.odds[book]
         const homeTeam = this.game.home_team?.name
         const awayTeam = this.game.away_team?.name
-        
+
         if (odds.moneyline && homeTeam && awayTeam) {
           mlHome.push(odds.moneyline[homeTeam])
           mlAway.push(odds.moneyline[awayTeam])
@@ -525,33 +528,33 @@ Total: ${avgTotalLine} (over odds: ${avgTotalOver})`
     try {
       // First attempt
       const answer = await this.statMuseClient.query(this.game.sport, question)
-      
+
       // Check if answer is valid
       if (answer && !answer.toLowerCase().includes('no data') && !answer.toLowerCase().includes('not found')) {
         return { text: answer, failed: false }
       }
-      
+
       // If no valid answer and we have retries left, try rephrasing
       if (maxRetries > 0) {
         console.log(`[${this.capperName}] StatMuse query unclear, rephrasing: "${question}"`)
-        
+
         // Simple rephrase: make it more specific or simpler
         const rephrased = question
           .replace('Compare', 'What is the difference between')
           .replace(' vs ', ' versus ')
           .replace(' last 5', ' recent')
-        
+
         // Try again with rephrased question
         const retryAnswer = await this.statMuseClient.query(this.game.sport, rephrased)
-        
+
         if (retryAnswer && !retryAnswer.toLowerCase().includes('no data')) {
           return { text: retryAnswer, failed: false }
         }
       }
-      
+
       // Failed after retries
       return { text: null, failed: true }
-      
+
     } catch (error) {
       console.error(`[${this.capperName}] StatMuse error:`, error)
       return { text: null, failed: true }
