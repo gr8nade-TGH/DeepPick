@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { analyzeBatch } from '@/lib/cappers/shiva-algorithm'
+import { executeWizardPipeline } from '@/lib/cappers/shiva-wizard-orchestrator'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
@@ -7,14 +7,20 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 300 // 5 minutes for full pick generation
 
 /**
- * Simplified SHIVA pick generation endpoint for cron jobs
- * 
- * This endpoint runs the complete pick generation flow for a single game:
- * 1. Validate the selected game
- * 2. Run Shiva algorithm (baseline + AI + vegas comparison)
- * 3. Generate pick if confidence >= threshold
- * 4. Save to database
- * 
+ * SHIVA Pick Generation Endpoint (Unified with Wizard)
+ *
+ * This endpoint runs the SAME wizard pipeline (Steps 1-7) as the manual UI wizard.
+ * This ensures cron jobs and manual picks use IDENTICAL logic and produce IDENTICAL results.
+ *
+ * Steps executed:
+ * 1. Game Selection (already done by scanner)
+ * 2. Odds Snapshot
+ * 3. Factor Analysis (F1-F5: Pace Index, Offensive Form, Defensive Erosion, Three-Point Environment, Free-Throw Environment)
+ * 4. Score Predictions
+ * 5. Pick Generation (Market Edge)
+ * 6. Bold Player Predictions (SKIPPED for cron)
+ * 7. Pick Finalization
+ *
  * Usage: POST /api/shiva/generate-pick
  * Body: { selectedGame: { id, home_team, away_team, game_date, game_time, total_line, spread_line, odds, status } }
  */
@@ -22,7 +28,7 @@ export async function POST(request: Request) {
   const startTime = Date.now()
 
   try {
-    console.log('🎯 [SHIVA:GeneratePick] Starting pick generation...')
+    console.log('🎯 [SHIVA:GeneratePick] Starting unified wizard pipeline...')
 
     const body = await request.json()
     const { selectedGame } = body
@@ -56,30 +62,34 @@ export async function POST(request: Request) {
       }, { status: 404 })
     }
 
-    console.log('[SHIVA:GeneratePick] Running Shiva algorithm...')
+    // Generate run ID
+    const runId = `shiva_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
 
-    // Prepare game for analysis
-    const maxPicks = 1
-    const existingPicksByGame = new Map<string, Set<string>>()
+    console.log('[SHIVA:GeneratePick] Running unified wizard pipeline...')
 
-    // Run Shiva algorithm
-    const results = await analyzeBatch([game], maxPicks, existingPicksByGame, { skipTimeValidation: true })
+    // Execute the wizard pipeline (Steps 1-7)
+    const result = await executeWizardPipeline({
+      game,
+      runId,
+      sport: 'NBA',
+      betType: 'TOTAL',
+      aiProvider: 'perplexity',
+      newsWindowHours: 24
+    })
 
     const duration = Date.now() - startTime
 
-    if (!results || results.length === 0) {
-      console.log('[SHIVA:GeneratePick] No results from algorithm')
+    if (!result.success) {
+      console.error('[SHIVA:GeneratePick] Pipeline failed:', result.error)
       return NextResponse.json({
         success: false,
-        decision: 'PASS',
-        message: 'Algorithm returned no results',
+        decision: 'ERROR',
+        message: result.error || 'Pipeline execution failed',
         duration: `${duration}ms`
-      })
+      }, { status: 500 })
     }
 
-    const result = results[0]
     const confidence = result.log?.confidenceBreakdown?.finalConfidence || 0
-    const runId = `shiva_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
 
     // CRITICAL: Save run to database (for run log table)
     console.log('[SHIVA:GeneratePick] Saving run to database...')
@@ -94,12 +104,15 @@ export async function POST(request: Request) {
       confidence,
       pick_type: result.pick?.pickType || 'TOTAL',
       selection: result.pick?.selection || 'PASS',
-      factor_contributions: result.log?.factors || [],
+      factor_contributions: result.log?.factors || [], // Now contains F1-F5 factors!
       predicted_total: result.log?.finalPrediction?.total || 0,
+      baseline_avg: result.log?.finalPrediction?.total || 0,
+      market_total: result.pick?.lockedOdds?.total?.line || 0,
       game: {
-        home_team: game.home_team?.name,
-        away_team: game.away_team?.name
-      }
+        home_team: typeof game.home_team === 'string' ? game.home_team : game.home_team?.name,
+        away_team: typeof game.away_team === 'string' ? game.away_team : game.away_team?.name
+      },
+      steps: result.steps // Store all step results for debugging
     }
 
     const { error: runError } = await supabase
@@ -118,23 +131,25 @@ export async function POST(request: Request) {
       // Don't fail the whole request, just log the error
     } else {
       console.log(`✅ [SHIVA:GeneratePick] Run saved to database: ${runId}`)
+      console.log(`📊 [SHIVA:GeneratePick] Factors saved: ${result.log?.factors?.length || 0} factors`)
     }
 
     if (!result.pick) {
-      console.log('[SHIVA:GeneratePick] Algorithm decided to PASS')
+      console.log('[SHIVA:GeneratePick] Pipeline decided to PASS')
       return NextResponse.json({
         success: false,
         decision: 'PASS',
-        message: 'Algorithm decided not to pick this game',
+        message: 'Pipeline decided not to pick this game',
         confidence,
         runId,
+        factors: result.log?.factors || [],
         duration: `${duration}ms`
       })
     }
 
     const pick = result.pick
 
-    console.log(`✅ [SHIVA:GeneratePick] Pick generated: ${pick.selection} (${pick.units} units, ${pick.confidence}% confidence)`)
+    console.log(`✅ [SHIVA:GeneratePick] Pick generated: ${pick.selection} (${pick.units} units, ${confidence.toFixed(2)} confidence)`)
 
     // Save pick to database
     const { data: savedPick, error: saveError } = await supabase
@@ -144,7 +159,7 @@ export async function POST(request: Request) {
         capper: 'shiva',
         pick_type: pick.pickType.toLowerCase(),
         selection: pick.selection,
-        odds: pick.odds || 0,
+        odds: pick.lockedOdds?.total?.over_odds || -110,
         units: pick.units,
         confidence: pick.confidence,
         game_snapshot: {
@@ -176,7 +191,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       decision: 'PICK',
-      message: 'Pick generated successfully',
+      message: 'Pick generated successfully using unified wizard pipeline',
       pick: {
         id: savedPick.id,
         game_id: game.id,
@@ -184,8 +199,9 @@ export async function POST(request: Request) {
         selection: pick.selection,
         units: pick.units,
         confidence: pick.confidence,
-        odds: pick.odds
+        odds: pick.lockedOdds?.total?.over_odds || -110
       },
+      factors: result.log?.factors || [],
       duration: `${duration}ms`
     })
 
