@@ -212,12 +212,25 @@ export function RunLogTable() {
     }
   }
 
-  // Extract pick type from selection string
+  // Extract pick type from selection string with market total
   const getPickType = (run: RunLogEntry): string => {
     if (run.units === 0 || run.units === null) return 'PASS'
     if (!run.selection) return '—'
-    if (run.selection.toUpperCase().includes('OVER')) return 'OVER'
-    if (run.selection.toUpperCase().includes('UNDER')) return 'UNDER'
+
+    // If selection already includes the total (e.g., "OVER 223.5"), return as-is
+    if (run.selection.match(/\d+(\.\d+)?/)) {
+      return run.selection
+    }
+
+    // Otherwise, append market total to OVER/UNDER
+    const marketTotal = run.market_total || 0
+    if (run.selection.toUpperCase().includes('OVER')) {
+      return `OVER ${marketTotal.toFixed(1)}`
+    }
+    if (run.selection.toUpperCase().includes('UNDER')) {
+      return `UNDER ${marketTotal.toFixed(1)}`
+    }
+
     return run.selection.split(' ')[0]?.toUpperCase() || '—'
   }
 
@@ -370,9 +383,9 @@ export function RunLogTable() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4" style={{ maxHeight: '400px' }}>
       {/* Run Log Table */}
-      <div className="border border-gray-700 rounded bg-gray-900 overflow-hidden flex flex-col" style={{ height: '300px' }}>
+      <div className="border border-gray-700 rounded bg-gray-900 overflow-hidden flex flex-col" style={{ height: '250px' }}>
         <div className="p-3 border-b border-gray-700 flex-shrink-0 flex justify-between items-center">
           <h3 className="text-lg font-bold text-white">📋 Run Log ({runs.length})</h3>
           <div className="flex gap-2">
@@ -471,7 +484,7 @@ export function RunLogTable() {
 
       {/* Cooldown Management Table */}
       {cooldowns.length > 0 && (
-        <div className="border border-gray-700 rounded bg-gray-900 overflow-hidden">
+        <div className="border border-gray-700 rounded bg-gray-900 overflow-hidden flex-shrink-0">
           <div className="p-3 border-b border-gray-700 flex justify-between items-center">
             <h3 className="text-lg font-bold text-white">⏸️ Cooldowns ({cooldowns.length})</h3>
             <button
@@ -482,7 +495,7 @@ export function RunLogTable() {
               📋 Copy Cooldown Debug
             </button>
           </div>
-          <div className="overflow-y-auto" style={{ maxHeight: '200px' }}>
+          <div className="overflow-y-auto" style={{ maxHeight: '130px' }}>
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-700">
