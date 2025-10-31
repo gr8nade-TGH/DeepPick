@@ -94,26 +94,34 @@ async function getFactorWeights(capperId: string, sport: string, betType: string
   const admin = getSupabaseAdmin()
 
   const profileRes = await admin
-    .from('capper_settings')
-    .select('profile_json')
+    .from('capper_profiles')
+    .select('factors')
     .eq('capper_id', capperId)
     .eq('sport', sport)
     .eq('bet_type', betType)
+    .eq('is_active', true)
     .single()
 
-  if (profileRes.error || !profileRes.data?.profile_json?.factors) {
+  if (profileRes.error || !profileRes.data?.factors) {
     throw new Error(
       `[FACTORS_SERVICE] Factor weights not configured! Please configure factor weights in the SHIVA Management UI. ` +
-      `Error: ${profileRes.error?.message || 'No profile_json.factors found'}`
+      `Error: ${profileRes.error?.message || 'No factors found in capper_profiles table'}`
     )
   }
 
-  const weights = getFactorWeightsFromProfile(profileRes.data.profile_json)
+  // Convert factors array to weights object
+  // factors is an array like: [{ key: 'paceIndex', enabled: true, weight: 50 }, ...]
+  const weights: Record<string, number> = {}
+  for (const factor of profileRes.data.factors) {
+    if (factor.enabled && factor.key !== 'edgeVsMarket') {
+      weights[factor.key] = factor.weight
+    }
+  }
 
   // Validate that we have weights
   if (Object.keys(weights).length === 0) {
     throw new Error(
-      `[FACTORS_SERVICE] No factor weights found in profile! Please configure factor weights in the SHIVA Management UI.`
+      `[FACTORS_SERVICE] No enabled factors found in profile! Please configure factor weights in the SHIVA Management UI.`
     )
   }
 

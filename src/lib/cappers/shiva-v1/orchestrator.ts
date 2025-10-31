@@ -164,30 +164,37 @@ async function computeFactors(runId: string, input: PipelineInput, oddsSnapshot:
     let factorWeights: Record<string, number> = {}
 
     const profileRes = await admin
-      .from('capper_settings')
-      .select('profile_json')
+      .from('capper_profiles')
+      .select('factors')
       .eq('capper_id', input.capperId)
       .eq('sport', input.sport)
       .eq('bet_type', input.betType)
+      .eq('is_active', true)
       .single()
 
-    if (profileRes.error || !profileRes.data?.profile_json?.factors) {
+    if (profileRes.error || !profileRes.data?.factors) {
       throw new Error(
         `[Orchestrator] Factor weights not configured! Please configure factor weights in the SHIVA Management UI. ` +
-        `Error: ${profileRes.error?.message || 'No profile_json.factors found'}`
+        `Error: ${profileRes.error?.message || 'No factors found in capper_profiles table'}`
       )
     }
 
-    factorWeights = getFactorWeightsFromProfile(profileRes.data.profile_json)
+    // Convert factors array to weights object
+    // factors is an array like: [{ key: 'paceIndex', enabled: true, weight: 50 }, ...]
+    for (const factor of profileRes.data.factors) {
+      if (factor.enabled && factor.key !== 'edgeVsMarket') {
+        factorWeights[factor.key] = factor.weight
+      }
+    }
 
     // Validate that we have weights
     if (Object.keys(factorWeights).length === 0) {
       throw new Error(
-        `[Orchestrator] No factor weights found in profile! Please configure factor weights in the SHIVA Management UI.`
+        `[Orchestrator] No enabled factors found in profile! Please configure factor weights in the SHIVA Management UI.`
       )
     }
 
-    console.log('[Orchestrator] Loaded factor weights from profile:', factorWeights)
+    console.log('[Orchestrator] Loaded factor weights from capper_profiles:', factorWeights)
 
     // Compute NBA totals factors
     const ctx = {

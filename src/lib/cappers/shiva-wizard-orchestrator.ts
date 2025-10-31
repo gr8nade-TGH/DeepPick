@@ -294,7 +294,6 @@ async function computeFactors(
 ) {
   // Import the factor computation logic
   const { computeTotalsFactors } = await import('@/lib/cappers/shiva-v1/factors/nba-totals-orchestrator')
-  const { getFactorWeightsFromProfile } = await import('@/lib/cappers/shiva-v1/confidence-calculator')
   const supabase = getSupabaseAdmin()
 
   // Get factor weights from profile
@@ -303,30 +302,37 @@ async function computeFactors(
   let factorWeights: Record<string, number> = {}
 
   const { data: profileData, error: profileError } = await supabase
-    .from('capper_settings')
-    .select('profile_json')
+    .from('capper_profiles')
+    .select('factors')
     .eq('capper_id', 'shiva')
     .eq('sport', sport)
     .eq('bet_type', betType)
+    .eq('is_active', true)
     .single()
 
-  if (profileError || !profileData?.profile_json?.factors) {
+  if (profileError || !profileData?.factors) {
     throw new Error(
       `[WizardOrchestrator] Factor weights not configured! Please configure factor weights in the SHIVA Management UI. ` +
-      `Error: ${profileError?.message || 'No profile_json.factors found'}`
+      `Error: ${profileError?.message || 'No factors found in capper_profiles table'}`
     )
   }
 
-  factorWeights = getFactorWeightsFromProfile(profileData.profile_json)
+  // Convert factors array to weights object
+  // factors is an array like: [{ key: 'paceIndex', enabled: true, weight: 50 }, ...]
+  for (const factor of profileData.factors) {
+    if (factor.enabled && factor.key !== 'edgeVsMarket') {
+      factorWeights[factor.key] = factor.weight
+    }
+  }
 
   // Validate that we have weights
   if (Object.keys(factorWeights).length === 0) {
     throw new Error(
-      `[WizardOrchestrator] No factor weights found in profile! Please configure factor weights in the SHIVA Management UI.`
+      `[WizardOrchestrator] No enabled factors found in profile! Please configure factor weights in the SHIVA Management UI.`
     )
   }
 
-  console.log('[WizardOrchestrator] Loaded factor weights from profile:', factorWeights)
+  console.log('[WizardOrchestrator] Loaded factor weights from capper_profiles:', factorWeights)
 
   // Compute factors
   const ctx = {
