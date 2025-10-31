@@ -21,14 +21,14 @@ const ScannerSchema = z.object({
 
 export async function POST(request: NextRequest) {
   const requestId = createRequestId()
-  
+
   return withApiCall(
     { request_id: requestId, route: '/api/shiva/step1-scanner' },
     async () => {
       try {
         const body = await request.json()
         const parse = ScannerSchema.safeParse(body)
-        
+
         if (!parse.success) {
           await logError({
             source: 'api',
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
             code: 'VALIDATION_FAILED',
             details: { errors: parse.error.issues, body },
           })
-          
+
           return NextResponse.json({
             error: {
               code: 'VALIDATION_FAILED',
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
 
         const { sport, betType, limit, selectedGame: selectedGameFromProps } = parse.data
         const supabase = getSupabase()
-        
+
         console.log(`[SHIVA_SCANNER] Starting scan for ${sport} ${betType} games`)
         console.log(`[SHIVA_SCANNER] Selected game:`, selectedGameFromProps)
 
@@ -58,12 +58,12 @@ export async function POST(request: NextRequest) {
         if (selectedGameFromProps) {
           console.log(`[SHIVA_SCANNER] Checking selected game: ${selectedGameFromProps.away} @ ${selectedGameFromProps.home}`)
           console.log(`[SHIVA_SCANNER] Selected game structure:`, JSON.stringify(selectedGameFromProps, null, 2))
-          
+
           // Check if this game can be processed
           console.log(`[SHIVA_SCANNER] About to check game eligibility...`)
           const canProcess = await checkGameEligibility(selectedGameFromProps, sport, betType, supabase)
           console.log(`[SHIVA_SCANNER] Game eligibility result:`, canProcess)
-          
+
           if (canProcess) {
             console.log(`[SHIVA_SCANNER] Selected game is eligible, using it`)
             return NextResponse.json({
@@ -95,12 +95,12 @@ export async function POST(request: NextRequest) {
         // Scan for eligible games
         console.log(`[SHIVA_SCANNER] Scanning for eligible ${sport} ${betType} games`)
         console.log(`[SHIVA_SCANNER] About to call scanForEligibleGames...`)
-        
+
         const scanResult = await scanForEligibleGames(sport, betType, limit, supabase)
         const eligibleGames = scanResult.games
-        
+
         console.log(`[SHIVA_SCANNER] scanForEligibleGames returned:`, eligibleGames.length, 'games')
-        
+
         if (eligibleGames.length === 0) {
           console.log(`[SHIVA_SCANNER] No eligible games found`)
           return NextResponse.json({
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
         const awayTeamName = firstEligibleGame.away_team?.name || firstEligibleGame.away_team
         const homeTeamAbbr = firstEligibleGame.home_team?.abbreviation || (typeof homeTeamName === 'string' ? homeTeamName.substring(0, 3).toUpperCase() : 'HOM')
         const awayTeamAbbr = firstEligibleGame.away_team?.abbreviation || (typeof awayTeamName === 'string' ? awayTeamName.substring(0, 3).toUpperCase() : 'AWY')
-        
+
         return NextResponse.json({
           success: true,
           run_id: `shiva_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
@@ -165,7 +165,7 @@ export async function POST(request: NextRequest) {
           code: 'UNHANDLED_ERROR',
           details: { message: error.message, stack: error.stack },
         })
-        
+
         return NextResponse.json({
           error: {
             code: 'UNHANDLED_ERROR',
@@ -183,19 +183,19 @@ export async function POST(request: NextRequest) {
  * Check if a specific game is eligible for pick generation
  */
 async function checkGameEligibility(
-  game: any, 
-  sport: string, 
-  betType: string, 
+  game: any,
+  sport: string,
+  betType: string,
   supabase: any
 ): Promise<boolean> {
   try {
     const sportLower = sport.toLowerCase()
     const betTypeLower = betType === 'TOTAL' ? 'total' : 'spread'
-    
+
     // Check if game exists and is scheduled or live
     console.log(`[SHIVA_SCANNER] Looking for game with ID: ${game.game_id}`)
     console.log(`[SHIVA_SCANNER] Sport filter: ${sportLower}`)
-    
+
     const { data: gameData, error: gameError } = await supabase
       .from('games')
       .select('id, status, game_time')
@@ -215,7 +215,7 @@ async function checkGameEligibility(
     const now = new Date()
     const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60 * 1000)
     const gameTime = new Date(gameData.game_time)
-    
+
     if (gameTime <= fiveMinutesFromNow) {
       console.log(`[SHIVA_SCANNER] Game is too soon: ${gameTime.toISOString()}`)
       return false
@@ -250,7 +250,7 @@ async function checkGameEligibility(
 
     if (!canGenerate) {
       console.log(`[SHIVA_SCANNER] Game is not eligible (cooldown or existing pick)`)
-      
+
       // Special logic for TOTAL picks: Check if the total line has changed
       if (betTypeLower === 'total' && game.total_line) {
         const { data: cooldownRecord } = await supabase
@@ -261,11 +261,11 @@ async function checkGameEligibility(
           .eq('bet_type', 'total')
           .gt('cooldown_until', new Date().toISOString())
           .single()
-        
+
         if (cooldownRecord) {
           console.log(`[SHIVA_SCANNER] Found active cooldown with total_line: ${cooldownRecord.total_line}`)
           console.log(`[SHIVA_SCANNER] Current game total_line: ${game.total_line}`)
-          
+
           // If the total line has changed, allow the prediction
           if (cooldownRecord.total_line !== game.total_line) {
             console.log(`[SHIVA_SCANNER] Total line has changed (${cooldownRecord.total_line} -> ${game.total_line}), allowing prediction`)
@@ -276,7 +276,7 @@ async function checkGameEligibility(
               .eq('game_id', game.game_id)
               .eq('capper', 'shiva')
               .eq('bet_type', 'total')
-            
+
             console.log(`[SHIVA_SCANNER] Game is eligible for processing (total line changed)`)
             return true
           } else {
@@ -285,7 +285,7 @@ async function checkGameEligibility(
           }
         }
       }
-      
+
       return false
     }
 
@@ -302,23 +302,23 @@ async function checkGameEligibility(
  * Scan for eligible games
  */
 async function scanForEligibleGames(
-  sport: string, 
-  betType: string, 
-  limit: number, 
+  sport: string,
+  betType: string,
+  limit: number,
   supabase: any
 ): Promise<{ games: any[], debug: any }> {
   try {
     const sportLower = sport.toLowerCase()
     const betTypeLower = betType === 'TOTAL' ? 'total' : 'spread'
-    
+
     // Get games that are scheduled and in the future (but allow games starting soon)
     const now = new Date()
     const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60 * 1000) // Only 5 minutes buffer
-    
+
     // Format the time for database comparison (HH:MM:SS format)
     const timeString = fiveMinutesFromNow.toTimeString().split(' ')[0] // Gets HH:MM:SS
     const dateString = fiveMinutesFromNow.toISOString().split('T')[0] // Gets YYYY-MM-DD
-    
+
     console.log(`[SHIVA_SCANNER] Scanning for games with:`)
     console.log(`  - sport: ${sportLower}`)
     console.log(`  - status: scheduled/live`)
@@ -326,7 +326,7 @@ async function scanForEligibleGames(
     console.log(`  - limit: ${limit * 2}`)
     console.log(`  - Current time: ${now.toISOString()}`)
     console.log(`  - Filtering for games after: ${fiveMinutesFromNow.toISOString()}`)
-    
+
     const { data: games, error: gamesError } = await supabase
       .from('games')
       .select(`
@@ -336,7 +336,9 @@ async function scanForEligibleGames(
         game_date,
         game_time,
         odds,
-        status
+        status,
+        total_line,
+        spread_line
       `)
       .eq('sport', sportLower)
       .eq('status', 'scheduled') // ONLY scheduled games - skip live/completed
@@ -344,7 +346,7 @@ async function scanForEligibleGames(
       .order('game_date', { ascending: true })
       .order('game_time', { ascending: true })
       .limit(limit * 2)
-    
+
     console.log(`[SHIVA_SCANNER] Found ${games?.length || 0} games`)
     if (gamesError) {
       console.log(`[SHIVA_SCANNER] Games query error:`, gamesError)
@@ -352,26 +354,26 @@ async function scanForEligibleGames(
 
     if (gamesError) {
       console.error(`[SHIVA_SCANNER] Error fetching games:`, gamesError)
-      return { 
-        games: [], 
-        debug: { 
-          step: 'database_query', 
+      return {
+        games: [],
+        debug: {
+          step: 'database_query',
           error: gamesError.message,
-          queryParams: { sport: sportLower, status: ['scheduled','live'], game_date: dateString, game_time: timeString }
-        } 
+          queryParams: { sport: sportLower, status: ['scheduled', 'live'], game_date: dateString, game_time: timeString }
+        }
       }
     }
 
     if (!games || games.length === 0) {
       console.log(`[SHIVA_SCANNER] No games found in database query`)
       console.log(`[SHIVA_SCANNER] Query parameters: sport=${sportLower}, status=['scheduled','live'], game_date >= ${dateString}, game_time >= ${timeString}`)
-      return { 
-        games: [], 
-        debug: { 
-          step: 'database_query', 
+      return {
+        games: [],
+        debug: {
+          step: 'database_query',
           gamesFound: 0,
-          queryParams: { sport: sportLower, status: ['scheduled','live'], game_date: dateString, game_time: timeString }
-        } 
+          queryParams: { sport: sportLower, status: ['scheduled', 'live'], game_date: dateString, game_time: timeString }
+        }
       }
     }
 
@@ -381,14 +383,14 @@ async function scanForEligibleGames(
     const processedGames = games.map((game: any) => {
       // Extract odds from JSONB column
       const odds = game.odds || {}
-      
+
       // Calculate average total line from all sportsbooks
       const sportsbooks = Object.keys(odds)
       const totalLines = sportsbooks
         .map(book => odds[book]?.total?.line)
         .filter(line => line !== undefined && line !== null)
-      
-      const avgTotalLine = totalLines.length > 0 
+
+      const avgTotalLine = totalLines.length > 0
         ? parseFloat((totalLines.reduce((a, b) => a + b, 0) / totalLines.length).toFixed(1))
         : 0
 
@@ -396,8 +398,8 @@ async function scanForEligibleGames(
       const spreadLines = sportsbooks
         .map(book => odds[book]?.spread?.line)
         .filter(line => line !== undefined && line !== null)
-      
-      const avgSpreadLine = spreadLines.length > 0 
+
+      const avgSpreadLine = spreadLines.length > 0
         ? parseFloat((spreadLines.reduce((a, b) => a + b, 0) / spreadLines.length).toFixed(1))
         : 0
 
@@ -414,7 +416,7 @@ async function scanForEligibleGames(
     const gameIds = processedGames.map((game: any) => game.id)
     console.log(`[SHIVA_SCANNER] Checking existing picks for ${gameIds.length} games`)
     console.log(`[SHIVA_SCANNER] Looking for capper: shiva, pick_type: ${betTypeLower}`)
-    
+
     const { data: existingPicks, error: picksError } = await supabase
       .from('picks')
       .select('game_id, pick_type, status')
@@ -425,13 +427,13 @@ async function scanForEligibleGames(
 
     if (picksError) {
       console.error(`[SHIVA_SCANNER] Error fetching existing picks:`, picksError)
-      return { 
-        games: [], 
-        debug: { 
-          step: 'existing_picks_check', 
+      return {
+        games: [],
+        debug: {
+          step: 'existing_picks_check',
           error: picksError.message,
           gamesFound: processedGames.length
-        } 
+        }
       }
     }
 
@@ -453,15 +455,15 @@ async function scanForEligibleGames(
     if (availableGames.length === 0) {
       console.log(`[SHIVA_SCANNER] No games available after filtering existing picks`)
       console.log(`[SHIVA_SCANNER] Games with existing picks:`, Array.from(gamesWithPicks))
-      return { 
-        games: [], 
-        debug: { 
-          step: 'existing_picks_filter', 
+      return {
+        games: [],
+        debug: {
+          step: 'existing_picks_filter',
           gamesFound: processedGames.length,
           existingPicksCount: existingPicks?.length || 0,
           gamesWithPicks: Array.from(gamesWithPicks),
           availableAfterFilter: 0
-        } 
+        }
       }
     }
 
@@ -506,44 +508,44 @@ async function scanForEligibleGames(
     if (finalGames.length > 0) {
       console.log(`[SHIVA_SCANNER] Available games:`, finalGames.map((g: any) => `${g.away_team?.name || 'Unknown'} @ ${g.home_team?.name || 'Unknown'} (${g.id})`))
     }
-    
+
     if (finalGames.length === 0) {
       console.log(`[SHIVA_SCANNER] No games available after filtering cooldown`)
       console.log(`[SHIVA_SCANNER] Games in cooldown:`, Array.from(gamesInCooldown))
-      return { 
-        games: [], 
-        debug: { 
-          step: 'cooldown_filter', 
+      return {
+        games: [],
+        debug: {
+          step: 'cooldown_filter',
           gamesFound: processedGames.length,
           availableAfterPicksFilter: availableGames.length,
           cooldownCount: cooldownData?.length || 0,
           gamesInCooldown: Array.from(gamesInCooldown),
           finalAvailable: 0
-        } 
+        }
       }
     }
 
-    return { 
-      games: finalGames.slice(0, limit), 
-      debug: { 
-        step: 'success', 
+    return {
+      games: finalGames.slice(0, limit),
+      debug: {
+        step: 'success',
         gamesFound: games.length,
         availableAfterPicksFilter: availableGames.length,
         cooldownCount: cooldownData?.length || 0,
         finalAvailable: finalGames.length,
         returned: Math.min(finalGames.length, limit)
-      } 
+      }
     }
 
   } catch (error: any) {
     console.error(`[SHIVA_SCANNER] Error scanning for eligible games:`, error)
-    return { 
-      games: [], 
-      debug: { 
-        step: 'error', 
+    return {
+      games: [],
+      debug: {
+        step: 'error',
         error: error?.message || 'Unknown error',
         stack: error?.stack || 'No stack trace'
-      } 
+      }
     }
   }
 }
