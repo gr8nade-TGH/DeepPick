@@ -51,33 +51,33 @@ export async function runFullPipeline(input: PipelineInput): Promise<PipelineRes
   const runId = crypto.randomUUID()
   const errors: string[] = []
   const steps: any = {}
-  
+
   try {
     console.log('[ORCHESTRATOR:START]', { runId, input })
-    
+
     // Step 1: Initialize run
     steps.step1 = await initializeRun(runId, input)
-    
+
     // Step 2: Capture odds snapshot
     steps.step2 = await captureOddsSnapshot(runId, input)
-    
+
     // Step 3: Compute factors
     steps.step3 = await computeFactors(runId, input, steps.step2)
-    
+
     // Step 4: Generate predictions and base confidence
     steps.step4 = await generatePredictions(runId, input, steps.step3)
-    
+
     // Step 5: Apply market edge adjustment
     steps.step5 = await applyMarketEdge(runId, input, steps.step4, steps.step2)
-    
+
     // Step 6: Generate final pick
     steps.step6 = await generatePick(runId, input, steps.step5, steps.step2)
-    
+
     // Step 7: Create insight card
     steps.step7 = await createInsightCard(runId, input, steps.step6, steps.step3)
-    
+
     console.log('[ORCHESTRATOR:SUCCESS]', { runId, executionTimeMs: Date.now() - startTime })
-    
+
     return {
       runId,
       success: true,
@@ -86,12 +86,12 @@ export async function runFullPipeline(input: PipelineInput): Promise<PipelineRes
       errors,
       executionTimeMs: Date.now() - startTime
     }
-    
+
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Unknown error'
     errors.push(errorMsg)
     console.error('[ORCHESTRATOR:ERROR]', { runId, error: errorMsg })
-    
+
     return {
       runId,
       success: false,
@@ -107,7 +107,7 @@ export async function runFullPipeline(input: PipelineInput): Promise<PipelineRes
  */
 async function initializeRun(runId: string, input: PipelineInput) {
   const admin = getSupabaseAdmin()
-  
+
   const { data, error } = await admin
     .from('runs')
     .insert({
@@ -121,9 +121,9 @@ async function initializeRun(runId: string, input: PipelineInput) {
     })
     .select()
     .single()
-  
+
   if (error) throw new Error(`Failed to initialize run: ${error.message}`)
-  
+
   return { run_id: runId, state: 'IN-PROGRESS' }
 }
 
@@ -134,7 +134,7 @@ async function captureOddsSnapshot(runId: string, input: PipelineInput) {
   // TODO: Integrate with real odds API
   // For now, return minimal structure - this should be replaced with real odds fetching
   console.warn('[ORCHESTRATOR] Using placeholder odds snapshot - integrate with real odds API')
-  
+
   return {
     snapshot_id: `snapshot_${runId}`,
     is_active: true,
@@ -159,41 +159,36 @@ async function captureOddsSnapshot(runId: string, input: PipelineInput) {
 async function computeFactors(runId: string, input: PipelineInput, oddsSnapshot: any) {
   if (input.sport === 'NBA' && input.betType === 'TOTAL') {
     // Get factor weights from capper profile
+    // NO FALLBACK WEIGHTS - must be configured in UI (except Edge vs Market which is always 100%)
     const admin = getSupabaseAdmin()
     let factorWeights: Record<string, number> = {}
-    
-    try {
-      const profileRes = await admin
-        .from('capper_settings')
-        .select('profile_json')
-        .eq('capper_id', input.capperId)
-        .eq('sport', input.sport)
-        .eq('bet_type', input.betType)
-        .single()
-      
-      if (profileRes.data?.profile_json?.factors) {
-        factorWeights = getFactorWeightsFromProfile(profileRes.data.profile_json)
-      } else {
-        // Default weights
-        factorWeights = {
-          paceIndex: 20,
-          offForm: 20,
-          defErosion: 20,
-          threeEnv: 20,
-          whistleEnv: 20
-        }
-      }
-    } catch (error) {
-      console.warn('Failed to load factor weights, using defaults')
-      factorWeights = {
-        paceIndex: 20,
-        offForm: 20,
-        defErosion: 20,
-        threeEnv: 20,
-        whistleEnv: 20
-      }
+
+    const profileRes = await admin
+      .from('capper_settings')
+      .select('profile_json')
+      .eq('capper_id', input.capperId)
+      .eq('sport', input.sport)
+      .eq('bet_type', input.betType)
+      .single()
+
+    if (profileRes.error || !profileRes.data?.profile_json?.factors) {
+      throw new Error(
+        `[Orchestrator] Factor weights not configured! Please configure factor weights in the SHIVA Management UI. ` +
+        `Error: ${profileRes.error?.message || 'No profile_json.factors found'}`
+      )
     }
-    
+
+    factorWeights = getFactorWeightsFromProfile(profileRes.data.profile_json)
+
+    // Validate that we have weights
+    if (Object.keys(factorWeights).length === 0) {
+      throw new Error(
+        `[Orchestrator] No factor weights found in profile! Please configure factor weights in the SHIVA Management UI.`
+      )
+    }
+
+    console.log('[Orchestrator] Loaded factor weights from profile:', factorWeights)
+
     // Compute NBA totals factors
     const ctx = {
       game_id: input.gameId,
@@ -211,10 +206,10 @@ async function computeFactors(runId: string, input: PipelineInput, oddsSnapshot:
       },
       factorWeights
     }
-    
+
     return await computeTotalsFactors(ctx)
   }
-  
+
   // Legacy factors for other sports/bet types
   throw new Error(`Factor computation not implemented for ${input.sport} ${input.betType}`)
 }
@@ -226,7 +221,7 @@ async function generatePredictions(runId: string, input: PipelineInput, factorsR
   if (!factorsResult?.factors) {
     throw new Error('No factors available for prediction generation')
   }
-  
+
   // Calculate confidence using the new system
   const factorWeights = factorsResult.factorWeights || {}
   const confidenceResult = calculateConfidence({
@@ -234,10 +229,10 @@ async function generatePredictions(runId: string, input: PipelineInput, factorsR
     factorWeights,
     confSource: 'nba_totals_v1'
   })
-  
+
   // Mock prediction logic (would be more sophisticated in reality)
   const predictedTotal = 220 + (confidenceResult.edgeRaw * 10) // Simple mock
-  
+
   return {
     run_id: runId,
     predictions: {
@@ -264,11 +259,11 @@ async function applyMarketEdge(runId: string, input: PipelineInput, predictions:
   const marketTotalLine = oddsSnapshot?.snapshot?.total?.line || 220
   const predictedTotal = predictions?.predictions?.total_pred_points || 220
   const baseConfidence = predictions?.confidence?.confScore || 0
-  
+
   const marketEdgePts = predictedTotal - marketTotalLine
   const edgeFactor = Math.max(-1, Math.min(1, marketEdgePts / 10))
   const adjustedConfidence = Math.max(0, Math.min(5, baseConfidence + (edgeFactor * 1.0)))
-  
+
   return {
     run_id: runId,
     conf_final: adjustedConfidence,
@@ -290,7 +285,7 @@ async function generatePick(runId: string, input: PipelineInput, confidence: any
   const finalConfidence = confidence?.conf_final || 0
   const predictedTotal = confidence?.predictions?.total_pred_points || 220
   const marketLine = oddsSnapshot?.snapshot?.total?.line || 220
-  
+
   // Determine pick direction and units using same logic as Step 5
   const pickDirection = predictedTotal > marketLine ? 'OVER' : 'UNDER'
   let units = 0
@@ -299,7 +294,7 @@ async function generatePick(runId: string, input: PipelineInput, confidence: any
   else if (finalConfidence >= 3.5) units = 2
   else if (finalConfidence >= 2.5) units = 1
   // else units = 0 (PASS)
-  
+
   const pick = {
     id: `pick_${runId}`,
     run_id: runId,
@@ -310,7 +305,7 @@ async function generatePick(runId: string, input: PipelineInput, confidence: any
     locked_odds: oddsSnapshot?.snapshot,
     locked_at: new Date().toISOString()
   }
-  
+
   return {
     run_id: runId,
     decision: 'PICK',

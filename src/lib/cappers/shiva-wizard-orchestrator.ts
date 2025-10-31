@@ -299,29 +299,34 @@ async function computeFactors(
 
   // Get factor weights from profile
   // NOTE: These are weight PERCENTAGES (0-100), not decimal weights
-  let factorWeights: Record<string, number> = {
-    paceIndex: 20,
-    offForm: 20,
-    defErosion: 20,
-    threeEnv: 20,
-    whistleEnv: 20
+  // NO FALLBACK WEIGHTS - must be configured in UI (except Edge vs Market which is always 100%)
+  let factorWeights: Record<string, number> = {}
+
+  const { data: profileData, error: profileError } = await supabase
+    .from('capper_settings')
+    .select('profile_json')
+    .eq('capper_id', 'shiva')
+    .eq('sport', sport)
+    .eq('bet_type', betType)
+    .single()
+
+  if (profileError || !profileData?.profile_json?.factors) {
+    throw new Error(
+      `[WizardOrchestrator] Factor weights not configured! Please configure factor weights in the SHIVA Management UI. ` +
+      `Error: ${profileError?.message || 'No profile_json.factors found'}`
+    )
   }
 
-  try {
-    const { data: profileData } = await supabase
-      .from('capper_settings')
-      .select('profile_json')
-      .eq('capper_id', 'shiva')
-      .eq('sport', sport)
-      .eq('bet_type', betType)
-      .single()
+  factorWeights = getFactorWeightsFromProfile(profileData.profile_json)
 
-    if (profileData?.profile_json?.factors) {
-      factorWeights = getFactorWeightsFromProfile(profileData.profile_json)
-    }
-  } catch (error) {
-    console.warn('[WizardOrchestrator] Failed to load factor weights, using defaults')
+  // Validate that we have weights
+  if (Object.keys(factorWeights).length === 0) {
+    throw new Error(
+      `[WizardOrchestrator] No factor weights found in profile! Please configure factor weights in the SHIVA Management UI.`
+    )
   }
+
+  console.log('[WizardOrchestrator] Loaded factor weights from profile:', factorWeights)
 
   // Compute factors
   const ctx = {

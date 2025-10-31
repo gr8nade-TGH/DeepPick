@@ -32,13 +32,13 @@ export interface FactorComputationResult {
  */
 export async function computeFactors(input: FactorComputationInput): Promise<FactorComputationResult> {
   const { runId, gameId, awayTeam, homeTeam, sport, betType, capperId } = input
-  
+
   console.log('[FACTORS_SERVICE:START]', { runId, sport, betType, capperId })
-  
+
   if (sport === 'NBA' && betType === 'TOTAL') {
     return await computeNBATotalsFactors(input)
   }
-  
+
   throw new Error(`Factor computation not implemented for ${sport} ${betType}`)
 }
 
@@ -47,10 +47,10 @@ export async function computeFactors(input: FactorComputationInput): Promise<Fac
  */
 async function computeNBATotalsFactors(input: FactorComputationInput): Promise<FactorComputationResult> {
   const { runId, gameId, awayTeam, homeTeam, capperId } = input
-  
+
   // Get factor weights from capper profile
   const factorWeights = await getFactorWeights(capperId, 'NBA', 'TOTAL')
-  
+
   // Create run context
   const ctx: RunCtx = {
     game_id: gameId,
@@ -68,16 +68,16 @@ async function computeNBATotalsFactors(input: FactorComputationInput): Promise<F
     },
     factorWeights
   }
-  
+
   // Compute factors
   const result = await computeTotalsFactors(ctx)
-  
-  console.log('[FACTORS_SERVICE:NBA_TOTALS_SUCCESS]', { 
-    runId, 
+
+  console.log('[FACTORS_SERVICE:NBA_TOTALS_SUCCESS]', {
+    runId,
     factorCount: result.factors.length,
-    factorVersion: result.factor_version 
+    factorVersion: result.factor_version
   })
-  
+
   return {
     factors: result.factors,
     factorVersion: result.factor_version,
@@ -88,37 +88,35 @@ async function computeNBATotalsFactors(input: FactorComputationInput): Promise<F
 
 /**
  * Get factor weights from capper profile
+ * NO FALLBACK WEIGHTS - must be configured in UI (except Edge vs Market which is always 100%)
  */
 async function getFactorWeights(capperId: string, sport: string, betType: string): Promise<Record<string, number>> {
   const admin = getSupabaseAdmin()
-  
-  try {
-    const profileRes = await admin
-      .from('capper_settings')
-      .select('profile_json')
-      .eq('capper_id', capperId)
-      .eq('sport', sport)
-      .eq('bet_type', betType)
-      .single()
-    
-    if (profileRes.data?.profile_json?.factors) {
-      const weights = getFactorWeightsFromProfile(profileRes.data.profile_json)
-      console.log('[FACTORS_SERVICE:LOADED_WEIGHTS]', { capperId, sport, betType, weights })
-      return weights
-    }
-  } catch (error) {
-    console.warn('[FACTORS_SERVICE:PROFILE_LOAD_FAILED]', { capperId, sport, betType, error })
+
+  const profileRes = await admin
+    .from('capper_settings')
+    .select('profile_json')
+    .eq('capper_id', capperId)
+    .eq('sport', sport)
+    .eq('bet_type', betType)
+    .single()
+
+  if (profileRes.error || !profileRes.data?.profile_json?.factors) {
+    throw new Error(
+      `[FACTORS_SERVICE] Factor weights not configured! Please configure factor weights in the SHIVA Management UI. ` +
+      `Error: ${profileRes.error?.message || 'No profile_json.factors found'}`
+    )
   }
-  
-  // Return default weights
-  const defaultWeights = {
-    paceIndex: 20,
-    offForm: 20,
-    defErosion: 20,
-    threeEnv: 20,
-    whistleEnv: 20
+
+  const weights = getFactorWeightsFromProfile(profileRes.data.profile_json)
+
+  // Validate that we have weights
+  if (Object.keys(weights).length === 0) {
+    throw new Error(
+      `[FACTORS_SERVICE] No factor weights found in profile! Please configure factor weights in the SHIVA Management UI.`
+    )
   }
-  
-  console.log('[FACTORS_SERVICE:USING_DEFAULT_WEIGHTS]', { capperId, sport, betType, defaultWeights })
-  return defaultWeights
+
+  console.log('[FACTORS_SERVICE:LOADED_WEIGHTS]', { capperId, sport, betType, weights })
+  return weights
 }
