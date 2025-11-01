@@ -24,6 +24,21 @@ export interface ConfidenceOutput {
     z: number
     weight: number
     contribution: number
+    // Add weighted scores for run log display
+    weighted_contributions?: {
+      overScore: number
+      underScore: number
+      net: number
+    }
+    // Add weight percentage for display
+    weight_percentage?: number
+    // Add parsed values for fallback
+    parsed_values_json?: {
+      overScore: number
+      underScore: number
+      signal: number
+      points: number
+    }
   }>
 }
 
@@ -82,7 +97,22 @@ export function calculateConfidence(input: ConfidenceInput): ConfidenceOutput {
       name: factor.name,
       z: factor.normalized_value || 0, // Keep signal for reference
       weight: weightDecimal,
-      contribution: effectiveOverScore - effectiveUnderScore // Net contribution
+      contribution: effectiveOverScore - effectiveUnderScore, // Net contribution
+      // Add weighted scores for run log display
+      weighted_contributions: {
+        overScore: effectiveOverScore,
+        underScore: effectiveUnderScore,
+        net: effectiveOverScore - effectiveUnderScore
+      },
+      // Add weight percentage for display
+      weight_percentage: weightPct,
+      // Add parsed values for fallback
+      parsed_values_json: {
+        overScore: rawOverScore,
+        underScore: rawUnderScore,
+        signal: parsedValues.signal || 0,
+        points: parsedValues.points || 0
+      }
     })
   }
 

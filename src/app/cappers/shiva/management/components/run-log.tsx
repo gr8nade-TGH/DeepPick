@@ -195,7 +195,24 @@ export function RunLogTable() {
   const formatFactorContribution = (factor: any): JSX.Element => {
     if (!factor) return <span>—</span>
 
-    // First try to get weighted contributions (new format from run logs)
+    // Debug: Log the factor structure for the first run
+    if (runs.length > 0 && runs[0].factor_contributions && runs[0].factor_contributions.length > 0) {
+      const firstFactor = runs[0].factor_contributions[0]
+      if (firstFactor && firstFactor.key === factor.key) {
+        console.log('[RunLog] Factor structure:', {
+          key: factor.key,
+          factor,
+          hasWeightedContributions: !!factor.weighted_contributions,
+          hasParsedValues: !!factor.parsed_values_json,
+          hasWeight: !!factor.weight,
+          hasWeightDecimal: !!factor.weight_decimal,
+          hasWeightTotalPct: !!factor.weight_total_pct,
+          hasWeightPercentage: !!factor.weight_percentage
+        })
+      }
+    }
+
+    // First try to get weighted contributions (new format from debug export)
     const weightedContributions = factor.weighted_contributions
 
     if (weightedContributions) {
@@ -204,7 +221,7 @@ export function RunLogTable() {
 
       // Validate that we have valid numbers
       if (isNaN(overScore) || isNaN(underScore)) {
-        console.warn('[RunLog] Invalid weighted scores:', { factor: factor.factor_key, overScore, underScore, weightedContributions })
+        console.warn('[RunLog] Invalid weighted scores:', { factor: factor.factor_key || factor.key, overScore, underScore, weightedContributions })
         return <span className="text-red-400">ERR</span>
       }
 
@@ -231,7 +248,22 @@ export function RunLogTable() {
     const parsedValues = factor.parsed_values_json || {}
     const rawOverScore = Number(parsedValues.overScore) || 0
     const rawUnderScore = Number(parsedValues.underScore) || 0
-    const weight = Number(factor.weight_decimal || factor.weight || 0)
+
+    // Try multiple weight field names (different formats use different field names)
+    let weight = 0
+    if (factor.weight_decimal) {
+      weight = Number(factor.weight_decimal)
+    } else if (factor.weight_applied) {
+      weight = Number(factor.weight_applied)
+    } else if (factor.weight_total_pct) {
+      weight = Number(factor.weight_total_pct) / 100 // Convert percentage to decimal
+    } else if (factor.weight_percentage) {
+      weight = Number(factor.weight_percentage) / 100 // Convert percentage to decimal
+    } else if (factor.weight) {
+      // Check if weight is already a decimal (0-1) or a percentage (0-100)
+      const w = Number(factor.weight)
+      weight = w > 1 ? w / 100 : w
+    }
 
     // Calculate weighted scores manually if we have the weight
     const overScore = rawOverScore * weight
@@ -239,8 +271,21 @@ export function RunLogTable() {
 
     // Validate that we have valid numbers
     if (isNaN(overScore) || isNaN(underScore)) {
-      console.warn('[RunLog] Invalid factor scores:', { factor: factor.key, overScore, underScore, parsedValues })
+      console.warn('[RunLog] Invalid factor scores:', {
+        factor: factor.key || factor.factor_key,
+        overScore,
+        underScore,
+        parsedValues,
+        weight,
+        rawOverScore,
+        rawUnderScore
+      })
       return <span className="text-red-400">ERR</span>
+    }
+
+    // If both scores are 0, it might mean we don't have the data
+    if (overScore === 0 && underScore === 0 && rawOverScore === 0 && rawUnderScore === 0) {
+      return <span className="text-gray-500">—</span>
     }
 
     // Determine which score is higher
