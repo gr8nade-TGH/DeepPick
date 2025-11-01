@@ -1,0 +1,418 @@
+{
+  "success": true,
+  "export_timestamp": "2025-11-01T02:14:59.651Z",
+  "summary": {
+    "total_runs": 1,
+    "pick_generated_count": 0,
+    "pass_count": 0,
+    "error_count": 0,
+    "average_confidence": 4.143489840802552,
+    "average_units": 3,
+    "confidence_calculation_discrepancies": 0
+  },
+  "runs": [
+    {
+      "run_id": "shiva_1761962782062_k3vv2j",
+      "id": "shiva_1761962782062_k3vv2j",
+      "game_id": "86d9cbd0-0cfd-4aa5-a121-0bfb8cf9ce0c",
+      "created_at": "2025-11-01T02:06:22.464094+00:00",
+      "matchup": "New York Knicks @ Chicago Bulls",
+      "game_time": "00:00:00",
+      "pick_type": "TOTAL",
+      "selection": "UNDER 235.5",
+      "units": 3,
+      "confidence": {
+        "final": 4.143489840802552,
+        "calculated_from_factors": 4.143489840802552,
+        "total_weighted_over": 0,
+        "total_weighted_under": 4.143489840802552
+      },
+      "predicted_total": 214.3928695997453,
+      "baseline_avg": 215.5350870083314,
+      "market_total": 235.5,
+      "factors": [
+        {
+          "factor_key": "paceIndex",
+          "factor_name": "Matchup Pace Index",
+          "weight_percentage": 20,
+          "weight_decimal": 0.2,
+          "raw_values": {
+            "overScore": 0,
+            "underScore": 2.855543521465252,
+            "signal": -0.5711087042930504,
+            "points": 2.855543521465252
+          },
+          "weighted_contributions": {
+            "overScore": 0,
+            "underScore": 0.5711087042930504,
+            "net": -0.5711087042930504
+          },
+          "parsed_values_json": {
+            "points": 2.855543521465252,
+            "signal": -0.5711087042930504,
+            "overScore": 0,
+            "underScore": 2.855543521465252,
+            "awayContribution": 1.427771760732626,
+            "homeContribution": 1.427771760732626
+          },
+          "raw_values_json": {
+            "expPace": 94.90666666666667,
+            "awayPace": 85.11999999999999,
+            "homePace": 104.69333333333333,
+            "paceDelta": -5.193333333333328,
+            "leaguePace": 100.1
+          },
+          "normalized_value": -0.5711087042930504,
+          "notes": "Pace: 94.9 vs 100.1 (Δ-5.2)",
+          "weight_total_pct": 20,
+          "weight_applied": 0.2
+        },
+        {
+          "factor_key": "edgeVsMarket",
+          "factor_name": "Edge vs Market",
+          "weight_percentage": 100,
+          "weight_decimal": 1,
+          "raw_values": {
+            "overScore": 0,
+            "underScore": 3.572381136509501,
+            "signal": -0.7144762273019002,
+            "points": 0
+          },
+          "weighted_contributions": {
+            "overScore": 0,
+            "underScore": 3.572381136509501,
+            "net": -3.572381136509501
+          },
+          "parsed_values_json": {
+            "signal": -0.7144762273019002,
+            "edgePts": -21.107130400254704,
+            "overScore": 0,
+            "underScore": 3.572381136509501
+          },
+          "raw_values_json": {
+            "edgePct": -8.962688068048706,
+            "edgePts": -21.107130400254704,
+            "marketTotal": 235.5,
+            "predictedTotal": 214.3928695997453
+          },
+          "normalized_value": -0.7144762273019002,
+          "notes": "Edge: -21.1 pts (Pred: 214.4 vs Mkt: 235.5)",
+          "weight_total_pct": 100,
+          "weight_applied": 1
+        }
+      ],
+      "factor_summary": {
+        "total_factors": 2,
+        "factors_favoring_over": 0,
+        "factors_favoring_under": 2,
+        "total_weight_percentage": 120
+      },
+      "step_data": {
+        "step3_json": null,
+        "step4_json": null,
+        "step5_json": null
+      },
+      "cooldown": null,
+      "state": "COMPLETE",
+      "capper": "shiva",
+      "sport": "NBA",
+      "raw_metadata": {
+        "game": {
+          "away_team": "New York Knicks",
+          "home_team": "Chicago Bulls"
+        },
+        "sport": "NBA",
+        "steps": {
+          "step1": {
+            "run_id": "shiva_1761962782062_k3vv2j",
+            "selected_game": {
+              "id": "86d9cbd0-0cfd-4aa5-a121-0bfb8cf9ce0c",
+              "away_team": "New York Knicks",
+              "game_time": "00:00:00",
+              "home_team": "Chicago Bulls"
+            }
+          },
+          "step2": {
+            "snapshot": {
+              "sport": "NBA",
+              "total": {
+                "line": 235.5,
+                "over_odds": -110,
+                "under_odds": -110
+              },
+              "spread": {
+                "line": -5.5,
+                "odds": -110,
+                "fav_team": "Chicago Bulls"
+              },
+              "game_id": "86d9cbd0-0cfd-4aa5-a121-0bfb8cf9ce0c",
+              "away_team": "New York Knicks",
+              "home_team": "Chicago Bulls",
+              "moneyline": {
+                "away_avg": 130,
+                "home_avg": -150
+              },
+              "raw_payload": {
+                "MySportsFeeds": {
+                  "total": {
+                    "line": 235.5,
+                    "over": -110,
+                    "under": -110
+                  },
+                  "spread": {
+                    "away": -110,
+                    "home": -110,
+                    "line": 4
+                  },
+                  "moneyline": {
+                    "away": -175,
+                    "home": 150
+                  }
+                }
+              },
+              "start_time_utc": "00:00:00",
+              "captured_at_utc": "2025-11-01T02:06:22.123Z",
+              "books_considered": 1
+            },
+            "is_active": true,
+            "snapshot_id": "snapshot_shiva_1761962782062_k3vv2j"
+          },
+          "step3": {
+            "factors": [
+              {
+                "key": "paceIndex",
+                "name": "Matchup Pace Index",
+                "notes": "Pace: 94.9 vs 100.1 (Δ-5.2)",
+                "factor_no": 1,
+                "cap_reason": null,
+                "caps_applied": false,
+                "raw_values_json": {
+                  "expPace": 94.90666666666667,
+                  "awayPace": 85.11999999999999,
+                  "homePace": 104.69333333333333,
+                  "paceDelta": -5.193333333333328,
+                  "leaguePace": 100.1
+                },
+                "normalized_value": -0.5711087042930504,
+                "weight_total_pct": 20,
+                "parsed_values_json": {
+                  "points": 2.855543521465252,
+                  "signal": -0.5711087042930504,
+                  "overScore": 0,
+                  "underScore": 2.855543521465252,
+                  "awayContribution": 1.427771760732626,
+                  "homeContribution": 1.427771760732626
+                }
+              }
+            ],
+            "baseline_avg": 215.5350870083314,
+            "factorWeights": {
+              "paceIndex": 20
+            },
+            "factor_version": "nba_totals_v1"
+          },
+          "step4": {
+            "run_id": "shiva_1761962782062_k3vv2j",
+            "confidence": {
+              "edgePct": 0.5711087042930504,
+              "edgeRaw": -0.5711087042930504,
+              "confScore": 0.5711087042930504,
+              "confSource": "nba_totals_v1",
+              "factorContributions": [
+                {
+                  "z": -0.5711087042930504,
+                  "key": "paceIndex",
+                  "name": "Matchup Pace Index",
+                  "weight": 0.2,
+                  "contribution": -0.5711087042930504
+                }
+              ]
+            },
+            "conf_source": "nba_totals_v1",
+            "predictions": {
+              "scores": {
+                "away": 105.19643479987265,
+                "home": 109.19643479987265
+              },
+              "winner": "TBD",
+              "pace_exp": 100,
+              "delta_100": 0,
+              "conf7_score": 0.5711087042930504,
+              "total_pred_points": 214.3928695997453,
+              "spread_pred_points": 0
+            }
+          },
+          "step5": {
+            "run_id": "shiva_1761962782062_k3vv2j",
+            "dominant": "total",
+            "conf_final": 4.143489840802552,
+            "conf_market_adj": 3.5723811365095015,
+            "confidenceResult": {
+              "edgePct": 4.143489840802552,
+              "edgeRaw": -4.143489840802552,
+              "confScore": 4.143489840802552,
+              "confSource": "nba_totals_v1",
+              "factorContributions": [
+                {
+                  "z": -0.5711087042930504,
+                  "key": "paceIndex",
+                  "name": "Matchup Pace Index",
+                  "weight": 0.2,
+                  "contribution": -0.5711087042930504
+                },
+                {
+                  "z": -0.7144762273019002,
+                  "key": "edgeVsMarket",
+                  "name": "Edge vs Market",
+                  "weight": 1,
+                  "contribution": -3.572381136509501
+                }
+              ]
+            },
+            "edgeVsMarketFactor": {
+              "key": "edgeVsMarket",
+              "name": "Edge vs Market",
+              "notes": "Edge: -21.1 pts (Pred: 214.4 vs Mkt: 235.5)",
+              "factor_no": 6,
+              "cap_reason": null,
+              "caps_applied": false,
+              "raw_values_json": {
+                "edgePct": -8.962688068048706,
+                "edgePts": -21.107130400254704,
+                "marketTotal": 235.5,
+                "predictedTotal": 214.3928695997453
+              },
+              "normalized_value": -0.7144762273019002,
+              "weight_total_pct": 100,
+              "parsed_values_json": {
+                "signal": -0.7144762273019002,
+                "edgePts": -21.107130400254704,
+                "overScore": 0,
+                "underScore": 3.572381136509501
+              }
+            }
+          },
+          "step6": {
+            "skipped": true
+          },
+          "step7": {
+            "pick": {
+              "id": "pick_shiva_1761962782062_k3vv2j",
+              "units": 3,
+              "run_id": "shiva_1761962782062_k3vv2j",
+              "locked_at": "2025-11-01T02:06:22.435Z",
+              "pick_type": "TOTAL",
+              "selection": "UNDER 235.5",
+              "confidence": 4.143489840802552,
+              "locked_odds": {
+                "sport": "NBA",
+                "total": {
+                  "line": 235.5,
+                  "over_odds": -110,
+                  "under_odds": -110
+                },
+                "spread": {
+                  "line": -5.5,
+                  "odds": -110,
+                  "fav_team": "Chicago Bulls"
+                },
+                "game_id": "86d9cbd0-0cfd-4aa5-a121-0bfb8cf9ce0c",
+                "away_team": "New York Knicks",
+                "home_team": "Chicago Bulls",
+                "moneyline": {
+                  "away_avg": 130,
+                  "home_avg": -150
+                },
+                "raw_payload": {
+                  "MySportsFeeds": {
+                    "total": {
+                      "line": 235.5,
+                      "over": -110,
+                      "under": -110
+                    },
+                    "spread": {
+                      "away": -110,
+                      "home": -110,
+                      "line": 4
+                    },
+                    "moneyline": {
+                      "away": -175,
+                      "home": 150
+                    }
+                  }
+                },
+                "start_time_utc": "00:00:00",
+                "captured_at_utc": "2025-11-01T02:06:22.123Z",
+                "books_considered": 1
+              }
+            },
+            "run_id": "shiva_1761962782062_k3vv2j",
+            "decision": "PICK",
+            "confidence": 4.143489840802552
+          }
+        },
+        "units": 3,
+        "capper": "shiva",
+        "bet_type": "TOTAL",
+        "pick_type": "TOTAL",
+        "selection": "UNDER 235.5",
+        "confidence": 4.143489840802552,
+        "baseline_avg": 215.5350870083314,
+        "market_total": 235.5,
+        "predicted_total": 214.3928695997453,
+        "factor_contributions": [
+          {
+            "key": "paceIndex",
+            "name": "Matchup Pace Index",
+            "notes": "Pace: 94.9 vs 100.1 (Δ-5.2)",
+            "factor_no": 1,
+            "cap_reason": null,
+            "caps_applied": false,
+            "weight_applied": 0.2,
+            "raw_values_json": {
+              "expPace": 94.90666666666667,
+              "awayPace": 85.11999999999999,
+              "homePace": 104.69333333333333,
+              "paceDelta": -5.193333333333328,
+              "leaguePace": 100.1
+            },
+            "normalized_value": -0.5711087042930504,
+            "weight_total_pct": 20,
+            "parsed_values_json": {
+              "points": 2.855543521465252,
+              "signal": -0.5711087042930504,
+              "overScore": 0,
+              "underScore": 2.855543521465252,
+              "awayContribution": 1.427771760732626,
+              "homeContribution": 1.427771760732626
+            }
+          },
+          {
+            "key": "edgeVsMarket",
+            "name": "Edge vs Market",
+            "notes": "Edge: -21.1 pts (Pred: 214.4 vs Mkt: 235.5)",
+            "factor_no": 6,
+            "cap_reason": null,
+            "caps_applied": false,
+            "weight_applied": 1,
+            "raw_values_json": {
+              "edgePct": -8.962688068048706,
+              "edgePts": -21.107130400254704,
+              "marketTotal": 235.5,
+              "predictedTotal": 214.3928695997453
+            },
+            "normalized_value": -0.7144762273019002,
+            "weight_total_pct": 100,
+            "parsed_values_json": {
+              "signal": -0.7144762273019002,
+              "edgePts": -21.107130400254704,
+              "overScore": 0,
+              "underScore": 3.572381136509501
+            }
+          }
+        ]
+      },
+      "shiva_run_metadata": null
+    }
+  ]
+}
