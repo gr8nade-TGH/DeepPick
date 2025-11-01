@@ -1,11 +1,12 @@
 /**
  * MySportsFeeds Supabase Cache
- * 
+ *
  * Stores team stats in Supabase to persist across serverless function cold starts
  * This solves the rate limiting issue where in-memory cache is reset on every cold start
  */
 
 import { getSupabaseAdmin } from '@/lib/supabase/server'
+import { getNBASeason } from './season-utils'
 
 export interface TeamFormData {
   team: string
@@ -16,13 +17,6 @@ export interface TeamFormData {
   threeP_rate: number
   ft_rate: number
   gamesAnalyzed: number
-}
-
-interface CacheEntry {
-  cache_key: string
-  data: TeamFormData
-  created_at: string
-  expires_at: string
 }
 
 // Cache TTL: 4 hours (team stats don't change frequently during the day)
@@ -38,10 +32,17 @@ export async function getCachedTeamForm(cacheKey: string): Promise<TeamFormData 
     const supabase = getSupabaseAdmin()
     const now = new Date()
 
+    // Parse cache key to get team and limit
+    const [team, limitStr] = cacheKey.split(':')
+    const limit = parseInt(limitStr, 10)
+    const season = 'current' // Always use 'current' season
+
     const { data, error } = await supabase
-      .from('mysportsfeeds_cache')
+      .from('team_stats_cache')
       .select('*')
-      .eq('cache_key', cacheKey)
+      .eq('team', team)
+      .eq('season', season)
+      .eq('limit_games', limit)
       .gt('expires_at', now.toISOString())
       .maybeSingle()
 
@@ -55,9 +56,9 @@ export async function getCachedTeamForm(cacheKey: string): Promise<TeamFormData 
       return null
     }
 
-    const age = now.getTime() - new Date(data.created_at).getTime()
+    const age = now.getTime() - new Date(data.cached_at).getTime()
     console.log(`[MySportsFeeds Cache] Cache HIT for ${cacheKey} (age: ${(age / 1000 / 60).toFixed(1)} minutes)`)
-    
+
     return data.data as TeamFormData
   } catch (error) {
     console.error('[MySportsFeeds Cache] Error in getCachedTeamForm:', error)
@@ -76,15 +77,22 @@ export async function setCachedTeamForm(cacheKey: string, data: TeamFormData): P
     const now = new Date()
     const expiresAt = new Date(now.getTime() + CACHE_TTL_MS)
 
+    // Parse cache key to get team and limit
+    const [team, limitStr] = cacheKey.split(':')
+    const limit = parseInt(limitStr, 10)
+    const season = 'current' // Always use 'current' season
+
     const { error } = await supabase
-      .from('mysportsfeeds_cache')
+      .from('team_stats_cache')
       .upsert({
-        cache_key: cacheKey,
+        team,
+        season,
+        limit_games: limit,
         data,
-        created_at: now.toISOString(),
+        cached_at: now.toISOString(),
         expires_at: expiresAt.toISOString()
       }, {
-        onConflict: 'cache_key'
+        onConflict: 'team,season,limit_games'
       })
 
     if (error) {
@@ -106,7 +114,7 @@ export async function clearExpiredCache(): Promise<void> {
     const now = new Date()
 
     const { error } = await supabase
-      .from('mysportsfeeds_cache')
+      .from('team_stats_cache')
       .delete()
       .lt('expires_at', now.toISOString())
 
