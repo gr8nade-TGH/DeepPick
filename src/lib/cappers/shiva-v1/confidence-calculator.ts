@@ -43,22 +43,18 @@ export interface ConfidenceOutput {
 export function calculateConfidence(input: ConfidenceInput): ConfidenceOutput {
   const { factors, factorWeights, confSource = 'nba_totals_v1' } = input
 
-  // Normalize weights to sum to 1.0
-  const totalWeight = Object.values(factorWeights).reduce((sum, w) => sum + w, 0)
-  const normalizedWeights = totalWeight > 0
-    ? Object.fromEntries(Object.entries(factorWeights).map(([k, v]) => [k, v / totalWeight]))
-    : {}
-
-  console.log('[ConfidenceCalculator] Weight normalization:', {
+  // DO NOT normalize weights - they are already percentages (0-100)
+  // Edge vs Market is always 100%, other factors sum to 250%
+  // Total weight budget = 350% (100% + 250%)
+  console.log('[ConfidenceCalculator] Using raw weight percentages:', {
     factorWeights,
-    totalWeight,
-    normalizedWeights
+    totalWeight: Object.values(factorWeights).reduce((sum, w) => sum + w, 0)
   })
 
   // Sum overScore and underScore across all factors
   // NOTE: Factors return scores based on MAX_POINTS = 5.0
   // We need to scale by (weight / 100) to get effective max points
-  // Example: Pace Index with weight=20% → Effective max = 5.0 × 0.20 = 1.0 point
+  // Example: Pace Index with weight=70% → Effective max = 5.0 × 0.70 = 3.5 points
   let totalOverScore = 0
   let totalUnderScore = 0
   const factorContributions: ConfidenceOutput['factorContributions'] = []
@@ -74,7 +70,7 @@ export function calculateConfidence(input: ConfidenceInput): ConfidenceOutput {
     const rawUnderScore = parsedValues.underScore || 0
 
     // Scale by weight to get effective contribution
-    // Example: rawOverScore = 3.5 (from signal 0.7 × 5.0), weight = 20% → effective = 3.5 × 0.20 = 0.7
+    // Example: rawOverScore = 3.5 (from signal 0.7 × 5.0), weight = 70% → effective = 3.5 × 0.70 = 2.45
     const effectiveOverScore = rawOverScore * weightDecimal
     const effectiveUnderScore = rawUnderScore * weightDecimal
 
