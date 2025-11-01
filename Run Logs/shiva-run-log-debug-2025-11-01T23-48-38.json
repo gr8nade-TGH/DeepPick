@@ -1,0 +1,1977 @@
+{
+  "success": true,
+  "export_timestamp": "2025-11-01T23:48:38.856Z",
+  "summary": {
+    "total_runs": 3,
+    "pick_generated_count": 0,
+    "pass_count": 0,
+    "error_count": 0,
+    "average_confidence": 3.8917992495954543,
+    "average_units": 0.6666666666666666,
+    "confidence_calculation_discrepancies": 3
+  },
+  "runs": [
+    {
+      "run_id": "shiva_1762040906637_e3qi1p",
+      "id": "shiva_1762040906637_e3qi1p",
+      "game_id": "ae7ac0c6-5f91-4fe0-8d6d-a0ab316a83c0",
+      "created_at": "2025-11-01T23:48:27.183842+00:00",
+      "matchup": "Los Angeles Lakers @ Memphis Grizzlies",
+      "game_time": "01:30:00",
+      "pick_type": "TOTAL",
+      "selection": "UNDER 236.5",
+      "units": 1,
+      "confidence": {
+        "final": 5.6830371646571844,
+        "calculated_from_factors": 0,
+        "total_weighted_over": 0,
+        "total_weighted_under": 0
+      },
+      "predicted_total": 211.67808076740792,
+      "baseline_avg": 209.17151382344562,
+      "market_total": 236.5,
+      "factors": [
+        {
+          "factor_key": "paceIndex",
+          "factor_name": "Matchup Pace Index",
+          "weight_percentage": 0,
+          "weight_decimal": 0,
+          "raw_values": {
+            "overScore": 0,
+            "underScore": 3.549750718259603,
+            "signal": -0.7099501436519206,
+            "points": 3.549750718259603
+          },
+          "weighted_contributions": {
+            "overScore": 0,
+            "underScore": 0,
+            "net": 0
+          },
+          "parsed_values_json": {
+            "points": 3.549750718259603,
+            "signal": -0.7099501436519206,
+            "overScore": 0,
+            "underScore": 3.549750718259603
+          },
+          "raw_values_json": {},
+          "normalized_value": 0,
+          "notes": ""
+        },
+        {
+          "factor_key": "offForm",
+          "factor_name": "Offensive Form vs League",
+          "weight_percentage": 0,
+          "weight_decimal": 0,
+          "raw_values": {
+            "overScore": 0.49897759542260134,
+            "underScore": 0,
+            "signal": 0.24948879771130067,
+            "points": 0
+          },
+          "weighted_contributions": {
+            "overScore": 0,
+            "underScore": 0,
+            "net": 0
+          },
+          "parsed_values_json": {
+            "points": 0,
+            "signal": 0.24948879771130067,
+            "overScore": 0.49897759542260134,
+            "underScore": 0
+          },
+          "raw_values_json": {},
+          "normalized_value": 0,
+          "notes": ""
+        },
+        {
+          "factor_key": "defErosion",
+          "factor_name": "Defensive Erosion",
+          "weight_percentage": 0,
+          "weight_decimal": 0,
+          "raw_values": {
+            "overScore": 0.5164788386733357,
+            "underScore": 0,
+            "signal": 0.25823941933666783,
+            "points": 0
+          },
+          "weighted_contributions": {
+            "overScore": 0,
+            "underScore": 0,
+            "net": 0
+          },
+          "parsed_values_json": {
+            "points": 0,
+            "signal": 0.25823941933666783,
+            "overScore": 0.5164788386733357,
+            "underScore": 0
+          },
+          "raw_values_json": {},
+          "normalized_value": 0,
+          "notes": ""
+        },
+        {
+          "factor_key": "threeEnv",
+          "factor_name": "3-Point Environment & Volatility",
+          "weight_percentage": 0,
+          "weight_decimal": 0,
+          "raw_values": {
+            "overScore": 1.1911282276522503,
+            "underScore": 0,
+            "signal": 0.2382256455304501,
+            "points": 0
+          },
+          "weighted_contributions": {
+            "overScore": 0,
+            "underScore": 0,
+            "net": 0
+          },
+          "parsed_values_json": {
+            "points": 0,
+            "signal": 0.2382256455304501,
+            "overScore": 1.1911282276522503,
+            "underScore": 0
+          },
+          "raw_values_json": {},
+          "normalized_value": 0,
+          "notes": ""
+        },
+        {
+          "factor_key": "whistleEnv",
+          "factor_name": "Free-Throw / Whistle Environment",
+          "weight_percentage": 0,
+          "weight_decimal": 0,
+          "raw_values": {
+            "overScore": 4.875783754668398,
+            "underScore": 0,
+            "signal": 0.9751567509336796,
+            "points": 0
+          },
+          "weighted_contributions": {
+            "overScore": 0,
+            "underScore": 0,
+            "net": 0
+          },
+          "parsed_values_json": {
+            "points": 0,
+            "signal": 0.9751567509336796,
+            "overScore": 4.875783754668398,
+            "underScore": 0
+          },
+          "raw_values_json": {},
+          "normalized_value": 0,
+          "notes": ""
+        },
+        {
+          "factor_key": "injuryAvailability",
+          "factor_name": "Key Injuries & Availability - Totals",
+          "weight_percentage": 0,
+          "weight_decimal": 0,
+          "raw_values": {
+            "overScore": 0,
+            "underScore": 0,
+            "signal": 0,
+            "points": 0
+          },
+          "weighted_contributions": {
+            "overScore": 0,
+            "underScore": 0,
+            "net": 0
+          },
+          "parsed_values_json": {
+            "points": 0,
+            "signal": 0,
+            "overScore": 0,
+            "underScore": 0
+          },
+          "raw_values_json": {},
+          "normalized_value": 0,
+          "notes": ""
+        },
+        {
+          "factor_key": "edgeVsMarket",
+          "factor_name": "Edge vs Market",
+          "weight_percentage": 0,
+          "weight_decimal": 0,
+          "raw_values": {
+            "overScore": 0,
+            "underScore": 3.9081618055273832,
+            "signal": -0.7816323611054766,
+            "points": 0
+          },
+          "weighted_contributions": {
+            "overScore": 0,
+            "underScore": 0,
+            "net": 0
+          },
+          "parsed_values_json": {
+            "points": 0,
+            "signal": -0.7816323611054766,
+            "overScore": 0,
+            "underScore": 3.9081618055273832
+          },
+          "raw_values_json": {},
+          "normalized_value": 0,
+          "notes": ""
+        }
+      ],
+      "factor_summary": {
+        "total_factors": 7,
+        "factors_favoring_over": 0,
+        "factors_favoring_under": 0,
+        "total_weight_percentage": 0
+      },
+      "step_data": {
+        "step3_json": null,
+        "step4_json": null,
+        "step5_json": null
+      },
+      "cooldown": null,
+      "state": "COMPLETE",
+      "capper": "shiva",
+      "sport": "NBA",
+      "raw_metadata": {
+        "game": {
+          "away_team": "Los Angeles Lakers",
+          "home_team": "Memphis Grizzlies"
+        },
+        "sport": "NBA",
+        "steps": {
+          "step1": {
+            "run_id": "shiva_1762040906637_e3qi1p",
+            "selected_game": {
+              "id": "ae7ac0c6-5f91-4fe0-8d6d-a0ab316a83c0",
+              "away_team": "Los Angeles Lakers",
+              "game_time": "01:30:00",
+              "home_team": "Memphis Grizzlies"
+            }
+          },
+          "step2": {
+            "snapshot": {
+              "sport": "NBA",
+              "total": {
+                "line": 236.5,
+                "over_odds": -110,
+                "under_odds": -110
+              },
+              "spread": {
+                "line": -5.5,
+                "odds": -110,
+                "fav_team": "Memphis Grizzlies"
+              },
+              "game_id": "ae7ac0c6-5f91-4fe0-8d6d-a0ab316a83c0",
+              "away_team": "Los Angeles Lakers",
+              "home_team": "Memphis Grizzlies",
+              "moneyline": {
+                "away_avg": 130,
+                "home_avg": -150
+              },
+              "raw_payload": {
+                "MySportsFeeds": {
+                  "total": {
+                    "line": 236.5,
+                    "over": -110,
+                    "under": -110
+                  },
+                  "spread": {
+                    "away": -110,
+                    "home": -110,
+                    "line": -2.5
+                  },
+                  "moneyline": {
+                    "away": 120,
+                    "home": -141
+                  }
+                }
+              },
+              "start_time_utc": "01:30:00",
+              "captured_at_utc": "2025-11-01T23:48:26.691Z",
+              "books_considered": 1
+            },
+            "is_active": true,
+            "snapshot_id": "snapshot_shiva_1762040906637_e3qi1p"
+          },
+          "step3": {
+            "factors": [
+              {
+                "key": "paceIndex",
+                "name": "Matchup Pace Index",
+                "notes": "Pace: 93.0 vs 100.1 (Δ-7.1)",
+                "factor_no": 1,
+                "cap_reason": null,
+                "caps_applied": false,
+                "raw_values_json": {
+                  "expPace": 93.00333333333333,
+                  "awayPace": 90.19333333333333,
+                  "homePace": 95.81333333333333,
+                  "paceDelta": -7.096666666666664,
+                  "leaguePace": 100.1
+                },
+                "normalized_value": -0.7099501436519206,
+                "weight_total_pct": 50,
+                "parsed_values_json": {
+                  "points": 3.549750718259603,
+                  "signal": -0.7099501436519206,
+                  "overScore": 0,
+                  "underScore": 3.549750718259603,
+                  "awayContribution": 1.7748753591298014,
+                  "homeContribution": 1.7748753591298014
+                }
+              },
+              {
+                "key": "offForm",
+                "name": "Offensive Form vs League",
+                "notes": "ORtg: 112.5 vs 110.0 (Δ2.5)",
+                "factor_no": 2,
+                "cap_reason": null,
+                "caps_applied": false,
+                "raw_values_json": {
+                  "awayORtg": 115.68972320159817,
+                  "homeORtg": 109.40762887261779,
+                  "advantage": 2.548676037107981,
+                  "leagueORtg": 110,
+                  "combinedORtg": 112.54867603710798
+                },
+                "normalized_value": 0.24948879771130067,
+                "weight_total_pct": 59,
+                "parsed_values_json": {
+                  "signal": 0.24948879771130067,
+                  "overScore": 0.49897759542260134,
+                  "underScore": 0,
+                  "awayContribution": 0.24948879771130067,
+                  "homeContribution": 0.24948879771130067
+                }
+              },
+              {
+                "key": "defErosion",
+                "name": "Defensive Erosion",
+                "notes": "DRtg: 113.0 vs 110.0 (Δ3.0), Injury: 0.00",
+                "factor_no": 3,
+                "cap_reason": null,
+                "caps_applied": false,
+                "raw_values_json": {
+                  "awayDRtg": 112.8851235788406,
+                  "homeDRtg": 113.15421599899582,
+                  "drtgDelta": 3.0196697889182076,
+                  "leagueDRtg": 110,
+                  "combinedDRtg": 113.01966978891821,
+                  "injuryImpact": 0,
+                  "totalErosion": 2.113768852242745
+                },
+                "normalized_value": 0.25823941933666783,
+                "weight_total_pct": 50,
+                "parsed_values_json": {
+                  "signal": 0.25823941933666783,
+                  "overScore": 0.5164788386733357,
+                  "underScore": 0,
+                  "awayContribution": 0.25823941933666783,
+                  "homeContribution": 0.25823941933666783
+                }
+              },
+              {
+                "key": "threeEnv",
+                "name": "3-Point Environment & Volatility",
+                "notes": "3P Env: 0.402 vs 0.390 (Δ0.012), Hot: 0.000",
+                "factor_no": 4,
+                "cap_reason": null,
+                "caps_applied": false,
+                "raw_values_json": {
+                  "envRate": 0.4021446078431372,
+                  "away3PAR": 0.36470588235294116,
+                  "away3Pct": 0.3225806451612903,
+                  "home3PAR": 0.4395833333333333,
+                  "home3Pct": 0.33175355450236965,
+                  "rateDelta": 0.0121446078431372,
+                  "league3PAR": 0.39,
+                  "league3Pct": 0.35,
+                  "combinedSignal": 0.0242892156862744,
+                  "shootingVariance": 0.009172909341079338
+                },
+                "normalized_value": 0.2382256455304501,
+                "weight_total_pct": 40,
+                "parsed_values_json": {
+                  "signal": 0.2382256455304501,
+                  "overScore": 1.1911282276522503,
+                  "underScore": 0
+                }
+              },
+              {
+                "key": "whistleEnv",
+                "name": "Free-Throw / Whistle Environment",
+                "notes": "FT Env: 0.351 vs 0.220 (Δ0.131)",
+                "factor_no": 5,
+                "cap_reason": null,
+                "caps_applied": false,
+                "raw_values_json": {
+                  "ftrEnv": 0.35127450980392155,
+                  "awayFTr": 0.38588235294117645,
+                  "homeFTr": 0.31666666666666665,
+                  "ftrDelta": 0.13127450980392155,
+                  "leagueFTr": 0.22
+                },
+                "normalized_value": 0.9751567509336796,
+                "weight_total_pct": 41,
+                "parsed_values_json": {
+                  "signal": 0.9751567509336796,
+                  "overScore": 4.875783754668398,
+                  "underScore": 0
+                }
+              },
+              {
+                "key": "injuryAvailability",
+                "name": "Key Injuries & Availability - Totals",
+                "notes": " | 0 key injuries | Error in AI analysis: perplexity API error: 400...",
+                "factor_no": 6,
+                "cap_reason": null,
+                "caps_applied": false,
+                "raw_values_json": {
+                  "reasoning": "Error in AI analysis: perplexity API error: 400",
+                  "awayImpact": 0,
+                  "homeImpact": 0,
+                  "keyInjuries": [],
+                  "totalImpact": 0,
+                  "dataSourcesUsed": [],
+                  "awayInjuredCount": 3,
+                  "homeInjuredCount": 1,
+                  "awayInjurySeverity": "critical",
+                  "homeInjurySeverity": "none"
+                },
+                "normalized_value": 0,
+                "weight_total_pct": 10,
+                "parsed_values_json": {
+                  "signal": 0,
+                  "overScore": 0,
+                  "reasoning": "Error in AI analysis: perplexity API error: 400",
+                  "awayImpact": 0,
+                  "homeImpact": 0,
+                  "underScore": 0,
+                  "keyInjuries": [],
+                  "totalImpact": 0,
+                  "awayContribution": 0,
+                  "homeContribution": 0
+                }
+              }
+            ],
+            "baseline_avg": 209.17151382344562,
+            "factorWeights": {
+              "offForm": 59,
+              "threeEnv": 40,
+              "paceIndex": 50,
+              "defErosion": 50,
+              "whistleEnv": 41,
+              "injuryAvailability": 10
+            },
+            "factor_version": "nba_totals_v1"
+          },
+          "step4": {
+            "run_id": "shiva_1762040906637_e3qi1p",
+            "confidence": {
+              "edgePct": 1.2532834719811443,
+              "edgeRaw": 1.2532834719811443,
+              "confScore": 3.0281588311109457,
+              "confSource": "nba_totals_v1",
+              "factorContributions": [
+                {
+                  "z": -0.7099501436519206,
+                  "key": "paceIndex",
+                  "name": "Matchup Pace Index",
+                  "weight": 0.5,
+                  "contribution": -1.7748753591298014,
+                  "weight_percentage": 50,
+                  "parsed_values_json": {
+                    "points": 3.549750718259603,
+                    "signal": -0.7099501436519206,
+                    "overScore": 0,
+                    "underScore": 3.549750718259603
+                  },
+                  "weighted_contributions": {
+                    "net": -1.7748753591298014,
+                    "overScore": 0,
+                    "underScore": 1.7748753591298014
+                  }
+                },
+                {
+                  "z": 0.24948879771130067,
+                  "key": "offForm",
+                  "name": "Offensive Form vs League",
+                  "weight": 0.59,
+                  "contribution": 0.2943967812993348,
+                  "weight_percentage": 59,
+                  "parsed_values_json": {
+                    "points": 0,
+                    "signal": 0.24948879771130067,
+                    "overScore": 0.49897759542260134,
+                    "underScore": 0
+                  },
+                  "weighted_contributions": {
+                    "net": 0.2943967812993348,
+                    "overScore": 0.2943967812993348,
+                    "underScore": 0
+                  }
+                },
+                {
+                  "z": 0.25823941933666783,
+                  "key": "defErosion",
+                  "name": "Defensive Erosion",
+                  "weight": 0.5,
+                  "contribution": 0.25823941933666783,
+                  "weight_percentage": 50,
+                  "parsed_values_json": {
+                    "points": 0,
+                    "signal": 0.25823941933666783,
+                    "overScore": 0.5164788386733357,
+                    "underScore": 0
+                  },
+                  "weighted_contributions": {
+                    "net": 0.25823941933666783,
+                    "overScore": 0.25823941933666783,
+                    "underScore": 0
+                  }
+                },
+                {
+                  "z": 0.2382256455304501,
+                  "key": "threeEnv",
+                  "name": "3-Point Environment & Volatility",
+                  "weight": 0.4,
+                  "contribution": 0.4764512910609002,
+                  "weight_percentage": 40,
+                  "parsed_values_json": {
+                    "points": 0,
+                    "signal": 0.2382256455304501,
+                    "overScore": 1.1911282276522503,
+                    "underScore": 0
+                  },
+                  "weighted_contributions": {
+                    "net": 0.4764512910609002,
+                    "overScore": 0.4764512910609002,
+                    "underScore": 0
+                  }
+                },
+                {
+                  "z": 0.9751567509336796,
+                  "key": "whistleEnv",
+                  "name": "Free-Throw / Whistle Environment",
+                  "weight": 0.41,
+                  "contribution": 1.9990713394140431,
+                  "weight_percentage": 41,
+                  "parsed_values_json": {
+                    "points": 0,
+                    "signal": 0.9751567509336796,
+                    "overScore": 4.875783754668398,
+                    "underScore": 0
+                  },
+                  "weighted_contributions": {
+                    "net": 1.9990713394140431,
+                    "overScore": 1.9990713394140431,
+                    "underScore": 0
+                  }
+                },
+                {
+                  "z": 0,
+                  "key": "injuryAvailability",
+                  "name": "Key Injuries & Availability - Totals",
+                  "weight": 0.1,
+                  "contribution": 0,
+                  "weight_percentage": 10,
+                  "parsed_values_json": {
+                    "points": 0,
+                    "signal": 0,
+                    "overScore": 0,
+                    "underScore": 0
+                  },
+                  "weighted_contributions": {
+                    "net": 0,
+                    "overScore": 0,
+                    "underScore": 0
+                  }
+                }
+              ]
+            },
+            "conf_source": "nba_totals_v1",
+            "predictions": {
+              "scores": {
+                "away": 103.83904038370396,
+                "home": 107.83904038370396
+              },
+              "winner": "TBD",
+              "pace_exp": 100,
+              "delta_100": 0,
+              "conf7_score": 3.0281588311109457,
+              "total_pred_points": 211.67808076740792,
+              "spread_pred_points": 0
+            }
+          },
+          "step5": {
+            "run_id": "shiva_1762040906637_e3qi1p",
+            "dominant": "total",
+            "conf_final": 5.6830371646571844,
+            "conf_market_adj": 2.6548783335462387,
+            "confidenceResult": {
+              "edgePct": 2.6548783335462387,
+              "edgeRaw": -2.6548783335462387,
+              "confScore": 5.6830371646571844,
+              "confSource": "nba_totals_v1",
+              "factorContributions": [
+                {
+                  "z": -0.7099501436519206,
+                  "key": "paceIndex",
+                  "name": "Matchup Pace Index",
+                  "weight": 0.5,
+                  "contribution": -1.7748753591298014,
+                  "weight_percentage": 50,
+                  "parsed_values_json": {
+                    "points": 3.549750718259603,
+                    "signal": -0.7099501436519206,
+                    "overScore": 0,
+                    "underScore": 3.549750718259603
+                  },
+                  "weighted_contributions": {
+                    "net": -1.7748753591298014,
+                    "overScore": 0,
+                    "underScore": 1.7748753591298014
+                  }
+                },
+                {
+                  "z": 0.24948879771130067,
+                  "key": "offForm",
+                  "name": "Offensive Form vs League",
+                  "weight": 0.59,
+                  "contribution": 0.2943967812993348,
+                  "weight_percentage": 59,
+                  "parsed_values_json": {
+                    "points": 0,
+                    "signal": 0.24948879771130067,
+                    "overScore": 0.49897759542260134,
+                    "underScore": 0
+                  },
+                  "weighted_contributions": {
+                    "net": 0.2943967812993348,
+                    "overScore": 0.2943967812993348,
+                    "underScore": 0
+                  }
+                },
+                {
+                  "z": 0.25823941933666783,
+                  "key": "defErosion",
+                  "name": "Defensive Erosion",
+                  "weight": 0.5,
+                  "contribution": 0.25823941933666783,
+                  "weight_percentage": 50,
+                  "parsed_values_json": {
+                    "points": 0,
+                    "signal": 0.25823941933666783,
+                    "overScore": 0.5164788386733357,
+                    "underScore": 0
+                  },
+                  "weighted_contributions": {
+                    "net": 0.25823941933666783,
+                    "overScore": 0.25823941933666783,
+                    "underScore": 0
+                  }
+                },
+                {
+                  "z": 0.2382256455304501,
+                  "key": "threeEnv",
+                  "name": "3-Point Environment & Volatility",
+                  "weight": 0.4,
+                  "contribution": 0.4764512910609002,
+                  "weight_percentage": 40,
+                  "parsed_values_json": {
+                    "points": 0,
+                    "signal": 0.2382256455304501,
+                    "overScore": 1.1911282276522503,
+                    "underScore": 0
+                  },
+                  "weighted_contributions": {
+                    "net": 0.4764512910609002,
+                    "overScore": 0.4764512910609002,
+                    "underScore": 0
+                  }
+                },
+                {
+                  "z": 0.9751567509336796,
+                  "key": "whistleEnv",
+                  "name": "Free-Throw / Whistle Environment",
+                  "weight": 0.41,
+                  "contribution": 1.9990713394140431,
+                  "weight_percentage": 41,
+                  "parsed_values_json": {
+                    "points": 0,
+                    "signal": 0.9751567509336796,
+                    "overScore": 4.875783754668398,
+                    "underScore": 0
+                  },
+                  "weighted_contributions": {
+                    "net": 1.9990713394140431,
+                    "overScore": 1.9990713394140431,
+                    "underScore": 0
+                  }
+                },
+                {
+                  "z": 0,
+                  "key": "injuryAvailability",
+                  "name": "Key Injuries & Availability - Totals",
+                  "weight": 0.1,
+                  "contribution": 0,
+                  "weight_percentage": 10,
+                  "parsed_values_json": {
+                    "points": 0,
+                    "signal": 0,
+                    "overScore": 0,
+                    "underScore": 0
+                  },
+                  "weighted_contributions": {
+                    "net": 0,
+                    "overScore": 0,
+                    "underScore": 0
+                  }
+                },
+                {
+                  "z": -0.7816323611054766,
+                  "key": "edgeVsMarket",
+                  "name": "Edge vs Market",
+                  "weight": 1,
+                  "contribution": -3.9081618055273832,
+                  "weight_percentage": 100,
+                  "parsed_values_json": {
+                    "points": 0,
+                    "signal": -0.7816323611054766,
+                    "overScore": 0,
+                    "underScore": 3.9081618055273832
+                  },
+                  "weighted_contributions": {
+                    "net": -3.9081618055273832,
+                    "overScore": 0,
+                    "underScore": 3.9081618055273832
+                  }
+                }
+              ]
+            },
+            "edgeVsMarketFactor": {
+              "key": "edgeVsMarket",
+              "name": "Edge vs Market",
+              "notes": "Edge: -24.8 pts (Pred: 211.7 vs Mkt: 236.5)",
+              "factor_no": 6,
+              "cap_reason": null,
+              "caps_applied": false,
+              "raw_values_json": {
+                "edgePct": -10.495526102575932,
+                "edgePts": -24.82191923259208,
+                "marketTotal": 236.5,
+                "predictedTotal": 211.67808076740792
+              },
+              "normalized_value": -0.7816323611054766,
+              "weight_total_pct": 100,
+              "parsed_values_json": {
+                "signal": -0.7816323611054766,
+                "edgePts": -24.82191923259208,
+                "overScore": 0,
+                "underScore": 3.9081618055273832
+              }
+            }
+          },
+          "step6": {
+            "skipped": true
+          },
+          "step7": {
+            "pick": {
+              "id": "pick_shiva_1762040906637_e3qi1p",
+              "units": 1,
+              "run_id": "shiva_1762040906637_e3qi1p",
+              "locked_at": "2025-11-01T23:48:27.158Z",
+              "pick_type": "TOTAL",
+              "selection": "UNDER 236.5",
+              "confidence": 5.6830371646571844,
+              "locked_odds": {
+                "sport": "NBA",
+                "total": {
+                  "line": 236.5,
+                  "over_odds": -110,
+                  "under_odds": -110
+                },
+                "spread": {
+                  "line": -5.5,
+                  "odds": -110,
+                  "fav_team": "Memphis Grizzlies"
+                },
+                "game_id": "ae7ac0c6-5f91-4fe0-8d6d-a0ab316a83c0",
+                "away_team": "Los Angeles Lakers",
+                "home_team": "Memphis Grizzlies",
+                "moneyline": {
+                  "away_avg": 130,
+                  "home_avg": -150
+                },
+                "raw_payload": {
+                  "MySportsFeeds": {
+                    "total": {
+                      "line": 236.5,
+                      "over": -110,
+                      "under": -110
+                    },
+                    "spread": {
+                      "away": -110,
+                      "home": -110,
+                      "line": -2.5
+                    },
+                    "moneyline": {
+                      "away": 120,
+                      "home": -141
+                    }
+                  }
+                },
+                "start_time_utc": "01:30:00",
+                "captured_at_utc": "2025-11-01T23:48:26.691Z",
+                "books_considered": 1
+              }
+            },
+            "run_id": "shiva_1762040906637_e3qi1p",
+            "decision": "PICK",
+            "confidence": 5.6830371646571844
+          }
+        },
+        "units": 1,
+        "capper": "shiva",
+        "bet_type": "TOTAL",
+        "pick_type": "TOTAL",
+        "selection": "UNDER 236.5",
+        "confidence": 5.6830371646571844,
+        "baseline_avg": 209.17151382344562,
+        "market_total": 236.5,
+        "predicted_total": 211.67808076740792,
+        "factor_contributions": [
+          {
+            "z": -0.7099501436519206,
+            "key": "paceIndex",
+            "name": "Matchup Pace Index",
+            "weight": 0.5,
+            "contribution": -1.7748753591298014,
+            "weight_percentage": 50,
+            "parsed_values_json": {
+              "points": 3.549750718259603,
+              "signal": -0.7099501436519206,
+              "overScore": 0,
+              "underScore": 3.549750718259603
+            },
+            "weighted_contributions": {
+              "net": -1.7748753591298014,
+              "overScore": 0,
+              "underScore": 1.7748753591298014
+            }
+          },
+          {
+            "z": 0.24948879771130067,
+            "key": "offForm",
+            "name": "Offensive Form vs League",
+            "weight": 0.59,
+            "contribution": 0.2943967812993348,
+            "weight_percentage": 59,
+            "parsed_values_json": {
+              "points": 0,
+              "signal": 0.24948879771130067,
+              "overScore": 0.49897759542260134,
+              "underScore": 0
+            },
+            "weighted_contributions": {
+              "net": 0.2943967812993348,
+              "overScore": 0.2943967812993348,
+              "underScore": 0
+            }
+          },
+          {
+            "z": 0.25823941933666783,
+            "key": "defErosion",
+            "name": "Defensive Erosion",
+            "weight": 0.5,
+            "contribution": 0.25823941933666783,
+            "weight_percentage": 50,
+            "parsed_values_json": {
+              "points": 0,
+              "signal": 0.25823941933666783,
+              "overScore": 0.5164788386733357,
+              "underScore": 0
+            },
+            "weighted_contributions": {
+              "net": 0.25823941933666783,
+              "overScore": 0.25823941933666783,
+              "underScore": 0
+            }
+          },
+          {
+            "z": 0.2382256455304501,
+            "key": "threeEnv",
+            "name": "3-Point Environment & Volatility",
+            "weight": 0.4,
+            "contribution": 0.4764512910609002,
+            "weight_percentage": 40,
+            "parsed_values_json": {
+              "points": 0,
+              "signal": 0.2382256455304501,
+              "overScore": 1.1911282276522503,
+              "underScore": 0
+            },
+            "weighted_contributions": {
+              "net": 0.4764512910609002,
+              "overScore": 0.4764512910609002,
+              "underScore": 0
+            }
+          },
+          {
+            "z": 0.9751567509336796,
+            "key": "whistleEnv",
+            "name": "Free-Throw / Whistle Environment",
+            "weight": 0.41,
+            "contribution": 1.9990713394140431,
+            "weight_percentage": 41,
+            "parsed_values_json": {
+              "points": 0,
+              "signal": 0.9751567509336796,
+              "overScore": 4.875783754668398,
+              "underScore": 0
+            },
+            "weighted_contributions": {
+              "net": 1.9990713394140431,
+              "overScore": 1.9990713394140431,
+              "underScore": 0
+            }
+          },
+          {
+            "z": 0,
+            "key": "injuryAvailability",
+            "name": "Key Injuries & Availability - Totals",
+            "weight": 0.1,
+            "contribution": 0,
+            "weight_percentage": 10,
+            "parsed_values_json": {
+              "points": 0,
+              "signal": 0,
+              "overScore": 0,
+              "underScore": 0
+            },
+            "weighted_contributions": {
+              "net": 0,
+              "overScore": 0,
+              "underScore": 0
+            }
+          },
+          {
+            "z": -0.7816323611054766,
+            "key": "edgeVsMarket",
+            "name": "Edge vs Market",
+            "weight": 1,
+            "contribution": -3.9081618055273832,
+            "weight_percentage": 100,
+            "parsed_values_json": {
+              "points": 0,
+              "signal": -0.7816323611054766,
+              "overScore": 0,
+              "underScore": 3.9081618055273832
+            },
+            "weighted_contributions": {
+              "net": -3.9081618055273832,
+              "overScore": 0,
+              "underScore": 3.9081618055273832
+            }
+          }
+        ]
+      },
+      "shiva_run_metadata": null
+    },
+    {
+      "run_id": "shiva_1762040546886_n0121e",
+      "id": "shiva_1762040546886_n0121e",
+      "game_id": "86d9cbd0-0cfd-4aa5-a121-0bfb8cf9ce0c",
+      "created_at": "2025-11-01T23:42:27.394+00:00",
+      "matchup": "New York Knicks @ Chicago Bulls",
+      "game_time": "00:00:00",
+      "pick_type": "TOTAL",
+      "selection": "OVER 235.5",
+      "units": 1,
+      "confidence": {
+        "final": 5.082360584129179,
+        "calculated_from_factors": 0,
+        "total_weighted_over": 0,
+        "total_weighted_under": 0
+      },
+      "predicted_total": 237.77449198177814,
+      "baseline_avg": 229.47993169678892,
+      "market_total": 235.5,
+      "factors": [
+        {
+          "factor_key": "paceIndex",
+          "factor_name": "Matchup Pace Index",
+          "weight_percentage": 0,
+          "weight_decimal": 0,
+          "raw_values": {
+            "overScore": 0,
+            "underScore": 0.907338742589544,
+            "signal": -0.18146774851790878,
+            "points": 0.907338742589544
+          },
+          "weighted_contributions": {
+            "overScore": 0,
+            "underScore": 0,
+            "net": 0
+          },
+          "parsed_values_json": {
+            "points": 0.907338742589544,
+            "signal": -0.18146774851790878,
+            "overScore": 0,
+            "underScore": 0.907338742589544
+          },
+          "raw_values_json": {},
+          "normalized_value": 0,
+          "notes": ""
+        },
+        {
+          "factor_key": "offForm",
+          "factor_name": "Offensive Form vs League",
+          "weight_percentage": 0,
+          "weight_decimal": 0,
+          "raw_values": {
+            "overScore": 1.1150682170527644,
+            "underScore": 0,
+            "signal": 0.5575341085263822,
+            "points": 0
+          },
+          "weighted_contributions": {
+            "overScore": 0,
+            "underScore": 0,
+            "net": 0
+          },
+          "parsed_values_json": {
+            "points": 0,
+            "signal": 0.5575341085263822,
+            "overScore": 1.1150682170527644,
+            "underScore": 0
+          },
+          "raw_values_json": {},
+          "normalized_value": 0,
+          "notes": ""
+        },
+        {
+          "factor_key": "defErosion",
+          "factor_name": "Defensive Erosion",
+          "weight_percentage": 0,
+          "weight_decimal": 0,
+          "raw_values": {
+            "overScore": 0.49952549467763774,
+            "underScore": 0,
+            "signal": 0.24976274733881887,
+            "points": 0
+          },
+          "weighted_contributions": {
+            "overScore": 0,
+            "underScore": 0,
+            "net": 0
+          },
+          "parsed_values_json": {
+            "points": 0,
+            "signal": 0.24976274733881887,
+            "overScore": 0.49952549467763774,
+            "underScore": 0
+          },
+          "raw_values_json": {},
+          "normalized_value": 0,
+          "notes": ""
+        },
+        {
+          "factor_key": "threeEnv",
+          "factor_name": "3-Point Environment & Volatility",
+          "weight_percentage": 0,
+          "weight_decimal": 0,
+          "raw_values": {
+            "overScore": 4.920576479831702,
+            "underScore": 0,
+            "signal": 0.9841152959663404,
+            "points": 0
+          },
+          "weighted_contributions": {
+            "overScore": 0,
+            "underScore": 0,
+            "net": 0
+          },
+          "parsed_values_json": {
+            "points": 0,
+            "signal": 0.9841152959663404,
+            "overScore": 4.920576479831702,
+            "underScore": 0
+          },
+          "raw_values_json": {},
+          "normalized_value": 0,
+          "notes": ""
+        },
+        {
+          "factor_key": "whistleEnv",
+          "factor_name": "Free-Throw / Whistle Environment",
+          "weight_percentage": 0,
+          "weight_decimal": 0,
+          "raw_values": {
+            "overScore": 4.207477869406721,
+            "underScore": 0,
+            "signal": 0.8414955738813442,
+            "points": 0
+          },
+          "weighted_contributions": {
+            "overScore": 0,
+            "underScore": 0,
+            "net": 0
+          },
+          "parsed_values_json": {
+            "points": 0,
+            "signal": 0.8414955738813442,
+            "overScore": 4.207477869406721,
+            "underScore": 0
+          },
+          "raw_values_json": {},
+          "normalized_value": 0,
+          "notes": ""
+        },
+        {
+          "factor_key": "injuryAvailability",
+          "factor_name": "Key Injuries & Availability - Totals",
+          "weight_percentage": 0,
+          "weight_decimal": 0,
+          "raw_values": {
+            "overScore": 0,
+            "underScore": 0,
+            "signal": 0,
+            "points": 0
+          },
+          "weighted_contributions": {
+            "overScore": 0,
+            "underScore": 0,
+            "net": 0
+          },
+          "parsed_values_json": {
+            "points": 0,
+            "signal": 0,
+            "overScore": 0,
+            "underScore": 0
+          },
+          "raw_values_json": {},
+          "normalized_value": 0,
+          "notes": ""
+        },
+        {
+          "factor_key": "edgeVsMarket",
+          "factor_name": "Edge vs Market",
+          "weight_percentage": 0,
+          "weight_decimal": 0,
+          "raw_values": {
+            "overScore": 0.4814110703397929,
+            "underScore": 0,
+            "signal": 0.09628221406795859,
+            "points": 0
+          },
+          "weighted_contributions": {
+            "overScore": 0,
+            "underScore": 0,
+            "net": 0
+          },
+          "parsed_values_json": {
+            "points": 0,
+            "signal": 0.09628221406795859,
+            "overScore": 0.4814110703397929,
+            "underScore": 0
+          },
+          "raw_values_json": {},
+          "normalized_value": 0,
+          "notes": ""
+        }
+      ],
+      "factor_summary": {
+        "total_factors": 7,
+        "factors_favoring_over": 0,
+        "factors_favoring_under": 0,
+        "total_weight_percentage": 0
+      },
+      "step_data": {
+        "step3_json": null,
+        "step4_json": null,
+        "step5_json": null
+      },
+      "cooldown": null,
+      "state": "COMPLETE",
+      "capper": "shiva",
+      "sport": "NBA",
+      "raw_metadata": {
+        "game": {
+          "away_team": "New York Knicks",
+          "home_team": "Chicago Bulls"
+        },
+        "sport": "NBA",
+        "steps": {
+          "step1": {
+            "run_id": "shiva_1762040546886_n0121e",
+            "selected_game": {
+              "id": "86d9cbd0-0cfd-4aa5-a121-0bfb8cf9ce0c",
+              "away_team": "New York Knicks",
+              "game_time": "00:00:00",
+              "home_team": "Chicago Bulls"
+            }
+          },
+          "step2": {
+            "snapshot": {
+              "sport": "NBA",
+              "total": {
+                "line": 235.5,
+                "over_odds": -110,
+                "under_odds": -110
+              },
+              "spread": {
+                "line": -5.5,
+                "odds": -110,
+                "fav_team": "Chicago Bulls"
+              },
+              "game_id": "86d9cbd0-0cfd-4aa5-a121-0bfb8cf9ce0c",
+              "away_team": "New York Knicks",
+              "home_team": "Chicago Bulls",
+              "moneyline": {
+                "away_avg": 130,
+                "home_avg": -150
+              },
+              "raw_payload": {
+                "MySportsFeeds": {
+                  "total": {
+                    "line": 235.5,
+                    "over": -110,
+                    "under": -110
+                  },
+                  "spread": {
+                    "away": -110,
+                    "home": -110,
+                    "line": 4
+                  },
+                  "moneyline": {
+                    "away": -175,
+                    "home": 150
+                  }
+                }
+              },
+              "start_time_utc": "00:00:00",
+              "captured_at_utc": "2025-11-01T23:42:26.922Z",
+              "books_considered": 1
+            },
+            "is_active": true,
+            "snapshot_id": "snapshot_shiva_1762040546886_n0121e"
+          },
+          "step3": {
+            "factors": [
+              {
+                "key": "paceIndex",
+                "name": "Matchup Pace Index",
+                "notes": "Pace: 98.6 vs 100.1 (Δ-1.5)",
+                "factor_no": 1,
+                "cap_reason": null,
+                "caps_applied": false,
+                "raw_values_json": {
+                  "expPace": 98.632,
+                  "awayPace": 97.288,
+                  "homePace": 99.976,
+                  "paceDelta": -1.4679999999999893,
+                  "leaguePace": 100.1
+                },
+                "normalized_value": -0.18146774851790878,
+                "weight_total_pct": 50,
+                "parsed_values_json": {
+                  "points": 0.907338742589544,
+                  "signal": -0.18146774851790878,
+                  "overScore": 0,
+                  "underScore": 0.907338742589544,
+                  "awayContribution": 0.453669371294772,
+                  "homeContribution": 0.453669371294772
+                }
+              },
+              {
+                "key": "offForm",
+                "name": "Offensive Form vs League",
+                "notes": "ORtg: 116.3 vs 110.0 (Δ6.3)",
+                "factor_no": 2,
+                "cap_reason": null,
+                "caps_applied": false,
+                "raw_values_json": {
+                  "awayORtg": 113.43770879168096,
+                  "homeORtg": 119.14724890727612,
+                  "advantage": 6.292478849478542,
+                  "leagueORtg": 110,
+                  "combinedORtg": 116.29247884947854
+                },
+                "normalized_value": 0.5575341085263822,
+                "weight_total_pct": 59,
+                "parsed_values_json": {
+                  "signal": 0.5575341085263822,
+                  "overScore": 1.1150682170527644,
+                  "underScore": 0,
+                  "awayContribution": 0.5575341085263822,
+                  "homeContribution": 0.5575341085263822
+                }
+              },
+              {
+                "key": "defErosion",
+                "name": "Defensive Erosion",
+                "notes": "DRtg: 112.9 vs 110.0 (Δ2.9), Injury: 0.00",
+                "factor_no": 3,
+                "cap_reason": null,
+                "caps_applied": false,
+                "raw_values_json": {
+                  "awayDRtg": 114.68032508686588,
+                  "homeDRtg": 111.15189796187387,
+                  "drtgDelta": 2.9161115243698816,
+                  "leagueDRtg": 110,
+                  "combinedDRtg": 112.91611152436988,
+                  "injuryImpact": 0,
+                  "totalErosion": 2.0412780670589172
+                },
+                "normalized_value": 0.24976274733881887,
+                "weight_total_pct": 50,
+                "parsed_values_json": {
+                  "signal": 0.24976274733881887,
+                  "overScore": 0.49952549467763774,
+                  "underScore": 0,
+                  "awayContribution": 0.24976274733881887,
+                  "homeContribution": 0.24976274733881887
+                }
+              },
+              {
+                "key": "threeEnv",
+                "name": "3-Point Environment & Volatility",
+                "notes": "3P Env: 0.439 vs 0.390 (Δ0.049), Hot: 0.014",
+                "factor_no": 4,
+                "cap_reason": null,
+                "caps_applied": false,
+                "raw_values_json": {
+                  "envRate": 0.4389365998115493,
+                  "away3PAR": 0.4919908466819222,
+                  "away3Pct": 0.34418604651162793,
+                  "home3PAR": 0.38588235294117645,
+                  "home3Pct": 0.40853658536585363,
+                  "rateDelta": 0.0489365998115493,
+                  "league3PAR": 0.39,
+                  "league3Pct": 0.35,
+                  "combinedSignal": 0.2413785881653556,
+                  "shootingVariance": 0.0643505388542257
+                },
+                "normalized_value": 0.9841152959663404,
+                "weight_total_pct": 40,
+                "parsed_values_json": {
+                  "signal": 0.9841152959663404,
+                  "overScore": 4.920576479831702,
+                  "underScore": 0
+                }
+              },
+              {
+                "key": "whistleEnv",
+                "name": "Free-Throw / Whistle Environment",
+                "notes": "FT Env: 0.294 vs 0.220 (Δ0.074)",
+                "factor_no": 5,
+                "cap_reason": null,
+                "caps_applied": false,
+                "raw_values_json": {
+                  "ftrEnv": 0.2935765244312828,
+                  "awayFTr": 0.28832951945080093,
+                  "homeFTr": 0.2988235294117647,
+                  "ftrDelta": 0.07357652443128279,
+                  "leagueFTr": 0.22
+                },
+                "normalized_value": 0.8414955738813442,
+                "weight_total_pct": 41,
+                "parsed_values_json": {
+                  "signal": 0.8414955738813442,
+                  "overScore": 4.207477869406721,
+                  "underScore": 0
+                }
+              },
+              {
+                "key": "injuryAvailability",
+                "name": "Key Injuries & Availability - Totals",
+                "notes": " | 0 key injuries | Error in AI analysis: perplexity API error: 400...",
+                "factor_no": 6,
+                "cap_reason": null,
+                "caps_applied": false,
+                "raw_values_json": {
+                  "reasoning": "Error in AI analysis: perplexity API error: 400",
+                  "awayImpact": 0,
+                  "homeImpact": 0,
+                  "keyInjuries": [],
+                  "totalImpact": 0,
+                  "dataSourcesUsed": [],
+                  "awayInjuredCount": 3,
+                  "homeInjuredCount": 0,
+                  "awayInjurySeverity": "minor",
+                  "homeInjurySeverity": "none"
+                },
+                "normalized_value": 0,
+                "weight_total_pct": 10,
+                "parsed_values_json": {
+                  "signal": 0,
+                  "overScore": 0,
+                  "reasoning": "Error in AI analysis: perplexity API error: 400",
+                  "awayImpact": 0,
+                  "homeImpact": 0,
+                  "underScore": 0,
+                  "keyInjuries": [],
+                  "totalImpact": 0,
+                  "awayContribution": 0,
+                  "homeContribution": 0
+                }
+              }
+            ],
+            "baseline_avg": 229.47993169678892,
+            "factorWeights": {
+              "offForm": 59,
+              "threeEnv": 40,
+              "paceIndex": 50,
+              "defErosion": 50,
+              "whistleEnv": 41,
+              "injuryAvailability": 10
+            },
+            "factor_version": "nba_totals_v1"
+          },
+          "step4": {
+            "run_id": "shiva_1762040546886_n0121e",
+            "confidence": {
+              "edgePct": 4.147280142494614,
+              "edgeRaw": 4.147280142494614,
+              "confScore": 4.600949513789386,
+              "confSource": "nba_totals_v1",
+              "factorContributions": [
+                {
+                  "z": -0.18146774851790878,
+                  "key": "paceIndex",
+                  "name": "Matchup Pace Index",
+                  "weight": 0.5,
+                  "contribution": -0.453669371294772,
+                  "weight_percentage": 50,
+                  "parsed_values_json": {
+                    "points": 0.907338742589544,
+                    "signal": -0.18146774851790878,
+                    "overScore": 0,
+                    "underScore": 0.907338742589544
+                  },
+                  "weighted_contributions": {
+                    "net": -0.453669371294772,
+                    "overScore": 0,
+                    "underScore": 0.453669371294772
+                  }
+                },
+                {
+                  "z": 0.5575341085263822,
+                  "key": "offForm",
+                  "name": "Offensive Form vs League",
+                  "weight": 0.59,
+                  "contribution": 0.6578902480611309,
+                  "weight_percentage": 59,
+                  "parsed_values_json": {
+                    "points": 0,
+                    "signal": 0.5575341085263822,
+                    "overScore": 1.1150682170527644,
+                    "underScore": 0
+                  },
+                  "weighted_contributions": {
+                    "net": 0.6578902480611309,
+                    "overScore": 0.6578902480611309,
+                    "underScore": 0
+                  }
+                },
+                {
+                  "z": 0.24976274733881887,
+                  "key": "defErosion",
+                  "name": "Defensive Erosion",
+                  "weight": 0.5,
+                  "contribution": 0.24976274733881887,
+                  "weight_percentage": 50,
+                  "parsed_values_json": {
+                    "points": 0,
+                    "signal": 0.24976274733881887,
+                    "overScore": 0.49952549467763774,
+                    "underScore": 0
+                  },
+                  "weighted_contributions": {
+                    "net": 0.24976274733881887,
+                    "overScore": 0.24976274733881887,
+                    "underScore": 0
+                  }
+                },
+                {
+                  "z": 0.9841152959663404,
+                  "key": "threeEnv",
+                  "name": "3-Point Environment & Volatility",
+                  "weight": 0.4,
+                  "contribution": 1.9682305919326808,
+                  "weight_percentage": 40,
+                  "parsed_values_json": {
+                    "points": 0,
+                    "signal": 0.9841152959663404,
+                    "overScore": 4.920576479831702,
+                    "underScore": 0
+                  },
+                  "weighted_contributions": {
+                    "net": 1.9682305919326808,
+                    "overScore": 1.9682305919326808,
+                    "underScore": 0
+                  }
+                },
+                {
+                  "z": 0.8414955738813442,
+                  "key": "whistleEnv",
+                  "name": "Free-Throw / Whistle Environment",
+                  "weight": 0.41,
+                  "contribution": 1.7250659264567554,
+                  "weight_percentage": 41,
+                  "parsed_values_json": {
+                    "points": 0,
+                    "signal": 0.8414955738813442,
+                    "overScore": 4.207477869406721,
+                    "underScore": 0
+                  },
+                  "weighted_contributions": {
+                    "net": 1.7250659264567554,
+                    "overScore": 1.7250659264567554,
+                    "underScore": 0
+                  }
+                },
+                {
+                  "z": 0,
+                  "key": "injuryAvailability",
+                  "name": "Key Injuries & Availability - Totals",
+                  "weight": 0.1,
+                  "contribution": 0,
+                  "weight_percentage": 10,
+                  "parsed_values_json": {
+                    "points": 0,
+                    "signal": 0,
+                    "overScore": 0,
+                    "underScore": 0
+                  },
+                  "weighted_contributions": {
+                    "net": 0,
+                    "overScore": 0,
+                    "underScore": 0
+                  }
+                }
+              ]
+            },
+            "conf_source": "nba_totals_v1",
+            "predictions": {
+              "scores": {
+                "away": 116.88724599088907,
+                "home": 120.88724599088907
+              },
+              "winner": "TBD",
+              "pace_exp": 100,
+              "delta_100": 0,
+              "conf7_score": 4.600949513789386,
+              "total_pred_points": 237.77449198177814,
+              "spread_pred_points": 0
+            }
+          },
+          "step5": {
+            "run_id": "shiva_1762040546886_n0121e",
+            "dominant": "total",
+            "conf_final": 5.082360584129179,
+            "conf_market_adj": 0.48141107033979313,
+            "confidenceResult": {
+              "edgePct": 4.628691212834407,
+              "edgeRaw": 4.628691212834407,
+              "confScore": 5.082360584129179,
+              "confSource": "nba_totals_v1",
+              "factorContributions": [
+                {
+                  "z": -0.18146774851790878,
+                  "key": "paceIndex",
+                  "name": "Matchup Pace Index",
+                  "weight": 0.5,
+                  "contribution": -0.453669371294772,
+                  "weight_percentage": 50,
+                  "parsed_values_json": {
+                    "points": 0.907338742589544,
+                    "signal": -0.18146774851790878,
+                    "overScore": 0,
+                    "underScore": 0.907338742589544
+                  },
+                  "weighted_contributions": {
+                    "net": -0.453669371294772,
+                    "overScore": 0,
+                    "underScore": 0.453669371294772
+                  }
+                },
+                {
+                  "z": 0.5575341085263822,
+                  "key": "offForm",
+                  "name": "Offensive Form vs League",
+                  "weight": 0.59,
+                  "contribution": 0.6578902480611309,
+                  "weight_percentage": 59,
+                  "parsed_values_json": {
+                    "points": 0,
+                    "signal": 0.5575341085263822,
+                    "overScore": 1.1150682170527644,
+                    "underScore": 0
+                  },
+                  "weighted_contributions": {
+                    "net": 0.6578902480611309,
+                    "overScore": 0.6578902480611309,
+                    "underScore": 0
+                  }
+                },
+                {
+                  "z": 0.24976274733881887,
+                  "key": "defErosion",
+                  "name": "Defensive Erosion",
+                  "weight": 0.5,
+                  "contribution": 0.24976274733881887,
+                  "weight_percentage": 50,
+                  "parsed_values_json": {
+                    "points": 0,
+                    "signal": 0.24976274733881887,
+                    "overScore": 0.49952549467763774,
+                    "underScore": 0
+                  },
+                  "weighted_contributions": {
+                    "net": 0.24976274733881887,
+                    "overScore": 0.24976274733881887,
+                    "underScore": 0
+                  }
+                },
+                {
+                  "z": 0.9841152959663404,
+                  "key": "threeEnv",
+                  "name": "3-Point Environment & Volatility",
+                  "weight": 0.4,
+                  "contribution": 1.9682305919326808,
+                  "weight_percentage": 40,
+                  "parsed_values_json": {
+                    "points": 0,
+                    "signal": 0.9841152959663404,
+                    "overScore": 4.920576479831702,
+                    "underScore": 0
+                  },
+                  "weighted_contributions": {
+                    "net": 1.9682305919326808,
+                    "overScore": 1.9682305919326808,
+                    "underScore": 0
+                  }
+                },
+                {
+                  "z": 0.8414955738813442,
+                  "key": "whistleEnv",
+                  "name": "Free-Throw / Whistle Environment",
+                  "weight": 0.41,
+                  "contribution": 1.7250659264567554,
+                  "weight_percentage": 41,
+                  "parsed_values_json": {
+                    "points": 0,
+                    "signal": 0.8414955738813442,
+                    "overScore": 4.207477869406721,
+                    "underScore": 0
+                  },
+                  "weighted_contributions": {
+                    "net": 1.7250659264567554,
+                    "overScore": 1.7250659264567554,
+                    "underScore": 0
+                  }
+                },
+                {
+                  "z": 0,
+                  "key": "injuryAvailability",
+                  "name": "Key Injuries & Availability - Totals",
+                  "weight": 0.1,
+                  "contribution": 0,
+                  "weight_percentage": 10,
+                  "parsed_values_json": {
+                    "points": 0,
+                    "signal": 0,
+                    "overScore": 0,
+                    "underScore": 0
+                  },
+                  "weighted_contributions": {
+                    "net": 0,
+                    "overScore": 0,
+                    "underScore": 0
+                  }
+                },
+                {
+                  "z": 0.09628221406795859,
+                  "key": "edgeVsMarket",
+                  "name": "Edge vs Market",
+                  "weight": 1,
+                  "contribution": 0.4814110703397929,
+                  "weight_percentage": 100,
+                  "parsed_values_json": {
+                    "points": 0,
+                    "signal": 0.09628221406795859,
+                    "overScore": 0.4814110703397929,
+                    "underScore": 0
+                  },
+                  "weighted_contributions": {
+                    "net": 0.4814110703397929,
+                    "overScore": 0.4814110703397929,
+                    "underScore": 0
+                  }
+                }
+              ]
+            },
+            "edgeVsMarketFactor": {
+              "key": "edgeVsMarket",
+              "name": "Edge vs Market",
+              "notes": "Edge: +2.3 pts (Pred: 237.8 vs Mkt: 235.5)",
+              "factor_no": 6,
+              "cap_reason": null,
+              "caps_applied": false,
+              "raw_values_json": {
+                "edgePct": 0.9658140050013336,
+                "edgePts": 2.274491981778141,
+                "marketTotal": 235.5,
+                "predictedTotal": 237.77449198177814
+              },
+              "normalized_value": 0.09628221406795859,
+              "weight_total_pct": 100,
+              "parsed_values_json": {
+                "signal": 0.09628221406795859,
+                "edgePts": 2.274491981778141,
+                "overScore": 0.4814110703397929,
+                "underScore": 0
+              }
+            }
+          },
+          "step6": {
+            "skipped": true
+          },
+          "step7": {
+            "pick": {
+              "id": "pick_shiva_1762040546886_n0121e",
+              "units": 1,
+              "run_id": "shiva_1762040546886_n0121e",
+              "locked_at": "2025-11-01T23:42:27.368Z",
+              "pick_type": "TOTAL",
+              "selection": "OVER 235.5",
+              "confidence": 5.082360584129179,
+              "locked_odds": {
+                "sport": "NBA",
+                "total": {
+                  "line": 235.5,
+                  "over_odds": -110,
+                  "under_odds": -110
+                },
+                "spread": {
+                  "line": -5.5,
+                  "odds": -110,
+                  "fav_team": "Chicago Bulls"
+                },
+                "game_id": "86d9cbd0-0cfd-4aa5-a121-0bfb8cf9ce0c",
+                "away_team": "New York Knicks",
+                "home_team": "Chicago Bulls",
+                "moneyline": {
+                  "away_avg": 130,
+                  "home_avg": -150
+                },
+                "raw_payload": {
+                  "MySportsFeeds": {
+                    "total": {
+                      "line": 235.5,
+                      "over": -110,
+                      "under": -110
+                    },
+                    "spread": {
+                      "away": -110,
+                      "home": -110,
+                      "line": 4
+                    },
+                    "moneyline": {
+                      "away": -175,
+                      "home": 150
+                    }
+                  }
+                },
+                "start_time_utc": "00:00:00",
+                "captured_at_utc": "2025-11-01T23:42:26.922Z",
+                "books_considered": 1
+              }
+            },
+            "run_id": "shiva_1762040546886_n0121e",
+            "decision": "PICK",
+            "confidence": 5.082360584129179
+          }
+        },
+        "units": 1,
+        "capper": "shiva",
+        "bet_type": "TOTAL",
+        "pick_type": "TOTAL",
+        "selection": "OVER 235.5",
+        "confidence": 5.082360584129179,
+        "baseline_avg": 229.47993169678892,
+        "market_total": 235.5,
+        "predicted_total": 237.77449198177814,
+        "factor_contributions": [
+          {
+            "z": -0.18146774851790878,
+            "key": "paceIndex",
+            "name": "Matchup Pace Index",
+            "weight": 0.5,
+            "contribution": -0.453669371294772,
+            "weight_percentage": 50,
+            "parsed_values_json": {
+              "points": 0.907338742589544,
+              "signal": -0.18146774851790878,
+              "overScore": 0,
+              "underScore": 0.907338742589544
+            },
+            "weighted_contributions": {
+              "net": -0.453669371294772,
+              "overScore": 0,
+              "underScore": 0.453669371294772
+            }
+          },
+          {
+            "z": 0.5575341085263822,
+            "key": "offForm",
+            "name": "Offensive Form vs League",
+            "weight": 0.59,
+            "contribution": 0.6578902480611309,
+            "weight_percentage": 59,
+            "parsed_values_json": {
+              "points": 0,
+              "signal": 0.5575341085263822,
+              "overScore": 1.1150682170527644,
+              "underScore": 0
+            },
+            "weighted_contributions": {
+              "net": 0.6578902480611309,
+              "overScore": 0.6578902480611309,
+              "underScore": 0
+            }
+          },
+          {
+            "z": 0.24976274733881887,
+            "key": "defErosion",
+            "name": "Defensive Erosion",
+            "weight": 0.5,
+            "contribution": 0.24976274733881887,
+            "weight_percentage": 50,
+            "parsed_values_json": {
+              "points": 0,
+              "signal": 0.24976274733881887,
+              "overScore": 0.49952549467763774,
+              "underScore": 0
+            },
+            "weighted_contributions": {
+              "net": 0.24976274733881887,
+              "overScore": 0.24976274733881887,
+              "underScore": 0
+            }
+          },
+          {
+            "z": 0.9841152959663404,
+            "key": "threeEnv",
+            "name": "3-Point Environment & Volatility",
+            "weight": 0.4,
+            "contribution": 1.9682305919326808,
+            "weight_percentage": 40,
+            "parsed_values_json": {
+              "points": 0,
+              "signal": 0.9841152959663404,
+              "overScore": 4.920576479831702,
+              "underScore": 0
+            },
+            "weighted_contributions": {
+              "net": 1.9682305919326808,
+              "overScore": 1.9682305919326808,
+              "underScore": 0
+            }
+          },
+          {
+            "z": 0.8414955738813442,
+            "key": "whistleEnv",
+            "name": "Free-Throw / Whistle Environment",
+            "weight": 0.41,
+            "contribution": 1.7250659264567554,
+            "weight_percentage": 41,
+            "parsed_values_json": {
+              "points": 0,
+              "signal": 0.8414955738813442,
+              "overScore": 4.207477869406721,
+              "underScore": 0
+            },
+            "weighted_contributions": {
+              "net": 1.7250659264567554,
+              "overScore": 1.7250659264567554,
+              "underScore": 0
+            }
+          },
+          {
+            "z": 0,
+            "key": "injuryAvailability",
+            "name": "Key Injuries & Availability - Totals",
+            "weight": 0.1,
+            "contribution": 0,
+            "weight_percentage": 10,
+            "parsed_values_json": {
+              "points": 0,
+              "signal": 0,
+              "overScore": 0,
+              "underScore": 0
+            },
+            "weighted_contributions": {
+              "net": 0,
+              "overScore": 0,
+              "underScore": 0
+            }
+          },
+          {
+            "z": 0.09628221406795859,
+            "key": "edgeVsMarket",
+            "name": "Edge vs Market",
+            "weight": 1,
+            "contribution": 0.4814110703397929,
+            "weight_percentage": 100,
+            "parsed_values_json": {
+              "points": 0,
+              "signal": 0.09628221406795859,
+              "overScore": 0.4814110703397929,
+              "underScore": 0
+            },
+            "weighted_contributions": {
+              "net": 0.4814110703397929,
+              "overScore": 0.4814110703397929,
+              "underScore": 0
+            }
+          }
+        ]
+      },
+      "shiva_run_metadata": null
+    },
+    {
+      "run_id": "shiva_1761980125382_3n66g0",
+      "id": "shiva_1761980125382_3n66g0",
+      "game_id": "0e647c27-3604-4c20-bdf7-c6013d15866a",
+      "created_at": "2025-11-01T06:55:35.456+00:00",
+      "matchup": "Utah Jazz @ Phoenix Suns",
+      "game_time": "02:00:00",
+      "pick_type": "TOTAL",
+      "selection": "UNDER 236.5",
+      "units": 0,
+      "confidence": {
+        "final": 0.91,
+        "calculated_from_factors": 0,
+        "total_weighted_over": 0,
+        "total_weighted_under": 0
+      },
+      "factors": [],
+      "factor_summary": {
+        "total_factors": 0,
+        "factors_favoring_over": 0,
+        "factors_favoring_under": 0,
+        "total_weight_percentage": 0
+      },
+      "step_data": {
+        "step3_json": null,
+        "step4_json": null,
+        "step5_json": null
+      },
+      "cooldown": null,
+      "state": null,
+      "capper": "shiva",
+      "raw_metadata": {},
+      "shiva_run_metadata": null
+    }
+  ]
+}

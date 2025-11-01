@@ -56,6 +56,8 @@ export async function GET(
     // Read data from metadata (same as run history API - this is the working method)
     const metadata = run?.metadata || {}
 
+    console.log('[InsightCard API] 🔍 RAW METADATA:', JSON.stringify(metadata, null, 2))
+
     let factorContributions = metadata.factor_contributions || []
     let predictedTotal = metadata.predicted_total || 0
     let baselineAvg = metadata.baseline_avg || 220
@@ -64,9 +66,10 @@ export async function GET(
     let predictedAwayScore = metadata.predicted_away_score || 0
     let boldPredictions = metadata.bold_predictions || null
 
-    console.log('[InsightCard API] Reading from metadata (same as run history API):', {
+    console.log('[InsightCard API] 📊 EXTRACTED DATA:', {
       has_metadata: !!run?.metadata,
       factor_contributions_count: factorContributions.length,
+      factor_contributions_sample: factorContributions[0],
       predicted_total: predictedTotal,
       baseline_avg: baselineAvg,
       market_total: marketTotal,
