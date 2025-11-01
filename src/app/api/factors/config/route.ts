@@ -256,7 +256,7 @@ export async function POST(request: NextRequest) {
     const profileId = `${capperId}-${sport}-${betType}-custom-${Date.now()}`.toLowerCase()
     console.log(`[${requestId}] [Factors:Config:POST] Generated profile ID:`, profileId)
 
-    // First, deactivate any existing active profile for this capper/sport/betType
+    // First, deactivate any existing default profile for this capper/sport/betType
     console.log(`[${requestId}] [Factors:Config:POST] Deactivating existing profiles...`)
     const { error: deactivateError } = await supabase
       .from('capper_profiles')
@@ -264,7 +264,7 @@ export async function POST(request: NextRequest) {
       .eq('capper_id', capperId)
       .eq('sport', sport)
       .eq('bet_type', betType)
-      .eq('is_active', true)
+      .eq('is_default', true)
 
     if (deactivateError) {
       console.error(`[${requestId}] [Factors:Config:POST] Error deactivating existing profiles:`, deactivateError)

@@ -28,7 +28,7 @@ const Step3Schema = z.object({
       cap_reason: z.string().nullable(),
       notes: z.string().nullable().optional(),
     }).strict()),
-    meta: z.object({ 
+    meta: z.object({
       ai_provider: z.enum(['perplexity', 'openai']),
       factor_version: z.string().optional(),
     }).passthrough(),
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
 
   const { run_id, inputs, results } = parse.data
   const { sport, betType } = inputs
-  
+
   return withIdempotency({
     runId: run_id,
     step: 'step3',
@@ -64,20 +64,20 @@ export async function POST(request: Request) {
     writeAllowed,
     exec: async () => {
       const admin = getSupabaseAdmin()
-      
+
       // Branch on NBA/TOTAL vs legacy factors
       let factorsToProcess: any[]
       let factorVersion: string
-      
-      console.debug('[step3:branch]', { sport, betType, used: sport==='NBA'&&betType==='TOTAL'?'totals':'legacy' })
-      
+
+      console.debug('[step3:branch]', { sport, betType, used: sport === 'NBA' && betType === 'TOTAL' ? 'totals' : 'legacy' })
+
       let totalsDebug: any = null
-      
+
       if (sport === 'NBA' && betType === 'TOTAL') {
         // Use new NBA totals factors
         try {
           console.log('[Step3:NBA-Totals] Starting computeTotalsFactors...')
-          
+
           // Fetch capper profile to get factor weights (both dry run and write modes)
           let factorWeights: Record<string, number> = {}
           try {
@@ -88,16 +88,16 @@ export async function POST(request: Request) {
               .eq('capper_id', 'SHIVA')
               .eq('sport', 'NBA')
               .eq('bet_type', 'TOTAL')
-              .eq('is_active', true)
+              .eq('is_default', true)
               .single()
-            
-            console.log('[Step3:NBA-Totals] Profile query result:', { 
-              data: profileRes.data, 
+
+            console.log('[Step3:NBA-Totals] Profile query result:', {
+              data: profileRes.data,
               error: profileRes.error,
               hasFactors: !!profileRes.data?.factors,
               factorsCount: profileRes.data?.factors?.length || 0
             })
-            
+
             if (profileRes.data?.factors && profileRes.data.factors.length > 0) {
               factorWeights = getFactorWeightsFromProfile({ factors: profileRes.data.factors })
               console.log('[Step3:NBA-Totals] Using factor weights from profile:', factorWeights)
@@ -109,7 +109,7 @@ export async function POST(request: Request) {
             console.error('[Step3:NBA-Totals] Could not fetch profile - FAILING as requested:', profileError)
             throw new Error(`Failed to load capper profile: ${profileError}`)
           }
-          
+
           const totalsResult = await computeTotalsFactors({
             game_id: run_id, // Use run_id as game_id for now
             away: inputs.teams.away,
@@ -126,12 +126,12 @@ export async function POST(request: Request) {
             },
             factorWeights // Pass weights to factor computation
           })
-          
-          console.log('[Step3:NBA-Totals] Success:', { 
-            factorCount: totalsResult.factors.length, 
-            version: totalsResult.factor_version 
+
+          console.log('[Step3:NBA-Totals] Success:', {
+            factorCount: totalsResult.factors.length,
+            version: totalsResult.factor_version
           })
-          
+
           factorsToProcess = totalsResult.factors
           factorVersion = totalsResult.factor_version
           totalsDebug = totalsResult.totals_debug
@@ -150,9 +150,9 @@ export async function POST(request: Request) {
         factorsToProcess = results.factors
         factorVersion = 'legacy_v1'
       }
-      
+
       const capsApplied = factorsToProcess.filter(f => f.caps_applied).length
-      
+
       if (writeAllowed) {
         // Get game_id from the run (it was stored during Step 1 or Step 2)
         const { data: runData } = await admin
@@ -160,15 +160,15 @@ export async function POST(request: Request) {
           .select('game_id')
           .eq('id', run_id)
           .single()
-        
+
         const game_id = runData?.game_id || null
-        
+
         // Single transaction: insert all factors
         for (const f of factorsToProcess) {
           const normalizedVal = f.normalized_value || 0
           const weightPct = f.weight_total_pct || 0
           const contribution = (normalizedVal * weightPct) / 100
-          
+
           const ins = await admin.from('factors').insert({
             run_id,
             game_id,
@@ -186,7 +186,7 @@ export async function POST(request: Request) {
           if (ins.error) throw new Error(ins.error.message)
         }
       }
-      
+
       // Extract baseline data from totalsDebug for Step 4
       const bundle = totalsDebug?.console_logs?.bundle
       const baselineData = bundle ? {
@@ -194,9 +194,9 @@ export async function POST(request: Request) {
         homePointsPerGame: bundle.homePointsPerGame || 111.5,
         matchupBaseline: (bundle.awayPointsPerGame || 111.5) + (bundle.homePointsPerGame || 111.5)
       } : null
-      
-      const responseBody = { 
-        run_id, 
+
+      const responseBody = {
+        run_id,
         factors: factorsToProcess,
         factor_count: factorsToProcess.length,
         factor_version: factorVersion,
@@ -207,7 +207,7 @@ export async function POST(request: Request) {
           news_window_hours: inputs.news_window_hours
         } : null
       }
-      
+
       // Structured logging
       console.log('[SHIVA:Step3]', {
         run_id,
@@ -222,7 +222,7 @@ export async function POST(request: Request) {
         latencyMs: Date.now() - startTime,
         status: 200,
       })
-      
+
       return { body: responseBody, status: 200 }
     }
   })

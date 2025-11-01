@@ -30,10 +30,10 @@ export function FactorConfigModal({
   const [profile, setProfile] = useState<CapperProfile | null>(null)
   const [factors, setFactors] = useState<FactorConfig[]>([])
   const [selectedFactorDetails, setSelectedFactorDetails] = useState<string | null>(null)
-  
+
   // State to manage which Logic & Examples sections are expanded
   const [expandedLogic, setExpandedLogic] = useState<Set<string>>(new Set())
-  
+
   // Calculate weight budget (with proper rounding to avoid floating point precision issues)
   // Edge vs Market doesn't count toward weight budget
   const weightFactors = factors.filter(f => f.enabled && f.key !== 'edgeVsMarket')
@@ -41,7 +41,7 @@ export function FactorConfigModal({
   const totalWeight = Math.round(rawTotalWeight * 100) / 100
   const remainingWeight = Math.round((250 - totalWeight) * 100) / 100
   const isWeightValid = Math.abs(remainingWeight) < 0.01 || Math.abs(totalWeight - 250) < 0.01
-  
+
   // Debug logging
   // console.log('[Weight Debug]', {
   //   weightFactors: weightFactors.map(f => ({ key: f.key, weight: f.weight })),
@@ -50,35 +50,35 @@ export function FactorConfigModal({
   //   remainingWeight,
   //   isWeightValid
   // })
-  
+
   // Force exact 250% if very close (within 0.01%)
   const displayTotalWeight = Math.abs(totalWeight - 250) < 0.01 ? 250 : totalWeight
   const displayRemainingWeight = Math.abs(remainingWeight) < 0.01 ? 0 : remainingWeight
-  
+
   // Get factor eligibility tags
   const getFactorTags = (factor: FactorConfig) => {
     const tags = []
-    
+
     // Edge vs Market is special - only show Global
     if (factor.key === 'edgeVsMarket') {
       return ['Global']
     }
-    
+
     // Sport tags
     if (factor.sport === 'NBA') tags.push('NBA')
     if (factor.sport === 'NFL') tags.push('NFL')
     if (factor.sport === 'MLB') tags.push('MLB')
-    
+
     // Bet type tags
     if (factor.betType === 'TOTAL') tags.push('O/U')
     if (factor.betType === 'SPREAD') tags.push('SPREAD')
     if (factor.betType === 'MONEYLINE') tags.push('ML')
-    
+
     // Scope tags
     if (factor.scope === 'global') tags.push('Global')
     if (factor.scope === 'matchup') tags.push('Matchup')
     if (factor.scope === 'team') tags.push('Team')
-    
+
     return tags
   }
 
@@ -86,7 +86,7 @@ export function FactorConfigModal({
   const getFactorDetails = (key: string) => {
     // Get the detailed logic from getFactorLogic
     const logic = getFactorLogic(key)
-    
+
     const detailsMap: Record<string, { features: string[]; examples: string[]; registry: string[] }> = {
       paceIndex: {
         features: [
@@ -102,7 +102,7 @@ export function FactorConfigModal({
           "• Signal: +0.91",
           "• Result: +1.82 Over Score (Very High confidence for Over)",
           "",
-          "Scenario 2: Slow Pace Game", 
+          "Scenario 2: Slow Pace Game",
           "• Possessions: -8 vs league average",
           "• Signal: -0.76",
           "• Result: +1.52 Under Score (High confidence for Under)"
@@ -131,7 +131,7 @@ export function FactorConfigModal({
           "",
           "Scenario 2: Struggling Offense",
           "• Combined ORtg: 100 (10 points below league)",
-          "• Signal: -0.76", 
+          "• Signal: -0.76",
           "• Result: +1.52 Under Score (High confidence for Under)"
         ],
         registry: [
@@ -399,14 +399,14 @@ export function FactorConfigModal({
     console.log(`[getFactorLogic] Result for ${key}:`, result)
     return result
   }
-  
+
   // Normalize factor weights to ensure they sum to 100%
   const normalizeFactorWeights = (factors: FactorConfig[]): FactorConfig[] => {
     // Edge vs Market doesn't count toward weight budget
     const weightFactors = factors.filter(f => f.key !== 'edgeVsMarket')
     const enabledFactors = weightFactors.filter(f => f.enabled)
     const disabledFactors = weightFactors.filter(f => !f.enabled)
-    
+
     if (enabledFactors.length === 0) {
       // If no factors enabled, enable all with equal weights (excluding Edge vs Market)
       return factors.map(f => {
@@ -416,10 +416,10 @@ export function FactorConfigModal({
         return { ...f, enabled: true, weight: 100 / weightFactors.length }
       })
     }
-    
+
     // Calculate total weight of enabled factors (excluding Edge vs Market)
     const totalWeight = enabledFactors.reduce((sum, f) => sum + f.weight, 0)
-    
+
     if (totalWeight === 0) {
       // If all enabled factors have 0 weight, distribute equally
       const equalWeight = 250 / enabledFactors.length
@@ -430,7 +430,7 @@ export function FactorConfigModal({
         return f.enabled ? { ...f, weight: equalWeight } : { ...f, weight: 0 }
       })
     }
-    
+
     // Normalize enabled factors to sum to 250% (excluding Edge vs Market)
     const normalizedFactors = factors.map(f => {
       if (f.key === 'edgeVsMarket') {
@@ -445,7 +445,7 @@ export function FactorConfigModal({
         return { ...f, weight: 0 }
       }
     })
-    
+
     // Final adjustment to ensure exact 250% total
     const finalFactors = [...normalizedFactors]
     const finalTotal = finalFactors
@@ -460,48 +460,57 @@ export function FactorConfigModal({
         firstEnabled.weight = Math.round((firstEnabled.weight + adjustment) * 100) / 100
       }
     }
-    
+
     return finalFactors
   }
 
   // Load factor configuration
   useEffect(() => {
     if (!isOpen) return
-    
+
     const loadConfig = async () => {
       try {
         setLoading(true)
         console.log('[FactorConfigModal] Loading config for:', { capperId, sport, betType })
-        
+
         const response = await fetch(
           `/api/factors/config?capperId=${capperId}&sport=${sport}&betType=${betType}`
         )
-        
+
         console.log('[FactorConfigModal] API response status:', response.status)
-        
+
         if (!response.ok) {
           const errorText = await response.text()
           console.error('[FactorConfigModal] API error:', { status: response.status, error: errorText })
           throw new Error(`Failed to load factor configuration: ${response.status}`)
         }
-        
+
         const data = await response.json()
         console.log('[FactorConfigModal] API response data:', data)
-        
+
         setProfile(data.profile)
-        
+
         // Use the full registry to get all available factors
         const registry = data.registry || {}
         console.log('[FactorConfigModal] Registry keys:', Object.keys(registry))
-        
+
         const loadedFactors = data.profile.factors || []
         console.log('[FactorConfigModal] Loaded factors:', loadedFactors)
-        
+        console.log('[FactorConfigModal] Loaded factor keys:', loadedFactors.map((f: any) => f.key))
+
         // Convert registry to FactorConfig array, merging with saved factors
         const allFactors: FactorConfig[] = Object.entries(registry).map(([key, meta]: [string, any]) => {
           // Find saved factor config for this key
           const savedFactor = loadedFactors.find((f: any) => f.key === key)
-          
+
+          console.log(`[FactorConfigModal] Processing factor ${key}:`, {
+            hasSavedFactor: !!savedFactor,
+            savedEnabled: savedFactor?.enabled,
+            savedWeight: savedFactor?.weight,
+            willUseEnabled: savedFactor?.enabled ?? (key === 'edgeVsMarket'),
+            willUseWeight: key === 'edgeVsMarket' ? 100 : (savedFactor?.weight ?? meta.defaultWeight)
+          })
+
           return {
             key,
             name: meta.name,
@@ -517,19 +526,19 @@ export function FactorConfigModal({
             shortName: meta.shortName
           }
         })
-        
+
         let factorsToSet: FactorConfig[]
-        
+
         // Use the registry-based factors
         factorsToSet = allFactors
-        
+
         console.log('[FactorConfigModal] Loaded factors:', {
           registryCount: Object.keys(registry).length,
           loadedFactorsCount: loadedFactors.length,
           allFactorsCount: allFactors.length,
           factorsToSet: factorsToSet.map(f => ({ key: f.key, name: f.name, enabled: f.enabled, weight: f.weight }))
         })
-        
+
         // Debug the getFactorLogic function
         factorsToSet.forEach(factor => {
           const logic = getFactorLogic(factor.key)
@@ -538,18 +547,18 @@ export function FactorConfigModal({
           console.log(`[FactorConfigModal] Factor ${factor.key} metric:`, logic.metric)
           console.log(`[FactorConfigModal] Factor ${factor.key} formula:`, logic.formula)
         })
-        
+
         setFactors(factorsToSet)
       } catch (error) {
         console.error('Error loading factor config:', error)
         // Set default factors with proper weights on error
         setFactors([
           // Edge vs Market - Totals (locked, doesn't count toward weight budget) - FIRST
-          { 
-            key: 'edgeVsMarket', 
-            name: 'Edge vs Market - Totals', 
+          {
+            key: 'edgeVsMarket',
+            name: 'Edge vs Market - Totals',
             description: 'Final confidence adjustment based on predicted vs market line for totals',
-            enabled: true, 
+            enabled: true,
             weight: 100, // Always 100% (fixed)
             dataSource: 'manual',
             maxPoints: 3.0,
@@ -559,12 +568,12 @@ export function FactorConfigModal({
             icon: '📊',
             shortName: 'Edge'
           },
-          { 
-            key: 'paceIndex', 
-            name: 'Pace Index', 
+          {
+            key: 'paceIndex',
+            name: 'Pace Index',
             description: 'Expected game pace vs league average',
-            enabled: true, 
-            weight: 20, 
+            enabled: true,
+            weight: 20,
             dataSource: 'nba-stats-api',
             maxPoints: 1.0,
             sport: 'NBA',
@@ -573,12 +582,12 @@ export function FactorConfigModal({
             icon: '⏱️',
             shortName: 'Pace'
           },
-          { 
-            key: 'offForm', 
-            name: 'Offensive Form', 
+          {
+            key: 'offForm',
+            name: 'Offensive Form',
             description: 'Recent offensive efficiency vs opponent defense',
-            enabled: true, 
-            weight: 20, 
+            enabled: true,
+            weight: 20,
             dataSource: 'nba-stats-api',
             maxPoints: 1.0,
             sport: 'NBA',
@@ -587,12 +596,12 @@ export function FactorConfigModal({
             icon: '🔥',
             shortName: 'ORtg Form'
           },
-          { 
-            key: 'defErosion', 
-            name: 'Defensive Erosion', 
+          {
+            key: 'defErosion',
+            name: 'Defensive Erosion',
             description: 'Defensive rating decline + injury impact',
-            enabled: true, 
-            weight: 20, 
+            enabled: true,
+            weight: 20,
             dataSource: 'nba-stats-api',
             maxPoints: 1.0,
             sport: 'NBA',
@@ -601,12 +610,12 @@ export function FactorConfigModal({
             icon: '🛡️',
             shortName: 'DRtg/Avail'
           },
-          { 
-            key: 'threeEnv', 
-            name: '3P Environment', 
+          {
+            key: 'threeEnv',
+            name: '3P Environment',
             description: '3-point environment & volatility',
-            enabled: true, 
-            weight: 20, 
+            enabled: true,
+            weight: 20,
             dataSource: 'nba-stats-api',
             maxPoints: 1.0,
             sport: 'NBA',
@@ -615,12 +624,12 @@ export function FactorConfigModal({
             icon: '🏹',
             shortName: '3P Env'
           },
-          { 
-            key: 'whistleEnv', 
-            name: 'FT Environment', 
+          {
+            key: 'whistleEnv',
+            name: 'FT Environment',
             description: 'Free throw rate environment',
-            enabled: true, 
-            weight: 20, 
+            enabled: true,
+            weight: 20,
             dataSource: 'nba-stats-api',
             maxPoints: 1.0,
             sport: 'NBA',
@@ -634,18 +643,18 @@ export function FactorConfigModal({
         setLoading(false)
       }
     }
-    
+
     loadConfig()
   }, [isOpen, capperId, sport, betType])
-  
+
   // Toggle factor enabled/disabled
   const toggleFactor = (key: string) => {
     setFactors(prev =>
       prev.map(f => {
         if (f.key === key) {
           const newEnabled = !f.enabled
-          return { 
-            ...f, 
+          return {
+            ...f,
             enabled: newEnabled,
             weight: newEnabled ? f.weight : 0 // Set weight to 0 when disabled
           }
@@ -654,30 +663,30 @@ export function FactorConfigModal({
       })
     )
   }
-  
+
   // Update factor weight
   const updateWeight = (key: string, weight: number) => {
     setFactors(prev => {
       // Don't allow Edge vs Market to be adjusted
       if (key === 'edgeVsMarket') return prev
-      
+
       // Calculate total weight of OTHER enabled factors (excluding Edge vs Market)
       const otherEnabledWeight = prev
         .filter(f => f.enabled && f.key !== key && f.key !== 'edgeVsMarket')
         .reduce((sum, f) => sum + f.weight, 0)
-      
+
       // Calculate max weight this factor can have (can't exceed remaining budget)
       const maxAllowed = Math.max(0, 250 - otherEnabledWeight)
-      
+
       // Clamp weight to valid range
       const newWeight = Math.max(0, Math.min(maxAllowed, weight))
-      
+
       return prev.map(f =>
         f.key === key ? { ...f, weight: newWeight } : f
       )
     })
   }
-  
+
   // Update factor data source
   const updateDataSource = (key: string, dataSource: DataSource) => {
     setFactors(prev =>
@@ -686,35 +695,49 @@ export function FactorConfigModal({
       )
     )
   }
-  
+
   // Save factor configuration
   const handleSave = async () => {
     if (!isWeightValid) {
       alert('Weights must sum to exactly 250% before saving')
       return
     }
-    
+
     setSaving(true)
     try {
+      const payload = {
+        capperId,
+        sport: sport as string,
+        betType: betType as string,
+        name: profile?.name || `${capperId} ${sport} ${betType} Profile`,
+        description: profile?.description || `Custom factor configuration for ${capperId} ${sport} ${betType}`,
+        factors: factors.map(factor => ({
+          ...factor,
+          sport: sport as string,
+          betType: betType as string
+        }))
+      }
+
+      console.log('[FactorConfigModal] Saving config with payload:', {
+        capperId: payload.capperId,
+        sport: payload.sport,
+        betType: payload.betType,
+        factorsCount: payload.factors.length,
+        factors: payload.factors.map(f => ({ key: f.key, enabled: f.enabled, weight: f.weight }))
+      })
+
       const response = await fetch('/api/factors/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          capperId,
-          sport: sport as string,
-          betType: betType as string,
-          name: profile?.name || `${capperId} ${sport} ${betType} Profile`,
-          description: profile?.description || `Custom factor configuration for ${capperId} ${sport} ${betType}`,
-          factors: factors.map(factor => ({
-            ...factor,
-            sport: sport as string,
-            betType: betType as string
-          }))
-        })
+        body: JSON.stringify(payload)
       })
-      
+
       if (response.ok) {
+        const responseData = await response.json()
+        console.log('[FactorConfigModal] Save response:', responseData)
+        console.log('[FactorConfigModal] Saved profile factors count:', responseData.profile?.factors?.length)
         console.log('Factor configuration saved successfully')
+
         // Create a complete profile with all required fields
         const completeProfile: CapperProfile = {
           id: profile?.id || `${capperId}-${sport}-${betType}`,
@@ -732,6 +755,8 @@ export function FactorConfigModal({
         onSave(completeProfile) // Notify parent component with full profile
         onClose() // Close modal
       } else {
+        const errorData = await response.json()
+        console.error('[FactorConfigModal] Save error:', errorData)
         throw new Error('Failed to save factor configuration')
       }
     } catch (error) {
@@ -741,9 +766,9 @@ export function FactorConfigModal({
       setSaving(false)
     }
   }
-  
+
   if (!isOpen) return null
-  
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-gray-900 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
@@ -761,7 +786,7 @@ export function FactorConfigModal({
                 onClick={() => {
                   const enabledFactors = factors.filter(f => f.enabled && f.key !== 'edgeVsMarket')
                   const equalWeight = 250 / enabledFactors.length
-                  
+
                   setFactors(prev => prev.map(f => {
                     if (f.key === 'edgeVsMarket') return f
                     return f.enabled ? { ...f, weight: equalWeight } : f
@@ -778,7 +803,7 @@ export function FactorConfigModal({
               >
                 {saving ? 'Saving...' : 'Save Configuration'}
               </button>
-              
+
               <button
                 onClick={() => {
                   const debugInfo = {
@@ -819,7 +844,7 @@ export function FactorConfigModal({
                       supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'Set' : 'Missing'
                     }
                   }
-                  
+
                   const debugText = JSON.stringify(debugInfo, null, 2)
                   navigator.clipboard.writeText(debugText).then(() => {
                     alert('Debug report copied to clipboard!')
@@ -846,47 +871,44 @@ export function FactorConfigModal({
               </button>
             </div>
           </div>
-          
+
           {/* Weight Budget Display */}
-          <div className={`p-3 rounded border ${
-            isWeightValid 
-              ? 'bg-green-500/10 border-green-500/30' 
-              : remainingWeight > 0
-                ? 'bg-blue-500/10 border-blue-500/30'
-                : 'bg-red-500/10 border-red-500/30'
-          }`}>
+          <div className={`p-3 rounded border ${isWeightValid
+            ? 'bg-green-500/10 border-green-500/30'
+            : remainingWeight > 0
+              ? 'bg-blue-500/10 border-blue-500/30'
+              : 'bg-red-500/10 border-red-500/30'
+            }`}>
             <div className="flex justify-between items-center">
               <div>
                 <div className="text-sm font-medium text-white">
                   Weight Budget: {displayTotalWeight}% / 250%
                 </div>
-                <div className={`text-xs mt-1 ${
-                  isWeightValid 
-                    ? 'text-green-400' 
-                    : displayRemainingWeight > 0
-                      ? 'text-blue-400'
-                      : 'text-red-400'
-                }`}>
-                  {isWeightValid 
-                    ? '✓ Perfect! All weight allocated.' 
+                <div className={`text-xs mt-1 ${isWeightValid
+                  ? 'text-green-400'
+                  : displayRemainingWeight > 0
+                    ? 'text-blue-400'
+                    : 'text-red-400'
+                  }`}>
+                  {isWeightValid
+                    ? '✓ Perfect! All weight allocated.'
                     : displayRemainingWeight > 0
                       ? `${displayRemainingWeight}% remaining to allocate`
                       : `Over budget by ${Math.abs(displayRemainingWeight)}%`
                   }
                 </div>
               </div>
-              
+
               {/* Progress Bar */}
               <div className="w-48">
                 <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-                  <div 
-                    className={`h-full transition-all ${
-                      isWeightValid 
-                        ? 'bg-green-500' 
-                        : displayTotalWeight > 100
-                          ? 'bg-red-500'
-                          : 'bg-blue-500'
-                    }`}
+                  <div
+                    className={`h-full transition-all ${isWeightValid
+                      ? 'bg-green-500'
+                      : displayTotalWeight > 100
+                        ? 'bg-red-500'
+                        : 'bg-blue-500'
+                      }`}
                     style={{ width: `${Math.min(displayTotalWeight, 100)}%` }}
                   />
                 </div>
@@ -894,7 +916,7 @@ export function FactorConfigModal({
             </div>
           </div>
         </div>
-        
+
         {/* Content */}
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
           {loading ? (
@@ -917,234 +939,230 @@ export function FactorConfigModal({
                     return 0
                   })
                   .map(factor => (
-                  <div
-                    key={factor.key}
-                    className={`border rounded-lg p-4 transition ${
-                      factor.enabled
+                    <div
+                      key={factor.key}
+                      className={`border rounded-lg p-4 transition ${factor.enabled
                         ? 'border-blue-500/30 bg-blue-500/5'
                         : 'border-gray-700 bg-gray-800/30'
-                    }`}
-                  >
-                    <div className="flex items-start gap-4">
-                      {/* Enable/Disable Toggle */}
-                      <button
-                        onClick={() => factor.key !== 'edgeVsMarket' && toggleFactor(factor.key)}
-                        disabled={factor.key === 'edgeVsMarket'}
-                        className={`mt-1 w-12 h-6 rounded-full transition ${
-                          factor.enabled ? 'bg-blue-600' : 'bg-gray-600'
-                        } ${factor.key === 'edgeVsMarket' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                      >
-                        <div
-                          className={`w-5 h-5 bg-white rounded-full transition transform ${
-                            factor.enabled ? 'translate-x-6' : 'translate-x-0.5'
-                          }`}
-                        />
-                      </button>
-                      
-                      {/* Factor Info */}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-2xl">{factor.icon}</span>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <h3 className="text-white font-medium">{factor.name}</h3>
-                              <button
-                                onClick={() => setSelectedFactorDetails(factor.key)}
-                                className="text-gray-400 hover:text-blue-400 transition-colors ml-1"
-                                title="View detailed factor information"
-                              >
-                                👁️
-                              </button>
-                              {/* Factor Tags */}
-                              <div className="flex gap-1">
-                                {getFactorTags(factor).map((tag, i) => (
-                                  <span 
-                                    key={i}
-                                    className="px-1.5 py-0.5 text-xs rounded bg-blue-500/20 text-blue-300 border border-blue-500/30"
-                                  >
-                                    {tag}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                            <p className="text-sm text-gray-400">{factor.description}</p>
-                          </div>
-                        </div>
-                        
-                        {factor.enabled && (
-                          <div className="mt-4 space-y-4">
-                            {/* Weight and Data Source */}
-                            <div className="grid grid-cols-2 gap-4">
-                              {/* Weight Slider */}
-                              <div>
-                                <label className="block text-xs text-gray-400 mb-2">
-                                  Weight: {factor.key === 'edgeVsMarket' ? '100% (Fixed)' : `${factor.weight}%`}
-                                </label>
-                                <input
-                                  type="range"
-                                  min="0"
-                                  max={factor.key === 'edgeVsMarket' ? 0 : 100}
-                                  value={factor.weight}
-                                  onChange={e => factor.key !== 'edgeVsMarket' && updateWeight(factor.key, parseInt(e.target.value))}
-                                  disabled={factor.key === 'edgeVsMarket'}
-                                  className={`w-full ${factor.key === 'edgeVsMarket' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                                />
-                              </div>
-                              
-                              {/* Data Source Selector */}
-                              <div>
-                                <label className="block text-xs text-gray-400 mb-2">
-                                  Data Source
-                                </label>
-                                <select
-                                  value={factor.dataSource}
-                                  onChange={e => updateDataSource(factor.key, e.target.value as DataSource)}
-                                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm"
+                        }`}
+                    >
+                      <div className="flex items-start gap-4">
+                        {/* Enable/Disable Toggle */}
+                        <button
+                          onClick={() => factor.key !== 'edgeVsMarket' && toggleFactor(factor.key)}
+                          disabled={factor.key === 'edgeVsMarket'}
+                          className={`mt-1 w-12 h-6 rounded-full transition ${factor.enabled ? 'bg-blue-600' : 'bg-gray-600'
+                            } ${factor.key === 'edgeVsMarket' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                        >
+                          <div
+                            className={`w-5 h-5 bg-white rounded-full transition transform ${factor.enabled ? 'translate-x-6' : 'translate-x-0.5'
+                              }`}
+                          />
+                        </button>
+
+                        {/* Factor Info */}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl">{factor.icon}</span>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="text-white font-medium">{factor.name}</h3>
+                                <button
+                                  onClick={() => setSelectedFactorDetails(factor.key)}
+                                  className="text-gray-400 hover:text-blue-400 transition-colors ml-1"
+                                  title="View detailed factor information"
                                 >
-                                  <option value="nba-stats-api">NBA Stats API</option>
-                                  <option value="odds-api-scores">Odds API Scores</option>
-                                  <option value="statmuse">StatMuse (deprecated)</option>
-                                  <option value="llm">LLM (AI)</option>
-                                  <option value="news-api">News API</option>
-                                  <option value="system">System</option>
-                                  <option value="manual">Manual Entry</option>
-                                </select>
+                                  👁️
+                                </button>
+                                {/* Factor Tags */}
+                                <div className="flex gap-1">
+                                  {getFactorTags(factor).map((tag, i) => (
+                                    <span
+                                      key={i}
+                                      className="px-1.5 py-0.5 text-xs rounded bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                                    >
+                                      {tag}
+                                    </span>
+                                  ))}
+                                </div>
                               </div>
+                              <p className="text-sm text-gray-400">{factor.description}</p>
                             </div>
-                            
-                            {/* Factor Logic Drawer */}
-                            <div className="p-3 bg-gray-900 rounded border border-gray-600">
-                              <button
-                                onClick={() => {
-                                  const newExpanded = new Set(expandedLogic)
-                                  if (expandedLogic.has(factor.key)) {
-                                    newExpanded.delete(factor.key)
-                                  } else {
-                                    newExpanded.add(factor.key)
-                                  }
-                                  setExpandedLogic(newExpanded)
-                                }}
-                                className="flex items-center justify-between w-full text-xs font-medium text-gray-300 mb-3 hover:text-white transition-colors"
-                              >
-                                <span>🧮 Logic & Examples</span>
-                                <span className="text-gray-500">
-                                  {expandedLogic.has(factor.key) ? '▼' : '▶'}
-                                </span>
-                              </button>
-                              
-                              {expandedLogic.has(factor.key) && (
-                                <div className="space-y-3">
-                                  {/* Full-width Examples Table */}
-                                  <div className="overflow-x-auto">
-                                    <div className="text-xs text-gray-400 mb-2">
-                                      <strong>Scoring Examples:</strong>
-                                    </div>
-                                    <div className="space-y-1">
-                                      {(() => {
-                                        const examples = getFactorLogic(factor.key).examples
-                                        console.log(`[Logic & Examples] Factor: ${factor.key}, Examples:`, examples)
-                                        const tableRows = examples.filter(line => line.startsWith('|') && !line.includes('---'))
-                                        const headerRow = examples.find(line => line.startsWith('|') && line.includes('---'))
-                                        const metricLine = examples.find(line => line.startsWith('*Metric:'))
-                                        const formulaLine = examples.find(line => line.startsWith('*Formula:'))
-                                        
-                                        console.log(`[Logic & Examples] Table rows:`, tableRows)
-                                        
-                                        if (tableRows.length > 0) {
-                                          const headers = tableRows[0].split('|').slice(1, -1).map(h => h.trim())
-                                          
-                                          return (
-                                            <>
-                                              <div className="overflow-x-auto">
-                                                <table className="w-full text-xs border-collapse">
-                                                  <thead>
-                                                    <tr className="border-b border-gray-600">
-                                                      {headers.map((header, i) => (
-                                                        <th key={i} className="text-left py-2 px-2 text-gray-300 font-medium">
-                                                          {header}
-                                                        </th>
-                                                      ))}
-                                                    </tr>
-                                                  </thead>
-                                                  <tbody>
-                                                    {tableRows.slice(1).map((row, i) => {
-                                                      const cells = row.split('|').slice(1, -1).map(c => c.trim())
-                                                      return (
-                                                        <tr key={i} className="border-b border-gray-700">
-                                                          {cells.map((cell, j) => {
-                                                            // Check if this is Over Score or Under Score column and has a + number
-                                                            const isScoreColumn = headers[j]?.includes('Score') && cell.startsWith('+')
-                                                            return (
-                                                              <td key={j} className={`py-2 px-2 ${isScoreColumn ? 'text-green-400 font-medium' : 'text-gray-300'}`}>
-                                                                {cell}
-                                                              </td>
-                                                            )
-                                                          })}
-                                                        </tr>
-                                                      )
-                                                    })}
-                                                  </tbody>
-                                                </table>
-                                              </div>
-                                              {metricLine && (
-                                                <div className="text-xs text-gray-500 italic mt-3">
-                                                  {metricLine.replace(/\*/g, '')}
+                          </div>
+
+                          {factor.enabled && (
+                            <div className="mt-4 space-y-4">
+                              {/* Weight and Data Source */}
+                              <div className="grid grid-cols-2 gap-4">
+                                {/* Weight Slider */}
+                                <div>
+                                  <label className="block text-xs text-gray-400 mb-2">
+                                    Weight: {factor.key === 'edgeVsMarket' ? '100% (Fixed)' : `${factor.weight}%`}
+                                  </label>
+                                  <input
+                                    type="range"
+                                    min="0"
+                                    max={factor.key === 'edgeVsMarket' ? 0 : 100}
+                                    value={factor.weight}
+                                    onChange={e => factor.key !== 'edgeVsMarket' && updateWeight(factor.key, parseInt(e.target.value))}
+                                    disabled={factor.key === 'edgeVsMarket'}
+                                    className={`w-full ${factor.key === 'edgeVsMarket' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                  />
+                                </div>
+
+                                {/* Data Source Selector */}
+                                <div>
+                                  <label className="block text-xs text-gray-400 mb-2">
+                                    Data Source
+                                  </label>
+                                  <select
+                                    value={factor.dataSource}
+                                    onChange={e => updateDataSource(factor.key, e.target.value as DataSource)}
+                                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm"
+                                  >
+                                    <option value="nba-stats-api">NBA Stats API</option>
+                                    <option value="odds-api-scores">Odds API Scores</option>
+                                    <option value="statmuse">StatMuse (deprecated)</option>
+                                    <option value="llm">LLM (AI)</option>
+                                    <option value="news-api">News API</option>
+                                    <option value="system">System</option>
+                                    <option value="manual">Manual Entry</option>
+                                  </select>
+                                </div>
+                              </div>
+
+                              {/* Factor Logic Drawer */}
+                              <div className="p-3 bg-gray-900 rounded border border-gray-600">
+                                <button
+                                  onClick={() => {
+                                    const newExpanded = new Set(expandedLogic)
+                                    if (expandedLogic.has(factor.key)) {
+                                      newExpanded.delete(factor.key)
+                                    } else {
+                                      newExpanded.add(factor.key)
+                                    }
+                                    setExpandedLogic(newExpanded)
+                                  }}
+                                  className="flex items-center justify-between w-full text-xs font-medium text-gray-300 mb-3 hover:text-white transition-colors"
+                                >
+                                  <span>🧮 Logic & Examples</span>
+                                  <span className="text-gray-500">
+                                    {expandedLogic.has(factor.key) ? '▼' : '▶'}
+                                  </span>
+                                </button>
+
+                                {expandedLogic.has(factor.key) && (
+                                  <div className="space-y-3">
+                                    {/* Full-width Examples Table */}
+                                    <div className="overflow-x-auto">
+                                      <div className="text-xs text-gray-400 mb-2">
+                                        <strong>Scoring Examples:</strong>
+                                      </div>
+                                      <div className="space-y-1">
+                                        {(() => {
+                                          const examples = getFactorLogic(factor.key).examples
+                                          console.log(`[Logic & Examples] Factor: ${factor.key}, Examples:`, examples)
+                                          const tableRows = examples.filter(line => line.startsWith('|') && !line.includes('---'))
+                                          const headerRow = examples.find(line => line.startsWith('|') && line.includes('---'))
+                                          const metricLine = examples.find(line => line.startsWith('*Metric:'))
+                                          const formulaLine = examples.find(line => line.startsWith('*Formula:'))
+
+                                          console.log(`[Logic & Examples] Table rows:`, tableRows)
+
+                                          if (tableRows.length > 0) {
+                                            const headers = tableRows[0].split('|').slice(1, -1).map(h => h.trim())
+
+                                            return (
+                                              <>
+                                                <div className="overflow-x-auto">
+                                                  <table className="w-full text-xs border-collapse">
+                                                    <thead>
+                                                      <tr className="border-b border-gray-600">
+                                                        {headers.map((header, i) => (
+                                                          <th key={i} className="text-left py-2 px-2 text-gray-300 font-medium">
+                                                            {header}
+                                                          </th>
+                                                        ))}
+                                                      </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                      {tableRows.slice(1).map((row, i) => {
+                                                        const cells = row.split('|').slice(1, -1).map(c => c.trim())
+                                                        return (
+                                                          <tr key={i} className="border-b border-gray-700">
+                                                            {cells.map((cell, j) => {
+                                                              // Check if this is Over Score or Under Score column and has a + number
+                                                              const isScoreColumn = headers[j]?.includes('Score') && cell.startsWith('+')
+                                                              return (
+                                                                <td key={j} className={`py-2 px-2 ${isScoreColumn ? 'text-green-400 font-medium' : 'text-gray-300'}`}>
+                                                                  {cell}
+                                                                </td>
+                                                              )
+                                                            })}
+                                                          </tr>
+                                                        )
+                                                      })}
+                                                    </tbody>
+                                                  </table>
                                                 </div>
-                                              )}
-                                              {formulaLine && (
-                                                <div className="text-xs text-gray-500 italic mt-1">
-                                                  {formulaLine.replace(/\*/g, '')}
-                                                </div>
-                                              )}
-                                            </>
-                                          )
-                                        }
-                                        
-                                        // Fallback to original format if no table structure found
-                                        return examples.map((example, i) => (
-                                          <div key={i} className={`text-xs leading-relaxed ${
-                                            example.startsWith('|') 
-                                              ? 'text-gray-300 font-mono' 
+                                                {metricLine && (
+                                                  <div className="text-xs text-gray-500 italic mt-3">
+                                                    {metricLine.replace(/\*/g, '')}
+                                                  </div>
+                                                )}
+                                                {formulaLine && (
+                                                  <div className="text-xs text-gray-500 italic mt-1">
+                                                    {formulaLine.replace(/\*/g, '')}
+                                                  </div>
+                                                )}
+                                              </>
+                                            )
+                                          }
+
+                                          // Fallback to original format if no table structure found
+                                          return examples.map((example, i) => (
+                                            <div key={i} className={`text-xs leading-relaxed ${example.startsWith('|')
+                                              ? 'text-gray-300 font-mono'
                                               : example.startsWith('*') && example.endsWith('*')
-                                              ? 'text-gray-500 italic mt-2'
-                                              : example === ''
-                                              ? 'h-1'
-                                              : 'text-gray-400'
-                                          }`}>
-                                            {example.replace(/\*/g, '')}
-                                          </div>
-                                        ))
-                                      })()}
+                                                ? 'text-gray-500 italic mt-2'
+                                                : example === ''
+                                                  ? 'h-1'
+                                                  : 'text-gray-400'
+                                              }`}>
+                                              {example.replace(/\*/g, '')}
+                                            </div>
+                                          ))
+                                        })()}
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                              )}
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Dynamic Max Points Badge */}
-                      <div className="text-right">
-                        <div className="text-xs text-gray-400">Max ± Points</div>
-                        <div className="text-white font-mono">
-                          {getEffectiveMaxPoints(factor).toFixed(1)}
+                          )}
                         </div>
-                        <div className="text-xs text-gray-500 mt-0.5">
-                          {factor.key === 'edgeVsMarket' 
-                            ? 'Fixed (Final Step)' 
-                            : `Max ${factor.maxPoints.toFixed(1)} points`
-                          }
+
+                        {/* Dynamic Max Points Badge */}
+                        <div className="text-right">
+                          <div className="text-xs text-gray-400">Max ± Points</div>
+                          <div className="text-white font-mono">
+                            {getEffectiveMaxPoints(factor).toFixed(1)}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-0.5">
+                            {factor.key === 'edgeVsMarket'
+                              ? 'Fixed (Final Step)'
+                              : `Max ${factor.maxPoints.toFixed(1)} points`
+                            }
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  ))
               )}
             </div>
           )}
         </div>
-        
+
         {/* Footer */}
         <div className="px-6 py-4 border-t border-gray-800 flex justify-between items-center">
           <div className="text-sm text-gray-400">
@@ -1174,7 +1192,7 @@ export function FactorConfigModal({
                   ✕
                 </button>
               </div>
-              
+
               {(() => {
                 const logic = getFactorLogic(selectedFactorDetails)
                 return (
@@ -1200,19 +1218,18 @@ export function FactorConfigModal({
                       <h3 className="text-lg font-semibold text-white mb-3">📈 Logic & Examples</h3>
                       <div className="space-y-2">
                         {logic.examples.map((example, i) => (
-                          <div key={i} className={`text-sm leading-relaxed ${
-                            example.startsWith('|') 
-                              ? 'text-gray-300 font-mono' 
-                              : example.startsWith('*') && example.endsWith('*')
+                          <div key={i} className={`text-sm leading-relaxed ${example.startsWith('|')
+                            ? 'text-gray-300 font-mono'
+                            : example.startsWith('*') && example.endsWith('*')
                               ? 'text-blue-300 italic'
                               : example.startsWith('🤖')
-                              ? 'text-green-300 font-bold'
-                              : example.startsWith('```')
-                              ? 'text-yellow-300 font-mono bg-gray-800 p-2 rounded'
-                              : example === ''
-                              ? 'h-2'
-                              : 'text-gray-400'
-                          }`}>
+                                ? 'text-green-300 font-bold'
+                                : example.startsWith('```')
+                                  ? 'text-yellow-300 font-mono bg-gray-800 p-2 rounded'
+                                  : example === ''
+                                    ? 'h-2'
+                                    : 'text-gray-400'
+                            }`}>
                             {example}
                           </div>
                         ))}
