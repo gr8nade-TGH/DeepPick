@@ -53,7 +53,7 @@ export const ProfileJSONSchema = z.object({
 export interface CapperProfile {
   capper: string
   version: string
-  
+
   // Factor weights (decimals, must sum to ~1.0)
   weights: {
     f1_net_rating: number        // 0.21
@@ -64,7 +64,7 @@ export interface CapperProfile {
     f6_home_court: number         // 0.035
     f7_three_point: number        // 0.021
   }
-  
+
   // Caps and adjustments
   caps: {
     h2h_per100: number           // ±6
@@ -73,21 +73,23 @@ export interface CapperProfile {
     news_edge_per100: number     // ±3.0
     market_adj_max: number       // 1.2
   }
-  
+
   // Constants
   constants: {
     home_edge_per100: number     // 1.5
     league_ortg: number          // 114.0
   }
-  
-  // Unit thresholds
+
+  // Unit thresholds (for documentation - actual logic is hardcoded in orchestrator)
   units: {
-    pass_below: number           // 2.5
-    one_unit_max: number         // 3.0
-    two_units_max: number        // 4.0
-    // Above 4.0 = 3 units
+    pass_below: number           // 5.0 (PASS if conf ≤ 5.0)
+    one_unit_min: number         // 5.0 (1 unit if conf > 5.0)
+    two_units_min: number        // 6.0 (2 units if conf > 6.0)
+    three_units_min: number      // 7.0 (3 units if conf > 7.0)
+    four_units_min: number       // 8.0 (4 units if conf > 8.0)
+    five_units_min: number       // 9.0 (5 units if conf > 9.0, max)
   }
-  
+
   // AI providers
   providers: {
     step3_default: AIProvider    // perplexity
@@ -95,7 +97,7 @@ export interface CapperProfile {
     timeout_ms: number           // 6000-8000
     max_retries: number          // 2
   }
-  
+
   // News settings
   news: {
     window_hours_default: number // 48
@@ -111,7 +113,7 @@ export interface CapperProfile {
 export const shivaProfileV1: CapperProfile = {
   capper: 'SHIVA',
   version: 'v1',
-  
+
   weights: {
     f1_net_rating: 0.21,
     f2_recent_form: 0.175,
@@ -121,7 +123,7 @@ export const shivaProfileV1: CapperProfile = {
     f6_home_court: 0.035,
     f7_three_point: 0.021,
   },
-  
+
   caps: {
     h2h_per100: 6,
     side_points: 6,
@@ -129,25 +131,28 @@ export const shivaProfileV1: CapperProfile = {
     news_edge_per100: 3.0,
     market_adj_max: 1.2,
   },
-  
+
   constants: {
     home_edge_per100: 1.5,
     league_ortg: 114.0,
   },
-  
+
   units: {
-    pass_below: 2.5,
-    one_unit_max: 3.0,
-    two_units_max: 4.0,
+    pass_below: 5.0,
+    one_unit_min: 5.0,
+    two_units_min: 6.0,
+    three_units_min: 7.0,
+    four_units_min: 8.0,
+    five_units_min: 9.0,
   },
-  
+
   providers: {
     step3_default: 'perplexity',
     step4_default: 'openai',
     timeout_ms: 6000,
     max_retries: 2,
   },
-  
+
   news: {
     window_hours_default: 48,
     window_hours_extended: 72,
@@ -167,7 +172,7 @@ export async function getCapperProfile(
   try {
     const { getSupabaseAdmin } = await import('@/lib/supabase/server')
     const admin = getSupabaseAdmin()
-    
+
     const result = await admin
       .from('capper_settings')
       .select('profile_json, version')
@@ -175,7 +180,7 @@ export async function getCapperProfile(
       .eq('sport', sport)
       .eq('is_active', true)
       .maybeSingle()
-    
+
     if (result.data && result.data.profile_json) {
       // Validate profile JSON
       const parsed = ProfileJSONSchema.safeParse(result.data.profile_json)
@@ -187,10 +192,10 @@ export async function getCapperProfile(
   } catch (error) {
     console.warn('[Profile]', 'Failed to load from DB, using fallback', error)
   }
-  
+
   // Fallback to in-memory defaults
   if (capper === 'SHIVA' && sport === 'NBA') return shivaProfileV1
-  
+
   return null
 }
 
@@ -199,7 +204,7 @@ export async function getCapperProfile(
  */
 function convertProfileJSONToCapperProfile(json: z.infer<typeof ProfileJSONSchema>): CapperProfile {
   const factorsMap = new Map(json.factors.map(f => [f.key, f]))
-  
+
   return {
     capper: 'SHIVA',
     version: json.version,
@@ -225,8 +230,11 @@ function convertProfileJSONToCapperProfile(json: z.infer<typeof ProfileJSONSchem
     },
     units: {
       pass_below: json.thresholds.passLt,
-      one_unit_max: json.thresholds.oneUnit,
-      two_units_max: json.thresholds.twoUnits,
+      one_unit_min: json.thresholds.oneUnit,
+      two_units_min: json.thresholds.twoUnits,
+      three_units_min: json.thresholds.maxUnits || 7.0,
+      four_units_min: 8.0,
+      five_units_min: 9.0,
     },
     providers: {
       step3_default: json.providers.step3,

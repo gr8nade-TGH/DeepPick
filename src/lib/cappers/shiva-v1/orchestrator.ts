@@ -295,13 +295,15 @@ async function generatePick(runId: string, input: PipelineInput, confidence: any
   const marketLine = oddsSnapshot?.snapshot?.total?.line || 220
 
   // Determine pick direction and units using same logic as Step 5
+  // New thresholds: Higher confidence required for picks
   const pickDirection = predictedTotal > marketLine ? 'OVER' : 'UNDER'
   let units = 0
-  if (finalConfidence >= 4.5) units = 5
-  else if (finalConfidence >= 4.0) units = 3
-  else if (finalConfidence >= 3.5) units = 2
-  else if (finalConfidence >= 2.5) units = 1
-  // else units = 0 (PASS)
+  if (finalConfidence > 9.0) units = 5      // 5 units (max)
+  else if (finalConfidence > 8.0) units = 4  // 4 units
+  else if (finalConfidence > 7.0) units = 3  // 3 units
+  else if (finalConfidence > 6.0) units = 2  // 2 units
+  else if (finalConfidence > 5.0) units = 1  // 1 unit
+  // else units = 0 (PASS - confidence ≤ 5.0)
 
   const pick = {
     id: `pick_${runId}`,

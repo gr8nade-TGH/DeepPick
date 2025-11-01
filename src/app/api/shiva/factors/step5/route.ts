@@ -17,16 +17,16 @@ const Step5Schema = z.object({
 export async function POST(request: Request) {
   const startTime = Date.now()
   console.log('[SHIVA:Step5] === ROUTE CALLED ===')
-  
+
   const apiErr = ensureApiEnabled()
   if (apiErr) {
     console.log('[SHIVA:Step5] API not enabled:', apiErr)
     return apiErr
   }
-  
+
   const writeAllowed = isWriteAllowed()
   console.log('[SHIVA:Step5] Write allowed:', writeAllowed)
-  
+
   const key = requireIdempotencyKey(request)
   if (typeof key !== 'string') {
     console.log('[SHIVA:Step5] Invalid idempotency key:', key)
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
 
   const { run_id, inputs } = parse.data
   const { base_confidence, predicted_total, market_total_line, pick_direction } = inputs
-  
+
   return withIdempotency({
     runId: run_id,
     step: 'step5',
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
     writeAllowed,
     exec: async () => {
       const admin = getSupabaseAdmin()
-      
+
       // Calculate market edge
       const marketEdgePts = predicted_total - market_total_line
 
@@ -81,35 +81,38 @@ export async function POST(request: Request) {
       })
 
       // Calculate units based on final confidence
+      // New thresholds: Higher confidence required for picks
       let units = 0
-      if (adjustedConfidence >= 4.5) units = 5
-      else if (adjustedConfidence >= 4.0) units = 3
-      else if (adjustedConfidence >= 3.5) units = 2
-      else if (adjustedConfidence >= 2.5) units = 1
+      if (adjustedConfidence > 9.0) units = 5      // 5 units (max)
+      else if (adjustedConfidence > 8.0) units = 4  // 4 units
+      else if (adjustedConfidence > 7.0) units = 3  // 3 units
+      else if (adjustedConfidence > 6.0) units = 2  // 2 units
+      else if (adjustedConfidence > 5.0) units = 1  // 1 unit
 
       console.log('[SHIVA:Step5] Units allocation:', {
         adjustedConfidence,
         units,
-        threshold: adjustedConfidence >= 4.5 ? '>=4.5 (5 units)' :
-                   adjustedConfidence >= 4.0 ? '>=4.0 (3 units)' :
-                   adjustedConfidence >= 3.5 ? '>=3.5 (2 units)' :
-                   adjustedConfidence >= 2.5 ? '>=2.5 (1 unit)' : '<2.5 (PASS)'
+        threshold: adjustedConfidence > 9.0 ? '>9.0 (5 units)' :
+          adjustedConfidence > 8.0 ? '>8.0 (4 units)' :
+            adjustedConfidence > 7.0 ? '>7.0 (3 units)' :
+              adjustedConfidence > 6.0 ? '>6.0 (2 units)' :
+                adjustedConfidence > 5.0 ? '>5.0 (1 unit)' : '≤5.0 (PASS)'
       })
-      
+
       // Generate final pick
       const line = market_total_line.toFixed(1)
       const selection = `${pick_direction} ${line}`
-      
+
       const finalPick = {
         type: 'TOTAL' as const,
         selection,
         units,
         confidence: adjustedConfidence
       }
-      
+
       if (writeAllowed) {
         // Store final confidence and pick
-        const upd = await admin.from('runs').update({ 
+        const upd = await admin.from('runs').update({
           conf_final: adjustedConfidence,
           final_factor: 'Edge vs Market',
           edge_pts: marketEdgePts,
@@ -117,7 +120,7 @@ export async function POST(request: Request) {
         }).eq('run_id', run_id)
         if (upd.error) throw new Error(upd.error.message)
       }
-      
+
       const responseBody = {
         run_id,
         final_factor: {
@@ -133,7 +136,7 @@ export async function POST(request: Request) {
         dominant: 'total',
         conf_market_adj: edgeFactor,
       }
-      
+
       // Structured logging
       console.log('[SHIVA:Step5Final]', {
         run_id,
@@ -153,7 +156,7 @@ export async function POST(request: Request) {
         latencyMs: Date.now() - startTime,
         status: 200,
       })
-      
+
       return { body: responseBody, status: 200 }
     }
   })

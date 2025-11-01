@@ -70,47 +70,47 @@ const FACTOR_METADATA: Record<string, { label: string; icon: string; description
 
 function isEnabledInProfile(factorKey: string, profile: any): boolean {
   if (!profile?.config?.factors) return true // Default enabled if no profile
-  
+
   // Find the factor in the profile configuration
   const factorConfig = profile.config.factors.find((f: any) => f.key === factorKey)
   if (!factorConfig) return false // Factor not found in profile
-  
+
   return factorConfig.enabled === true
 }
 
 function getWeightPct(factorKey: string, profile: any): number {
   if (!profile?.config?.factors) return 0.1 // Default weight
-  
+
   // Find the factor in the profile configuration
   const factorConfig = profile.config.factors.find((f: any) => f.key === factorKey)
   if (!factorConfig) return 0.1 // Default weight if not found
-  
+
   return Number(factorConfig.weight ?? 0.1)
 }
 
 function generatePredictionWriteup(pick: any, predictedScore: any, totalLine: number, confFinal: number, factorRows: any[], homeTeam: string, awayTeam: string): string {
   if (!pick) return 'No pick generated.'
-  
+
   const totalPred = predictedScore.home + predictedScore.away
   const topFactor = factorRows[0]
-  
+
   switch (pick.type) {
     case 'TOTAL':
       // 4) Writeup polish (now that totals show)
       const line = totalLine ?? null
       const edgePts = line ? (totalPred - line).toFixed(1) : null
       const overUnder = pick.selection?.includes('OVER') ? 'Over' : 'Under'
-      
+
       return line
         ? `Model projects ${homeTeam} ${predictedScore.home}-${awayTeam} ${predictedScore.away} (total ${totalPred}). With confidence ${confFinal.toFixed(1)}/5 and a +${edgePts}pt edge, we lean ${overUnder} ${line}. Key driver: ${topFactor?.label}.`
         : `Model projects ${homeTeam} ${predictedScore.home}-${awayTeam} ${predictedScore.away}. Key driver: ${topFactor?.label}.`
-    
+
     case 'SPREAD':
       return `Model projects ${predictedScore.winner} covering by ${Math.abs(predictedScore.home - predictedScore.away)} points vs spread. Key driver: ${topFactor?.label} (${topFactor?.rationale}). With confidence ${confFinal.toFixed(1)}/5, we lean ${pick.selection}.`
-    
+
     case 'MONEYLINE':
       return `Model projects ${predictedScore.winner} winning outright ${predictedScore.home}-${predictedScore.away}. Key driver: ${topFactor?.label} (${topFactor?.rationale}). With confidence ${confFinal.toFixed(1)}/5, we lean ${pick.selection}.`
-    
+
     default:
       return `Model projects ${predictedScore.winner} ${predictedScore.home}-${predictedScore.away}. Key driver: ${topFactor?.label}. With confidence ${confFinal.toFixed(1)}/5, we lean ${pick.selection}.`
   }
@@ -118,19 +118,19 @@ function generatePredictionWriteup(pick: any, predictedScore: any, totalLine: nu
 
 function generateBoldPrediction(pick: any, predictedScore: any, factorRows: any[]): string {
   if (!pick) return 'No prediction available.'
-  
+
   const topFactor = factorRows[0]
-  
+
   switch (pick.type) {
     case 'TOTAL':
       return `${predictedScore.winner} hits ${pick.selection?.includes('OVER') ? 'high' : 'low'} total with ${topFactor?.label} edge.`
-    
+
     case 'SPREAD':
       return `${predictedScore.winner} covers by ${Math.abs(predictedScore.home - predictedScore.away)}+ points.`
-    
+
     case 'MONEYLINE':
       return `${predictedScore.winner} wins outright with ${topFactor?.label} advantage.`
-    
+
     default:
       return `${predictedScore.winner} dominates with ${topFactor?.label} edge.`
   }
@@ -152,26 +152,26 @@ function assembleInsightCard({ runCtx, step4, step5, step5_5, step6, step3, step
   // 1) Use Step-2 snapshot odds in the card header (try multiple paths)
   console.debug('[card:step2.snapshot]', step2?.json?.snapshot)
   console.debug('[card:odds.keys]', Object.keys(step2?.json?.snapshot ?? {}))
-  
-  const odds = 
+
+  const odds =
     step2?.json?.snapshot?.raw_payload ??
     step2?.json?.snapshot?.odds ??
     step2?.json?.odds ??
     runCtx?.game?.odds ??
     null
 
-  const totalLine = 
+  const totalLine =
     odds?.total?.line ??
     odds?.total_line ??
     (typeof odds?.totalLine === 'number' ? odds.totalLine : null)
 
-  const spreadTeam = 
+  const spreadTeam =
     odds?.spread?.team ??
     odds?.spread_team ??
     odds?.fav_team ??
     null
 
-  const spreadLine = 
+  const spreadLine =
     odds?.spread?.line ??
     odds?.spread_line ??
     (typeof odds?.spreadLine === 'number' ? odds.spreadLine : null)
@@ -179,7 +179,7 @@ function assembleInsightCard({ runCtx, step4, step5, step5_5, step6, step3, step
   // Format matchup strings without injecting zeroes
   const awayTeam = g.away || 'Away'
   const homeTeam = g.home || 'Home'
-  
+
   function formatSpread(away: string, home: string, spreadTeam: string, spreadLine: number) {
     if (spreadTeam && typeof spreadLine === 'number') {
       const fav = spreadTeam === home ? home : away
@@ -196,9 +196,9 @@ function assembleInsightCard({ runCtx, step4, step5, step5_5, step6, step3, step
   const lockedTotalLine = pick?.locked_odds?.total_line
   const currentTotalLine = totalLine
   const delta = (lockedTotalLine && currentTotalLine) ? (currentTotalLine - lockedTotalLine).toFixed(1) : null
-  
-  const totalText = (typeof currentTotalLine === 'number') 
-    ? `Current O/U ${currentTotalLine}${delta ? ` (Δ ${Number(delta) > 0 ? '+' : ''}${delta})` : ''}` 
+
+  const totalText = (typeof currentTotalLine === 'number')
+    ? `Current O/U ${currentTotalLine}${delta ? ` (Δ ${Number(delta) > 0 ? '+' : ''}${delta})` : ''}`
     : 'Current O/U —'
   const spreadText = (spreadTeam && typeof spreadLine === 'number')
     ? formatSpread(awayTeam, homeTeam, spreadTeam, spreadLine)
@@ -211,14 +211,14 @@ function assembleInsightCard({ runCtx, step4, step5, step5_5, step6, step3, step
   const edgeVsMarket = step5?.json?.final_factor
   const marketEdgePts = edgeVsMarket?.edge_pts ?? 0
   const marketEdgeFactor = edgeVsMarket?.edge_factor ?? 0
-  
+
   // Edge vs Market is locked at 100% weight by default
   const edgeVsMarketWeight = 1.0 // Always 100% weight
-  
+
   // Calculate Edge vs Market factor points (following factor pattern)
   // Edge factor is already normalized (-1.83), convert to points using MAX_POINTS = 5.0
   const edgeFactorPoints = Math.abs(marketEdgeFactor) * 5.0
-  
+
   // Create Edge vs Market factor row (always at top)
   const edgeVsMarketRow = {
     key: 'edgeVsMarket',
@@ -287,10 +287,10 @@ function assembleInsightCard({ runCtx, step4, step5, step5_5, step6, step3, step
       confidence: Number(pick.confidence ?? confFinal),
       locked_odds: pick.locked_odds || null,
       locked_at: pick.locked_at || null,
-    } : { 
-      type: 'TOTAL' as const, 
-      selection: 'N/A', 
-      units: 0, 
+    } : {
+      type: 'TOTAL' as const,
+      selection: 'N/A',
+      units: 0,
       confidence: confFinal,
       locked_odds: null,
       locked_at: null,
@@ -305,7 +305,7 @@ function assembleInsightCard({ runCtx, step4, step5, step5_5, step6, step3, step
     injury_summary: step3?.json?._debug?.totals?.injury_impact ? {
       findings: [],
       total_impact: 0,
-      summary: step3.json._debug.totals.injury_impact.rawResponse ? 
+      summary: step3.json._debug.totals.injury_impact.rawResponse ?
         JSON.parse(step3.json._debug.totals.injury_impact.rawResponse).findings?.length > 0 ?
           step3.json._debug.totals.injury_impact.summary :
           "No key injury data was found" :
@@ -378,7 +378,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
 
   // Track step logs in a ref for consistent data access
   const stepLogsRef = useRef<Record<number, any>>({})
-  
+
   // Keep ref in sync with state
   useEffect(() => {
     stepLogsRef.current = stepLogs
@@ -395,7 +395,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       }
       return newSet
     })
-    
+
     setStepProgress(prev => ({
       ...prev,
       [stepNum]: { progress, status }
@@ -422,10 +422,9 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       )
     } else if (stepLogs[stepNum]) {
       return (
-        <span className={`px-2 py-1 rounded text-xs ${
-          stepLogs[stepNum].status >= 200 && stepLogs[stepNum].status < 300 ? 'bg-green-600 text-white' :
-          stepLogs[stepNum].status >= 400 ? 'bg-red-600 text-white' : 'bg-yellow-600 text-white'
-        }`}>
+        <span className={`px-2 py-1 rounded text-xs ${stepLogs[stepNum].status >= 200 && stepLogs[stepNum].status < 300 ? 'bg-green-600 text-white' :
+            stepLogs[stepNum].status >= 400 ? 'bg-red-600 text-white' : 'bg-yellow-600 text-white'
+          }`}>
           {stepLogs[stepNum].status}
         </span>
       )
@@ -433,7 +432,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       // Check if this step can be executed (previous steps validated)
       let canExecute = true
       let validationError = ''
-      
+
       if (stepNum === 2) {
         const validation = validateStep1()
         canExecute = validation.isValid
@@ -458,7 +457,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         canExecute = stepLogs[6]?.json ? true : false
         validationError = stepLogs[6]?.json ? '' : 'Step 6 not executed'
       }
-      
+
       if (!canExecute) {
         return (
           <span className="px-2 py-1 rounded text-xs bg-orange-600 text-white" title={validationError}>
@@ -466,7 +465,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           </span>
         )
       }
-      
+
       return (
         <span className="px-2 py-1 rounded text-xs bg-gray-600 text-white">
           Ready
@@ -478,7 +477,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
   // Step names mapping
   const stepNames: Record<number, string> = {
     1: 'Game Selection',
-    2: 'Odds Snapshot', 
+    2: 'Odds Snapshot',
     3: 'Factor Analysis',
     4: 'Score Predictions',
     5: 'Pick Generation',
@@ -501,7 +500,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         "Generate unique run_id and retrieve game details + current odds"
       ]
     })
-    
+
     registerStep({
       step: 2,
       name: "Odds Snapshot",
@@ -514,7 +513,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         "Note: Edge calculation happens in Step 5, not here"
       ]
     })
-    
+
     registerStep({
       step: 3,
       name: "Factor Analysis",
@@ -527,7 +526,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         "Note: StatMuse has been removed, using NBA Stats API only"
       ]
     })
-    
+
     registerStep({
       step: 4,
       name: "Score Predictions",
@@ -539,7 +538,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         "Generate predicted scores (home/away) and margin"
       ]
     })
-    
+
     registerStep({
       step: 5,
       name: "Pick Generation",
@@ -551,7 +550,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         "Determine pick direction (Over/Under) based on edge"
       ]
     })
-    
+
     registerStep({
       step: 6,
       name: "Bold Player Predictions",
@@ -563,7 +562,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         "Include reasoning and confidence levels for each prediction"
       ]
     })
-    
+
     registerStep({
       step: 7,
       name: "Pick Finalization",
@@ -575,7 +574,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         "Apply risk management rules and validation"
       ]
     })
-    
+
     registerStep({
       step: 8,
       name: "Insight Card",
@@ -587,7 +586,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         "Show confidence scoring explanation and rationale"
       ]
     })
-    
+
     registerStep({
       step: 9,
       name: "Debug Report",
@@ -609,7 +608,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       console.log('effectiveProfileSnapshot:', effectiveProfileSnapshot)
       console.log('current runId:', runId)
       console.log('current snapId:', snapId)
-      
+
       // Build comprehensive steps array with actual response data
       const stepsArray = Object.entries(stepLogs)
         .filter(([stepNum]) => parseInt(stepNum) >= 1 && parseInt(stepNum) < 8) // Include steps 1-7
@@ -621,13 +620,13 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           response: response.json || null, // Include actual response data
           error: response.error || null,
         }))
-      
+
       // Check if Step 1 was executed
       const step1Executed = stepLogs[1] !== undefined
       const step1Status = stepLogs[1]?.status || 'NOT_EXECUTED'
-      
+
       console.log('[Debug Report] Step 1 check:', { step1Executed, step1Status, stepLogs })
-      
+
       const debugReport = {
         timestamp: new Date().toISOString(),
         runId: runId || 'unknown',
@@ -776,7 +775,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     if (!step2Data.snapshot) {
       return { isValid: false, error: 'Step 2 did not capture odds snapshot' }
     }
-    
+
     // Data anomaly checks
     const snapshot = step2Data.snapshot
     if (!snapshot.total?.line || typeof snapshot.total.line !== 'number') {
@@ -791,7 +790,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     if (!snapshot.start_time_utc) {
       return { isValid: false, error: 'Step 2 snapshot missing start time' }
     }
-    
+
     return { isValid: true, data: step2Data }
   }
 
@@ -811,23 +810,23 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     if (step3Data.factors.length === 0) {
       return { isValid: false, error: 'Step 3 generated empty factors array' }
     }
-    
+
     // Data anomaly checks
     const factors = step3Data.factors
     const expectedFactorKeys = ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv', 'injuryAvailability']
     const actualFactorKeys = factors.map((f: any) => f.key)
-    
+
     // Check if we have at least some factors (minimum 1)
     if (factors.length < 1) {
       return { isValid: false, error: `Step 3 only generated ${factors.length} factors, expected at least 1` }
     }
-    
+
     // Check for missing critical factors (only warn, don't block)
     const missingFactors = expectedFactorKeys.filter(key => !actualFactorKeys.includes(key))
     if (missingFactors.length > 0) {
       console.warn(`[Step 3] Missing factors: ${missingFactors.join(', ')} - this may be intentional based on configuration`)
     }
-    
+
     // Check if all factors have valid data structure
     for (const factor of factors) {
       if (!factor.key || !factor.name) {
@@ -840,7 +839,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         return { isValid: false, error: `Step 3 factor ${factor.key} missing parsed_values_json` }
       }
     }
-    
+
     // Check for suspicious data patterns (all factors returning 0)
     // NOTE: This is a warning, not a blocking error, because it could be legitimate
     // if teams are truly at league average. We log it but don't block progression.
@@ -850,13 +849,13 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       // Don't block - this could be legitimate, just log the warning
       // return { isValid: false, error: 'Step 3 all factors returning 0 - possible data issue' }
     }
-    
+
     // Check weight validation
     const totalWeight = factors.reduce((sum: number, f: any) => sum + (f.weight_total_pct || 0), 0)
     if (Math.abs(totalWeight - 250) > 1) {
       return { isValid: false, error: `Step 3 total weight ${totalWeight}% is not 250%` }
     }
-    
+
     return { isValid: true, data: step3Data }
   }
 
@@ -876,7 +875,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     if (typeof step4Data.predictions.total_pred_points !== 'number') {
       return { isValid: false, error: 'Step 4 predictions missing total_pred_points' }
     }
-    
+
     // Data anomaly checks
     const predictions = step4Data.predictions
     if (predictions.total_pred_points < 150 || predictions.total_pred_points > 300) {
@@ -897,12 +896,12 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     if (!predictions.winner || !['home', 'away'].includes(predictions.winner)) {
       return { isValid: false, error: 'Step 4 predictions missing or invalid winner' }
     }
-    
+
     // Check confidence data
     if (!step4Data.confidence || typeof step4Data.confidence.base_confidence !== 'number') {
       return { isValid: false, error: 'Step 4 missing confidence data' }
     }
-    
+
     return { isValid: true, data: step4Data }
   }
 
@@ -922,7 +921,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     if (typeof step5Data.units !== 'number') {
       return { isValid: false, error: 'Step 5 missing units' }
     }
-    
+
     // Data anomaly checks
     if (step5Data.conf_final < 0 || step5Data.conf_final > 10) {
       return { isValid: false, error: `Step 5 conf_final ${step5Data.conf_final} seems anomalous (expected 0-10)` }
@@ -930,7 +929,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     if (![0, 1, 2, 3, 5].includes(step5Data.units)) {
       return { isValid: false, error: `Step 5 units ${step5Data.units} not in expected range [0,1,2,3,5]` }
     }
-    
+
     // Check if this is a PASS decision (units === 0) - should halt pipeline
     if (step5Data.units === 0) {
       return { isValid: false, error: 'PASS decision - no units allocated' }
@@ -941,7 +940,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     if (!step5Data.final_pick.type || !['TOTAL', 'SPREAD', 'MONEYLINE'].includes(step5Data.final_pick.type)) {
       return { isValid: false, error: 'Step 5 final_pick has invalid type' }
     }
-    
+
     // Check edge vs market data
     if (!step5Data.final_factor || typeof step5Data.final_factor.edge_pts !== 'number') {
       return { isValid: false, error: 'Step 5 missing final_factor edge data' }
@@ -949,7 +948,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     if (Math.abs(step5Data.final_factor.edge_pts) > 50) {
       return { isValid: false, error: `Step 5 edge_pts ${step5Data.final_factor.edge_pts} seems anomalous (expected -50 to +50)` }
     }
-    
+
     return { isValid: true, data: step5Data }
   }
 
@@ -958,7 +957,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     if (!step6Data) {
       return { isValid: false, error: 'Step 6 not executed' }
     }
-    
+
     return { isValid: true, data: step6Data }
   }
 
@@ -1000,7 +999,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           console.log('[Step 2] Using runId:', effectiveRunId)
           console.log('[Step 2] Using game_id:', step1Game.id)
           console.log('[Step 2] Processing odds from Step 1 game:', step1Game.home_team?.name, 'vs', step1Game.away_team?.name)
-          
+
           // Calculate simple averages from Step 1 odds data
           let totalLine: number | null = null
           let spreadLine = 0
@@ -1079,7 +1078,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             console.error('[Step 2] ❌ CRITICAL ERROR: No odds data found in game')
             throw new Error('CRITICAL: No odds data found in game. Cannot proceed without market total.')
           }
-          
+
           // Validate total line before proceeding
           if (totalLine === null || typeof totalLine !== 'number' || totalLine < 150 || totalLine > 300) {
             console.error('[Step 2] ❌ CRITICAL ERROR: Invalid total line:', totalLine)
@@ -1120,19 +1119,19 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             },
             raw_payload: step1Game.odds
           }
-          
+
           console.log('[Step 2] Calling odds snapshot API...')
           updateStepProgress(2, 60, 'Calling odds API...')
-          
+
           const step2IdempotencyKey = `ui-demo-snap-${Date.now()}-${Math.random().toString(36).substring(7)}`
           const response = await postJson('/api/shiva/odds/snapshot', {
             run_id: effectiveRunId,
             snapshot: snapshotData
           }, step2IdempotencyKey)
-          
+
           console.log('[Step 2] API response:', response)
           console.log('[Step 2] Full response details:', JSON.stringify(response, null, 2))
-          
+
           // Check if the response was successful (status 2xx)
           if (response.status >= 400) {
             const errorMsg = response.json?.error || response.json?.message || JSON.stringify(response.json)
@@ -1143,16 +1142,16 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             })
             throw new Error(`Snapshot API returned status ${response.status}: ${errorMsg}`)
           }
-          
+
           if (response.json?.snapshot_id) {
             setSnapId(response.json.snapshot_id)
           }
-          
+
           setLog(response)
           setStepLogs(prev => ({ ...prev, 2: response }))
           setStepLoading(2, false, 'Complete', 100)
           console.log('[Step 2] Step 2 completed successfully')
-          
+
         } catch (error) {
           console.error('[Step 2] Error:', error)
           setStepLoading(2, false, 'Failed', 0)
@@ -1207,8 +1206,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       }
 
       if (current === 7) {
-        const step6Validation = stepLogs[6]?.json ? 
-          { isValid: true, data: stepLogs[6].json } : 
+        const step6Validation = stepLogs[6]?.json ?
+          { isValid: true, data: stepLogs[6].json } :
           { isValid: false, error: 'Step 6 not executed' }
         if (!step6Validation.isValid) {
           console.error('[Step 7] Step 6 validation failed:', step6Validation.error)
@@ -1219,8 +1218,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       }
 
       if (current === 8) {
-        const step7Validation = stepLogs[7]?.json ? 
-          { isValid: true, data: stepLogs[7].json } : 
+        const step7Validation = stepLogs[7]?.json ?
+          { isValid: true, data: stepLogs[7].json } :
           { isValid: false, error: 'Step 7 not executed' }
         if (!step7Validation.isValid) {
           console.error('[Step 8] Step 7 validation failed:', step7Validation.error)
@@ -1231,8 +1230,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       }
 
       if (current === 9) {
-        const step8Validation = stepLogs[8]?.json ? 
-          { isValid: true, data: stepLogs[8].json } : 
+        const step8Validation = stepLogs[8]?.json ?
+          { isValid: true, data: stepLogs[8].json } :
           { isValid: false, error: 'Step 8 not executed' }
         if (!step8Validation.isValid) {
           console.error('[Step 9] Step 8 validation failed:', step8Validation.error)
@@ -1245,13 +1244,13 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       if (current === 1) {
         logger.step(1, 'Starting Step 1 execution...')
         setStepLoading(1, true, 'Initializing run...', 10)
-        
+
         // Snapshot effectiveProfile on first step
         if (props.effectiveProfile) {
           setEffectiveProfileSnapshot(props.effectiveProfile)
           logger.debug('Snapshot effectiveProfile', props.effectiveProfile)
         }
-        
+
         // Call Step 1 API to find available games
         logger.step(1, 'Calling game selection API...')
         logger.debug('Selected game details', {
@@ -1260,7 +1259,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           keys: props.selectedGame ? Object.keys(props.selectedGame) : 'undefined'
         })
         updateStepProgress(1, 30, 'Finding available games...')
-        
+
         try {
           const requestBody = {
             sport: 'NBA',
@@ -1268,9 +1267,9 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             limit: 10,
             selectedGame: props.selectedGame // Pass the selected game
           }
-          
+
           console.log('[Step 1] Request body:', JSON.stringify(requestBody, null, 2))
-          
+
           const step1Response = await fetch('/api/shiva/step1-scanner', {
             method: 'POST',
             headers: {
@@ -1278,13 +1277,13 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             },
             body: JSON.stringify(requestBody)
           })
-          
+
           console.log('[Step 1] API response status:', step1Response.status)
           const step1Data = await step1Response.json()
           console.log('[Step 1] API response data:', step1Data)
           console.log('[Step 1] API response debug info:', step1Data.debug)
           console.log('[Step 1] Full API response JSON:', JSON.stringify(step1Data, null, 2))
-          
+
           // Enhanced client-side debugging
           console.log('🔍 === STEP 1 SCANNER DEBUG INFO (CLIENT) ===')
           console.log('Success:', step1Data.success)
@@ -1293,12 +1292,12 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           console.log('Selected Game:', step1Data.selected_game)
           console.log('Available Games Count:', step1Data.available_games_count)
           console.log('🔍 === END STEP 1 SCANNER DEBUG INFO ===')
-          
+
           if (!step1Response.ok) {
             console.error('[Step 1] API error:', step1Data)
             throw new Error(`Step 1 failed: ${step1Data.error?.message || 'Unknown error'}`)
           }
-          
+
           if (!step1Data.success || step1Data.state === 'NO_AVAILABLE_GAMES') {
             // No games available - show message
             console.log('[Step 1] No games available, showing message')
@@ -1316,36 +1315,36 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             setStepLogs(prev => ({ ...prev, [1]: noGamesResponse }))
             return
           }
-          
+
           // Set the run_id from API response
           const selectedGame = step1Data.selected_game
           const generatedRunId = step1Data.run_id
-          
+
           console.log('[Step 1] Setting runId to:', generatedRunId)
           console.log('[Step 1] Selected game:', selectedGame)
-          
+
           setRunId(generatedRunId)
-          
+
           // Store Step 1 response
           const step1LogEntry = {
             status: step1Response.status,
             json: step1Data,
             latencyMs: 0 // Will be calculated properly later
           }
-          
+
           console.log('[Step 1] Storing step log entry:', step1LogEntry)
           setStepLogs(prev => {
             const newLogs = { ...prev, [1]: step1LogEntry }
             console.log('[Step 1] Updated stepLogs:', newLogs)
             return newLogs
           })
-          
+
           setLog(step1LogEntry)
           updateStepProgress(1, 100, 'Game selected successfully')
           setStepLoading(1, false, 'Complete', 100)
           console.log('[Step 1] Step 1 completed successfully')
           return
-          
+
         } catch (error) {
           console.error('[Step 1] Error during Step 1 execution:', error)
           const errorResponse = {
@@ -1357,29 +1356,29 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           return
         }
       }
-      
+
       if (current === 3) {
         console.log('[Step 3] Starting Step 3 execution...')
         setStepLoading(3, true, 'Computing NBA factors...', 10)
-        
+
         // Get the selected game from Step 1 (use ref for fresh data in AUTO mode)
         const step1Game = stepLogsRef.current[1]?.json?.selected_game || stepLogs[1]?.json?.selected_game
         if (!step1Game) {
           throw new Error('Step 1 must be completed before Step 3')
         }
-        
+
         const awayTeam = step1Game.away_team?.name || 'Unknown Away'
         const homeTeam = step1Game.home_team?.name || 'Unknown Home'
-        
+
         // Get run_id from Step 1 (use ref for fresh data in AUTO mode)
         const effectiveRunId = stepLogsRef.current[1]?.json?.run_id || runId
         if (!effectiveRunId) {
           throw new Error('No run_id available from Step 1')
         }
-        
+
         console.log('[Step 3] Using runId:', effectiveRunId)
         console.log('[Step 3] Using teams from Step 1:', { awayTeam, homeTeam })
-        
+
         // Real API call for Step 3 - NBA Totals factors
         // Note: For NBA TOTAL, the API will compute factors via computeTotalsFactors()
         // The results object is required by schema but will be replaced by computed factors
@@ -1408,7 +1407,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         console.log('[Step 3] Using idempotency key:', step3IdempotencyKey)
         const r = await postJson('/api/shiva/factors/step3', step3Body, step3IdempotencyKey)
         console.log('[Step 3] API response:', r)
-        
+
         // Check if the response was successful (status 2xx)
         if (r.status >= 400) {
           const errorMsg = r.json?.error || r.json?.message || JSON.stringify(r.json)
@@ -1419,7 +1418,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           })
           throw new Error(`Factors API returned status ${r.status}: ${errorMsg}`)
         }
-        
+
         updateStepProgress(3, 80, 'Computing factor signals...')
         setLog(r)
         setStepLogs(prev => ({ ...prev, 3: r }))
@@ -1428,24 +1427,24 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       } else if (current === 4) {
         console.log('[Step 4] Starting Step 4 execution...')
         setStepLoading(4, true, 'Generating AI predictions...', 10)
-        
+
         // Use actual Step 3 results instead of fixture (use ref for fresh data in AUTO mode)
         const step3Results = stepLogsRef.current[3]?.json || stepLogs[3]?.json
         if (!step3Results?.factors) {
           throw new Error('Step 3 must be completed before Step 4')
         }
-        
+
         // Get run_id from Step 1 (use ref for fresh data in AUTO mode)
         const effectiveRunId = stepLogsRef.current[1]?.json?.run_id || runId
         if (!effectiveRunId) {
           throw new Error('No run_id available from Step 1')
         }
-        
+
         const step4Body = {
           run_id: effectiveRunId,
-          inputs: { 
-            sport: props.sport || 'NBA', 
-            betType: props.betType || 'TOTAL' 
+          inputs: {
+            sport: props.sport || 'NBA',
+            betType: props.betType || 'TOTAL'
           },
           results: {
             factors: step3Results.factors,
@@ -1475,29 +1474,29 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       } else if (current === 5) {
         console.log('[Step 5] Starting Step 5 execution...')
         setStepLoading(5, true, 'Calculating market edge...', 10)
-        
+
         // Use actual Step 4 results instead of fixture (use ref for fresh data in AUTO mode)
         const step4Results = stepLogsRef.current[4]?.json || stepLogs[4]?.json
         console.log('[Wizard:Step5] Step 4 results:', step4Results)
         console.log('[Wizard:Step5] Has predictions?', !!step4Results?.predictions)
-        
+
         // Always execute Step 5, even if Step 4 failed - show in Step Responses table
         if (!step4Results?.predictions) {
           console.log('[Wizard:Step5] Step 4 has no predictions, using fallback data for Step 5')
         }
-        
+
         // Use fallback values when Step 4 data is missing
         const baseConfidence = step4Results?.predictions?.conf7_score || 0
         const predictedTotal = step4Results?.predictions?.total_pred_points || 225
         const marketTotal = (stepLogsRef.current[2]?.json || stepLogs[2]?.json)?.snapshot?.total?.line || 225
         const pickDirection = predictedTotal > marketTotal ? 'OVER' : 'UNDER'
-        
+
         // Get run_id from Step 1 (use ref for fresh data in AUTO mode)
         const effectiveRunId = stepLogsRef.current[1]?.json?.run_id || runId
         if (!effectiveRunId) {
           throw new Error('No run_id available from Step 1')
         }
-        
+
         const step5Body = {
           run_id: effectiveRunId,
           inputs: {
@@ -1517,7 +1516,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           setStepLogs(prev => ({ ...prev, 5: r }))
           updateStepProgress(5, 100, 'Market analysis complete')
           setStepLoading(5, false, 'Complete', 100)
-          
+
           // If this is a PASS decision (units === 0), save the run to database
           // Wizard is always in WRITE mode (manual testing) - AUTO mode removed
           if (r.json?.units === 0) {
@@ -1600,7 +1599,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
               console.error('[Wizard:Step5] Error saving PASS:', passError)
             }
           }
-          
+
           // Also save successful picks (units > 0) to database
           // Wizard is always in WRITE mode (manual testing) - AUTO mode removed
           if (r.json?.units > 0) {
@@ -1642,7 +1641,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
 
               // Generate a pick ID for the picks_row
               const pickId = `pick_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-              
+
               const savePickBody = {
                 run_id: effectiveRunId,
                 inputs: {
@@ -1699,43 +1698,43 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         }
       } else if (current === 6) {
         console.log('[Step 6] Starting Step 6 execution...')
-        
+
         // Bold Player Predictions - Step 6
         const step5Results = stepLogs[5]?.json
         const step4Results = stepLogs[4]?.json
         const step1Results = stepLogs[1]?.json
-        
+
         // Check if we should run Step 6 (only if pick has units > 0)
         const step5Units = step5Results?.units || 0
         console.log('[Step 6] Checking units:', { step5Units, willRun: step5Units > 0 })
-        
+
         if (step5Units > 0) {
           setStepLoading(6, true, 'Generating bold predictions...', 10)
-          
+
           // Always execute Step 6, even if previous steps failed - show in Step Responses table
           if (!step5Results || !step4Results || !step1Results) {
             console.log('[Wizard:Step6] Missing previous step data, using fallback')
           }
-        
-        const step5_5Body = {
-          run_id: runId,
-          inputs: {
-            sport: props.sport || 'NBA',
-            betType: props.betType || 'TOTAL',
-            game_data: {
-              home_team: step1Results.selected_game?.home_team?.name || 'Home Team',
-              away_team: step1Results.selected_game?.away_team?.name || 'Away Team',
-              game_date: step1Results.selected_game?.game_date || new Date().toISOString().split('T')[0]
-            },
-            prediction_data: {
-              predicted_total: step4Results.predictions?.total_pred_points || 225,
-              pick_direction: step5Results.final_pick?.selection?.includes('OVER') ? 'OVER' : 'UNDER',
-              confidence: step5Results.final_pick?.confidence || 0,
-              factors_summary: stepLogs[3]?.json?.factors?.map((f: any) => `${f.name}: ${f.notes}`).join(', ') || 'Factor analysis complete'
+
+          const step5_5Body = {
+            run_id: runId,
+            inputs: {
+              sport: props.sport || 'NBA',
+              betType: props.betType || 'TOTAL',
+              game_data: {
+                home_team: step1Results.selected_game?.home_team?.name || 'Home Team',
+                away_team: step1Results.selected_game?.away_team?.name || 'Away Team',
+                game_date: step1Results.selected_game?.game_date || new Date().toISOString().split('T')[0]
+              },
+              prediction_data: {
+                predicted_total: step4Results.predictions?.total_pred_points || 225,
+                pick_direction: step5Results.final_pick?.selection?.includes('OVER') ? 'OVER' : 'UNDER',
+                confidence: step5Results.final_pick?.confidence || 0,
+                factors_summary: stepLogs[3]?.json?.factors?.map((f: any) => `${f.name}: ${f.notes}`).join(', ') || 'Factor analysis complete'
+              }
             }
           }
-        }
-        
+
           updateStepProgress(6, 50, 'Calling AI service...')
           const r = await postJson('/api/shiva/factors/step5-5', step5_5Body, `ui-demo-step6-${Date.now()}`)
           updateStepProgress(6, 80, 'Processing predictions...')
@@ -1746,10 +1745,10 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         } else {
           console.log('[Step 6] Skipping Bold Player Predictions - no units allocated (PASS)')
           setStepLoading(6, true, 'Skipping - no units allocated...', 10)
-          
+
           const skipResult = {
             status: 200,
-            json: { 
+            json: {
               run_id: runId,
               bold_predictions: null,
               reason: 'Skipped - no units allocated (PASS)',
@@ -1765,24 +1764,26 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       } else if (current === 7) {
         console.log('[Step 7] Starting Step 7 execution...')
         setStepLoading(7, true, 'Generating final pick...', 10)
-        
+
         // Real API call for Step 7 - Pick generation with locked odds
         const step5Results = stepLogs[5]?.json
         const step4Results = stepLogs[4]?.json
         const step2Results = stepLogs[2]?.json
-        
+
         const confFinal = step5Results?.conf_final || 0
         const totalPred = step4Results?.predictions?.total_pred_points || 225
         const marketTotal = step2Results?.snapshot?.total?.line || 225
-        
+
         // Determine pick direction and units based on actual confidence
+        // New thresholds: Higher confidence required for picks
         const pickDirection = totalPred > marketTotal ? 'OVER' : 'UNDER'
         let units = 0
-        if (confFinal >= 4.5) units = 5
-        else if (confFinal >= 4.0) units = 3
-        else if (confFinal >= 3.5) units = 2
-        else if (confFinal >= 2.5) units = 1
-        
+        if (confFinal > 9.0) units = 5      // 5 units (max)
+        else if (confFinal > 8.0) units = 4  // 4 units
+        else if (confFinal > 7.0) units = 3  // 3 units
+        else if (confFinal > 6.0) units = 2  // 2 units
+        else if (confFinal > 5.0) units = 1  // 1 unit
+
         const step6Body = {
           run_id: runId,
           inputs: {
@@ -1830,7 +1831,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       } else if (current === 8) {
         console.log('[Step 8] Starting Step 8 execution...')
         setStepLoading(8, true, 'Generating insight card...', 10)
-        
+
         updateStepProgress(8, 30, 'Loading card template...')
         // Use fallback template instead of deleted fixture
         const fx = {
@@ -1858,13 +1859,13 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         updateStepProgress(8, 80, 'Finalizing card...')
         setLog(r)
         setStepLogs(prev => ({ ...prev, 8: r }))
-        
+
         // Assemble Insight Card from real run data
         const runCtx = {
           game: props.selectedGame,
           effectiveProfile: effectiveProfileSnapshot || props.effectiveProfile
         }
-        
+
         const assembledCard = assembleInsightCard({
           runCtx,
           step4: stepLogs[4],
@@ -1873,7 +1874,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           step3: stepLogs[3],
           snapshot: stepLogs[2]?.json
         })
-        
+
         // Light up Insight pill and store assembled data
         setHasInsight(true)
         setInsightCardData(assembledCard)
@@ -1882,13 +1883,13 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       } else if (current === 8) {
         console.log('[Step 8] Starting Step 8 execution...')
         setStepLoading(8, true, 'Generating debug report...', 10)
-        
+
         // Debug Report - build comprehensive structure
         console.log('Generating debug report for step 8, stepLogs:', stepLogs)
         console.log('stepLogs keys:', Object.keys(stepLogs))
         console.log('effectiveProfileSnapshot:', effectiveProfileSnapshot)
         updateStepProgress(8, 30, 'Collecting step data...')
-        
+
         // Build comprehensive steps array with actual response data
         const stepsArray = Object.entries(stepLogs)
           .filter(([stepNum]) => parseInt(stepNum) < 8) // Exclude step 8
@@ -1899,7 +1900,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             response: response.json || null, // Include actual response data
             error: response.error || null,
           }))
-        
+
         const debugReport = {
           timestamp: new Date().toISOString(),
           runId: runId || 'unknown',
@@ -1939,13 +1940,13 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       } else if (current === 9) {
         console.log('[Step 9] Starting Step 9 execution...')
         setStepLoading(9, true, 'Generating debug report...', 10)
-        
+
         // Debug Report - build comprehensive structure
         console.log('Generating debug report for step 9, stepLogs:', stepLogs)
         console.log('stepLogs keys:', Object.keys(stepLogs))
         console.log('effectiveProfileSnapshot:', effectiveProfileSnapshot)
         updateStepProgress(9, 30, 'Collecting step data...')
-        
+
         // Build comprehensive steps array with actual response data
         const stepsArray = Object.entries(stepLogs)
           .filter(([stepNum]) => parseInt(stepNum) < 9) // Exclude step 9
@@ -1956,7 +1957,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             response: response.json || null, // Include actual response data
             error: response.error || null,
           }))
-        
+
         const debugReport = {
           timestamp: new Date().toISOString(),
           runId: runId || 'unknown',
@@ -2032,13 +2033,13 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
 
       {/* Step Logs Table - Always visible, shows all 8 steps */}
       <div className="mb-4">
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="text-sm font-semibold text-white">Step Responses:</h4>
-            {/* Debug Report Buttons - Always visible when there are step logs */}
-            {Object.keys(stepLogs).length > 0 && (
-              <div className="flex gap-2">
-                <button 
-                  className="px-3 py-1 bg-blue-600 text-white rounded text-xs font-bold hover:bg-blue-700"
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="text-sm font-semibold text-white">Step Responses:</h4>
+          {/* Debug Report Buttons - Always visible when there are step logs */}
+          {Object.keys(stepLogs).length > 0 && (
+            <div className="flex gap-2">
+              <button
+                className="px-3 py-1 bg-blue-600 text-white rounded text-xs font-bold hover:bg-blue-700"
                 onClick={() => {
                   const debugReport = {
                     timestamp: new Date().toISOString(),
@@ -2080,53 +2081,53 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                       }
                     },
                     // Step-specific debug information (DRASTICALLY REDUCED to prevent massive debug reports)
-      step_debug: {
-        // REMOVED: step3_totals (was causing 1000+ line debug reports)
-        // REMOVED: step3_factors_detail (visible in summary.factor_contributions)
-        // REMOVED: nba_stats_api_debug (too verbose)
-        // REMOVED: step4_predictions (too verbose)
-        // REMOVED: step5_confidence (too verbose)
-        // REMOVED: step6_pick (visible in summary)
-        // REMOVED: confidence_calculation (too verbose)
+                    step_debug: {
+                      // REMOVED: step3_totals (was causing 1000+ line debug reports)
+                      // REMOVED: step3_factors_detail (visible in summary.factor_contributions)
+                      // REMOVED: nba_stats_api_debug (too verbose)
+                      // REMOVED: step4_predictions (too verbose)
+                      // REMOVED: step5_confidence (too verbose)
+                      // REMOVED: step6_pick (visible in summary)
+                      // REMOVED: confidence_calculation (too verbose)
 
-        // Only keep essential summary info
-        step3_factor_count: stepLogs[3]?.json?.factors?.length || 0,
-        step3_has_debug: !!stepLogs[3]?.json?._debug,
-        step4_prediction_exists: !!stepLogs[4]?.json,
-        step5_confidence_exists: !!stepLogs[5]?.json,
+                      // Only keep essential summary info
+                      step3_factor_count: stepLogs[3]?.json?.factors?.length || 0,
+                      step3_has_debug: !!stepLogs[3]?.json?._debug,
+                      step4_prediction_exists: !!stepLogs[4]?.json,
+                      step5_confidence_exists: !!stepLogs[5]?.json,
 
-        // Keep only top-level summary for debugging
-        nba_stats_summary: {
-          api_calls_made: stepLogs[3]?.json?._debug?.totals?.console_logs?.api_calls || 'Not found',
-          team_names: stepLogs[3]?.json?._debug?.totals?.console_logs?.team_names || 'Not found'
-        }
-      },
-      // Pick Generation Cooldown Information
-      pick_generation_cooldown: {
-        step1_cooldown_info: stepLogs[1]?.json?.cooldown_info || null,
-        step1_debug_info: stepLogs[0]?.json?.debug_info || null,
-        step1_detailed_debug: {
-          game_id: stepLogs[0]?.json?.debug_info?.gameId || 'unknown',
-          capper: stepLogs[0]?.json?.debug_info?.capper || 'unknown',
-          bet_type: stepLogs[0]?.json?.debug_info?.betType || 'unknown',
-          existing_picks_count: stepLogs[0]?.json?.debug_info?.existingPicks?.length || 0,
-          cooldown_records_count: stepLogs[0]?.json?.debug_info?.cooldownData?.length || 0,
-          all_picks_count: stepLogs[0]?.json?.debug_info?.allPicks?.length || 0,
-          has_existing_picks: stepLogs[0]?.json?.debug_info?.summary?.hasExistingPicks || false,
-          has_active_cooldown: stepLogs[0]?.json?.debug_info?.summary?.hasActiveCooldown || false,
-          total_picks_for_game: stepLogs[0]?.json?.debug_info?.summary?.totalPicksForGame || 0,
-          database_errors: stepLogs[0]?.json?.debug_info?.errors || {},
-          blocking_reason: stepLogs[0]?.json?.debug_info?.summary?.hasExistingPicks ? 
-            'EXISTING_PICKS' : 
-            stepLogs[0]?.json?.debug_info?.summary?.hasActiveCooldown ? 
-            'ACTIVE_COOLDOWN' : 
-            'UNKNOWN'
-        },
-        games_in_cooldown: stepLogs[1]?.json?.cooldown_info?.games_in_cooldown || 0,
-        cooldown_hours: stepLogs[1]?.json?.cooldown_info?.cooldown_hours || 2,
-        total_games_checked: stepLogs[1]?.json?.total_games_checked || 0,
-        available_games_count: stepLogs[1]?.json?.available_games_count || 0
-      },
+                      // Keep only top-level summary for debugging
+                      nba_stats_summary: {
+                        api_calls_made: stepLogs[3]?.json?._debug?.totals?.console_logs?.api_calls || 'Not found',
+                        team_names: stepLogs[3]?.json?._debug?.totals?.console_logs?.team_names || 'Not found'
+                      }
+                    },
+                    // Pick Generation Cooldown Information
+                    pick_generation_cooldown: {
+                      step1_cooldown_info: stepLogs[1]?.json?.cooldown_info || null,
+                      step1_debug_info: stepLogs[0]?.json?.debug_info || null,
+                      step1_detailed_debug: {
+                        game_id: stepLogs[0]?.json?.debug_info?.gameId || 'unknown',
+                        capper: stepLogs[0]?.json?.debug_info?.capper || 'unknown',
+                        bet_type: stepLogs[0]?.json?.debug_info?.betType || 'unknown',
+                        existing_picks_count: stepLogs[0]?.json?.debug_info?.existingPicks?.length || 0,
+                        cooldown_records_count: stepLogs[0]?.json?.debug_info?.cooldownData?.length || 0,
+                        all_picks_count: stepLogs[0]?.json?.debug_info?.allPicks?.length || 0,
+                        has_existing_picks: stepLogs[0]?.json?.debug_info?.summary?.hasExistingPicks || false,
+                        has_active_cooldown: stepLogs[0]?.json?.debug_info?.summary?.hasActiveCooldown || false,
+                        total_picks_for_game: stepLogs[0]?.json?.debug_info?.summary?.totalPicksForGame || 0,
+                        database_errors: stepLogs[0]?.json?.debug_info?.errors || {},
+                        blocking_reason: stepLogs[0]?.json?.debug_info?.summary?.hasExistingPicks ?
+                          'EXISTING_PICKS' :
+                          stepLogs[0]?.json?.debug_info?.summary?.hasActiveCooldown ?
+                            'ACTIVE_COOLDOWN' :
+                            'UNKNOWN'
+                      },
+                      games_in_cooldown: stepLogs[1]?.json?.cooldown_info?.games_in_cooldown || 0,
+                      cooldown_hours: stepLogs[1]?.json?.cooldown_info?.cooldown_hours || 2,
+                      total_games_checked: stepLogs[1]?.json?.total_games_checked || 0,
+                      available_games_count: stepLogs[1]?.json?.available_games_count || 0
+                    },
                     // AI Usage Summary
                     ai_usage: {
                       step3_provider: stepLogs[3]?.json?._debug?.ai_provider || 'unknown',
@@ -2144,97 +2145,96 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
               >
                 📋 Copy Step Responses Debug
               </button>
-              </div>
-            )}
-          </div>
-          <div className="border border-gray-600 rounded p-2 text-xs bg-gray-800">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-600">
-                  <th className="text-left p-1 text-white">Step</th>
-                  <th className="text-left p-1 text-white">Name</th>
-                  <th className="text-left p-1 text-white">Status</th>
-                  <th className="text-left p-1 text-white">AI Used</th>
-                  <th className="text-left p-1 text-white">Data Type</th>
-                  <th className="text-left p-1 text-white">Response</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((stepNum) => {
-                  const response = stepLogs[stepNum]
-                  const isExecuted = !!response
-                  const usesAI = stepNum === 3 || stepNum === 4 || stepNum === 6 || stepNum === 8 // Steps that use AI
-                  const aiProvider = stepNum === 3 ? 'Perplexity' : stepNum === 4 ? 'OpenAI' : stepNum === 6 ? 'Perplexity' : stepNum === 8 ? 'OpenAI' : null
-                  
-                  // Detect mock vs real data (only for executed steps)
-                  const isMockData = isExecuted && (
-                    response.json?.mock_data === true || 
-                    response.json?.data_source === 'mock' ||
-                    response.json?.fixture === true ||
-                    (stepNum === 2 && response.json?.snapshot?.odds?.mock === true) ||
-                    (stepNum === 3 && response.json?.factors?.some((f: any) => f.mock_data === true))
-                  )
-                  
-                  return (
-                    <tr key={stepNum} className={`border-b border-gray-700 ${!isExecuted ? 'opacity-50' : ''}`}>
-                      <td className="p-1 text-white">{stepNum}</td>
-                      <td className="p-1 text-gray-300">{stepNames[stepNum]}</td>
-                      <td className="p-1">
-                        {isExecuted ? (
-                          <span className={`px-1 rounded text-xs ${
-                            response.status >= 200 && response.status < 300 ? 'bg-green-600 text-white' :
+            </div>
+          )}
+        </div>
+        <div className="border border-gray-600 rounded p-2 text-xs bg-gray-800">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-600">
+                <th className="text-left p-1 text-white">Step</th>
+                <th className="text-left p-1 text-white">Name</th>
+                <th className="text-left p-1 text-white">Status</th>
+                <th className="text-left p-1 text-white">AI Used</th>
+                <th className="text-left p-1 text-white">Data Type</th>
+                <th className="text-left p-1 text-white">Response</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((stepNum) => {
+                const response = stepLogs[stepNum]
+                const isExecuted = !!response
+                const usesAI = stepNum === 3 || stepNum === 4 || stepNum === 6 || stepNum === 8 // Steps that use AI
+                const aiProvider = stepNum === 3 ? 'Perplexity' : stepNum === 4 ? 'OpenAI' : stepNum === 6 ? 'Perplexity' : stepNum === 8 ? 'OpenAI' : null
+
+                // Detect mock vs real data (only for executed steps)
+                const isMockData = isExecuted && (
+                  response.json?.mock_data === true ||
+                  response.json?.data_source === 'mock' ||
+                  response.json?.fixture === true ||
+                  (stepNum === 2 && response.json?.snapshot?.odds?.mock === true) ||
+                  (stepNum === 3 && response.json?.factors?.some((f: any) => f.mock_data === true))
+                )
+
+                return (
+                  <tr key={stepNum} className={`border-b border-gray-700 ${!isExecuted ? 'opacity-50' : ''}`}>
+                    <td className="p-1 text-white">{stepNum}</td>
+                    <td className="p-1 text-gray-300">{stepNames[stepNum]}</td>
+                    <td className="p-1">
+                      {isExecuted ? (
+                        <span className={`px-1 rounded text-xs ${response.status >= 200 && response.status < 300 ? 'bg-green-600 text-white' :
                             response.status >= 400 ? 'bg-red-600 text-white' : 'bg-yellow-600 text-white'
                           }`}>
-                            {response.status}
+                          {response.status}
+                        </span>
+                      ) : (
+                        <span className="px-1 rounded text-xs bg-gray-600 text-gray-400">
+                          —
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-1">
+                      {isExecuted && usesAI ? (
+                        <span className="px-1 rounded text-xs bg-purple-600 text-white">
+                          🤖 {aiProvider}
+                        </span>
+                      ) : (
+                        <span className="px-1 rounded text-xs bg-gray-600 text-gray-400">
+                          —
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-1">
+                      {isExecuted ? (
+                        isMockData ? (
+                          <span className="px-1 rounded text-xs bg-yellow-600 text-black font-bold">
+                            🔧 MOCK
                           </span>
                         ) : (
-                          <span className="px-1 rounded text-xs bg-gray-600 text-gray-400">
-                            —
+                          <span className="px-1 rounded text-xs bg-green-600 text-white">
+                            ✅ REAL
                           </span>
-                        )}
-                      </td>
-                      <td className="p-1">
-                        {isExecuted && usesAI ? (
-                          <span className="px-1 rounded text-xs bg-purple-600 text-white">
-                            🤖 {aiProvider}
-                          </span>
-                        ) : (
-                          <span className="px-1 rounded text-xs bg-gray-600 text-gray-400">
-                            —
-                          </span>
-                        )}
-                      </td>
-                      <td className="p-1">
-                        {isExecuted ? (
-                          isMockData ? (
-                            <span className="px-1 rounded text-xs bg-yellow-600 text-black font-bold">
-                              🔧 MOCK
-                            </span>
-                          ) : (
-                            <span className="px-1 rounded text-xs bg-green-600 text-white">
-                              ✅ REAL
-                            </span>
-                          )
-                        ) : (
-                          <span className="px-1 rounded text-xs bg-gray-600 text-gray-400">
-                            —
-                          </span>
-                        )}
-                      </td>
-                      <td className="p-1 font-mono text-xs max-w-xs truncate text-gray-300">
-                        {isExecuted ? (
-                          response.json ? JSON.stringify(response.json).substring(0, 50) + '...' : 'No data'
-                        ) : (
-                          <span className="text-gray-500">Not executed</span>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+                        )
+                      ) : (
+                        <span className="px-1 rounded text-xs bg-gray-600 text-gray-400">
+                          —
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-1 font-mono text-xs max-w-xs truncate text-gray-300">
+                      {isExecuted ? (
+                        response.json ? JSON.stringify(response.json).substring(0, 50) + '...' : 'No data'
+                      ) : (
+                        <span className="text-gray-500">Not executed</span>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
         </div>
+      </div>
 
       {/* Navigation Buttons - Moved to stay at top */}
       <div className="flex items-center justify-between mb-4">
@@ -2297,7 +2297,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                   </>
                 )}
               </div>
-              
+
               {/* Progress Bar for Current Step */}
               {loadingSteps.has(step) && stepProgress[step] && (
                 <div className="mt-2">
@@ -2306,14 +2306,14 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                     <span>{stepProgress[step].progress}%</span>
                   </div>
                   <div className="w-full bg-gray-700 rounded-full h-2">
-                    <div 
+                    <div
                       className="bg-blue-500 h-2 rounded-full transition-all duration-300 ease-out"
                       style={{ width: `${stepProgress[step].progress}%` }}
                     ></div>
                   </div>
                 </div>
               )}
-              
+
               <div className="text-xs text-gray-300 mt-1">
                 {step === 1 && (
                   <div>
@@ -2408,17 +2408,16 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             </div>
           )}
         </div>
-        <button 
-          className={`px-3 py-1 border-2 border-gray-600 rounded font-semibold flex items-center gap-2 ${
-            step >= 8 
-              ? 'bg-gray-700 text-gray-500 cursor-not-allowed' 
+        <button
+          className={`px-3 py-1 border-2 border-gray-600 rounded font-semibold flex items-center gap-2 ${step >= 8
+              ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
               : loadingSteps.has(step)
-              ? 'bg-blue-600 text-white cursor-wait border-blue-500'
-              : 'bg-gray-800 text-white hover:bg-gray-700'
-          }`}
+                ? 'bg-blue-600 text-white cursor-wait border-blue-500'
+                : 'bg-gray-800 text-white hover:bg-gray-700'
+            }`}
           onClick={async () => {
             if (loadingSteps.has(step)) return // Only block if loading
-            
+
             // Execute the current step first, then advance
             await handleStepClick(step)
             // Advance to next step after execution
@@ -2439,11 +2438,11 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
       </div>
 
       <div className="border rounded p-3 text-xs font-mono whitespace-pre-wrap bg-gray-900 text-white">
-        {log ? JSON.stringify(log, null, 2) : 
-         step === 9 ? 'Click Next to generate debug report with all step responses.' :
-         'Click Next to start (Step 1 creates run).'}
+        {log ? JSON.stringify(log, null, 2) :
+          step === 9 ? 'Click Next to generate debug report with all step responses.' :
+            'Click Next to start (Step 1 creates run).'}
       </div>
-      
+
       {/* Debug info */}
       <div className="mt-2 text-xs text-gray-300 font-semibold">
         Current step: {step}, Step logs count: {Object.keys(stepLogs).length}
@@ -2456,7 +2455,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             <div className="text-white font-bold">
               ✅ Insight Card Ready ({insightCardData?.pick?.units || 0}u on {insightCardData?.pick?.selection || 'N/A'})
             </div>
-            <button 
+            <button
               className="px-4 py-2 bg-green-600 text-white rounded font-bold hover:bg-green-500 border-2 border-green-400"
               onClick={() => {
                 if (!insightCardData) return
@@ -2481,7 +2480,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             >
               ✕ Close
             </button>
-            
+
             {/* Action Buttons */}
             <div className="absolute top-4 left-4 flex gap-2 z-10">
               <button

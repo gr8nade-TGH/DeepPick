@@ -479,13 +479,14 @@ async function finalizePick(
   oddsSnapshot: any
 ) {
   // Determine units based on confidence
-  // Using the same thresholds as the wizard
+  // New thresholds: Higher confidence required for picks
   let units = 0
-  if (finalConfidence >= 4.5) units = 5
-  else if (finalConfidence >= 4.0) units = 3
-  else if (finalConfidence >= 3.5) units = 2
-  else if (finalConfidence >= 2.5) units = 1
-  // else units = 0 (PASS)
+  if (finalConfidence > 9.0) units = 5      // 5 units (max)
+  else if (finalConfidence > 8.0) units = 4  // 4 units
+  else if (finalConfidence > 7.0) units = 3  // 3 units
+  else if (finalConfidence > 6.0) units = 2  // 2 units
+  else if (finalConfidence > 5.0) units = 1  // 1 unit
+  // else units = 0 (PASS - confidence ≤ 5.0)
 
   const decision = units > 0 ? 'PICK' : 'PASS'
 

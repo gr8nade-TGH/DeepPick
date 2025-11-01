@@ -63,13 +63,13 @@ export function calculateEdgeConfidence(
 } {
   // Calculate raw edge (directional sum)
   const edgeRaw = factors.reduce((sum, f) => sum + f.weight_total_pct * f.normalized_value, 0)
-  
+
   // Convert to probability using sigmoid
   const edgePct = sigmoidScaled(edgeRaw, scalingConstant)
-  
+
   // Scale to 0-5 visual scale
   const confScore = 5 * edgePct
-  
+
   return {
     edgeRaw: Math.round(edgeRaw * 1000) / 1000, // Round to 3 decimal places
     edgePct: Math.round(edgePct * 1000) / 1000,
@@ -118,11 +118,11 @@ export function calculatePaceAndPredictions(
 } {
   const spreadPred = delta100 * 0.5 // Convert delta100 to spread points
   const totalPred = paceExp + (delta100 * 0.1) // Adjust total based on pace and delta
-  
+
   // Calculate individual scores (simplified)
   const homePts = Math.round(leagueAverages.ORtg + spreadPred)
   const awayPts = Math.round(leagueAverages.ORtg - spreadPred)
-  
+
   return {
     pace_exp: Math.round(paceExp * 100) / 100,
     delta_100_value: Math.round(delta100 * 100) / 100,
@@ -149,15 +149,18 @@ export function calculateMarketMismatch(
 } {
   const mismatchPoints = predictedTotal - marketLine
   const mismatchPct = (mismatchPoints / marketLine) * 100
-  
+
   // Units based on confidence and mismatch
+  // New thresholds: Higher confidence required for picks
   let units = 0
   if (Math.abs(mismatchPct) > 0.03) { // 3% threshold
-    if (confidence >= 4.0) units = 3
-    else if (confidence >= 3.0) units = 2
-    else if (confidence >= 2.0) units = 1
+    if (confidence > 9.0) units = 5      // 5 units (max)
+    else if (confidence > 8.0) units = 4  // 4 units
+    else if (confidence > 7.0) units = 3  // 3 units
+    else if (confidence > 6.0) units = 2  // 2 units
+    else if (confidence > 5.0) units = 1  // 1 unit
   }
-  
+
   return {
     mismatch_points: Math.round(mismatchPoints * 100) / 100,
     mismatch_pct: Math.round(mismatchPct * 100) / 100,
@@ -177,7 +180,7 @@ export function applyCap(value: number, cap: number): { value: number; capped: b
 }
 
 export function paceHarmonic(homePace: number, awayPace: number): number {
-  return 2 / (1/homePace + 1/awayPace)
+  return 2 / (1 / homePace + 1 / awayPace)
 }
 
 export function spreadFromDelta(delta: number, pace: number): number {
