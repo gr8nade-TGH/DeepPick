@@ -50,88 +50,30 @@ export async function GET(
     }
 
     console.log('[InsightCard API] Run data:', run ? 'found' : 'not found')
-    if (run) {
-      console.log('[InsightCard API] Run columns:', {
-        has_factor_contributions: !!run.factor_contributions,
-        factor_contributions_length: Array.isArray(run.factor_contributions) ? run.factor_contributions.length : 'not array',
-        has_predicted_total: !!run.predicted_total,
-        predicted_total: run.predicted_total,
-        has_baseline_avg: !!run.baseline_avg,
-        baseline_avg: run.baseline_avg,
-        has_market_total: !!run.market_total,
-        market_total: run.market_total,
-        has_predicted_home_score: !!run.predicted_home_score,
-        predicted_home_score: run.predicted_home_score,
-        has_predicted_away_score: !!run.predicted_away_score,
-        predicted_away_score: run.predicted_away_score,
-        has_bold_predictions: !!run.bold_predictions,
-        bold_predictions: run.bold_predictions,
-        has_metadata: !!run.metadata,
-        metadata_keys: run.metadata ? Object.keys(run.metadata) : []
-      })
-    }
 
     const game = pick.games || {}
 
-    // The runs table can have data in TWO formats:
-    // 1. NEW format: separate columns (factor_contributions, predicted_total, baseline_avg, market_total, predicted_home_score, predicted_away_score, bold_predictions)
-    // 2. OLD format: metadata JSONB column with steps.step3, steps.step4, etc.
+    // Read data from metadata (same as run history API - this is the working method)
+    const metadata = run?.metadata || {}
 
-    let factorContributions = []
-    let predictedTotal = 0
-    let baselineAvg = 220
-    let marketTotal = 0
-    let predictedHomeScore = 0
-    let predictedAwayScore = 0
-    let boldPredictions = null
+    let factorContributions = metadata.factor_contributions || []
+    let predictedTotal = metadata.predicted_total || 0
+    let baselineAvg = metadata.baseline_avg || 220
+    let marketTotal = metadata.market_total || 0
+    let predictedHomeScore = metadata.predicted_home_score || 0
+    let predictedAwayScore = metadata.predicted_away_score || 0
+    let boldPredictions = metadata.bold_predictions || null
 
-    // Try NEW format first (separate columns)
-    if (run?.factor_contributions && Array.isArray(run.factor_contributions) && run.factor_contributions.length > 0) {
-      console.log('[InsightCard API] Using NEW format (separate columns)')
-      factorContributions = run.factor_contributions
-      predictedTotal = run.predicted_total || 0
-      baselineAvg = run.baseline_avg || 220
-      marketTotal = run.market_total || 0
-      predictedHomeScore = run.predicted_home_score || 0
-      predictedAwayScore = run.predicted_away_score || 0
-      boldPredictions = run.bold_predictions || null
-    }
-    // Fall back to OLD format (metadata.steps)
-    else if (run?.metadata?.steps) {
-      console.log('[InsightCard API] Using OLD format (metadata.steps)')
-      const steps = run.metadata.steps
-
-      // Extract factor contributions from step3 or step5
-      if (steps.step5?.confidenceResult?.factorContributions) {
-        factorContributions = steps.step5.confidenceResult.factorContributions
-      } else if (steps.step3?.factorContributions) {
-        factorContributions = steps.step3.factorContributions
-      }
-
-      // Extract predicted total from step4
-      if (steps.step4?.predictions?.total) {
-        predictedTotal = steps.step4.predictions.total
-      }
-
-      // Extract baseline from step2
-      if (steps.step2?.baseline?.total) {
-        baselineAvg = steps.step2.baseline.total
-      }
-
-      // Extract market total from metadata or game snapshot
-      if (run.metadata.market_total) {
-        marketTotal = run.metadata.market_total
-      } else if (pick.game_snapshot?.total_line) {
-        marketTotal = pick.game_snapshot.total_line
-      }
-    }
-    // Last resort: try to extract from pick.game_snapshot
-    else {
-      console.log('[InsightCard API] No run data found, using pick.game_snapshot fallback')
-      if (pick.game_snapshot?.total_line) {
-        marketTotal = pick.game_snapshot.total_line
-      }
-    }
+    console.log('[InsightCard API] Reading from metadata (same as run history API):', {
+      has_metadata: !!run?.metadata,
+      factor_contributions_count: factorContributions.length,
+      predicted_total: predictedTotal,
+      baseline_avg: baselineAvg,
+      market_total: marketTotal,
+      predicted_home_score: predictedHomeScore,
+      predicted_away_score: predictedAwayScore,
+      has_bold_predictions: !!boldPredictions
+    })
 
     console.log('[InsightCard API] Extracted data:', {
       format: run?.factor_contributions ? 'NEW (columns)' : run?.metadata?.steps ? 'OLD (metadata)' : 'FALLBACK',
