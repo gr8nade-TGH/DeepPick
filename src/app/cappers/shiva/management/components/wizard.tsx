@@ -1747,6 +1747,49 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
           updateStepProgress(6, 80, 'Processing predictions...')
           setLog(r)
           setStepLogs(prev => ({ ...prev, 6: r }))
+
+          // Update the run record with bold predictions
+          if (r?.json?.bold_predictions) {
+            console.log('[Wizard:Step6] Updating run with bold predictions...')
+            try {
+              const updateBody = {
+                run_id: runId,
+                inputs: {
+                  conf_final: step5Results?.conf_final || 0,
+                  edge_dominant: 'total',
+                  total_data: {
+                    total_pred: step4Results?.predictions?.total_pred_points || 0,
+                    market_total: (stepLogsRef.current[2]?.json || stepLogs[2]?.json)?.snapshot?.total?.line || 0,
+                    factor_contributions: (stepLogsRef.current[4]?.json || stepLogs[4]?.json)?.factor_contributions || [],
+                    predicted_total: step4Results?.predictions?.total_pred_points || 0,
+                    baseline_avg: (stepLogsRef.current[4]?.json || stepLogs[4]?.json)?.baseline_avg || 220,
+                    market_total_line: (stepLogsRef.current[2]?.json || stepLogs[2]?.json)?.snapshot?.total?.line || 0,
+                    predicted_home_score: step4Results?.predictions?.scores?.home || 0,
+                    predicted_away_score: step4Results?.predictions?.scores?.away || 0,
+                    bold_predictions: r.json.bold_predictions
+                  }
+                },
+                results: {
+                  decision: {
+                    pick_type: 'TOTAL',
+                    pick_side: step5Results?.final_pick?.selection?.includes('OVER') ? 'OVER' : 'UNDER',
+                    line: (stepLogsRef.current[2]?.json || stepLogs[2]?.json)?.snapshot?.total?.line || 0,
+                    units: step5Results?.units || 0,
+                    reason: 'Updating with bold predictions'
+                  },
+                  persistence: {
+                    picks_row: null // Don't create a new pick, just update the run
+                  }
+                }
+              }
+
+              const updateResponse = await postJson('/api/shiva/pick/generate', updateBody, `ui-demo-update-bold-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`)
+              console.log('[Wizard:Step6] Bold predictions update response:', updateResponse)
+            } catch (updateError) {
+              console.error('[Wizard:Step6] Error updating run with bold predictions:', updateError)
+            }
+          }
+
           updateStepProgress(6, 100, 'Bold predictions generated')
           setStepLoading(6, false, 'Complete', 100)
         } else {

@@ -265,7 +265,11 @@ function assembleInsightCardFromRun({ game, pick, run, factorContributions, pred
       dominant: 'total' as const
     },
     results: {
-      status: pick.status === 'won' ? 'win' : pick.status === 'lost' ? 'loss' : pick.status === 'push' ? 'push' : 'pending',
+      status: pick.status === 'won' ? 'win'
+        : pick.status === 'lost' ? 'loss'
+          : pick.status === 'push' ? 'push'
+            : game.final_score ? 'pending' // Game finished but not graded yet
+              : 'pending', // Game not started/finished yet
       finalScore: game.final_score ? {
         away: game.final_score.away,
         home: game.final_score.home

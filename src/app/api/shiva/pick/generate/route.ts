@@ -32,7 +32,8 @@ const PickSchema = z.object({
       baseline_avg: z.number().optional(),
       market_total_line: z.number().optional(),
       predicted_home_score: z.number().optional(),
-      predicted_away_score: z.number().optional()
+      predicted_away_score: z.number().optional(),
+      bold_predictions: z.any().optional()
     }).optional(),
   }).strict(),
   results: z.object({
@@ -129,6 +130,7 @@ export async function POST(request: Request) {
               const predictedTotal = totalData?.predicted_total || null
               const baselineAvg = totalData?.baseline_avg || null
               const marketTotal = totalData?.market_total_line || null
+              const boldPredictions = totalData?.bold_predictions || null
 
               console.log('[SHIVA:PickGenerate] PASS - Attempting to upsert run:', {
                 id: run_id,
@@ -137,7 +139,8 @@ export async function POST(request: Request) {
                 bet_type: results.decision.pick_type,
                 units: 0,
                 hasFactors: !!factorContributions,
-                predictedTotal
+                predictedTotal,
+                hasBoldPredictions: !!boldPredictions
               })
 
               const { data, error } = await admin
@@ -156,6 +159,7 @@ export async function POST(request: Request) {
                   predicted_total: predictedTotal,
                   baseline_avg: baselineAvg,
                   market_total: marketTotal,
+                  bold_predictions: boldPredictions,
                   created_at: now,
                   updated_at: now
                 }, { onConflict: 'id' })
@@ -222,6 +226,7 @@ export async function POST(request: Request) {
         const marketTotal = totalData?.market_total_line || null
         const predictedHomeScore = totalData?.predicted_home_score || null
         const predictedAwayScore = totalData?.predicted_away_score || null
+        const boldPredictions = totalData?.bold_predictions || null
 
         console.log('[SHIVA:PickGenerate] Extracted data for runs table:', {
           hasFactorContributions: !!factorContributions,
@@ -231,6 +236,7 @@ export async function POST(request: Request) {
           marketTotal,
           predictedHomeScore,
           predictedAwayScore,
+          hasBoldPredictions: !!boldPredictions,
           totalDataKeys: totalData ? Object.keys(totalData) : []
         })
 
@@ -302,6 +308,7 @@ export async function POST(request: Request) {
               market_total: marketTotal,
               predicted_home_score: predictedHomeScore,
               predicted_away_score: predictedAwayScore,
+              bold_predictions: boldPredictions,
               created_at: now,
               updated_at: now
             })

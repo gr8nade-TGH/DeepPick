@@ -218,8 +218,23 @@ export function InsightCard(props: InsightCardProps) {
                 🔒 Locked at {(safePick as any).locked_odds.total_line}
               </div>
             )}
-            <div className="text-green-100 text-lg font-bold">
-              {props.capper || 'SHIVA'} • {props.sport || 'NBA'} • {safePick.type} • {safePick.confidence.toFixed(1)}% Confidence
+          </div>
+        </div>
+
+        {/* Confidence Score Bar - Moved to top */}
+        <div className="p-4 bg-slate-800 border-b border-slate-700">
+          <div className="text-center">
+            <div className="text-sm text-slate-300 mb-2">Edge Score = {Math.min(safeMarket.confFinal, 10).toFixed(1)} / 10.0</div>
+            <div className="relative h-3 bg-slate-600 rounded-full overflow-hidden mx-auto max-w-xs">
+              <div
+                className="h-full bg-gradient-to-r from-red-500 via-yellow-500 to-green-500"
+                style={{ width: `${Math.min((safeMarket.confFinal / 10) * 100, 100)}%` }}
+              />
+            </div>
+            <div className="text-xs text-slate-400 mt-2">
+              {safeMarket.confFinal >= 8 ? '🔥 HIGH EDGE' :
+                safeMarket.confFinal >= 6 ? '⚡ MODERATE EDGE' :
+                  safeMarket.confFinal >= 4 ? '⚠️ LOW EDGE' : '❌ VERY LOW EDGE'}
             </div>
           </div>
         </div>
@@ -444,24 +459,6 @@ export function InsightCard(props: InsightCardProps) {
           </div>
         </div>
 
-        {/* Confidence Score Footer */}
-        <div className="p-4 bg-slate-800 border-b border-slate-700">
-          <div className="text-center">
-            <div className="text-sm text-slate-300 mb-2">Edge Score = {Math.min(safeMarket.confFinal, 10).toFixed(1)} / 10.0</div>
-            <div className="relative h-3 bg-slate-600 rounded-full overflow-hidden mx-auto max-w-xs">
-              <div
-                className="h-full bg-gradient-to-r from-red-500 via-yellow-500 to-green-500"
-                style={{ width: `${Math.min((safeMarket.confFinal / 10) * 100, 100)}%` }}
-              />
-            </div>
-            <div className="text-xs text-slate-400 mt-2">
-              {safeMarket.confFinal >= 8 ? '🔥 HIGH EDGE' :
-                safeMarket.confFinal >= 6 ? '⚡ MODERATE EDGE' :
-                  safeMarket.confFinal >= 4 ? '⚠️ LOW EDGE' : '❌ VERY LOW EDGE'}
-            </div>
-          </div>
-        </div>
-
         {/* Edge Bar */}
         {props.pick.edgeRaw !== undefined && props.pick.edgePct !== undefined && (
           <div className="p-4 bg-slate-800 border-b border-slate-700">
@@ -503,15 +500,15 @@ export function InsightCard(props: InsightCardProps) {
                       <span className="text-xs font-medium text-white">{finding.team}</span>
                       <span className="text-xs text-slate-300">{finding.player}</span>
                       <span className={`text-xs px-2 py-1 rounded ${finding.status === 'out' ? 'bg-red-600 text-white' :
-                          finding.status === 'doubtful' ? 'bg-orange-600 text-white' :
-                            finding.status === 'questionable' ? 'bg-yellow-600 text-black' :
-                              'bg-green-600 text-white'
+                        finding.status === 'doubtful' ? 'bg-orange-600 text-white' :
+                          finding.status === 'questionable' ? 'bg-yellow-600 text-black' :
+                            'bg-green-600 text-white'
                         }`}>
                         {finding.status.toUpperCase()}
                       </span>
                     </div>
                     <span className={`text-xs font-bold ${finding.impact > 0 ? 'text-red-400' :
-                        finding.impact < 0 ? 'text-green-400' : 'text-slate-400'
+                      finding.impact < 0 ? 'text-green-400' : 'text-slate-400'
                       }`}>
                       {finding.impact > 0 ? '+' : ''}{finding.impact.toFixed(1)}
                     </span>
@@ -520,7 +517,7 @@ export function InsightCard(props: InsightCardProps) {
               </div>
               <div className="mt-3 text-xs text-slate-400">
                 Total Impact: <span className={`font-bold ${props.injury_summary.total_impact > 0 ? 'text-red-400' :
-                    props.injury_summary.total_impact < 0 ? 'text-green-400' : 'text-slate-400'
+                  props.injury_summary.total_impact < 0 ? 'text-green-400' : 'text-slate-400'
                   }`}>
                   {props.injury_summary.total_impact > 0 ? '+' : ''}{props.injury_summary.total_impact.toFixed(1)} points
                 </span>
@@ -533,10 +530,10 @@ export function InsightCard(props: InsightCardProps) {
         <div className="p-4 bg-slate-800">
           <div className="text-center">
             <div className="text-sm font-semibold text-white mb-3">RESULTS</div>
-            {props.results ? (
+            {props.results && props.results.status !== 'pending' ? (
               <div className={`p-3 rounded-lg border ${props.results.status === 'win' ? 'bg-green-900 border-green-700' :
-                  props.results.status === 'loss' ? 'bg-red-900 border-red-700' :
-                    'bg-yellow-900 border-yellow-700'
+                props.results.status === 'loss' ? 'bg-red-900 border-red-700' :
+                  'bg-yellow-900 border-yellow-700'
                 }`}>
                 <div className="text-lg font-bold text-white mb-2">
                   {props.results.status === 'win' ? '✅ WIN' :
@@ -555,7 +552,7 @@ export function InsightCard(props: InsightCardProps) {
               </div>
             ) : (
               <div className="text-sm text-slate-400">
-                Game has not yet started yet, check back to see the outcome and our assessment of what we did right or wrong in predicting this matchup!
+                Game has not started yet. Check back to see the outcome and our assessment of what we did right or wrong in predicting this matchup!
               </div>
             )}
           </div>
