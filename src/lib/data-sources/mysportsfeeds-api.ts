@@ -8,7 +8,7 @@
 import { getNBASeason, getNBASeasonForDateString } from './season-utils'
 
 const MYSPORTSFEEDS_API_KEY = process.env.MYSPORTSFEEDS_API_KEY
-const MYSPORTSFEEDS_BASE_URL = 'https://api.mysportsfeeds.com/v2.1/pull/nba'
+const MYSPORTSFEEDS_BASE_URL = 'https://api.mysportsfeeds.com/v2.0/pull/nba'
 
 /**
  * Get the base URL for a specific season
@@ -25,11 +25,11 @@ function getAuthHeader(): string | null {
     console.warn('[MySportsFeeds] MYSPORTSFEEDS_API_KEY environment variable not set')
     return null
   }
-
+  
   // v2.x uses "MYSPORTSFEEDS" as the password
   const credentials = `${MYSPORTSFEEDS_API_KEY}:MYSPORTSFEEDS`
   const encoded = Buffer.from(credentials).toString('base64')
-
+  
   return `Basic ${encoded}`
 }
 
@@ -47,7 +47,7 @@ async function fetchMySportsFeeds(endpoint: string, season?: string, maxRetries:
     url = endpoint
   } else if (endpoint.includes('/nba/')) {
     // Endpoint already has season in it
-    url = `https://api.mysportsfeeds.com/v2.1/pull/${endpoint}`
+    url = `https://api.mysportsfeeds.com/v2.0/pull/${endpoint}`
   } else {
     // Need to add season
     const seasonToUse = season || getNBASeason().season
@@ -163,7 +163,7 @@ async function fetchMySportsFeeds(endpoint: string, season?: string, maxRetries:
  */
 export async function testMySportsFeedsConnection(): Promise<void> {
   console.log('[MySportsFeeds] Testing connection...')
-
+  
   try {
     // Fetch current season schedule
     const data = await fetchMySportsFeeds('season_games/2024-25')
@@ -179,13 +179,11 @@ export async function testMySportsFeedsConnection(): Promise<void> {
  * Fetch game scoreboard for a specific date
  * Format: YYYYMMDD (e.g., 20250128)
  * Automatically determines the correct season based on the date
- *
- * NOTE: v2.1 API uses 'games.json' endpoint, not 'scoreboard.json'
  */
 export async function fetchScoreboard(date: string): Promise<any> {
   const season = getNBASeasonForDateString(date).season
-  console.log(`[MySportsFeeds] Fetching games for ${date} (season: ${season})`)
-  return await fetchMySportsFeeds(`date/${date}/games.json`, season)
+  console.log(`[MySportsFeeds] Fetching scoreboard for ${date} (season: ${season})`)
+  return await fetchMySportsFeeds(`date/${date}/scoreboard.json`, season)
 }
 
 /**

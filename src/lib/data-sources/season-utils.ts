@@ -20,9 +20,9 @@ export interface SeasonInfo {
 export function getNBASeason(date: Date = new Date()): SeasonInfo {
   const year = date.getFullYear()
   const month = date.getMonth() + 1 // 1-12
-
+  
   let startYear: number
-
+  
   if (month >= 10) {
     // October-December: Season starts this year
     startYear = year
@@ -33,9 +33,9 @@ export function getNBASeason(date: Date = new Date()): SeasonInfo {
     // July-September: Off-season, next season starts in October
     startYear = year
   }
-
+  
   const endYear = startYear + 1
-
+  
   return {
     season: `${startYear}-${endYear}-regular`,
     startYear,
@@ -52,7 +52,7 @@ export function getNBASeasonForDateString(dateStr: string): SeasonInfo {
   const year = parseInt(dateStr.substring(0, 4))
   const month = parseInt(dateStr.substring(4, 6))
   const day = parseInt(dateStr.substring(6, 8))
-
+  
   const date = new Date(year, month - 1, day)
   return getNBASeason(date)
 }
@@ -63,17 +63,17 @@ export function getNBASeasonForDateString(dateStr: string): SeasonInfo {
  */
 export function isNBARegularSeason(date: Date = new Date()): boolean {
   const month = date.getMonth() + 1 // 1-12
-
+  
   // Regular season months: October (late), November, December, January, February, March, April (early)
   if (month >= 11 || month <= 4) {
     return true
   }
-
+  
   // October: Check if after ~22nd (season usually starts around Oct 22-25)
   if (month === 10) {
     return date.getDate() >= 20
   }
-
+  
   // May-September: Off-season or playoffs
   return false
 }
@@ -83,24 +83,24 @@ export function isNBARegularSeason(date: Date = new Date()): boolean {
  */
 export function getSportSeason(sport: string, date: Date = new Date()): SeasonInfo {
   const sportLower = sport.toLowerCase()
-
+  
   switch (sportLower) {
     case 'nba':
     case 'basketball':
       return getNBASeason(date)
-
+    
     case 'nfl':
     case 'football':
       return getNFLSeason(date)
-
+    
     case 'mlb':
     case 'baseball':
       return getMLBSeason(date)
-
+    
     case 'nhl':
     case 'hockey':
       return getNHLSeason(date)
-
+    
     default:
       throw new Error(`Unsupported sport: ${sport}`)
   }
@@ -112,9 +112,9 @@ export function getSportSeason(sport: string, date: Date = new Date()): SeasonIn
 function getNFLSeason(date: Date): SeasonInfo {
   const year = date.getFullYear()
   const month = date.getMonth() + 1
-
+  
   let startYear: number
-
+  
   if (month >= 9) {
     // September-December: Season starts this year
     startYear = year
@@ -125,9 +125,9 @@ function getNFLSeason(date: Date): SeasonInfo {
     // March-August: Off-season, next season starts in September
     startYear = year
   }
-
+  
   const endYear = startYear + 1
-
+  
   return {
     season: `${startYear}-${endYear}-regular`,
     startYear,
@@ -142,7 +142,7 @@ function getNFLSeason(date: Date): SeasonInfo {
 function getMLBSeason(date: Date): SeasonInfo {
   const year = date.getFullYear()
   const month = date.getMonth() + 1
-
+  
   // MLB season is within a single calendar year
   if (month >= 3 && month <= 10) {
     // March-October: Current season
@@ -197,7 +197,7 @@ export function parseDateFromAPI(dateStr: string): Date {
 export function getSeasonDateRange(sport: string): { start: Date; end: Date } {
   const now = new Date()
   const season = getSportSeason(sport, now)
-
+  
   switch (sport.toLowerCase()) {
     case 'nba':
     case 'basketball':
@@ -205,28 +205,28 @@ export function getSeasonDateRange(sport: string): { start: Date; end: Date } {
         start: new Date(season.startYear, 9, 20), // October 20
         end: new Date(season.endYear, 5, 30) // June 30
       }
-
+    
     case 'nfl':
     case 'football':
       return {
         start: new Date(season.startYear, 8, 1), // September 1
         end: new Date(season.endYear, 1, 28) // February 28
       }
-
+    
     case 'mlb':
     case 'baseball':
       return {
         start: new Date(season.startYear, 2, 1), // March 1
         end: new Date(season.startYear, 9, 31) // October 31
       }
-
+    
     case 'nhl':
     case 'hockey':
       return {
         start: new Date(season.startYear, 9, 1), // October 1
         end: new Date(season.endYear, 5, 30) // June 30
       }
-
+    
     default:
       throw new Error(`Unsupported sport: ${sport}`)
   }
