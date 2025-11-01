@@ -24,13 +24,15 @@ const PickSchema = z.object({
     conf_final: z.number(),
     edge_dominant: z.enum(['side', 'total']),
     side_data: z.object({ pick_team: z.string(), spread_pred: z.number(), market_spread: z.number() }).optional(),
-    total_data: z.object({ 
-      total_pred: z.number(), 
+    total_data: z.object({
+      total_pred: z.number(),
       market_total: z.number(),
       factor_contributions: z.any().optional(),
       predicted_total: z.number().optional(),
       baseline_avg: z.number().optional(),
-      market_total_line: z.number().optional()
+      market_total_line: z.number().optional(),
+      predicted_home_score: z.number().optional(),
+      predicted_away_score: z.number().optional()
     }).optional(),
   }).strict(),
   results: z.object({
@@ -83,7 +85,7 @@ export async function POST(request: Request) {
     exec: async () => {
       console.log('[SHIVA:PickGenerate] EXEC FUNCTION CALLED for run:', run_id)
       const admin = getSupabaseAdmin()
-      
+
       if (!results.persistence?.picks_row || results.persistence.picks_row.units === 0) {
         // PASS decision - no pick row or zero units
         console.log('[SHIVA:PickGenerate]', {
@@ -105,7 +107,7 @@ export async function POST(request: Request) {
           try {
             const totalLine = activeSnapshot?.total?.line || null
             let gameId = activeSnapshot?.game_id
-            
+
             console.log('[SHIVA:PickGenerate] PASS - Executing database write...')
             console.log('[SHIVA:PickGenerate] PASS - game_id from snapshot:', gameId)
             console.log('[SHIVA:PickGenerate] PASS - activeSnapshot:', JSON.stringify(activeSnapshot))
@@ -157,7 +159,7 @@ export async function POST(request: Request) {
                   created_at: now,
                   updated_at: now
                 }, { onConflict: 'id' })
-              
+
               if (error) {
                 console.error('[SHIVA:PickGenerate] Error saving PASS run:', error)
               } else {
@@ -201,7 +203,7 @@ export async function POST(request: Request) {
 
         return { body: { run_id, decision: 'PASS', confidence: parse.data.inputs.conf_final, pick: null, writeAllowed, debug: { hasSnapshot: !!activeSnapshot, gameId: activeSnapshot?.game_id, snapshotGameId: activeSnapshot?.game_id || null } }, status: 200 }
       }
-      
+
       const r = results.persistence.picks_row
 
       // Lock odds at pick-time from active Step-2 snapshot
@@ -218,6 +220,8 @@ export async function POST(request: Request) {
         const predictedTotal = totalData?.predicted_total || null
         const baselineAvg = totalData?.baseline_avg || null
         const marketTotal = totalData?.market_total_line || null
+        const predictedHomeScore = totalData?.predicted_home_score || null
+        const predictedAwayScore = totalData?.predicted_away_score || null
 
         console.log('[SHIVA:PickGenerate] Extracted data for runs table:', {
           hasFactorContributions: !!factorContributions,
@@ -225,6 +229,8 @@ export async function POST(request: Request) {
           predictedTotal,
           baselineAvg,
           marketTotal,
+          predictedHomeScore,
+          predictedAwayScore,
           totalDataKeys: totalData ? Object.keys(totalData) : []
         })
 
@@ -294,6 +300,8 @@ export async function POST(request: Request) {
               predicted_total: predictedTotal,
               baseline_avg: baselineAvg,
               market_total: marketTotal,
+              predicted_home_score: predictedHomeScore,
+              predicted_away_score: predictedAwayScore,
               created_at: now,
               updated_at: now
             })
@@ -385,23 +393,23 @@ export async function POST(request: Request) {
           console.error('[SHIVA:PickGenerate] Error stack:', error instanceof Error ? error.stack : 'No stack trace')
         }
       }
-      
-      const responseBody = { 
-        run_id, 
-        decision: 'PICK', 
-        confidence: r.confidence, 
-        pick: { 
-          id: r.id, 
-          run_id, 
-          pick_type: results.decision.pick_type, 
-          selection: r.selection, 
-          units: r.units, 
+
+      const responseBody = {
+        run_id,
+        decision: 'PICK',
+        confidence: r.confidence,
+        pick: {
+          id: r.id,
+          run_id,
+          pick_type: results.decision.pick_type,
+          selection: r.selection,
+          units: r.units,
           confidence: r.confidence,
           locked_odds: locked_odds,
           locked_at: new Date().toISOString()
-        } 
+        }
       }
-      
+
       // Structured logging
       console.log('[SHIVA:PickGenerate]', {
         run_id,
@@ -420,7 +428,7 @@ export async function POST(request: Request) {
         latencyMs: Date.now() - startTime,
         status: 200,
       })
-      
+
       return { body: responseBody, status: 200 }
     }
   })

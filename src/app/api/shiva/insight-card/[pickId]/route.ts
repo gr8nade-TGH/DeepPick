@@ -228,13 +228,13 @@ function assembleInsightCardFromRun({ game, pick, run, factorContributions, pred
       locked_at: pick.created_at
     },
     predictedScore: {
-      away: Math.floor((predictedTotal || 0) / 2),
-      home: Math.ceil((predictedTotal || 0) / 2),
+      away: run?.predicted_away_score || Math.floor((predictedTotal || 0) / 2),
+      home: run?.predicted_home_score || Math.ceil((predictedTotal || 0) / 2),
       winner: 'TBD'
     },
     writeups: {
-      prediction: `Model projects ${pick.selection} with ${confFinal.toFixed(1)}/5.0 confidence based on ${factors.length} factors.`,
-      gamePrediction: `Predicted total: ${predictedTotal?.toFixed(1) || 'N/A'} vs Market: ${marketTotal?.toFixed(1) || game.odds?.total_line || 'N/A'}`,
+      prediction: `Model projects ${pick.selection} with ${confFinal.toFixed(1)}/10.0 confidence based on ${factors.length} factors.`,
+      gamePrediction: `Predicted total: ${predictedTotal?.toFixed(1) || '0.0'} vs Market: ${marketTotal?.toFixed(1) || game.odds?.total_line || 'N/A'}`,
       bold: null
     },
     bold_predictions: null,

@@ -423,7 +423,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     } else if (stepLogs[stepNum]) {
       return (
         <span className={`px-2 py-1 rounded text-xs ${stepLogs[stepNum].status >= 200 && stepLogs[stepNum].status < 300 ? 'bg-green-600 text-white' :
-            stepLogs[stepNum].status >= 400 ? 'bg-red-600 text-white' : 'bg-yellow-600 text-white'
+          stepLogs[stepNum].status >= 400 ? 'bg-red-600 text-white' : 'bg-yellow-600 text-white'
           }`}>
           {stepLogs[stepNum].status}
         </span>
@@ -1654,7 +1654,9 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                     factor_contributions: factorContributions,
                     predicted_total: predictedTotal,
                     baseline_avg: baselineAvg,
-                    market_total_line: marketTotalFromStep2 // Use actual market total from Step 2, not fallback
+                    market_total_line: marketTotalFromStep2, // Use actual market total from Step 2, not fallback
+                    predicted_home_score: step4?.json?.predictions?.scores?.home || 0,
+                    predicted_away_score: step4?.json?.predictions?.scores?.away || 0
                   }
                 },
                 results: {
@@ -2183,7 +2185,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                     <td className="p-1">
                       {isExecuted ? (
                         <span className={`px-1 rounded text-xs ${response.status >= 200 && response.status < 300 ? 'bg-green-600 text-white' :
-                            response.status >= 400 ? 'bg-red-600 text-white' : 'bg-yellow-600 text-white'
+                          response.status >= 400 ? 'bg-red-600 text-white' : 'bg-yellow-600 text-white'
                           }`}>
                           {response.status}
                         </span>
@@ -2410,10 +2412,10 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
         </div>
         <button
           className={`px-3 py-1 border-2 border-gray-600 rounded font-semibold flex items-center gap-2 ${step >= 8
-              ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-              : loadingSteps.has(step)
-                ? 'bg-blue-600 text-white cursor-wait border-blue-500'
-                : 'bg-gray-800 text-white hover:bg-gray-700'
+            ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+            : loadingSteps.has(step)
+              ? 'bg-blue-600 text-white cursor-wait border-blue-500'
+              : 'bg-gray-800 text-white hover:bg-gray-700'
             }`}
           onClick={async () => {
             if (loadingSteps.has(step)) return // Only block if loading
