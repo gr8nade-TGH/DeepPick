@@ -1630,13 +1630,17 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
               const step2Results = stepLogsRef.current[2]?.json || stepLogs[2]?.json
               const marketTotalFromStep2 = step2Results?.snapshot?.total?.line || null
 
+              // Get predicted scores from Step 4 results
+              const step4Logs = stepLogsRef.current[4]?.json || stepLogs[4]?.json
+
               console.log('[Wizard:Step5] PICK - Data extraction:', {
                 baselineAvg,
                 marketTotalFromStep2,
                 predictedTotal,
                 step3HasBaseline: !!step3Results?.baseline,
                 step2HasSnapshot: !!step2Results?.snapshot,
-                step2TotalLine: step2Results?.snapshot?.total?.line
+                step2TotalLine: step2Results?.snapshot?.total?.line,
+                step4PredictedScores: step4Logs?.predictions?.scores
               })
 
               // Generate a pick ID for the picks_row
@@ -1655,8 +1659,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                     predicted_total: predictedTotal,
                     baseline_avg: baselineAvg,
                     market_total_line: marketTotalFromStep2, // Use actual market total from Step 2, not fallback
-                    predicted_home_score: step4?.json?.predictions?.scores?.home || 0,
-                    predicted_away_score: step4?.json?.predictions?.scores?.away || 0
+                    predicted_home_score: step4Logs?.predictions?.scores?.home || 0,
+                    predicted_away_score: step4Logs?.predictions?.scores?.away || 0
                   }
                 },
                 results: {
