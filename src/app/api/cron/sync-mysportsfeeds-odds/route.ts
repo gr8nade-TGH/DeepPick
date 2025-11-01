@@ -42,7 +42,7 @@ export async function GET() {
     // Get today's date in YYYYMMDD format
     const today = new Date()
     const dateStr = formatDateForAPI(today)
-    
+
     console.log(`📅 [MYSPORTSFEEDS-ODDS-SYNC] Fetching odds for date: ${dateStr}`)
 
     // Fetch odds from MySportsFeeds (use 'current' season for live data)
@@ -168,6 +168,7 @@ export async function GET() {
             },
             game_date: startTime.split('T')[0],
             game_time: startTime.split('T')[1].split('.')[0],
+            game_start_timestamp: startTime, // Store complete ISO-8601 timestamp in UTC
             status: 'scheduled',
             venue: '',
             odds: oddsData,

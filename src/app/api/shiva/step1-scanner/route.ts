@@ -198,7 +198,7 @@ async function checkGameEligibility(
 
     const { data: gameData, error: gameError } = await supabase
       .from('games')
-      .select('id, status, game_time')
+      .select('id, status, game_time, game_date, game_start_timestamp')
       .eq('id', game.game_id)
       .eq('sport', sportLower)
       .in('status', ['scheduled', 'live'])
@@ -214,10 +214,17 @@ async function checkGameEligibility(
     // Check if game is in the future (at least 5 minutes from now)
     const now = new Date()
     const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60 * 1000)
-    const gameTime = new Date(gameData.game_time)
 
-    if (gameTime <= fiveMinutesFromNow) {
-      console.log(`[SHIVA_SCANNER] Game is too soon: ${gameTime.toISOString()}`)
+    // Use game_start_timestamp if available, otherwise construct from game_date + game_time
+    let gameStartTime: Date
+    if (gameData.game_start_timestamp) {
+      gameStartTime = new Date(gameData.game_start_timestamp)
+    } else {
+      gameStartTime = new Date(`${gameData.game_date}T${gameData.game_time}Z`)
+    }
+
+    if (gameStartTime <= fiveMinutesFromNow) {
+      console.log(`[SHIVA_SCANNER] Game is too soon or has started: ${gameStartTime.toISOString()}`)
       return false
     }
 

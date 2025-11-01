@@ -125,14 +125,14 @@ export function RealDashboard() {
   const fetchData = async () => {
     try {
       setLoading(true)
-      
+
       // Fetch picks with capper filter
       const capperParam = selectedCapper !== 'all' ? `&capper=${selectedCapper}` : ''
-      
+
       // Fetch current picks (pending/live)
       const picksResponse = await fetch(`/api/picks?status=pending${capperParam}`)
       const picksData = await picksResponse.json()
-      
+
       if (picksData.success) {
         setPicks(picksData.data)
       }
@@ -140,7 +140,7 @@ export function RealDashboard() {
       // Fetch pick history (completed picks - last 10)
       const historyResponse = await fetch(`/api/picks?status=completed&limit=10${capperParam}`)
       const historyData = await historyResponse.json()
-      
+
       if (historyData.success) {
         setPickHistory(historyData.data)
       }
@@ -148,7 +148,7 @@ export function RealDashboard() {
       // Fetch performance data with capper filter
       const performanceResponse = await fetch(`/api/performance?period=${timeFilter}${capperParam}`)
       const performanceData = await performanceResponse.json()
-      
+
       if (performanceData.success) {
         setPerformance(performanceData.data)
       }
@@ -287,23 +287,22 @@ export function RealDashboard() {
                   key={capper.id}
                   onClick={() => setSelectedCapper(capper.id)}
                   variant={selectedCapper === capper.id ? 'default' : 'outline'}
-                  className={`${
-                    selectedCapper === capper.id
+                  className={`${selectedCapper === capper.id
                       ? `bg-gradient-to-r ${capper.color} text-white font-bold`
                       : 'border-gray-600 text-gray-300 hover:bg-gray-700'
-                  }`}
+                    }`}
                 >
                   {capper.name}
                 </Button>
               ))}
             </div>
           </div>
-          
+
           <div className="border-t border-gray-700 pt-3">
             <span className="text-sm font-semibold text-gray-400">ALGORITHM PAGES:</span>
             <div className="flex flex-wrap gap-2 mt-2">
               {CAPPERS.filter(c => c.path).map((capper) => (
-                <Link 
+                <Link
                   key={capper.id}
                   href={capper.path!}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-neon-blue/50 bg-neon-blue/10 hover:bg-neon-blue/20 hover:border-neon-blue transition-all text-sm text-neon-blue font-semibold"
@@ -351,7 +350,7 @@ export function RealDashboard() {
                     chartDataType: typeof performance?.chartData,
                     chartDataIsArray: Array.isArray(performance?.chartData)
                   })
-                  
+
                   // Test all potential length accesses
                   console.log('🔍 LENGTH TESTS:', {
                     'performance?.chartData?.length': performance?.chartData?.length,
@@ -386,71 +385,71 @@ export function RealDashboard() {
                   </div>
                 </div>
               ) : (
-              <div className="h-[250px]">
-                {(() => {
-                  try {
-                    const chartData = performance?.chartData?.filter(item => item && typeof item === 'object' && item.date && typeof item.cumulative_profit === 'number') || []
-                    console.log('📈 RENDERING CHART with data:', chartData)
-                    return (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart 
-                          data={chartData} 
-                          margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-                        >
-                    <defs>
-                      <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <XAxis 
-                      dataKey="date" 
-                      stroke="#4B5563" 
-                      tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      interval="preserveStartEnd"
-                    />
-                    <YAxis stroke="#4B5563" tickFormatter={(value) => `$${value / 1000}K`} />
-                    <Tooltip
-                      contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '4px' }}
-                      labelStyle={{ color: '#E5E7EB' }}
-                      formatter={(value: number) => {
-                        const color = value >= 0 ? '#10B981' : '#EF4444'
-                        return [`$${value.toFixed(2)}`, 'Profit']
-                      }}
-                      itemStyle={{ color: '#10B981' }}
-                      content={({ active, payload, label }) => {
-                        if (active && payload && payload?.length && payload[0]) {
-                          const value = payload[0].value as number
-                          const color = value >= 0 ? '#10B981' : '#EF4444'
-                          return (
-                            <div style={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '4px', padding: '8px' }}>
-                              <p style={{ color: '#E5E7EB', marginBottom: '4px' }}>{label}</p>
-                              <p style={{ color: color, fontWeight: 'bold' }}>
-                                Profit: ${value.toFixed(2)}
-                              </p>
-                            </div>
-                          )
-                        }
-                        return null
-                      }}
-                    />
-                    <Area type="monotone" dataKey="cumulative_profit" stroke="#10B981" fillOpacity={1} fill="url(#colorProfit)" />
-                  </AreaChart>
-                </ResponsiveContainer>
-                    )
-                  } catch (error) {
-                    console.error('🚨 CHART RENDERING ERROR:', error)
-                    return (
-                      <div className="h-[250px] flex items-center justify-center text-red-400">
-                        <div className="text-center">
-                          <p className="text-lg mb-2">Chart Error</p>
-                          <p className="text-sm">Failed to render chart: {error instanceof Error ? error.message : 'Unknown error'}</p>
+                <div className="h-[250px]">
+                  {(() => {
+                    try {
+                      const chartData = performance?.chartData?.filter(item => item && typeof item === 'object' && item.date && typeof item.cumulative_profit === 'number') || []
+                      console.log('📈 RENDERING CHART with data:', chartData)
+                      return (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart
+                            data={chartData}
+                            margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                          >
+                            <defs>
+                              <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#10B981" stopOpacity={0.8} />
+                                <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
+                              </linearGradient>
+                            </defs>
+                            <XAxis
+                              dataKey="date"
+                              stroke="#4B5563"
+                              tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              interval="preserveStartEnd"
+                            />
+                            <YAxis stroke="#4B5563" tickFormatter={(value) => `$${value / 1000}K`} />
+                            <Tooltip
+                              contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '4px' }}
+                              labelStyle={{ color: '#E5E7EB' }}
+                              formatter={(value: number) => {
+                                const color = value >= 0 ? '#10B981' : '#EF4444'
+                                return [`$${value.toFixed(2)}`, 'Profit']
+                              }}
+                              itemStyle={{ color: '#10B981' }}
+                              content={({ active, payload, label }) => {
+                                if (active && payload && payload?.length && payload[0]) {
+                                  const value = payload[0].value as number
+                                  const color = value >= 0 ? '#10B981' : '#EF4444'
+                                  return (
+                                    <div style={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '4px', padding: '8px' }}>
+                                      <p style={{ color: '#E5E7EB', marginBottom: '4px' }}>{label}</p>
+                                      <p style={{ color: color, fontWeight: 'bold' }}>
+                                        Profit: ${value.toFixed(2)}
+                                      </p>
+                                    </div>
+                                  )
+                                }
+                                return null
+                              }}
+                            />
+                            <Area type="monotone" dataKey="cumulative_profit" stroke="#10B981" fillOpacity={1} fill="url(#colorProfit)" />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      )
+                    } catch (error) {
+                      console.error('🚨 CHART RENDERING ERROR:', error)
+                      return (
+                        <div className="h-[250px] flex items-center justify-center text-red-400">
+                          <div className="text-center">
+                            <p className="text-lg mb-2">Chart Error</p>
+                            <p className="text-sm">Failed to render chart: {error instanceof Error ? error.message : 'Unknown error'}</p>
+                          </div>
                         </div>
-                      </div>
-                    )
-                  }
-                })()}
-              </div>
+                      )
+                    }
+                  })()}
+                </div>
               )}
             </CardContent>
           </Card>
@@ -472,7 +471,7 @@ export function RealDashboard() {
                 </p>
               </CardContent>
             </Card>
-            
+
             <Card className="bg-gray-800 border border-purple-500 shadow-purple-glow">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-purple-400">Record</CardTitle>
@@ -554,15 +553,15 @@ export function RealDashboard() {
                         {pick.game_snapshot?.game_date && pick.game_snapshot?.game_time ? (
                           <div className="text-sm">
                             <div className="text-gray-300 font-semibold">
-                              {new Date(`${pick.game_snapshot.game_date}T${pick.game_snapshot.game_time}`).toLocaleDateString('en-US', { 
-                                month: 'short', 
+                              {new Date(`${pick.game_snapshot.game_date}T${pick.game_snapshot.game_time}Z`).toLocaleDateString('en-US', {
+                                month: 'short',
                                 day: 'numeric',
                                 hour: 'numeric',
                                 minute: '2-digit'
                               })}
                             </div>
                             <div className={`text-xs font-mono ${(() => {
-                              const gameTime = new Date(`${pick.game_snapshot.game_date}T${pick.game_snapshot.game_time}`)
+                              const gameTime = new Date(`${pick.game_snapshot.game_date}T${pick.game_snapshot.game_time}Z`)
                               const now = new Date()
                               const hoursUntil = (gameTime.getTime() - now.getTime()) / (1000 * 60 * 60)
                               if (hoursUntil < 0) return 'text-red-400'
@@ -570,7 +569,7 @@ export function RealDashboard() {
                               return 'text-cyan-400'
                             })()}`}>
                               {(() => {
-                                const gameTime = new Date(`${pick.game_snapshot.game_date}T${pick.game_snapshot.game_time}`)
+                                const gameTime = new Date(`${pick.game_snapshot.game_date}T${pick.game_snapshot.game_time}Z`)
                                 const now = new Date()
                                 const diff = gameTime.getTime() - now.getTime()
                                 if (diff < 0) return 'STARTED'
@@ -585,8 +584,8 @@ export function RealDashboard() {
                         )}
                       </td>
                       <td className="py-3 px-4 align-middle text-gray-300 text-sm">
-                        {new Date(pick.created_at).toLocaleDateString('en-US', { 
-                          month: 'short', 
+                        {new Date(pick.created_at).toLocaleDateString('en-US', {
+                          month: 'short',
                           day: 'numeric',
                           hour: 'numeric',
                           minute: '2-digit'
@@ -666,7 +665,7 @@ export function RealDashboard() {
                 (pickHistory || []).map((pick) => {
                   const capperInfo = CAPPERS.find(c => c.id === pick.capper) || CAPPERS[1]
                   const finalScore = pick.games?.final_score
-                  
+
                   return (
                     <tr key={pick.id} className="border-b border-gray-800 hover:bg-gray-800 transition-colors">
                       <td className="py-3 px-4 align-middle">
@@ -696,12 +695,12 @@ export function RealDashboard() {
                         )}
                       </td>
                       <td className="py-3 px-4 align-middle">
-                        <Badge 
+                        <Badge
                           variant={pick.status === 'won' ? 'default' : pick.status === 'lost' ? 'destructive' : 'secondary'}
                           className={
                             pick.status === 'won' ? 'bg-green-600 hover:bg-green-700' :
-                            pick.status === 'lost' ? 'bg-red-600 hover:bg-red-700' :
-                            'bg-gray-600 hover:bg-gray-700'
+                              pick.status === 'lost' ? 'bg-red-600 hover:bg-red-700' :
+                                'bg-gray-600 hover:bg-gray-700'
                           }
                         >
                           {pick.status.toUpperCase()}
@@ -710,8 +709,8 @@ export function RealDashboard() {
                       <td className="py-3 px-4 align-middle">
                         <span className={
                           pick.status === 'won' ? 'text-green-400 font-bold' :
-                          pick.status === 'lost' ? 'text-red-400 font-bold' :
-                          'text-gray-400'
+                            pick.status === 'lost' ? 'text-red-400 font-bold' :
+                              'text-gray-400'
                         }>
                           {pick.status === 'won' && `✅ +${pick.net_units?.toFixed(2)}u`}
                           {pick.status === 'lost' && `❌ ${pick.net_units?.toFixed(2)}u`}
@@ -903,20 +902,18 @@ export function RealDashboard() {
                     </h3>
                     <div className="space-y-3 max-h-96 overflow-y-auto">
                       {(selectedPick?.result?.prediction_log?.steps || []).map((step, idx) => (
-                        <div 
-                          key={idx} 
-                          className={`p-3 rounded-lg border ${
-                            step.impact === 'positive' ? 'bg-green-500/5 border-green-500/30' :
-                            step.impact === 'negative' ? 'bg-red-500/5 border-red-500/30' :
-                            'bg-gray-500/5 border-gray-500/30'
-                          }`}
+                        <div
+                          key={idx}
+                          className={`p-3 rounded-lg border ${step.impact === 'positive' ? 'bg-green-500/5 border-green-500/30' :
+                              step.impact === 'negative' ? 'bg-red-500/5 border-red-500/30' :
+                                'bg-gray-500/5 border-gray-500/30'
+                            }`}
                         >
                           <div className="flex items-start gap-2">
-                            <span className={`text-xs font-bold px-2 py-1 rounded ${
-                              step.impact === 'positive' ? 'bg-green-500/20 text-green-400' :
-                              step.impact === 'negative' ? 'bg-red-500/20 text-red-400' :
-                              'bg-gray-500/20 text-gray-400'
-                            }`}>
+                            <span className={`text-xs font-bold px-2 py-1 rounded ${step.impact === 'positive' ? 'bg-green-500/20 text-green-400' :
+                                step.impact === 'negative' ? 'bg-red-500/20 text-red-400' :
+                                  'bg-gray-500/20 text-gray-400'
+                              }`}>
                               {step.step}
                             </span>
                             <div className="flex-1">
@@ -927,11 +924,10 @@ export function RealDashboard() {
                                   {step.calculation}
                                 </p>
                               )}
-                              <p className={`text-sm mt-1 font-medium ${
-                                step.impact === 'positive' ? 'text-green-400' :
-                                step.impact === 'negative' ? 'text-red-400' :
-                                'text-gray-300'
-                              }`}>
+                              <p className={`text-sm mt-1 font-medium ${step.impact === 'positive' ? 'text-green-400' :
+                                  step.impact === 'negative' ? 'text-red-400' :
+                                    'text-gray-300'
+                                }`}>
                                 → {step.result}
                               </p>
                             </div>
@@ -949,15 +945,15 @@ export function RealDashboard() {
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="flex items-center gap-2">
-                        {selectedPick.result.prediction_log.decisionFactors.passedMinConfidence ? 
-                          <CheckCircle className="w-5 h-5 text-green-400" /> : 
+                        {selectedPick.result.prediction_log.decisionFactors.passedMinConfidence ?
+                          <CheckCircle className="w-5 h-5 text-green-400" /> :
                           <XCircle className="w-5 h-5 text-red-400" />
                         }
                         <span className="text-sm text-gray-300">Min Confidence (60%)</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        {selectedPick.result.prediction_log.decisionFactors.passedFavoriteRule ? 
-                          <CheckCircle className="w-5 h-5 text-green-400" /> : 
+                        {selectedPick.result.prediction_log.decisionFactors.passedFavoriteRule ?
+                          <CheckCircle className="w-5 h-5 text-green-400" /> :
                           <XCircle className="w-5 h-5 text-red-400" />
                         }
                         <span className="text-sm text-gray-300">Favorite Rule (-250)</span>
@@ -984,7 +980,7 @@ export function RealDashboard() {
                       Algorithm Reasoning
                     </h3>
                     <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
-                      {selectedPick.reasoning || 
+                      {selectedPick.reasoning ||
                         "This pick was generated based on a comprehensive analysis of historical patterns, statistical models, and real-time market data."
                       }
                     </p>

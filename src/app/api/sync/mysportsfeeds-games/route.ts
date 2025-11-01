@@ -96,7 +96,7 @@ export async function POST(request: Request) {
         season: seasonInfo.season
       }, { status: 500 })
     }
-    
+
     // Process games from odds data
     const games = odds.gameLines || []
     let synced = 0
@@ -126,7 +126,7 @@ export async function POST(request: Request) {
           errors.push(`Skipping game ${gameId} - ${teamError instanceof Error ? teamError.message : String(teamError)}`)
           continue
         }
-        
+
         // Parse game odds if available
         let oddsData: any = null
 
@@ -184,7 +184,7 @@ export async function POST(request: Request) {
           // Add sportsbook name for reference
           oddsData.source = lines.sportsbook || 'MySportsFeeds'
         }
-        
+
         // Upsert game to database with resolved team names
         // Use api_event_id for conflict resolution (not id)
         const { error } = await supabase
@@ -203,6 +203,7 @@ export async function POST(request: Request) {
             },
             game_date: startTime.split('T')[0],
             game_time: startTime.split('T')[1].split('.')[0],
+            game_start_timestamp: startTime, // Store complete ISO-8601 timestamp in UTC
             status: 'scheduled',
             venue: '', // MySportsFeeds doesn't provide venue in odds endpoint
             odds: oddsData || {},
@@ -222,7 +223,7 @@ export async function POST(request: Request) {
         errors.push(`Error processing game: ${error instanceof Error ? error.message : String(error)}`)
       }
     }
-    
+
     // Provide detailed summary
     const summary = {
       success: true,
@@ -254,7 +255,7 @@ export async function POST(request: Request) {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
     console.error('[Sync Games] Error:', errorMessage)
-    
+
     return NextResponse.json({
       success: false,
       error: errorMessage
