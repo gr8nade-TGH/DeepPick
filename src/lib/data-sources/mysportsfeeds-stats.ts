@@ -8,6 +8,7 @@
 
 import { fetchTeamGameLogs } from './mysportsfeeds-api'
 import { getTeamAbbrev } from './team-mappings'
+import { getCachedTeamForm as getSupabaseCachedTeamForm, setCachedTeamForm as setSupabaseCachedTeamForm } from './mysportsfeeds-cache'
 
 interface GameLogEntry {
   teamAbbrev: string
@@ -42,36 +43,10 @@ export interface TeamFormData {
 
 /**
  * Cache for team form data to reduce API calls
+ *
+ * NOTE: Now using Supabase cache instead of in-memory cache
+ * This persists across serverless function cold starts and prevents rate limiting
  */
-interface TeamFormCacheEntry {
-  data: TeamFormData
-  timestamp: number
-}
-
-const teamFormCache = new Map<string, TeamFormCacheEntry>()
-const CACHE_TTL_MS = 60 * 60 * 1000 // 60 minutes (1 hour) - team stats don't change frequently, reduces API calls
-
-function getCachedTeamForm(cacheKey: string): TeamFormData | null {
-  const cached = teamFormCache.get(cacheKey)
-  if (!cached) return null
-
-  const age = Date.now() - cached.timestamp
-  if (age > CACHE_TTL_MS) {
-    teamFormCache.delete(cacheKey)
-    return null
-  }
-
-  console.log(`[MySportsFeeds Stats] Cache HIT for ${cacheKey} (age: ${(age / 1000).toFixed(1)}s)`)
-  return cached.data
-}
-
-function setCachedTeamForm(cacheKey: string, data: TeamFormData): void {
-  teamFormCache.set(cacheKey, {
-    data,
-    timestamp: Date.now()
-  })
-  console.log(`[MySportsFeeds Stats] Cached team form for ${cacheKey}`)
-}
 
 /**
  * Calculate possessions using simplified formula
@@ -115,9 +90,9 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
   // Resolve team abbreviation
   const teamAbbrev = getTeamAbbrev(teamInput)
 
-  // Check cache first
+  // Check Supabase cache first (persists across serverless cold starts)
   const cacheKey = `${teamAbbrev}:${n}`
-  const cached = getCachedTeamForm(cacheKey)
+  const cached = await getSupabaseCachedTeamForm(cacheKey)
   if (cached) {
     return cached
   }
@@ -282,7 +257,8 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
     }
 
     // Cache the result before returning
-    setCachedTeamForm(cacheKey, formData)
+    // Cache in Supabase (persists across serverless cold starts)
+    await setSupabaseCachedTeamForm(cacheKey, formData)
 
     return formData
   } catch (error) {

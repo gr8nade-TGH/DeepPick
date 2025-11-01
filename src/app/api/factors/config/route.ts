@@ -12,6 +12,7 @@ import { getSupabase } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 // ============================================================================
 // SCHEMAS
@@ -114,6 +115,12 @@ export async function GET(request: NextRequest) {
         success: true,
         profile,
         registry: registryObject
+      }, {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
       })
     }
 
@@ -154,6 +161,12 @@ export async function GET(request: NextRequest) {
       success: true,
       profile,
       registry: registryObject
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
     })
   } catch (error) {
     console.error('[Factors:Config:GET] Error:', error)
