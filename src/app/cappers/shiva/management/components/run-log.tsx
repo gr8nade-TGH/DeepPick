@@ -190,17 +190,52 @@ export function RunLogTable() {
   }
 
   // Format factor contribution with OVER/UNDER indicator (3 decimal places for precision)
-  // Now uses overScore/underScore from parsed_values_json instead of net contribution
+  // Uses WEIGHTED contributions (overScore/underScore multiplied by weight)
   // Returns JSX with colored OVER/UNDER text
   const formatFactorContribution = (factor: any): JSX.Element => {
     if (!factor) return <span>—</span>
 
-    const parsedValues = factor.parsed_values_json || {}
+    // First try to get weighted contributions (new format from run logs)
+    const weightedContributions = factor.weighted_contributions
 
-    // Safely parse scores with fallback to 0
-    // Use Number() to handle string numbers and ensure valid number
-    const overScore = Number(parsedValues.overScore) || 0
-    const underScore = Number(parsedValues.underScore) || 0
+    if (weightedContributions) {
+      const overScore = Number(weightedContributions.overScore) || 0
+      const underScore = Number(weightedContributions.underScore) || 0
+
+      // Validate that we have valid numbers
+      if (isNaN(overScore) || isNaN(underScore)) {
+        console.warn('[RunLog] Invalid weighted scores:', { factor: factor.factor_key, overScore, underScore, weightedContributions })
+        return <span className="text-red-400">ERR</span>
+      }
+
+      // Determine which score is higher
+      if (overScore > underScore) {
+        return (
+          <span>
+            +{overScore.toFixed(2)} <span className="text-blue-400">OVER</span>
+          </span>
+        )
+      } else if (underScore > overScore) {
+        return (
+          <span>
+            +{underScore.toFixed(2)} <span className="text-orange-400">UNDER</span>
+          </span>
+        )
+      } else {
+        return <span>0 NEUTRAL</span>
+      }
+    }
+
+    // Fallback to old format (raw scores from parsed_values_json)
+    // This is for backward compatibility with old run logs
+    const parsedValues = factor.parsed_values_json || {}
+    const rawOverScore = Number(parsedValues.overScore) || 0
+    const rawUnderScore = Number(parsedValues.underScore) || 0
+    const weight = Number(factor.weight_decimal || factor.weight || 0)
+
+    // Calculate weighted scores manually if we have the weight
+    const overScore = rawOverScore * weight
+    const underScore = rawUnderScore * weight
 
     // Validate that we have valid numbers
     if (isNaN(overScore) || isNaN(underScore)) {
@@ -541,9 +576,22 @@ export function RunLogTable() {
                       </td>
                       {factorKeys.map(key => {
                         const factor = getFactor(run, key)
-                        const parsedValues = factor?.parsed_values_json || {}
-                        const overScore = parsedValues.overScore || 0
-                        const underScore = parsedValues.underScore || 0
+
+                        // Get weighted scores for highlighting
+                        let overScore = 0
+                        let underScore = 0
+
+                        if (factor?.weighted_contributions) {
+                          overScore = factor.weighted_contributions.overScore || 0
+                          underScore = factor.weighted_contributions.underScore || 0
+                        } else if (factor?.parsed_values_json) {
+                          // Fallback: calculate weighted scores manually
+                          const parsedValues = factor.parsed_values_json
+                          const weight = factor.weight_decimal || factor.weight || 0
+                          overScore = (parsedValues.overScore || 0) * weight
+                          underScore = (parsedValues.underScore || 0) * weight
+                        }
+
                         const maxScore = Math.max(overScore, underScore)
                         const isSignificant = maxScore > 0.1
 
