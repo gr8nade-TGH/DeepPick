@@ -226,16 +226,17 @@ export function RunLogTable() {
       }
 
       // Determine which score is higher
+      // Use 3 decimal places to match confidence precision
       if (overScore > underScore) {
         return (
           <span>
-            +{overScore.toFixed(2)} <span className="text-blue-400">OVER</span>
+            +{overScore.toFixed(3)} <span className="text-blue-400">OVER</span>
           </span>
         )
       } else if (underScore > overScore) {
         return (
           <span>
-            +{underScore.toFixed(2)} <span className="text-orange-400">UNDER</span>
+            +{underScore.toFixed(3)} <span className="text-orange-400">UNDER</span>
           </span>
         )
       } else {
@@ -289,16 +290,17 @@ export function RunLogTable() {
     }
 
     // Determine which score is higher
+    // Use 3 decimal places to match confidence precision
     if (overScore > underScore) {
       return (
         <span>
-          +{overScore.toFixed(2)} <span className="text-blue-400">OVER</span>
+          +{overScore.toFixed(3)} <span className="text-blue-400">OVER</span>
         </span>
       )
     } else if (underScore > overScore) {
       return (
         <span>
-          +{underScore.toFixed(2)} <span className="text-orange-400">UNDER</span>
+          +{underScore.toFixed(3)} <span className="text-orange-400">UNDER</span>
         </span>
       )
     } else {
