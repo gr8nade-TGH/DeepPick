@@ -159,12 +159,10 @@ export async function executeWizardPipeline(input: WizardOrchestratorInput): Pro
     console.log('[WizardOrchestrator] Step 7: Pick finalized')
 
     // Build result
-    // CRITICAL: Add weight_applied field to all factors for database storage
-    // The factors from step3 have weight_total_pct, but we need weight_applied as decimal
-    const factorsWithWeights = [...(steps.step3.factors || []), steps.step5.edgeVsMarketFactor].map(factor => ({
-      ...factor,
-      weight_applied: (factor.weight_total_pct || 0) / 100 // Convert percentage to decimal
-    }))
+    // CRITICAL: Use factorContributions from Step 5 confidence calculation
+    // This includes weighted scores (overScore, underScore) for run log display
+    // The confidence calculator already computed these with proper weights applied
+    const factorContributions = steps.step5.confidenceResult?.factorContributions || []
 
     const result: WizardOrchestratorResult = {
       success: true,
@@ -178,7 +176,7 @@ export async function executeWizardPipeline(input: WizardOrchestratorInput): Pro
         lockedOdds: steps.step2.snapshot
       } : undefined,
       log: {
-        factors: factorsWithWeights, // Use factors with weight_applied field
+        factors: factorContributions, // Use factor contributions with weighted scores
         finalPrediction: {
           total: predictedTotal,
           home: steps.step4.predictions?.scores?.home || 0,
