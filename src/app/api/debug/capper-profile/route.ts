@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getSupabaseAdmin } from '@/lib/supabase-admin'
+import { getSupabaseAdmin } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -7,7 +7,7 @@ export const revalidate = 0
 export async function GET() {
   try {
     const supabase = getSupabaseAdmin()
-    
+
     // Query for SHIVA profile
     const { data: profileData, error: profileError } = await supabase
       .from('capper_profiles')
