@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { capper_type } from '@/lib/database.types'
+import { PickInsightModal } from '@/components/dashboard/pick-insight-modal'
 
 interface GameInboxProps {
   capper: capper_type
@@ -44,9 +45,9 @@ export function GameInbox({ capper, betType, onGameSelect, selectedGameId, selec
           limit: 10
         }),
       })
-      
+
       const data = await response.json()
-      
+
       if (data.success && data.selected_game) {
         // If a game was selected, wrap it in an array
         setAvailableGames([data.selected_game])
@@ -77,7 +78,7 @@ export function GameInbox({ capper, betType, onGameSelect, selectedGameId, selec
           {loading ? '⏳' : '🔄'} Refresh
         </button>
       </div>
-      
+
       <div className="h-48 overflow-y-auto border border-gray-600 rounded">
         {loading ? (
           <div className="p-4 text-center text-gray-400">Loading games...</div>
@@ -93,11 +94,10 @@ export function GameInbox({ capper, betType, onGameSelect, selectedGameId, selec
               <div
                 key={game.game_id}
                 onClick={() => onGameSelect?.(game)}
-                className={`p-2 rounded cursor-pointer transition-colors ${
-                  selectedGameId === game.game_id
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-700 hover:bg-gray-600 text-gray-200'
-                }`}
+                className={`p-2 rounded cursor-pointer transition-colors ${selectedGameId === game.game_id
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-700 hover:bg-gray-600 text-gray-200'
+                  }`}
               >
                 <div className="text-xs font-semibold">
                   {game.away_team} @ {game.home_team}
@@ -113,7 +113,7 @@ export function GameInbox({ capper, betType, onGameSelect, selectedGameId, selec
           </div>
         )}
       </div>
-      
+
       <div className="mt-2 text-xs text-gray-400">
         Showing {availableGames.length} available games for {capper} {betType} picks
       </div>
@@ -125,8 +125,8 @@ export function GeneratedPicksInbox({ capper }: { capper: capper_type }) {
   const [generatedPicks, setGeneratedPicks] = useState<GeneratedPick[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [showInsightCard, setShowInsightCard] = useState<boolean>(false)
-  const [selectedPickInsight, setSelectedPickInsight] = useState<any>(null)
+  const [showInsightModal, setShowInsightModal] = useState<boolean>(false)
+  const [selectedPickId, setSelectedPickId] = useState<string | null>(null)
 
   const fetchGeneratedPicks = async () => {
     setLoading(true)
@@ -138,9 +138,9 @@ export function GeneratedPicksInbox({ capper }: { capper: capper_type }) {
         const errorText = await response.text()
         throw new Error(`API Error ${response.status}: ${errorText}`)
       }
-      
+
       const data = await response.json()
-      
+
       if (data.success) {
         if (!data.picks || data.picks.length === 0) {
           setError(`No picks found for ${capper}. Try generating some picks first.`)
@@ -161,7 +161,7 @@ export function GeneratedPicksInbox({ capper }: { capper: capper_type }) {
           status: pick.status,
           insight_card_data: pick.insight_card_data
         }))
-        
+
         setGeneratedPicks(transformedPicks)
       } else {
         // Fallback to empty array if no picks found
@@ -177,59 +177,9 @@ export function GeneratedPicksInbox({ capper }: { capper: capper_type }) {
     }
   }
 
-  const handleInsightClick = async (pick: GeneratedPick) => {
-    try {
-      // Fetch insight card data for this pick
-      const response = await fetch(`/api/shiva/insight-card/${pick.id}`)
-      if (response.ok) {
-        const insightData = await response.json()
-        setSelectedPickInsight(insightData)
-        setShowInsightCard(true)
-      } else {
-        // Fallback: create mock insight data
-        const mockInsight = {
-          pick_id: pick.id,
-          game_id: pick.game_id,
-          matchup: `${pick.away_team} @ ${pick.home_team}`,
-          pick_type: pick.pick_type,
-          selection: pick.selection,
-          units: pick.units,
-          confidence: pick.confidence,
-          created_at: pick.created_at,
-          factors: [
-            { name: 'Edge vs Market', points: 2.5, rationale: 'Market edge analysis' },
-            { name: 'Pace Index', points: 1.8, rationale: 'Team pace differential' },
-            { name: 'Offensive Form', points: 1.2, rationale: 'Recent offensive performance' }
-          ],
-          prediction: `${pick.home_team} 115-${pick.away_team} 118 (Total: 233)`,
-          reasoning: `Model projects ${pick.selection} with ${pick.confidence}/5 confidence based on market edge and team factors.`
-        }
-        setSelectedPickInsight(mockInsight)
-        setShowInsightCard(true)
-      }
-    } catch (err) {
-      console.error('Failed to fetch insight card:', err)
-      // Still show mock data as fallback
-      const mockInsight = {
-        pick_id: pick.id,
-        game_id: pick.game_id,
-        matchup: `${pick.away_team} @ ${pick.home_team}`,
-        pick_type: pick.pick_type,
-        selection: pick.selection,
-        units: pick.units,
-        confidence: pick.confidence,
-        created_at: pick.created_at,
-        factors: [
-          { name: 'Edge vs Market', points: 2.5, rationale: 'Market edge analysis' },
-          { name: 'Pace Index', points: 1.8, rationale: 'Team pace differential' },
-          { name: 'Offensive Form', points: 1.2, rationale: 'Recent offensive performance' }
-        ],
-        prediction: `${pick.home_team} 115-${pick.away_team} 118 (Total: 233)`,
-        reasoning: `Model projects ${pick.selection} with ${pick.confidence}/5 confidence based on market edge and team factors.`
-      }
-      setSelectedPickInsight(mockInsight)
-      setShowInsightCard(true)
-    }
+  const handleInsightClick = (pick: GeneratedPick) => {
+    setSelectedPickId(pick.id)
+    setShowInsightModal(true)
   }
 
   useEffect(() => {
@@ -248,7 +198,7 @@ export function GeneratedPicksInbox({ capper }: { capper: capper_type }) {
           {loading ? '⏳' : '🔄'} Refresh
         </button>
       </div>
-      
+
       <div className="h-48 overflow-y-auto border border-gray-600 rounded">
         {loading ? (
           <div className="p-4 text-center text-gray-400">Loading picks...</div>
@@ -298,80 +248,20 @@ export function GeneratedPicksInbox({ capper }: { capper: capper_type }) {
           </div>
         )}
       </div>
-      
+
       <div className="mt-2 text-xs text-gray-400">
         {generatedPicks.length} picks generated by {capper}
       </div>
 
-      {/* Insight Card Modal */}
-      {showInsightCard && selectedPickInsight && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto relative">
-            {/* Close Button */}
-            <button
-              onClick={() => setShowInsightCard(false)}
-              className="absolute top-4 right-4 bg-gray-800 text-white px-3 py-1 rounded font-bold hover:bg-gray-700 z-10"
-            >
-              ✕ Close
-            </button>
-            
-            {/* Insight Card Content */}
-            <div className="p-6 mt-8">
-              <div className="mb-4">
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                  {selectedPickInsight.matchup}
-                </h2>
-                <div className="text-sm text-gray-600">
-                  Pick ID: {selectedPickInsight.pick_id} • Game ID: {selectedPickInsight.game_id}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Pick Details */}
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h3 className="font-bold text-lg mb-3">Pick Details</h3>
-                  <div className="space-y-2">
-                    <div><strong>Selection:</strong> {selectedPickInsight.selection}</div>
-                    <div><strong>Units:</strong> {selectedPickInsight.units}u</div>
-                    <div><strong>Confidence:</strong> {selectedPickInsight.confidence}/5</div>
-                    <div><strong>Type:</strong> {selectedPickInsight.pick_type}</div>
-                    <div><strong>Created:</strong> {new Date(selectedPickInsight.created_at).toLocaleString()}</div>
-                  </div>
-                </div>
-
-                {/* Factors */}
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h3 className="font-bold text-lg mb-3">Edge Factors</h3>
-                  <div className="space-y-2">
-                    {selectedPickInsight.factors?.map((factor: any, index: number) => (
-                      <div key={index} className="flex justify-between items-center">
-                        <span className="text-sm">{factor.name}</span>
-                        <span className="text-sm font-semibold text-blue-600">+{factor.points}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Prediction & Reasoning */}
-              <div className="mt-6 space-y-4">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <h3 className="font-bold text-lg mb-2">Game Prediction</h3>
-                  <div className="text-lg font-semibold text-blue-800">
-                    {selectedPickInsight.prediction}
-                  </div>
-                </div>
-
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <h3 className="font-bold text-lg mb-2">Reasoning</h3>
-                  <div className="text-gray-700">
-                    {selectedPickInsight.reasoning}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* Insight Modal - Using PickInsightModal */}
+      {showInsightModal && selectedPickId && (
+        <PickInsightModal
+          pickId={selectedPickId}
+          onClose={() => {
+            setShowInsightModal(false)
+            setSelectedPickId(null)
+          }}
+        />
       )}
     </div>
   )
@@ -380,9 +270,9 @@ export function GeneratedPicksInbox({ capper }: { capper: capper_type }) {
 export function GameAndPicksInbox({ capper, betType, onGameSelect, selectedGameId, selectedGame }: GameInboxProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <GameInbox 
-        capper={capper} 
-        betType={betType} 
+      <GameInbox
+        capper={capper}
+        betType={betType}
         onGameSelect={onGameSelect}
         selectedGameId={selectedGameId}
         selectedGame={selectedGame}
