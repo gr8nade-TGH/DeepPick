@@ -301,46 +301,21 @@ async function computeFactors(
   // NO FALLBACK WEIGHTS - must be configured in UI (except Edge vs Market which is always 100%)
   let factorWeights: Record<string, number> = {}
 
-  // DEBUG: Log the query parameters
-  console.log('[WizardOrchestrator] Querying capper_profiles with:', {
-    capper_id: 'shiva',
-    sport,
-    bet_type: betType,
-    is_active: true,
-    is_default: true
-  })
-
+  // Query for SHIVA profile (uppercase, removed is_active filter since all profiles are inactive)
   const { data: profileData, error: profileError } = await supabase
     .from('capper_profiles')
     .select('*')
-    .eq('capper_id', 'shiva')
+    .eq('capper_id', 'SHIVA')
     .eq('sport', sport)
     .eq('bet_type', betType)
-    .eq('is_active', true)
     .eq('is_default', true)
     .limit(1)
     .maybeSingle()
 
-  // DEBUG: Log the query result
-  console.log('[WizardOrchestrator] Profile query result:', {
-    error: profileError,
-    data: profileData,
-    hasFactors: !!profileData?.factors
-  })
-
   if (profileError || !profileData?.factors) {
-    // DEBUG: Try to find ANY profiles to help diagnose
-    const { data: allProfiles } = await supabase
-      .from('capper_profiles')
-      .select('capper_id, sport, bet_type, is_active, is_default')
-      .limit(10)
-
-    console.error('[WizardOrchestrator] Profile not found! All profiles in DB:', allProfiles)
-
     throw new Error(
       `[WizardOrchestrator] Factor weights not configured! Please configure factor weights in the SHIVA Management UI. ` +
-      `Error: ${profileError?.message || 'No factors found in capper_profiles table'}. ` +
-      `Query params: capper_id=shiva, sport=${sport}, bet_type=${betType}, is_active=true, is_default=true`
+      `Error: ${profileError?.message || 'No factors found in capper_profiles table'}`
     )
   }
 
