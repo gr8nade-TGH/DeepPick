@@ -108,9 +108,9 @@ export function RunLogTable() {
     fetchRunLog()
     fetchCooldowns()
 
-    // Refresh every 30 seconds to see new runs
-    const runInterval = setInterval(fetchRunLog, 30000)
-    const cooldownInterval = setInterval(fetchCooldowns, 30000)
+    // Refresh every 60 seconds to see new runs (cron runs every 6 minutes)
+    const runInterval = setInterval(fetchRunLog, 60000)
+    const cooldownInterval = setInterval(fetchCooldowns, 60000)
     return () => {
       clearInterval(runInterval)
       clearInterval(cooldownInterval)
