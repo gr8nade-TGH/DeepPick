@@ -47,6 +47,9 @@ export class PickGenerationService {
 
   /**
    * Record the result of a pick generation run
+   *
+   * IMPORTANT: PICK_GENERATED results get PERMANENT cooldowns (year 2099)
+   * PASS results get temporary cooldowns (default 2 hours)
    */
   async recordPickGenerationResult(
     result: PickGenerationResult,
@@ -69,9 +72,12 @@ export class PickGenerationService {
       }
 
       // Calculate cooldown_until
-      const cooldownUntil = new Date()
-      cooldownUntil.setHours(cooldownUntil.getHours() + cooldownHours)
-      
+      // PICK_GENERATED = permanent cooldown (year 2099) - game can never be picked again for this bet type
+      // PASS = temporary cooldown (2 hours) - game can be reconsidered later
+      const cooldownUntil = result.result === 'PICK_GENERATED'
+        ? new Date('2099-12-31T23:59:59Z')
+        : new Date(Date.now() + cooldownHours * 60 * 60 * 1000)
+
       // Normalize bet_type to lowercase for consistency
       const betTypeNormalized = result.betType.toLowerCase()
 
@@ -144,9 +150,9 @@ export class PickGenerationService {
       return { success: true }
     } catch (error) {
       console.error('[PickGenerationService] Error in recordPickGenerationResult:', error)
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
       }
     }
   }
@@ -177,9 +183,9 @@ export class PickGenerationService {
       return { games: data || [] }
     } catch (error) {
       console.error('[PickGenerationService] Error in getAvailableGames:', error)
-      return { 
-        games: [], 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        games: [],
+        error: error instanceof Error ? error.message : 'Unknown error'
       }
     }
   }
@@ -210,9 +216,9 @@ export class PickGenerationService {
       return { cooldown: data || null }
     } catch (error) {
       console.error('[PickGenerationService] Error in getCooldownStatus:', error)
-      return { 
-        cooldown: null, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        cooldown: null,
+        error: error instanceof Error ? error.message : 'Unknown error'
       }
     }
   }
@@ -238,13 +244,13 @@ export class PickGenerationService {
 
       const deletedCount = data?.length || 0
       console.log(`[PickGenerationService] Cleaned up ${deletedCount} expired cooldown records`)
-      
+
       return { deleted: deletedCount }
     } catch (error) {
       console.error('[PickGenerationService] Error in cleanupExpiredCooldowns:', error)
-      return { 
-        deleted: 0, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        deleted: 0,
+        error: error instanceof Error ? error.message : 'Unknown error'
       }
     }
   }

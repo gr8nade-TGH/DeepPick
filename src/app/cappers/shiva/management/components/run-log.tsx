@@ -601,8 +601,13 @@ export function RunLogTable() {
               </thead>
               <tbody>
                 {cooldowns.map((cd, idx) => {
+                  // Check if this is a permanent cooldown (PICK_GENERATED with far future date)
+                  const cooldownDate = new Date(cd.cooldown_until)
+                  const isPermanent = cd.result === 'PICK_GENERATED' || cooldownDate.getFullYear() >= 2099
+
                   // Only calculate isExpired after component is mounted to avoid hydration mismatch
-                  const isExpired = isMounted ? new Date(cd.cooldown_until).getTime() <= now : false
+                  const isExpired = isMounted && !isPermanent ? cooldownDate.getTime() <= now : false
+
                   return (
                     <tr key={idx} className={`border-b border-gray-800 hover:bg-gray-800 ${isExpired ? 'opacity-50' : ''}`}>
                       <td className="py-2 px-3 text-gray-300 text-xs">{cd.matchup || cd.game_id?.substring(0, 12)}</td>
@@ -613,14 +618,23 @@ export function RunLogTable() {
                         {isMounted && isExpired && <span className="ml-2 text-xs text-gray-500">(EXPIRED)</span>}
                       </td>
                       <td className="py-2 px-3 text-gray-300">{cd.units || 0}</td>
-                      <td className="py-2 px-3 font-mono text-orange-400">
-                        {!isMounted ? 'Loading...' : isExpired ? 'EXPIRED' : formatCountdown(cd.cooldown_until)}
+                      <td className="py-2 px-3 font-mono">
+                        {!isMounted ? (
+                          <span className="text-gray-400">Loading...</span>
+                        ) : isPermanent ? (
+                          <span className="text-purple-400 font-bold">🔒 PERMANENT</span>
+                        ) : isExpired ? (
+                          <span className="text-gray-500">EXPIRED</span>
+                        ) : (
+                          <span className="text-orange-400">{formatCountdown(cd.cooldown_until)}</span>
+                        )}
                       </td>
                       <td className="py-2 px-3 text-center">
                         <button
                           onClick={() => handleClearCooldown(cd.id)}
                           disabled={clearingCooldown === cd.id}
                           className="px-3 py-1 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white text-xs rounded"
+                          title={isPermanent ? 'Clear permanent cooldown (game will become eligible again)' : 'Clear temporary cooldown'}
                         >
                           {clearingCooldown === cd.id ? 'Clearing...' : 'Clear'}
                         </button>

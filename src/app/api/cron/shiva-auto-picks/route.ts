@@ -4,17 +4,22 @@ import { getSupabaseAdmin } from '@/lib/supabase/server'
 /**
  * SHIVA AUTO-PICKS CRON
  *
- * Runs every 10 minutes to automatically generate SHIVA picks
+ * Runs every 6 minutes to automatically generate SHIVA picks
  * Uses the same logic as the manual pick generation wizard
  *
  * Cooldown Logic:
  * - Step 1 Scanner checks if game is eligible (no existing picks, not in cooldown)
- * - If PASS (units=0): Records 2-hour cooldown
- * - If PICK_GENERATED (units>0): Records no cooldown (game has pick)
+ * - If PASS (units=0): Records 2-hour temporary cooldown (game can be reconsidered later)
+ * - If PICK_GENERATED (units>0): Records PERMANENT cooldown (game can NEVER be picked again for this bet type)
  * - Next run skips games with existing picks or in cooldown
  *
+ * Permanent Cooldown Rationale:
+ * - Once a pick is generated for a game/bet_type, we should never generate another pick
+ * - This prevents duplicate picks and ensures one pick per game per bet type
+ * - Cooldown is set to year 2099 to make it effectively permanent
+ *
  * One-Game-Per-Run Policy:
- * - Each 10-minute cycle attempts ONLY ONE game
+ * - Each 6-minute cycle attempts ONLY ONE game
  * - No retry logic - if the game results in PASS, wait for next cycle
  * - This ensures controlled, predictable pick generation
  */

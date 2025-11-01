@@ -230,8 +230,10 @@ export async function POST(request: Request) {
 
     console.log(`💾 [SHIVA:GeneratePick] Pick saved to database: ${savedPick.id}`)
 
-    // Create cooldown for PICK_GENERATED decision
-    const cooldownUntil = new Date(Date.now() + 2 * 60 * 60 * 1000) // 2 hours
+    // Create PERMANENT cooldown for PICK_GENERATED decision
+    // Once a pick is generated for a game, we should NEVER generate another pick for that game/bet_type
+    // Set cooldown to year 2099 to make it effectively permanent
+    const cooldownUntil = new Date('2099-12-31T23:59:59Z')
     const { error: cooldownError } = await supabase
       .from('pick_generation_cooldowns')
       .insert({
@@ -249,7 +251,7 @@ export async function POST(request: Request) {
     if (cooldownError) {
       console.error('[SHIVA:GeneratePick] Error creating PICK_GENERATED cooldown:', cooldownError)
     } else {
-      console.log(`[SHIVA:GeneratePick] ✅ PICK_GENERATED cooldown created until ${cooldownUntil.toISOString()}`)
+      console.log(`[SHIVA:GeneratePick] ✅ PERMANENT cooldown created for PICK_GENERATED (until ${cooldownUntil.toISOString()})`)
     }
 
     return NextResponse.json({
