@@ -195,23 +195,6 @@ export function RunLogTable() {
   const formatFactorContribution = (factor: any): JSX.Element => {
     if (!factor) return <span>—</span>
 
-    // Debug: Log the factor structure for the first run
-    if (runs.length > 0 && runs[0].factor_contributions && runs[0].factor_contributions.length > 0) {
-      const firstFactor = runs[0].factor_contributions[0]
-      if (firstFactor && firstFactor.key === factor.key) {
-        console.log('[RunLog] Factor structure:', {
-          key: factor.key,
-          factor,
-          hasWeightedContributions: !!factor.weighted_contributions,
-          hasParsedValues: !!factor.parsed_values_json,
-          hasWeight: !!factor.weight,
-          hasWeightDecimal: !!factor.weight_decimal,
-          hasWeightTotalPct: !!factor.weight_total_pct,
-          hasWeightPercentage: !!factor.weight_percentage
-        })
-      }
-    }
-
     // First try to get weighted contributions (new format from debug export)
     const weightedContributions = factor.weighted_contributions
 
