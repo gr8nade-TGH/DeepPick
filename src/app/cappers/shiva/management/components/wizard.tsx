@@ -1610,6 +1610,14 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
               const step1Game = stepLogsRef.current[1]?.json?.selected_game || stepLogs[1]?.json?.selected_game
               const factorContributions = step4Results?.confidence?.factor_contributions || []
 
+              console.log('[Wizard:Step5] 🔍 CRITICAL DEBUG - Factor Contributions Extraction:', {
+                hasStep4Results: !!step4Results,
+                hasConfidence: !!step4Results?.confidence,
+                hasFactorContributions: !!step4Results?.confidence?.factor_contributions,
+                factorContributionsLength: factorContributions.length,
+                factorContributionsArray: JSON.stringify(factorContributions, null, 2)
+              })
+
               // Add edgeVsMarket to factor_contributions for visibility (even though it's an adjustment, not a base factor)
               const step5Results = stepLogsRef.current[5]?.json || stepLogs[5]?.json
               if (step5Results?.edge_factor !== undefined) {
@@ -1633,14 +1641,17 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
               // Get predicted scores from Step 4 results
               const step4Logs = stepLogsRef.current[4]?.json || stepLogs[4]?.json
 
-              console.log('[Wizard:Step5] PICK - Data extraction:', {
+              console.log('[Wizard:Step5] 🔍 CRITICAL DEBUG - Data extraction:', {
                 baselineAvg,
                 marketTotalFromStep2,
                 predictedTotal,
+                predictedHomeScore: step4Logs?.predictions?.scores?.home,
+                predictedAwayScore: step4Logs?.predictions?.scores?.away,
                 step3HasBaseline: !!step3Results?.baseline,
                 step2HasSnapshot: !!step2Results?.snapshot,
                 step2TotalLine: step2Results?.snapshot?.total?.line,
-                step4PredictedScores: step4Logs?.predictions?.scores
+                step4PredictedScores: step4Logs?.predictions?.scores,
+                factorContributionsCount: factorContributions.length
               })
 
               // Generate a pick ID for the picks_row
@@ -1686,10 +1697,22 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                   }
                 }
               }
-              console.log('[Wizard:Step5] Saving PICK to pick/generate controller...')
-              console.log('[Wizard:Step5] PICK body:', JSON.stringify(savePickBody, null, 2))
+
+              console.log('[Wizard:Step5] 🚀 CRITICAL DEBUG - Saving PICK to pick/generate controller...')
+              console.log('[Wizard:Step5] 🚀 CRITICAL DEBUG - total_data being sent:', {
+                factor_contributions_count: savePickBody.inputs.total_data.factor_contributions?.length || 0,
+                factor_contributions_sample: savePickBody.inputs.total_data.factor_contributions?.[0],
+                predicted_total: savePickBody.inputs.total_data.predicted_total,
+                predicted_home_score: savePickBody.inputs.total_data.predicted_home_score,
+                predicted_away_score: savePickBody.inputs.total_data.predicted_away_score,
+                baseline_avg: savePickBody.inputs.total_data.baseline_avg,
+                market_total_line: savePickBody.inputs.total_data.market_total_line
+              })
+              console.log('[Wizard:Step5] 🚀 FULL PICK BODY:', JSON.stringify(savePickBody, null, 2))
+
               const saveResponse = await postJson('/api/shiva/pick/generate', savePickBody, `ui-demo-save-pick-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`)
-              console.log('[Wizard:Step5] PICK save response:', JSON.stringify(saveResponse, null, 2))
+
+              console.log('[Wizard:Step5] 📥 CRITICAL DEBUG - PICK save response:', JSON.stringify(saveResponse, null, 2))
               if (saveResponse?.json?.error) {
                 console.error('[Wizard:Step5] PICK save ERROR:', saveResponse.json.error)
               }
@@ -1750,8 +1773,21 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
 
           // Update the run record with bold predictions
           if (r?.json?.bold_predictions) {
-            console.log('[Wizard:Step6] Updating run with bold predictions...')
+            console.log('[Wizard:Step6] 🔄 CRITICAL DEBUG - Updating run with bold predictions...')
             try {
+              const step4FactorContributions = (stepLogsRef.current[4]?.json || stepLogs[4]?.json)?.confidence?.factor_contributions || []
+
+              console.log('[Wizard:Step6] 🔍 CRITICAL DEBUG - Step 6 data extraction:', {
+                hasStep4Results: !!step4Results,
+                hasStep4FactorContributions: step4FactorContributions.length > 0,
+                step4FactorContributionsCount: step4FactorContributions.length,
+                predictedTotal: step4Results?.predictions?.total_pred_points,
+                predictedHomeScore: step4Results?.predictions?.scores?.home,
+                predictedAwayScore: step4Results?.predictions?.scores?.away,
+                baselineAvg: (stepLogsRef.current[3]?.json || stepLogs[3]?.json)?.baseline?.matchupBaseline,
+                hasBoldPredictions: !!r.json.bold_predictions
+              })
+
               const updateBody = {
                 run_id: runId,
                 inputs: {
@@ -1760,7 +1796,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                   total_data: {
                     total_pred: step4Results?.predictions?.total_pred_points || 0,
                     market_total: (stepLogsRef.current[2]?.json || stepLogs[2]?.json)?.snapshot?.total?.line || 0,
-                    factor_contributions: (stepLogsRef.current[4]?.json || stepLogs[4]?.json)?.confidence?.factor_contributions || [],
+                    factor_contributions: step4FactorContributions,
                     predicted_total: step4Results?.predictions?.total_pred_points || 0,
                     baseline_avg: (stepLogsRef.current[3]?.json || stepLogs[3]?.json)?.baseline?.matchupBaseline || 220,
                     market_total_line: (stepLogsRef.current[2]?.json || stepLogs[2]?.json)?.snapshot?.total?.line || 0,
@@ -1783,8 +1819,16 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                 }
               }
 
+              console.log('[Wizard:Step6] 🚀 CRITICAL DEBUG - Update body total_data:', {
+                factor_contributions_count: updateBody.inputs.total_data.factor_contributions?.length || 0,
+                predicted_total: updateBody.inputs.total_data.predicted_total,
+                predicted_home_score: updateBody.inputs.total_data.predicted_home_score,
+                predicted_away_score: updateBody.inputs.total_data.predicted_away_score,
+                has_bold_predictions: !!updateBody.inputs.total_data.bold_predictions
+              })
+
               const updateResponse = await postJson('/api/shiva/pick/generate', updateBody, `ui-demo-update-bold-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`)
-              console.log('[Wizard:Step6] Bold predictions update response:', updateResponse)
+              console.log('[Wizard:Step6] 📥 CRITICAL DEBUG - Bold predictions update response:', updateResponse)
             } catch (updateError) {
               console.error('[Wizard:Step6] Error updating run with bold predictions:', updateError)
             }

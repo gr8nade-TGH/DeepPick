@@ -147,6 +147,22 @@ export async function POST(request: Request) {
                 hasBoldPredictions: !!boldPredictions
               })
 
+              // Build metadata object for backwards compatibility (run log uses this)
+              const metadata = {
+                capper: 'shiva',
+                pick_type: results.decision.pick_type,
+                selection: `${results.decision.pick_side} ${results.decision.line}`,
+                units: 0,
+                confidence: parse.data.inputs.conf_final,
+                factor_contributions: factorContributions,
+                predicted_total: predictedTotal,
+                baseline_avg: baselineAvg,
+                market_total: marketTotal,
+                predicted_home_score: predictedHomeScore,
+                predicted_away_score: predictedAwayScore,
+                bold_predictions: boldPredictions
+              }
+
               const { data, error } = await admin
                 .from('runs')
                 .upsert({
@@ -159,6 +175,7 @@ export async function POST(request: Request) {
                   confidence: parse.data.inputs.conf_final,
                   pick_type: results.decision.pick_type,
                   selection: `${results.decision.pick_side} ${results.decision.line}`,
+                  // NEW format (separate columns)
                   factor_contributions: factorContributions,
                   predicted_total: predictedTotal,
                   baseline_avg: baselineAvg,
@@ -166,6 +183,8 @@ export async function POST(request: Request) {
                   predicted_home_score: predictedHomeScore,
                   predicted_away_score: predictedAwayScore,
                   bold_predictions: boldPredictions,
+                  // OLD format (metadata JSONB) - for backwards compatibility with run log
+                  metadata: metadata,
                   created_at: now,
                   updated_at: now
                 }, { onConflict: 'id' })
@@ -234,9 +253,16 @@ export async function POST(request: Request) {
         const predictedAwayScore = totalData?.predicted_away_score || null
         const boldPredictions = totalData?.bold_predictions || null
 
-        console.log('[SHIVA:PickGenerate] Extracted data for runs table:', {
+        console.log('[SHIVA:PickGenerate] 🔍 CRITICAL DEBUG - Received request body:', {
+          run_id,
+          has_total_data: !!totalData,
+          total_data_keys: totalData ? Object.keys(totalData) : []
+        })
+
+        console.log('[SHIVA:PickGenerate] 🔍 CRITICAL DEBUG - Extracted data for runs table:', {
           hasFactorContributions: !!factorContributions,
           factorContributionsCount: factorContributions?.length || 0,
+          factorContributionsSample: factorContributions?.[0],
           predictedTotal,
           baselineAvg,
           marketTotal,
@@ -245,6 +271,8 @@ export async function POST(request: Request) {
           hasBoldPredictions: !!boldPredictions,
           totalDataKeys: totalData ? Object.keys(totalData) : []
         })
+
+        console.log('[SHIVA:PickGenerate] 🔍 FULL factor_contributions array:', JSON.stringify(factorContributions, null, 2))
 
         // Get game_id from snapshot for the run record
         const gameId = activeSnapshot?.game_id
@@ -268,26 +296,61 @@ export async function POST(request: Request) {
             hasBoldPredictions: !!boldPredictions
           })
 
+          // First, fetch the existing run to get current metadata
+          const { data: existingRun } = await admin
+            .from('runs')
+            .select('metadata')
+            .eq('run_id', run_id)
+            .single()
+
+          // Merge new data into existing metadata
+          const updatedMetadata = {
+            ...(existingRun?.metadata || {}),
+            factor_contributions: factorContributions,
+            predicted_total: predictedTotal,
+            baseline_avg: baselineAvg,
+            market_total: marketTotal,
+            predicted_home_score: predictedHomeScore,
+            predicted_away_score: predictedAwayScore,
+            bold_predictions: boldPredictions
+          }
+
+          const updateData = {
+            // NEW format (separate columns)
+            factor_contributions: factorContributions,
+            predicted_total: predictedTotal,
+            baseline_avg: baselineAvg,
+            market_total: marketTotal,
+            predicted_home_score: predictedHomeScore,
+            predicted_away_score: predictedAwayScore,
+            bold_predictions: boldPredictions,
+            // OLD format (metadata JSONB) - for backwards compatibility with run log
+            metadata: updatedMetadata,
+            updated_at: now
+          }
+
+          console.log('[SHIVA:PickGenerate] 🔄 CRITICAL DEBUG - UPDATE data being sent to database:', {
+            factor_contributions_count: factorContributions?.length || 0,
+            predicted_total: predictedTotal,
+            predicted_home_score: predictedHomeScore,
+            predicted_away_score: predictedAwayScore,
+            baseline_avg: baselineAvg,
+            market_total: marketTotal,
+            has_bold_predictions: !!boldPredictions
+          })
+
           // UPDATE the existing run with new data (e.g., bold predictions)
           const updateRun = await admin
             .from('runs')
-            .update({
-              factor_contributions: factorContributions,
-              predicted_total: predictedTotal,
-              baseline_avg: baselineAvg,
-              market_total: marketTotal,
-              predicted_home_score: predictedHomeScore,
-              predicted_away_score: predictedAwayScore,
-              bold_predictions: boldPredictions,
-              updated_at: now
-            })
+            .update(updateData)
             .eq('run_id', run_id)
 
           if (updateRun.error) {
-            console.error('[SHIVA:PickGenerate] ERROR updating runs table:', updateRun.error.message)
+            console.error('[SHIVA:PickGenerate] ❌ ERROR updating runs table:', updateRun.error.message)
+            console.error('[SHIVA:PickGenerate] ❌ Full error:', JSON.stringify(updateRun.error, null, 2))
             throw new Error(updateRun.error.message)
           }
-          console.log('[SHIVA:PickGenerate] ✓ Successfully updated runs table with new data')
+          console.log('[SHIVA:PickGenerate] ✅ Successfully updated runs table with new data')
         } else {
           // Check if ANY run exists for this game (for logging purposes only)
           const anyExistingRun = await admin
@@ -317,34 +380,69 @@ export async function POST(request: Request) {
 
           // Create new run with current run_id
           console.log('[SHIVA:PickGenerate] Creating new run with id:', run_id)
+
+          // Build metadata object for backwards compatibility (run log uses this)
+          const metadata = {
+            capper: 'shiva',
+            pick_type: results.decision.pick_type,
+            selection: r.selection,
+            units: r.units,
+            confidence: r.confidence,
+            factor_contributions: factorContributions,
+            predicted_total: predictedTotal,
+            baseline_avg: baselineAvg,
+            market_total: marketTotal,
+            predicted_home_score: predictedHomeScore,
+            predicted_away_score: predictedAwayScore,
+            bold_predictions: boldPredictions
+          }
+
+          const insertData = {
+            id: run_id,
+            run_id: run_id,
+            game_id: gameId,
+            capper: 'shiva',
+            bet_type: results.decision.pick_type,
+            units: r.units,
+            confidence: r.confidence,
+            pick_type: results.decision.pick_type,
+            selection: r.selection,
+            // NEW format (separate columns)
+            factor_contributions: factorContributions,
+            predicted_total: predictedTotal,
+            baseline_avg: baselineAvg,
+            market_total: marketTotal,
+            predicted_home_score: predictedHomeScore,
+            predicted_away_score: predictedAwayScore,
+            bold_predictions: boldPredictions,
+            // OLD format (metadata JSONB) - for backwards compatibility with run log
+            metadata: metadata,
+            created_at: now,
+            updated_at: now
+          }
+
+          console.log('[SHIVA:PickGenerate] 💾 CRITICAL DEBUG - INSERT data being sent to database:', {
+            run_id,
+            game_id: gameId,
+            factor_contributions_count: factorContributions?.length || 0,
+            predicted_total: predictedTotal,
+            predicted_home_score: predictedHomeScore,
+            predicted_away_score: predictedAwayScore,
+            baseline_avg: baselineAvg,
+            market_total: marketTotal,
+            has_bold_predictions: !!boldPredictions
+          })
+
           const insertRun = await admin
             .from('runs')
-            .insert({
-              id: run_id,
-              run_id: run_id,
-              game_id: gameId,
-              capper: 'shiva',
-              bet_type: results.decision.pick_type,
-              units: r.units,
-              confidence: r.confidence,
-              pick_type: results.decision.pick_type,
-              selection: r.selection,
-              factor_contributions: factorContributions,
-              predicted_total: predictedTotal,
-              baseline_avg: baselineAvg,
-              market_total: marketTotal,
-              predicted_home_score: predictedHomeScore,
-              predicted_away_score: predictedAwayScore,
-              bold_predictions: boldPredictions,
-              created_at: now,
-              updated_at: now
-            })
+            .insert(insertData)
 
           if (insertRun.error) {
-            console.error('[SHIVA:PickGenerate] ERROR inserting into runs table:', insertRun.error.message)
+            console.error('[SHIVA:PickGenerate] ❌ ERROR inserting into runs table:', insertRun.error.message)
+            console.error('[SHIVA:PickGenerate] ❌ Full error:', JSON.stringify(insertRun.error, null, 2))
             throw new Error(insertRun.error.message)
           }
-          console.log('[SHIVA:PickGenerate] ✓ Successfully inserted into runs table')
+          console.log('[SHIVA:PickGenerate] ✅ Successfully inserted into runs table')
         }
 
         console.log('[SHIVA:PickGenerate] Upserted runs table with factor data:', {
