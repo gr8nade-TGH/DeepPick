@@ -9,6 +9,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'rec
 import { TrendingUp, Activity, Lightbulb, AlertTriangle, Zap, BarChart, Rocket, MessageCircle, CheckCircle, XCircle, PlayCircle, Clock, BarChart3, Archive, Brain, X, Target, TrendingDown, Trophy } from 'lucide-react'
 import { NavBar } from '@/components/navigation/nav-bar'
 import Link from 'next/link'
+import { PickInsightModal } from '@/components/dashboard/pick-insight-modal'
 
 interface PredictionLog {
   timestamp: string
@@ -288,8 +289,8 @@ export function RealDashboard() {
                   onClick={() => setSelectedCapper(capper.id)}
                   variant={selectedCapper === capper.id ? 'default' : 'outline'}
                   className={`${selectedCapper === capper.id
-                      ? `bg-gradient-to-r ${capper.color} text-white font-bold`
-                      : 'border-gray-600 text-gray-300 hover:bg-gray-700'
+                    ? `bg-gradient-to-r ${capper.color} text-white font-bold`
+                    : 'border-gray-600 text-gray-300 hover:bg-gray-700'
                     }`}
                 >
                   {capper.name}
@@ -740,8 +741,16 @@ export function RealDashboard() {
         </div>
       </section>
 
-      {/* Pick Breakdown Modal */}
+      {/* Pick Insight Modal - Using SHIVA Insight Card */}
       {showBreakdown && selectedPick && (
+        <PickInsightModal
+          pickId={selectedPick.id}
+          onClose={() => setShowBreakdown(false)}
+        />
+      )}
+
+      {/* OLD Pick Breakdown Modal - REPLACED WITH INSIGHT CARD ABOVE */}
+      {false && showBreakdown && selectedPick && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border-2 border-purple-500/50 rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             {/* Header */}
@@ -905,14 +914,14 @@ export function RealDashboard() {
                         <div
                           key={idx}
                           className={`p-3 rounded-lg border ${step.impact === 'positive' ? 'bg-green-500/5 border-green-500/30' :
-                              step.impact === 'negative' ? 'bg-red-500/5 border-red-500/30' :
-                                'bg-gray-500/5 border-gray-500/30'
+                            step.impact === 'negative' ? 'bg-red-500/5 border-red-500/30' :
+                              'bg-gray-500/5 border-gray-500/30'
                             }`}
                         >
                           <div className="flex items-start gap-2">
                             <span className={`text-xs font-bold px-2 py-1 rounded ${step.impact === 'positive' ? 'bg-green-500/20 text-green-400' :
-                                step.impact === 'negative' ? 'bg-red-500/20 text-red-400' :
-                                  'bg-gray-500/20 text-gray-400'
+                              step.impact === 'negative' ? 'bg-red-500/20 text-red-400' :
+                                'bg-gray-500/20 text-gray-400'
                               }`}>
                               {step.step}
                             </span>
@@ -925,8 +934,8 @@ export function RealDashboard() {
                                 </p>
                               )}
                               <p className={`text-sm mt-1 font-medium ${step.impact === 'positive' ? 'text-green-400' :
-                                  step.impact === 'negative' ? 'text-red-400' :
-                                    'text-gray-300'
+                                step.impact === 'negative' ? 'text-red-400' :
+                                  'text-gray-300'
                                 }`}>
                                 → {step.result}
                               </p>
