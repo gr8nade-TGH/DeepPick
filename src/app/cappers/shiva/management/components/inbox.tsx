@@ -34,7 +34,7 @@ export function SHIVAManagementInbox({ onGameSelect, selectedGame }: SHIVAManage
     try {
       const response = await fetch('/api/sync/mysportsfeeds-games', { method: 'POST' })
       const data = await response.json()
-      
+
       if (data.success) {
         console.log(`[Game Inbox] Synced ${data.gamesSynced} games`)
         console.log(`[Game Inbox] Full sync response:`, data)
@@ -65,10 +65,10 @@ export function SHIVAManagementInbox({ onGameSelect, selectedGame }: SHIVAManage
       if (response.ok) {
         const data = await response.json()
         const allGames = data.games || []
-        
+
         // Deduplicate games by team matchup (home vs away)
         const deduplicatedGames = deduplicateGamesByMatchup(allGames)
-        
+
         console.log(`[Game Inbox] Fetched ${allGames.length} games, deduplicated to ${deduplicatedGames.length}`)
         setGames(deduplicatedGames)
       } else {
@@ -89,13 +89,13 @@ export function SHIVAManagementInbox({ onGameSelect, selectedGame }: SHIVAManage
   const deduplicateGamesByMatchup = (games: GameInboxItem[]) => {
     const matchupMap = new Map<string, GameInboxItem>()
     const duplicatesRemoved: string[] = []
-    
+
     games.forEach(game => {
       // Create a unique key based on team names (case-insensitive)
       const homeTeam = game.home.toLowerCase().trim()
       const awayTeam = game.away.toLowerCase().trim()
       const matchupKey = `${awayTeam}@${homeTeam}`
-      
+
       // If we haven't seen this matchup, or if this game is earlier, keep it
       if (!matchupMap.has(matchupKey)) {
         matchupMap.set(matchupKey, game)
@@ -103,7 +103,7 @@ export function SHIVAManagementInbox({ onGameSelect, selectedGame }: SHIVAManage
         const existingGame = matchupMap.get(matchupKey)!
         const currentGameTime = new Date(game.start_time_utc).getTime()
         const existingGameTime = new Date(existingGame.start_time_utc).getTime()
-        
+
         // Keep the earlier game
         if (currentGameTime < existingGameTime) {
           duplicatesRemoved.push(`Removed duplicate: ${game.away} @ ${game.home} (${existingGame.start_time_utc})`)
@@ -113,23 +113,23 @@ export function SHIVAManagementInbox({ onGameSelect, selectedGame }: SHIVAManage
         }
       }
     })
-    
+
     if (duplicatesRemoved.length > 0) {
       console.log('[Game Inbox] Deduplication results:', duplicatesRemoved)
     }
-    
+
     // Convert back to array and sort by start time
-    return Array.from(matchupMap.values()).sort((a, b) => 
+    return Array.from(matchupMap.values()).sort((a, b) =>
       new Date(a.start_time_utc).getTime() - new Date(b.start_time_utc).getTime()
     )
   }
 
   const formatLocalTime = (utcTime: string) => {
     try {
-      return new Date(utcTime).toLocaleTimeString('en-US', { 
-        hour: 'numeric', 
+      return new Date(utcTime).toLocaleTimeString('en-US', {
+        hour: 'numeric',
         minute: '2-digit',
-        hour12: true 
+        hour12: true
       })
     } catch {
       return 'TBD'
@@ -148,6 +148,9 @@ export function SHIVAManagementInbox({ onGameSelect, selectedGame }: SHIVAManage
 
   return (
     <div className="space-y-4">
+      {/* Generated Picks Inbox - MOVED TO TOP FOR VISIBILITY */}
+      <GeneratedPicksInbox capper="shiva" />
+
       {/* Game Inbox with fixed height and scroll */}
       <div>
         <div className="mb-3 flex items-center justify-between">
@@ -172,14 +175,14 @@ export function SHIVAManagementInbox({ onGameSelect, selectedGame }: SHIVAManage
             </button>
           </div>
         </div>
-        
+
         {/* Deduplication Info */}
         {games.length > 0 && (
           <div className="mb-2 text-xs text-gray-400">
             Showing {games.length} unique matchups (duplicates removed)
           </div>
         )}
-        
+
         {/* Fixed height container with scroll */}
         <div className="h-64 overflow-y-auto border border-gray-600 rounded bg-gray-800">
           {loading ? (
@@ -192,13 +195,12 @@ export function SHIVAManagementInbox({ onGameSelect, selectedGame }: SHIVAManage
                 const statusChip = getStatusChip(game.status)
                 const isSelected = selectedGame?.game_id === game.game_id
                 return (
-                  <li 
-                    key={game.game_id} 
-                    className={`py-3 px-3 cursor-pointer transition-colors ${
-                      isSelected 
-                        ? 'bg-blue-600 text-white' 
-                        : 'hover:bg-gray-700'
-                    }`}
+                  <li
+                    key={game.game_id}
+                    className={`py-3 px-3 cursor-pointer transition-colors ${isSelected
+                      ? 'bg-blue-600 text-white'
+                      : 'hover:bg-gray-700'
+                      }`}
                     onClick={() => {
                       console.log('Game selected:', game)
                       onGameSelect?.(game)
@@ -235,9 +237,6 @@ export function SHIVAManagementInbox({ onGameSelect, selectedGame }: SHIVAManage
           )}
         </div>
       </div>
-
-      {/* Generated Picks Inbox */}
-      <GeneratedPicksInbox capper="shiva" />
     </div>
   )
 }

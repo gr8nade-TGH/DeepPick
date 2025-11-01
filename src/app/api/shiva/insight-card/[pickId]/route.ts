@@ -36,6 +36,7 @@ export async function GET(
     }
 
     console.log('[InsightCard API] Pick found:', pick.id)
+    console.log('[InsightCard API] Pick.run_id:', pick.run_id)
 
     // Fetch the run data separately using run_id
     const { data: run, error: runError } = await supabase
@@ -49,15 +50,84 @@ export async function GET(
     }
 
     console.log('[InsightCard API] Run data:', run ? 'found' : 'not found')
+    if (run) {
+      console.log('[InsightCard API] Run columns:', {
+        has_factor_contributions: !!run.factor_contributions,
+        factor_contributions_length: Array.isArray(run.factor_contributions) ? run.factor_contributions.length : 'not array',
+        has_predicted_total: !!run.predicted_total,
+        predicted_total: run.predicted_total,
+        has_baseline_avg: !!run.baseline_avg,
+        baseline_avg: run.baseline_avg,
+        has_market_total: !!run.market_total,
+        market_total: run.market_total,
+        has_metadata: !!run.metadata,
+        metadata_keys: run.metadata ? Object.keys(run.metadata) : []
+      })
+    }
 
     const game = pick.games || {}
 
-    // The runs table has separate columns, not a metadata JSONB
-    // Extract data from run columns
-    const factorContributions = run?.factor_contributions || []
-    const predictedTotal = run?.predicted_total || 0
-    const baselineAvg = run?.baseline_avg || 220
-    const marketTotal = run?.market_total || 0
+    // The runs table can have data in TWO formats:
+    // 1. NEW format: separate columns (factor_contributions, predicted_total, baseline_avg, market_total)
+    // 2. OLD format: metadata JSONB column with steps.step3, steps.step4, etc.
+
+    let factorContributions = []
+    let predictedTotal = 0
+    let baselineAvg = 220
+    let marketTotal = 0
+
+    // Try NEW format first (separate columns)
+    if (run?.factor_contributions && Array.isArray(run.factor_contributions) && run.factor_contributions.length > 0) {
+      console.log('[InsightCard API] Using NEW format (separate columns)')
+      factorContributions = run.factor_contributions
+      predictedTotal = run.predicted_total || 0
+      baselineAvg = run.baseline_avg || 220
+      marketTotal = run.market_total || 0
+    }
+    // Fall back to OLD format (metadata.steps)
+    else if (run?.metadata?.steps) {
+      console.log('[InsightCard API] Using OLD format (metadata.steps)')
+      const steps = run.metadata.steps
+
+      // Extract factor contributions from step3 or step5
+      if (steps.step5?.confidenceResult?.factorContributions) {
+        factorContributions = steps.step5.confidenceResult.factorContributions
+      } else if (steps.step3?.factorContributions) {
+        factorContributions = steps.step3.factorContributions
+      }
+
+      // Extract predicted total from step4
+      if (steps.step4?.predictions?.total) {
+        predictedTotal = steps.step4.predictions.total
+      }
+
+      // Extract baseline from step2
+      if (steps.step2?.baseline?.total) {
+        baselineAvg = steps.step2.baseline.total
+      }
+
+      // Extract market total from metadata or game snapshot
+      if (run.metadata.market_total) {
+        marketTotal = run.metadata.market_total
+      } else if (pick.game_snapshot?.total_line) {
+        marketTotal = pick.game_snapshot.total_line
+      }
+    }
+    // Last resort: try to extract from pick.game_snapshot
+    else {
+      console.log('[InsightCard API] No run data found, using pick.game_snapshot fallback')
+      if (pick.game_snapshot?.total_line) {
+        marketTotal = pick.game_snapshot.total_line
+      }
+    }
+
+    console.log('[InsightCard API] Extracted data:', {
+      format: run?.factor_contributions ? 'NEW (columns)' : run?.metadata?.steps ? 'OLD (metadata)' : 'FALLBACK',
+      factorContributions: factorContributions.length,
+      predictedTotal,
+      baselineAvg,
+      marketTotal
+    })
 
     // Assemble insight card data from runs table columns
     const insightCardData = assembleInsightCardFromRun({

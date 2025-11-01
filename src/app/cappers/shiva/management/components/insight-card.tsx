@@ -33,7 +33,7 @@ export interface InsightCardProps {
     } | null
     locked_at?: string | null
   }
-  predictedScore: { 
+  predictedScore: {
     away: number
     home: number
     winner: string
@@ -139,8 +139,8 @@ export function InsightCard(props: InsightCardProps) {
 
   const formatLocalDate = (isoString: string) => {
     try {
-      return new Date(isoString).toLocaleDateString('en-US', { 
-        month: 'short', 
+      return new Date(isoString).toLocaleDateString('en-US', {
+        month: 'short',
         day: 'numeric',
         year: 'numeric'
       })
@@ -151,10 +151,10 @@ export function InsightCard(props: InsightCardProps) {
 
   const formatLocalTime = (isoString: string) => {
     try {
-      return new Date(isoString).toLocaleTimeString('en-US', { 
-        hour: 'numeric', 
+      return new Date(isoString).toLocaleTimeString('en-US', {
+        hour: 'numeric',
         minute: '2-digit',
-        hour12: true 
+        hour12: true
       })
     } catch {
       return 'Unknown Time'
@@ -208,7 +208,7 @@ export function InsightCard(props: InsightCardProps) {
         <div className="p-8 bg-gradient-to-r from-green-900 via-emerald-800 to-green-900 border-4 border-green-400 border-b border-slate-600 shadow-2xl relative overflow-hidden">
           {/* Animated background effect */}
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse"></div>
-          
+
           <div className="text-center relative z-10">
             <div className="text-5xl font-black text-white mb-4 drop-shadow-2xl tracking-wide">
               {safePick.units} {safePick.units === 1 ? 'UNIT' : 'UNITS'} on {safePick.selection}
@@ -233,7 +233,7 @@ export function InsightCard(props: InsightCardProps) {
                 <p className="text-white text-sm leading-relaxed">{props.writeups.prediction}</p>
               </div>
             )}
-            
+
             {props.writeups.gamePrediction && (
               <div className="bg-slate-700 rounded-lg p-3">
                 <div className="text-xs font-semibold text-slate-300 uppercase mb-2">GAME PREDICTION (SCORE AND VICTOR)</div>
@@ -249,7 +249,7 @@ export function InsightCard(props: InsightCardProps) {
                 </div>
               </div>
             )}
-            
+
             {props.bold_predictions && props.bold_predictions.predictions && props.bold_predictions.predictions.length > 0 ? (
               <div className="bg-amber-900 border border-amber-700 rounded-lg p-3">
                 <div className="text-xs font-semibold text-amber-300 uppercase mb-2">AI BOLD PREDICTIONS</div>
@@ -316,7 +316,7 @@ export function InsightCard(props: InsightCardProps) {
               </div>
             )}
           </div>
-          
+
           {/* Header Row - Over/Under Direction */}
           <div className="grid grid-cols-[50px_1fr_1fr] gap-3 mb-3 text-xs font-semibold text-slate-400">
             <div className="text-center">FACTOR ICONS</div>
@@ -333,14 +333,14 @@ export function InsightCard(props: InsightCardProps) {
               const icon = factorMeta?.icon || 'ℹ️'
               const shortName = factorMeta?.shortName || factor.label || factor.key
               const tooltip = factorMeta?.description || factor.rationale || 'Factor'
-              
+
               // Calculate Over/Under direction from factor scores
               // For NBA Totals: overScore = points toward OVER, underScore = points toward UNDER
               const netContribution = (factor.overScore || 0) - (factor.underScore || 0)
               const isOver = factor.overScore > 0
               const isUnder = factor.underScore > 0
               const isNeutral = Math.abs(netContribution) < 0.01
-              
+
               return (
                 <div
                   key={factor.key}
@@ -373,7 +373,7 @@ export function InsightCard(props: InsightCardProps) {
                     <div className="w-20 h-1.5 bg-slate-600 rounded-full overflow-hidden">
                       <div
                         className={`h-full ${isOver ? 'bg-green-500' : isUnder ? 'bg-red-500' : 'bg-slate-500'}`}
-                        style={{ 
+                        style={{
                           width: `${Math.min(Math.abs(netContribution) / 2 * 100, 100)}%`,
                           marginLeft: isOver ? '0%' : isUnder ? `${100 - Math.min(Math.abs(netContribution) / 2 * 100, 100)}%` : '50%'
                         }}
@@ -389,7 +389,7 @@ export function InsightCard(props: InsightCardProps) {
               )
             })}
           </div>
-      </div>
+        </div>
 
         {/* Market Summary Strip */}
         <div className="p-4 bg-slate-800 border-b border-slate-700">
@@ -417,7 +417,7 @@ export function InsightCard(props: InsightCardProps) {
               </div>
             </div>
           </div>
-          
+
           {/* Market Influence Mini-Bar (±30% scale) */}
           <div className="mt-3">
             <div className="text-xs text-slate-400 text-center mb-2">
@@ -426,7 +426,7 @@ export function InsightCard(props: InsightCardProps) {
             <div className="relative h-2 bg-slate-600 rounded-full overflow-hidden">
               {/* Center line */}
               <div className="absolute left-1/2 top-0 bottom-0 w-px bg-slate-500" />
-              
+
               {/* Market adjustment bar */}
               <div
                 className={`absolute top-0 bottom-0 ${safeMarket.confAdj > 0 ? 'bg-green-500' : 'bg-red-500'}`}
@@ -447,17 +447,17 @@ export function InsightCard(props: InsightCardProps) {
         {/* Confidence Score Footer */}
         <div className="p-4 bg-slate-800 border-b border-slate-700">
           <div className="text-center">
-            <div className="text-sm text-slate-300 mb-2">Edge Score = {safeMarket.confFinal.toFixed(1)} / 5.0</div>
+            <div className="text-sm text-slate-300 mb-2">Edge Score = {Math.min(safeMarket.confFinal, 10).toFixed(1)} / 10.0</div>
             <div className="relative h-3 bg-slate-600 rounded-full overflow-hidden mx-auto max-w-xs">
               <div
                 className="h-full bg-gradient-to-r from-red-500 via-yellow-500 to-green-500"
-                style={{ width: `${Math.min((safeMarket.confFinal / 5) * 100, 100)}%` }}
+                style={{ width: `${Math.min((safeMarket.confFinal / 10) * 100, 100)}%` }}
               />
             </div>
             <div className="text-xs text-slate-400 mt-2">
-              {safeMarket.confFinal >= 4 ? '🔥 HIGH EDGE' : 
-               safeMarket.confFinal >= 3 ? '⚡ MODERATE EDGE' : 
-               safeMarket.confFinal >= 2 ? '⚠️ LOW EDGE' : '❌ VERY LOW EDGE'}
+              {safeMarket.confFinal >= 8 ? '🔥 HIGH EDGE' :
+                safeMarket.confFinal >= 6 ? '⚡ MODERATE EDGE' :
+                  safeMarket.confFinal >= 4 ? '⚠️ LOW EDGE' : '❌ VERY LOW EDGE'}
             </div>
           </div>
         </div>
@@ -502,29 +502,26 @@ export function InsightCard(props: InsightCardProps) {
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-medium text-white">{finding.team}</span>
                       <span className="text-xs text-slate-300">{finding.player}</span>
-                      <span className={`text-xs px-2 py-1 rounded ${
-                        finding.status === 'out' ? 'bg-red-600 text-white' :
-                        finding.status === 'doubtful' ? 'bg-orange-600 text-white' :
-                        finding.status === 'questionable' ? 'bg-yellow-600 text-black' :
-                        'bg-green-600 text-white'
-                      }`}>
+                      <span className={`text-xs px-2 py-1 rounded ${finding.status === 'out' ? 'bg-red-600 text-white' :
+                          finding.status === 'doubtful' ? 'bg-orange-600 text-white' :
+                            finding.status === 'questionable' ? 'bg-yellow-600 text-black' :
+                              'bg-green-600 text-white'
+                        }`}>
                         {finding.status.toUpperCase()}
                       </span>
                     </div>
-                    <span className={`text-xs font-bold ${
-                      finding.impact > 0 ? 'text-red-400' : 
-                      finding.impact < 0 ? 'text-green-400' : 'text-slate-400'
-                    }`}>
+                    <span className={`text-xs font-bold ${finding.impact > 0 ? 'text-red-400' :
+                        finding.impact < 0 ? 'text-green-400' : 'text-slate-400'
+                      }`}>
                       {finding.impact > 0 ? '+' : ''}{finding.impact.toFixed(1)}
                     </span>
                   </div>
                 ))}
               </div>
               <div className="mt-3 text-xs text-slate-400">
-                Total Impact: <span className={`font-bold ${
-                  props.injury_summary.total_impact > 0 ? 'text-red-400' : 
-                  props.injury_summary.total_impact < 0 ? 'text-green-400' : 'text-slate-400'
-                }`}>
+                Total Impact: <span className={`font-bold ${props.injury_summary.total_impact > 0 ? 'text-red-400' :
+                    props.injury_summary.total_impact < 0 ? 'text-green-400' : 'text-slate-400'
+                  }`}>
                   {props.injury_summary.total_impact > 0 ? '+' : ''}{props.injury_summary.total_impact.toFixed(1)} points
                 </span>
               </div>
@@ -537,14 +534,13 @@ export function InsightCard(props: InsightCardProps) {
           <div className="text-center">
             <div className="text-sm font-semibold text-white mb-3">RESULTS</div>
             {props.results ? (
-              <div className={`p-3 rounded-lg border ${
-                props.results.status === 'win' ? 'bg-green-900 border-green-700' :
-                props.results.status === 'loss' ? 'bg-red-900 border-red-700' :
-                'bg-yellow-900 border-yellow-700'
-              }`}>
+              <div className={`p-3 rounded-lg border ${props.results.status === 'win' ? 'bg-green-900 border-green-700' :
+                  props.results.status === 'loss' ? 'bg-red-900 border-red-700' :
+                    'bg-yellow-900 border-yellow-700'
+                }`}>
                 <div className="text-lg font-bold text-white mb-2">
-                  {props.results.status === 'win' ? '✅ WIN' : 
-                   props.results.status === 'loss' ? '❌ LOSS' : '🤝 PUSH'}
+                  {props.results.status === 'win' ? '✅ WIN' :
+                    props.results.status === 'loss' ? '❌ LOSS' : '🤝 PUSH'}
                 </div>
                 {props.results.finalScore && (
                   <div className="text-sm text-white mb-2">
