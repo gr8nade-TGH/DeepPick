@@ -63,19 +63,20 @@ export async function GET(request: NextRequest) {
     const capperId = searchParams.get('capperId')
     const sport = searchParams.get('sport')
     const betType = searchParams.get('betType')
-    
+
     const parse = GetConfigSchema.safeParse({ capperId, sport, betType })
-    
+
     if (!parse.success) {
       return NextResponse.json(
         { error: 'Invalid parameters', details: parse.error.issues },
         { status: 400 }
       )
     }
-    
+
     const { capperId: capper, sport: spt, betType: bt } = parse.data
-    
+
     // Try to fetch from database first
+    // CRITICAL: Query by is_default: true to match pick generation logic
     const supabase = getSupabase()
     const { data: savedProfile, error } = await supabase
       .from('capper_profiles')
@@ -83,16 +84,17 @@ export async function GET(request: NextRequest) {
       .eq('capper_id', capper)
       .eq('sport', spt)
       .eq('bet_type', bt)
-      .eq('is_active', true)
-      .single()
-    
+      .eq('is_default', true)
+      .limit(1)
+      .maybeSingle()
+
     if (error || !savedProfile) {
       // Fallback to default profile if no saved profile found
       console.log('[Factors:Config:GET] No saved profile found, using default')
       const profile = getDefaultProfile(capper, spt, bt)
       // Use the proper getFactorsByContext function
       const applicableFactors = getFactorsByContext(spt as any, bt as any);
-      
+
       console.log('[Factors:Config:GET] Fallback debug info:', {
         capper: capper,
         sport: spt,
@@ -101,20 +103,20 @@ export async function GET(request: NextRequest) {
         applicableFactors: applicableFactors.length,
         factorKeys: applicableFactors.map(f => f.key)
       });
-      
+
       // Convert array to object for frontend compatibility
       const registryObject = applicableFactors.reduce((acc, factor) => {
         acc[factor.key] = factor
         return acc
       }, {} as Record<string, any>)
-      
+
       return NextResponse.json({
         success: true,
         profile,
         registry: registryObject
       })
     }
-    
+
     // Convert database profile to expected format
     const profile = {
       id: savedProfile.id,
@@ -129,10 +131,10 @@ export async function GET(request: NextRequest) {
       createdAt: savedProfile.created_at,
       updatedAt: savedProfile.updated_at
     }
-    
+
     // Use the proper getFactorsByContext function
     const applicableFactors = getFactorsByContext(spt as any, bt as any);
-    
+
     console.log('[Factors:Config:GET] Debug info:', {
       capper: capper,
       sport: spt,
@@ -141,13 +143,13 @@ export async function GET(request: NextRequest) {
       applicableFactors: applicableFactors.length,
       factorKeys: applicableFactors.map(f => f.key)
     });
-    
+
     // Convert array to object for frontend compatibility
     const registryObject = applicableFactors.reduce((acc, factor) => {
       acc[factor.key] = factor
       return acc
     }, {} as Record<string, any>)
-    
+
     return NextResponse.json({
       success: true,
       profile,
@@ -169,10 +171,10 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const startTime = Date.now()
   const requestId = Math.random().toString(36).substr(2, 9)
-  
+
   try {
     console.log(`[${requestId}] [Factors:Config:POST] Starting POST request`)
-    
+
     // Parse request body first
     const body = await request.json()
     console.log(`[${requestId}] [Factors:Config:POST] Request body parsed:`, {
@@ -181,20 +183,20 @@ export async function POST(request: NextRequest) {
       betType: body.betType,
       factorsCount: body.factors?.length || 0
     })
-    
+
     // Debug: Log factor details for validation issues
     if (body.factors) {
-      console.log(`[${requestId}] [Factors:Config:POST] Factor details:`, 
-        body.factors.map((f: any) => ({ 
-          key: f.key, 
-          enabled: f.enabled, 
+      console.log(`[${requestId}] [Factors:Config:POST] Factor details:`,
+        body.factors.map((f: any) => ({
+          key: f.key,
+          enabled: f.enabled,
           weight: f.weight,
           dataSource: f.dataSource,
           scope: f.scope
         }))
       )
     }
-    
+
     // Validate request body
     const parse = SaveConfigSchema.safeParse(body)
     if (!parse.success) {
@@ -206,21 +208,21 @@ export async function POST(request: NextRequest) {
         requestId
       }, { status: 400 })
     }
-    
+
     console.log(`[${requestId}] [Factors:Config:POST] Validation passed`)
-    
+
     // Test database connection
     console.log(`[${requestId}] [Factors:Config:POST] Testing database connection...`)
     const supabase = getSupabase()
     console.log(`[${requestId}] [Factors:Config:POST] Supabase client created`)
-    
+
     const { data: testData, error: testError } = await supabase
       .from('capper_profiles')
       .select('count')
       .limit(1)
-    
+
     console.log(`[${requestId}] [Factors:Config:POST] Database test result:`, { testData, testError })
-    
+
     if (testError) {
       console.error(`[${requestId}] [Factors:Config:POST] Database connection failed:`, testError)
       return NextResponse.json({
@@ -231,32 +233,32 @@ export async function POST(request: NextRequest) {
         requestId
       }, { status: 500 })
     }
-    
+
     console.log(`[${requestId}] [Factors:Config:POST] Database connection successful`)
-    
+
     const { capperId, sport, betType, name, description, factors } = parse.data
     console.log(`[${requestId}] [Factors:Config:POST] Extracted data:`, { capperId, sport, betType, name, description, factorsCount: factors.length })
-    
+
     // Generate profile ID
     const profileId = `${capperId}-${sport}-${betType}-custom-${Date.now()}`.toLowerCase()
     console.log(`[${requestId}] [Factors:Config:POST] Generated profile ID:`, profileId)
-    
+
     // First, deactivate any existing active profile for this capper/sport/betType
     console.log(`[${requestId}] [Factors:Config:POST] Deactivating existing profiles...`)
     const { error: deactivateError } = await supabase
       .from('capper_profiles')
-      .update({ is_active: false })
+      .update({ is_active: false, is_default: false })
       .eq('capper_id', capperId)
       .eq('sport', sport)
       .eq('bet_type', betType)
       .eq('is_active', true)
-    
+
     if (deactivateError) {
       console.error(`[${requestId}] [Factors:Config:POST] Error deactivating existing profiles:`, deactivateError)
     } else {
       console.log(`[${requestId}] [Factors:Config:POST] Successfully deactivated existing profiles`)
     }
-    
+
     // Insert new profile
     console.log(`[${requestId}] [Factors:Config:POST] Inserting new profile...`)
     const insertData = {
@@ -268,24 +270,24 @@ export async function POST(request: NextRequest) {
       description,
       factors,
       is_active: true,
-      is_default: false
+      is_default: true  // CRITICAL: Set is_default to true so pick generation can find it
     }
     console.log(`[${requestId}] [Factors:Config:POST] Insert data:`, JSON.stringify(insertData, null, 2))
-    
+
     const { data: savedProfile, error } = await supabase
       .from('capper_profiles')
       .insert(insertData)
       .select()
       .single()
-    
+
     console.log(`[${requestId}] [Factors:Config:POST] Insert operation completed`)
-    
+
     if (error) {
       console.error(`[${requestId}] [Factors:Config:POST] Database error:`, error)
       console.error(`[${requestId}] [Factors:Config:POST] Error code:`, error.code)
       console.error(`[${requestId}] [Factors:Config:POST] Error details:`, error.details)
       console.error(`[${requestId}] [Factors:Config:POST] Error hint:`, error.hint)
-      
+
       return NextResponse.json({
         error: 'Failed to save configuration',
         details: error.message,
@@ -294,7 +296,7 @@ export async function POST(request: NextRequest) {
         requestId
       }, { status: 500 })
     }
-    
+
     // Convert database profile to expected format
     const profile = {
       id: savedProfile.id,
@@ -309,7 +311,7 @@ export async function POST(request: NextRequest) {
       createdAt: savedProfile.created_at,
       updatedAt: savedProfile.updated_at
     }
-    
+
     const duration = Date.now() - startTime
     console.log(`[${requestId}] [Factors:Config:POST] Success! Profile saved in ${duration}ms:`, {
       profileId,
@@ -318,7 +320,7 @@ export async function POST(request: NextRequest) {
       betType,
       factorCount: factors.length
     })
-    
+
     return NextResponse.json({
       success: true,
       profile,
@@ -326,12 +328,12 @@ export async function POST(request: NextRequest) {
       requestId,
       duration
     })
-    
+
   } catch (error) {
     const duration = Date.now() - startTime
     console.error(`[${requestId}] [Factors:Config:POST] Unexpected error after ${duration}ms:`, error)
     console.error(`[${requestId}] [Factors:Config:POST] Error stack:`, error instanceof Error ? error.stack : 'No stack trace')
-    
+
     return NextResponse.json({
       error: 'Internal server error',
       details: error instanceof Error ? error.message : 'Unknown error',
