@@ -3,12 +3,30 @@
  *
  * Replaces both The Odds API and NBA Stats API
  * Uses past 5 box scores to calculate advanced statistics
+ *
+ * RATE LIMITING:
+ * - Daily/Weekly Team Gamelogs require 5-second backoff between requests
+ * - Requests are queued and serialized to respect backoff delays
  */
 
 import { getNBASeason, getNBASeasonForDateString } from './season-utils'
 
 const MYSPORTSFEEDS_API_KEY = process.env.MYSPORTSFEEDS_API_KEY
-const MYSPORTSFEEDS_BASE_URL = 'https://api.mysportsfeeds.com/v2.0/pull/nba'
+const MYSPORTSFEEDS_BASE_URL = 'https://api.mysportsfeeds.com/v2.1/pull/nba'
+
+/**
+ * Request queue for team_gamelogs endpoint to enforce 5-second backoff
+ * Per MySportsFeeds API docs: Daily/Weekly Team Gamelogs require 5-second backoff
+ */
+let lastTeamGamelogsRequest = 0
+const TEAM_GAMELOGS_BACKOFF_MS = 5000 // 5 seconds
+
+/**
+ * Sleep utility for backoff delays
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
 
 /**
  * Get the base URL for a specific season
@@ -25,11 +43,11 @@ function getAuthHeader(): string | null {
     console.warn('[MySportsFeeds] MYSPORTSFEEDS_API_KEY environment variable not set')
     return null
   }
-  
+
   // v2.x uses "MYSPORTSFEEDS" as the password
   const credentials = `${MYSPORTSFEEDS_API_KEY}:MYSPORTSFEEDS`
   const encoded = Buffer.from(credentials).toString('base64')
-  
+
   return `Basic ${encoded}`
 }
 
@@ -47,7 +65,7 @@ async function fetchMySportsFeeds(endpoint: string, season?: string, maxRetries:
     url = endpoint
   } else if (endpoint.includes('/nba/')) {
     // Endpoint already has season in it
-    url = `https://api.mysportsfeeds.com/v2.0/pull/${endpoint}`
+    url = `https://api.mysportsfeeds.com/v2.1/pull/${endpoint}`
   } else {
     // Need to add season
     const seasonToUse = season || getNBASeason().season
@@ -163,7 +181,7 @@ async function fetchMySportsFeeds(endpoint: string, season?: string, maxRetries:
  */
 export async function testMySportsFeedsConnection(): Promise<void> {
   console.log('[MySportsFeeds] Testing connection...')
-  
+
   try {
     // Fetch current season schedule
     const data = await fetchMySportsFeeds('season_games/2024-25')
@@ -176,14 +194,16 @@ export async function testMySportsFeedsConnection(): Promise<void> {
 }
 
 /**
- * Fetch game scoreboard for a specific date
+ * Fetch daily games for a specific date
  * Format: YYYYMMDD (e.g., 20250128)
  * Automatically determines the correct season based on the date
+ *
+ * NOTE: v2.1 API uses 'games.json' endpoint, not 'scoreboard.json'
  */
 export async function fetchScoreboard(date: string): Promise<any> {
   const season = getNBASeasonForDateString(date).season
-  console.log(`[MySportsFeeds] Fetching scoreboard for ${date} (season: ${season})`)
-  return await fetchMySportsFeeds(`date/${date}/scoreboard.json`, season)
+  console.log(`[MySportsFeeds] Fetching daily games for ${date} (season: ${season})`)
+  return await fetchMySportsFeeds(`date/${date}/games.json`, season)
 }
 
 /**
@@ -233,12 +253,31 @@ export async function fetchTeamGameLogByDate(date: string, teamAbbrev: string): 
 
 /**
  * Fetch team game logs for last N games
+ *
+ * IMPORTANT: This endpoint requires a 5-second backoff between requests per MySportsFeeds API docs.
+ * Requests are automatically queued and delayed to respect this requirement.
+ *
  * @param teamAbbrev - Team abbreviation (e.g., "BOS", "LAL")
  * @param limit - Number of games to fetch (default: 10)
  */
 export async function fetchTeamGameLogs(teamAbbrev: string, limit: number = 10): Promise<any> {
   const season = getNBASeason().season
+
+  // Enforce 5-second backoff for team_gamelogs endpoint
+  const now = Date.now()
+  const timeSinceLastRequest = now - lastTeamGamelogsRequest
+
+  if (timeSinceLastRequest < TEAM_GAMELOGS_BACKOFF_MS) {
+    const waitTime = TEAM_GAMELOGS_BACKOFF_MS - timeSinceLastRequest
+    console.log(`[MySportsFeeds] Enforcing 5-second backoff for team_gamelogs - waiting ${waitTime}ms before fetching ${teamAbbrev}...`)
+    await sleep(waitTime)
+  }
+
   console.log(`[MySportsFeeds] Fetching last ${limit} games for ${teamAbbrev} (season: ${season})`)
+
+  // Update last request timestamp BEFORE making the request to prevent race conditions
+  lastTeamGamelogsRequest = Date.now()
+
   return await fetchMySportsFeeds(`team_gamelogs.json?team=${teamAbbrev}&limit=${limit}`, season)
 }
 
