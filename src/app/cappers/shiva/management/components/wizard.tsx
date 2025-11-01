@@ -1723,6 +1723,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
             inputs: {
               sport: props.sport || 'NBA',
               betType: props.betType || 'TOTAL',
+              ai_provider: 'perplexity',  // Use Perplexity for web search capability
               game_data: {
                 home_team: step1Results.selected_game?.home_team?.name || 'Home Team',
                 away_team: step1Results.selected_game?.away_team?.name || 'Away Team',
