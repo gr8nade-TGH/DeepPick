@@ -1760,9 +1760,9 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
                   total_data: {
                     total_pred: step4Results?.predictions?.total_pred_points || 0,
                     market_total: (stepLogsRef.current[2]?.json || stepLogs[2]?.json)?.snapshot?.total?.line || 0,
-                    factor_contributions: (stepLogsRef.current[4]?.json || stepLogs[4]?.json)?.factor_contributions || [],
+                    factor_contributions: (stepLogsRef.current[4]?.json || stepLogs[4]?.json)?.confidence?.factor_contributions || [],
                     predicted_total: step4Results?.predictions?.total_pred_points || 0,
-                    baseline_avg: (stepLogsRef.current[4]?.json || stepLogs[4]?.json)?.baseline_avg || 220,
+                    baseline_avg: (stepLogsRef.current[3]?.json || stepLogs[3]?.json)?.baseline?.matchupBaseline || 220,
                     market_total_line: (stepLogsRef.current[2]?.json || stepLogs[2]?.json)?.snapshot?.total?.line || 0,
                     predicted_home_score: step4Results?.predictions?.scores?.home || 0,
                     predicted_away_score: step4Results?.predictions?.scores?.away || 0,

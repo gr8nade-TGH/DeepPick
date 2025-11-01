@@ -130,6 +130,8 @@ export async function POST(request: Request) {
               const predictedTotal = totalData?.predicted_total || null
               const baselineAvg = totalData?.baseline_avg || null
               const marketTotal = totalData?.market_total_line || null
+              const predictedHomeScore = totalData?.predicted_home_score || null
+              const predictedAwayScore = totalData?.predicted_away_score || null
               const boldPredictions = totalData?.bold_predictions || null
 
               console.log('[SHIVA:PickGenerate] PASS - Attempting to upsert run:', {
@@ -140,6 +142,8 @@ export async function POST(request: Request) {
                 units: 0,
                 hasFactors: !!factorContributions,
                 predictedTotal,
+                predictedHomeScore,
+                predictedAwayScore,
                 hasBoldPredictions: !!boldPredictions
               })
 
@@ -159,6 +163,8 @@ export async function POST(request: Request) {
                   predicted_total: predictedTotal,
                   baseline_avg: baselineAvg,
                   market_total: marketTotal,
+                  predicted_home_score: predictedHomeScore,
+                  predicted_away_score: predictedAwayScore,
                   bold_predictions: boldPredictions,
                   created_at: now,
                   updated_at: now
@@ -256,11 +262,32 @@ export async function POST(request: Request) {
           .maybeSingle()
 
         if (existingRunWithSameId.data) {
-          console.log('[SHIVA:PickGenerate] ⚠️ Run with this exact run_id already exists - skipping insert:', {
+          console.log('[SHIVA:PickGenerate] ⚠️ Run with this exact run_id already exists - updating instead of inserting:', {
             run_id: existingRunWithSameId.data.run_id,
-            game_id: gameId
+            game_id: gameId,
+            hasBoldPredictions: !!boldPredictions
           })
-          // Don't insert again - the run already exists
+
+          // UPDATE the existing run with new data (e.g., bold predictions)
+          const updateRun = await admin
+            .from('runs')
+            .update({
+              factor_contributions: factorContributions,
+              predicted_total: predictedTotal,
+              baseline_avg: baselineAvg,
+              market_total: marketTotal,
+              predicted_home_score: predictedHomeScore,
+              predicted_away_score: predictedAwayScore,
+              bold_predictions: boldPredictions,
+              updated_at: now
+            })
+            .eq('run_id', run_id)
+
+          if (updateRun.error) {
+            console.error('[SHIVA:PickGenerate] ERROR updating runs table:', updateRun.error.message)
+            throw new Error(updateRun.error.message)
+          }
+          console.log('[SHIVA:PickGenerate] ✓ Successfully updated runs table with new data')
         } else {
           // Check if ANY run exists for this game (for logging purposes only)
           const anyExistingRun = await admin
