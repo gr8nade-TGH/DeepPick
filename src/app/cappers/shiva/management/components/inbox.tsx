@@ -212,10 +212,10 @@ export function SHIVAManagementInbox({ onGameSelect, selectedGame }: SHIVAManage
                           {game.away} @ {game.home}
                         </div>
                         <div className="text-xs text-gray-300 mt-1">
-                          ML {game.away.split(' ').pop()} {game.odds.ml_away !== 0 ? (game.odds.ml_away > 0 ? '+' : '') + game.odds.ml_away : '—'} • {game.home.split(' ').pop()} {game.odds.ml_home !== 0 ? (game.odds.ml_home > 0 ? '+' : '') + game.odds.ml_home : '—'}
+                          ML {game.away.split(' ').pop()} {game.odds?.ml_away !== 0 ? (game.odds?.ml_away > 0 ? '+' : '') + game.odds?.ml_away : '—'} • {game.home.split(' ').pop()} {game.odds?.ml_home !== 0 ? (game.odds?.ml_home > 0 ? '+' : '') + game.odds?.ml_home : '—'}
                         </div>
                         <div className="text-xs text-gray-300">
-                          Spread: {game.odds.spread_team.split(' ').pop()} {game.odds.spread_line !== 0 ? (game.odds.spread_line > 0 ? '+' : '') + game.odds.spread_line : '—'} • Total: {game.odds.total_line !== 0 ? game.odds.total_line : '—'}
+                          Spread: {game.odds?.spread_team?.split(' ').pop() || '—'} {game.odds?.spread_line !== 0 ? (game.odds?.spread_line > 0 ? '+' : '') + game.odds?.spread_line : '—'} • Total: {game.odds?.total_line !== 0 ? game.odds?.total_line : '—'}
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
                           Game ID: {game.game_id}
