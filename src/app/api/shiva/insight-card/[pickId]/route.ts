@@ -60,6 +60,12 @@ export async function GET(
         baseline_avg: run.baseline_avg,
         has_market_total: !!run.market_total,
         market_total: run.market_total,
+        has_predicted_home_score: !!run.predicted_home_score,
+        predicted_home_score: run.predicted_home_score,
+        has_predicted_away_score: !!run.predicted_away_score,
+        predicted_away_score: run.predicted_away_score,
+        has_bold_predictions: !!run.bold_predictions,
+        bold_predictions: run.bold_predictions,
         has_metadata: !!run.metadata,
         metadata_keys: run.metadata ? Object.keys(run.metadata) : []
       })
@@ -68,13 +74,16 @@ export async function GET(
     const game = pick.games || {}
 
     // The runs table can have data in TWO formats:
-    // 1. NEW format: separate columns (factor_contributions, predicted_total, baseline_avg, market_total)
+    // 1. NEW format: separate columns (factor_contributions, predicted_total, baseline_avg, market_total, predicted_home_score, predicted_away_score, bold_predictions)
     // 2. OLD format: metadata JSONB column with steps.step3, steps.step4, etc.
 
     let factorContributions = []
     let predictedTotal = 0
     let baselineAvg = 220
     let marketTotal = 0
+    let predictedHomeScore = 0
+    let predictedAwayScore = 0
+    let boldPredictions = null
 
     // Try NEW format first (separate columns)
     if (run?.factor_contributions && Array.isArray(run.factor_contributions) && run.factor_contributions.length > 0) {
@@ -83,6 +92,9 @@ export async function GET(
       predictedTotal = run.predicted_total || 0
       baselineAvg = run.baseline_avg || 220
       marketTotal = run.market_total || 0
+      predictedHomeScore = run.predicted_home_score || 0
+      predictedAwayScore = run.predicted_away_score || 0
+      boldPredictions = run.bold_predictions || null
     }
     // Fall back to OLD format (metadata.steps)
     else if (run?.metadata?.steps) {
@@ -126,7 +138,10 @@ export async function GET(
       factorContributions: factorContributions.length,
       predictedTotal,
       baselineAvg,
-      marketTotal
+      marketTotal,
+      predictedHomeScore,
+      predictedAwayScore,
+      hasBoldPredictions: !!boldPredictions
     })
 
     // Assemble insight card data from runs table columns
@@ -137,7 +152,10 @@ export async function GET(
       factorContributions,
       predictedTotal,
       baselineAvg,
-      marketTotal
+      marketTotal,
+      predictedHomeScore,
+      predictedAwayScore,
+      boldPredictions
     })
 
     console.log('[InsightCard API] Insight card assembled successfully')
@@ -157,7 +175,7 @@ export async function GET(
 }
 
 // Helper function to assemble insight card from runs table data
-function assembleInsightCardFromRun({ game, pick, run, factorContributions, predictedTotal, baselineAvg, marketTotal }: any) {
+function assembleInsightCardFromRun({ game, pick, run, factorContributions, predictedTotal, baselineAvg, marketTotal, predictedHomeScore, predictedAwayScore, boldPredictions }: any) {
   // Get confidence values from pick or run
   const confFinal = Number(pick.confidence ?? run?.confidence ?? 0)
 
@@ -228,16 +246,16 @@ function assembleInsightCardFromRun({ game, pick, run, factorContributions, pred
       locked_at: pick.created_at
     },
     predictedScore: {
-      away: run?.predicted_away_score || Math.floor((predictedTotal || 0) / 2),
-      home: run?.predicted_home_score || Math.ceil((predictedTotal || 0) / 2),
+      away: predictedAwayScore || Math.floor((predictedTotal || 0) / 2),
+      home: predictedHomeScore || Math.ceil((predictedTotal || 0) / 2),
       winner: 'TBD'
     },
     writeups: {
       prediction: `Model projects ${pick.selection} with ${confFinal.toFixed(1)}/10.0 confidence based on ${factors.length} factors.`,
       gamePrediction: `Predicted total: ${predictedTotal?.toFixed(1) || '0.0'} vs Market: ${marketTotal?.toFixed(1) || game.odds?.total_line || 'N/A'}`,
-      bold: null
+      bold: boldPredictions?.summary || null
     },
-    bold_predictions: null,
+    bold_predictions: boldPredictions,
     injury_summary: null,
     factors,
     market: {
