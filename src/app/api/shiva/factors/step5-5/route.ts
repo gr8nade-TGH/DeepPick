@@ -287,6 +287,8 @@ Research recent news, injury reports, and statistical trends to make the most ac
               generated_at: new Date().toISOString(),
               confidence: 0,
               pick_direction: 'OVER' as const,
+              ai_provider,
+              ai_call_success: false,
               error: error instanceof Error ? error.message : String(error)
             },
             status: 500
@@ -302,6 +304,8 @@ Research recent news, injury reports, and statistical trends to make the most ac
             generated_at: new Date().toISOString(),
             confidence: 0,
             pick_direction: 'OVER' as const,
+            ai_provider,
+            ai_call_success: false,
             error: 'Only NBA TOTAL bets supported for Bold Player Predictions'
           },
           status: 400
