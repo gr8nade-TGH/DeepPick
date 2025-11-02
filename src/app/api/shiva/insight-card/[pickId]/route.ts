@@ -55,6 +55,22 @@ export async function GET(
       hasGame: !!pick.games
     })
 
+    // Check if run_id is null
+    if (!pick.run_id) {
+      console.error('[InsightCard] Pick has NULL run_id - this is a data integrity issue:', {
+        pickId: pick.id,
+        createdAt: pick.created_at,
+        selection: pick.selection
+      })
+      return NextResponse.json(
+        {
+          error: 'Pick has no associated run data',
+          details: 'The pick was created without a run_id. This is a bug in pick generation.'
+        },
+        { status: 500 }
+      )
+    }
+
     // Step 2: Get the run using run_id
     console.log('[InsightCard] Querying runs table for run_id:', pick.run_id)
     const { data: run, error: runError } = await supabase

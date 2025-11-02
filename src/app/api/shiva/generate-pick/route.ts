@@ -196,6 +196,7 @@ export async function POST(request: Request) {
       .from('picks')
       .insert({
         game_id: game.id,
+        run_id: runId, // CRITICAL: Link pick to run for insight card
         capper: 'shiva',
         pick_type: pick.pickType.toLowerCase(),
         selection: pick.selection,
@@ -213,7 +214,10 @@ export async function POST(request: Request) {
           spread_line: game.spread_line,
           odds: game.odds
         },
-        status: 'pending'
+        status: 'pending',
+        is_system_pick: true,
+        reasoning: `SHIVA pick generated via wizard pipeline`,
+        algorithm_version: 'shiva_v1'
       })
       .select()
       .single()
