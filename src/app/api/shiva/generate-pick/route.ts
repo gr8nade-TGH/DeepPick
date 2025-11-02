@@ -153,8 +153,31 @@ export async function POST(request: Request) {
     if (!result.pick) {
       console.log('[SHIVA:GeneratePick] Pipeline decided to PASS')
 
-      // Create cooldown for PASS decision
-      const cooldownUntil = new Date(Date.now() + 2 * 60 * 60 * 1000) // 2 hours
+      // Create cooldown for PASS decision - cooldown until game time to prevent re-analyzing
+      // If game time is not available or already passed, use 24 hours
+      let cooldownUntil: Date
+      const gameDate = game.game_date
+      const gameTime = game.game_time
+
+      if (gameDate && gameTime) {
+        // Combine game_date and game_time to get full timestamp
+        const gameDateTime = new Date(`${gameDate}T${gameTime}Z`)
+
+        // If game is in the future, cooldown until game time
+        if (gameDateTime > new Date()) {
+          cooldownUntil = gameDateTime
+          console.log(`[SHIVA:GeneratePick] Setting PASS cooldown until game time: ${cooldownUntil.toISOString()}`)
+        } else {
+          // Game already started or passed, use 24 hours
+          cooldownUntil = new Date(Date.now() + 24 * 60 * 60 * 1000)
+          console.log(`[SHIVA:GeneratePick] Game time passed, setting PASS cooldown for 24 hours: ${cooldownUntil.toISOString()}`)
+        }
+      } else {
+        // No game time available, use 24 hours
+        cooldownUntil = new Date(Date.now() + 24 * 60 * 60 * 1000)
+        console.log(`[SHIVA:GeneratePick] No game time available, setting PASS cooldown for 24 hours: ${cooldownUntil.toISOString()}`)
+      }
+
       const { error: cooldownError } = await supabase
         .from('pick_generation_cooldowns')
         .insert({
