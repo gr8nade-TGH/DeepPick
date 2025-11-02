@@ -162,82 +162,87 @@ export function InsightCard(props: InsightCardProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-900 rounded-xl shadow-2xl border border-slate-700 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Subtle Tech Header */}
-        <div className="bg-slate-800 p-6 rounded-t-xl border-b border-slate-700">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl shadow-2xl border-2 border-cyan-500/30 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        {/* CHANGE 3: Professional Header with Navy/Teal Theme */}
+        <div className="bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 p-6 rounded-t-2xl border-b-2 border-cyan-500/40">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-slate-700 rounded-full flex items-center justify-center border border-slate-600">
-                <span className="text-2xl">❄️</span>
+              <div className="w-14 h-14 bg-gradient-to-br from-cyan-600 to-blue-700 rounded-full flex items-center justify-center border-2 border-cyan-400 shadow-lg">
+                <span className="text-3xl">❄️</span>
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-white">{props.capper || 'SHIVA'}'S PICK</h1>
-                <div className="text-slate-300 text-sm">AI-Powered Prediction Engine</div>
+                <h1 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">{props.capper || 'SHIVA'}'S PICK</h1>
+                <div className="text-cyan-300 text-sm font-semibold">Professional Sports Analytics</div>
               </div>
             </div>
-            <div className="text-right text-slate-300 text-sm">
-              <div className="mb-1">GAME DATE: {formatLocalDate(props.matchup?.gameDateLocal || props.generatedAt)}</div>
-              <div className="mb-1">GAME ID: {props.gameId || '#'}</div>
-              {props.pickId && <div className="mb-1">PICK ID: {props.pickId}</div>}
-              <div>PICK GENERATED: {formatLocalTime(props.generatedAt)}</div>
-            </div>
+            <button
+              onClick={props.onClose}
+              className="text-slate-400 hover:text-cyan-400 text-3xl font-bold transition-colors"
+            >
+              ×
+            </button>
+          </div>
+          <div className="mt-4 text-right text-slate-300 text-xs space-y-1">
+            <div>GAME DATE: {formatLocalDate(props.matchup?.gameDateLocal || props.generatedAt)}</div>
+            <div>PICK GENERATED: {formatLocalTime(props.generatedAt)}</div>
           </div>
         </div>
 
         {/* Subtitle */}
-        <div className="px-6 py-2 bg-slate-800 border-b border-slate-700">
-          <div className="text-sm text-slate-300">
-            NBA Totals Model v1 — 5 factors weighted for Over/Under prediction
+        <div className="px-6 py-3 bg-gradient-to-r from-slate-800 to-slate-700 border-b border-cyan-500/20">
+          <div className="text-sm text-cyan-300 font-medium">
+            🎯 NBA Totals Model v1 — Advanced Statistical Analysis
           </div>
         </div>
 
         {/* Matchup Line */}
-        <div className="p-4 bg-slate-800 border-b border-slate-700">
+        <div className="p-5 bg-gradient-to-r from-slate-800 to-slate-700 border-b border-cyan-500/20">
           <div className="text-center">
-            <div className="text-lg font-bold text-white mb-1">
+            <div className="text-xl font-bold text-white mb-2">
               {props.matchup?.spreadText || 'AWAY +spread @ HOME -spread'}
             </div>
-            <div className="text-slate-300">
+            <div className="text-cyan-300 font-medium">
               {props.matchup?.totalText || 'O/U {total_line}'}
             </div>
           </div>
         </div>
 
-        {/* Bet Banner - LIT UP AND PRONOUNCED */}
-        <div className="p-8 bg-gradient-to-r from-green-900 via-emerald-800 to-green-900 border-4 border-green-400 border-b border-slate-600 shadow-2xl relative overflow-hidden">
-          {/* Animated background effect */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse"></div>
+        {/* Bet Banner - Professional & Clean */}
+        <div className="p-8 bg-gradient-to-r from-cyan-900 via-blue-900 to-cyan-900 border-y-2 border-cyan-400/50 shadow-xl relative overflow-hidden">
+          {/* Subtle animated background */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-400/5 to-transparent animate-pulse"></div>
 
           <div className="text-center relative z-10">
-            <div className="text-5xl font-black text-white mb-4 drop-shadow-2xl tracking-wide">
+            <div className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-blue-300 mb-3 drop-shadow-lg tracking-tight">
               {safePick.units} {safePick.units === 1 ? 'UNIT' : 'UNITS'} on {safePick.selection}
             </div>
             {(safePick as any).locked_odds?.total_line && (
-              <div className="text-green-200 text-lg mb-3 font-bold">
-                🔒 Locked at {(safePick as any).locked_odds.total_line}
+              <div className="text-cyan-200 text-lg font-semibold flex items-center justify-center gap-2">
+                <span className="text-2xl">🔒</span>
+                <span>Locked at {(safePick as any).locked_odds.total_line}</span>
               </div>
             )}
           </div>
         </div>
 
-        {/* Confidence Score Bar - Moved to top */}
-        <div className="p-4 bg-slate-800 border-b border-slate-700">
+        {/* Confidence Score Bar - Professional Design */}
+        <div className="p-6 bg-gradient-to-r from-slate-800 to-slate-700 border-b border-cyan-500/20">
           <div className="text-center">
-            <div className="text-sm text-slate-300 mb-2">Edge Score = {Math.min(safeMarket.confFinal, 10).toFixed(1)} / 10.0</div>
+            <div className="text-sm text-cyan-300 font-semibold mb-3">Edge Score: {Math.min(safeMarket.confFinal, 10).toFixed(1)} / 10.0</div>
 
             {/* Edge Score Bar with Unit Markers */}
-            <div className="relative mx-auto max-w-md">
+            <div className="relative mx-auto max-w-lg">
               {/* Background bar */}
-              <div className="relative h-4 bg-slate-600 rounded-full overflow-hidden">
+              <div className="relative h-5 bg-slate-900/50 rounded-full overflow-hidden border border-cyan-500/30">
                 <div
-                  className="h-full bg-gradient-to-r from-red-500 via-yellow-500 to-green-500 transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-red-500 via-yellow-400 to-cyan-400 transition-all duration-500 shadow-lg"
                   style={{ width: `${Math.min((safeMarket.confFinal / 10) * 100, 100)}%` }}
                 />
               </div>
 
               {/* Unit markers */}
-              <div className="relative h-6 mt-1">
+              <div className="relative h-7 mt-2">
                 {[5, 6, 7, 8, 9, 10].map((threshold) => {
                   const position = (threshold / 10) * 100
                   const units = threshold < 6 ? 1 : threshold < 7 ? 2 : threshold < 8 ? 3 : threshold < 9 ? 4 : 5
@@ -249,7 +254,7 @@ export function InsightCard(props: InsightCardProps) {
                       className="absolute transform -translate-x-1/2"
                       style={{ left: `${position}%` }}
                     >
-                      <div className={`text-xs font-bold ${isActive ? 'text-green-400' : 'text-slate-500'}`}>
+                      <div className={`text-xs font-bold ${isActive ? 'text-cyan-400' : 'text-slate-600'}`}>
                         {units}U
                       </div>
                     </div>
@@ -258,7 +263,7 @@ export function InsightCard(props: InsightCardProps) {
               </div>
             </div>
 
-            <div className="text-xs text-slate-400 mt-2">
+            <div className="text-sm text-cyan-200 mt-3 font-medium">
               {safeMarket.confFinal >= 9 ? '🔥🔥 MAXIMUM EDGE (5 Units)' :
                 safeMarket.confFinal >= 8 ? '🔥 HIGH EDGE (4 Units)' :
                   safeMarket.confFinal >= 7 ? '⚡ STRONG EDGE (3 Units)' :
@@ -268,25 +273,31 @@ export function InsightCard(props: InsightCardProps) {
           </div>
         </div>
 
-        {/* AI Writeups */}
+        {/* AI Writeups - Professional Analyst Style */}
         {props.writeups && (
-          <div className="p-4 bg-slate-800 border-b border-slate-700 space-y-3">
+          <div className="p-6 bg-gradient-to-br from-slate-800 to-slate-700 border-b border-cyan-500/20 space-y-4">
             {props.writeups.prediction && (
-              <div className="bg-slate-700 rounded-lg p-3">
-                <div className="text-xs font-semibold text-slate-300 uppercase mb-2">PREDICTION WRITEUP</div>
-                <p className="text-white text-sm leading-relaxed">{props.writeups.prediction}</p>
+              <div className="bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-xl p-5 border border-cyan-500/20 shadow-lg">
+                <div className="text-xs font-bold text-cyan-400 uppercase mb-3 flex items-center gap-2">
+                  <span>📊</span>
+                  <span>Professional Analysis</span>
+                </div>
+                <p className="text-white text-base leading-relaxed font-medium">{props.writeups.prediction}</p>
               </div>
             )}
 
             {props.writeups.gamePrediction && (
-              <div className="bg-slate-700 rounded-lg p-3">
-                <div className="text-xs font-semibold text-slate-300 uppercase mb-2">GAME PREDICTION (SCORE AND VICTOR)</div>
-                <p className="text-white text-base font-semibold mb-2">{props.writeups.gamePrediction}</p>
+              <div className="bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-xl p-5 border border-cyan-500/20 shadow-lg">
+                <div className="text-xs font-bold text-cyan-400 uppercase mb-3 flex items-center gap-2">
+                  <span>🎯</span>
+                  <span>Score Projection</span>
+                </div>
+                <p className="text-cyan-100 text-sm font-medium mb-3">{props.writeups.gamePrediction}</p>
                 {/* Clear predicted score display */}
-                <div className="bg-slate-600 rounded p-2 mt-2">
+                <div className="bg-gradient-to-r from-slate-800 to-slate-700 rounded-lg p-4 mt-3 border border-cyan-500/30">
                   <div className="text-center">
-                    <div className="text-sm text-slate-300 mb-1">PREDICTED FINAL SCORE</div>
-                    <div className="text-lg font-bold text-white">
+                    <div className="text-xs text-cyan-300 font-semibold mb-2">PREDICTED FINAL SCORE</div>
+                    <div className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-blue-300">
                       {props.matchup?.away || 'Away'} {safePredictedScore.away} - {safePredictedScore.home} {props.matchup?.home || 'Home'}
                     </div>
                   </div>
@@ -294,54 +305,31 @@ export function InsightCard(props: InsightCardProps) {
               </div>
             )}
 
-            {props.bold_predictions && props.bold_predictions.predictions && props.bold_predictions.predictions.length > 0 ? (
-              <div className="bg-amber-900 border border-amber-700 rounded-lg p-3">
-                <div className="text-xs font-semibold text-amber-300 uppercase mb-2">AI BOLD PREDICTIONS</div>
-                <div className="space-y-3">
-                  {props.bold_predictions.predictions.map((pred, index) => (
-                    <div key={index} className="bg-amber-800 rounded p-2">
-                      <div className="flex justify-between items-start mb-1">
-                        <span className="text-amber-100 font-semibold text-sm">{pred.player}</span>
-                        <span className="text-amber-300 text-xs px-2 py-1 rounded bg-amber-700">
-                          {pred.confidence}
-                        </span>
-                      </div>
-                      <p className="text-amber-200 text-sm font-medium mb-1">{pred.prediction}</p>
-                      <p className="text-amber-300 text-xs">{pred.reasoning}</p>
-                    </div>
-                  ))}
-                  {props.bold_predictions.summary && (
-                    <div className="text-amber-100 text-sm font-medium mt-2 p-2 bg-amber-800 rounded">
-                      {props.bold_predictions.summary}
-                    </div>
-                  )}
-                </div>
+            {/* CHANGE 1: Temporarily disabled - Coming Soon placeholder */}
+            <div className="bg-gradient-to-br from-amber-900 to-amber-800 border border-amber-600 rounded-lg p-4">
+              <div className="text-xs font-semibold text-amber-300 uppercase mb-2">🎯 AI BOLD PREDICTIONS</div>
+              <div className="text-center py-3">
+                <p className="text-amber-100 text-sm font-medium">Bold Player Predictions Coming Soon</p>
+                <p className="text-amber-300 text-xs mt-1">Advanced AI-powered player performance predictions</p>
               </div>
-            ) : props.writeups.bold ? (
-              <div className="bg-amber-900 border border-amber-700 rounded-lg p-3">
-                <div className="text-xs font-semibold text-amber-300 uppercase mb-2">AI BOLD PREDICTION</div>
-                <p className="text-amber-100 text-sm font-semibold">{props.writeups.bold}</p>
-              </div>
-            ) : (
-              <div className="bg-amber-900 border border-amber-700 rounded-lg p-3">
-                <div className="text-xs font-semibold text-amber-300 uppercase mb-2">AI BOLD PREDICTIONS</div>
-                <p className="text-amber-100 text-sm">No prediction available.</p>
-              </div>
-            )}
+            </div>
           </div>
         )}
 
-        {/* Injury Summary */}
+        {/* Injury Summary - Professional Design */}
         {props.injury_summary && (
-          <div className="p-4 bg-slate-800 border-b border-slate-700">
-            <div className="text-sm font-semibold text-white mb-2">INJURY SUMMARY</div>
-            <div className="bg-slate-700 rounded p-3">
-              <p className="text-slate-300 text-sm">{props.injury_summary.summary}</p>
+          <div className="p-6 bg-gradient-to-br from-slate-800 to-slate-700 border-b border-cyan-500/20">
+            <div className="text-sm font-bold text-cyan-300 mb-3 flex items-center gap-2">
+              <span>🏥</span>
+              <span>INJURY SUMMARY</span>
+            </div>
+            <div className="bg-gradient-to-br from-slate-900/60 to-slate-800/60 rounded-lg p-4 border border-cyan-500/20">
+              <p className="text-white text-sm leading-relaxed">{props.injury_summary.summary}</p>
               {props.injury_summary.findings && props.injury_summary.findings.length > 0 && (
-                <div className="mt-2 space-y-1">
+                <div className="mt-3 space-y-2">
                   {props.injury_summary.findings.map((finding, index) => (
-                    <div key={index} className="text-xs text-slate-400">
-                      {finding.team}: {finding.player} - {finding.status} (Impact: {finding.impact})
+                    <div key={index} className="text-xs text-cyan-200 bg-slate-800/50 rounded px-3 py-2">
+                      <span className="font-semibold">{finding.team}:</span> {finding.player} - {finding.status} <span className="text-cyan-400">(Impact: {finding.impact})</span>
                     </div>
                   ))}
                 </div>
@@ -350,23 +338,26 @@ export function InsightCard(props: InsightCardProps) {
           </div>
         )}
 
-        {/* Confidence Factors Table - OVER/UNDER DIRECTION */}
-        <div className="p-4 bg-slate-800 border-b border-slate-700">
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-sm font-semibold text-white">EDGE FACTORS:</div>
+        {/* Confidence Factors Table - Professional Design */}
+        <div className="p-6 bg-gradient-to-br from-slate-800 to-slate-700 border-b border-cyan-500/20">
+          <div className="flex items-center justify-between mb-4">
+            <div className="text-base font-bold text-cyan-300 flex items-center gap-2">
+              <span>📈</span>
+              <span>EDGE FACTORS</span>
+            </div>
             {sortedFactors.length > 0 && (
-              <div className="text-xs px-3 py-1 bg-slate-600 text-slate-200 rounded-full border border-slate-500">
+              <div className="text-xs px-4 py-2 bg-gradient-to-r from-cyan-900 to-blue-900 text-cyan-200 rounded-full border border-cyan-500/40 font-semibold">
                 🏆 Dominant: {sortedFactors[0].label}
               </div>
             )}
           </div>
 
           {/* Header Row - Over/Under Direction */}
-          <div className="grid grid-cols-[50px_1fr_1fr] gap-3 mb-3 text-xs font-semibold text-slate-400">
-            <div className="text-center">FACTOR ICONS</div>
-            <div className="text-center">FACTOR NAME</div>
+          <div className="grid grid-cols-[50px_1fr_1fr] gap-3 mb-3 text-xs font-bold text-cyan-400">
+            <div className="text-center">ICON</div>
+            <div className="text-center">FACTOR</div>
             <div className="text-center">
-              <div className="text-xs text-slate-500 mb-1">OVER / UNDER</div>
+              <div className="text-xs text-cyan-300 mb-1">OVER / UNDER</div>
             </div>
           </div>
 
@@ -388,7 +379,7 @@ export function InsightCard(props: InsightCardProps) {
               return (
                 <div
                   key={factor.key}
-                  className="grid grid-cols-[50px_1fr_1fr] gap-3 items-center py-2 bg-slate-700 rounded hover:bg-slate-600 transition-colors border border-slate-600"
+                  className="grid grid-cols-[50px_1fr_1fr] gap-3 items-center py-3 bg-gradient-to-r from-slate-900/60 to-slate-800/60 rounded-lg hover:from-slate-800/80 hover:to-slate-700/80 transition-all border border-cyan-500/20 hover:border-cyan-500/40"
                   onMouseEnter={() => setHoveredFactor(factor.key)}
                   onMouseLeave={() => setHoveredFactor(null)}
                 >
@@ -462,30 +453,7 @@ export function InsightCard(props: InsightCardProps) {
             </div>
           </div>
 
-          {/* Market Influence Mini-Bar (±30% scale) */}
-          <div className="mt-3">
-            <div className="text-xs text-slate-400 text-center mb-2">
-              Market Influence (max ±30%)
-            </div>
-            <div className="relative h-2 bg-slate-600 rounded-full overflow-hidden">
-              {/* Center line */}
-              <div className="absolute left-1/2 top-0 bottom-0 w-px bg-slate-500" />
-
-              {/* Market adjustment bar */}
-              <div
-                className={`absolute top-0 bottom-0 ${safeMarket.confAdj > 0 ? 'bg-green-500' : 'bg-red-500'}`}
-                style={{
-                  left: safeMarket.confAdj >= 0 ? '50%' : `${50 + (safeMarket.confAdj / 1.2) * 50}%`,
-                  width: `${Math.abs(safeMarket.confAdj / 1.2) * 50}%`,
-                }}
-              />
-            </div>
-            <div className="flex justify-between text-xs text-slate-400 mt-1">
-              <span>-30%</span>
-              <span>0</span>
-              <span>+30%</span>
-            </div>
-          </div>
+          {/* CHANGE 2: Market Influence slider removed - data still calculated in backend */}
         </div>
 
         {/* Edge Bar */}

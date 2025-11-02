@@ -1,6 +1,56 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 
+/**
+ * Generate professional analyst-style writeup for the pick
+ */
+function generateProfessionalWriteup(
+  pick: any,
+  confidence: number,
+  factors: any[],
+  predictedTotal: number,
+  marketTotal: number,
+  awayTeam: string,
+  homeTeam: string
+): string {
+  const selection = pick.selection
+  const edge = Math.abs(predictedTotal - marketTotal)
+  const edgeDirection = predictedTotal > marketTotal ? 'higher' : 'lower'
+
+  // Confidence tier messaging
+  let confidenceTier = ''
+  let actionVerb = ''
+  if (confidence >= 9) {
+    confidenceTier = 'exceptional'
+    actionVerb = 'strongly recommend'
+  } else if (confidence >= 8) {
+    confidenceTier = 'high'
+    actionVerb = 'recommend'
+  } else if (confidence >= 7) {
+    confidenceTier = 'strong'
+    actionVerb = 'favor'
+  } else if (confidence >= 6) {
+    confidenceTier = 'moderate'
+    actionVerb = 'lean toward'
+  } else {
+    confidenceTier = 'developing'
+    actionVerb = 'identify value in'
+  }
+
+  // Build narrative
+  const intro = `Our advanced analytics model has identified ${confidenceTier} value on the ${selection} ${marketTotal.toFixed(1)} in the ${awayTeam} at ${homeTeam} matchup.`
+
+  const edgeAnalysis = `The model projects a total of ${predictedTotal.toFixed(1)} points, which is ${edge.toFixed(1)} points ${edgeDirection} than the current market line. This ${edge.toFixed(1)}-point edge represents a significant market inefficiency that we ${actionVerb}.`
+
+  const factorSummary = factors.length > 0
+    ? `This projection is supported by ${factors.length} key factors, including ${factors.slice(0, 3).map(f => f.label.toLowerCase()).join(', ')}${factors.length > 3 ? ', and others' : ''}.`
+    : 'This projection is based on comprehensive statistical analysis.'
+
+  const confidenceStatement = `With a confidence score of ${confidence.toFixed(1)}/10.0, this represents a ${confidenceTier}-conviction play in our betting model.`
+
+  return `${intro} ${edgeAnalysis} ${factorSummary} ${confidenceStatement}`
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { pickId: string } }
@@ -310,7 +360,7 @@ function buildInsightCard({ pick, game, run, factorContributions, predictedTotal
       winner: 'TBD'
     },
     writeups: {
-      prediction: `Model projects ${pick.selection} with ${confFinal.toFixed(1)}/10.0 confidence based on ${factors.length} factors.`,
+      prediction: generateProfessionalWriteup(pick, confFinal, factors, predictedTotal, marketTotal, awayTeamName, homeTeamName),
       gamePrediction: `Predicted total: ${predictedTotal.toFixed(1)} vs Market: ${marketTotal.toFixed(1)}`,
       bold: boldPredictions?.summary || null
     },
