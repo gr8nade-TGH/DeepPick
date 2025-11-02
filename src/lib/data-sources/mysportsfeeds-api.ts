@@ -15,11 +15,12 @@ const MYSPORTSFEEDS_API_KEY = process.env.MYSPORTSFEEDS_API_KEY
 const MYSPORTSFEEDS_BASE_URL = 'https://api.mysportsfeeds.com/v2.1/pull/nba'
 
 /**
- * Request queue for team_gamelogs endpoint to enforce 5-second backoff
+ * Request queue for team_gamelogs endpoint to enforce 10-second backoff
  * Per MySportsFeeds API docs: Daily/Weekly Team Gamelogs require 5-second backoff
+ * INCREASED TO 10 SECONDS: Even with Live tier, we're hitting 429 rate limits with 5s backoff
  */
 let lastTeamGamelogsRequest = 0
-const TEAM_GAMELOGS_BACKOFF_MS = 5000 // 5 seconds
+const TEAM_GAMELOGS_BACKOFF_MS = 10000 // 10 seconds (increased from 5s due to rate limits)
 
 /**
  * Sleep utility for backoff delays
@@ -254,7 +255,7 @@ export async function fetchTeamGameLogByDate(date: string, teamAbbrev: string): 
 /**
  * Fetch team game logs for last N games
  *
- * IMPORTANT: This endpoint requires a 5-second backoff between requests per MySportsFeeds API docs.
+ * IMPORTANT: This endpoint requires a 10-second backoff between requests to avoid 429 rate limits.
  * Requests are automatically queued and delayed to respect this requirement.
  *
  * @param teamAbbrev - Team abbreviation (e.g., "BOS", "LAL")
@@ -263,13 +264,13 @@ export async function fetchTeamGameLogByDate(date: string, teamAbbrev: string): 
 export async function fetchTeamGameLogs(teamAbbrev: string, limit: number = 10): Promise<any> {
   const season = getNBASeason().season
 
-  // Enforce 5-second backoff for team_gamelogs endpoint
+  // Enforce 10-second backoff for team_gamelogs endpoint
   const now = Date.now()
   const timeSinceLastRequest = now - lastTeamGamelogsRequest
 
   if (timeSinceLastRequest < TEAM_GAMELOGS_BACKOFF_MS) {
     const waitTime = TEAM_GAMELOGS_BACKOFF_MS - timeSinceLastRequest
-    console.log(`[MySportsFeeds] Enforcing 5-second backoff for team_gamelogs - waiting ${waitTime}ms before fetching ${teamAbbrev}...`)
+    console.log(`[MySportsFeeds] Enforcing 10-second backoff for team_gamelogs - waiting ${waitTime}ms before fetching ${teamAbbrev}...`)
     await sleep(waitTime)
   }
 
