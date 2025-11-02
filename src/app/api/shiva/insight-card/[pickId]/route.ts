@@ -7,8 +7,10 @@ export async function GET(
 ) {
   try {
     const { pickId } = params
+    console.log('[InsightCard] Request for pickId:', pickId)
 
     if (!pickId) {
+      console.error('[InsightCard] No pickId provided')
       return NextResponse.json(
         { error: 'Pick ID is required' },
         { status: 400 }
@@ -18,34 +20,73 @@ export async function GET(
     const supabase = getSupabaseAdmin()
 
     // Step 1: Get the pick
+    console.log('[InsightCard] Querying picks table for:', pickId)
     const { data: pick, error: pickError } = await supabase
       .from('picks')
       .select('*, games(*)')
       .eq('id', pickId)
       .single()
 
-    if (pickError || !pick) {
-      console.error('[InsightCard] Pick not found:', pickError)
+    if (pickError) {
+      console.error('[InsightCard] Pick query error:', {
+        error: pickError,
+        code: pickError.code,
+        message: pickError.message,
+        details: pickError.details
+      })
+      return NextResponse.json(
+        { error: 'Pick not found', details: pickError.message },
+        { status: 404 }
+      )
+    }
+
+    if (!pick) {
+      console.error('[InsightCard] Pick not found in database:', pickId)
       return NextResponse.json(
         { error: 'Pick not found' },
         { status: 404 }
       )
     }
 
+    console.log('[InsightCard] Pick found:', {
+      pickId: pick.id,
+      runId: pick.run_id,
+      selection: pick.selection,
+      hasGame: !!pick.games
+    })
+
     // Step 2: Get the run using run_id
+    console.log('[InsightCard] Querying runs table for run_id:', pick.run_id)
     const { data: run, error: runError } = await supabase
       .from('runs')
       .select('*')
       .eq('run_id', pick.run_id)
       .maybeSingle()
 
-    if (runError || !run) {
-      console.error('[InsightCard] Run not found:', runError)
+    if (runError) {
+      console.error('[InsightCard] Run query error:', {
+        error: runError,
+        runId: pick.run_id
+      })
+      return NextResponse.json(
+        { error: 'Run data not found', details: runError.message },
+        { status: 404 }
+      )
+    }
+
+    if (!run) {
+      console.error('[InsightCard] Run not found in database:', pick.run_id)
       return NextResponse.json(
         { error: 'Run data not found for this pick' },
         { status: 404 }
       )
     }
+
+    console.log('[InsightCard] Run found:', {
+      runId: run.run_id,
+      hasMetadata: !!run.metadata,
+      metadataKeys: run.metadata ? Object.keys(run.metadata) : []
+    })
 
     // Step 3: Extract data from metadata (EXACTLY like run log does)
     const metadata = run.metadata || {}
