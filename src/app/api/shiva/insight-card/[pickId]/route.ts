@@ -108,14 +108,39 @@ export async function GET(
     const metadata = run.metadata || {}
     const game = pick.games || {}
 
-    // Extract all data from metadata
-    const factorContributions = metadata.factor_contributions || []
-    const predictedTotal = metadata.predicted_total || 0
-    const baselineAvg = metadata.baseline_avg || 220
-    const marketTotal = metadata.market_total || 0
-    const predictedHomeScore = metadata.predicted_home_score || 0
-    const predictedAwayScore = metadata.predicted_away_score || 0
-    const boldPredictions = metadata.bold_predictions || null
+    // Extract all data from metadata - check both top-level and nested in steps
+    const factorContributions = metadata.factor_contributions
+      || metadata.steps?.step4?.confidence?.factorContributions
+      || []
+
+    const predictedTotal = metadata.predicted_total
+      || metadata.steps?.step4?.predictions?.total_pred_points
+      || 0
+
+    const baselineAvg = metadata.baseline_avg
+      || metadata.steps?.step3?.baseline_avg
+      || 220
+
+    const marketTotal = metadata.market_total
+      || metadata.steps?.step2?.snapshot?.total?.line
+      || 0
+
+    const predictedHomeScore = metadata.predicted_home_score
+      || metadata.steps?.step4?.predictions?.scores?.home
+      || 0
+
+    const predictedAwayScore = metadata.predicted_away_score
+      || metadata.steps?.step4?.predictions?.scores?.away
+      || 0
+
+    const boldPredictions = metadata.bold_predictions
+      || metadata.steps?.step6?.bold_predictions
+      || null
+
+    // Extract confidence values
+    const conf7 = metadata.steps?.step4?.predictions?.conf7_score || run.conf7 || 0
+    const confMarketAdj = metadata.steps?.step5?.conf_market_adj || 0
+    const confFinal = metadata.steps?.step5?.conf_final || run.conf_final || pick.confidence || 0
 
     console.log('[InsightCard] Data extracted:', {
       pickId,
@@ -123,6 +148,9 @@ export async function GET(
       factorCount: factorContributions.length,
       predictedTotal,
       marketTotal,
+      conf7,
+      confMarketAdj,
+      confFinal,
       hasBoldPredictions: !!boldPredictions
     })
 
@@ -137,7 +165,10 @@ export async function GET(
       marketTotal,
       predictedHomeScore,
       predictedAwayScore,
-      boldPredictions
+      boldPredictions,
+      conf7,
+      confMarketAdj,
+      confFinal
     })
 
     return NextResponse.json({
@@ -155,10 +186,10 @@ export async function GET(
 }
 
 // Build insight card data structure from run metadata
-function buildInsightCard({ pick, game, run, factorContributions, predictedTotal, baselineAvg, marketTotal, predictedHomeScore, predictedAwayScore, boldPredictions }: any) {
+function buildInsightCard({ pick, game, run, factorContributions, predictedTotal, baselineAvg, marketTotal, predictedHomeScore, predictedAwayScore, boldPredictions, conf7, confMarketAdj, confFinal }: any) {
 
   // Map factors to insight card format
-  const factors = factorContributions.map((factor: any) => {
+  const baseFactors = factorContributions.map((factor: any) => {
     // Get weight percentage
     const weightPct = factor.weight_percentage || factor.weight_total_pct || 0
     const weightDecimal = weightPct / 100
@@ -188,12 +219,28 @@ function buildInsightCard({ pick, game, run, factorContributions, predictedTotal
     }
   })
 
-  // Get confidence
-  const confidence = Number(pick.confidence || run.confidence || 0)
-
-  // Calculate edge
+  // Calculate edge in points
   const edgeRaw = predictedTotal - marketTotal
-  const edgePct = marketTotal > 0 ? (edgeRaw / marketTotal) * 100 : 0
+
+  // Calculate edge percentage properly:
+  // Edge % = (Our implied probability - Market implied probability)
+  // For totals: Convert point difference to probability difference
+  // Simplified: Use the confidence adjustment as the edge percentage
+  const edgePct = confMarketAdj || 0
+
+  // Add "Edge vs Market" factor (calculated in Step 5)
+  const edgeFactor = {
+    key: 'edgeVsMarket',
+    label: 'Edge vs Market',
+    icon: '📊',
+    overScore: edgeRaw > 0 ? confMarketAdj : 0,
+    underScore: edgeRaw < 0 ? Math.abs(confMarketAdj) : 0,
+    weightAppliedPct: 100,
+    rationale: `Edge: ${edgeRaw > 0 ? '+' : ''}${edgeRaw.toFixed(1)} pts (Pred: ${predictedTotal.toFixed(1)} vs Mkt: ${marketTotal.toFixed(1)})`
+  }
+
+  // Combine base factors with edge factor
+  const factors = [...baseFactors, edgeFactor]
 
   // Build the insight card
   return {
@@ -214,10 +261,10 @@ function buildInsightCard({ pick, game, run, factorContributions, predictedTotal
       type: 'TOTAL' as const,
       selection: pick.selection,
       units: pick.units,
-      confidence,
+      confidence: confFinal,
       edgeRaw,
       edgePct,
-      confScore: confidence,
+      confScore: confFinal,
       locked_odds: pick.game_snapshot || null,
       locked_at: pick.created_at
     },
@@ -227,7 +274,7 @@ function buildInsightCard({ pick, game, run, factorContributions, predictedTotal
       winner: 'TBD'
     },
     writeups: {
-      prediction: `Model projects ${pick.selection} with ${confidence.toFixed(1)}/10.0 confidence based on ${factors.length} factors.`,
+      prediction: `Model projects ${pick.selection} with ${confFinal.toFixed(1)}/10.0 confidence based on ${factors.length} factors.`,
       gamePrediction: `Predicted total: ${predictedTotal.toFixed(1)} vs Market: ${marketTotal.toFixed(1)}`,
       bold: boldPredictions?.summary || null
     },
@@ -235,9 +282,9 @@ function buildInsightCard({ pick, game, run, factorContributions, predictedTotal
     injury_summary: null,
     factors,
     market: {
-      conf7: confidence,
-      confAdj: 0,
-      confFinal: confidence,
+      conf7: conf7,
+      confAdj: confMarketAdj,
+      confFinal: confFinal,
       dominant: 'total' as const
     },
     results: {
