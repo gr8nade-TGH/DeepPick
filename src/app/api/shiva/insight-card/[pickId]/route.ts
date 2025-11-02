@@ -135,6 +135,8 @@ export async function GET(
 
     const boldPredictions = metadata.bold_predictions
       || metadata.steps?.step6?.bold_predictions
+      || metadata.steps?.step5_5?.bold_predictions
+      || metadata.steps?.['step5.5']?.bold_predictions
       || null
 
     // Extract confidence values
@@ -151,7 +153,11 @@ export async function GET(
       conf7,
       confMarketAdj,
       confFinal,
-      hasBoldPredictions: !!boldPredictions
+      hasBoldPredictions: !!boldPredictions,
+      boldPredictionsSource: boldPredictions ? 'found' : 'null',
+      metadataStepKeys: metadata.steps ? Object.keys(metadata.steps) : [],
+      step6Keys: metadata.steps?.step6 ? Object.keys(metadata.steps.step6) : [],
+      step5_5Keys: metadata.steps?.step5_5 ? Object.keys(metadata.steps.step5_5) : []
     })
 
     // Step 4: Build insight card data structure
@@ -245,6 +251,33 @@ function buildInsightCard({ pick, game, run, factorContributions, predictedTotal
     }
   ]
 
+  // Extract team names from game_snapshot or game object
+  const awayTeamName = pick.game_snapshot?.away_team?.name
+    || pick.game_snapshot?.away_team
+    || game.away_team?.name
+    || game.away_team
+    || 'Away'
+
+  const homeTeamName = pick.game_snapshot?.home_team?.name
+    || pick.game_snapshot?.home_team
+    || game.home_team?.name
+    || game.home_team
+    || 'Home'
+
+  // Format spread text: "Away Team @ Home Team" or "Away +7.5 @ Home -7.5"
+  const spreadData = pick.game_snapshot?.spread || game.spread || null
+  const spreadLine = spreadData?.line || game.spread_line || null
+  const favTeam = spreadData?.fav_team || null
+
+  let spreadText = `${awayTeamName} @ ${homeTeamName}`
+  if (spreadLine && favTeam) {
+    // Determine which team is favored
+    const isFavHome = favTeam === homeTeamName || favTeam.includes(homeTeamName)
+    const awaySpread = isFavHome ? `+${Math.abs(spreadLine)}` : `-${Math.abs(spreadLine)}`
+    const homeSpread = isFavHome ? `-${Math.abs(spreadLine)}` : `+${Math.abs(spreadLine)}`
+    spreadText = `${awayTeamName} ${awaySpread} @ ${homeTeamName} ${homeSpread}`
+  }
+
   // Build the insight card
   return {
     capper: 'SHIVA',
@@ -254,10 +287,10 @@ function buildInsightCard({ pick, game, run, factorContributions, predictedTotal
     pickId: pick.id,
     generatedAt: pick.created_at,
     matchup: {
-      away: game.away_team?.name || game.away_team || 'Away',
-      home: game.home_team?.name || game.home_team || 'Home',
-      spreadText: game.spread_line ? `${game.spread_line}` : 'N/A',
-      totalText: `O/U ${marketTotal || game.total_line || 'N/A'}`,
+      away: awayTeamName,
+      home: homeTeamName,
+      spreadText,
+      totalText: `Locked O/U ${marketTotal.toFixed(1)}`,
       gameDateLocal: game.game_start_timestamp || game.game_date || new Date().toISOString()
     },
     pick: {
@@ -272,8 +305,8 @@ function buildInsightCard({ pick, game, run, factorContributions, predictedTotal
       locked_at: pick.created_at
     },
     predictedScore: {
-      away: predictedAwayScore || Math.floor(predictedTotal / 2),
-      home: predictedHomeScore || Math.ceil(predictedTotal / 2),
+      away: Math.round(predictedAwayScore || Math.floor(predictedTotal / 2)),
+      home: Math.round(predictedHomeScore || Math.ceil(predictedTotal / 2)),
       winner: 'TBD'
     },
     writeups: {

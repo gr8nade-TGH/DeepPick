@@ -225,16 +225,45 @@ export function InsightCard(props: InsightCardProps) {
         <div className="p-4 bg-slate-800 border-b border-slate-700">
           <div className="text-center">
             <div className="text-sm text-slate-300 mb-2">Edge Score = {Math.min(safeMarket.confFinal, 10).toFixed(1)} / 10.0</div>
-            <div className="relative h-3 bg-slate-600 rounded-full overflow-hidden mx-auto max-w-xs">
-              <div
-                className="h-full bg-gradient-to-r from-red-500 via-yellow-500 to-green-500"
-                style={{ width: `${Math.min((safeMarket.confFinal / 10) * 100, 100)}%` }}
-              />
+
+            {/* Edge Score Bar with Unit Markers */}
+            <div className="relative mx-auto max-w-md">
+              {/* Background bar */}
+              <div className="relative h-4 bg-slate-600 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-red-500 via-yellow-500 to-green-500 transition-all duration-500"
+                  style={{ width: `${Math.min((safeMarket.confFinal / 10) * 100, 100)}%` }}
+                />
+              </div>
+
+              {/* Unit markers */}
+              <div className="relative h-6 mt-1">
+                {[5, 6, 7, 8, 9, 10].map((threshold) => {
+                  const position = (threshold / 10) * 100
+                  const units = threshold < 6 ? 1 : threshold < 7 ? 2 : threshold < 8 ? 3 : threshold < 9 ? 4 : 5
+                  const isActive = safeMarket.confFinal >= threshold
+
+                  return (
+                    <div
+                      key={threshold}
+                      className="absolute transform -translate-x-1/2"
+                      style={{ left: `${position}%` }}
+                    >
+                      <div className={`text-xs font-bold ${isActive ? 'text-green-400' : 'text-slate-500'}`}>
+                        {units}U
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
+
             <div className="text-xs text-slate-400 mt-2">
-              {safeMarket.confFinal >= 8 ? '🔥 HIGH EDGE' :
-                safeMarket.confFinal >= 6 ? '⚡ MODERATE EDGE' :
-                  safeMarket.confFinal >= 4 ? '⚠️ LOW EDGE' : '❌ VERY LOW EDGE'}
+              {safeMarket.confFinal >= 9 ? '🔥🔥 MAXIMUM EDGE (5 Units)' :
+                safeMarket.confFinal >= 8 ? '🔥 HIGH EDGE (4 Units)' :
+                  safeMarket.confFinal >= 7 ? '⚡ STRONG EDGE (3 Units)' :
+                    safeMarket.confFinal >= 6 ? '✅ MODERATE EDGE (2 Units)' :
+                      safeMarket.confFinal >= 5 ? '⚠️ LOW EDGE (1 Unit)' : '❌ VERY LOW EDGE'}
             </div>
           </div>
         </div>
