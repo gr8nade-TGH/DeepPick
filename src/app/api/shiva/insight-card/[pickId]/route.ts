@@ -228,19 +228,22 @@ function buildInsightCard({ pick, game, run, factorContributions, predictedTotal
   // Simplified: Use the confidence adjustment as the edge percentage
   const edgePct = confMarketAdj || 0
 
-  // Add "Edge vs Market" factor (calculated in Step 5)
-  const edgeFactor = {
-    key: 'edgeVsMarket',
-    label: 'Edge vs Market',
-    icon: '📊',
-    overScore: edgeRaw > 0 ? confMarketAdj : 0,
-    underScore: edgeRaw < 0 ? Math.abs(confMarketAdj) : 0,
-    weightAppliedPct: 100,
-    rationale: `Edge: ${edgeRaw > 0 ? '+' : ''}${edgeRaw.toFixed(1)} pts (Pred: ${predictedTotal.toFixed(1)} vs Mkt: ${marketTotal.toFixed(1)})`
-  }
+  // Check if "Edge vs Market" factor already exists in baseFactors
+  const hasEdgeFactor = baseFactors.some(f => f.key === 'edgeVsMarket')
 
-  // Combine base factors with edge factor
-  const factors = [...baseFactors, edgeFactor]
+  // Only add "Edge vs Market" factor if it doesn't already exist
+  const factors = hasEdgeFactor ? baseFactors : [
+    ...baseFactors,
+    {
+      key: 'edgeVsMarket',
+      label: 'Edge vs Market',
+      icon: '💰',
+      overScore: edgeRaw > 0 ? confMarketAdj : 0,
+      underScore: edgeRaw < 0 ? Math.abs(confMarketAdj) : 0,
+      weightAppliedPct: 100,
+      rationale: `Edge: ${edgeRaw > 0 ? '+' : ''}${edgeRaw.toFixed(1)} pts (Pred: ${predictedTotal.toFixed(1)} vs Mkt: ${marketTotal.toFixed(1)})`
+    }
+  ]
 
   // Build the insight card
   return {

@@ -465,17 +465,17 @@ export function InsightCard(props: InsightCardProps) {
             <div className="text-center">
               <div className="flex items-center justify-center gap-3 mb-2">
                 <span className="text-sm font-bold text-slate-300">EDGE</span>
-                <span className={`text-lg font-bold ${props.pick.edgeRaw >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {props.pick.edgeRaw >= 0 ? '+' : ''}{(props.pick.edgeRaw * 100).toFixed(1)}%
+                <span className={`text-lg font-bold ${props.pick.edgePct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {props.pick.edgePct >= 0 ? '+' : ''}{props.pick.edgePct.toFixed(1)}%
                 </span>
                 <div className="relative w-32 h-2 bg-slate-600 rounded-full overflow-hidden">
                   <div
-                    className={`h-full ${props.pick.edgeRaw >= 0 ? 'bg-gradient-to-r from-green-500 to-green-400' : 'bg-gradient-to-r from-red-500 to-red-400'}`}
-                    style={{ width: `${Math.min(Math.abs(props.pick.edgeRaw) * 200, 100)}%` }}
+                    className={`h-full ${props.pick.edgePct >= 0 ? 'bg-gradient-to-r from-green-500 to-green-400' : 'bg-gradient-to-r from-red-500 to-red-400'}`}
+                    style={{ width: `${Math.min(Math.abs(props.pick.edgePct) * 10, 100)}%` }}
                   />
                 </div>
                 <span className="text-sm text-slate-300">
-                  {(props.pick.edgePct * 100).toFixed(0)}%
+                  {props.pick.edgeRaw.toFixed(1)} pts
                 </span>
               </div>
               <div className="text-xs text-slate-400" title="Model edge vs market implied probability">
