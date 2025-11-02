@@ -229,7 +229,7 @@ function buildInsightCard({ pick, game, run, factorContributions, predictedTotal
   const edgePct = confMarketAdj || 0
 
   // Check if "Edge vs Market" factor already exists in baseFactors
-  const hasEdgeFactor = baseFactors.some(f => f.key === 'edgeVsMarket')
+  const hasEdgeFactor = baseFactors.some((f: any) => f.key === 'edgeVsMarket')
 
   // Only add "Edge vs Market" factor if it doesn't already exist
   const factors = hasEdgeFactor ? baseFactors : [
