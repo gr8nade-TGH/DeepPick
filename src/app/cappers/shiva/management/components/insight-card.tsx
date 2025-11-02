@@ -243,7 +243,7 @@ export function InsightCard(props: InsightCardProps) {
 
               {/* Unit markers */}
               <div className="relative h-7 mt-2">
-                {[5, 6, 7, 8, 9, 10].map((threshold) => {
+                {[5, 6, 7, 8, 9].map((threshold) => {
                   const position = (threshold / 10) * 100
                   const units = threshold < 6 ? 1 : threshold < 7 ? 2 : threshold < 8 ? 3 : threshold < 9 ? 4 : 5
                   const isActive = safeMarket.confFinal >= threshold
