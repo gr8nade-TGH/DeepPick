@@ -17,82 +17,62 @@ export async function GET(
 
     const supabase = getSupabaseAdmin()
 
-    // Fetch the pick and its associated run data from runs table (not shiva_runs)
+    // Step 1: Get the pick
     const { data: pick, error: pickError } = await supabase
       .from('picks')
-      .select(`
-        *,
-        games(*)
-      `)
+      .select('*, games(*)')
       .eq('id', pickId)
       .single()
 
     if (pickError || !pick) {
-      console.error('[InsightCard API] Pick not found:', pickError)
+      console.error('[InsightCard] Pick not found:', pickError)
       return NextResponse.json(
         { error: 'Pick not found' },
         { status: 404 }
       )
     }
 
-    console.log('[InsightCard API] Pick found:', pick.id)
-    console.log('[InsightCard API] Pick.run_id:', pick.run_id)
-
-    // Fetch the run data separately using run_id
+    // Step 2: Get the run using run_id
     const { data: run, error: runError } = await supabase
       .from('runs')
       .select('*')
       .eq('run_id', pick.run_id)
       .maybeSingle()
 
-    if (runError) {
-      console.error('[InsightCard API] Error fetching run:', runError)
+    if (runError || !run) {
+      console.error('[InsightCard] Run not found:', runError)
+      return NextResponse.json(
+        { error: 'Run data not found for this pick' },
+        { status: 404 }
+      )
     }
 
-    console.log('[InsightCard API] Run data:', run ? 'found' : 'not found')
-
+    // Step 3: Extract data from metadata (EXACTLY like run log does)
+    const metadata = run.metadata || {}
     const game = pick.games || {}
 
-    // Read data from metadata (same as run history API - this is the working method)
-    const metadata = run?.metadata || {}
+    // Extract all data from metadata
+    const factorContributions = metadata.factor_contributions || []
+    const predictedTotal = metadata.predicted_total || 0
+    const baselineAvg = metadata.baseline_avg || 220
+    const marketTotal = metadata.market_total || 0
+    const predictedHomeScore = metadata.predicted_home_score || 0
+    const predictedAwayScore = metadata.predicted_away_score || 0
+    const boldPredictions = metadata.bold_predictions || null
 
-    console.log('[InsightCard API] 🔍 RAW METADATA:', JSON.stringify(metadata, null, 2))
-
-    let factorContributions = metadata.factor_contributions || []
-    let predictedTotal = metadata.predicted_total || 0
-    let baselineAvg = metadata.baseline_avg || 220
-    let marketTotal = metadata.market_total || 0
-    let predictedHomeScore = metadata.predicted_home_score || 0
-    let predictedAwayScore = metadata.predicted_away_score || 0
-    let boldPredictions = metadata.bold_predictions || null
-
-    console.log('[InsightCard API] 📊 EXTRACTED DATA:', {
-      has_metadata: !!run?.metadata,
-      factor_contributions_count: factorContributions.length,
-      factor_contributions_sample: factorContributions[0],
-      predicted_total: predictedTotal,
-      baseline_avg: baselineAvg,
-      market_total: marketTotal,
-      predicted_home_score: predictedHomeScore,
-      predicted_away_score: predictedAwayScore,
-      has_bold_predictions: !!boldPredictions
-    })
-
-    console.log('[InsightCard API] Extracted data:', {
-      format: run?.factor_contributions ? 'NEW (columns)' : run?.metadata?.steps ? 'OLD (metadata)' : 'FALLBACK',
-      factorContributions: factorContributions.length,
+    console.log('[InsightCard] Data extracted:', {
+      pickId,
+      runId: run.run_id,
+      factorCount: factorContributions.length,
       predictedTotal,
-      baselineAvg,
       marketTotal,
-      predictedHomeScore,
-      predictedAwayScore,
       hasBoldPredictions: !!boldPredictions
     })
 
-    // Assemble insight card data from runs table columns
-    const insightCardData = assembleInsightCardFromRun({
-      game,
+    // Step 4: Build insight card data structure
+    const insightCardData = buildInsightCard({
       pick,
+      game,
       run,
       factorContributions,
       predictedTotal,
@@ -103,15 +83,13 @@ export async function GET(
       boldPredictions
     })
 
-    console.log('[InsightCard API] Insight card assembled successfully')
-
     return NextResponse.json({
       success: true,
       data: insightCardData
     })
 
   } catch (error) {
-    console.error('Error fetching insight card:', error)
+    console.error('[InsightCard] Error:', error)
     return NextResponse.json(
       { error: 'Failed to fetch insight card', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
@@ -119,52 +97,48 @@ export async function GET(
   }
 }
 
-// Helper function to assemble insight card from runs table data
-function assembleInsightCardFromRun({ game, pick, run, factorContributions, predictedTotal, baselineAvg, marketTotal, predictedHomeScore, predictedAwayScore, boldPredictions }: any) {
-  // Get confidence values from pick or run
-  const confFinal = Number(pick.confidence ?? run?.confidence ?? 0)
+// Build insight card data structure from run metadata
+function buildInsightCard({ pick, game, run, factorContributions, predictedTotal, baselineAvg, marketTotal, predictedHomeScore, predictedAwayScore, boldPredictions }: any) {
 
-  // Map factor contributions to insight card format
-  const factors = (factorContributions || []).map((fc: any) => {
-    // Factor contributions from runs table have this structure:
-    // { key, name, overScore, underScore, weight, notes, weighted_contributions, weight_percentage, parsed_values_json }
-
-    const weightPct = fc.weight_percentage ? Math.round(fc.weight_percentage) : (fc.weight_total_pct || 0)
+  // Map factors to insight card format
+  const factors = factorContributions.map((factor: any) => {
+    // Get weight percentage
+    const weightPct = factor.weight_percentage || factor.weight_total_pct || 0
     const weightDecimal = weightPct / 100
-    const parsedValues = fc.parsed_values_json || {}
 
-    // Use weighted contributions if available, otherwise calculate from raw scores
+    // Get scores from weighted_contributions if available
     let overScore = 0
     let underScore = 0
 
-    if (fc.weighted_contributions) {
-      overScore = Number(fc.weighted_contributions.overScore || 0)
-      underScore = Number(fc.weighted_contributions.underScore || 0)
-    } else if (parsedValues.overScore !== undefined || parsedValues.underScore !== undefined) {
-      overScore = (parsedValues.overScore || 0) * weightDecimal
-      underScore = (parsedValues.underScore || 0) * weightDecimal
-    } else {
-      // Fallback to direct scores
-      overScore = Number(fc.overScore || 0)
-      underScore = Number(fc.underScore || 0)
+    if (factor.weighted_contributions) {
+      overScore = factor.weighted_contributions.overScore || 0
+      underScore = factor.weighted_contributions.underScore || 0
+    } else if (factor.parsed_values_json) {
+      // Calculate from parsed values
+      const parsed = factor.parsed_values_json
+      overScore = (parsed.overScore || 0) * weightDecimal
+      underScore = (parsed.underScore || 0) * weightDecimal
     }
 
     return {
-      key: fc.key || fc.factor_key,
-      label: fc.name || fc.factor_name || fc.key,
-      icon: getFactorIcon(fc.key || fc.factor_key),
+      key: factor.key || factor.factor_key,
+      label: factor.name || factor.factor_name || factor.key,
+      icon: getFactorIcon(factor.key || factor.factor_key),
       overScore,
       underScore,
-      weightAppliedPct: weightPct,
-      rationale: fc.notes || fc.rationale || 'No rationale provided'
+      weightAppliedPct: Math.round(weightPct),
+      rationale: factor.notes || 'No rationale provided'
     }
   })
 
-  // Calculate edge from predicted total vs market total
-  const edgeRaw = predictedTotal && marketTotal ? predictedTotal - marketTotal : 0
-  const edgePct = predictedTotal && marketTotal ? ((predictedTotal - marketTotal) / marketTotal) * 100 : 0
+  // Get confidence
+  const confidence = Number(pick.confidence || run.confidence || 0)
 
-  // Assemble the insight card data
+  // Calculate edge
+  const edgeRaw = predictedTotal - marketTotal
+  const edgePct = marketTotal > 0 ? (edgeRaw / marketTotal) * 100 : 0
+
+  // Build the insight card
   return {
     capper: 'SHIVA',
     capperIconUrl: null,
@@ -173,48 +147,47 @@ function assembleInsightCardFromRun({ game, pick, run, factorContributions, pred
     pickId: pick.id,
     generatedAt: pick.created_at,
     matchup: {
-      away: game.away_team?.name || game.away_team?.abbreviation || 'Away',
-      home: game.home_team?.name || game.home_team?.abbreviation || 'Home',
-      spreadText: `${game.odds?.spread_line || 'N/A'}`,
-      totalText: `Current O/U ${marketTotal || game.odds?.total_line || 'N/A'}`,
-      gameDateLocal: game.game_start_timestamp || `${game.game_date}T${game.game_time}Z`
+      away: game.away_team?.name || game.away_team || 'Away',
+      home: game.home_team?.name || game.home_team || 'Home',
+      spreadText: game.spread_line ? `${game.spread_line}` : 'N/A',
+      totalText: `O/U ${marketTotal || game.total_line || 'N/A'}`,
+      gameDateLocal: game.game_start_timestamp || game.game_date || new Date().toISOString()
     },
     pick: {
-      type: (pick.pick_type?.toUpperCase() || 'TOTAL') as 'TOTAL',
+      type: 'TOTAL' as const,
       selection: pick.selection,
       units: pick.units,
-      confidence: confFinal,
+      confidence,
       edgeRaw,
       edgePct,
-      confScore: confFinal,
+      confScore: confidence,
       locked_odds: pick.game_snapshot || null,
       locked_at: pick.created_at
     },
     predictedScore: {
-      away: predictedAwayScore || Math.floor((predictedTotal || 0) / 2),
-      home: predictedHomeScore || Math.ceil((predictedTotal || 0) / 2),
+      away: predictedAwayScore || Math.floor(predictedTotal / 2),
+      home: predictedHomeScore || Math.ceil(predictedTotal / 2),
       winner: 'TBD'
     },
     writeups: {
-      prediction: `Model projects ${pick.selection} with ${confFinal.toFixed(1)}/10.0 confidence based on ${factors.length} factors.`,
-      gamePrediction: `Predicted total: ${predictedTotal?.toFixed(1) || '0.0'} vs Market: ${marketTotal?.toFixed(1) || game.odds?.total_line || 'N/A'}`,
+      prediction: `Model projects ${pick.selection} with ${confidence.toFixed(1)}/10.0 confidence based on ${factors.length} factors.`,
+      gamePrediction: `Predicted total: ${predictedTotal.toFixed(1)} vs Market: ${marketTotal.toFixed(1)}`,
       bold: boldPredictions?.summary || null
     },
     bold_predictions: boldPredictions,
     injury_summary: null,
     factors,
     market: {
-      conf7: confFinal, // We don't have separate conf7 in runs table
-      confAdj: 0, // We don't have separate confAdj in runs table
-      confFinal,
+      conf7: confidence,
+      confAdj: 0,
+      confFinal: confidence,
       dominant: 'total' as const
     },
     results: {
       status: pick.status === 'won' ? 'win'
         : pick.status === 'lost' ? 'loss'
           : pick.status === 'push' ? 'push'
-            : game.final_score ? 'pending' // Game finished but not graded yet
-              : 'pending', // Game not started/finished yet
+            : 'pending',
       finalScore: game.final_score ? {
         away: game.final_score.away,
         home: game.final_score.home
@@ -225,9 +198,9 @@ function assembleInsightCardFromRun({ game, pick, run, factorContributions, pred
   }
 }
 
-// Helper to get factor icons
+// Get factor icon
 function getFactorIcon(key: string): string {
-  const iconMap: Record<string, string> = {
+  const icons: Record<string, string> = {
     edgeVsMarket: '💰',
     paceIndex: '⚡',
     offForm: '🎯',
@@ -236,5 +209,5 @@ function getFactorIcon(key: string): string {
     whistleEnv: '🎺',
     injuryAvailability: '🏥'
   }
-  return iconMap[key] || '📊'
+  return icons[key] || '📊'
 }
