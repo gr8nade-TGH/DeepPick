@@ -82,12 +82,30 @@ export async function POST(request: Request) {
     if (!result.success) {
       console.error('[SHIVA:GeneratePick] Pipeline failed:', result.error)
 
-      // NOTE: We do NOT create cooldowns for ERROR results because:
-      // 1. The database constraint only allows 'PASS' and 'PICK_GENERATED' (migration 044 not yet applied)
-      // 2. Errors should be retried on next cron cycle (10 minutes)
-      // 3. If the error persists, it will keep failing until fixed
+      // Create cooldown for ERROR to prevent infinite retry loop
+      // Common errors: Missing API data, rate limits, invalid game state
+      // Cooldown for 2 hours to allow API data to become available
+      const cooldownUntil = new Date(Date.now() + 2 * 60 * 60 * 1000) // 2 hours
 
-      console.log('[SHIVA:GeneratePick] ⚠️ No cooldown created for ERROR - game will be retried on next cron cycle')
+      const { error: cooldownError } = await supabase
+        .from('pick_generation_cooldowns')
+        .insert({
+          game_id: game.id,
+          capper: 'shiva',
+          bet_type: 'total',
+          result: 'ERROR',
+          units: 0,
+          confidence_score: 0,
+          reason: result.error?.substring(0, 500) || 'Pipeline execution failed',
+          cooldown_until: cooldownUntil.toISOString(),
+          created_at: new Date().toISOString()
+        })
+
+      if (cooldownError) {
+        console.error('[SHIVA:GeneratePick] Failed to create ERROR cooldown:', cooldownError)
+      } else {
+        console.log(`[SHIVA:GeneratePick] ✅ ERROR cooldown created until ${cooldownUntil.toISOString()}`)
+      }
 
       return NextResponse.json({
         success: false,
