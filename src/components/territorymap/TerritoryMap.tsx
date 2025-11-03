@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import Map from 'react-map-gl'
+import Map from 'react-map-gl/maplibre'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { NBA_TEAM_COORDINATES } from './nba-team-coordinates'
 import { MOCK_TERRITORY_DATA } from './mock-data'
@@ -26,7 +26,7 @@ export function TerritoryMap() {
 
     // Filter by capper
     if (filters.capper) {
-      filtered = filtered.filter(t => 
+      filtered = filtered.filter(t =>
         t.state === 'unclaimed' || t.capperUsername === filters.capper
       )
     }
@@ -101,7 +101,7 @@ export function TerritoryMap() {
         {/* Render team markers */}
         {NBA_TEAM_COORDINATES.map((team) => {
           const territory = getTerritoryData(team.abbr)
-          
+
           // Skip if filtering and this team doesn't match
           if (filters.activePicksOnly && territory.state !== 'active') {
             return null
