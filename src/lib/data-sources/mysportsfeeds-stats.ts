@@ -271,6 +271,29 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
     const avgOppOffReb = totalOppOffReb / gameCount
     const avgOppDefReb = totalOppDefReb / gameCount
 
+    // DIAGNOSTIC: Log rebounding data to debug missing fields
+    console.log(`[MySportsFeeds Stats] Rebounding data for ${teamAbbrev}:`, {
+      totalOffReb,
+      totalDefReb,
+      totalOppOffReb,
+      totalOppDefReb,
+      avgOffReb,
+      avgDefReb,
+      avgOppOffReb,
+      avgOppDefReb,
+      gameCount
+    })
+
+    // CRITICAL: Validate rebounding data exists (required for SPREAD factors)
+    if (totalOffReb === 0 && totalDefReb === 0) {
+      throw new Error(
+        `Missing rebounding data for ${teamAbbrev}. ` +
+        `MySportsFeeds API did not return rebounds in stats.rebounds field. ` +
+        `This data is required for SPREAD factor S3 (Rebounding Differential). ` +
+        `Check API response structure or field names.`
+      )
+    }
+
     // Four Factors calculations (for S5)
     const avgEfg = totalFGA > 0 ? (totalFGM + 0.5 * total3PM) / totalFGA : 0
     const avgPoss = totalPace * gameCount // Total possessions across all games
