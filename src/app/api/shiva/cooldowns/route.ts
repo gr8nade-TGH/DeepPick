@@ -5,14 +5,17 @@ import { getSupabaseAdmin } from '@/lib/supabase/server'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url)
+    const betType = searchParams.get('betType') // 'TOTAL' or 'SPREAD'
+
     const supabase = getSupabaseAdmin()
 
     // Get ALL cooldowns (both active and expired) for visibility
     // CHANGED: Removed .gt('cooldown_until', ...) filter to show all cooldowns including expired ones
     // This allows the Run Log to display cooldown history, not just active cooldowns
-    const { data: cooldowns, error } = await supabase
+    let query = supabase
       .from('pick_generation_cooldowns')
       .select(`
         id,
@@ -26,6 +29,14 @@ export async function GET() {
       `)
       .order('created_at', { ascending: false })
       .limit(50) // Limit to most recent 50 cooldowns
+
+    // Filter by betType if provided
+    if (betType) {
+      const betTypeLower = betType === 'TOTAL' ? 'total' : 'spread'
+      query = query.eq('bet_type', betTypeLower)
+    }
+
+    const { data: cooldowns, error } = await query
 
     if (error) {
       console.error('[CooldownsAPI] Error fetching cooldowns:', error)

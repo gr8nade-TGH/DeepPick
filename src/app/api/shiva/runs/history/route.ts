@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
     const limit = parseInt(searchParams.get('limit') || '50')
+    const betType = searchParams.get('betType') // 'TOTAL' or 'SPREAD'
 
     const supabase = getSupabaseAdmin()
 
@@ -27,8 +28,16 @@ export async function GET(request: NextRequest) {
     console.log('[Run History] Fetched', runsData?.length || 0, 'runs from database')
 
     // Filter for SHIVA runs only (capper is in metadata)
-    const shivaRuns = (runsData || []).filter((run: any) => run.metadata?.capper === 'shiva')
-    console.log('[Run History] Filtered to', shivaRuns.length, 'SHIVA runs')
+    let shivaRuns = (runsData || []).filter((run: any) => run.metadata?.capper === 'shiva')
+
+    // Filter by betType if provided
+    if (betType) {
+      const betTypeLower = betType === 'TOTAL' ? 'total' : 'spread'
+      shivaRuns = shivaRuns.filter((run: any) => run.metadata?.betType === betTypeLower || run.metadata?.pick_type === betTypeLower)
+      console.log('[Run History] Filtered to', shivaRuns.length, 'SHIVA runs with betType:', betType)
+    } else {
+      console.log('[Run History] Filtered to', shivaRuns.length, 'SHIVA runs (all bet types)')
+    }
 
     // Log sample of first run to debug factor data
     if (shivaRuns.length > 0) {
