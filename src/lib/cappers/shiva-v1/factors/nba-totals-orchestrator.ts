@@ -83,6 +83,8 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
             homeFTr: 0.22,
             awayOppFTr: 0.22,
             homeOppFTr: 0.22,
+            awayTOVLast10: 14.0,
+            homeTOVLast10: 14.0,
             leaguePace: 100.1,
             leagueORtg: 110.0,
             leagueDRtg: 110.0,
