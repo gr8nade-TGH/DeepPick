@@ -114,8 +114,22 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
   // Check Supabase cache first (persists across serverless cold starts)
   const cacheKey = `${teamAbbrev}:${n}`
   const cached = await getSupabaseCachedTeamForm(cacheKey)
-  if (cached) {
+
+  // Validate cached data has all required fields (invalidate old cache entries)
+  if (cached &&
+    typeof cached.avgTurnovers === 'number' &&
+    typeof cached.avgOffReb === 'number' &&
+    typeof cached.avgDefReb === 'number' &&
+    typeof cached.avgOppOffReb === 'number' &&
+    typeof cached.avgOppDefReb === 'number' &&
+    typeof cached.avgEfg === 'number' &&
+    typeof cached.avgTovPct === 'number' &&
+    typeof cached.avgOrebPct === 'number' &&
+    typeof cached.avgFtr === 'number') {
+    console.log(`[MySportsFeeds Stats] Cache HIT for ${cacheKey} - using cached data`)
     return cached
+  } else if (cached) {
+    console.log(`[MySportsFeeds Stats] Cache INVALID for ${cacheKey} - missing new fields, refetching...`)
   }
 
   console.log(`[MySportsFeeds Stats] Cache MISS for ${cacheKey} - fetching from API...`)
