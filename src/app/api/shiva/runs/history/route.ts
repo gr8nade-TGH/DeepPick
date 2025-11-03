@@ -32,8 +32,13 @@ export async function GET(request: NextRequest) {
 
     // Filter by betType if provided
     if (betType) {
-      const betTypeLower = betType === 'TOTAL' ? 'total' : 'spread'
-      shivaRuns = shivaRuns.filter((run: any) => run.metadata?.betType === betTypeLower || run.metadata?.pick_type === betTypeLower)
+      const betTypeUpper = betType.toUpperCase() // 'TOTAL' or 'SPREAD'
+      shivaRuns = shivaRuns.filter((run: any) => {
+        // Check metadata.bet_type (uppercase) or metadata.pick_type (uppercase)
+        const runBetType = run.metadata?.bet_type?.toUpperCase()
+        const runPickType = run.metadata?.pick_type?.toUpperCase()
+        return runBetType === betTypeUpper || runPickType === betTypeUpper
+      })
       console.log('[Run History] Filtered to', shivaRuns.length, 'SHIVA runs with betType:', betType)
     } else {
       console.log('[Run History] Filtered to', shivaRuns.length, 'SHIVA runs (all bet types)')
