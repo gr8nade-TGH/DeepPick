@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import Map from 'react-map-gl/maplibre'
+import Map from 'react-map-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { NBA_TEAM_COORDINATES } from './nba-team-coordinates'
 import { MOCK_TERRITORY_DATA } from './mock-data'
@@ -82,8 +82,7 @@ export function TerritoryMap() {
 
       {/* Map */}
       <Map
-        mapboxAccessToken={MAPBOX_TOKEN}
-        mapStyle="mapbox://styles/mapbox/light-v11"
+        mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
         initialViewState={{
           longitude: -98.5795,
           latitude: 39.8283,
