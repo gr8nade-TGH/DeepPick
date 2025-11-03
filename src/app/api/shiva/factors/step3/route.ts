@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { ensureApiEnabled, isWriteAllowed, jsonError, jsonOk, requireIdempotencyKey } from '@/lib/api/shiva-v1/route-helpers'
 import { withIdempotency } from '@/lib/api/shiva-v1/idempotency'
 import { computeTotalsFactors } from '@/lib/cappers/shiva-v1/factors/nba-totals-orchestrator'
+import { computeSpreadFactors } from '@/lib/cappers/shiva-v1/factors/nba-spread-orchestrator'
 import { getFactorWeightsFromProfile } from '@/lib/cappers/shiva-v1/confidence-calculator'
 export const runtime = 'nodejs'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
@@ -65,33 +66,37 @@ export async function POST(request: Request) {
     exec: async () => {
       const admin = getSupabaseAdmin()
 
-      // Branch on NBA/TOTAL vs legacy factors
+      // Branch on NBA bet type vs legacy factors
       let factorsToProcess: any[]
       let factorVersion: string
 
-      console.debug('[step3:branch]', { sport, betType, used: sport === 'NBA' && betType === 'TOTAL' ? 'totals' : 'legacy' })
+      console.debug('[step3:branch]', {
+        sport,
+        betType,
+        used: sport === 'NBA' && (betType === 'TOTAL' || betType === 'SPREAD') ? betType.toLowerCase() : 'legacy'
+      })
 
       let totalsDebug: any = null
 
-      if (sport === 'NBA' && betType === 'TOTAL') {
-        // Use new NBA totals factors
+      if (sport === 'NBA' && (betType === 'TOTAL' || betType === 'SPREAD')) {
+        // Use new NBA factors (TOTAL or SPREAD)
         try {
-          console.log('[Step3:NBA-Totals] Starting computeTotalsFactors...')
+          console.log(`[Step3:NBA-${betType}] Starting compute${betType === 'TOTAL' ? 'Totals' : 'Spread'}Factors...`)
 
           // Fetch capper profile to get factor weights (both dry run and write modes)
           let factorWeights: Record<string, number> = {}
           try {
-            console.log('[Step3:NBA-Totals] Fetching profile for:', { capper_id: 'SHIVA', sport: 'NBA', bet_type: 'TOTAL' })
+            console.log(`[Step3:NBA-${betType}] Fetching profile for:`, { capper_id: 'SHIVA', sport: 'NBA', bet_type: betType })
             const profileRes = await admin
               .from('capper_profiles')
               .select('factors')
               .eq('capper_id', 'SHIVA')
               .eq('sport', 'NBA')
-              .eq('bet_type', 'TOTAL')
+              .eq('bet_type', betType)
               .eq('is_default', true)
               .single()
 
-            console.log('[Step3:NBA-Totals] Profile query result:', {
+            console.log(`[Step3:NBA-${betType}] Profile query result:`, {
               data: profileRes.data,
               error: profileRes.error,
               hasFactors: !!profileRes.data?.factors,
@@ -100,50 +105,68 @@ export async function POST(request: Request) {
 
             if (profileRes.data?.factors && profileRes.data.factors.length > 0) {
               factorWeights = getFactorWeightsFromProfile({ factors: profileRes.data.factors })
-              console.log('[Step3:NBA-Totals] Using factor weights from profile:', factorWeights)
+              console.log(`[Step3:NBA-${betType}] Using factor weights from profile:`, factorWeights)
             } else {
-              console.error('[Step3:NBA-Totals] No profile found - FAILING as requested')
+              console.error(`[Step3:NBA-${betType}] No profile found - FAILING as requested`)
               throw new Error('No capper profile found. Please configure factors first.')
             }
           } catch (profileError) {
-            console.error('[Step3:NBA-Totals] Could not fetch profile - FAILING as requested:', profileError)
+            console.error(`[Step3:NBA-${betType}] Could not fetch profile - FAILING as requested:`, profileError)
             throw new Error(`Failed to load capper profile: ${profileError}`)
           }
 
-          const totalsResult = await computeTotalsFactors({
-            game_id: run_id, // Use run_id as game_id for now
-            away: inputs.teams.away,
-            home: inputs.teams.home,
-            sport: 'NBA',
-            betType: 'TOTAL',
-            leagueAverages: {
-              pace: 100.1,
-              ORtg: 110.0,
-              DRtg: 110.0,
-              threePAR: 0.39,
-              FTr: 0.22,
-              threePstdev: 0.036
-            },
-            factorWeights // Pass weights to factor computation
+          // Call the appropriate orchestrator based on betType
+          const orchestratorResult = betType === 'TOTAL'
+            ? await computeTotalsFactors({
+              game_id: run_id,
+              away: inputs.teams.away,
+              home: inputs.teams.home,
+              sport: 'NBA',
+              betType: 'TOTAL',
+              leagueAverages: {
+                pace: 100.1,
+                ORtg: 110.0,
+                DRtg: 110.0,
+                threePAR: 0.39,
+                FTr: 0.22,
+                threePstdev: 0.036
+              },
+              factorWeights
+            })
+            : await computeSpreadFactors({
+              game_id: run_id,
+              away: inputs.teams.away,
+              home: inputs.teams.home,
+              sport: 'NBA',
+              betType: 'SPREAD',
+              leagueAverages: {
+                pace: 100.1,
+                ORtg: 110.0,
+                DRtg: 110.0,
+                threePAR: 0.39,
+                FTr: 0.22,
+                threePstdev: 0.036
+              },
+              factorWeights
+            })
+
+          console.log(`[Step3:NBA-${betType}] Success:`, {
+            factorCount: orchestratorResult.factors.length,
+            version: orchestratorResult.factor_version
           })
 
-          console.log('[Step3:NBA-Totals] Success:', {
-            factorCount: totalsResult.factors.length,
-            version: totalsResult.factor_version
-          })
-
-          factorsToProcess = totalsResult.factors
-          factorVersion = totalsResult.factor_version
-          totalsDebug = totalsResult.totals_debug
+          factorsToProcess = orchestratorResult.factors
+          factorVersion = orchestratorResult.factor_version
+          totalsDebug = orchestratorResult.totals_debug
         } catch (error) {
           const errorMsg = error instanceof Error ? error.message : String(error)
-          console.error('[Step3:NBA-Totals] Error details:', {
+          console.error(`[Step3:NBA-${betType}] Error details:`, {
             message: errorMsg,
             stack: error instanceof Error ? error.stack : undefined,
             fullError: error
           })
           // Log detailed error and throw for withIdempotency to handle
-          throw new Error(`NBA Totals computation failed: ${errorMsg}. NBA Stats API may be unavailable or returning invalid data.`)
+          throw new Error(`NBA ${betType} computation failed: ${errorMsg}. NBA Stats API may be unavailable or returning invalid data.`)
         }
       } else {
         // Use legacy factors (existing logic)
