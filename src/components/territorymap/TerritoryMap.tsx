@@ -84,11 +84,6 @@ export function TerritoryMap() {
       <Map
         mapboxAccessToken={MAPBOX_TOKEN}
         mapStyle="mapbox://styles/mapbox/light-v11"
-        projection={{
-          name: 'albers',
-          center: [-98, 38] as [number, number],
-          parallels: [29.5, 45.5]
-        }}
         initialViewState={{
           longitude: -98.5795,
           latitude: 39.8283,
