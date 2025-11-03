@@ -148,14 +148,19 @@ export function calculateReboundingDiffPoints(input: ReboundingDiffInput): Rebou
  * Compute S3 (Rebounding Differential) for orchestrator
  */
 export function computeReboundingDifferential(bundle: NBAStatsBundle, ctx: RunCtx): any {
-  const awayOffReb = bundle.awayOffReb ?? 10.5
-  const awayDefReb = bundle.awayDefReb ?? 34.0
-  const awayOppOffReb = bundle.awayOppOffReb ?? 10.5
-  const awayOppDefReb = bundle.awayOppDefReb ?? 34.0
-  const homeOffReb = bundle.homeOffReb ?? 10.5
-  const homeDefReb = bundle.homeDefReb ?? 34.0
-  const homeOppOffReb = bundle.homeOppOffReb ?? 10.5
-  const homeOppDefReb = bundle.homeOppDefReb ?? 34.0
+  if (!bundle.awayOffReb || !bundle.awayDefReb || !bundle.awayOppOffReb || !bundle.awayOppDefReb ||
+    !bundle.homeOffReb || !bundle.homeDefReb || !bundle.homeOppOffReb || !bundle.homeOppDefReb) {
+    throw new Error('[S3:REBOUNDING_DIFF] Missing rebounding data in bundle')
+  }
+
+  const awayOffReb = bundle.awayOffReb
+  const awayDefReb = bundle.awayDefReb
+  const awayOppOffReb = bundle.awayOppOffReb
+  const awayOppDefReb = bundle.awayOppDefReb
+  const homeOffReb = bundle.homeOffReb
+  const homeDefReb = bundle.homeDefReb
+  const homeOppOffReb = bundle.homeOppOffReb
+  const homeOppDefReb = bundle.homeOppDefReb
 
   const result = calculateReboundingDiffPoints({
     awayOffReb,

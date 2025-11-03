@@ -171,7 +171,7 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
     factor_keys: factors.map(f => f.key),
     console_logs: {
       branch_used: branchLog,
-      bundle: (bundle || {}) as any,
+      bundle: bundle,
       rows_z_points: factors.map(f => ({
         key: f.key,
         z: f.normalized_value,

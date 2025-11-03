@@ -139,14 +139,19 @@ export function calculateFourFactorsPoints(input: FourFactorsInput): FourFactors
  * Compute S5 (Four Factors Differential) for orchestrator
  */
 export function computeFourFactorsDifferential(bundle: NBAStatsBundle, ctx: RunCtx): any {
-  const awayEfg = bundle.awayEfg ?? 0.53
-  const awayTovPct = bundle.awayTovPct ?? 0.14
-  const awayOrebPct = bundle.awayOrebPct ?? 0.24
-  const awayFtr = bundle.awayFtr ?? 0.22
-  const homeEfg = bundle.homeEfg ?? 0.53
-  const homeTovPct = bundle.homeTovPct ?? 0.14
-  const homeOrebPct = bundle.homeOrebPct ?? 0.24
-  const homeFtr = bundle.homeFtr ?? 0.22
+  if (!bundle.awayEfg || !bundle.awayTovPct || !bundle.awayOrebPct || !bundle.awayFtr ||
+    !bundle.homeEfg || !bundle.homeTovPct || !bundle.homeOrebPct || !bundle.homeFtr) {
+    throw new Error('[S5:FOUR_FACTORS] Missing Four Factors data in bundle')
+  }
+
+  const awayEfg = bundle.awayEfg
+  const awayTovPct = bundle.awayTovPct
+  const awayOrebPct = bundle.awayOrebPct
+  const awayFtr = bundle.awayFtr
+  const homeEfg = bundle.homeEfg
+  const homeTovPct = bundle.homeTovPct
+  const homeOrebPct = bundle.homeOrebPct
+  const homeFtr = bundle.homeFtr
 
   const result = calculateFourFactorsPoints({
     awayEfg,

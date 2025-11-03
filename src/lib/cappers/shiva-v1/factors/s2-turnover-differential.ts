@@ -124,8 +124,12 @@ export function computeTurnoverDifferential(bundle: NBAStatsBundle, ctx: RunCtx)
   console.log('[S2:TURNOVER_DIFF] Computing turnover differential...')
 
   // Extract turnover data from bundle
-  const awayTOV = bundle.awayTOVLast10 ?? 14.0 // League average fallback
-  const homeTOV = bundle.homeTOVLast10 ?? 14.0 // League average fallback
+  if (!bundle.awayTOVLast10 || !bundle.homeTOVLast10) {
+    throw new Error('[S2:TURNOVER_DIFF] Missing turnover data in bundle')
+  }
+
+  const awayTOV = bundle.awayTOVLast10
+  const homeTOV = bundle.homeTOVLast10
 
   console.log(`[S2:TURNOVER_DIFF] Away TOV: ${awayTOV.toFixed(1)}, Home TOV: ${homeTOV.toFixed(1)}`)
 
