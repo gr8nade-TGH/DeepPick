@@ -37,25 +37,26 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground font-sans;
     background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
     min-height: 100vh;
   }
-  
+
   /* Custom scrollbar */
   ::-webkit-scrollbar {
     width: 8px;
   }
-  
+
   ::-webkit-scrollbar-track {
     @apply bg-dark-200;
   }
-  
+
   ::-webkit-scrollbar-thumb {
     @apply bg-neon-green rounded-full;
   }
-  
+
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-neon-blue;
   }
@@ -65,60 +66,60 @@
   .glass-effect {
     @apply bg-white/5 backdrop-blur-sm border border-white/10;
   }
-  
+
   .neon-glow {
     @apply shadow-lg;
     box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
   }
-  
+
   .neon-glow-blue {
     @apply shadow-lg;
     box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
   }
-  
+
   .neon-glow-purple {
     @apply shadow-lg;
     box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
   }
-  
+
   .neon-glow-pink {
     @apply shadow-lg;
     box-shadow: 0 0 20px rgba(244, 114, 182, 0.3);
   }
-  
+
   .shadow-yellow-glow {
     box-shadow: 0 0 20px rgba(234, 179, 8, 0.3);
   }
-  
+
   .shadow-gray-glow {
     box-shadow: 0 0 20px rgba(156, 163, 175, 0.3);
   }
-  
+
   .shadow-orange-glow {
     box-shadow: 0 0 20px rgba(249, 115, 22, 0.3);
   }
-  
+
   .heartbeat-line {
     stroke: #00ff88;
     stroke-width: 2;
     fill: none;
     filter: drop-shadow(0 0 3px #00ff88);
   }
-  
+
   .grid-pattern {
-    background-image: 
+    background-image:
       linear-gradient(rgba(0, 255, 136, 0.1) 1px, transparent 1px),
       linear-gradient(90deg, rgba(0, 255, 136, 0.1) 1px, transparent 1px);
     background-size: 20px 20px;
   }
-  
+
   .text-gradient {
     background: linear-gradient(135deg, #00ff88 0%, #00d4ff 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
-  
+
   .text-gradient-purple {
     background: linear-gradient(135deg, #8b5cf6 0%, #f472b6 100%);
     -webkit-background-clip: text;
@@ -134,9 +135,12 @@
 
   /* Territory Map Animations */
   @keyframes pulse-glow {
-    0%, 100% {
+
+    0%,
+    100% {
       box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
     }
+
     50% {
       box-shadow: 0 0 40px rgba(255, 215, 0, 1.0);
     }
@@ -144,5 +148,37 @@
 
   .animate-pulse-glow {
     animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  @keyframes sword-clash {
+
+    0%,
+    100% {
+      transform: rotate(-15deg) translateX(-2px);
+    }
+
+    50% {
+      transform: rotate(15deg) translateX(2px);
+    }
+  }
+
+  @keyframes sword-clash-reverse {
+
+    0%,
+    100% {
+      transform: rotate(15deg) translateX(2px) scaleX(-1);
+    }
+
+    50% {
+      transform: rotate(-15deg) translateX(-2px) scaleX(-1);
+    }
+  }
+
+  .animate-sword-clash {
+    animation: sword-clash 0.6s ease-in-out infinite;
+  }
+
+  .animate-sword-clash-reverse {
+    animation: sword-clash-reverse 0.6s ease-in-out infinite;
   }
 }
