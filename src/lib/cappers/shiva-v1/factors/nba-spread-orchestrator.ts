@@ -124,11 +124,6 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
     nbaStatsDebugInfo.api_calls_made = true
   }
 
-  // Ensure bundle exists before computing factors
-  if (!bundle && factors.length === 0) {
-    throw new Error('[SPREAD] No bundle available and no factors computed - this should not happen')
-  }
-
   // Compute only enabled factors
   const factors: any[] = []
 
