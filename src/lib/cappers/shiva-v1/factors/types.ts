@@ -1,7 +1,7 @@
 /**
- * NBA Totals Factor Types
- * 
- * Shared types for NBA totals factor computation
+ * NBA Factor Types
+ *
+ * Shared types for NBA factor computation (TOTALS and SPREAD)
  */
 
 export interface RunCtx {
@@ -9,7 +9,7 @@ export interface RunCtx {
   away: string
   home: string
   sport: 'NBA'
-  betType: 'TOTAL'
+  betType: 'TOTAL' | 'SPREAD' | 'MONEYLINE'
   leagueAverages: {
     pace: number
     ORtg: number
