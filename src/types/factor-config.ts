@@ -3,7 +3,7 @@
  * Defines the structure for configurable factors per capper/sport/bet type
  */
 
-export type DataSource = 'nba-stats-api' | 'odds-api-scores' | 'statmuse' | 'manual' | 'llm' | 'news-api' | 'system' | 'mysportsfeeds'
+export type DataSource = 'system' | 'mysportsfeeds' | 'perplexity' | 'openai'
 
 export interface FactorConfig {
   key: string
@@ -13,12 +13,12 @@ export interface FactorConfig {
   weight: number // 0-100
   dataSource: DataSource
   maxPoints: number
-  
+
   // Metadata
   sport: string
   betType: string
   scope: 'team' | 'player' | 'matchup' | 'global'
-  
+
   // UI
   icon: string
   shortName: string
@@ -29,12 +29,12 @@ export interface CapperProfile {
   capperId: string // 'SHIVA', 'IFRIT', 'CERBERUS', etc.
   sport: string // 'NBA', 'NFL', 'MLB'
   betType: string // 'SPREAD', 'MONEYLINE', 'TOTAL'
-  
+
   name: string
   description?: string
-  
+
   factors: FactorConfig[]
-  
+
   // Metadata
   createdAt: string
   updatedAt: string

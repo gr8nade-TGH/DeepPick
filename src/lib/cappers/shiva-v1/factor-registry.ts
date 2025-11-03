@@ -35,7 +35,7 @@ export const NBA_TOTALS_FACTORS: FactorMeta[] = [
     },
     maxPoints: 5.0,
     defaultWeight: 0.20,
-    defaultDataSource: 'nba-stats-api'
+    defaultDataSource: 'mysportsfeeds'
   },
   {
     key: 'offForm',
@@ -50,7 +50,7 @@ export const NBA_TOTALS_FACTORS: FactorMeta[] = [
     },
     maxPoints: 5.0,
     defaultWeight: 0.20,
-    defaultDataSource: 'nba-stats-api'
+    defaultDataSource: 'mysportsfeeds'
   },
   {
     key: 'defErosion',
@@ -65,7 +65,7 @@ export const NBA_TOTALS_FACTORS: FactorMeta[] = [
     },
     maxPoints: 5.0,
     defaultWeight: 0.20,
-    defaultDataSource: 'nba-stats-api'
+    defaultDataSource: 'mysportsfeeds'
   },
   {
     key: 'threeEnv',
@@ -80,7 +80,7 @@ export const NBA_TOTALS_FACTORS: FactorMeta[] = [
     },
     maxPoints: 5.0,
     defaultWeight: 0.20,
-    defaultDataSource: 'nba-stats-api'
+    defaultDataSource: 'mysportsfeeds'
   },
   {
     key: 'whistleEnv',
@@ -95,7 +95,7 @@ export const NBA_TOTALS_FACTORS: FactorMeta[] = [
     },
     maxPoints: 5.0,
     defaultWeight: 0.20,
-    defaultDataSource: 'nba-stats-api'
+    defaultDataSource: 'mysportsfeeds'
   }
 ];
 
@@ -193,7 +193,7 @@ export const GLOBAL_FACTORS: FactorMeta[] = [
     },
     maxPoints: 5.0,
     defaultWeight: 0.15,
-    defaultDataSource: 'manual'
+    defaultDataSource: 'system'
   },
   {
     key: 'edgeVsMarketSpread',
@@ -208,7 +208,7 @@ export const GLOBAL_FACTORS: FactorMeta[] = [
     },
     maxPoints: 5.0,
     defaultWeight: 0.15,
-    defaultDataSource: 'manual'
+    defaultDataSource: 'system'
   }
 ];
 
@@ -227,7 +227,7 @@ export const INJURY_FACTORS: FactorMeta[] = [
     },
     maxPoints: 5.0,
     defaultWeight: 0.00,
-    defaultDataSource: 'llm'
+    defaultDataSource: 'perplexity'
   }
 ];
 

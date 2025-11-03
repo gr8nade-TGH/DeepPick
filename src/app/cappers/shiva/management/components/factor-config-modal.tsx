@@ -729,7 +729,7 @@ export function FactorConfigModal({
             description: meta.description,
             enabled: savedFactor?.enabled ?? isEdge, // Edge vs Market factors enabled by default
             weight: isEdge ? 100 : (savedFactor?.weight ?? meta.defaultWeight), // Edge vs Market factors always 100%
-            dataSource: savedFactor?.dataSource ?? meta.defaultDataSource ?? (key === 'injuryAvailability' ? 'llm' : 'nba-stats-api'),
+            dataSource: savedFactor?.dataSource ?? meta.defaultDataSource ?? (key === 'injuryAvailability' ? 'perplexity' : 'mysportsfeeds'),
             maxPoints: meta.maxPoints,
             sport: Array.isArray(meta.appliesTo.sports) ? meta.appliesTo.sports[0] : 'NBA',
             betType: Array.isArray(meta.appliesTo.betTypes) ? meta.appliesTo.betTypes[0] : 'TOTAL',
@@ -1232,13 +1232,10 @@ export function FactorConfigModal({
                                     onChange={e => updateDataSource(factor.key, e.target.value as DataSource)}
                                     className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm"
                                   >
-                                    <option value="nba-stats-api">NBA Stats API</option>
-                                    <option value="odds-api-scores">Odds API Scores</option>
-                                    <option value="statmuse">StatMuse (deprecated)</option>
-                                    <option value="llm">LLM (AI)</option>
-                                    <option value="news-api">News API</option>
                                     <option value="system">System</option>
-                                    <option value="manual">Manual Entry</option>
+                                    <option value="mysportsfeeds">MySportsFeeds</option>
+                                    <option value="perplexity">Perplexity</option>
+                                    <option value="openai">OpenAI</option>
                                   </select>
                                 </div>
                               </div>
