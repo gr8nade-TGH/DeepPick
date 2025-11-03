@@ -772,7 +772,7 @@ export function FactorConfigModal({
             description: 'Final confidence adjustment based on predicted vs market line for totals',
             enabled: true,
             weight: 100, // Always 100% (fixed)
-            dataSource: 'manual',
+            dataSource: 'system',
             maxPoints: 3.0,
             sport: 'NBA',
             betType: 'TOTAL',
