@@ -89,8 +89,10 @@ export function calculateConfidence(input: ConfidenceInput): ConfidenceOutput {
   })
 
   // Detect bet type from confSource or first factor
+  // For TOTALS: parsed_values_json has overScore/underScore
+  // For SPREAD: parsed_values_json has awayScore/homeScore
   const isTotals = confSource.includes('totals') || factors.some(f => f.parsed_values_json?.overScore !== undefined)
-  const isSpread = confSource.includes('spread') || factors.some(f => f.parsed_spread_values_json?.awayScore !== undefined)
+  const isSpread = confSource.includes('spread') || factors.some(f => f.parsed_values_json?.awayScore !== undefined)
 
   console.log('[ConfidenceCalculator] Bet type detection:', { isTotals, isSpread, confSource })
 
@@ -108,7 +110,6 @@ export function calculateConfidence(input: ConfidenceInput): ConfidenceOutput {
     const weightPct = factorWeights[factor.key] || 0 // Weight percentage (0-100)
     const weightDecimal = weightPct / 100 // Convert to decimal (0-1)
     const parsedValues = factor.parsed_values_json || {}
-    const parsedSpreadValues = factor.parsed_spread_values_json || {}
 
     if (isTotals) {
       // TOTALS: Use overScore and underScore
@@ -142,9 +143,9 @@ export function calculateConfidence(input: ConfidenceInput): ConfidenceOutput {
         }
       })
     } else if (isSpread) {
-      // SPREAD/MONEYLINE: Use awayScore and homeScore
-      const rawAwayScore = parsedSpreadValues.awayScore || 0
-      const rawHomeScore = parsedSpreadValues.homeScore || 0
+      // SPREAD/MONEYLINE: Use awayScore and homeScore from parsed_values_json
+      const rawAwayScore = parsedValues.awayScore || 0
+      const rawHomeScore = parsedValues.homeScore || 0
 
       // Scale by weight to get effective contribution
       const effectiveAwayScore = rawAwayScore * weightDecimal
@@ -168,8 +169,8 @@ export function calculateConfidence(input: ConfidenceInput): ConfidenceOutput {
         parsed_spread_values_json: {
           awayScore: rawAwayScore,
           homeScore: rawHomeScore,
-          signal: parsedSpreadValues.signal || 0,
-          points: parsedSpreadValues.points || 0
+          signal: parsedValues.signal || 0,
+          points: parsedValues.points || 0
         }
       })
     }
