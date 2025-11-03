@@ -131,4 +131,18 @@
   .text-balance {
     text-wrap: balance;
   }
+
+  /* Territory Map Animations */
+  @keyframes pulse-glow {
+    0%, 100% {
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+    }
+    50% {
+      box-shadow: 0 0 40px rgba(255, 215, 0, 1.0);
+    }
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
 }
