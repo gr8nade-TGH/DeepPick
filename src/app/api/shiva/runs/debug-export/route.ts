@@ -96,10 +96,17 @@ export async function GET(request: NextRequest) {
       const factorContributions = (metadata.factor_contributions || []).map((factor: any) => {
         const parsedValues = factor.parsed_values_json || {}
 
-        // CRITICAL: Try weight_applied first (new format), fallback to weight_total_pct (old format)
-        let weight = factor.weight_applied || 0
-        if (weight === 0 && factor.weight_total_pct) {
-          weight = factor.weight_total_pct / 100 // Convert percentage to decimal
+        // CRITICAL: Try multiple weight field names (different formats use different field names)
+        // Priority: weight (decimal 0-1) > weight_percentage (0-100) > weight_total_pct (0-100) > weight_applied (decimal 0-1)
+        let weight = 0
+        if (factor.weight !== undefined && factor.weight !== null) {
+          weight = Number(factor.weight) // Decimal weight (0-1)
+        } else if (factor.weight_percentage !== undefined && factor.weight_percentage !== null) {
+          weight = Number(factor.weight_percentage) / 100 // Convert percentage to decimal
+        } else if (factor.weight_total_pct !== undefined && factor.weight_total_pct !== null) {
+          weight = Number(factor.weight_total_pct) / 100 // Convert percentage to decimal
+        } else if (factor.weight_applied !== undefined && factor.weight_applied !== null) {
+          weight = Number(factor.weight_applied) // Decimal weight (0-1)
         }
         const weightPct = Math.round(weight * 100)
 
