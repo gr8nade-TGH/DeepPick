@@ -729,7 +729,7 @@ export function FactorConfigModal({
             description: meta.description,
             enabled: savedFactor?.enabled ?? isEdge, // Edge vs Market factors enabled by default
             weight: isEdge ? 100 : (savedFactor?.weight ?? meta.defaultWeight), // Edge vs Market factors always 100%
-            dataSource: savedFactor?.dataSource ?? meta.defaultDataSource ?? (key === 'injuryAvailability' ? 'perplexity' : 'mysportsfeeds'),
+            dataSource: meta.defaultDataSource ?? 'mysportsfeeds', // Always use registry's data source (hardcoded, not user-configurable)
             maxPoints: meta.maxPoints,
             sport: Array.isArray(meta.appliesTo.sports) ? meta.appliesTo.sports[0] : 'NBA',
             betType: Array.isArray(meta.appliesTo.betTypes) ? meta.appliesTo.betTypes[0] : 'TOTAL',
@@ -1222,21 +1222,17 @@ export function FactorConfigModal({
                                   />
                                 </div>
 
-                                {/* Data Source Selector */}
+                                {/* Data Source (Read-Only) */}
                                 <div>
                                   <label className="block text-xs text-gray-400 mb-2">
                                     Data Source
                                   </label>
-                                  <select
-                                    value={factor.dataSource}
-                                    onChange={e => updateDataSource(factor.key, e.target.value as DataSource)}
-                                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm"
-                                  >
-                                    <option value="system">System</option>
-                                    <option value="mysportsfeeds">MySportsFeeds</option>
-                                    <option value="perplexity">Perplexity</option>
-                                    <option value="openai">OpenAI</option>
-                                  </select>
+                                  <div className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded text-gray-300 text-sm">
+                                    {factor.dataSource === 'mysportsfeeds' && '📊 MySportsFeeds'}
+                                    {factor.dataSource === 'system' && '⚙️ System'}
+                                    {factor.dataSource === 'perplexity' && '🤖 Perplexity'}
+                                    {factor.dataSource === 'openai' && '🧠 OpenAI'}
+                                  </div>
                                 </div>
                               </div>
 
