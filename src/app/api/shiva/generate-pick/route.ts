@@ -89,12 +89,13 @@ export async function POST(request: Request) {
 
       // CRITICAL: Use UPSERT to handle expired cooldowns
       // The unique constraint on (game_id, capper, bet_type) means we need to update existing records
+      // IMPORTANT: Use lowercase 'total' to match RPC function can_generate_pick (line 91 in migration 028)
       const { error: cooldownError } = await supabase
         .from('pick_generation_cooldowns')
         .upsert({
           game_id: game.id,
           capper: 'shiva',
-          bet_type: 'TOTAL', // ← UPPERCASE to match capper_profiles schema
+          bet_type: 'total', // ← lowercase to match RPC function can_generate_pick
           result: 'ERROR',
           units: 0,
           confidence_score: 0,
@@ -176,9 +177,11 @@ export async function POST(request: Request) {
     if (!result.pick) {
       console.log('[SHIVA:GeneratePick] Pipeline decided to PASS')
 
-      // Create cooldown for PASS decision - cooldown until game time to prevent re-analyzing
-      // If game time is not available or already passed, use 24 hours
+      // Create cooldown for PASS decision
+      // Use 2-hour cooldown OR game time, whichever is SHORTER
+      // This allows re-analysis if conditions change, but prevents spam
       let cooldownUntil: Date
+      const twoHoursFromNow = new Date(Date.now() + 2 * 60 * 60 * 1000)
       const gameDate = game.game_date
       const gameTime = game.game_time
 
@@ -186,29 +189,30 @@ export async function POST(request: Request) {
         // Combine game_date and game_time to get full timestamp
         const gameDateTime = new Date(`${gameDate}T${gameTime}Z`)
 
-        // If game is in the future, cooldown until game time
+        // If game is in the future, use the SHORTER of 2 hours or game time
         if (gameDateTime > new Date()) {
-          cooldownUntil = gameDateTime
-          console.log(`[SHIVA:GeneratePick] Setting PASS cooldown until game time: ${cooldownUntil.toISOString()}`)
+          cooldownUntil = gameDateTime < twoHoursFromNow ? gameDateTime : twoHoursFromNow
+          console.log(`[SHIVA:GeneratePick] Setting PASS cooldown to ${cooldownUntil.toISOString()} (shorter of 2 hours or game time)`)
         } else {
-          // Game already started or passed, use 24 hours
-          cooldownUntil = new Date(Date.now() + 24 * 60 * 60 * 1000)
-          console.log(`[SHIVA:GeneratePick] Game time passed, setting PASS cooldown for 24 hours: ${cooldownUntil.toISOString()}`)
+          // Game already started or passed, use 2 hours
+          cooldownUntil = twoHoursFromNow
+          console.log(`[SHIVA:GeneratePick] Game time passed, setting PASS cooldown for 2 hours: ${cooldownUntil.toISOString()}`)
         }
       } else {
-        // No game time available, use 24 hours
-        cooldownUntil = new Date(Date.now() + 24 * 60 * 60 * 1000)
-        console.log(`[SHIVA:GeneratePick] No game time available, setting PASS cooldown for 24 hours: ${cooldownUntil.toISOString()}`)
+        // No game time available, use 2 hours
+        cooldownUntil = twoHoursFromNow
+        console.log(`[SHIVA:GeneratePick] No game time available, setting PASS cooldown for 2 hours: ${cooldownUntil.toISOString()}`)
       }
 
       // CRITICAL: Use UPSERT to handle expired cooldowns
       // The unique constraint on (game_id, capper, bet_type) means we need to update existing records
+      // IMPORTANT: Use lowercase 'total' to match RPC function can_generate_pick (line 91 in migration 028)
       const { error: cooldownError } = await supabase
         .from('pick_generation_cooldowns')
         .upsert({
           game_id: game.id,
           capper: 'shiva',
-          bet_type: 'TOTAL', // ← UPPERCASE to match capper_profiles schema
+          bet_type: 'total', // ← lowercase to match RPC function can_generate_pick
           result: 'PASS',
           units: 0,
           confidence_score: confidence,
@@ -290,13 +294,14 @@ export async function POST(request: Request) {
     // Set cooldown to year 2099 to make it effectively permanent
     // CRITICAL: Use UPSERT to handle expired cooldowns
     // The unique constraint on (game_id, capper, bet_type) means we need to update existing records
+    // IMPORTANT: Use lowercase 'total' to match RPC function can_generate_pick (line 91 in migration 028)
     const cooldownUntil = new Date('2099-12-31T23:59:59Z')
     const { error: cooldownError } = await supabase
       .from('pick_generation_cooldowns')
       .upsert({
         game_id: game.id,
         capper: 'shiva',
-        bet_type: 'TOTAL', // ← UPPERCASE to match capper_profiles schema
+        bet_type: 'total', // ← lowercase to match RPC function can_generate_pick
         result: 'PICK_GENERATED',
         units: pick.units,
         confidence_score: confidence,

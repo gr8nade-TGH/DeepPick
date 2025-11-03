@@ -248,6 +248,7 @@ async function checkGameEligibility(
     }
 
     // Check cooldown period using the service
+    // The RPC function can_generate_pick automatically converts bet_type to lowercase (migration 028 line 91)
     const canGenerate = await pickGenerationService.canGeneratePick(
       game.game_id,
       'shiva',
@@ -265,7 +266,7 @@ async function checkGameEligibility(
           .select('total_line, cooldown_until')
           .eq('game_id', game.game_id)
           .eq('capper', 'shiva')
-          .eq('bet_type', 'total')
+          .eq('bet_type', betTypeLower)
           .gt('cooldown_until', new Date().toISOString())
           .single()
 
@@ -282,7 +283,7 @@ async function checkGameEligibility(
               .delete()
               .eq('game_id', game.game_id)
               .eq('capper', 'shiva')
-              .eq('bet_type', 'total')
+              .eq('bet_type', betTypeLower)
 
             console.log(`[SHIVA_SCANNER] Game is eligible for processing (total line changed)`)
             return true
@@ -476,10 +477,11 @@ async function scanForEligibleGames(
 
     // Check cooldown periods for remaining games
     console.log(`[SHIVA_SCANNER] Checking cooldowns for ${availableGames.length} games...`)
+    console.log(`[SHIVA_SCANNER] Using bet_type: ${betTypeLower} (lowercase to match cooldown records)`)
     const nowIso = new Date().toISOString()
     const { data: cooldownData, error: cooldownError } = await supabase
       .from('pick_generation_cooldowns')
-      .select('game_id, cooldown_until, result, units, created_at')
+      .select('game_id, cooldown_until, result, units, created_at, bet_type')
       .in('game_id', availableGames.map((g: any) => g.id))
       .eq('capper', 'shiva')
       .eq('bet_type', betTypeLower)
