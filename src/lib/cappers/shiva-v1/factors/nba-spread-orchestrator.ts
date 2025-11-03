@@ -15,8 +15,9 @@ import { FactorComputation } from '@/types/factors'
 import { RunCtx, NBAStatsBundle, InjuryImpact, FactorComputationResult } from './types'
 import { fetchNBAStatsBundle, summarizeAvailabilityWithLLM } from './data-fetcher'
 
-// TODO: Import spread factor implementations when created
-// import { computeNetRatingDifferential } from './s1-net-rating-differential'
+// Import spread factor implementations
+import { computeNetRatingDifferential } from './s1-net-rating-differential'
+// TODO: Import remaining spread factors when created
 // import { computeRestAdvantage } from './s2-rest-advantage'
 // import { computeATSMomentum } from './s3-ats-momentum'
 // import { computeHomeCourtAdvantage } from './s4-home-court-advantage'
@@ -122,10 +123,13 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
   // Compute only enabled factors
   const factors: any[] = []
 
-  // TODO: Implement spread factors in Phase 2
-  // if (enabledFactorKeys.includes('netRatingDiff')) {
-  //   factors.push(computeNetRatingDifferential(bundle!, ctx))
-  // }
+  // S1: Net Rating Differential
+  if (enabledFactorKeys.includes('netRatingDiff')) {
+    console.log('[SPREAD:S1] Computing Net Rating Differential...')
+    factors.push(computeNetRatingDifferential(bundle!, ctx))
+  }
+
+  // TODO: Implement remaining spread factors in Phase 2
   // if (enabledFactorKeys.includes('restAdvantage')) {
   //   factors.push(computeRestAdvantage(bundle!, ctx))
   // }
