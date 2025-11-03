@@ -6,8 +6,8 @@
  * SPREAD FACTORS (S1-S5):
  * - S1: Net Rating Differential (30% weight)
  * - S2: Turnover Differential (25% weight)
- * - S3: Recent ATS Momentum (20% weight)
- * - S4: Home Court Advantage (15% weight)
+ * - S3: Rebounding Differential (20% weight)
+ * - S4: Pace Mismatch (15% weight)
  * - S5: Four Factors Differential (10% weight)
  */
 
@@ -18,10 +18,9 @@ import { fetchNBAStatsBundle, summarizeAvailabilityWithLLM } from './data-fetche
 // Import spread factor implementations
 import { computeNetRatingDifferential } from './s1-net-rating-differential'
 import { computeTurnoverDifferential } from './s2-turnover-differential'
-// TODO: Import remaining spread factors when created
-// import { computeATSMomentum } from './s3-ats-momentum'
-// import { computeHomeCourtAdvantage } from './s4-home-court-advantage'
-// import { computeFourFactorsDifferential } from './s5-four-factors'
+import { computeReboundingDifferential } from './s3-rebounding-differential'
+import { computePaceMismatch } from './s4-pace-mismatch'
+import { computeFourFactorsDifferential } from './s5-four-factors-differential'
 
 /**
  * Main entry point: compute only enabled NBA spread factors
@@ -38,11 +37,11 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
 
   const nbaStatsConditionCheck = {
     enabledFactorKeys,
-    shouldFetchNBAStats: enabledFactorKeys.some(key => ['netRatingDiff', 'turnoverDiff', 'atsMomentum', 'homeCourtAdv', 'fourFactorsDiff'].includes(key)),
+    shouldFetchNBAStats: enabledFactorKeys.some(key => ['netRatingDiff', 'turnoverDiff', 'reboundingDiff', 'paceMismatch', 'fourFactorsDiff'].includes(key)),
     netRatingDiff: enabledFactorKeys.includes('netRatingDiff'),
     turnoverDiff: enabledFactorKeys.includes('turnoverDiff'),
-    atsMomentum: enabledFactorKeys.includes('atsMomentum'),
-    homeCourtAdv: enabledFactorKeys.includes('homeCourtAdv'),
+    reboundingDiff: enabledFactorKeys.includes('reboundingDiff'),
+    paceMismatch: enabledFactorKeys.includes('paceMismatch'),
     fourFactorsDiff: enabledFactorKeys.includes('fourFactorsDiff')
   }
   console.log('[SPREAD:NBA_STATS_CONDITION_CHECK]', nbaStatsConditionCheck)
@@ -135,16 +134,23 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
     factors.push(computeTurnoverDifferential(bundle!, ctx))
   }
 
-  // TODO: Implement remaining spread factors in Phase 2
-  // if (enabledFactorKeys.includes('atsMomentum')) {
-  //   factors.push(computeATSMomentum(bundle!, ctx))
-  // }
-  // if (enabledFactorKeys.includes('homeCourtAdv')) {
-  //   factors.push(computeHomeCourtAdvantage(bundle!, ctx))
-  // }
-  // if (enabledFactorKeys.includes('fourFactorsDiff')) {
-  //   factors.push(computeFourFactorsDifferential(bundle!, ctx))
-  // }
+  // S3: Rebounding Differential
+  if (enabledFactorKeys.includes('reboundingDiff')) {
+    console.log('[SPREAD:S3] Computing Rebounding Differential...')
+    factors.push(computeReboundingDifferential(bundle!, ctx))
+  }
+
+  // S4: Pace Mismatch
+  if (enabledFactorKeys.includes('paceMismatch')) {
+    console.log('[SPREAD:S4] Computing Pace Mismatch...')
+    factors.push(computePaceMismatch(bundle!, ctx))
+  }
+
+  // S5: Four Factors Differential
+  if (enabledFactorKeys.includes('fourFactorsDiff')) {
+    console.log('[SPREAD:S5] Computing Four Factors Differential...')
+    factors.push(computeFourFactorsDifferential(bundle!, ctx))
+  }
 
   console.log('[SPREAD:FACTORS_COMPUTED]', { totalFactors: factors.length, factorKeys: factors.map(f => f.key) })
 

@@ -58,6 +58,36 @@ export interface NBAStatsBundle {
   awayTOVLast10: number
   homeTOVLast10: number
 
+  // Rebounding data (for SPREAD factor S3)
+  awayOffReb: number
+  awayDefReb: number
+  awayOppOffReb: number
+  awayOppDefReb: number
+  homeOffReb: number
+  homeDefReb: number
+  homeOppOffReb: number
+  homeOppDefReb: number
+
+  // Four Factors data (for SPREAD factor S5)
+  awayEfg: number
+  awayTovPct: number
+  awayOrebPct: number
+  awayFtr: number
+  homeEfg: number
+  homeTovPct: number
+  homeOrebPct: number
+  homeFtr: number
+
+  // Home/Away splits (for SPREAD factor S4)
+  awayORtgHome?: number
+  awayORtgAway?: number
+  awayDRtgHome?: number
+  awayDRtgAway?: number
+  homeORtgHome?: number
+  homeORtgAway?: number
+  homeDRtgHome?: number
+  homeDRtgAway?: number
+
   // League anchors
   leaguePace: number
   leagueORtg: number

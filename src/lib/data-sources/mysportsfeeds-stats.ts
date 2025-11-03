@@ -40,6 +40,26 @@ export interface TeamFormData {
   ft_rate: number     // FTr
   gamesAnalyzed: number // Number of games used in calculation
   avgTurnovers: number // Average turnovers per game (for SPREAD factor S2)
+
+  // Rebounding data (for SPREAD factor S3)
+  avgOffReb: number // Offensive rebounds per game
+  avgDefReb: number // Defensive rebounds per game
+  avgOppOffReb: number // Opponent offensive rebounds per game
+  avgOppDefReb: number // Opponent defensive rebounds per game
+
+  // Four Factors data (for SPREAD factor S5)
+  avgEfg: number // Effective Field Goal %
+  avgTovPct: number // Turnover %
+  avgOrebPct: number // Offensive Rebound %
+  avgFtr: number // Free Throw Rate
+
+  // Home/Away splits (for SPREAD factor S4)
+  ortgHome?: number // ORtg in home games only
+  ortgAway?: number // ORtg in away games only
+  drtgHome?: number // DRtg in home games only
+  drtgAway?: number // DRtg in away games only
+  homeGames?: number // Number of home games analyzed
+  awayGames?: number // Number of away games analyzed
 }
 
 /**
@@ -142,6 +162,12 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
     let totalFTA = 0
     let totalFGA = 0
     let totalTOV = 0
+    let totalOffReb = 0
+    let totalDefReb = 0
+    let totalOppOffReb = 0
+    let totalOppDefReb = 0
+    let totalFGM = 0
+    let total3PM = 0
 
     for (const gameLog of gameLogs) {
       const stats = gameLog.stats
@@ -152,12 +178,18 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
 
       // Get team stats - VALIDATE that we have actual data, not just zeros
       const teamFGA = stats.fieldGoals?.fgAtt || 0
+      const teamFGM = stats.fieldGoals?.fgMade || 0
       const teamFTA = stats.freeThrows?.ftAtt || 0
       const teamOREB = stats.rebounds?.offReb || 0
+      const teamDREB = stats.rebounds?.defReb || 0
       const teamTOV = stats.defense?.tov || 0
       const team3PA = stats.fieldGoals?.fg3PtAtt || 0
       const team3PM = stats.fieldGoals?.fg3PtMade || 0
       const teamPTS = stats.offense?.pts || 0
+
+      // Opponent rebounding (from defense stats)
+      const oppOREB = stats.defense?.offRebAgainst || 0
+      const oppDREB = stats.defense?.defRebAgainst || 0
 
       // CRITICAL: Skip games with missing/zero stats (incomplete data from API)
       if (teamFGA === 0 && teamFTA === 0 && teamPTS === 0) {
@@ -189,6 +221,12 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
       totalFTA += teamFTA
       totalFGA += teamFGA
       totalTOV += teamTOV
+      totalOffReb += teamOREB
+      totalDefReb += teamDREB
+      totalOppOffReb += oppOREB
+      totalOppDefReb += oppDREB
+      totalFGM += teamFGM
+      total3PM += team3PM
     }
 
     const gameCount = gameLogs.length
@@ -213,6 +251,19 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
     const ft_rate = totalFGA > 0 ? totalFTA / totalFGA : 0
     const avgTurnovers = totalTOV / gameCount
 
+    // Rebounding averages (for S3)
+    const avgOffReb = totalOffReb / gameCount
+    const avgDefReb = totalDefReb / gameCount
+    const avgOppOffReb = totalOppOffReb / gameCount
+    const avgOppDefReb = totalOppDefReb / gameCount
+
+    // Four Factors calculations (for S5)
+    const avgEfg = totalFGA > 0 ? (totalFGM + 0.5 * total3PM) / totalFGA : 0
+    const avgPoss = totalPace * gameCount // Total possessions across all games
+    const avgTovPct = avgPoss > 0 ? totalTOV / avgPoss : 0
+    const avgOrebPct = (totalOffReb + totalOppDefReb) > 0 ? totalOffReb / (totalOffReb + totalOppDefReb) : 0
+    const avgFtr = totalFGA > 0 ? totalFTA / totalFGA : 0
+
     const formData: TeamFormData = {
       team: teamAbbrev,
       pace: avgPace,
@@ -222,7 +273,19 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
       threeP_rate,
       ft_rate,
       gamesAnalyzed: gameCount,
-      avgTurnovers
+      avgTurnovers,
+
+      // Rebounding data (S3)
+      avgOffReb,
+      avgDefReb,
+      avgOppOffReb,
+      avgOppDefReb,
+
+      // Four Factors (S5)
+      avgEfg,
+      avgTovPct,
+      avgOrebPct,
+      avgFtr
     }
 
     console.log(`[MySportsFeeds Stats] Form data for ${teamAbbrev}:`, {
@@ -233,6 +296,10 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
       threeP_rate: (threeP_rate * 100).toFixed(1) + '%',
       ft_rate: (ft_rate * 100).toFixed(1) + '%',
       avgTurnovers: avgTurnovers.toFixed(1),
+      avgOffReb: avgOffReb.toFixed(1),
+      avgDefReb: avgDefReb.toFixed(1),
+      avgEfg: (avgEfg * 100).toFixed(1) + '%',
+      avgOrebPct: (avgOrebPct * 100).toFixed(1) + '%',
       games: gameCount
     })
 

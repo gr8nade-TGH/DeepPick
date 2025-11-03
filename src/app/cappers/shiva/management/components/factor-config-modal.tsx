@@ -274,6 +274,70 @@ export function FactorConfigModal({
           "Data Sources: MySportsFeeds (team_gamelogs, last 10 games)",
           "Supported: NBA Spread predictions"
         ]
+      },
+      reboundingDiff: {
+        features: [
+          "🏀 Rebounding Differential: OREB% + DREB% dominance",
+          "📊 Formula: TotalREB% = OREB% + DREB%, differential = home - away",
+          "⚖️ Smart Scaling: Uses tanh for smooth saturation, caps at ±12% differential",
+          "🎯 Directional Scoring: Away OR Home, never both",
+          "📈 Max Points: 5.0 (significant ATS impact)"
+        ],
+        examples: [
+          "Scenario 1: Home dominates boards",
+          "• Away REB%: 95.0%, Home REB%: 105.0%",
+          "• Differential: +10.0%, Expected Impact: +10.0",
+          "• Signal: +0.76, Result: +3.80 Home Score",
+          "",
+          "Scenario 2: Away controls boards",
+          "• Away REB%: 106.0%, Home REB%: 94.0%",
+          "• Differential: -12.0%, Expected Impact: -12.0",
+          "• Signal: -0.83, Result: +4.15 Away Score",
+          "",
+          "Scenario 3: Even rebounding",
+          "• Away REB%: 100.0%, Home REB%: 100.0%",
+          "• Differential: 0.0%, Expected Impact: 0.0",
+          "• Signal: 0.0, Result: 0.0 (Neutral)"
+        ],
+        registry: [
+          "Weight: 20% (Default - Adjustable)",
+          "Max Points: 5.0 (significant ATS impact)",
+          "Scope: NBA SPREAD only",
+          "Data Sources: MySportsFeeds (team_gamelogs, last 10 games)",
+          "Supported: NBA Spread predictions"
+        ]
+      },
+      paceMismatch: {
+        features: [
+          "⚡ Pace Mismatch: Fast vs slow tempo differential",
+          "📊 Formula: paceDiff = awayPace - homePace, impact = paceDiff × 0.3",
+          "⚖️ Smart Scaling: Uses tanh for smooth saturation, caps at ±14 pace differential",
+          "🎯 Directional Scoring: Slower team gets ATS edge",
+          "📈 Max Points: 5.0 (moderate ATS impact)"
+        ],
+        examples: [
+          "Scenario 1: Fast away vs slow home",
+          "• Away Pace: 105.0, Home Pace: 95.0",
+          "• Pace Diff: +10.0, Expected Impact: +3.0",
+          "• Signal: +0.76, Result: +3.80 Home Score (slower team edge)",
+          "",
+          "Scenario 2: Slow away vs fast home",
+          "• Away Pace: 92.0, Home Pace: 106.0",
+          "• Pace Diff: -14.0, Expected Impact: -4.2",
+          "• Signal: -0.92, Result: +4.60 Away Score (slower team edge)",
+          "",
+          "Scenario 3: Even pace",
+          "• Away Pace: 100.0, Home Pace: 100.0",
+          "• Pace Diff: 0.0, Expected Impact: 0.0",
+          "• Signal: 0.0, Result: 0.0 (Neutral)"
+        ],
+        registry: [
+          "Weight: 15% (Default - Adjustable)",
+          "Max Points: 5.0 (moderate ATS impact)",
+          "Scope: NBA SPREAD only",
+          "Data Sources: MySportsFeeds (team_gamelogs, last 10 games)",
+          "Supported: NBA Spread predictions"
+        ]
       }
     }
     return detailsMap[key] || { features: [], examples: [], registry: [] }
@@ -666,6 +730,68 @@ export function FactorConfigModal({
           "",
           "*Metric: Average turnovers per game (last 10 games) - ball security vs defensive pressure*",
           "*Formula: differential = homeTOV - awayTOV, expectedPointImpact = differential × 1.1, signal = tanh(expectedPointImpact/5.0), if signal > 0: awayScore = |signal| × 5.0, homeScore = 0; else: awayScore = 0, homeScore = |signal| × 5.0*"
+        ]
+      },
+      reboundingDiff: {
+        metric: "Rebounding dominance (OREB% + DREB%) - extra possessions and defensive control",
+        formula: "OREB% = offReb/(offReb+oppDefReb), DREB% = defReb/(defReb+oppOffReb), TotalREB% = OREB%+DREB%, differential = homeTotalREB% - awayTotalREB%, expectedImpact = differential × 100, signal = tanh(expectedImpact/10), if signal > 0: homeScore = |signal| × 5.0, awayScore = 0; else: homeScore = 0, awayScore = |signal| × 5.0",
+        examples: [
+          "| Away REB% | Home REB% | Differential | Expected Impact | Signal | Away Score | Home Score | Confidence | Example |",
+          "|-----------|-----------|--------------|-----------------|--------|------------|------------|------------|---------|",
+          "| 95.0%     | 105.0%    | +10.0%       | +10.0           | +0.76  | 0.0        | +3.80      | High       | Home dominates boards |",
+          "| 98.0%     | 102.0%    | +4.0%        | +4.0            | +0.38  | 0.0        | +1.90      | Moderate   | Home slight edge |",
+          "| 100.0%    | 100.0%    | 0.0%         | 0.0             | 0.0    | 0.0        | 0.0        | Neutral    | Even rebounding |",
+          "| 103.0%    | 97.0%     | -6.0%        | -6.0            | -0.54  | +2.70      | 0.0        | High       | Away controls boards |",
+          "| 106.0%    | 94.0%     | -12.0%       | -12.0           | -0.83  | +4.15      | 0.0        | Very High  | Away dominates boards |",
+          "",
+          "🏀 **Rebounding Impact:**",
+          "• OREB% = offensive rebounds / (offensive rebounds + opponent defensive rebounds)",
+          "• DREB% = defensive rebounds / (defensive rebounds + opponent offensive rebounds)",
+          "• Total REB% = OREB% + DREB% (typically 95-105%)",
+          "",
+          "📊 **ATS Predictive Value:**",
+          "• Teams with +5% rebounding differential cover spread ~56% of time",
+          "• Extra possessions from OREB = more scoring opportunities",
+          "• Defensive rebounds = denying opponent possessions",
+          "",
+          "🎯 **Why It Works:**",
+          "• Rebounding = possession control",
+          "• More possessions = more scoring chances",
+          "• Defensive control = limiting opponent opportunities",
+          "",
+          "*Metric: Rebounding percentage differential (OREB% + DREB%) over last 10 games*",
+          "*Formula: OREB% = offReb/(offReb+oppDefReb), DREB% = defReb/(defReb+oppOffReb), TotalREB% = OREB%+DREB%, differential = homeTotalREB% - awayTotalREB%, expectedImpact = differential × 100, signal = tanh(expectedImpact/10)*"
+        ]
+      },
+      paceMismatch: {
+        metric: "Pace differential between teams - slower teams control tempo and often cover",
+        formula: "paceDiff = awayPace - homePace, expectedImpact = paceDiff × 0.3, signal = tanh(expectedImpact/3), if signal > 0: homeScore = |signal| × 5.0, awayScore = 0; else: homeScore = 0, awayScore = |signal| × 5.0",
+        examples: [
+          "| Away Pace | Home Pace | Pace Diff | Expected Impact | Signal | Away Score | Home Score | Category | Example |",
+          "|-----------|-----------|-----------|-----------------|--------|------------|------------|----------|---------|",
+          "| 105.0     | 95.0      | +10.0     | +3.0            | +0.76  | 0.0        | +3.80      | Extreme  | Fast vs slow |",
+          "| 102.0     | 98.0      | +4.0      | +1.2            | +0.37  | 0.0        | +1.85      | Moderate | Slight mismatch |",
+          "| 100.0     | 100.0     | 0.0       | 0.0             | 0.0    | 0.0        | 0.0        | Minimal  | Even pace |",
+          "| 96.0      | 102.0     | -6.0      | -1.8            | -0.54  | +2.70      | 0.0        | High     | Home faster |",
+          "| 92.0      | 106.0     | -14.0     | -4.2            | -0.92  | +4.60      | 0.0        | Extreme  | Huge mismatch |",
+          "",
+          "⚡ **Pace Mismatch Theory:**",
+          "• Slower teams force fast teams to play their tempo",
+          "• Pace control creates scoring variance",
+          "• When pace differential > 5 possessions, underdogs cover ~54% of time",
+          "",
+          "📊 **Calculation:**",
+          "• Positive paceDiff = Away plays faster (Home gets ATS edge)",
+          "• Negative paceDiff = Home plays faster (Away gets ATS edge)",
+          "• Each possession difference ≈ 0.3 points ATS edge for slower team",
+          "",
+          "🎯 **Market Inefficiency:**",
+          "• Betting markets often overvalue fast-paced teams",
+          "• Slower teams control tempo and limit possessions",
+          "• Fewer possessions = lower variance = better for underdogs",
+          "",
+          "*Metric: Pace differential (possessions per 48 minutes) over last 10 games*",
+          "*Formula: paceDiff = awayPace - homePace, expectedImpact = paceDiff × 0.3, signal = tanh(expectedImpact/3), slower team gets ATS edge*"
         ]
       }
     }

@@ -85,6 +85,36 @@ export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<NBAStatsBundle> 
       awayTOVLast10: awayRecent.avgTurnovers,
       homeTOVLast10: homeRecent.avgTurnovers,
 
+      // Rebounding data (for SPREAD factor S3)
+      awayOffReb: awayRecent.avgOffReb,
+      awayDefReb: awayRecent.avgDefReb,
+      awayOppOffReb: awayRecent.avgOppOffReb,
+      awayOppDefReb: awayRecent.avgOppDefReb,
+      homeOffReb: homeRecent.avgOffReb,
+      homeDefReb: homeRecent.avgDefReb,
+      homeOppOffReb: homeRecent.avgOppOffReb,
+      homeOppDefReb: homeRecent.avgOppDefReb,
+
+      // Four Factors data (for SPREAD factor S5)
+      awayEfg: awayRecent.avgEfg,
+      awayTovPct: awayRecent.avgTovPct,
+      awayOrebPct: awayRecent.avgOrebPct,
+      awayFtr: awayRecent.avgFtr,
+      homeEfg: homeRecent.avgEfg,
+      homeTovPct: homeRecent.avgTovPct,
+      homeOrebPct: homeRecent.avgOrebPct,
+      homeFtr: homeRecent.avgFtr,
+
+      // Home/Away splits (for SPREAD factor S4) - optional for now
+      awayORtgHome: awayRecent.ortgHome,
+      awayORtgAway: awayRecent.ortgAway,
+      awayDRtgHome: awayRecent.drtgHome,
+      awayDRtgAway: awayRecent.drtgAway,
+      homeORtgHome: homeRecent.ortgHome,
+      homeORtgAway: homeRecent.ortgAway,
+      homeDRtgHome: homeRecent.drtgHome,
+      homeDRtgAway: homeRecent.drtgAway,
+
       // Points Per Game (calculated from ORtg and Pace)
       awayPointsPerGame: (awayRecent.ortg * awayRecent.pace) / 100,
       homePointsPerGame: (homeRecent.ortg * homeRecent.pace) / 100

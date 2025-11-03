@@ -132,11 +132,11 @@ export const NBA_SPREAD_FACTORS: FactorMeta[] = [
     defaultDataSource: 'mysportsfeeds'
   },
   {
-    key: 'atsMomentum',
-    name: 'Recent ATS Momentum',
-    shortName: 'ATS',
-    icon: '🔥',
-    description: 'Teams on ATS hot streaks (7-3 L10) are undervalued by market',
+    key: 'reboundingDiff',
+    name: 'Rebounding Differential',
+    shortName: 'REB',
+    icon: '🏀',
+    description: 'Rebounding dominance (OREB% + DREB%) - extra possessions and defensive control',
     appliesTo: {
       sports: ['NBA'],
       betTypes: ['SPREAD'],
@@ -147,11 +147,11 @@ export const NBA_SPREAD_FACTORS: FactorMeta[] = [
     defaultDataSource: 'mysportsfeeds'
   },
   {
-    key: 'homeCourtAdv',
-    name: 'Home Court Advantage',
-    shortName: 'HCA',
-    icon: '🏠',
-    description: 'Actual HCA (home win% - road win%) vs league average (3 points)',
+    key: 'paceMismatch',
+    name: 'Pace Mismatch',
+    shortName: 'PACE',
+    icon: '⚡',
+    description: 'Pace differential between teams - slower teams control tempo and often cover',
     appliesTo: {
       sports: ['NBA'],
       betTypes: ['SPREAD'],
