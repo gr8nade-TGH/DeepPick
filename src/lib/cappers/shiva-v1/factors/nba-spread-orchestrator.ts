@@ -70,7 +70,7 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
           rows_z_points: []
         },
         nba_stats_api_debug: {
-          condition_check: nbaStatsConditionCheck,
+          condition_check: nbaStatsConditionCheck as any,
           enabled_factors: enabledFactorKeys,
           nba_stats_fetched: false,
           team_names: { away: ctx.away, home: ctx.home },
@@ -85,7 +85,7 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
   // Fetch NBA Stats API data bundle (only if needed)
   let bundle: NBAStatsBundle | null = null
   let nbaStatsDebugInfo = {
-    condition_check: nbaStatsConditionCheck,
+    condition_check: nbaStatsConditionCheck as any,
     enabled_factors: enabledFactorKeys,
     nba_stats_fetched: false,
     team_names: { away: ctx.away, home: ctx.home },
