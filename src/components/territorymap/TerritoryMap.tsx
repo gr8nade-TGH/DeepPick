@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Map from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { NBA_TEAM_COORDINATES } from './nba-team-coordinates'
@@ -9,20 +9,45 @@ import { TeamMarker } from './TeamMarker'
 import { MapLegend } from './MapLegend'
 import { MapFiltersPanel } from './MapFiltersPanel'
 import { MapFilters, MapStats, TerritoryData } from './types'
+import { PickInsightModal } from '@/components/dashboard/pick-insight-modal'
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || 'pk.eyJ1IjoiZ3I4bmFkZSIsImEiOiJjbWhpcjVuM2IxNTRkMmtwcTM0dHoyc2N4In0.xTuWFyLgmwGbuQKWLOGv4A'
 
 export function TerritoryMap() {
   const [hoveredTeam, setHoveredTeam] = useState<string | null>(null)
+  const [selectedPickId, setSelectedPickId] = useState<string | null>(null)
   const [filters, setFilters] = useState<MapFilters>({
     timePeriod: 'all-time',
     capper: null,
     activePicksOnly: false
   })
+  const [territoryData, setTerritoryData] = useState<TerritoryData[]>(MOCK_TERRITORY_DATA)
+  const [loading, setLoading] = useState(true)
+  const [pickIdMap, setPickIdMap] = useState<Record<string, string>>({})
+
+  // Fetch real territory data from API
+  useEffect(() => {
+    async function fetchTerritoryData() {
+      try {
+        const response = await fetch('/api/territory-map')
+        if (response.ok) {
+          const data = await response.json()
+          setTerritoryData(data.territories)
+          setPickIdMap(data.pickIdMap || {})
+        }
+      } catch (error) {
+        console.error('Failed to fetch territory data:', error)
+        // Fall back to mock data on error
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchTerritoryData()
+  }, [])
 
   // Filter territories based on current filters
   const filteredTerritories = useMemo(() => {
-    let filtered = MOCK_TERRITORY_DATA
+    let filtered = territoryData
 
     // Filter by capper
     if (filters.capper) {
@@ -66,9 +91,16 @@ export function TerritoryMap() {
       return // No action for unclaimed territories
     }
 
-    if (territory.state === 'active') {
-      alert(`Active Pick: ${territory.activePick?.prediction}\nConfidence: ${territory.activePick?.confidence}/10\nGame: ${territory.activePick?.opponent} at ${territory.activePick?.gameTime}`)
+    // For active picks, show the insight modal if we have a pick ID
+    if (territory.state === 'active' && territory.activePick?.gameId) {
+      const pickId = pickIdMap[territory.teamAbbr]
+      if (pickId) {
+        setSelectedPickId(pickId)
+      } else {
+        alert(`Active Pick: ${territory.activePick?.prediction}\nConfidence: ${territory.activePick?.confidence}/10\nGame: ${territory.activePick?.opponent}`)
+      }
     } else {
+      // For claimed territories, show summary
       alert(`Territory: ${territory.teamAbbr}\nCapper: ${territory.capperUsername}\nUnits: +${territory.units}u\nRecord: ${territory.wins}-${territory.losses}-${territory.pushes}`)
     }
   }
@@ -82,7 +114,8 @@ export function TerritoryMap() {
 
       {/* Map */}
       <Map
-        mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+        mapboxAccessToken={MAPBOX_TOKEN}
+        mapStyle="mapbox://styles/mapbox/light-v11"
         initialViewState={{
           longitude: -98.5795,
           latitude: 39.8283,
@@ -178,6 +211,14 @@ export function TerritoryMap() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Pick Insight Modal */}
+      {selectedPickId && (
+        <PickInsightModal
+          pickId={selectedPickId}
+          onClose={() => setSelectedPickId(null)}
+        />
       )}
     </div>
   )
