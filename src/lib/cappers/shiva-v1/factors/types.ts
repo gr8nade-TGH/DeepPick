@@ -54,6 +54,10 @@ export interface NBAStatsBundle {
   awayOppFTr: number
   homeOppFTr: number
 
+  // Turnover data (for SPREAD factor S2)
+  awayTOVLast10: number
+  homeTOVLast10: number
+
   // League anchors
   leaguePace: number
   leagueORtg: number

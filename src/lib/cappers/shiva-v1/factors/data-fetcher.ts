@@ -81,6 +81,10 @@ export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<NBAStatsBundle> 
       homeOppFTr: 0.22,
       leagueFTr: 0.22, // NBA league average (static)
 
+      // Turnover data (for SPREAD factor S2)
+      awayTOVLast10: awayRecent.avgTurnovers,
+      homeTOVLast10: homeRecent.avgTurnovers,
+
       // Points Per Game (calculated from ORtg and Pace)
       awayPointsPerGame: (awayRecent.ortg * awayRecent.pace) / 100,
       homePointsPerGame: (homeRecent.ortg * homeRecent.pace) / 100
@@ -110,31 +114,31 @@ export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<NBAStatsBundle> 
  */
 export async function summarizeAvailabilityWithLLM(ctx: RunCtx): Promise<InjuryImpact> {
   console.log('[INJURY_LLM:LEGACY]', 'Using legacy injury analysis - consider using AI factor instead')
-  
+
   try {
     const injuryData = await searchInjuries(ctx.away, ctx.home, 48) // 48 hour window
-    
+
     // Mock LLM processing (would use actual LLM in production)
     const defenseImpactA = Math.random() * 0.4 - 0.2 // -0.2 to +0.2
     const defenseImpactB = Math.random() * 0.4 - 0.2 // -0.2 to +0.2
-    
+
     const result: InjuryImpact = {
       defenseImpactA,
       defenseImpactB,
       summary: `Legacy injury analysis for ${ctx.away} vs ${ctx.home}`,
       rawResponse: JSON.stringify(injuryData)
     }
-    
-    console.log('[INJURY_LLM:SUCCESS]', { 
-      defenseImpactA, 
-      defenseImpactB 
+
+    console.log('[INJURY_LLM:SUCCESS]', {
+      defenseImpactA,
+      defenseImpactB
     })
-    
+
     return result
-    
+
   } catch (error) {
     console.error('[INJURY_LLM:ERROR]', error)
-    
+
     // Return neutral impact on error
     return {
       defenseImpactA: 0,

@@ -242,6 +242,38 @@ export function FactorConfigModal({
           "Data Sources: calculated (net rating + spread factors + market spread)",
           "Supported: All Spread/Moneyline predictions"
         ]
+      },
+      turnoverDiff: {
+        features: [
+          "🏀 Turnover Differential: Ball security vs defensive pressure",
+          "📊 Formula: differential = homeTOV - awayTOV, pointImpact = differential × 1.1",
+          "⚖️ Smart Scaling: Uses tanh for smooth saturation, caps at ±5 TOV differential",
+          "🎯 Directional Scoring: Away OR Home, never both (prevents cancellation)",
+          "📈 Max Points: 5.0 (significant ATS impact)"
+        ],
+        examples: [
+          "Scenario 1: Away has ball security advantage",
+          "• Away TOV: 12.0/game, Home TOV: 16.0/game",
+          "• Differential: +4.0 (home commits more), Point Impact: +4.4",
+          "• Signal: +0.63, Result: +3.15 Away Score",
+          "",
+          "Scenario 2: Home has defensive pressure advantage",
+          "• Away TOV: 17.0/game, Home TOV: 12.0/game",
+          "• Differential: -5.0 (away commits more), Point Impact: -5.5",
+          "• Signal: -0.74, Result: +3.70 Home Score",
+          "",
+          "Scenario 3: Even ball security",
+          "• Away TOV: 14.0/game, Home TOV: 14.0/game",
+          "• Differential: 0.0, Point Impact: 0.0",
+          "• Signal: 0.0, Result: 0.0 (Neutral)"
+        ],
+        registry: [
+          "Weight: 25% (Default - Adjustable)",
+          "Max Points: 5.0 (significant ATS impact)",
+          "Scope: NBA SPREAD only",
+          "Data Sources: MySportsFeeds (team_gamelogs, last 10 games)",
+          "Supported: NBA Spread predictions"
+        ]
       }
     }
     return detailsMap[key] || { features: [], examples: [], registry: [] }
@@ -603,6 +635,37 @@ export function FactorConfigModal({
           "",
           "*Metric: Dean Oliver's Four Factors efficiency differential (eFG%, TOV%, OREB%, FTR)*",
           "*Formula: rating = (0.50×eFG%) - (0.30×TOV%) + (0.15×OREB%) + (0.05×FTR), differential = awayRating - homeRating, expectedMargin = differential × 120, signal = tanh(expectedMargin/8), if signal > 0: awayScore = |signal| × 5.0, homeScore = 0; else: awayScore = 0, homeScore = |signal| × 5.0*"
+        ]
+      },
+      turnoverDiff: {
+        metric: "Ball security and defensive pressure (turnovers forced vs committed)",
+        formula: "differential = homeTOV - awayTOV, expectedPointImpact = differential × 1.1, signal = tanh(expectedPointImpact/5.0), if signal > 0: awayScore = |signal| × 5.0, homeScore = 0; else: awayScore = 0, homeScore = |signal| × 5.0",
+        examples: [
+          "| Away TOV | Home TOV | Differential | Point Impact | Signal | Away Score | Home Score | Confidence | Example |",
+          "|----------|----------|--------------|--------------|--------|------------|------------|------------|---------|",
+          "| 12.0     | 16.0     | +4.0         | +4.4         | +0.63  | +3.15      | 0.0        | High       | Away forces more TOV |",
+          "| 13.5     | 15.5     | +2.0         | +2.2         | +0.37  | +1.85      | 0.0        | Moderate   | Away slight edge |",
+          "| 14.0     | 14.0     | 0.0          | 0.0          | 0.0    | 0.0        | 0.0        | Neutral    | Even ball security |",
+          "| 15.0     | 13.0     | -2.0         | -2.2         | -0.37  | 0.0        | +1.85      | Moderate   | Home slight edge |",
+          "| 17.0     | 12.0     | -5.0         | -5.5         | -0.74  | 0.0        | +3.70      | High       | Home forces more TOV |",
+          "",
+          "🏀 **Turnover Impact:**",
+          "• Each turnover = extra possession ≈ 1.1 points",
+          "• Based on league average ORtg × possession value",
+          "• Teams with +3 TOV differential cover spread ~58% of time",
+          "",
+          "📊 **Calculation:**",
+          "• Positive differential = Home commits more TOV (Away advantage)",
+          "• Negative differential = Away commits more TOV (Home advantage)",
+          "• Point Impact = Differential × 1.1 points per turnover",
+          "",
+          "🎯 **ATS Predictive Value:**",
+          "• Turnover differential in close games is highly predictive",
+          "• Ball security = fewer wasted possessions",
+          "• Defensive pressure = creating extra possessions",
+          "",
+          "*Metric: Average turnovers per game (last 10 games) - ball security vs defensive pressure*",
+          "*Formula: differential = homeTOV - awayTOV, expectedPointImpact = differential × 1.1, signal = tanh(expectedPointImpact/5.0), if signal > 0: awayScore = |signal| × 5.0, homeScore = 0; else: awayScore = 0, homeScore = |signal| × 5.0*"
         ]
       }
     }

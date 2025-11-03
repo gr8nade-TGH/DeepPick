@@ -117,11 +117,11 @@ export const NBA_SPREAD_FACTORS: FactorMeta[] = [
     defaultDataSource: 'mysportsfeeds'
   },
   {
-    key: 'restAdvantage',
-    name: 'Rest Advantage',
-    shortName: 'Rest',
-    icon: '😴',
-    description: 'Back-to-back situations and travel impact (3-5 point ATS swing)',
+    key: 'turnoverDiff',
+    name: 'Turnover Differential',
+    shortName: 'TD',
+    icon: '🏀',
+    description: 'Ball security and defensive pressure (turnovers forced vs committed)',
     appliesTo: {
       sports: ['NBA'],
       betTypes: ['SPREAD'],

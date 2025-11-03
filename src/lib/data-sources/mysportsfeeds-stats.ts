@@ -39,6 +39,7 @@ export interface TeamFormData {
   threeP_rate: number // 3PAR
   ft_rate: number     // FTr
   gamesAnalyzed: number // Number of games used in calculation
+  avgTurnovers: number // Average turnovers per game (for SPREAD factor S2)
 }
 
 /**
@@ -140,6 +141,7 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
     let totalThreePM = 0
     let totalFTA = 0
     let totalFGA = 0
+    let totalTOV = 0
 
     for (const gameLog of gameLogs) {
       const stats = gameLog.stats
@@ -186,6 +188,7 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
       totalThreePM += team3PM
       totalFTA += teamFTA
       totalFGA += teamFGA
+      totalTOV += teamTOV
     }
 
     const gameCount = gameLogs.length
@@ -208,6 +211,7 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
     const threeP_pct = totalThreePA > 0 ? totalThreePM / totalThreePA : 0
     const threeP_rate = totalFGA > 0 ? totalThreePA / totalFGA : 0
     const ft_rate = totalFGA > 0 ? totalFTA / totalFGA : 0
+    const avgTurnovers = totalTOV / gameCount
 
     const formData: TeamFormData = {
       team: teamAbbrev,
@@ -217,7 +221,8 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
       threeP_pct,
       threeP_rate,
       ft_rate,
-      gamesAnalyzed: gameCount
+      gamesAnalyzed: gameCount,
+      avgTurnovers
     }
 
     console.log(`[MySportsFeeds Stats] Form data for ${teamAbbrev}:`, {
@@ -227,6 +232,7 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
       threeP_pct: (threeP_pct * 100).toFixed(1) + '%',
       threeP_rate: (threeP_rate * 100).toFixed(1) + '%',
       ft_rate: (ft_rate * 100).toFixed(1) + '%',
+      avgTurnovers: avgTurnovers.toFixed(1),
       games: gameCount
     })
 
