@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import Map from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { NBA_TEAM_COORDINATES } from './nba-team-coordinates'
@@ -14,67 +14,8 @@ import type { MapRef } from 'react-map-gl/mapbox'
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || 'pk.eyJ1IjoiZ3I4bmFkZSIsImEiOiJjbWhpcjVuM2IxNTRkMmtwcTM0dHoyc2N4In0.xTuWFyLgmwGbuQKWLOGv4A'
 
-// Medieval/Fantasy map styling - parchment background with hand-drawn borders
-const MEDIEVAL_MAP_STYLE = {
-  version: 8,
-  name: 'Medieval Territory Map',
-  sources: {
-    'mapbox': {
-      type: 'vector',
-      url: 'mapbox://mapbox.mapbox-streets-v8'
-    }
-  },
-  layers: [
-    // Parchment background
-    {
-      id: 'background',
-      type: 'background',
-      paint: {
-        'background-color': '#F4E8D0' // Aged parchment color
-      }
-    },
-    // State fills - slightly darker parchment for land
-    {
-      id: 'admin-state-fill',
-      type: 'fill',
-      source: 'mapbox',
-      'source-layer': 'admin',
-      filter: ['all', ['==', 'admin_level', 1], ['==', 'maritime', 0]],
-      paint: {
-        'fill-color': '#EDE4D3',
-        'fill-opacity': 0.5
-      }
-    },
-    // State borders - dark brown medieval style
-    {
-      id: 'admin-state-border',
-      type: 'line',
-      source: 'mapbox',
-      'source-layer': 'admin',
-      filter: ['all', ['==', 'admin_level', 1], ['==', 'maritime', 0]],
-      paint: {
-        'line-color': '#3E2723', // Dark brown
-        'line-width': 2,
-        'line-opacity': 0.8
-      }
-    },
-    // Country borders - thicker for US outline
-    {
-      id: 'admin-country-border',
-      type: 'line',
-      source: 'mapbox',
-      'source-layer': 'admin',
-      filter: ['==', 'admin_level', 0],
-      paint: {
-        'line-color': '#2C1810',
-        'line-width': 3,
-        'line-opacity': 0.9
-      }
-    }
-  ]
-}
-
 export function TerritoryMap() {
+  const mapRef = useRef<MapRef>(null)
   const [hoveredTeam, setHoveredTeam] = useState<string | null>(null)
   const [selectedPickId, setSelectedPickId] = useState<string | null>(null)
   const [filters, setFilters] = useState<MapFilters>({
@@ -85,6 +26,64 @@ export function TerritoryMap() {
   const [territoryData, setTerritoryData] = useState<TerritoryData[]>(MOCK_TERRITORY_DATA)
   const [loading, setLoading] = useState(true)
   const [pickIdMap, setPickIdMap] = useState<Record<string, string>>({})
+
+  // Apply medieval map styling when map loads
+  const handleMapLoad = useCallback(() => {
+    const map = mapRef.current?.getMap()
+    if (!map) return
+
+    // Wait for style to load
+    if (!map.isStyleLoaded()) {
+      map.once('styledata', () => handleMapLoad())
+      return
+    }
+
+    // Get all layers
+    const layers = map.getStyle().layers
+    if (!layers) return
+
+    // Hide all layers except admin boundaries
+    layers.forEach((layer) => {
+      const layerId = layer.id
+
+      // Keep only admin boundary layers
+      if (layerId.includes('admin')) {
+        // Keep admin layers visible
+        return
+      }
+
+      // Hide everything else (roads, POIs, labels, water, etc.)
+      if (layer.type === 'symbol' || layer.type === 'line' || layer.type === 'fill' || layer.type === 'circle') {
+        map.setLayoutProperty(layerId, 'visibility', 'none')
+      }
+    })
+
+    // Update background color to parchment
+    map.setPaintProperty('background', 'background-color', '#F4E8D0')
+
+    // Style admin boundaries with medieval aesthetic
+    layers.forEach((layer) => {
+      const layerId = layer.id
+
+      // Style state boundaries
+      if (layerId.includes('admin') && layerId.includes('1')) {
+        if (layer.type === 'line') {
+          map.setPaintProperty(layerId, 'line-color', '#3E2723')
+          map.setPaintProperty(layerId, 'line-width', 2)
+          map.setPaintProperty(layerId, 'line-opacity', 0.8)
+        }
+      }
+
+      // Style country boundaries (thicker)
+      if (layerId.includes('admin') && layerId.includes('0')) {
+        if (layer.type === 'line') {
+          map.setPaintProperty(layerId, 'line-color', '#2C1810')
+          map.setPaintProperty(layerId, 'line-width', 3)
+          map.setPaintProperty(layerId, 'line-opacity', 0.9)
+        }
+      }
+    })
+  }, [])
 
   // Fetch real territory data from API
   useEffect(() => {
@@ -178,8 +177,9 @@ export function TerritoryMap() {
 
       {/* Map - Medieval/Fantasy gameboard style */}
       <Map
+        ref={mapRef}
         mapboxAccessToken={MAPBOX_TOKEN}
-        mapStyle={MEDIEVAL_MAP_STYLE as any}
+        mapStyle="mapbox://styles/mapbox/light-v11"
         initialViewState={{
           longitude: -98.5795,
           latitude: 39.8283,
@@ -190,6 +190,7 @@ export function TerritoryMap() {
         style={{ width: '100%', height: '100%' }}
         attributionControl={false}
         logoPosition="bottom-right"
+        onLoad={handleMapLoad}
       >
         {/* Render team markers */}
         {NBA_TEAM_COORDINATES.map((team) => {
