@@ -66,7 +66,7 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
         factor_keys: [],
         console_logs: {
           branch_used: branchLog,
-          bundle: {},
+          bundle: {} as any,
           rows_z_points: []
         },
         nba_stats_api_debug: {
@@ -75,7 +75,7 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
           nba_stats_fetched: false,
           team_names: { away: ctx.away, home: ctx.home },
           bundle_keys: [],
-          bundle_sample: {},
+          bundle_sample: {} as any,
           api_calls_made: false
         }
       }
