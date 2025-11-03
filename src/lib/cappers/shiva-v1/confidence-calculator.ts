@@ -24,18 +24,31 @@ export interface ConfidenceOutput {
     z: number
     weight: number
     contribution: number
-    // Add weighted scores for run log display
+    // Add weighted scores for run log display (TOTALS)
     weighted_contributions?: {
       overScore: number
       underScore: number
       net: number
     }
+    // Add weighted scores for run log display (SPREAD/MONEYLINE)
+    weighted_spread_contributions?: {
+      awayScore: number
+      homeScore: number
+      net: number
+    }
     // Add weight percentage for display
     weight_percentage?: number
-    // Add parsed values for fallback
+    // Add parsed values for fallback (TOTALS)
     parsed_values_json?: {
       overScore: number
       underScore: number
+      signal: number
+      points: number
+    }
+    // Add parsed values for fallback (SPREAD/MONEYLINE)
+    parsed_spread_values_json?: {
+      awayScore: number
+      homeScore: number
       signal: number
       points: number
     }
@@ -43,17 +56,26 @@ export interface ConfidenceOutput {
 }
 
 /**
- * Calculate confidence using Over/Under score model
+ * Calculate confidence using Over/Under score model (TOTALS) or Away/Home score model (SPREAD/MONEYLINE)
  *
- * Logic (per factor chart examples):
+ * TOTALS Logic:
  * 1. Each factor has overScore and underScore (both positive or 0)
  * 2. Sum all overScore values across factors
  * 3. Sum all underScore values across factors
  * 4. Pick direction = whichever total is higher
  * 5. Confidence = the higher total
  *
- * Example: If total overScore = 8.5 and total underScore = 3.2
+ * SPREAD/MONEYLINE Logic:
+ * 1. Each factor has awayScore and homeScore (both positive or 0)
+ * 2. Sum all awayScore values across factors
+ * 3. Sum all homeScore values across factors
+ * 4. Pick direction = whichever total is higher (away or home)
+ * 5. Confidence = the higher total
+ *
+ * Example (TOTALS): If total overScore = 8.5 and total underScore = 3.2
  *   → Pick OVER with confidence 8.5
+ * Example (SPREAD): If total awayScore = 8.5 and total homeScore = 3.2
+ *   → Pick AWAY with confidence 8.5
  */
 export function calculateConfidence(input: ConfidenceInput): ConfidenceOutput {
   const { factors, factorWeights, confSource = 'nba_totals_v1' } = input
@@ -66,71 +88,128 @@ export function calculateConfidence(input: ConfidenceInput): ConfidenceOutput {
     totalWeight: Object.values(factorWeights).reduce((sum, w) => sum + w, 0)
   })
 
-  // Sum overScore and underScore across all factors
+  // Detect bet type from confSource or first factor
+  const isTotals = confSource.includes('totals') || factors.some(f => f.parsed_values_json?.overScore !== undefined)
+  const isSpread = confSource.includes('spread') || factors.some(f => f.parsed_spread_values_json?.awayScore !== undefined)
+
+  console.log('[ConfidenceCalculator] Bet type detection:', { isTotals, isSpread, confSource })
+
+  // Sum scores across all factors (TOTALS: over/under, SPREAD: away/home)
   // NOTE: Factors return scores based on MAX_POINTS = 5.0
   // We need to scale by (weight / 100) to get effective max points
   // Example: Pace Index with weight=70% → Effective max = 5.0 × 0.70 = 3.5 points
   let totalOverScore = 0
   let totalUnderScore = 0
+  let totalAwayScore = 0
+  let totalHomeScore = 0
   const factorContributions: ConfidenceOutput['factorContributions'] = []
 
   for (const factor of factors) {
     const weightPct = factorWeights[factor.key] || 0 // Weight percentage (0-100)
     const weightDecimal = weightPct / 100 // Convert to decimal (0-1)
     const parsedValues = factor.parsed_values_json || {}
+    const parsedSpreadValues = factor.parsed_spread_values_json || {}
 
-    // Get overScore and underScore from parsed_values_json
-    // These are based on MAX_POINTS = 5.0, so we scale by weight to get effective contribution
-    const rawOverScore = parsedValues.overScore || 0
-    const rawUnderScore = parsedValues.underScore || 0
+    if (isTotals) {
+      // TOTALS: Use overScore and underScore
+      const rawOverScore = parsedValues.overScore || 0
+      const rawUnderScore = parsedValues.underScore || 0
 
-    // Scale by weight to get effective contribution
-    // Example: rawOverScore = 3.5 (from signal 0.7 × 5.0), weight = 70% → effective = 3.5 × 0.70 = 2.45
-    const effectiveOverScore = rawOverScore * weightDecimal
-    const effectiveUnderScore = rawUnderScore * weightDecimal
+      // Scale by weight to get effective contribution
+      const effectiveOverScore = rawOverScore * weightDecimal
+      const effectiveUnderScore = rawUnderScore * weightDecimal
 
-    totalOverScore += effectiveOverScore
-    totalUnderScore += effectiveUnderScore
+      totalOverScore += effectiveOverScore
+      totalUnderScore += effectiveUnderScore
 
-    factorContributions.push({
-      key: factor.key,
-      name: factor.name,
-      z: factor.normalized_value || 0, // Keep signal for reference
-      weight: weightDecimal,
-      contribution: effectiveOverScore - effectiveUnderScore, // Net contribution
-      // Add weighted scores for run log display
-      weighted_contributions: {
-        overScore: effectiveOverScore,
-        underScore: effectiveUnderScore,
-        net: effectiveOverScore - effectiveUnderScore
-      },
-      // Add weight percentage for display
-      weight_percentage: weightPct,
-      // Add parsed values for fallback
-      parsed_values_json: {
-        overScore: rawOverScore,
-        underScore: rawUnderScore,
-        signal: parsedValues.signal || 0,
-        points: parsedValues.points || 0
-      }
+      factorContributions.push({
+        key: factor.key,
+        name: factor.name,
+        z: factor.normalized_value || 0,
+        weight: weightDecimal,
+        contribution: effectiveOverScore - effectiveUnderScore,
+        weighted_contributions: {
+          overScore: effectiveOverScore,
+          underScore: effectiveUnderScore,
+          net: effectiveOverScore - effectiveUnderScore
+        },
+        weight_percentage: weightPct,
+        parsed_values_json: {
+          overScore: rawOverScore,
+          underScore: rawUnderScore,
+          signal: parsedValues.signal || 0,
+          points: parsedValues.points || 0
+        }
+      })
+    } else if (isSpread) {
+      // SPREAD/MONEYLINE: Use awayScore and homeScore
+      const rawAwayScore = parsedSpreadValues.awayScore || 0
+      const rawHomeScore = parsedSpreadValues.homeScore || 0
+
+      // Scale by weight to get effective contribution
+      const effectiveAwayScore = rawAwayScore * weightDecimal
+      const effectiveHomeScore = rawHomeScore * weightDecimal
+
+      totalAwayScore += effectiveAwayScore
+      totalHomeScore += effectiveHomeScore
+
+      factorContributions.push({
+        key: factor.key,
+        name: factor.name,
+        z: factor.normalized_value || 0,
+        weight: weightDecimal,
+        contribution: effectiveAwayScore - effectiveHomeScore,
+        weighted_spread_contributions: {
+          awayScore: effectiveAwayScore,
+          homeScore: effectiveHomeScore,
+          net: effectiveAwayScore - effectiveHomeScore
+        },
+        weight_percentage: weightPct,
+        parsed_spread_values_json: {
+          awayScore: rawAwayScore,
+          homeScore: rawHomeScore,
+          signal: parsedSpreadValues.signal || 0,
+          points: parsedSpreadValues.points || 0
+        }
+      })
+    }
+  }
+
+  // Determine pick direction and confidence based on bet type
+  let pickDirection: string
+  let confScore: number
+  let edgeRaw: number
+
+  if (isTotals) {
+    const pickOver = totalOverScore > totalUnderScore
+    confScore = pickOver ? totalOverScore : totalUnderScore
+    edgeRaw = totalOverScore - totalUnderScore // Positive = OVER, Negative = UNDER
+    pickDirection = pickOver ? 'OVER' : 'UNDER'
+
+    console.log('[ConfidenceCalculator] TOTALS Score calculation:', {
+      totalOverScore,
+      totalUnderScore,
+      pickDirection,
+      confScore,
+      edgeRaw
+    })
+  } else {
+    const pickAway = totalAwayScore > totalHomeScore
+    confScore = pickAway ? totalAwayScore : totalHomeScore
+    edgeRaw = totalAwayScore - totalHomeScore // Positive = AWAY, Negative = HOME
+    pickDirection = pickAway ? 'AWAY' : 'HOME'
+
+    console.log('[ConfidenceCalculator] SPREAD Score calculation:', {
+      totalAwayScore,
+      totalHomeScore,
+      pickDirection,
+      confScore,
+      edgeRaw
     })
   }
 
-  // Determine pick direction and confidence
-  const pickOver = totalOverScore > totalUnderScore
-  const confScore = pickOver ? totalOverScore : totalUnderScore
-  const edgeRaw = totalOverScore - totalUnderScore // Positive = OVER, Negative = UNDER
-
-  console.log('[ConfidenceCalculator] Score calculation:', {
-    totalOverScore,
-    totalUnderScore,
-    pickDirection: pickOver ? 'OVER' : 'UNDER',
-    confScore,
-    edgeRaw
-  })
-
   return {
-    edgeRaw, // Positive = OVER bias, Negative = UNDER bias
+    edgeRaw, // Positive = OVER/AWAY bias, Negative = UNDER/HOME bias
     edgePct: Math.abs(edgeRaw), // Magnitude of the edge
     confScore, // Always positive - the confidence in the pick
     confSource,

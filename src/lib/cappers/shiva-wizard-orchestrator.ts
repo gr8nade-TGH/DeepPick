@@ -169,7 +169,7 @@ export async function executeWizardPipeline(input: WizardOrchestratorInput): Pro
       runId,
       steps,
       pick: steps.step7.decision === 'PICK' ? {
-        pickType: 'TOTAL',
+        pickType: betType === 'TOTAL' ? 'TOTAL' : 'SPREAD', // Dynamic based on betType
         selection: steps.step7.pick?.selection || 'PASS',
         units: steps.step7.pick?.units || 0,
         confidence: finalConfidence,
@@ -280,7 +280,7 @@ async function captureOddsSnapshot(runId: string, game: any, sport: string) {
 }
 
 /**
- * Step 3: Compute factors (F1-F5)
+ * Step 3: Compute factors (F1-F5 for TOTALS, S1-S5 for SPREAD)
  */
 async function computeFactors(
   runId: string,
@@ -290,8 +290,6 @@ async function computeFactors(
   aiProvider: string,
   newsWindowHours: number
 ) {
-  // Import the factor computation logic
-  const { computeTotalsFactors } = await import('@/lib/cappers/shiva-v1/factors/nba-totals-orchestrator')
   const supabase = getSupabaseAdmin()
 
   // Get factor weights from profile
@@ -320,7 +318,7 @@ async function computeFactors(
   // Convert factors array to weights object
   // factors is an array like: [{ key: 'paceIndex', enabled: true, weight: 50 }, ...]
   for (const factor of profileData.factors) {
-    if (factor.enabled && factor.key !== 'edgeVsMarket') {
+    if (factor.enabled && factor.key !== 'edgeVsMarket' && factor.key !== 'edgeVsMarketSpread') {
       factorWeights[factor.key] = factor.weight
     }
   }
@@ -334,13 +332,13 @@ async function computeFactors(
 
   console.log('[WizardOrchestrator] Loaded factor weights from capper_profiles:', factorWeights)
 
-  // Compute factors
+  // Compute factors based on bet type
   const ctx = {
     game_id: runId,
     away: teams.away,
     home: teams.home,
     sport: sport as 'NBA',
-    betType: betType as 'TOTAL',
+    betType: betType as 'TOTAL' | 'SPREAD' | 'MONEYLINE',
     leagueAverages: {
       pace: 100.0,
       ORtg: 110.0,
@@ -352,13 +350,28 @@ async function computeFactors(
     factorWeights
   }
 
-  const result = await computeTotalsFactors(ctx)
+  let result: any
+  let factorVersion: string
+
+  if (betType === 'TOTAL') {
+    // Import and use TOTALS orchestrator
+    const { computeTotalsFactors } = await import('@/lib/cappers/shiva-v1/factors/nba-totals-orchestrator')
+    result = await computeTotalsFactors(ctx)
+    factorVersion = 'nba_totals_v1'
+  } else if (betType === 'SPREAD' || betType === 'MONEYLINE') {
+    // Import and use SPREAD orchestrator
+    const { computeSpreadFactors } = await import('@/lib/cappers/shiva-v1/factors/nba-spread-orchestrator')
+    result = await computeSpreadFactors(ctx)
+    factorVersion = 'nba_spread_v1'
+  } else {
+    throw new Error(`[WizardOrchestrator] Unsupported bet type: ${betType}`)
+  }
 
   return {
     factors: result.factors || [],
     factorWeights,
-    factor_version: 'nba_totals_v1',
-    baseline_avg: result.baseline_avg || 220 // Pass through baseline_avg
+    factor_version: factorVersion,
+    baseline_avg: result.baseline_avg || (betType === 'TOTAL' ? 220 : 0) // TOTALS: 220, SPREAD: 0
   }
 }
 

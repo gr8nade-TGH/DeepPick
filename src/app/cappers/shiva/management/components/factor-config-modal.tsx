@@ -34,9 +34,12 @@ export function FactorConfigModal({
   // State to manage which Logic & Examples sections are expanded
   const [expandedLogic, setExpandedLogic] = useState<Set<string>>(new Set())
 
+  // Helper function to check if a factor is an Edge vs Market factor
+  const isEdgeFactor = (key: string) => key === 'edgeVsMarket' || key === 'edgeVsMarketSpread'
+
   // Calculate weight budget (with proper rounding to avoid floating point precision issues)
   // Edge vs Market doesn't count toward weight budget
-  const weightFactors = factors.filter(f => f.enabled && f.key !== 'edgeVsMarket')
+  const weightFactors = factors.filter(f => f.enabled && !isEdgeFactor(f.key))
   const rawTotalWeight = weightFactors.reduce((sum, f) => sum + f.weight, 0)
   const totalWeight = Math.round(rawTotalWeight * 100) / 100
   const remainingWeight = Math.round((250 - totalWeight) * 100) / 100
@@ -59,8 +62,8 @@ export function FactorConfigModal({
   const getFactorTags = (factor: FactorConfig) => {
     const tags = []
 
-    // Edge vs Market is special - only show Global
-    if (factor.key === 'edgeVsMarket') {
+    // Edge vs Market factors are special - only show Global
+    if (isEdgeFactor(factor.key)) {
       return ['Global']
     }
 
@@ -205,6 +208,40 @@ export function FactorConfigModal({
           "Data Sources: calculated (team pace + efficiency + factor adjustments)",
           "Supported: All Totals predictions with team-specific baselines"
         ]
+      },
+      edgeVsMarketSpread: {
+        features: [
+          "⚖️ Market Edge Calculation: Compares predicted margin vs market spread",
+          "🏀 Predicted Margin: Based on Net Rating Differential and factor adjustments",
+          "📊 Formula: predicted_margin = Σ(spread_factor_points), edge = predicted_margin - market_spread",
+          "⚖️ Edge Calculation: signal = clamp(edge/3, -2, +2)",
+          "🎯 Directional Score: Positive edge → Away team, Negative edge → Home team",
+          "📈 Max Points: 5.0 for maximum impact on final prediction",
+          "🔒 Final Step: Applied after all other factors for final confidence adjustment"
+        ],
+        examples: [
+          "Scenario 1: Strong Away Edge (Underdog value)",
+          "• Predicted Margin: Away +2.5, Market Spread: Away +7.0",
+          "• Edge: +4.5 (away team undervalued), Signal: +1.5",
+          "• Result: +7.5 Away Score (bet on away team)",
+          "",
+          "Scenario 2: Strong Home Edge (Favorite value)",
+          "• Predicted Margin: Home -8.0, Market Spread: Home -4.0",
+          "• Edge: -4.0 (home team undervalued), Signal: -1.33",
+          "• Result: +6.65 Home Score (bet on home team)",
+          "",
+          "Scenario 3: Perfect Line (No edge)",
+          "• Predicted Margin: Away +3.0, Market Spread: Away +3.0",
+          "• Edge: 0.0, Signal: 0.0",
+          "• Result: 0.0 (No edge, pass)"
+        ],
+        registry: [
+          "Weight: 100% (Fixed - Final Step)",
+          "Max Points: 5.0 (maximum impact on prediction)",
+          "Scope: global (applies to all sports/bet types)",
+          "Data Sources: calculated (net rating + spread factors + market spread)",
+          "Supported: All Spread/Moneyline predictions"
+        ]
       }
     }
     return detailsMap[key] || { features: [], examples: [], registry: [] }
@@ -212,8 +249,8 @@ export function FactorConfigModal({
 
   // Calculate effective max points based on weight
   const getEffectiveMaxPoints = (factor: FactorConfig) => {
-    if (factor.key === 'edgeVsMarket') {
-      return 5.0 // Edge vs Market is always at 100% weight
+    if (isEdgeFactor(factor.key)) {
+      return 5.0 // Edge vs Market factors are always at 100% weight
     }
     return (factor.maxPoints * factor.weight) / 100
   }
@@ -307,6 +344,33 @@ export function FactorConfigModal({
           "",
           "*Metric: Final confidence adjustment based on team-specific predicted total vs market line*",
           "*Formula: P = 0.5×(pace_home + pace_away), PPP_home = 1.10 + 0.5×(ORtg_home-110)/100 - 0.5×(DRtg_away-110)/100, PPP_away = 1.10 + 0.5×(ORtg_away-110)/100 - 0.5×(DRtg_home-110)/100, total_base = P × (PPP_home + PPP_away), predicted_total = total_base + Σ(factor_points), edgePts = predictedTotal - marketTotalLine, signal = clamp(edgePts/3, -2, +2), if signal > 0: overScore = |signal| × 5.0, underScore = 0; else: overScore = 0, underScore = |signal| × 5.0*"
+        ]
+      },
+      edgeVsMarketSpread: {
+        metric: "Final confidence adjustment based on predicted margin vs market spread",
+        formula: "predicted_margin = Σ(spread_factor_points), edge = predicted_margin - market_spread, signal = clamp(edge/3, -2, +2), if signal > 0: awayScore = |signal| × 5.0, homeScore = 0; else: awayScore = 0, homeScore = |signal| × 5.0",
+        examples: [
+          "| Predicted Margin | Market Spread | Edge | Signal | Away Score | Home Score | Confidence | Example |",
+          "|------------------|---------------|------|--------|------------|------------|------------|---------|",
+          "| Away +2.5        | Away +7.0     | +4.5 | +1.5   | +7.5       | 0.0        | High       | Underdog value |",
+          "| Home -8.0        | Home -4.0     | -4.0 | -1.33  | 0.0        | +6.65      | High       | Favorite value |",
+          "| Away +3.0        | Away +3.0     | 0.0  | 0.0    | 0.0        | 0.0        | Neutral    | Perfect line |",
+          "| Home -12.0       | Home -6.0     | -6.0 | -2.0   | 0.0        | +10.0      | Maximum    | Strong favorite |",
+          "| Away +10.0       | Away +4.0     | +6.0 | +2.0   | +10.0      | 0.0        | Maximum    | Strong underdog |",
+          "",
+          "🏀 **Predicted Margin Calculation:**",
+          "• predicted_margin = Σ(spread_factor_signal × 5.0 × weight%)",
+          "• Positive margin = Away team favored",
+          "• Negative margin = Home team favored",
+          "",
+          "📊 **Edge Calculation:**",
+          "• edge = predicted_margin - market_spread",
+          "• Positive edge = Away team undervalued (bet away)",
+          "• Negative edge = Home team undervalued (bet home)",
+          "• signal = clamp(edge/3, -2, +2)",
+          "",
+          "*Metric: Final confidence adjustment based on predicted margin vs market spread*",
+          "*Formula: predicted_margin = Σ(spread_factor_points), edge = predicted_margin - market_spread, signal = clamp(edge/3, -2, +2), if signal > 0: awayScore = |signal| × 5.0, homeScore = 0; else: awayScore = 0, homeScore = |signal| × 5.0*"
         ]
       },
       threeEnv: {
@@ -403,15 +467,15 @@ export function FactorConfigModal({
   // Normalize factor weights to ensure they sum to 100%
   const normalizeFactorWeights = (factors: FactorConfig[]): FactorConfig[] => {
     // Edge vs Market doesn't count toward weight budget
-    const weightFactors = factors.filter(f => f.key !== 'edgeVsMarket')
+    const weightFactors = factors.filter(f => !isEdgeFactor(f.key))
     const enabledFactors = weightFactors.filter(f => f.enabled)
     const disabledFactors = weightFactors.filter(f => !f.enabled)
 
     if (enabledFactors.length === 0) {
       // If no factors enabled, enable all with equal weights (excluding Edge vs Market)
       return factors.map(f => {
-        if (f.key === 'edgeVsMarket') {
-          return { ...f, enabled: true, weight: 100 } // Edge vs Market is always 100%
+        if (isEdgeFactor(f.key)) {
+          return { ...f, enabled: true, weight: 100 } // Edge vs Market factors are always 100%
         }
         return { ...f, enabled: true, weight: 100 / weightFactors.length }
       })
@@ -424,8 +488,8 @@ export function FactorConfigModal({
       // If all enabled factors have 0 weight, distribute equally
       const equalWeight = 250 / enabledFactors.length
       return factors.map(f => {
-        if (f.key === 'edgeVsMarket') {
-          return { ...f, enabled: true, weight: 100 } // Edge vs Market is always 100%
+        if (isEdgeFactor(f.key)) {
+          return { ...f, enabled: true, weight: 100 } // Edge vs Market factors are always 100%
         }
         return f.enabled ? { ...f, weight: equalWeight } : { ...f, weight: 0 }
       })
@@ -433,8 +497,8 @@ export function FactorConfigModal({
 
     // Normalize enabled factors to sum to 250% (excluding Edge vs Market)
     const normalizedFactors = factors.map(f => {
-      if (f.key === 'edgeVsMarket') {
-        return { ...f, enabled: true, weight: 100 } // Edge vs Market is always 100%
+      if (isEdgeFactor(f.key)) {
+        return { ...f, enabled: true, weight: 100 } // Edge vs Market factors are always 100%
       }
       if (f.enabled) {
         const normalizedWeight = (f.weight / totalWeight) * 250
@@ -449,12 +513,12 @@ export function FactorConfigModal({
     // Final adjustment to ensure exact 250% total
     const finalFactors = [...normalizedFactors]
     const finalTotal = finalFactors
-      .filter(f => f.enabled && f.key !== 'edgeVsMarket')
+      .filter(f => f.enabled && !isEdgeFactor(f.key))
       .reduce((sum, f) => sum + f.weight, 0)
 
     if (Math.abs(finalTotal - 250) > 0.01) {
       // Adjust the first enabled factor to make it exactly 250%
-      const firstEnabled = finalFactors.find(f => f.enabled && f.key !== 'edgeVsMarket')
+      const firstEnabled = finalFactors.find(f => f.enabled && !isEdgeFactor(f.key))
       if (firstEnabled) {
         const adjustment = 250 - finalTotal
         firstEnabled.weight = Math.round((firstEnabled.weight + adjustment) * 100) / 100
@@ -503,20 +567,21 @@ export function FactorConfigModal({
           // Find saved factor config for this key
           const savedFactor = loadedFactors.find((f: any) => f.key === key)
 
+          const isEdge = isEdgeFactor(key)
           console.log(`[FactorConfigModal] Processing factor ${key}:`, {
             hasSavedFactor: !!savedFactor,
             savedEnabled: savedFactor?.enabled,
             savedWeight: savedFactor?.weight,
-            willUseEnabled: savedFactor?.enabled ?? (key === 'edgeVsMarket'),
-            willUseWeight: key === 'edgeVsMarket' ? 100 : (savedFactor?.weight ?? meta.defaultWeight)
+            willUseEnabled: savedFactor?.enabled ?? isEdge,
+            willUseWeight: isEdge ? 100 : (savedFactor?.weight ?? meta.defaultWeight)
           })
 
           return {
             key,
             name: meta.name,
             description: meta.description,
-            enabled: savedFactor?.enabled ?? (key === 'edgeVsMarket'), // Edge vs Market enabled by default
-            weight: key === 'edgeVsMarket' ? 100 : (savedFactor?.weight ?? meta.defaultWeight), // Edge vs Market always 100%
+            enabled: savedFactor?.enabled ?? isEdge, // Edge vs Market factors enabled by default
+            weight: isEdge ? 100 : (savedFactor?.weight ?? meta.defaultWeight), // Edge vs Market factors always 100%
             dataSource: savedFactor?.dataSource ?? meta.defaultDataSource ?? (key === 'injuryAvailability' ? 'llm' : 'nba-stats-api'),
             maxPoints: meta.maxPoints,
             sport: Array.isArray(meta.appliesTo.sports) ? meta.appliesTo.sports[0] : 'NBA',
@@ -667,12 +732,12 @@ export function FactorConfigModal({
   // Update factor weight
   const updateWeight = (key: string, weight: number) => {
     setFactors(prev => {
-      // Don't allow Edge vs Market to be adjusted
-      if (key === 'edgeVsMarket') return prev
+      // Don't allow Edge vs Market factors to be adjusted
+      if (isEdgeFactor(key)) return prev
 
       // Calculate total weight of OTHER enabled factors (excluding Edge vs Market)
       const otherEnabledWeight = prev
-        .filter(f => f.enabled && f.key !== key && f.key !== 'edgeVsMarket')
+        .filter(f => f.enabled && f.key !== key && !isEdgeFactor(f.key))
         .reduce((sum, f) => sum + f.weight, 0)
 
       // Calculate max weight this factor can have (can't exceed remaining budget)
@@ -784,11 +849,11 @@ export function FactorConfigModal({
             <div className="flex gap-3">
               <button
                 onClick={() => {
-                  const enabledFactors = factors.filter(f => f.enabled && f.key !== 'edgeVsMarket')
+                  const enabledFactors = factors.filter(f => f.enabled && !isEdgeFactor(f.key))
                   const equalWeight = 250 / enabledFactors.length
 
                   setFactors(prev => prev.map(f => {
-                    if (f.key === 'edgeVsMarket') return f
+                    if (isEdgeFactor(f.key)) return f
                     return f.enabled ? { ...f, weight: equalWeight } : f
                   }))
                 }}
@@ -933,9 +998,9 @@ export function FactorConfigModal({
               ) : (
                 factors
                   .sort((a, b) => {
-                    // Edge vs Market always comes first
-                    if (a.key === 'edgeVsMarket') return -1
-                    if (b.key === 'edgeVsMarket') return 1
+                    // Edge vs Market factors always come first
+                    if (isEdgeFactor(a.key)) return -1
+                    if (isEdgeFactor(b.key)) return 1
                     return 0
                   })
                   .map(factor => (
@@ -949,10 +1014,10 @@ export function FactorConfigModal({
                       <div className="flex items-start gap-4">
                         {/* Enable/Disable Toggle */}
                         <button
-                          onClick={() => factor.key !== 'edgeVsMarket' && toggleFactor(factor.key)}
-                          disabled={factor.key === 'edgeVsMarket'}
+                          onClick={() => !isEdgeFactor(factor.key) && toggleFactor(factor.key)}
+                          disabled={isEdgeFactor(factor.key)}
                           className={`mt-1 w-12 h-6 rounded-full transition ${factor.enabled ? 'bg-blue-600' : 'bg-gray-600'
-                            } ${factor.key === 'edgeVsMarket' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                            } ${isEdgeFactor(factor.key) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                         >
                           <div
                             className={`w-5 h-5 bg-white rounded-full transition transform ${factor.enabled ? 'translate-x-6' : 'translate-x-0.5'
@@ -997,16 +1062,16 @@ export function FactorConfigModal({
                                 {/* Weight Slider */}
                                 <div>
                                   <label className="block text-xs text-gray-400 mb-2">
-                                    Weight: {factor.key === 'edgeVsMarket' ? '100% (Fixed)' : `${factor.weight}%`}
+                                    Weight: {isEdgeFactor(factor.key) ? '100% (Fixed)' : `${factor.weight}%`}
                                   </label>
                                   <input
                                     type="range"
                                     min="0"
-                                    max={factor.key === 'edgeVsMarket' ? 0 : 100}
+                                    max={isEdgeFactor(factor.key) ? 0 : 100}
                                     value={factor.weight}
-                                    onChange={e => factor.key !== 'edgeVsMarket' && updateWeight(factor.key, parseInt(e.target.value))}
-                                    disabled={factor.key === 'edgeVsMarket'}
-                                    className={`w-full ${factor.key === 'edgeVsMarket' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                    onChange={e => !isEdgeFactor(factor.key) && updateWeight(factor.key, parseInt(e.target.value))}
+                                    disabled={isEdgeFactor(factor.key)}
+                                    className={`w-full ${isEdgeFactor(factor.key) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                                   />
                                 </div>
 
@@ -1149,7 +1214,7 @@ export function FactorConfigModal({
                             {getEffectiveMaxPoints(factor).toFixed(1)}
                           </div>
                           <div className="text-xs text-gray-500 mt-0.5">
-                            {factor.key === 'edgeVsMarket'
+                            {isEdgeFactor(factor.key)
                               ? 'Fixed (Final Step)'
                               : `Max ${factor.maxPoints.toFixed(1)} points`
                             }

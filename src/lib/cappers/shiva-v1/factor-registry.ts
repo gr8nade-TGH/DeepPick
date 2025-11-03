@@ -1,12 +1,21 @@
 /**
- * NBA Totals Factor Registry
- * 
- * Defines the 5 NBA totals factors that real bettors use:
+ * NBA Factor Registry
+ *
+ * Defines all NBA factors for TOTALS and SPREAD bet types:
+ *
+ * TOTALS FACTORS (F1-F5):
  * F1) Matchup Pace Index - How fast both teams will play tonight
  * F2) Offensive Form vs Opponent - Are offenses hot?
  * F3) Defensive Erosion - Are key defenders out or playing hurt?
  * F4) 3-Point Environment & Volatility - Combined 3PA rate and variance
  * F5) Free-Throw/Whistle Environment - FT rate and foul propensity
+ *
+ * SPREAD FACTORS (S1-S5):
+ * S1) Net Rating Differential - Expected point margin vs spread
+ * S2) Rest Advantage - Back-to-back & travel impact
+ * S3) Recent ATS Momentum - Hot/cold ATS streaks
+ * S4) Home Court Advantage - Actual HCA vs league average
+ * S5) Four Factors Differential - Dean Oliver's efficiency metrics
  */
 
 import { FactorMeta, BetType, Sport, Scope } from '@/types/factors';
@@ -90,6 +99,85 @@ export const NBA_TOTALS_FACTORS: FactorMeta[] = [
   }
 ];
 
+// NBA Spread Factors (5 factors)
+export const NBA_SPREAD_FACTORS: FactorMeta[] = [
+  {
+    key: 'netRatingDiff',
+    name: 'Net Rating Differential',
+    shortName: 'NetRtg',
+    icon: '📈',
+    description: 'Expected point margin based on offensive/defensive ratings vs spread',
+    appliesTo: {
+      sports: ['NBA'],
+      betTypes: ['SPREAD', 'MONEYLINE'],
+      scope: 'LEAGUE'
+    },
+    maxPoints: 5.0,
+    defaultWeight: 0.30,
+    defaultDataSource: 'mysportsfeeds'
+  },
+  {
+    key: 'restAdvantage',
+    name: 'Rest Advantage',
+    shortName: 'Rest',
+    icon: '😴',
+    description: 'Back-to-back situations and travel impact (3-5 point ATS swing)',
+    appliesTo: {
+      sports: ['NBA'],
+      betTypes: ['SPREAD', 'MONEYLINE'],
+      scope: 'LEAGUE'
+    },
+    maxPoints: 5.0,
+    defaultWeight: 0.25,
+    defaultDataSource: 'mysportsfeeds'
+  },
+  {
+    key: 'atsMomentum',
+    name: 'Recent ATS Momentum',
+    shortName: 'ATS',
+    icon: '🔥',
+    description: 'Teams on ATS hot streaks (7-3 L10) are undervalued by market',
+    appliesTo: {
+      sports: ['NBA'],
+      betTypes: ['SPREAD', 'MONEYLINE'],
+      scope: 'LEAGUE'
+    },
+    maxPoints: 5.0,
+    defaultWeight: 0.20,
+    defaultDataSource: 'mysportsfeeds'
+  },
+  {
+    key: 'homeCourtAdv',
+    name: 'Home Court Advantage',
+    shortName: 'HCA',
+    icon: '🏠',
+    description: 'Actual HCA (home win% - road win%) vs league average (3 points)',
+    appliesTo: {
+      sports: ['NBA'],
+      betTypes: ['SPREAD', 'MONEYLINE'],
+      scope: 'LEAGUE'
+    },
+    maxPoints: 5.0,
+    defaultWeight: 0.15,
+    defaultDataSource: 'mysportsfeeds'
+  },
+  {
+    key: 'fourFactorsDiff',
+    name: 'Four Factors Differential',
+    shortName: '4F',
+    icon: '⚖️',
+    description: 'Dean Oliver\'s Four Factors (eFG%, TOV%, OREB%, FTR) efficiency differential',
+    appliesTo: {
+      sports: ['NBA'],
+      betTypes: ['SPREAD', 'MONEYLINE'],
+      scope: 'LEAGUE'
+    },
+    maxPoints: 5.0,
+    defaultWeight: 0.10,
+    defaultDataSource: 'mysportsfeeds'
+  }
+];
+
 // Global factors (apply to all sports/bet types)
 export const GLOBAL_FACTORS: FactorMeta[] = [
   {
@@ -101,6 +189,21 @@ export const GLOBAL_FACTORS: FactorMeta[] = [
     appliesTo: {
       sports: '*',
       betTypes: ['TOTAL'],
+      scope: 'GLOBAL'
+    },
+    maxPoints: 5.0,
+    defaultWeight: 0.15,
+    defaultDataSource: 'manual'
+  },
+  {
+    key: 'edgeVsMarketSpread',
+    name: 'Edge vs Market - Spread',
+    shortName: 'Edge',
+    icon: '📊',
+    description: 'Predicted margin vs market spread. Positive edge favors away team, negative favors home team.',
+    appliesTo: {
+      sports: '*',
+      betTypes: ['SPREAD', 'MONEYLINE'],
       scope: 'GLOBAL'
     },
     maxPoints: 5.0,
@@ -130,37 +233,38 @@ export const INJURY_FACTORS: FactorMeta[] = [
 
 // Combined registry - Edge vs Market should be FIRST (non-adjustable)
 export const FACTOR_REGISTRY: FactorMeta[] = [
-  ...GLOBAL_FACTORS,  // Edge vs Market first
+  ...GLOBAL_FACTORS,  // Edge vs Market first (both TOTAL and SPREAD)
   ...NBA_TOTALS_FACTORS,
+  ...NBA_SPREAD_FACTORS,
   ...INJURY_FACTORS
 ];
 
 // StatMuse Query Helpers for NBA Totals
 export const StatMuseQueries = {
   // Pace queries
-  pace: (team: string, last10 = false) => 
+  pace: (team: string, last10 = false) =>
     last10 ? `${team} pace last 10 games this season` : `${team} pace this season`,
-  
+
   leaguePace: () => 'league average pace this season',
-  
+
   // Offensive/Defensive rating queries
   ortgLast10: (team: string) => `${team} offensive rating last 10 games this season`,
   drtgSeason: (team: string) => `${team} defensive rating this season`,
-  ortgVenue: (team: string, venue: 'home' | 'away') => 
+  ortgVenue: (team: string, venue: 'home' | 'away') =>
     `${team} offensive rating ${venue === 'home' ? 'at home' : 'on the road'} this season`,
-  
+
   // 3-Point environment queries
   threePAR: (team: string) => `${team} 3 point attempt rate this season`,
   oppThreePAR: (team: string) => `${team} opponent 3 point attempt rate this season`,
   threePctLast10: (team: string) => `${team} 3pt percentage last 10 games this season`,
-  
+
   // Free throw environment queries
   ftr: (team: string) => `${team} free throw rate this season`,
   oppFtr: (team: string) => `${team} opponent free throw rate this season`,
   fouls: (team: string) => `${team} personal fouls per game this season`,
-  
+
   // Rest/fatigue queries
-  restRecord: (team: string, days: number) => 
+  restRecord: (team: string, days: number) =>
     `${team} record on ${days} days rest this season`
 };
 
@@ -196,23 +300,23 @@ export function getFactorMeta(key: string): FactorMeta | undefined {
 }
 
 export function getFactorsBySport(sport: Sport): FactorMeta[] {
-  return FACTOR_REGISTRY.filter(factor => 
+  return FACTOR_REGISTRY.filter(factor =>
     factor.appliesTo.sports === '*' || (Array.isArray(factor.appliesTo.sports) && factor.appliesTo.sports.includes(sport))
   );
 }
 
 export function getFactorsByBetType(betType: BetType): FactorMeta[] {
-  return FACTOR_REGISTRY.filter(factor => 
+  return FACTOR_REGISTRY.filter(factor =>
     factor.appliesTo.betTypes === '*' || (Array.isArray(factor.appliesTo.betTypes) && factor.appliesTo.betTypes.includes(betType))
   );
 }
 
 export function getFactorsByContext(sport: Sport, betType: BetType): FactorMeta[] {
   console.log('[getFactorsByContext] Input:', { sport, betType });
-  
+
   const result = FACTOR_REGISTRY.filter(factor => {
     const sportMatch = factor.appliesTo.sports === '*' || (Array.isArray(factor.appliesTo.sports) && factor.appliesTo.sports.includes(sport));
-    
+
     // Handle bet type matching
     let betTypeMatch = false;
     if (factor.appliesTo.betTypes === '*') {
@@ -226,7 +330,7 @@ export function getFactorsByContext(sport: Sport, betType: BetType): FactorMeta[
         betTypeMatch = factor.appliesTo.betTypes.includes(betType as any);
       }
     }
-    
+
     const matches = sportMatch && betTypeMatch;
     console.log(`[getFactorsByContext] Factor ${factor.key}:`, {
       sportMatch,
@@ -235,10 +339,10 @@ export function getFactorsByContext(sport: Sport, betType: BetType): FactorMeta[
       requestedBetType: betType,
       matches
     });
-    
+
     return matches;
   });
-  
+
   // Debug logging
   console.log('[getFactorsByContext] Result:', {
     sport,
@@ -248,6 +352,6 @@ export function getFactorsByContext(sport: Sport, betType: BetType): FactorMeta[
     factorKeys: result.map(f => f.key),
     allFactorBetTypes: FACTOR_REGISTRY.map(f => ({ key: f.key, betTypes: f.appliesTo.betTypes }))
   });
-  
+
   return result;
 }
