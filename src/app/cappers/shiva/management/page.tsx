@@ -55,7 +55,7 @@ export default function ShivaManagementPage() {
   const [selectedGame, setSelectedGame] = useState<any>(null)
   // AUTO mode REMOVED - all automated picks run via /api/cron/shiva-auto-picks
   // This wizard is for MANUAL testing/debugging only
-  const [betType, setBetType] = useState<'TOTAL' | 'SPREAD/MONEYLINE'>('TOTAL')
+  const [betType, setBetType] = useState<'TOTAL' | 'SPREAD'>('TOTAL')
   const [providerOverrides, setProviderOverrides] = useState<{ step3?: string; step4?: string }>({})
   const [showFactorConfig, setShowFactorConfig] = useState(false)
 
@@ -79,14 +79,14 @@ export default function ShivaManagementPage() {
     console.log('Main page: selectedGame state updated')
   }
 
-  const handleBetTypeChange = (newBetType: 'TOTAL' | 'SPREAD/MONEYLINE') => {
+  const handleBetTypeChange = (newBetType: 'TOTAL' | 'SPREAD') => {
     setBetType(newBetType)
   }
 
   const handleRunClick = () => {
     // Build effective profile from current selections
     if (!currentProfile) return
-    
+
     const effective: CapperProfile = {
       ...currentProfile,
       providers: {
@@ -95,7 +95,7 @@ export default function ShivaManagementPage() {
         step4_default: (providerOverrides.step4 as any) || currentProfile.providers.step4_default,
       },
     }
-    
+
     setEffectiveProfile(effective)
   }
 
@@ -108,14 +108,14 @@ export default function ShivaManagementPage() {
         onProviderOverrides={(step3, step4) => setProviderOverrides({ step3, step4 })}
         selectedGame={selectedGame}
       />
-      
+
       <div className="p-4 flex flex-col gap-4 h-[calc(100vh-120px)]">
         {/* Top row: Inbox + Wizard */}
         <div className="flex gap-4 h-[550px] overflow-hidden">
           {/* Left: Inbox - matches height of Generated Picks would be */}
           <div className="w-96 flex flex-col">
             <div className="border border-gray-700 rounded p-3 bg-gray-900 h-full">
-              <SHIVAManagementInbox 
+              <SHIVAManagementInbox
                 onGameSelect={handleGameSelect}
                 selectedGame={selectedGame}
               />
@@ -124,154 +124,154 @@ export default function ShivaManagementPage() {
 
           {/* Right: Wizard - matches left column height */}
           <div className="flex-1 border border-gray-700 rounded p-3 bg-gray-900 overflow-hidden flex flex-col h-full">
-          {/* Action Buttons */}
-          <div className="mb-4 flex gap-3 flex-shrink-0">
-            <button
-              onClick={() => setShowFactorConfig(true)}
-              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded font-medium transition flex items-center gap-2"
-            >
-              <span>⚙️</span>
-              Configure Factors
-            </button>
-            <button
-              onClick={async () => {
-                if (!confirm('⚠️ This will delete ALL picks from ALL cappers. Continue?')) {
-                  return
-                }
-                try {
-                  console.log('🧹 [CLEAR ALL PICKS] Button clicked, calling API...')
-                  const response = await fetch('/api/debug/clear-all-picks', { method: 'POST' })
-                  console.log('🧹 [CLEAR ALL PICKS] API response status:', response.status)
-                  const result = await response.json()
-                  console.log('🧹 [CLEAR ALL PICKS] API response data:', result)
-                  
-                  if (result.success) {
-                    alert(`✅ ${result.message}! Refreshing data...`)
-                    console.log('🧹 [CLEAR ALL PICKS] Success, refreshing page...')
-                    // Refresh the page to update all data
-                    window.location.reload()
-                  } else {
-                    alert('❌ Error clearing picks: ' + (result.error || 'Unknown error'))
-                    console.error('🧹 [CLEAR ALL PICKS] API error:', result)
+            {/* Action Buttons */}
+            <div className="mb-4 flex gap-3 flex-shrink-0">
+              <button
+                onClick={() => setShowFactorConfig(true)}
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded font-medium transition flex items-center gap-2"
+              >
+                <span>⚙️</span>
+                Configure Factors
+              </button>
+              <button
+                onClick={async () => {
+                  if (!confirm('⚠️ This will delete ALL picks from ALL cappers. Continue?')) {
+                    return
                   }
-                } catch (error) {
-                  alert('❌ Error clearing picks: ' + error)
-                  console.error('🧹 [CLEAR ALL PICKS] Network error:', error)
-                }
-              }}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded font-medium transition flex items-center gap-2"
-            >
-              <span>🧹</span>
-              Clear ALL Picks
-            </button>
-            <button
-              onClick={async () => {
-                try {
-                  console.log('🔍 [CHECK DB] Button clicked, checking database...')
-                  const response = await fetch('/api/debug/check-database')
-                  const result = await response.json()
-                  console.log('🔍 [CHECK DB] Database state:', result)
-                  
-                  if (result.success) {
-                    alert(`📊 Database State:\nPicks: ${result.counts.picks}\nCooldowns: ${result.counts.cooldowns}\nGames: ${result.counts.games}`)
-                  } else {
-                    alert('❌ Error checking database: ' + result.error)
+                  try {
+                    console.log('🧹 [CLEAR ALL PICKS] Button clicked, calling API...')
+                    const response = await fetch('/api/debug/clear-all-picks', { method: 'POST' })
+                    console.log('🧹 [CLEAR ALL PICKS] API response status:', response.status)
+                    const result = await response.json()
+                    console.log('🧹 [CLEAR ALL PICKS] API response data:', result)
+
+                    if (result.success) {
+                      alert(`✅ ${result.message}! Refreshing data...`)
+                      console.log('🧹 [CLEAR ALL PICKS] Success, refreshing page...')
+                      // Refresh the page to update all data
+                      window.location.reload()
+                    } else {
+                      alert('❌ Error clearing picks: ' + (result.error || 'Unknown error'))
+                      console.error('🧹 [CLEAR ALL PICKS] API error:', result)
+                    }
+                  } catch (error) {
+                    alert('❌ Error clearing picks: ' + error)
+                    console.error('🧹 [CLEAR ALL PICKS] Network error:', error)
                   }
-                } catch (error) {
-                  alert('❌ Error checking database: ' + error)
-                  console.error('🔍 [CHECK DB] Network error:', error)
-                }
-              }}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium transition flex items-center gap-2"
-            >
-              <span>🔍</span>
-              Check DB
-            </button>
-            <button
-              onClick={async () => {
-                try {
-                  console.log('🔄 [FETCH NBA GAMES] Button clicked, fetching NBA games...')
-                  const response = await fetch('/api/debug/fetch-nba-games', { method: 'POST' })
-                  const result = await response.json()
-                  console.log('🔄 [FETCH NBA GAMES] Response:', result)
-                  
-                  if (result.success) {
-                    alert(`✅ ${result.message}! Refreshing page...`)
-                    window.location.reload()
-                  } else {
-                    alert('❌ Error fetching NBA games: ' + result.error)
+                }}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded font-medium transition flex items-center gap-2"
+              >
+                <span>🧹</span>
+                Clear ALL Picks
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    console.log('🔍 [CHECK DB] Button clicked, checking database...')
+                    const response = await fetch('/api/debug/check-database')
+                    const result = await response.json()
+                    console.log('🔍 [CHECK DB] Database state:', result)
+
+                    if (result.success) {
+                      alert(`📊 Database State:\nPicks: ${result.counts.picks}\nCooldowns: ${result.counts.cooldowns}\nGames: ${result.counts.games}`)
+                    } else {
+                      alert('❌ Error checking database: ' + result.error)
+                    }
+                  } catch (error) {
+                    alert('❌ Error checking database: ' + error)
+                    console.error('🔍 [CHECK DB] Network error:', error)
                   }
-                } catch (error) {
-                  alert('❌ Error fetching NBA games: ' + error)
-                  console.error('🔄 [FETCH NBA GAMES] Network error:', error)
-                }
-              }}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded font-medium transition flex items-center gap-2"
-            >
-              <span>🔄</span>
-              Fetch NBA Games
-            </button>
-            <button
-              onClick={async () => {
-                try {
-                  console.log('🎮 [ADD TEST GAMES] Button clicked, adding test games...')
-                  const response = await fetch('/api/debug/add-test-games', { method: 'POST' })
-                  const result = await response.json()
-                  console.log('🎮 [ADD TEST GAMES] Response:', result)
-                  
-                  if (result.success) {
-                    alert(`✅ ${result.message}! Refreshing page...`)
-                    window.location.reload()
-                  } else {
-                    alert('❌ Error adding test games: ' + result.error)
+                }}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium transition flex items-center gap-2"
+              >
+                <span>🔍</span>
+                Check DB
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    console.log('🔄 [FETCH NBA GAMES] Button clicked, fetching NBA games...')
+                    const response = await fetch('/api/debug/fetch-nba-games', { method: 'POST' })
+                    const result = await response.json()
+                    console.log('🔄 [FETCH NBA GAMES] Response:', result)
+
+                    if (result.success) {
+                      alert(`✅ ${result.message}! Refreshing page...`)
+                      window.location.reload()
+                    } else {
+                      alert('❌ Error fetching NBA games: ' + result.error)
+                    }
+                  } catch (error) {
+                    alert('❌ Error fetching NBA games: ' + error)
+                    console.error('🔄 [FETCH NBA GAMES] Network error:', error)
                   }
-                } catch (error) {
-                  alert('❌ Error adding test games: ' + error)
-                  console.error('🎮 [ADD TEST GAMES] Network error:', error)
-                }
-              }}
-              className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded font-medium transition flex items-center gap-2"
-            >
-              <span>🎮</span>
-              Add Test Games
-            </button>
-            <a
-              href="/odds"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium transition flex items-center gap-2"
-            >
-              <span>📊</span>
-              Games & Odds
-            </a>
-            <a
-              href="/api-test"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded font-medium transition flex items-center gap-2"
-            >
-              <span>🧪</span>
-              API Test
-            </a>
-          </div>
-          
-          {/* Wizard with scroll */}
-          <div className="flex-1 overflow-y-auto min-h-0">
-            <SHIVAWizard
-              effectiveProfile={effectiveProfile}
-              selectedGame={selectedGame}
-              betType={betType}
-            />
+                }}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded font-medium transition flex items-center gap-2"
+              >
+                <span>🔄</span>
+                Fetch NBA Games
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    console.log('🎮 [ADD TEST GAMES] Button clicked, adding test games...')
+                    const response = await fetch('/api/debug/add-test-games', { method: 'POST' })
+                    const result = await response.json()
+                    console.log('🎮 [ADD TEST GAMES] Response:', result)
+
+                    if (result.success) {
+                      alert(`✅ ${result.message}! Refreshing page...`)
+                      window.location.reload()
+                    } else {
+                      alert('❌ Error adding test games: ' + result.error)
+                    }
+                  } catch (error) {
+                    alert('❌ Error adding test games: ' + error)
+                    console.error('🎮 [ADD TEST GAMES] Network error:', error)
+                  }
+                }}
+                className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded font-medium transition flex items-center gap-2"
+              >
+                <span>🎮</span>
+                Add Test Games
+              </button>
+              <a
+                href="/odds"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium transition flex items-center gap-2"
+              >
+                <span>📊</span>
+                Games & Odds
+              </a>
+              <a
+                href="/api-test"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded font-medium transition flex items-center gap-2"
+              >
+                <span>🧪</span>
+                API Test
+              </a>
+            </div>
+
+            {/* Wizard with scroll */}
+            <div className="flex-1 overflow-y-auto min-h-0">
+              <SHIVAWizard
+                effectiveProfile={effectiveProfile}
+                selectedGame={selectedGame}
+                betType={betType}
+              />
+            </div>
           </div>
         </div>
-        </div>
-        
+
         {/* Bottom: Run Log - Full Width */}
         <div className="w-full">
           <RunLogTable />
         </div>
       </div>
-      
+
       {/* Factor Configuration Modal */}
       <FactorConfigModal
         isOpen={showFactorConfig}

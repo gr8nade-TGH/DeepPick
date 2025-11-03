@@ -109,7 +109,7 @@ export const NBA_SPREAD_FACTORS: FactorMeta[] = [
     description: 'Expected point margin based on offensive/defensive ratings vs spread',
     appliesTo: {
       sports: ['NBA'],
-      betTypes: ['SPREAD/MONEYLINE'],
+      betTypes: ['SPREAD'],
       scope: 'LEAGUE'
     },
     maxPoints: 5.0,
@@ -124,7 +124,7 @@ export const NBA_SPREAD_FACTORS: FactorMeta[] = [
     description: 'Back-to-back situations and travel impact (3-5 point ATS swing)',
     appliesTo: {
       sports: ['NBA'],
-      betTypes: ['SPREAD/MONEYLINE'],
+      betTypes: ['SPREAD'],
       scope: 'LEAGUE'
     },
     maxPoints: 5.0,
@@ -139,7 +139,7 @@ export const NBA_SPREAD_FACTORS: FactorMeta[] = [
     description: 'Teams on ATS hot streaks (7-3 L10) are undervalued by market',
     appliesTo: {
       sports: ['NBA'],
-      betTypes: ['SPREAD/MONEYLINE'],
+      betTypes: ['SPREAD'],
       scope: 'LEAGUE'
     },
     maxPoints: 5.0,
@@ -154,7 +154,7 @@ export const NBA_SPREAD_FACTORS: FactorMeta[] = [
     description: 'Actual HCA (home win% - road win%) vs league average (3 points)',
     appliesTo: {
       sports: ['NBA'],
-      betTypes: ['SPREAD/MONEYLINE'],
+      betTypes: ['SPREAD'],
       scope: 'LEAGUE'
     },
     maxPoints: 5.0,
@@ -169,7 +169,7 @@ export const NBA_SPREAD_FACTORS: FactorMeta[] = [
     description: 'Dean Oliver\'s Four Factors (eFG%, TOV%, OREB%, FTR) efficiency differential',
     appliesTo: {
       sports: ['NBA'],
-      betTypes: ['SPREAD/MONEYLINE'],
+      betTypes: ['SPREAD'],
       scope: 'LEAGUE'
     },
     maxPoints: 5.0,
@@ -203,7 +203,7 @@ export const GLOBAL_FACTORS: FactorMeta[] = [
     description: 'Predicted margin vs market spread. Positive edge favors away team, negative favors home team.',
     appliesTo: {
       sports: '*',
-      betTypes: ['SPREAD/MONEYLINE'],
+      betTypes: ['SPREAD'],
       scope: 'GLOBAL'
     },
     maxPoints: 5.0,
@@ -322,13 +322,7 @@ export function getFactorsByContext(sport: Sport, betType: BetType): FactorMeta[
     if (factor.appliesTo.betTypes === '*') {
       betTypeMatch = true;
     } else if (Array.isArray(factor.appliesTo.betTypes)) {
-      if (betType === 'SPREAD/MONEYLINE') {
-        // For SPREAD/MONEYLINE, match if factor applies to either SPREAD or MONEYLINE
-        betTypeMatch = factor.appliesTo.betTypes.includes('SPREAD' as any) || factor.appliesTo.betTypes.includes('MONEYLINE' as any);
-      } else {
-        // For TOTAL, match if factor applies to TOTAL
-        betTypeMatch = factor.appliesTo.betTypes.includes(betType as any);
-      }
+      betTypeMatch = factor.appliesTo.betTypes.includes(betType);
     }
 
     const matches = sportMatch && betTypeMatch;

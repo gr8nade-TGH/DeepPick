@@ -17,7 +17,7 @@ export interface FactorControlsProps {
   onRunClick: () => void
   hasSelectedGame?: boolean
   selectedGameStatus?: string
-  betType?: 'TOTAL' | 'SPREAD/MONEYLINE'
+  betType?: 'TOTAL' | 'SPREAD'
   sport?: 'NBA' | 'NFL' | 'MLB'
 }
 
@@ -28,7 +28,7 @@ export function FactorControls(props: FactorControlsProps) {
   // Filter factors based on sport and bet type
   const filteredFactors = factors.filter(factor => {
     if (!props.sport || !props.betType) return true // Show all if no filter
-    
+
     // Get applicable factors from registry
     const applicableFactors = getFactorsByContext(props.sport, props.betType)
     return applicableFactors.some(meta => meta.key === factor.key)
@@ -43,7 +43,7 @@ export function FactorControls(props: FactorControlsProps) {
   const weightsSum = filteredFactors
     .filter(f => f.enabled)
     .reduce((sum, f) => sum + f.weight, 0)
-  
+
   const isValidWeights = Math.abs(weightsSum - 0.70) < 0.005
   const isGameFinal = props.selectedGameStatus === 'final'
   const canRun = isValidWeights && (props.hasSelectedGame ?? true) && !isGameFinal
@@ -68,9 +68,8 @@ export function FactorControls(props: FactorControlsProps) {
     <div className="border border-gray-700 rounded p-4 bg-gray-900">
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-bold text-sm text-white">Step 0: Factor Configuration</h3>
-        <div className={`text-xs px-2 py-1 rounded font-bold ${
-          isValidWeights ? 'bg-green-800 text-green-200 border border-green-600' : 'bg-yellow-800 text-yellow-200 border border-yellow-600'
-        }`}>
+        <div className={`text-xs px-2 py-1 rounded font-bold ${isValidWeights ? 'bg-green-800 text-green-200 border border-green-600' : 'bg-yellow-800 text-yellow-200 border border-yellow-600'
+          }`}>
           Weights sum: {weightsSum.toFixed(3)} {isValidWeights ? '✓' : '⚠'}
         </div>
       </div>
@@ -102,7 +101,7 @@ export function FactorControls(props: FactorControlsProps) {
                     ⓘ details
                   </button>
                 </div>
-                
+
                 {/* Details Popover */}
                 {showDetails === factor.key && (
                   <div className="mt-2 p-2 bg-blue-900 rounded text-xs border border-blue-700">
@@ -172,11 +171,10 @@ export function FactorControls(props: FactorControlsProps) {
       <button
         onClick={props.onRunClick}
         disabled={!canRun}
-        className={`w-full py-2 rounded font-semibold text-sm ${
-          canRun
+        className={`w-full py-2 rounded font-semibold text-sm ${canRun
             ? 'bg-blue-600 text-white hover:bg-blue-700 border-2 border-blue-800'
             : 'bg-gray-400 text-gray-700 cursor-not-allowed border-2 border-gray-500'
-        }`}
+          }`}
       >
         Run with these settings
       </button>

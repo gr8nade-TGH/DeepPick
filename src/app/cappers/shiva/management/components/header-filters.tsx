@@ -24,7 +24,7 @@ export interface HeaderFiltersProps {
   onGameChange: (game: any) => void
   onModeChange?: (mode: 'write' | 'auto') => void // Optional - AUTO mode removed
   onProviderOverrides: (step3?: string, step4?: string) => void
-  onBetTypeChange: (betType: 'TOTAL' | 'SPREAD/MONEYLINE') => void
+  onBetTypeChange: (betType: 'TOTAL' | 'SPREAD') => void
   selectedGame?: any
   mode?: 'write' | 'auto' // Add mode prop from parent
 }
@@ -32,7 +32,7 @@ export interface HeaderFiltersProps {
 export function HeaderFilters(props: HeaderFiltersProps) {
   const [capper, setCapper] = useState('SHIVA')
   const [sport, setSport] = useState('NBA')
-  const [betType, setBetType] = useState<'TOTAL' | 'SPREAD/MONEYLINE'>('TOTAL')
+  const [betType, setBetType] = useState<'TOTAL' | 'SPREAD'>('TOTAL')
   // Use mode from props if provided, otherwise use localStorage or default
   const [mode, setMode] = useState<'write' | 'auto'>(() => {
     // Priority 1: Use prop from parent
@@ -85,13 +85,13 @@ export function HeaderFilters(props: HeaderFiltersProps) {
         if (res.ok) {
           const data = await res.json()
           setProfile(data)
-          
+
           // Set default providers from profile
           if (data.providers) {
             setStep3Provider(data.providers.step3_default || '')
             setStep4Provider(data.providers.step4_default || '')
           }
-          
+
           props.onProfileChange(data, capper, sport)
         } else {
           setProfile(null)
@@ -103,7 +103,7 @@ export function HeaderFilters(props: HeaderFiltersProps) {
         props.onProfileChange(null, capper, sport)
       }
     }
-    
+
     loadProfile()
   }, [capper, sport])
 
@@ -115,7 +115,7 @@ export function HeaderFilters(props: HeaderFiltersProps) {
 
     searchTimeoutRef.current = setTimeout(async () => {
       if (sport !== 'NBA') return // Only NBA active for now
-      
+
       setLoadingGames(true)
       try {
         const query = gameSearch ? `&q=${encodeURIComponent(gameSearch)}` : ''
@@ -167,7 +167,7 @@ export function HeaderFilters(props: HeaderFiltersProps) {
     setSport(newSport as 'NBA' | 'MLB' | 'NFL')
   }
 
-  const handleBetTypeChange = (newBetType: 'TOTAL' | 'SPREAD/MONEYLINE') => {
+  const handleBetTypeChange = (newBetType: 'TOTAL' | 'SPREAD') => {
     setBetType(newBetType)
     props.onBetTypeChange(newBetType)
   }
@@ -276,11 +276,11 @@ export function HeaderFilters(props: HeaderFiltersProps) {
           <label className="text-xs font-bold text-white">Bet Type</label>
           <select
             value={betType}
-            onChange={(e) => handleBetTypeChange(e.target.value as 'TOTAL' | 'SPREAD/MONEYLINE')}
+            onChange={(e) => handleBetTypeChange(e.target.value as 'TOTAL' | 'SPREAD')}
             className="px-3 py-1 border border-gray-600 rounded text-sm bg-gray-800 text-white"
           >
             <option value="TOTAL">TOTAL</option>
-            <option value="SPREAD/MONEYLINE">SPREAD/MONEYLINE</option>
+            <option value="SPREAD">SPREAD</option>
           </select>
         </div>
 
@@ -290,11 +290,10 @@ export function HeaderFilters(props: HeaderFiltersProps) {
           <div className="flex gap-2">
             <button
               onClick={() => handleModeChange('write')}
-              className={`px-3 py-1 text-sm rounded font-bold ${
-                mode === 'write'
-                  ? 'bg-orange-600 text-white border-2 border-orange-400'
-                  : 'bg-gray-700 text-white'
-              }`}
+              className={`px-3 py-1 text-sm rounded font-bold ${mode === 'write'
+                ? 'bg-orange-600 text-white border-2 border-orange-400'
+                : 'bg-gray-700 text-white'
+                }`}
               title="Write mode - actually creates picks and records cooldowns"
             >
               Write
@@ -354,7 +353,7 @@ export function HeaderFilters(props: HeaderFiltersProps) {
             placeholder="Search games..."
             className="px-3 py-1 border border-gray-600 rounded text-sm bg-gray-800 text-white placeholder-gray-400"
           />
-          
+
           {/* Dropdown */}
           {showGameDropdown && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded shadow-lg max-h-96 overflow-y-auto z-20">
@@ -382,11 +381,11 @@ export function HeaderFilters(props: HeaderFiltersProps) {
                   </div>
                 </div>
               </button>
-              
+
               {loadingGames && (
                 <div className="p-3 text-center text-gray-400 text-xs">Loading games...</div>
               )}
-              
+
               {!loadingGames && gameOptions.length === 0 && (
                 <div className="p-3 text-center text-gray-400 text-xs">
                   No upcoming NBA games found. Try clearing your search.
@@ -414,8 +413,8 @@ export function HeaderFilters(props: HeaderFiltersProps) {
                                   {game.away} @ {game.home}
                                 </div>
                                 <div className="text-xs text-gray-300 mt-1">
-                                  ML {game.away.split(' ').pop()} {game.odds.ml_away !== 0 ? (game.odds.ml_away > 0 ? '+' : '') + game.odds.ml_away : '—'} • {game.home.split(' ').pop()} {game.odds.ml_home !== 0 ? (game.odds.ml_home > 0 ? '+' : '') + game.odds.ml_home : '—'} | 
-                                  Spread: {game.odds.spread_team.split(' ').pop()} {game.odds.spread_line !== 0 ? (game.odds.spread_line > 0 ? '+' : '') + game.odds.spread_line : '—'} | 
+                                  ML {game.away.split(' ').pop()} {game.odds.ml_away !== 0 ? (game.odds.ml_away > 0 ? '+' : '') + game.odds.ml_away : '—'} • {game.home.split(' ').pop()} {game.odds.ml_home !== 0 ? (game.odds.ml_home > 0 ? '+' : '') + game.odds.ml_home : '—'} |
+                                  Spread: {game.odds.spread_team.split(' ').pop()} {game.odds.spread_line !== 0 ? (game.odds.spread_line > 0 ? '+' : '') + game.odds.spread_line : '—'} |
                                   Total: {game.odds.total_line !== 0 ? game.odds.total_line : '—'}
                                 </div>
                               </div>
@@ -459,8 +458,8 @@ export function HeaderFilters(props: HeaderFiltersProps) {
                                   {game.away} @ {game.home}
                                 </div>
                                 <div className="text-xs text-gray-300 mt-1">
-                                  ML {game.away.split(' ').pop()} {game.odds.ml_away !== 0 ? (game.odds.ml_away > 0 ? '+' : '') + game.odds.ml_away : '—'} • {game.home.split(' ').pop()} {game.odds.ml_home !== 0 ? (game.odds.ml_home > 0 ? '+' : '') + game.odds.ml_home : '—'} | 
-                                  Spread: {game.odds.spread_team.split(' ').pop()} {game.odds.spread_line !== 0 ? (game.odds.spread_line > 0 ? '+' : '') + game.odds.spread_line : '—'} | 
+                                  ML {game.away.split(' ').pop()} {game.odds.ml_away !== 0 ? (game.odds.ml_away > 0 ? '+' : '') + game.odds.ml_away : '—'} • {game.home.split(' ').pop()} {game.odds.ml_home !== 0 ? (game.odds.ml_home > 0 ? '+' : '') + game.odds.ml_home : '—'} |
+                                  Spread: {game.odds.spread_team.split(' ').pop()} {game.odds.spread_line !== 0 ? (game.odds.spread_line > 0 ? '+' : '') + game.odds.spread_line : '—'} |
                                   Total: {game.odds.total_line !== 0 ? game.odds.total_line : '—'}
                                 </div>
                               </div>
@@ -490,8 +489,8 @@ export function HeaderFilters(props: HeaderFiltersProps) {
                                   {game.away} @ {game.home}
                                 </div>
                                 <div className="text-xs text-gray-300 mt-1">
-                                  ML {game.away.split(' ').pop()} {game.odds.ml_away !== 0 ? (game.odds.ml_away > 0 ? '+' : '') + game.odds.ml_away : '—'} • {game.home.split(' ').pop()} {game.odds.ml_home !== 0 ? (game.odds.ml_home > 0 ? '+' : '') + game.odds.ml_home : '—'} | 
-                                  Spread: {game.odds.spread_team.split(' ').pop()} {game.odds.spread_line !== 0 ? (game.odds.spread_line > 0 ? '+' : '') + game.odds.spread_line : '—'} | 
+                                  ML {game.away.split(' ').pop()} {game.odds.ml_away !== 0 ? (game.odds.ml_away > 0 ? '+' : '') + game.odds.ml_away : '—'} • {game.home.split(' ').pop()} {game.odds.ml_home !== 0 ? (game.odds.ml_home > 0 ? '+' : '') + game.odds.ml_home : '—'} |
+                                  Spread: {game.odds.spread_team.split(' ').pop()} {game.odds.spread_line !== 0 ? (game.odds.spread_line > 0 ? '+' : '') + game.odds.spread_line : '—'} |
                                   Total: {game.odds.total_line !== 0 ? game.odds.total_line : '—'}
                                 </div>
                               </div>

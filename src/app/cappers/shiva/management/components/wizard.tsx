@@ -339,7 +339,7 @@ export interface SHIVAWizardProps {
   effectiveProfile?: any
   selectedGame?: any
   // mode prop removed - wizard is always in WRITE mode (manual testing only)
-  betType?: 'TOTAL' | 'SPREAD/MONEYLINE'
+  betType?: 'TOTAL' | 'SPREAD'
   sport?: 'NBA' | 'NFL' | 'MLB'
 }
 

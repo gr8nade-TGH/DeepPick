@@ -27,7 +27,7 @@ export interface WizardOrchestratorInput {
   }
   runId: string
   sport?: 'NBA' | 'NFL' | 'MLB'
-  betType?: 'TOTAL' | 'SPREAD' | 'MONEYLINE'
+  betType?: 'TOTAL' | 'SPREAD'
   aiProvider?: 'perplexity' | 'openai'
   newsWindowHours?: number
 }
@@ -338,7 +338,7 @@ async function computeFactors(
     away: teams.away,
     home: teams.home,
     sport: sport as 'NBA',
-    betType: betType as 'TOTAL' | 'SPREAD' | 'MONEYLINE',
+    betType: betType as 'TOTAL' | 'SPREAD',
     leagueAverages: {
       pace: 100.0,
       ORtg: 110.0,
@@ -358,7 +358,7 @@ async function computeFactors(
     const { computeTotalsFactors } = await import('@/lib/cappers/shiva-v1/factors/nba-totals-orchestrator')
     result = await computeTotalsFactors(ctx)
     factorVersion = 'nba_totals_v1'
-  } else if (betType === 'SPREAD' || betType === 'MONEYLINE') {
+  } else if (betType === 'SPREAD') {
     // Import and use SPREAD orchestrator
     const { computeSpreadFactors } = await import('@/lib/cappers/shiva-v1/factors/nba-spread-orchestrator')
     result = await computeSpreadFactors(ctx)

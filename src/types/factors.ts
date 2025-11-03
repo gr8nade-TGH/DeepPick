@@ -1,11 +1,11 @@
 /**
  * Factor System Types
- * 
+ *
  * Defines the core types for the factor tagging and computation system.
  * Supports filtering factors by sport, bet type, and scope.
  */
 
-export type BetType = 'TOTAL' | 'SPREAD/MONEYLINE';
+export type BetType = 'TOTAL' | 'SPREAD';
 export type Sport = 'NBA' | 'NFL' | 'MLB' | 'NHL';
 export type Scope = 'GLOBAL' | 'SPORT' | 'LEAGUE';
 
@@ -15,10 +15,10 @@ export interface FactorMeta {
   shortName: string;      // label next to the icon
   icon: string;           // emoji or icon key
   description?: string;   // tooltip description
-  appliesTo: { 
-    sports: Sport[] | '*'; 
-    betTypes: BetType[] | '*'; 
-    scope: Scope 
+  appliesTo: {
+    sports: Sport[] | '*';
+    betTypes: BetType[] | '*';
+    scope: Scope
   };
   maxPoints: number;      // cap of absolute contribution in points
   defaultWeight: number;  // contributes to confidence (your ~0.70 target)
@@ -71,7 +71,7 @@ export function calculateTotalWeight(factors: FactorMeta[]): number {
 export function normalizeWeights(factors: FactorMeta[], targetWeight: number = 0.70): FactorMeta[] {
   const currentTotal = calculateTotalWeight(factors);
   const scaleFactor = targetWeight / currentTotal;
-  
+
   return factors.map(factor => ({
     ...factor,
     defaultWeight: factor.defaultWeight * scaleFactor

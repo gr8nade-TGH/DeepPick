@@ -9,7 +9,7 @@ export interface RunCtx {
   away: string
   home: string
   sport: 'NBA'
-  betType: 'TOTAL' | 'SPREAD' | 'MONEYLINE'
+  betType: 'TOTAL' | 'SPREAD'
   leagueAverages: {
     pace: number
     ORtg: number
