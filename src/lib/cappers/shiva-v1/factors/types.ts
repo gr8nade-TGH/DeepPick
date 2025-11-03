@@ -54,31 +54,31 @@ export interface NBAStatsBundle {
   awayOppFTr: number
   homeOppFTr: number
 
-  // Turnover data (for SPREAD factor S2)
-  awayTOVLast10: number
-  homeTOVLast10: number
+  // Turnover data (for SPREAD factor S2) - optional for TOTALS
+  awayTOVLast10?: number
+  homeTOVLast10?: number
 
-  // Rebounding data (for SPREAD factor S3)
-  awayOffReb: number
-  awayDefReb: number
-  awayOppOffReb: number
-  awayOppDefReb: number
-  homeOffReb: number
-  homeDefReb: number
-  homeOppOffReb: number
-  homeOppDefReb: number
+  // Rebounding data (for SPREAD factor S3) - optional for TOTALS
+  awayOffReb?: number
+  awayDefReb?: number
+  awayOppOffReb?: number
+  awayOppDefReb?: number
+  homeOffReb?: number
+  homeDefReb?: number
+  homeOppOffReb?: number
+  homeOppDefReb?: number
 
-  // Four Factors data (for SPREAD factor S5)
-  awayEfg: number
-  awayTovPct: number
-  awayOrebPct: number
-  awayFtr: number
-  homeEfg: number
-  homeTovPct: number
-  homeOrebPct: number
-  homeFtr: number
+  // Four Factors data (for SPREAD factor S5) - optional for TOTALS
+  awayEfg?: number
+  awayTovPct?: number
+  awayOrebPct?: number
+  awayFtr?: number
+  homeEfg?: number
+  homeTovPct?: number
+  homeOrebPct?: number
+  homeFtr?: number
 
-  // Home/Away splits (for SPREAD factor S4)
+  // Home/Away splits (for SPREAD factor S4) - optional for all
   awayORtgHome?: number
   awayORtgAway?: number
   awayDRtgHome?: number

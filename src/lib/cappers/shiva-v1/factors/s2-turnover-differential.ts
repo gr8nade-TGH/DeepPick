@@ -96,8 +96,8 @@ export function calculateTurnoverDiffPoints(input: TurnoverDiffInput): TurnoverD
   const reason = turnoverDifferential > 0
     ? `Away advantage: Home commits ${Math.abs(turnoverDifferential).toFixed(1)} more TOV/game (${expectedPointImpact.toFixed(1)} pts)`
     : turnoverDifferential < 0
-    ? `Home advantage: Away commits ${Math.abs(turnoverDifferential).toFixed(1)} more TOV/game (${Math.abs(expectedPointImpact).toFixed(1)} pts)`
-    : 'No turnover differential'
+      ? `Home advantage: Away commits ${Math.abs(turnoverDifferential).toFixed(1)} more TOV/game (${Math.abs(expectedPointImpact).toFixed(1)} pts)`
+      : 'No turnover differential'
 
   return {
     awayScore,
@@ -124,8 +124,8 @@ export function computeTurnoverDifferential(bundle: NBAStatsBundle, ctx: RunCtx)
   console.log('[S2:TURNOVER_DIFF] Computing turnover differential...')
 
   // Extract turnover data from bundle
-  const awayTOV = bundle.awayTOVLast10
-  const homeTOV = bundle.homeTOVLast10
+  const awayTOV = bundle.awayTOVLast10 ?? 14.0 // League average fallback
+  const homeTOV = bundle.homeTOVLast10 ?? 14.0 // League average fallback
 
   console.log(`[S2:TURNOVER_DIFF] Away TOV: ${awayTOV.toFixed(1)}, Home TOV: ${homeTOV.toFixed(1)}`)
 

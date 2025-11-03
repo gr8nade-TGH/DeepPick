@@ -87,14 +87,14 @@ export function calculateFourFactorsPoints(input: FourFactorsInput): FourFactors
   const FTR_WEIGHT = 0.05
 
   // Calculate composite rating for away team
-  const awayRating = 
+  const awayRating =
     (EFG_WEIGHT * input.awayEfg) -
     (TOV_WEIGHT * input.awayTovPct) +
     (OREB_WEIGHT * input.awayOrebPct) +
     (FTR_WEIGHT * input.awayFtr)
 
   // Calculate composite rating for home team
-  const homeRating = 
+  const homeRating =
     (EFG_WEIGHT * input.homeEfg) -
     (TOV_WEIGHT * input.homeTovPct) +
     (OREB_WEIGHT * input.homeOrebPct) +
@@ -139,14 +139,14 @@ export function calculateFourFactorsPoints(input: FourFactorsInput): FourFactors
  * Compute S5 (Four Factors Differential) for orchestrator
  */
 export function computeFourFactorsDifferential(bundle: NBAStatsBundle, ctx: RunCtx): any {
-  const awayEfg = bundle.awayEfg
-  const awayTovPct = bundle.awayTovPct
-  const awayOrebPct = bundle.awayOrebPct
-  const awayFtr = bundle.awayFtr
-  const homeEfg = bundle.homeEfg
-  const homeTovPct = bundle.homeTovPct
-  const homeOrebPct = bundle.homeOrebPct
-  const homeFtr = bundle.homeFtr
+  const awayEfg = bundle.awayEfg ?? 0.53
+  const awayTovPct = bundle.awayTovPct ?? 0.14
+  const awayOrebPct = bundle.awayOrebPct ?? 0.24
+  const awayFtr = bundle.awayFtr ?? 0.22
+  const homeEfg = bundle.homeEfg ?? 0.53
+  const homeTovPct = bundle.homeTovPct ?? 0.14
+  const homeOrebPct = bundle.homeOrebPct ?? 0.24
+  const homeFtr = bundle.homeFtr ?? 0.22
 
   const result = calculateFourFactorsPoints({
     awayEfg,

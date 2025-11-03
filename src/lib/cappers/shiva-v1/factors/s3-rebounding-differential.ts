@@ -87,22 +87,22 @@ export function calculateReboundingDiffPoints(input: ReboundingDiffInput): Rebou
   const awayOrebPct = (input.awayOffReb + input.awayOppDefReb) > 0
     ? input.awayOffReb / (input.awayOffReb + input.awayOppDefReb)
     : 0.24 // League average OREB%
-  
+
   const awayDrebPct = (input.awayDefReb + input.awayOppOffReb) > 0
     ? input.awayDefReb / (input.awayDefReb + input.awayOppOffReb)
     : 0.76 // League average DREB%
-  
+
   const awayTotalRebPct = awayOrebPct + awayDrebPct
 
   // Calculate rebounding percentages for home team
   const homeOrebPct = (input.homeOffReb + input.homeOppDefReb) > 0
     ? input.homeOffReb / (input.homeOffReb + input.homeOppDefReb)
     : 0.24 // League average OREB%
-  
+
   const homeDrebPct = (input.homeDefReb + input.homeOppOffReb) > 0
     ? input.homeDefReb / (input.homeDefReb + input.homeOppOffReb)
     : 0.76 // League average DREB%
-  
+
   const homeTotalRebPct = homeOrebPct + homeDrebPct
 
   // Calculate differential (positive = home advantage, negative = away advantage)
@@ -148,14 +148,14 @@ export function calculateReboundingDiffPoints(input: ReboundingDiffInput): Rebou
  * Compute S3 (Rebounding Differential) for orchestrator
  */
 export function computeReboundingDifferential(bundle: NBAStatsBundle, ctx: RunCtx): any {
-  const awayOffReb = bundle.awayOffReb
-  const awayDefReb = bundle.awayDefReb
-  const awayOppOffReb = bundle.awayOppOffReb
-  const awayOppDefReb = bundle.awayOppDefReb
-  const homeOffReb = bundle.homeOffReb
-  const homeDefReb = bundle.homeDefReb
-  const homeOppOffReb = bundle.homeOppOffReb
-  const homeOppDefReb = bundle.homeOppDefReb
+  const awayOffReb = bundle.awayOffReb ?? 10.5
+  const awayDefReb = bundle.awayDefReb ?? 34.0
+  const awayOppOffReb = bundle.awayOppOffReb ?? 10.5
+  const awayOppDefReb = bundle.awayOppDefReb ?? 34.0
+  const homeOffReb = bundle.homeOffReb ?? 10.5
+  const homeDefReb = bundle.homeDefReb ?? 34.0
+  const homeOppOffReb = bundle.homeOppOffReb ?? 10.5
+  const homeOppDefReb = bundle.homeOppDefReb ?? 34.0
 
   const result = calculateReboundingDiffPoints({
     awayOffReb,
