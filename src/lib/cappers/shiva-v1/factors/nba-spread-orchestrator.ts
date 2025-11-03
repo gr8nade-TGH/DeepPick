@@ -96,12 +96,17 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
 
   console.log('[SPREAD:CONDITION_CHECK]', {
     enabledFactorKeys,
-    conditionCheck: enabledFactorKeys.some(key => ['netRatingDiff', 'restAdvantage', 'atsMomentum', 'homeCourtAdv', 'fourFactorsDiff'].includes(key))
+    conditionCheck: enabledFactorKeys.some(key => ['netRatingDiff', 'turnoverDiff', 'reboundingDiff', 'paceMismatch', 'fourFactorsDiff'].includes(key))
   })
 
-  if (enabledFactorKeys.some(key => ['netRatingDiff', 'restAdvantage', 'atsMomentum', 'homeCourtAdv', 'fourFactorsDiff'].includes(key))) {
+  if (enabledFactorKeys.some(key => ['netRatingDiff', 'turnoverDiff', 'reboundingDiff', 'paceMismatch', 'fourFactorsDiff'].includes(key))) {
     console.log('[SPREAD:ABOUT_TO_FETCH_NBA_STATS]', 'Starting NBA Stats API fetch...')
     bundle = await fetchNBAStatsBundle(ctx)
+
+    if (!bundle) {
+      throw new Error('[SPREAD] Failed to fetch NBA stats bundle - bundle is null')
+    }
+
     console.log('[SPREAD:NBA_STATS_FETCHED]', 'NBA Stats bundle received:', Object.keys(bundle))
     console.debug('[spread:bundle]', bundle)
 
@@ -117,6 +122,11 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
       leagueORtg: bundle.leagueORtg
     }
     nbaStatsDebugInfo.api_calls_made = true
+  }
+
+  // Ensure bundle exists before computing factors
+  if (!bundle && factors.length === 0) {
+    throw new Error('[SPREAD] No bundle available and no factors computed - this should not happen')
   }
 
   // Compute only enabled factors
@@ -159,19 +169,26 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
 
   // Build debug info
   const totals_debug = {
-    league_anchors: {
-      pace: bundle?.leaguePace || 100.1,
-      ORtg: bundle?.leagueORtg || 110.0,
-      DRtg: bundle?.leagueDRtg || 110.0,
-      threePAR: bundle?.league3PAR || 0.39,
-      FTr: bundle?.leagueFTr || 0.22,
-      threePstdev: bundle?.league3Pstdev || 0.036
+    league_anchors: bundle ? {
+      pace: bundle.leaguePace,
+      ORtg: bundle.leagueORtg,
+      DRtg: bundle.leagueDRtg,
+      threePAR: bundle.league3PAR,
+      FTr: bundle.leagueFTr,
+      threePstdev: bundle.league3Pstdev
+    } : {
+      pace: 100.1,
+      ORtg: 110.0,
+      DRtg: 110.0,
+      threePAR: 0.39,
+      FTr: 0.22,
+      threePstdev: 0.036
     },
     injury_impact: { defenseImpactA: 0, defenseImpactB: 0, summary: 'Not implemented for spread yet', rawResponse: '' },
     factor_keys: factors.map(f => f.key),
     console_logs: {
       branch_used: branchLog,
-      bundle: bundle,
+      bundle: bundle!,
       rows_z_points: factors.map(f => ({
         key: f.key,
         z: f.normalized_value,
