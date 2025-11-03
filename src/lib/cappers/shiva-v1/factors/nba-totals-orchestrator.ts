@@ -166,6 +166,11 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
     })
     console.log('[TOTALS:TEAM_NAMES]', { away: ctx.away, home: ctx.home })
     bundle = await fetchNBAStatsBundle(ctx)
+
+    if (!bundle) {
+      throw new Error('[TOTALS] Failed to fetch NBA stats bundle - bundle is null')
+    }
+
     console.log('[TOTALS:NBA_STATS_FETCHED]', 'NBA Stats bundle received:', Object.keys(bundle))
     console.debug('[totals:bundle]', bundle)
 
@@ -305,7 +310,7 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
       factor_keys: weightedFactors.map(f => f.key),
       console_logs: {
         branch_used: branchLog,
-        bundle: bundle,
+        bundle: bundle!,
         rows_z_points: rowsZPoints
       },
       nba_stats_api_debug: nbaStatsDebugInfo
