@@ -14,9 +14,30 @@ export interface TeamFormData {
   ortg: number
   drtg: number
   threeP_pct: number
-  threeP_rate: number
-  ft_rate: number
-  gamesAnalyzed: number
+  threeP_rate: number // 3PAR
+  ft_rate: number     // FTr
+  gamesAnalyzed: number // Number of games used in calculation
+  avgTurnovers: number // Average turnovers per game (for SPREAD factor S2)
+
+  // Rebounding data (for SPREAD factor S3)
+  avgOffReb: number // Offensive rebounds per game
+  avgDefReb: number // Defensive rebounds per game
+  avgOppOffReb: number // Opponent offensive rebounds per game
+  avgOppDefReb: number // Opponent defensive rebounds per game
+
+  // Four Factors data (for SPREAD factor S5)
+  avgEfg: number // Effective Field Goal %
+  avgTovPct: number // Turnover %
+  avgOrebPct: number // Offensive Rebound %
+  avgFtr: number // Free Throw Rate
+
+  // Home/Away splits (for SPREAD factor S4)
+  ortgHome?: number // ORtg in home games only
+  ortgAway?: number // ORtg in away games only
+  drtgHome?: number // DRtg in home games only
+  drtgAway?: number // DRtg in away games only
+  homeGames?: number // Number of home games analyzed
+  awayGames?: number // Number of away games analyzed
 }
 
 // Cache TTL: 4 hours (team stats don't change frequently during the day)
