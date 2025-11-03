@@ -3,6 +3,7 @@
 import { Marker } from 'react-map-gl/mapbox'
 import { TerritoryData, TerritoryTier } from './types'
 import { NBATeamCoordinate } from './nba-team-coordinates'
+import Image from 'next/image'
 
 interface TeamMarkerProps {
   team: NBATeamCoordinate
@@ -42,11 +43,11 @@ export function TeamMarker({ team, territory, onClick, onHover }: TeamMarkerProp
         <div
           className={`
             relative
-            w-16 h-16
+            w-20 h-20
             rounded-full
             flex items-center justify-center
             transition-all duration-300
-            ${isUnclaimed ? 'bg-gray-300 border-dashed' : 'bg-white'}
+            ${isUnclaimed ? 'bg-gray-300/80 border-dashed' : 'bg-white shadow-lg'}
             ${isActive ? 'animate-pulse-glow' : ''}
           `}
           style={{
@@ -55,15 +56,21 @@ export function TeamMarker({ team, territory, onClick, onHover }: TeamMarkerProp
             borderStyle: isUnclaimed ? 'dashed' : 'solid',
           }}
         >
-          {/* Team Abbreviation */}
-          <span
-            className={`
-              text-sm font-bold
-              ${isUnclaimed ? 'text-gray-500' : 'text-gray-900'}
-            `}
-          >
-            {team.abbr}
-          </span>
+          {/* Team Logo */}
+          {!isUnclaimed ? (
+            <div className="relative w-14 h-14">
+              <Image
+                src={`/nba_territory_logos/${team.abbr}.png`}
+                alt={team.abbr}
+                fill
+                className="object-contain p-1"
+              />
+            </div>
+          ) : (
+            <span className="text-sm font-bold text-gray-500">
+              {team.abbr}
+            </span>
+          )}
 
           {/* Crown Icon for Dominant Territories */}
           {territory.tier === 'dominant' && !isUnclaimed && (

@@ -194,13 +194,13 @@
       repeating-linear-gradient(0deg,
         transparent,
         transparent 2px,
-        rgba(62, 39, 35, 0.02) 2px,
-        rgba(62, 39, 35, 0.02) 4px),
+        rgba(62, 39, 35, 0.01) 2px,
+        rgba(62, 39, 35, 0.01) 4px),
       repeating-linear-gradient(90deg,
         transparent,
         transparent 2px,
-        rgba(62, 39, 35, 0.02) 2px,
-        rgba(62, 39, 35, 0.02) 4px);
-    opacity: 0.3;
+        rgba(62, 39, 35, 0.01) 2px,
+        rgba(62, 39, 35, 0.01) 4px);
+    opacity: 0.15;
   }
 }

@@ -27,7 +27,7 @@ export function TerritoryMap() {
   const [loading, setLoading] = useState(true)
   const [pickIdMap, setPickIdMap] = useState<Record<string, string>>({})
 
-  // Apply medieval map styling when map loads
+  // Apply medieval/fantasy map styling when map loads
   const handleMapLoad = useCallback(() => {
     const map = mapRef.current?.getMap()
     if (!map) return
@@ -42,44 +42,52 @@ export function TerritoryMap() {
     const layers = map.getStyle().layers
     if (!layers) return
 
-    // Hide all layers except admin boundaries
+    // Apply medieval/vintage styling to layers
     layers.forEach((layer) => {
       const layerId = layer.id
 
-      // Keep only admin boundary layers
-      if (layerId.includes('admin')) {
-        // Keep admin layers visible
-        return
-      }
-
-      // Hide everything else (roads, POIs, labels, water, etc.)
-      if (layer.type === 'symbol' || layer.type === 'line' || layer.type === 'fill' || layer.type === 'circle') {
+      // Hide POI labels and icons to reduce clutter
+      if (layerId.includes('poi-label') || layerId.includes('transit')) {
         map.setLayoutProperty(layerId, 'visibility', 'none')
       }
-    })
 
-    // Update background color to parchment
-    map.setPaintProperty('background', 'background-color', '#F4E8D0')
+      // Reduce road visibility for cleaner look
+      if (layerId.includes('road') && layer.type === 'line') {
+        map.setPaintProperty(layerId, 'line-opacity', 0.3)
+      }
 
-    // Style admin boundaries with medieval aesthetic
-    layers.forEach((layer) => {
-      const layerId = layer.id
-
-      // Style state boundaries
-      if (layerId.includes('admin') && layerId.includes('1')) {
-        if (layer.type === 'line') {
-          map.setPaintProperty(layerId, 'line-color', '#3E2723')
-          map.setPaintProperty(layerId, 'line-width', 2)
-          map.setPaintProperty(layerId, 'line-opacity', 0.8)
+      // Style water with vintage blue
+      if (layerId.includes('water')) {
+        if (layer.type === 'fill') {
+          map.setPaintProperty(layerId, 'fill-color', '#B8D4E8')
+          map.setPaintProperty(layerId, 'fill-opacity', 0.6)
         }
       }
 
-      // Style country boundaries (thicker)
-      if (layerId.includes('admin') && layerId.includes('0')) {
+      // Style land/background with parchment tone
+      if (layerId.includes('land') || layerId === 'background') {
+        if (layer.type === 'background') {
+          map.setPaintProperty(layerId, 'background-color', '#F4E8D0')
+        } else if (layer.type === 'fill') {
+          map.setPaintProperty(layerId, 'fill-color', '#F4E8D0')
+        }
+      }
+
+      // Enhance admin boundaries with medieval aesthetic
+      if (layerId.includes('admin')) {
         if (layer.type === 'line') {
-          map.setPaintProperty(layerId, 'line-color', '#2C1810')
-          map.setPaintProperty(layerId, 'line-width', 3)
-          map.setPaintProperty(layerId, 'line-opacity', 0.9)
+          // State boundaries
+          if (layerId.includes('1')) {
+            map.setPaintProperty(layerId, 'line-color', '#8B4513')
+            map.setPaintProperty(layerId, 'line-width', 2)
+            map.setPaintProperty(layerId, 'line-opacity', 0.7)
+          }
+          // Country boundaries
+          if (layerId.includes('0')) {
+            map.setPaintProperty(layerId, 'line-color', '#654321')
+            map.setPaintProperty(layerId, 'line-width', 3)
+            map.setPaintProperty(layerId, 'line-opacity', 0.9)
+          }
         }
       }
     })
@@ -179,7 +187,7 @@ export function TerritoryMap() {
       <Map
         ref={mapRef}
         mapboxAccessToken={MAPBOX_TOKEN}
-        mapStyle="mapbox://styles/mapbox/light-v11"
+        mapStyle="mapbox://styles/mapbox/outdoors-v12"
         initialViewState={{
           longitude: -98.5795,
           latitude: 39.8283,
