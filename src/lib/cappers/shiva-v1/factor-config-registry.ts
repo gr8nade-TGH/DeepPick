@@ -9,7 +9,7 @@ export const FACTOR_REGISTRY: FactorRegistry = {
   // ========================================================================
   // NBA TOTALS FACTORS (F1-F5)
   // ========================================================================
-  
+
   paceIndex: {
     name: 'Matchup Pace Index',
     description: 'Expected game pace vs league average',
@@ -17,13 +17,13 @@ export const FACTOR_REGISTRY: FactorRegistry = {
     maxPoints: 2.0,
     supportedSports: ['NBA'],
     supportedBetTypes: ['TOTAL'],
-    availableDataSources: ['mysportsfeeds', 'manual'],
+    availableDataSources: ['mysportsfeeds', 'system'],
     defaultDataSource: 'mysportsfeeds',
     scope: 'matchup',
     icon: '⏱️',
     shortName: 'Pace'
   },
-  
+
   offForm: {
     name: 'Offensive Form vs League',
     description: 'Combined team offensive efficiency vs league average',
@@ -31,13 +31,13 @@ export const FACTOR_REGISTRY: FactorRegistry = {
     maxPoints: 2.0,
     supportedSports: ['NBA'],
     supportedBetTypes: ['TOTAL'],
-    availableDataSources: ['mysportsfeeds', 'manual'],
+    availableDataSources: ['mysportsfeeds', 'system'],
     defaultDataSource: 'mysportsfeeds',
     scope: 'matchup',
     icon: '🔥',
     shortName: 'Offense'
   },
-  
+
   defErosion: {
     name: 'Defensive Erosion',
     description: 'Defensive rating decline + injury impact',
@@ -45,13 +45,13 @@ export const FACTOR_REGISTRY: FactorRegistry = {
     maxPoints: 2.0,
     supportedSports: ['NBA'],
     supportedBetTypes: ['TOTAL'],
-    availableDataSources: ['llm', 'manual'],
-    defaultDataSource: 'llm',
+    availableDataSources: ['perplexity', 'system'],
+    defaultDataSource: 'perplexity',
     scope: 'matchup',
     icon: '🛡️',
     shortName: 'Defense'
   },
-  
+
   threeEnv: {
     name: '3-Point Environment & Volatility',
     description: '3-point attempt rate and recent shooting variance',
@@ -59,13 +59,13 @@ export const FACTOR_REGISTRY: FactorRegistry = {
     maxPoints: 1.0,
     supportedSports: ['NBA'],
     supportedBetTypes: ['TOTAL'],
-    availableDataSources: ['mysportsfeeds', 'manual'],
+    availableDataSources: ['mysportsfeeds', 'system'],
     defaultDataSource: 'mysportsfeeds',
     scope: 'matchup',
     icon: '🏹',
     shortName: '3P Env'
   },
-  
+
   whistleEnv: {
     name: 'Free-Throw / Whistle Environment',
     description: 'Free throw rate environment for both teams',
@@ -73,17 +73,17 @@ export const FACTOR_REGISTRY: FactorRegistry = {
     maxPoints: 1.0,
     supportedSports: ['NBA'],
     supportedBetTypes: ['TOTAL'],
-    availableDataSources: ['mysportsfeeds', 'manual'],
+    availableDataSources: ['mysportsfeeds', 'system'],
     defaultDataSource: 'mysportsfeeds',
     scope: 'matchup',
     icon: '⛹️‍♂️',
     shortName: 'FT Env'
   },
-  
+
   // ========================================================================
   // NBA SPREAD FACTORS (Legacy - examples)
   // ========================================================================
-  
+
   netRating: {
     name: 'Net Rating Differential',
     description: 'Offensive rating minus defensive rating differential',
@@ -91,13 +91,13 @@ export const FACTOR_REGISTRY: FactorRegistry = {
     maxPoints: 1.0,
     supportedSports: ['NBA'],
     supportedBetTypes: ['SPREAD', 'MONEYLINE'],
-    availableDataSources: ['mysportsfeeds', 'manual'],
+    availableDataSources: ['mysportsfeeds', 'system'],
     defaultDataSource: 'mysportsfeeds',
     scope: 'matchup',
     icon: '📊',
     shortName: 'NetRtg'
   },
-  
+
   homeCourtAdvantage: {
     name: 'Home Court Advantage',
     description: 'Historical home/away performance differential',
@@ -105,13 +105,13 @@ export const FACTOR_REGISTRY: FactorRegistry = {
     maxPoints: 0.5,
     supportedSports: ['NBA', 'NFL', 'MLB'],
     supportedBetTypes: ['SPREAD', 'MONEYLINE'],
-    availableDataSources: ['mysportsfeeds', 'manual'],
+    availableDataSources: ['mysportsfeeds', 'system'],
     defaultDataSource: 'mysportsfeeds',
     scope: 'team',
     icon: '🏠',
     shortName: 'Home'
   },
-  
+
   restAdvantage: {
     name: 'Rest Advantage',
     description: 'Days of rest differential between teams',
@@ -119,17 +119,17 @@ export const FACTOR_REGISTRY: FactorRegistry = {
     maxPoints: 0.4,
     supportedSports: ['NBA', 'NFL'],
     supportedBetTypes: ['SPREAD', 'MONEYLINE', 'TOTAL'],
-    availableDataSources: ['manual'],
-    defaultDataSource: 'manual',
+    availableDataSources: ['system'],
+    defaultDataSource: 'system',
     scope: 'matchup',
     icon: '😴',
     shortName: 'Rest'
   },
-  
+
   // ========================================================================
   // GLOBAL FACTORS (All sports/bet types)
   // ========================================================================
-  
+
   newsEdge: {
     name: 'News/Injury Edge',
     description: 'Injury/availability impact within last 48-72h. Capped at ±3 per 100 pre-aggregation.',
@@ -137,13 +137,13 @@ export const FACTOR_REGISTRY: FactorRegistry = {
     maxPoints: 0.3,
     supportedSports: ['NBA', 'NFL', 'MLB'],
     supportedBetTypes: ['SPREAD', 'MONEYLINE', 'TOTAL'],
-    availableDataSources: ['llm', 'news-api', 'manual'],
-    defaultDataSource: 'llm',
+    availableDataSources: ['perplexity', 'openai', 'system'],
+    defaultDataSource: 'perplexity',
     scope: 'team',
     icon: '🏥',
     shortName: 'News/Injury'
   },
-  
+
   injuryAvailability: {
     name: 'Key Injuries & Availability - Totals',
     description: 'AI analysis of key player injuries and availability. Considers impact on scoring, team performance, and game flow.',
@@ -151,13 +151,13 @@ export const FACTOR_REGISTRY: FactorRegistry = {
     maxPoints: 3.0,
     supportedSports: ['NBA', 'NFL', 'MLB'],
     supportedBetTypes: ['TOTAL'],
-    availableDataSources: ['llm', 'news-api', 'manual'],
-    defaultDataSource: 'llm',
+    availableDataSources: ['perplexity', 'openai', 'system'],
+    defaultDataSource: 'perplexity',
     scope: 'global',
     icon: '🏥',
     shortName: 'Injuries'
   },
-  
+
   momentum: {
     name: 'Recent Momentum',
     description: 'Last 5 games performance trend',
@@ -165,13 +165,13 @@ export const FACTOR_REGISTRY: FactorRegistry = {
     maxPoints: 0.5,
     supportedSports: ['NBA', 'NFL', 'MLB'],
     supportedBetTypes: ['SPREAD', 'MONEYLINE', 'TOTAL'],
-    availableDataSources: ['mysportsfeeds', 'manual'],
+    availableDataSources: ['mysportsfeeds', 'system'],
     defaultDataSource: 'mysportsfeeds',
     scope: 'team',
     icon: '📈',
     shortName: 'Momentum'
   },
-  
+
   weather: {
     name: 'Weather Conditions',
     description: 'Weather impact on outdoor games',
@@ -179,13 +179,13 @@ export const FACTOR_REGISTRY: FactorRegistry = {
     maxPoints: 0.4,
     supportedSports: ['NFL', 'MLB'],
     supportedBetTypes: ['SPREAD', 'MONEYLINE', 'TOTAL'],
-    availableDataSources: ['manual'],
-    defaultDataSource: 'manual',
+    availableDataSources: ['system'],
+    defaultDataSource: 'system',
     scope: 'global',
     icon: '🌦️',
     shortName: 'Weather'
   },
-  
+
   edgeVsMarket: {
     name: 'Edge vs Market - Totals',
     description: 'Final confidence adjustment based on predicted vs market line for totals',
@@ -223,7 +223,7 @@ export function getDefaultProfile(
   betType: string
 ): any {
   const availableFactorKeys = getAvailableFactors(sport, betType)
-  
+
   const factors = availableFactorKeys.map(key => {
     const factorDef = FACTOR_REGISTRY[key]
     return {
@@ -241,7 +241,7 @@ export function getDefaultProfile(
       shortName: factorDef.shortName
     }
   })
-  
+
   return {
     id: `${capperId}-${sport}-${betType}-default`.toLowerCase(),
     capperId,
