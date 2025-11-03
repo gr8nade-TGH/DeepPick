@@ -112,18 +112,19 @@ export function TerritoryMap() {
         <h1 className="text-2xl font-bold tracking-wide">🏀 NBA TERRITORY MAP 🗺️</h1>
       </div>
 
-      {/* Map */}
+      {/* Map - Using outdoors style with minimal details */}
       <Map
         mapboxAccessToken={MAPBOX_TOKEN}
-        mapStyle="mapbox://styles/mapbox/light-v11"
+        mapStyle="mapbox://styles/mapbox/outdoors-v12"
         initialViewState={{
           longitude: -98.5795,
           latitude: 39.8283,
-          zoom: 3.5
+          zoom: 4
         }}
-        minZoom={3}
-        maxZoom={8}
+        minZoom={3.5}
+        maxZoom={6}
         style={{ width: '100%', height: '100%' }}
+        attributionControl={false}
       >
         {/* Render team markers */}
         {NBA_TEAM_COORDINATES.map((team) => {

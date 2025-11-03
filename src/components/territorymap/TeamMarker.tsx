@@ -76,7 +76,7 @@ export function TeamMarker({ team, territory, onClick, onHover }: TeamMarkerProp
           {isActive && (
             <>
               {/* Crossed Swords Animation - Above LIVE badge */}
-              <div className="absolute -top-9 left-1/2 transform -translate-x-1/2 flex items-center justify-center">
+              <div className="absolute -top-14 left-1/2 transform -translate-x-1/2 flex items-center justify-center">
                 <div className="relative w-8 h-8">
                   {/* Left Sword */}
                   <div className="absolute left-0 top-1/2 -translate-y-1/2 animate-sword-clash">
