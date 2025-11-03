@@ -14,7 +14,7 @@ import { pickGenerationService } from '@/lib/services/pick-generation-service'
 
 const ScannerSchema = z.object({
   sport: z.enum(['NBA', 'NFL', 'MLB']).default('NBA'),
-  betType: z.enum(['TOTAL', 'SPREAD/MONEYLINE']).default('TOTAL'),
+  betType: z.enum(['TOTAL', 'SPREAD']).default('TOTAL'),
   limit: z.number().min(1).max(50).default(10),
   selectedGame: z.any().optional() // Optional selected game to check first
 })
