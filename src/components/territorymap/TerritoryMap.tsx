@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import Map from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { NBA_TEAM_COORDINATES } from './nba-team-coordinates'
@@ -10,8 +10,69 @@ import { MapLegend } from './MapLegend'
 import { MapFiltersPanel } from './MapFiltersPanel'
 import { MapFilters, MapStats, TerritoryData } from './types'
 import { PickInsightModal } from '@/components/dashboard/pick-insight-modal'
+import type { MapRef } from 'react-map-gl/mapbox'
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || 'pk.eyJ1IjoiZ3I4bmFkZSIsImEiOiJjbWhpcjVuM2IxNTRkMmtwcTM0dHoyc2N4In0.xTuWFyLgmwGbuQKWLOGv4A'
+
+// Medieval/Fantasy map styling - parchment background with hand-drawn borders
+const MEDIEVAL_MAP_STYLE = {
+  version: 8,
+  name: 'Medieval Territory Map',
+  sources: {
+    'mapbox': {
+      type: 'vector',
+      url: 'mapbox://mapbox.mapbox-streets-v8'
+    }
+  },
+  layers: [
+    // Parchment background
+    {
+      id: 'background',
+      type: 'background',
+      paint: {
+        'background-color': '#F4E8D0' // Aged parchment color
+      }
+    },
+    // State fills - slightly darker parchment for land
+    {
+      id: 'admin-state-fill',
+      type: 'fill',
+      source: 'mapbox',
+      'source-layer': 'admin',
+      filter: ['all', ['==', 'admin_level', 1], ['==', 'maritime', 0]],
+      paint: {
+        'fill-color': '#EDE4D3',
+        'fill-opacity': 0.5
+      }
+    },
+    // State borders - dark brown medieval style
+    {
+      id: 'admin-state-border',
+      type: 'line',
+      source: 'mapbox',
+      'source-layer': 'admin',
+      filter: ['all', ['==', 'admin_level', 1], ['==', 'maritime', 0]],
+      paint: {
+        'line-color': '#3E2723', // Dark brown
+        'line-width': 2,
+        'line-opacity': 0.8
+      }
+    },
+    // Country borders - thicker for US outline
+    {
+      id: 'admin-country-border',
+      type: 'line',
+      source: 'mapbox',
+      'source-layer': 'admin',
+      filter: ['==', 'admin_level', 0],
+      paint: {
+        'line-color': '#2C1810',
+        'line-width': 3,
+        'line-opacity': 0.9
+      }
+    }
+  ]
+}
 
 export function TerritoryMap() {
   const [hoveredTeam, setHoveredTeam] = useState<string | null>(null)
@@ -107,15 +168,18 @@ export function TerritoryMap() {
 
   return (
     <div className="relative w-full h-screen bg-[#F4E8D0]">
+      {/* Medieval parchment texture overlay */}
+      <div className="medieval-map-overlay z-[1]" />
+
       {/* Title Overlay */}
       <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10 bg-[#3E2723] text-[#D4AF37] px-6 py-3 rounded-lg shadow-lg border-2 border-[#D4AF37]">
         <h1 className="text-2xl font-bold tracking-wide">🏀 NBA TERRITORY MAP 🗺️</h1>
       </div>
 
-      {/* Map - Using outdoors style with minimal details */}
+      {/* Map - Medieval/Fantasy gameboard style */}
       <Map
         mapboxAccessToken={MAPBOX_TOKEN}
-        mapStyle="mapbox://styles/mapbox/outdoors-v12"
+        mapStyle={MEDIEVAL_MAP_STYLE as any}
         initialViewState={{
           longitude: -98.5795,
           latitude: 39.8283,
@@ -125,6 +189,7 @@ export function TerritoryMap() {
         maxZoom={6}
         style={{ width: '100%', height: '100%' }}
         attributionControl={false}
+        logoPosition="bottom-right"
       >
         {/* Render team markers */}
         {NBA_TEAM_COORDINATES.map((team) => {
