@@ -813,8 +813,13 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
 
     // Data anomaly checks
     const factors = step3Data.factors
-    const expectedFactorKeys = ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv', 'injuryAvailability']
     const actualFactorKeys = factors.map((f: any) => f.key)
+
+    // ✅ DYNAMIC FACTOR KEY VALIDATION BASED ON BET TYPE
+    const betType = props.betType || 'TOTAL'
+    const expectedFactorKeys = betType === 'TOTAL'
+      ? ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv', 'injuryAvailability']
+      : ['netRatingDiff', 'restAdvantage', 'atsMomentum', 'homeCourtAdv', 'fourFactorsDiff']
 
     // Check if we have at least some factors (minimum 1)
     if (factors.length < 1) {
@@ -824,7 +829,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     // Check for missing critical factors (only warn, don't block)
     const missingFactors = expectedFactorKeys.filter(key => !actualFactorKeys.includes(key))
     if (missingFactors.length > 0) {
-      console.warn(`[Step 3] Missing factors: ${missingFactors.join(', ')} - this may be intentional based on configuration`)
+      console.warn(`[Step 3] Missing ${betType} factors: ${missingFactors.join(', ')} - this may be intentional based on configuration`)
     }
 
     // Check if all factors have valid data structure
@@ -872,15 +877,39 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     if (!step4Data.predictions) {
       return { isValid: false, error: 'Step 4 did not generate predictions' }
     }
-    if (typeof step4Data.predictions.total_pred_points !== 'number') {
-      return { isValid: false, error: 'Step 4 predictions missing total_pred_points' }
+
+    // ✅ BET TYPE SPECIFIC VALIDATION
+    const betType = props.betType || 'TOTAL'
+    const predictions = step4Data.predictions
+
+    if (betType === 'TOTAL') {
+      // TOTALS validation
+      if (typeof predictions.total_pred_points !== 'number') {
+        return { isValid: false, error: 'Step 4 predictions missing total_pred_points' }
+      }
+      if (predictions.total_pred_points < 150 || predictions.total_pred_points > 300) {
+        return { isValid: false, error: `Step 4 total_pred_points ${predictions.total_pred_points} seems anomalous (expected 150-300)` }
+      }
+    } else if (betType === 'SPREAD') {
+      // SPREAD validation - scores and winner are required
+      if (!predictions.scores || !predictions.scores.home || !predictions.scores.away) {
+        return { isValid: false, error: 'Step 4 predictions missing home/away scores' }
+      }
+      if (typeof predictions.scores.home !== 'number' || typeof predictions.scores.away !== 'number') {
+        return { isValid: false, error: 'Step 4 predictions scores not numeric' }
+      }
+      if (predictions.scores.home < 50 || predictions.scores.home > 200) {
+        return { isValid: false, error: `Step 4 home score ${predictions.scores.home} seems anomalous (expected 50-200)` }
+      }
+      if (predictions.scores.away < 50 || predictions.scores.away > 200) {
+        return { isValid: false, error: `Step 4 away score ${predictions.scores.away} seems anomalous (expected 50-200)` }
+      }
+      if (!predictions.winner || !['home', 'away'].includes(predictions.winner)) {
+        return { isValid: false, error: 'Step 4 predictions missing or invalid winner' }
+      }
     }
 
-    // Data anomaly checks
-    const predictions = step4Data.predictions
-    if (predictions.total_pred_points < 150 || predictions.total_pred_points > 300) {
-      return { isValid: false, error: `Step 4 total_pred_points ${predictions.total_pred_points} seems anomalous (expected 150-300)` }
-    }
+    // Common validation for both bet types
     if (!predictions.scores || !predictions.scores.home || !predictions.scores.away) {
       return { isValid: false, error: 'Step 4 predictions missing home/away scores' }
     }
