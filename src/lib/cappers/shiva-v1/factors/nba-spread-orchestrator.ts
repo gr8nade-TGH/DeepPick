@@ -158,14 +158,14 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
     factor_keys: factors.map(f => f.key),
     console_logs: {
       branch_used: branchLog,
-      bundle: bundle || {},
+      bundle: (bundle || {}) as any,
       rows_z_points: factors.map(f => ({
         key: f.key,
         name: f.name,
         z: f.normalized_value,
-        points: f.parsed_spread_values_json?.points || 0,
-        awayScore: f.parsed_spread_values_json?.awayScore || 0,
-        homeScore: f.parsed_spread_values_json?.homeScore || 0
+        points: f.parsed_values_json?.points || 0,
+        awayScore: f.parsed_values_json?.awayScore || 0,
+        homeScore: f.parsed_values_json?.homeScore || 0
       }))
     },
     nba_stats_api_debug: nbaStatsDebugInfo
