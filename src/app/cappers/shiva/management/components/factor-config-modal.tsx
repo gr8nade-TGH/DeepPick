@@ -114,7 +114,7 @@ export function FactorConfigModal({
           "Weight: 30% (up from 20%)",
           "Max Points: 2.0 (up from 1.5)",
           "Scope: matchup (covers both teams)",
-          "Data Sources: nba-stats-api, manual",
+          "Data Sources: mysportsfeeds, system",
           "Supported: NBA Totals only"
         ]
       },
@@ -141,7 +141,7 @@ export function FactorConfigModal({
           "Weight: 30% (up from 20%)",
           "Max Points: 2.0 (up from 1.0)",
           "Scope: matchup (covers both teams)",
-          "Data Sources: nba-stats-api, manual",
+          "Data Sources: mysportsfeeds, system",
           "Supported: NBA Totals only"
         ]
       },
@@ -168,7 +168,7 @@ export function FactorConfigModal({
           "Weight: 30% (up from 20%)",
           "Max Points: 2.0 (up from 1.0)",
           "Scope: matchup (covers both teams)",
-          "Data Sources: nba-stats-api, llm, manual",
+          "Data Sources: mysportsfeeds, perplexity, system",
           "Supported: NBA Totals only"
         ]
       },
@@ -786,7 +786,7 @@ export function FactorConfigModal({
             description: 'Expected game pace vs league average',
             enabled: true,
             weight: 20,
-            dataSource: 'nba-stats-api',
+            dataSource: 'mysportsfeeds',
             maxPoints: 1.0,
             sport: 'NBA',
             betType: 'TOTAL',
@@ -800,7 +800,7 @@ export function FactorConfigModal({
             description: 'Recent offensive efficiency vs opponent defense',
             enabled: true,
             weight: 20,
-            dataSource: 'nba-stats-api',
+            dataSource: 'mysportsfeeds',
             maxPoints: 1.0,
             sport: 'NBA',
             betType: 'TOTAL',
@@ -814,7 +814,7 @@ export function FactorConfigModal({
             description: 'Defensive rating decline + injury impact',
             enabled: true,
             weight: 20,
-            dataSource: 'nba-stats-api',
+            dataSource: 'mysportsfeeds',
             maxPoints: 1.0,
             sport: 'NBA',
             betType: 'TOTAL',
@@ -828,7 +828,7 @@ export function FactorConfigModal({
             description: '3-point environment & volatility',
             enabled: true,
             weight: 20,
-            dataSource: 'nba-stats-api',
+            dataSource: 'mysportsfeeds',
             maxPoints: 1.0,
             sport: 'NBA',
             betType: 'TOTAL',
@@ -842,7 +842,7 @@ export function FactorConfigModal({
             description: 'Free throw rate environment',
             enabled: true,
             weight: 20,
-            dataSource: 'nba-stats-api',
+            dataSource: 'mysportsfeeds',
             maxPoints: 1.0,
             sport: 'NBA',
             betType: 'TOTAL',
