@@ -1,17 +1,17 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { getSupabase } from '@/lib/supabase/server'
 import { TerritoryData } from '@/components/territorymap/types'
 
 export const dynamic = 'force-dynamic'
 
 /**
  * GET /api/territory-map
- * 
+ *
  * Returns territory data for all NBA teams based on capper performance
  */
 export async function GET() {
   try {
-    const supabase = await createClient()
+    const supabase = getSupabase()
 
     // Fetch all picks with their outcomes grouped by team
     const { data: picks, error } = await supabase
@@ -34,7 +34,7 @@ export async function GET() {
       // Extract team abbreviation from matchup (e.g., "LAL vs GSW" -> "LAL")
       const teamMatch = pick.matchup?.match(/^([A-Z]{2,3})/)
       if (!teamMatch) continue
-      
+
       const teamAbbr = teamMatch[1]
 
       // Get existing territory or create new one
