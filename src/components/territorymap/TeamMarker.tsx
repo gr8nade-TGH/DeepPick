@@ -75,14 +75,8 @@ export function TeamMarker({ team, territory, onClick, onHover }: TeamMarkerProp
           {/* LIVE Badge and Crossed Swords for Active Picks */}
           {isActive && (
             <>
-              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                <span className="px-2 py-0.5 bg-red-600 text-white text-xs font-bold rounded-full animate-pulse">
-                  LIVE
-                </span>
-              </div>
-
-              {/* Crossed Swords Animation */}
-              <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 flex items-center justify-center">
+              {/* Crossed Swords Animation - Above LIVE badge */}
+              <div className="absolute -top-9 left-1/2 transform -translate-x-1/2 flex items-center justify-center">
                 <div className="relative w-8 h-8">
                   {/* Left Sword */}
                   <div className="absolute left-0 top-1/2 -translate-y-1/2 animate-sword-clash">
@@ -93,6 +87,12 @@ export function TeamMarker({ team, territory, onClick, onHover }: TeamMarkerProp
                     <span className="text-lg">⚔️</span>
                   </div>
                 </div>
+              </div>
+
+              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                <span className="px-2 py-0.5 bg-red-600 text-white text-xs font-bold rounded-full animate-pulse">
+                  LIVE
+                </span>
               </div>
             </>
           )}
