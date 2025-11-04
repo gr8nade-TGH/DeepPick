@@ -142,10 +142,16 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
     const gameLogs = gameLogsData.gamelogs || []
 
     if (!gameLogs || gameLogs.length === 0) {
-      throw new Error(`No game logs found for ${teamAbbrev}. Team may not have played ${n} games yet this season, or the season may not have started.`)
+      throw new Error(`No game logs found for ${teamAbbrev}. Team may not have played any games yet this season, or the season may not have started.`)
     }
 
-    console.log(`[MySportsFeeds Stats] Found ${gameLogs.length} games for ${teamAbbrev}`)
+    // Use whatever games are available (may be fewer than requested)
+    const actualGames = gameLogs.length
+    if (actualGames < n) {
+      console.log(`[MySportsFeeds Stats] Requested ${n} games for ${teamAbbrev}, but only ${actualGames} available - using all available games`)
+    } else {
+      console.log(`[MySportsFeeds Stats] Found ${actualGames} games for ${teamAbbrev}`)
+    }
 
     // DIAGNOSTIC: Log first game to see what data we're getting
     if (gameLogs.length > 0) {

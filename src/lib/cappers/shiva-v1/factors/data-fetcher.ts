@@ -27,9 +27,10 @@ export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<NBAStatsBundle> 
 
     console.log(`[DATA_FETCHER] Resolved teams: ${awayAbbrev} @ ${homeAbbrev}`)
 
-    // Fetch recent form (last 10 games) - REDUCED API CALLS to avoid rate limits
-    // Using 10-game stats for both recent and season to reduce from 4 calls to 2 calls per game
-    console.log('[DATA_FETCHER] Fetching team statistics from MySportsFeeds (10-game window)...')
+    // Fetch recent form (last 10 games, or fewer if not available)
+    // Early in the season, teams may not have played 10 games yet
+    // The function will use whatever games are available and calculate averages accordingly
+    console.log('[DATA_FETCHER] Fetching team statistics from MySportsFeeds (up to 10 games)...')
 
     const [awayRecent, homeRecent] = await Promise.all([
       getTeamFormData(awayAbbrev, 10),
@@ -41,10 +42,10 @@ export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<NBAStatsBundle> 
     console.log(`[DATA_FETCHER] ${homeAbbrev} recent: Pace=${homeRecent.pace.toFixed(1)}, ORtg=${homeRecent.ortg.toFixed(1)}`)
 
     // Build the stats bundle
-    // NOTE: Using 10-game stats for both recent and season to reduce API calls
-    // This is a trade-off between data accuracy and rate limit avoidance
+    // NOTE: Using available games (up to 10) for both recent and season to reduce API calls
+    // Early in season, this may be fewer than 10 games
     const bundle: NBAStatsBundle = {
-      // Pace stats (using 10-game for both)
+      // Pace stats (using available games)
       awayPaceSeason: awayRecent.pace,
       awayPaceLast10: awayRecent.pace,
       homePaceSeason: homeRecent.pace,
