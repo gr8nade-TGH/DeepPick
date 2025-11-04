@@ -44,8 +44,15 @@ export async function DELETE(request: NextRequest) {
     let shivaRuns = (allRuns || []).filter((run: any) => run.metadata?.capper === 'shiva')
 
     if (betTypeLower) {
-      shivaRuns = shivaRuns.filter((run: any) => run.metadata?.bet_type === betTypeLower)
-      console.log(`[ClearRuns] Filtered to ${betTypeLower} runs only`)
+      const betTypeUpper = betType // 'TOTAL' or 'SPREAD' (already uppercase from frontend)
+      shivaRuns = shivaRuns.filter((run: any) => {
+        // Check metadata.bet_type (lowercase) or metadata.pick_type (uppercase)
+        // SPREAD runs use pick_type='SPREAD', TOTAL runs use bet_type='total'
+        const runBetType = run.metadata?.bet_type?.toLowerCase()
+        const runPickType = run.metadata?.pick_type?.toUpperCase()
+        return runBetType === betTypeLower || runPickType === betTypeUpper
+      })
+      console.log(`[ClearRuns] Filtered to ${betType} runs only (found ${shivaRuns.length} runs)`)
     }
 
     const runIds = shivaRuns.map(r => r.run_id)
