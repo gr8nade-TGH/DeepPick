@@ -113,40 +113,99 @@ export async function executeWizardPipeline(input: WizardOrchestratorInput): Pro
 
     // Step 5: Market Edge Adjustment
     console.log('[WizardOrchestrator] Step 5: Calculating market edge...')
-    const marketTotalLine = steps.step2.snapshot?.total?.line || 220
-    const predictedTotal = steps.step4.predictions?.total_pred_points || 220
-    const baseConfidence = steps.step4.predictions?.conf7_score || 0
-    const pickDirection = predictedTotal > marketTotalLine ? 'OVER' : 'UNDER'
-    const marketEdgePts = predictedTotal - marketTotalLine
 
-    // Create Edge vs Market factor (100% weight, max 5.0 points)
-    const edgeVsMarketFactor = createEdgeVsMarketFactor(predictedTotal, marketTotalLine, marketEdgePts)
+    let edgeVsMarketFactor: any
+    let finalConfidence: number
+    let baseConfidence: number
+    let pickDirection: string
+    let marketEdgePts: number
 
-    // Add Edge vs Market to factors array for confidence calculation
-    const allFactors = [...(steps.step3.factors || []), edgeVsMarketFactor]
+    if (betType === 'TOTAL') {
+      // TOTALS: Compare predicted total vs market total line
+      const marketTotalLine = steps.step2.snapshot?.total?.line || 220
+      const predictedTotal = steps.step4.predictions?.total_pred_points || 220
+      baseConfidence = steps.step4.predictions?.conf7_score || 0
+      pickDirection = predictedTotal > marketTotalLine ? 'OVER' : 'UNDER'
+      marketEdgePts = predictedTotal - marketTotalLine
 
-    // Recalculate confidence with Edge vs Market included
-    const { calculateConfidence } = await import('@/lib/cappers/shiva-v1/confidence-calculator')
-    const factorWeights = {
-      ...steps.step3.factorWeights,
-      edgeVsMarket: 100 // 100% weight (fixed)
+      // Create Edge vs Market factor (100% weight, max 5.0 points)
+      edgeVsMarketFactor = createEdgeVsMarketFactor(predictedTotal, marketTotalLine, marketEdgePts)
+
+      // Add Edge vs Market to factors array for confidence calculation
+      const allFactors = [...(steps.step3.factors || []), edgeVsMarketFactor]
+
+      // Recalculate confidence with Edge vs Market included
+      const { calculateConfidence } = await import('@/lib/cappers/shiva-v1/confidence-calculator')
+      const factorWeights = {
+        ...steps.step3.factorWeights,
+        edgeVsMarket: 100 // 100% weight (fixed)
+      }
+      const confidenceResult = calculateConfidence({
+        factors: allFactors,
+        factorWeights,
+        confSource: 'nba_totals_v1'
+      })
+
+      finalConfidence = confidenceResult.confScore
+
+      steps.step5 = {
+        run_id: runId,
+        conf_final: finalConfidence,
+        dominant: 'total',
+        conf_market_adj: finalConfidence - baseConfidence,
+        edgeVsMarketFactor,
+        confidenceResult
+      }
+    } else if (betType === 'SPREAD') {
+      // SPREAD: Compare predicted margin vs market spread line
+      const marketSpread = steps.step2.snapshot?.spread?.line || 0
+      const predictedMargin = steps.step4.predictions?.spread_pred_points || 0
+      baseConfidence = steps.step4.predictions?.conf7_score || 0
+
+      // Determine pick direction based on predicted margin
+      // Positive margin = away team favored, negative = home team favored
+      const awayTeam = typeof game.away_team === 'string' ? game.away_team : game.away_team.name
+      const homeTeam = typeof game.home_team === 'string' ? game.home_team : game.home_team.name
+      pickDirection = predictedMargin > 0 ? awayTeam : homeTeam
+
+      // Calculate edge: predicted margin vs market spread
+      // Market spread convention: negative = home favored (e.g., -4.5 means home favored by 4.5)
+      // Convert to away perspective: awaySpread = -marketSpread
+      const awaySpread = -marketSpread
+      marketEdgePts = predictedMargin - awaySpread
+
+      // Create Edge vs Market Spread factor (100% weight, max 5.0 points)
+      edgeVsMarketFactor = createEdgeVsMarketSpreadFactor(predictedMargin, marketSpread, marketEdgePts)
+
+      // Add Edge vs Market Spread to factors array for confidence calculation
+      const allFactors = [...(steps.step3.factors || []), edgeVsMarketFactor]
+
+      // Recalculate confidence with Edge vs Market Spread included
+      const { calculateConfidence } = await import('@/lib/cappers/shiva-v1/confidence-calculator')
+      const factorWeights = {
+        ...steps.step3.factorWeights,
+        edgeVsMarketSpread: 100 // 100% weight (fixed)
+      }
+      const confidenceResult = calculateConfidence({
+        factors: allFactors,
+        factorWeights,
+        confSource: 'nba_spread_v1'
+      })
+
+      finalConfidence = confidenceResult.confScore
+
+      steps.step5 = {
+        run_id: runId,
+        conf_final: finalConfidence,
+        dominant: 'spread',
+        conf_market_adj: finalConfidence - baseConfidence,
+        edgeVsMarketFactor,
+        confidenceResult
+      }
+    } else {
+      throw new Error(`[WizardOrchestrator] Unsupported bet type in Step 5: ${betType}`)
     }
-    const confidenceResult = calculateConfidence({
-      factors: allFactors,
-      factorWeights,
-      confSource: 'nba_totals_v1'
-    })
 
-    const finalConfidence = confidenceResult.confScore
-
-    steps.step5 = {
-      run_id: runId,
-      conf_final: finalConfidence,
-      dominant: 'total',
-      conf_market_adj: finalConfidence - baseConfidence,
-      edgeVsMarketFactor,
-      confidenceResult
-    }
     console.log('[WizardOrchestrator] Step 5: Market edge calculated, final confidence:', finalConfidence)
 
     // Step 6: Bold Player Predictions (SKIP for cron - this is AI-powered player props)
@@ -155,7 +214,16 @@ export async function executeWizardPipeline(input: WizardOrchestratorInput): Pro
 
     // Step 7: Pick Finalization
     console.log('[WizardOrchestrator] Step 7: Finalizing pick...')
-    steps.step7 = await finalizePick(runId, finalConfidence, predictedTotal, marketTotalLine, pickDirection, steps.step2.snapshot)
+
+    // Get predicted value and market line based on bet type
+    const predictedValue = betType === 'TOTAL'
+      ? steps.step4.predictions?.total_pred_points || 220
+      : steps.step4.predictions?.spread_pred_points || 0
+    const marketLine = betType === 'TOTAL'
+      ? steps.step2.snapshot?.total?.line || 220
+      : steps.step2.snapshot?.spread?.line || 0
+
+    steps.step7 = await finalizePick(runId, finalConfidence, predictedValue, marketLine, pickDirection, steps.step2.snapshot, betType)
     console.log('[WizardOrchestrator] Step 7: Pick finalized')
 
     // Build result
@@ -178,7 +246,7 @@ export async function executeWizardPipeline(input: WizardOrchestratorInput): Pro
       log: {
         factors: factorContributions, // Use factor contributions with weighted scores
         finalPrediction: {
-          total: predictedTotal,
+          total: steps.step4.predictions?.total_pred_points || 0,
           home: steps.step4.predictions?.scores?.home || 0,
           away: steps.step4.predictions?.scores?.away || 0
         },
@@ -385,47 +453,96 @@ async function generatePredictions(runId: string, step3Result: any, sport: strin
     throw new Error('No factors available for prediction generation')
   }
 
-  // Calculate confidence using the F1-F5 factors
+  // Calculate confidence using the factors (F1-F5 for TOTALS, S1-S5 for SPREAD)
+  const confSource = betType === 'TOTAL' ? 'nba_totals_v1' : 'nba_spread_v1'
   const confidenceResult = calculateConfidence({
     factors: step3Result.factors,
     factorWeights: step3Result.factorWeights || {},
-    confSource: 'nba_totals_v1'
+    confSource
   })
 
-  // Calculate predicted total based on baseline_avg (sum of team PPG) + factor adjustments
-  // baseline_avg comes from Step 3 factor computation (awayPPG + homePPG)
-  const baselineAvg = step3Result.baseline_avg || 220 // Fallback to NBA average if missing
+  // baseline_avg comes from Step 3 factor computation
+  // TOTALS: awayPPG + homePPG (e.g., 220)
+  // SPREAD: 0 (no inherent advantage)
+  const baselineAvg = step3Result.baseline_avg || (betType === 'TOTAL' ? 220 : 0)
 
-  // Factor adjustment: Use edgeRaw but scale it appropriately
-  // edgeRaw is the net confidence (overScore - underScore), typically in range [-10, +10]
-  // We scale by 2.0 to convert confidence points to total points adjustment
-  // Example: edgeRaw = +5.0 → adjustment = +10 points → predicted = 230 (if baseline = 220)
-  const factorAdjustment = confidenceResult.edgeRaw * 2.0
-  const predictedTotal = Math.max(180, Math.min(280, baselineAvg + factorAdjustment))
+  if (betType === 'TOTAL') {
+    // TOTALS: Calculate predicted total
+    // edgeRaw is the net confidence (overScore - underScore), typically in range [-10, +10]
+    // We scale by 2.0 to convert confidence points to total points adjustment
+    // Example: edgeRaw = +5.0 → adjustment = +10 points → predicted = 230 (if baseline = 220)
+    const factorAdjustment = confidenceResult.edgeRaw * 2.0
+    const predictedTotal = Math.max(180, Math.min(280, baselineAvg + factorAdjustment))
 
-  console.log('[WizardOrchestrator:Step4] Prediction calculation:', {
-    baselineAvg,
-    edgeRaw: confidenceResult.edgeRaw,
-    factorAdjustment,
-    predictedTotal
-  })
+    console.log('[WizardOrchestrator:Step4] TOTALS Prediction calculation:', {
+      baselineAvg,
+      edgeRaw: confidenceResult.edgeRaw,
+      factorAdjustment,
+      predictedTotal
+    })
 
-  return {
-    run_id: runId,
-    predictions: {
-      pace_exp: 100.0,
-      delta_100: 0.0,
-      spread_pred_points: 0.0,
-      total_pred_points: predictedTotal,
-      scores: {
-        home: predictedTotal / 2 + 2,
-        away: predictedTotal / 2 - 2
+    return {
+      run_id: runId,
+      predictions: {
+        pace_exp: 100.0,
+        delta_100: 0.0,
+        spread_pred_points: 0.0,
+        total_pred_points: predictedTotal,
+        scores: {
+          home: predictedTotal / 2 + 2,
+          away: predictedTotal / 2 - 2
+        },
+        winner: 'TBD',
+        conf7_score: confidenceResult.confScore
       },
-      winner: 'TBD',
-      conf7_score: confidenceResult.confScore
-    },
-    confidence: confidenceResult,
-    conf_source: 'nba_totals_v1'
+      confidence: confidenceResult,
+      conf_source: confSource
+    }
+  } else if (betType === 'SPREAD') {
+    // SPREAD: Calculate predicted margin
+    // edgeRaw is the net confidence (awayScore - homeScore), typically in range [-10, +10]
+    // Positive edgeRaw = away team favored, negative = home team favored
+    // We scale by 1.5 to convert confidence points to margin points
+    // Example: edgeRaw = +5.0 → margin = +7.5 (away favored by 7.5)
+    const predictedMargin = confidenceResult.edgeRaw * 1.5
+
+    // Calculate predicted scores based on margin
+    // Assume average NBA game total is ~220 points
+    const avgGameTotal = 220
+    const predictedAwayScore = (avgGameTotal / 2) + (predictedMargin / 2)
+    const predictedHomeScore = (avgGameTotal / 2) - (predictedMargin / 2)
+
+    // Determine winner based on margin
+    const winner = predictedMargin > 0 ? 'AWAY' : 'HOME'
+
+    console.log('[WizardOrchestrator:Step4] SPREAD Prediction calculation:', {
+      baselineAvg,
+      edgeRaw: confidenceResult.edgeRaw,
+      predictedMargin,
+      predictedAwayScore,
+      predictedHomeScore,
+      winner
+    })
+
+    return {
+      run_id: runId,
+      predictions: {
+        pace_exp: 100.0,
+        delta_100: 0.0,
+        spread_pred_points: predictedMargin,
+        total_pred_points: avgGameTotal,
+        scores: {
+          away: predictedAwayScore,
+          home: predictedHomeScore
+        },
+        winner,
+        conf7_score: confidenceResult.confScore
+      },
+      confidence: confidenceResult,
+      conf_source: confSource
+    }
+  } else {
+    throw new Error(`[WizardOrchestrator] Unsupported bet type in generatePredictions: ${betType}`)
   }
 }
 
@@ -481,15 +598,64 @@ function createEdgeVsMarketFactor(predictedTotal: number, marketTotalLine: numbe
 }
 
 /**
+ * Helper: Create Edge vs Market Spread factor (SPREAD)
+ * This factor has 100% weight and max 5.0 points
+ */
+function createEdgeVsMarketSpreadFactor(predictedMargin: number, marketSpread: number, marketEdgePts: number) {
+  const MAX_POINTS = 5.0
+
+  // Calculate signal: normalize edge by typical spread range
+  // For spreads, we use a smaller divisor (3.0) because spread edges are more significant
+  // Example: +3.0 pts edge on -4.5 spread is a big deal
+  const signal = Math.tanh(marketEdgePts / 3.0) // Scale by 3 for spread sensitivity
+
+  // Convert to awayScore/homeScore based on MAX_POINTS
+  let awayScore = 0
+  let homeScore = 0
+
+  if (signal > 0) {
+    // Positive edge = away team has value
+    awayScore = Math.abs(signal) * MAX_POINTS
+  } else if (signal < 0) {
+    // Negative edge = home team has value
+    homeScore = Math.abs(signal) * MAX_POINTS
+  }
+
+  return {
+    key: 'edgeVsMarketSpread',
+    name: 'Edge vs Market - Spread',
+    factor_no: 6,
+    normalized_value: signal,
+    weight_total_pct: 100, // 100% weight (fixed)
+    raw_values_json: {
+      predictedMargin,
+      marketSpread,
+      edgePts: marketEdgePts,
+      edgePct: (marketEdgePts / Math.abs(marketSpread || 1)) * 100
+    },
+    parsed_values_json: {
+      signal,
+      awayScore,
+      homeScore,
+      edgePts: marketEdgePts
+    },
+    notes: `Edge: ${marketEdgePts > 0 ? '+' : ''}${marketEdgePts.toFixed(1)} pts (Pred Margin: ${predictedMargin.toFixed(1)} vs Mkt Spread: ${marketSpread})`,
+    caps_applied: Math.abs(signal) >= 0.99,
+    cap_reason: Math.abs(signal) >= 0.99 ? 'signal saturated' : null
+  }
+}
+
+/**
  * Step 7: Finalize pick
  */
 async function finalizePick(
   runId: string,
   finalConfidence: number,
-  predictedTotal: number,
+  predictedValue: number,
   marketLine: number,
-  pickDirection: 'OVER' | 'UNDER',
-  oddsSnapshot: any
+  pickDirection: string,
+  oddsSnapshot: any,
+  betType: string
 ) {
   // Determine units based on confidence
   // New thresholds: Higher confidence required for picks
@@ -503,11 +669,22 @@ async function finalizePick(
 
   const decision = units > 0 ? 'PICK' : 'PASS'
 
+  // Format selection based on bet type
+  let selection: string
+  if (betType === 'TOTAL') {
+    selection = `${pickDirection} ${marketLine}`
+  } else if (betType === 'SPREAD') {
+    // pickDirection is team name for SPREAD
+    selection = `${pickDirection} ${marketLine > 0 ? '+' : ''}${marketLine}`
+  } else {
+    selection = pickDirection
+  }
+
   const pick = units > 0 ? {
     id: `pick_${runId}`,
     run_id: runId,
-    pick_type: 'TOTAL',
-    selection: `${pickDirection} ${marketLine}`,
+    pick_type: betType,
+    selection,
     units,
     confidence: finalConfidence,
     locked_odds: oddsSnapshot,
@@ -516,6 +693,7 @@ async function finalizePick(
 
   console.log('[WizardOrchestrator:Step7] Pick decision:', {
     decision,
+    betType,
     confidence: finalConfidence,
     units,
     selection: pick?.selection
