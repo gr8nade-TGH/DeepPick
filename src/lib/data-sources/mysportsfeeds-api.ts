@@ -277,6 +277,8 @@ export async function fetchTeamGameLogByDate(date: string, teamAbbrev: string): 
 export async function fetchTeamGameLogs(teamAbbrev: string, limit: number = 10): Promise<any> {
   const season = getNBASeason().season
   console.log(`[MySportsFeeds] Fetching last ${limit} games for ${teamAbbrev} (season: ${season})`)
+  console.log(`[MySportsFeeds] Current date: ${new Date().toISOString()}`)
+  console.log(`[MySportsFeeds] Using season keyword: ${season}`)
   return await fetchMySportsFeeds(`team_gamelogs.json?team=${teamAbbrev}&limit=${limit}`, season)
 }
 
