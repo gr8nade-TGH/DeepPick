@@ -12,9 +12,9 @@
  *
  * SPREAD FACTORS (S1-S5):
  * S1) Net Rating Differential - Expected point margin vs spread
- * S2) Rest Advantage - Back-to-back & travel impact
- * S3) Recent ATS Momentum - Hot/cold ATS streaks
- * S4) Home Court Advantage - Actual HCA vs league average
+ * S2) Turnover Differential - Ball security and defensive pressure
+ * S3) Shooting Efficiency + Momentum - eFG%/FTr combined with recent performance trends
+ * S4) Pace Mismatch - Pace differential creates ATS opportunities
  * S5) Four Factors Differential - Dean Oliver's efficiency metrics
  */
 
@@ -132,11 +132,11 @@ export const NBA_SPREAD_FACTORS: FactorMeta[] = [
     defaultDataSource: 'mysportsfeeds'
   },
   {
-    key: 'reboundingDiff',
-    name: 'Rebounding Differential',
-    shortName: 'REB',
-    icon: '🏀',
-    description: 'Rebounding dominance (OREB% + DREB%) - extra possessions and defensive control',
+    key: 'shootingEfficiencyMomentum',
+    name: 'Shooting Efficiency + Momentum',
+    shortName: 'SHOOT',
+    icon: '🎯',
+    description: 'Shooting efficiency (eFG% + FTr) combined with recent performance momentum (last 3 vs last 10 games)',
     appliesTo: {
       sports: ['NBA'],
       betTypes: ['SPREAD'],

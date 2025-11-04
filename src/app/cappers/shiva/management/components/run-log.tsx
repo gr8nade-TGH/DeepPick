@@ -194,7 +194,7 @@ export function RunLogTable({ betType = 'TOTAL' }: RunLogTableProps) {
       'edgeVsMarketSpread': 'EM',
       'netRatingDiff': 'NetRtg',
       'turnoverDiff': 'TD',
-      'reboundingDiff': 'REB',
+      'shootingEfficiencyMomentum': 'SHOOT',
       'paceMismatch': 'PACE',
       'fourFactorsDiff': '4F'
     }
@@ -493,7 +493,7 @@ export function RunLogTable({ betType = 'TOTAL' }: RunLogTableProps) {
 
   // Define factor keys in order based on betType
   const factorKeys = betType === 'SPREAD'
-    ? ['edgeVsMarketSpread', 'netRatingDiff', 'turnoverDiff', 'reboundingDiff', 'paceMismatch', 'fourFactorsDiff']
+    ? ['edgeVsMarketSpread', 'netRatingDiff', 'turnoverDiff', 'shootingEfficiencyMomentum', 'paceMismatch', 'fourFactorsDiff']
     : ['edgeVsMarket', 'paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv', 'injuryAvailability']
 
   if (loading) {

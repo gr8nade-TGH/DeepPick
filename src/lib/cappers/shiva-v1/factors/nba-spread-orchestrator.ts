@@ -6,7 +6,7 @@
  * SPREAD FACTORS (S1-S5):
  * - S1: Net Rating Differential (30% weight)
  * - S2: Turnover Differential (25% weight)
- * - S3: Rebounding Differential (20% weight)
+ * - S3: Shooting Efficiency + Momentum (20% weight)
  * - S4: Pace Mismatch (15% weight)
  * - S5: Four Factors Differential (10% weight)
  */
@@ -18,7 +18,7 @@ import { fetchNBAStatsBundle, summarizeAvailabilityWithLLM } from './data-fetche
 // Import spread factor implementations
 import { computeNetRatingDifferential } from './s1-net-rating-differential'
 import { computeTurnoverDifferential } from './s2-turnover-differential'
-import { computeReboundingDifferential } from './s3-rebounding-differential'
+import { computeShootingEfficiencyMomentum } from './s3-shooting-efficiency-momentum'
 import { computePaceMismatch } from './s4-pace-mismatch'
 import { computeFourFactorsDifferential } from './s5-four-factors-differential'
 
@@ -37,10 +37,10 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
 
   const nbaStatsConditionCheck = {
     enabledFactorKeys,
-    shouldFetchNBAStats: enabledFactorKeys.some(key => ['netRatingDiff', 'turnoverDiff', 'reboundingDiff', 'paceMismatch', 'fourFactorsDiff'].includes(key)),
+    shouldFetchNBAStats: enabledFactorKeys.some(key => ['netRatingDiff', 'turnoverDiff', 'shootingEfficiencyMomentum', 'paceMismatch', 'fourFactorsDiff'].includes(key)),
     netRatingDiff: enabledFactorKeys.includes('netRatingDiff'),
     turnoverDiff: enabledFactorKeys.includes('turnoverDiff'),
-    reboundingDiff: enabledFactorKeys.includes('reboundingDiff'),
+    shootingEfficiencyMomentum: enabledFactorKeys.includes('shootingEfficiencyMomentum'),
     paceMismatch: enabledFactorKeys.includes('paceMismatch'),
     fourFactorsDiff: enabledFactorKeys.includes('fourFactorsDiff')
   }
@@ -96,10 +96,10 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
 
   console.log('[SPREAD:CONDITION_CHECK]', {
     enabledFactorKeys,
-    conditionCheck: enabledFactorKeys.some(key => ['netRatingDiff', 'turnoverDiff', 'reboundingDiff', 'paceMismatch', 'fourFactorsDiff'].includes(key))
+    conditionCheck: enabledFactorKeys.some(key => ['netRatingDiff', 'turnoverDiff', 'shootingEfficiencyMomentum', 'paceMismatch', 'fourFactorsDiff'].includes(key))
   })
 
-  if (enabledFactorKeys.some(key => ['netRatingDiff', 'turnoverDiff', 'reboundingDiff', 'paceMismatch', 'fourFactorsDiff'].includes(key))) {
+  if (enabledFactorKeys.some(key => ['netRatingDiff', 'turnoverDiff', 'shootingEfficiencyMomentum', 'paceMismatch', 'fourFactorsDiff'].includes(key))) {
     console.log('[SPREAD:ABOUT_TO_FETCH_NBA_STATS]', 'Starting NBA Stats API fetch...')
     bundle = await fetchNBAStatsBundle(ctx)
 
@@ -139,10 +139,10 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
     factors.push(computeTurnoverDifferential(bundle!, ctx))
   }
 
-  // S3: Rebounding Differential
-  if (enabledFactorKeys.includes('reboundingDiff')) {
-    console.log('[SPREAD:S3] Computing Rebounding Differential...')
-    factors.push(computeReboundingDifferential(bundle!, ctx))
+  // S3: Shooting Efficiency + Momentum
+  if (enabledFactorKeys.includes('shootingEfficiencyMomentum')) {
+    console.log('[SPREAD:S3] Computing Shooting Efficiency + Momentum...')
+    factors.push(await computeShootingEfficiencyMomentum(bundle!, ctx))
   }
 
   // S4: Pace Mismatch

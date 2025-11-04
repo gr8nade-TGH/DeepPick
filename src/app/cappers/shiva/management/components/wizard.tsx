@@ -819,7 +819,7 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     const betType = props.betType || 'TOTAL'
     const expectedFactorKeys = betType === 'TOTAL'
       ? ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv', 'injuryAvailability']
-      : ['netRatingDiff', 'restAdvantage', 'atsMomentum', 'homeCourtAdv', 'fourFactorsDiff']
+      : ['netRatingDiff', 'turnoverDiff', 'shootingEfficiencyMomentum', 'paceMismatch', 'fourFactorsDiff']
 
     // Check if we have at least some factors (minimum 1)
     if (factors.length < 1) {
