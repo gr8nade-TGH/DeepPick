@@ -279,7 +279,22 @@ export async function fetchTeamGameLogs(teamAbbrev: string, limit: number = 10):
   console.log(`[MySportsFeeds] Fetching last ${limit} games for ${teamAbbrev} (season: ${season})`)
   console.log(`[MySportsFeeds] Current date: ${new Date().toISOString()}`)
   console.log(`[MySportsFeeds] Using season keyword: ${season}`)
-  return await fetchMySportsFeeds(`team_gamelogs.json?team=${teamAbbrev}&limit=${limit}`, season)
+
+  const result = await fetchMySportsFeeds(`team_gamelogs.json?team=${teamAbbrev}&limit=${limit}`, season)
+
+  // Log what we got back
+  console.log(`[MySportsFeeds] Team game logs response for ${teamAbbrev}:`, {
+    hasGamelogs: !!result.gamelogs,
+    gamelogsCount: result.gamelogs?.length || 0,
+    responseKeys: Object.keys(result),
+    firstGameSample: result.gamelogs?.[0] ? {
+      gameId: result.gamelogs[0].game?.id,
+      startTime: result.gamelogs[0].game?.startTime,
+      hasStats: !!result.gamelogs[0].stats
+    } : null
+  })
+
+  return result
 }
 
 // Export for testing
