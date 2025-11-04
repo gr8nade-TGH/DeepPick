@@ -664,6 +664,7 @@ export function RunLogTable({ betType = 'TOTAL' }: RunLogTableProps) {
                 <tr className="border-b border-gray-700">
                   <th className="text-left py-2 px-2 text-gray-400 font-bold">Time</th>
                   <th className="text-left py-2 px-2 text-gray-400 font-bold">Game</th>
+                  <th className="text-left py-2 px-2 text-gray-400 font-bold">Type</th>
                   <th className="text-left py-2 px-2 text-gray-400 font-bold">Outcome</th>
                   <th className="text-left py-2 px-2 text-gray-400 font-bold">Pick</th>
                   {factorKeys.map(key => (
@@ -688,6 +689,11 @@ export function RunLogTable({ betType = 'TOTAL' }: RunLogTableProps) {
                     <tr key={idx} className="border-b border-gray-800 hover:bg-gray-800">
                       <td className="py-2 px-2 text-gray-300">{formatDateTime(run.created_at)}</td>
                       <td className="py-2 px-2 text-gray-300 text-xs">{run.matchup || run.game_id?.substring(0, 8) + '...'}</td>
+                      <td className="py-2 px-2">
+                        <span className={`px-2 py-0.5 rounded text-xs font-bold ${betType === 'TOTALS' ? 'bg-blue-900 text-blue-200' : 'bg-purple-900 text-purple-200'}`}>
+                          {betType}
+                        </span>
+                      </td>
                       <td className={`py-2 px-2 font-bold ${getOutcomeColor(outcome)}`}>
                         {outcome}
                       </td>
@@ -761,6 +767,7 @@ export function RunLogTable({ betType = 'TOTAL' }: RunLogTableProps) {
               <thead>
                 <tr className="border-b border-gray-700">
                   <th className="text-left py-2 px-3 text-gray-400 font-bold">Game</th>
+                  <th className="text-left py-2 px-3 text-gray-400 font-bold">Type</th>
                   <th className="text-left py-2 px-3 text-gray-400 font-bold">Result</th>
                   <th className="text-left py-2 px-3 text-gray-400 font-bold">Units</th>
                   <th className="text-left py-2 px-3 text-gray-400 font-bold">Time Remaining</th>
@@ -779,6 +786,11 @@ export function RunLogTable({ betType = 'TOTAL' }: RunLogTableProps) {
                   return (
                     <tr key={idx} className={`border-b border-gray-800 hover:bg-gray-800 ${isExpired ? 'opacity-50' : ''}`}>
                       <td className="py-2 px-3 text-gray-300 text-xs">{cd.matchup || cd.game_id?.substring(0, 12)}</td>
+                      <td className="py-2 px-3">
+                        <span className={`px-2 py-0.5 rounded text-xs font-bold ${cd.bet_type === 'total' ? 'bg-blue-900 text-blue-200' : 'bg-purple-900 text-purple-200'}`}>
+                          {cd.bet_type === 'total' ? 'TOTAL' : 'SPREAD'}
+                        </span>
+                      </td>
                       <td className="py-2 px-3">
                         <span className={`font-bold ${cd.result === 'PASS' ? 'text-yellow-400' : 'text-green-400'}`}>
                           {cd.result}
