@@ -169,7 +169,7 @@ export function computeFourFactorsDifferential(bundle: NBAStatsBundle, ctx: RunC
     key: 'fourFactorsDiff',
     name: 'Four Factors Differential',
     normalized_value: result.signal,
-    raw_values_json: JSON.stringify({
+    raw_values_json: {
       awayEfg,
       awayTovPct,
       awayOrebPct,
@@ -177,26 +177,19 @@ export function computeFourFactorsDifferential(bundle: NBAStatsBundle, ctx: RunC
       homeEfg,
       homeTovPct,
       homeOrebPct,
-      homeFtr
-    }),
-    parsed_values_json: JSON.stringify({
-      awayEfg: (awayEfg * 100).toFixed(1) + '%',
-      awayTovPct: (awayTovPct * 100).toFixed(1) + '%',
-      awayOrebPct: (awayOrebPct * 100).toFixed(1) + '%',
-      awayFtr: (awayFtr * 100).toFixed(1) + '%',
-      awayRating: result.meta.awayRating.toFixed(3),
-      homeEfg: (homeEfg * 100).toFixed(1) + '%',
-      homeTovPct: (homeTovPct * 100).toFixed(1) + '%',
-      homeOrebPct: (homeOrebPct * 100).toFixed(1) + '%',
-      homeFtr: (homeFtr * 100).toFixed(1) + '%',
-      homeRating: result.meta.homeRating.toFixed(3),
-      differential: result.meta.differential.toFixed(3),
-      expectedMargin: result.meta.expectedMargin.toFixed(1),
-      signal: result.signal.toFixed(3),
-      awayScore: result.awayScore.toFixed(2),
-      homeScore: result.homeScore.toFixed(2)
-    }),
-    caps_applied: 0,
+      homeFtr,
+      awayRating: result.meta.awayRating,
+      homeRating: result.meta.homeRating,
+      differential: result.meta.differential,
+      expectedMargin: result.meta.expectedMargin
+    },
+    parsed_values_json: {
+      points: Math.max(result.awayScore, result.homeScore),
+      awayScore: result.awayScore,
+      homeScore: result.homeScore,
+      signal: result.signal
+    },
+    caps_applied: false,
     cap_reason: null,
     notes: `Away Rating: ${result.meta.awayRating.toFixed(3)}, Home Rating: ${result.meta.homeRating.toFixed(3)}, Diff: ${result.meta.differential.toFixed(3)}, Margin: ${result.meta.expectedMargin.toFixed(1)} pts`
   }

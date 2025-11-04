@@ -205,12 +205,14 @@ export async function computeShootingEfficiencyMomentum(bundle: NBAStatsBundle, 
     key: 'shootingEfficiencyMomentum',
     name: 'Shooting Efficiency + Momentum',
     shortName: 'SHOOT',
-    signal: parseFloat(result.signal.toFixed(3)),
-    awayScore: parseFloat(result.awayScore.toFixed(2)),
-    homeScore: parseFloat(result.homeScore.toFixed(2)),
-    maxPoints: 5.0,
-    weight: ctx.factorWeights?.shootingEfficiencyMomentum || 0.20,
-    metadata: {
+    normalized_value: parseFloat(result.signal.toFixed(3)),
+    parsed_values_json: {
+      points: Math.max(result.awayScore, result.homeScore),
+      awayScore: parseFloat(result.awayScore.toFixed(2)),
+      homeScore: parseFloat(result.homeScore.toFixed(2)),
+      signal: parseFloat(result.signal.toFixed(3))
+    },
+    raw_values_json: {
       shootingDiff: parseFloat(result.shootingDiff.toFixed(3)),
       momentumDiff: parseFloat(result.momentumDiff.toFixed(3)),
       awayShootingScore: parseFloat(result.awayShootingScore.toFixed(3)),
@@ -221,7 +223,10 @@ export async function computeShootingEfficiencyMomentum(bundle: NBAStatsBundle, 
       momentumSignal: parseFloat(result.momentumSignal.toFixed(2)),
       awayTrend: result.awayMomentum > 0.02 ? 'HEATING_UP' : result.awayMomentum < -0.02 ? 'COOLING_DOWN' : 'STABLE',
       homeTrend: result.homeMomentum > 0.02 ? 'HEATING_UP' : result.homeMomentum < -0.02 ? 'COOLING_DOWN' : 'STABLE'
-    }
+    },
+    caps_applied: false,
+    cap_reason: null,
+    notes: `Shooting: ${result.shootingDiff > 0 ? 'Away' : 'Home'} +${Math.abs(result.shootingDiff).toFixed(3)} | Momentum: ${result.momentumDiff > 0 ? 'Away' : 'Home'} ${(result.momentumDiff * 100).toFixed(1)}%`
   }
 }
 

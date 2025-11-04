@@ -135,22 +135,21 @@ export function computePaceMismatch(bundle: NBAStatsBundle, ctx: RunCtx): any {
     key: 'paceMismatch',
     name: 'Pace Mismatch',
     normalized_value: result.signal,
-    raw_values_json: JSON.stringify({
+    raw_values_json: {
       awayPace,
-      homePace
-    }),
-    parsed_values_json: JSON.stringify({
-      awayPace: result.meta.awayPace.toFixed(1),
-      homePace: result.meta.homePace.toFixed(1),
-      paceDiff: result.meta.paceDiff.toFixed(1),
-      absPaceDiff: result.meta.absPaceDiff.toFixed(1),
-      expectedImpact: result.meta.expectedImpact.toFixed(2),
-      paceCategory: result.meta.paceCategory,
-      signal: result.signal.toFixed(3),
-      awayScore: result.awayScore.toFixed(2),
-      homeScore: result.homeScore.toFixed(2)
-    }),
-    caps_applied: 0,
+      homePace,
+      paceDiff: result.meta.paceDiff,
+      absPaceDiff: result.meta.absPaceDiff,
+      expectedImpact: result.meta.expectedImpact,
+      paceCategory: result.meta.paceCategory
+    },
+    parsed_values_json: {
+      points: Math.max(result.awayScore, result.homeScore),
+      awayScore: result.awayScore,
+      homeScore: result.homeScore,
+      signal: result.signal
+    },
+    caps_applied: false,
     cap_reason: null,
     notes: `Away Pace: ${result.meta.awayPace.toFixed(1)}, Home Pace: ${result.meta.homePace.toFixed(1)}, Diff: ${result.meta.paceDiff.toFixed(1)}, Category: ${result.meta.paceCategory}`
   }
