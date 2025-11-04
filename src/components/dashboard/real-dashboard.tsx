@@ -72,6 +72,7 @@ interface Pick {
     away_team: any
     game_date: string
     game_time: string
+    game_start_timestamp?: string // Full UTC timestamp (ISO-8601)
   }
   games?: {
     status: string
