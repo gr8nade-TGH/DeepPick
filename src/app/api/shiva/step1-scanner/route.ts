@@ -350,7 +350,7 @@ async function scanForEligibleGames(
       `)
       .eq('sport', sportLower)
       .eq('status', 'scheduled') // ONLY scheduled games - skip live/completed
-      .or(`game_date.gte.${dateString},and(game_date.eq.${dateString},game_time.gte.${timeString})`)
+      .or(`game_date.gt.${dateString},and(game_date.eq.${dateString},game_time.gte.${timeString})`)
       .order('game_date', { ascending: true })
       .order('game_time', { ascending: true })
       .limit(limit * 2)
