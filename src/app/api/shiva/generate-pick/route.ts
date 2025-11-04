@@ -265,6 +265,7 @@ export async function POST(request: Request) {
           away_team: game.away_team,
           game_date: game.game_date,
           game_time: game.game_time,
+          game_start_timestamp: game.game_start_timestamp, // CRITICAL: Include full UTC timestamp
           total_line: game.total_line,
           spread_line: game.spread_line,
           odds: game.odds

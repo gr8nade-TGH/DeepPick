@@ -551,10 +551,10 @@ export function RealDashboard() {
                         )}
                       </td>
                       <td className="py-3 px-4 align-middle">
-                        {pick.game_snapshot?.game_date && pick.game_snapshot?.game_time ? (
+                        {pick.game_snapshot?.game_start_timestamp || (pick.game_snapshot?.game_date && pick.game_snapshot?.game_time) ? (
                           <div className="text-sm">
                             <div className="text-gray-300 font-semibold">
-                              {new Date(`${pick.game_snapshot.game_date}T${pick.game_snapshot.game_time}Z`).toLocaleDateString('en-US', {
+                              {new Date(pick.game_snapshot.game_start_timestamp || `${pick.game_snapshot.game_date}T${pick.game_snapshot.game_time}`).toLocaleDateString('en-US', {
                                 month: 'short',
                                 day: 'numeric',
                                 hour: 'numeric',
@@ -562,7 +562,7 @@ export function RealDashboard() {
                               })}
                             </div>
                             <div className={`text-xs font-mono ${(() => {
-                              const gameTime = new Date(`${pick.game_snapshot.game_date}T${pick.game_snapshot.game_time}Z`)
+                              const gameTime = new Date(pick.game_snapshot.game_start_timestamp || `${pick.game_snapshot.game_date}T${pick.game_snapshot.game_time}`)
                               const now = new Date()
                               const hoursUntil = (gameTime.getTime() - now.getTime()) / (1000 * 60 * 60)
                               if (hoursUntil < 0) return 'text-red-400'
@@ -570,7 +570,7 @@ export function RealDashboard() {
                               return 'text-cyan-400'
                             })()}`}>
                               {(() => {
-                                const gameTime = new Date(`${pick.game_snapshot.game_date}T${pick.game_snapshot.game_time}Z`)
+                                const gameTime = new Date(pick.game_snapshot.game_start_timestamp || `${pick.game_snapshot.game_date}T${pick.game_snapshot.game_time}`)
                                 const now = new Date()
                                 const diff = gameTime.getTime() - now.getTime()
                                 if (diff < 0) return 'STARTED'
@@ -759,4 +759,4 @@ export function RealDashboard() {
       </footer>
     </main>
   )
-}
+}

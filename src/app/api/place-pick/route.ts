@@ -48,6 +48,7 @@ export async function POST(request: NextRequest) {
       away_team: game.away_team,
       game_date: game.game_date,
       game_time: game.game_time,
+      game_start_timestamp: game.game_start_timestamp, // CRITICAL: Include full UTC timestamp
       odds: game.odds,
       status: game.status
     }
