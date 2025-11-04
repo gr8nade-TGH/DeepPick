@@ -439,14 +439,16 @@ export function RunLogTable({ betType = 'TOTAL' }: RunLogTableProps) {
 
   // Clear all runs
   const handleClearAllRuns = async () => {
-    if (!confirm('Are you sure you want to clear ALL runs? This cannot be undone.')) {
+    const betTypeLabel = betType === 'SPREAD' ? 'SPREAD' : 'TOTAL'
+    if (!confirm(`Are you sure you want to clear ALL ${betTypeLabel} runs? This cannot be undone.`)) {
       return
     }
 
-    console.log('[RunLogTable] Clearing all runs...')
+    console.log(`[RunLogTable] Clearing all ${betTypeLabel} runs...`)
     setClearingAllRuns(true)
     try {
-      const response = await fetch('/api/shiva/runs/clear', { method: 'DELETE' })
+      // CRITICAL FIX: Pass betType parameter to filter deletion by bet type
+      const response = await fetch(`/api/shiva/runs/clear?betType=${betType}`, { method: 'DELETE' })
       const json = await response.json()
       console.log('[RunLogTable] Clear all runs response:', json)
       if (response.ok) {
@@ -457,7 +459,7 @@ export function RunLogTable({ betType = 'TOTAL' }: RunLogTableProps) {
         // Force refetch with cache-busting to verify deletion
         setTimeout(async () => {
           const timestamp = Date.now()
-          const verifyResponse = await fetch(`/api/shiva/runs/history?limit=50&_t=${timestamp}`, {
+          const verifyResponse = await fetch(`/api/shiva/runs/history?limit=50&betType=${betType}&_t=${timestamp}`, {
             cache: 'no-store',
             headers: { 'Cache-Control': 'no-cache' }
           })
@@ -467,7 +469,7 @@ export function RunLogTable({ betType = 'TOTAL' }: RunLogTableProps) {
             console.log('[RunLogTable] Verified runs after clear:', data.runs?.length || 0)
           }
 
-          const cooldownResponse = await fetch(`/api/shiva/cooldowns?_t=${timestamp}`, {
+          const cooldownResponse = await fetch(`/api/shiva/cooldowns?betType=${betType}&_t=${timestamp}`, {
             cache: 'no-store',
             headers: { 'Cache-Control': 'no-cache' }
           })
@@ -478,10 +480,10 @@ export function RunLogTable({ betType = 'TOTAL' }: RunLogTableProps) {
           }
         }, 500) // Wait 500ms for database to propagate
 
-        alert(`Successfully cleared ${json.deletedCount || 0} runs, ${json.shivaRunsDeleted || 0} shiva_runs, and ${json.cooldownsDeleted || 0} cooldowns!`)
+        alert(`✅ Successfully cleared ${json.deletedCount || 0} ${betTypeLabel} runs and ${json.cooldownsDeleted || 0} cooldowns!`)
       } else {
         console.error('[RunLogTable] Failed to clear runs:', json)
-        alert(`Failed to clear runs: ${json.error || 'Unknown error'}`)
+        alert(`❌ Failed to clear ${betTypeLabel} runs: ${json.error || 'Unknown error'}`)
       }
     } catch (error) {
       console.error('[RunLogTable] Failed to clear runs:', error)
@@ -631,9 +633,9 @@ export function RunLogTable({ betType = 'TOTAL' }: RunLogTableProps) {
               onClick={handleClearAllRuns}
               disabled={clearingAllRuns || runs.length === 0}
               className="px-3 py-1 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white text-sm rounded transition-colors"
-              title="Clear all runs from the database"
+              title={`Clear all ${betType} runs from the database (does NOT affect ${betType === 'SPREAD' ? 'TOTAL' : 'SPREAD'} runs)`}
             >
-              {clearingAllRuns ? '🗑️ Clearing...' : '🗑️ Clear All Runs'}
+              {clearingAllRuns ? '🗑️ Clearing...' : `🗑️ Clear All ${betType} Runs`}
             </button>
             <button
               onClick={handleCopyDebugInfo}
