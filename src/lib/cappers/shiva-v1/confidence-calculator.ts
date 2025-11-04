@@ -160,15 +160,17 @@ export function calculateConfidence(input: ConfidenceInput): ConfidenceOutput {
         z: factor.normalized_value || 0,
         weight: weightDecimal,
         contribution: effectiveAwayScore - effectiveHomeScore,
-        weighted_spread_contributions: {
-          awayScore: effectiveAwayScore,
-          homeScore: effectiveHomeScore,
+        // Use same keys as TOTALS for consistency in UI
+        weighted_contributions: {
+          overScore: effectiveAwayScore,  // Map awayScore to overScore for UI compatibility
+          underScore: effectiveHomeScore, // Map homeScore to underScore for UI compatibility
           net: effectiveAwayScore - effectiveHomeScore
         },
         weight_percentage: weightPct,
-        parsed_spread_values_json: {
-          awayScore: rawAwayScore,
-          homeScore: rawHomeScore,
+        // Use same keys as TOTALS for consistency in UI
+        parsed_values_json: {
+          overScore: rawAwayScore,  // Map awayScore to overScore for UI compatibility
+          underScore: rawHomeScore, // Map homeScore to underScore for UI compatibility
           signal: parsedValues.signal || 0,
           points: parsedValues.points || 0
         }
