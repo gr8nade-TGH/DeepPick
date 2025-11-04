@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     console.log('🎯 [SHIVA:GeneratePick] Starting unified wizard pipeline...')
 
     const body = await request.json()
-    const { selectedGame } = body
+    const { selectedGame, betType = 'TOTAL' } = body
 
     if (!selectedGame || !selectedGame.id) {
       return NextResponse.json({
@@ -42,6 +42,7 @@ export async function POST(request: Request) {
     }
 
     console.log(`🎮 [SHIVA:GeneratePick] Processing game: ${selectedGame.away_team?.name || selectedGame.away_team} @ ${selectedGame.home_team?.name || selectedGame.home_team}`)
+    console.log(`🎮 [SHIVA:GeneratePick] Bet type: ${betType}`)
 
     // Get Supabase client
     const supabase = getSupabaseAdmin()
@@ -72,7 +73,7 @@ export async function POST(request: Request) {
       game,
       runId,
       sport: 'NBA',
-      betType: 'TOTAL',
+      betType: betType as 'TOTAL' | 'SPREAD',
       aiProvider: 'perplexity',
       newsWindowHours: 24
     })
@@ -89,13 +90,13 @@ export async function POST(request: Request) {
 
       // CRITICAL: Use UPSERT to handle expired cooldowns
       // The unique constraint on (game_id, capper, bet_type) means we need to update existing records
-      // IMPORTANT: Use lowercase 'total' to match RPC function can_generate_pick (line 91 in migration 028)
+      // IMPORTANT: Use lowercase to match RPC function can_generate_pick (line 91 in migration 028)
       const { error: cooldownError } = await supabase
         .from('pick_generation_cooldowns')
         .upsert({
           game_id: game.id,
           capper: 'shiva',
-          bet_type: 'total', // ← lowercase to match RPC function can_generate_pick
+          bet_type: betType.toLowerCase(), // ← lowercase to match RPC function can_generate_pick
           result: 'ERROR',
           units: 0,
           confidence_score: 0,
@@ -139,12 +140,12 @@ export async function POST(request: Request) {
     const metadata = {
       capper: 'shiva',
       sport: 'NBA',
-      bet_type: 'TOTAL',
+      bet_type: betType,
       units: result.pick?.units || 0,
       confidence,
-      pick_type: result.pick?.pickType || 'TOTAL',
+      pick_type: result.pick?.pickType || betType,
       selection: result.pick?.selection || 'PASS',
-      factor_contributions: result.log?.factors || [], // Now contains F1-F5 factors!
+      factor_contributions: result.log?.factors || [], // Now contains F1-F5 or S1-S5 factors!
       predicted_total: result.log?.finalPrediction?.total || 0,
       baseline_avg: baselineAvg, // Sum of away PPG + home PPG
       market_total: marketTotal,
@@ -212,7 +213,7 @@ export async function POST(request: Request) {
         .upsert({
           game_id: game.id,
           capper: 'shiva',
-          bet_type: 'total', // ← lowercase to match RPC function can_generate_pick
+          bet_type: betType.toLowerCase(), // ← lowercase to match RPC function can_generate_pick
           result: 'PASS',
           units: 0,
           confidence_score: confidence,
@@ -302,7 +303,7 @@ export async function POST(request: Request) {
       .upsert({
         game_id: game.id,
         capper: 'shiva',
-        bet_type: 'total', // ← lowercase to match RPC function can_generate_pick
+        bet_type: betType.toLowerCase(), // ← lowercase to match RPC function can_generate_pick
         result: 'PICK_GENERATED',
         units: pick.units,
         confidence_score: confidence,

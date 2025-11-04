@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/shiva-auto-picks",
       "schedule": "*/6 * * * *"
+    },
+    {
+      "path": "/api/cron/shiva-auto-picks-spread",
+      "schedule": "*/8 * * * *"
     }
   ]
 }
