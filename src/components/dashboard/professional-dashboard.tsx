@@ -203,7 +203,7 @@ export function ProfessionalDashboard() {
     <div className="min-h-screen bg-slate-950">
       <NavBar />
 
-      <div className="container mx-auto px-4 py-3 max-w-[1800px]">
+      <div className="px-4 py-3">
 
         {/* PERFORMANCE STATS BAR - COMPACT */}
         {performance && (
