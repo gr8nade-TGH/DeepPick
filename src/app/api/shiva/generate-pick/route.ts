@@ -254,8 +254,8 @@ export async function POST(request: Request) {
         predicted_total: predictedValue,
         baseline_avg: baselineAvg,
         market_total: marketLine,
-        predicted_home_score: result.log?.finalPrediction?.home || 0,
-        predicted_away_score: result.log?.finalPrediction?.away || 0,
+        // NOTE: predicted_home_score and predicted_away_score columns don't exist in database
+        // These values are stored in metadata.steps.step4.predictions instead
         // OLD: Also store in metadata for backwards compatibility
         metadata
       })

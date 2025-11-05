@@ -149,8 +149,6 @@ export async function POST(request: Request) {
                 marketTotal = sideData?.market_spread || null // Market spread line
               }
 
-              const predictedHomeScore = totalData?.predicted_home_score || null
-              const predictedAwayScore = totalData?.predicted_away_score || null
               const boldPredictions = totalData?.bold_predictions || null
 
               console.log('[SHIVA:PickGenerate] PASS - Attempting to upsert run:', {
@@ -161,8 +159,6 @@ export async function POST(request: Request) {
                 units: 0,
                 hasFactors: !!factorContributions,
                 predictedTotal,
-                predictedHomeScore,
-                predictedAwayScore,
                 hasBoldPredictions: !!boldPredictions
               })
 
@@ -199,9 +195,8 @@ export async function POST(request: Request) {
                   predicted_total: predictedTotal,
                   baseline_avg: baselineAvg,
                   market_total: marketTotal,
-                  predicted_home_score: predictedHomeScore,
-                  predicted_away_score: predictedAwayScore,
-                  bold_predictions: boldPredictions,
+                  // NOTE: predicted_home_score and predicted_away_score columns don't exist in database
+                  // These values are stored in metadata.steps.step4.predictions instead
                   // OLD format (metadata JSONB) - for backwards compatibility with run log
                   metadata: metadata,
                   created_at: now,
@@ -287,8 +282,6 @@ export async function POST(request: Request) {
           marketTotal = sideData?.market_spread || null // Market spread line
         }
 
-        const predictedHomeScore = totalData?.predicted_home_score || null
-        const predictedAwayScore = totalData?.predicted_away_score || null
         const boldPredictions = totalData?.bold_predictions || null
 
         console.log('[SHIVA:PickGenerate] 🔍 CRITICAL DEBUG - Received request body:', {
@@ -304,8 +297,6 @@ export async function POST(request: Request) {
           predictedTotal,
           baselineAvg,
           marketTotal,
-          predictedHomeScore,
-          predictedAwayScore,
           hasBoldPredictions: !!boldPredictions,
           totalDataKeys: totalData ? Object.keys(totalData) : []
         })
@@ -370,8 +361,6 @@ export async function POST(request: Request) {
           console.log('[SHIVA:PickGenerate] 🔄 CRITICAL DEBUG - UPDATE data being sent to database:', {
             factor_contributions_count: factorContributions?.length || 0,
             predicted_total: predictedTotal,
-            predicted_home_score: predictedHomeScore,
-            predicted_away_score: predictedAwayScore,
             baseline_avg: baselineAvg,
             market_total: marketTotal,
             has_bold_predictions: !!boldPredictions
@@ -450,9 +439,8 @@ export async function POST(request: Request) {
             predicted_total: predictedTotal,
             baseline_avg: baselineAvg,
             market_total: marketTotal,
-            predicted_home_score: predictedHomeScore,
-            predicted_away_score: predictedAwayScore,
-            bold_predictions: boldPredictions,
+            // NOTE: predicted_home_score and predicted_away_score columns don't exist in database
+            // These values are stored in metadata.steps.step4.predictions instead
             // OLD format (metadata JSONB) - for backwards compatibility with run log
             metadata: metadata,
             created_at: now,
@@ -464,8 +452,6 @@ export async function POST(request: Request) {
             game_id: gameId,
             factor_contributions_count: factorContributions?.length || 0,
             predicted_total: predictedTotal,
-            predicted_home_score: predictedHomeScore,
-            predicted_away_score: predictedAwayScore,
             baseline_avg: baselineAvg,
             market_total: marketTotal,
             has_bold_predictions: !!boldPredictions
