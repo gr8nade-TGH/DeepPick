@@ -204,38 +204,51 @@ export async function GET(
       metadataKeys: run.metadata ? Object.keys(run.metadata) : []
     })
 
-    // Step 3: Extract data from metadata (EXACTLY like run log does)
+    // Step 3: Extract data from run columns AND metadata (CRITICAL FIX)
+    // PRIORITY: Check separate columns FIRST (new format), then fall back to metadata JSONB (old format)
     const metadata = run.metadata || {}
     const game = pick.games || {}
 
-    // CRITICAL DEBUG: Log the full metadata structure to see what's available
-    console.log('[InsightCard] 🔍 FULL METADATA STRUCTURE:', {
+    // CRITICAL DEBUG: Log the full run structure to see what's available
+    console.log('[InsightCard] 🔍 FULL RUN STRUCTURE:', {
       pickId,
       runId: run.run_id,
       hasMetadata: !!metadata,
       metadataKeys: metadata ? Object.keys(metadata) : [],
-      hasSteps: !!metadata.steps,
-      stepsKeys: metadata.steps ? Object.keys(metadata.steps) : [],
-      topLevelFactorContributions: metadata.factor_contributions,
-      nestedFactorContributions: metadata.steps?.step4?.confidence?.factorContributions,
-      fullMetadataSample: JSON.stringify(metadata).substring(0, 500) + '...'
+      hasFactorContributionsColumn: !!run.factor_contributions,
+      factorContributionsCount: run.factor_contributions?.length || 0,
+      hasPredictedTotal: !!run.predicted_total,
+      hasBaselineAvg: !!run.baseline_avg,
+      hasMarketTotal: !!run.market_total,
+      runColumnsSample: {
+        factor_contributions: run.factor_contributions,
+        predicted_total: run.predicted_total,
+        baseline_avg: run.baseline_avg,
+        market_total: run.market_total
+      }
     })
 
-    // Extract all data from metadata - check both top-level and nested in steps
-    const factorContributions = metadata.factor_contributions
-      || metadata.steps?.step4?.confidence?.factorContributions
+    // Extract all data - PRIORITY: separate columns FIRST, then metadata JSONB
+    // CRITICAL FIX: The data is stored in separate columns (factor_contributions, predicted_total, etc.)
+    // NOT in metadata JSONB! This is why insight cards were missing factor scores!
+    const factorContributions = run.factor_contributions  // NEW: Separate column (PRIORITY)
+      || metadata.factor_contributions                     // OLD: Top-level in metadata
+      || metadata.steps?.step4?.confidence?.factorContributions  // OLDEST: Nested in steps
       || []
 
-    const predictedTotal = metadata.predicted_total
-      || metadata.steps?.step4?.predictions?.total_pred_points
+    const predictedTotal = run.predicted_total  // NEW: Separate column (PRIORITY)
+      || metadata.predicted_total                // OLD: Top-level in metadata
+      || metadata.steps?.step4?.predictions?.total_pred_points  // OLDEST: Nested in steps
       || 0
 
-    const baselineAvg = metadata.baseline_avg
-      || metadata.steps?.step3?.baseline_avg
+    const baselineAvg = run.baseline_avg  // NEW: Separate column (PRIORITY)
+      || metadata.baseline_avg             // OLD: Top-level in metadata
+      || metadata.steps?.step3?.baseline_avg  // OLDEST: Nested in steps
       || 220
 
-    const marketTotal = metadata.market_total
-      || metadata.steps?.step2?.snapshot?.total?.line
+    const marketTotal = run.market_total  // NEW: Separate column (PRIORITY)
+      || metadata.market_total             // OLD: Top-level in metadata
+      || metadata.steps?.step2?.snapshot?.total?.line  // OLDEST: Nested in steps
       || 0
 
     const predictedHomeScore = metadata.predicted_home_score
