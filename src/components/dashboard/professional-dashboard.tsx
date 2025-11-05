@@ -21,6 +21,7 @@ import {
 import { NavBar } from '@/components/navigation/nav-bar'
 import { PickInsightModal } from '@/components/dashboard/pick-insight-modal'
 import Link from 'next/link'
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
 
 interface Pick {
   id: string
@@ -66,11 +67,20 @@ interface PerformanceMetrics {
   roi: number
 }
 
+interface ChartDataPoint {
+  date: string
+  cumulative_units: number
+  daily_units: number
+  wins: number
+  losses: number
+}
+
 export function ProfessionalDashboard() {
   const [todaysPicks, setTodaysPicks] = useState<Pick[]>([])
   const [topCappers, setTopCappers] = useState<Capper[]>([])
   const [recentActivity, setRecentActivity] = useState<Pick[]>([])
   const [performance, setPerformance] = useState<PerformanceMetrics | null>(null)
+  const [chartData, setChartData] = useState<ChartDataPoint[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedPick, setSelectedPick] = useState<Pick | null>(null)
   const [showInsight, setShowInsight] = useState(false)
@@ -97,7 +107,11 @@ export function ProfessionalDashboard() {
       ])
 
       if (picksData.success) setTodaysPicks(picksData.data)
-      if (activityData.success) setRecentActivity(activityData.data)
+      if (activityData.success) {
+        setRecentActivity(activityData.data)
+        // Calculate chart data from activity
+        calculateChartData(activityData.data)
+      }
       if (perfData.success) setPerformance(perfData.data.metrics)
 
       // Mock capper data
@@ -112,6 +126,41 @@ export function ProfessionalDashboard() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const calculateChartData = (picks: Pick[]) => {
+    // Group picks by date and calculate cumulative units
+    const dateMap = new Map<string, { units: number, wins: number, losses: number }>()
+
+    picks.forEach(pick => {
+      if (pick.status === 'won' || pick.status === 'lost') {
+        const date = new Date(pick.created_at).toISOString().split('T')[0]
+        const existing = dateMap.get(date) || { units: 0, wins: 0, losses: 0 }
+        existing.units += pick.net_units || 0
+        if (pick.status === 'won') existing.wins++
+        if (pick.status === 'lost') existing.losses++
+        dateMap.set(date, existing)
+      }
+    })
+
+    // Convert to array and sort by date
+    const sortedDates = Array.from(dateMap.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+
+    // Calculate cumulative units
+    let cumulative = 0
+    const data: ChartDataPoint[] = sortedDates.map(([date, stats]) => {
+      cumulative += stats.units
+      return {
+        date,
+        cumulative_units: cumulative,
+        daily_units: stats.units,
+        wins: stats.wins,
+        losses: stats.losses
+      }
+    })
+
+    setChartData(data)
   }
 
   const getGameStatus = (pick: Pick) => {
@@ -333,6 +382,111 @@ export function ProfessionalDashboard() {
               </CardContent>
             </Card>
 
+            {/* PERFORMANCE TREND GRAPH - COMPACT */}
+            <Card className="bg-slate-900/50 border-slate-800">
+              <CardHeader className="pb-2 px-3 pt-2.5 border-b border-slate-800">
+                <CardTitle className="text-sm font-semibold text-white flex items-center gap-1.5">
+                  <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
+                  Performance Trend
+                </CardTitle>
+              </CardHeader>
+
+              <CardContent className="px-3 py-2">
+                {chartData.length === 0 ? (
+                  <div className="h-[200px] flex items-center justify-center">
+                    <p className="text-[11px] text-slate-500">No performance data yet</p>
+                  </div>
+                ) : (
+                  <div className="h-[200px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        data={chartData}
+                        margin={{ top: 10, right: 5, left: -20, bottom: 5 }}
+                      >
+                        <defs>
+                          {/* Gradient for positive trend */}
+                          <linearGradient id="lineGradientPos" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#10B981" stopOpacity={0.3} />
+                            <stop offset="100%" stopColor="#10B981" stopOpacity={0.05} />
+                          </linearGradient>
+                          {/* Gradient for negative trend */}
+                          <linearGradient id="lineGradientNeg" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#EF4444" stopOpacity={0.05} />
+                            <stop offset="100%" stopColor="#EF4444" stopOpacity={0.3} />
+                          </linearGradient>
+                        </defs>
+
+                        <XAxis
+                          dataKey="date"
+                          tick={{ fontSize: 10, fill: '#64748b' }}
+                          stroke="#334155"
+                          tickFormatter={(value) => {
+                            const date = new Date(value)
+                            return `${date.getMonth() + 1}/${date.getDate()}`
+                          }}
+                          interval="preserveStartEnd"
+                        />
+
+                        <YAxis
+                          tick={{ fontSize: 10, fill: '#64748b' }}
+                          stroke="#334155"
+                          tickFormatter={(value) => `${value >= 0 ? '+' : ''}${value.toFixed(0)}u`}
+                        />
+
+                        {/* Zero baseline */}
+                        <ReferenceLine
+                          y={0}
+                          stroke="#475569"
+                          strokeDasharray="3 3"
+                          strokeWidth={1}
+                        />
+
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: '#1e293b',
+                            border: '1px solid #334155',
+                            borderRadius: '6px',
+                            fontSize: '11px',
+                            padding: '6px 8px'
+                          }}
+                          labelStyle={{ color: '#94a3b8', fontSize: '10px' }}
+                          itemStyle={{ color: '#fff', fontSize: '11px' }}
+                          formatter={(value: number, name: string) => {
+                            if (name === 'cumulative_units') {
+                              return [`${value >= 0 ? '+' : ''}${value.toFixed(1)}u`, 'Net Units']
+                            }
+                            return [value, name]
+                          }}
+                          labelFormatter={(label) => {
+                            const date = new Date(label)
+                            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                          }}
+                        />
+
+                        <Line
+                          type="monotone"
+                          dataKey="cumulative_units"
+                          stroke={(chartData[chartData.length - 1]?.cumulative_units || 0) >= 0 ? '#10B981' : '#EF4444'}
+                          strokeWidth={2}
+                          dot={{
+                            fill: (chartData[chartData.length - 1]?.cumulative_units || 0) >= 0 ? '#10B981' : '#EF4444',
+                            strokeWidth: 0,
+                            r: 2
+                          }}
+                          activeDot={{
+                            fill: (chartData[chartData.length - 1]?.cumulative_units || 0) >= 0 ? '#10B981' : '#EF4444',
+                            strokeWidth: 2,
+                            stroke: '#1e293b',
+                            r: 4
+                          }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             {/* PICK HISTORY - DETAILED */}
             <Card className="bg-slate-900/50 border-slate-800">
               <CardHeader className="pb-2 px-3 pt-2.5 border-b border-slate-800">
@@ -362,8 +516,8 @@ export function ProfessionalDashboard() {
                     <div
                       key={pick.id}
                       className={`px-2 py-1.5 rounded border transition-all cursor-pointer hover:border-slate-600 ${isWin ? 'bg-emerald-500/5 border-emerald-500/20' :
-                          isLoss ? 'bg-red-500/5 border-red-500/20' :
-                            'bg-slate-800/20 border-slate-700/30'
+                        isLoss ? 'bg-red-500/5 border-red-500/20' :
+                          'bg-slate-800/20 border-slate-700/30'
                         }`}
                       onClick={() => {
                         setSelectedPick(pick)
