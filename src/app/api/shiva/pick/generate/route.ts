@@ -127,9 +127,14 @@ export async function POST(request: Request) {
               // Extract factor data from total_data if available
               const totalData = parse.data.inputs.total_data
               const factorContributions = totalData?.factor_contributions || null
-              const predictedTotal = totalData?.predicted_total || null
-              const baselineAvg = totalData?.baseline_avg || null
-              const marketTotal = totalData?.market_total_line || null
+
+              // CRITICAL: Only set predicted_total, baseline_avg, market_total for TOTALS picks
+              // For SPREAD picks, these should be NULL
+              const isTotal = results.decision.pick_type === 'TOTAL'
+              const predictedTotal = isTotal ? (totalData?.predicted_total || null) : null
+              const baselineAvg = isTotal ? (totalData?.baseline_avg || null) : null
+              const marketTotal = isTotal ? (totalData?.market_total_line || null) : null
+
               const predictedHomeScore = totalData?.predicted_home_score || null
               const predictedAwayScore = totalData?.predicted_away_score || null
               const boldPredictions = totalData?.bold_predictions || null
@@ -246,9 +251,14 @@ export async function POST(request: Request) {
         // Prepare factor data for runs table
         const totalData = parse.data.inputs.total_data
         const factorContributions = totalData?.factor_contributions || null
-        const predictedTotal = totalData?.predicted_total || null
-        const baselineAvg = totalData?.baseline_avg || null
-        const marketTotal = totalData?.market_total_line || null
+
+        // CRITICAL: Only set predicted_total, baseline_avg, market_total for TOTALS picks
+        // For SPREAD picks, these should be NULL
+        const isTotal = results.decision.pick_type === 'TOTAL'
+        const predictedTotal = isTotal ? (totalData?.predicted_total || null) : null
+        const baselineAvg = isTotal ? (totalData?.baseline_avg || null) : null
+        const marketTotal = isTotal ? (totalData?.market_total_line || null) : null
+
         const predictedHomeScore = totalData?.predicted_home_score || null
         const predictedAwayScore = totalData?.predicted_away_score || null
         const boldPredictions = totalData?.bold_predictions || null

@@ -63,6 +63,71 @@ export async function POST(request: Request) {
       }, { status: 404 })
     }
 
+    // CRITICAL: Check for existing picks BEFORE running the wizard to prevent duplicates
+    // This prevents race conditions where multiple cron jobs try to generate picks simultaneously
+    const betTypeLower = betType.toLowerCase()
+    const { data: existingPicks, error: picksError } = await supabase
+      .from('picks')
+      .select('id, pick_type, status, selection')
+      .eq('game_id', game.id)
+      .eq('capper', 'shiva')
+      .eq('pick_type', betTypeLower)
+      .in('status', ['pending', 'won', 'lost', 'push'])
+
+    if (picksError) {
+      console.error('[SHIVA:GeneratePick] Error checking existing picks:', picksError)
+      return NextResponse.json({
+        success: false,
+        error: 'Failed to check existing picks',
+        details: picksError.message,
+        decision: 'ERROR'
+      }, { status: 500 })
+    }
+
+    if (existingPicks && existingPicks.length > 0) {
+      console.log(`⚠️ [SHIVA:GeneratePick] Game already has ${betType} pick(s):`, existingPicks)
+      return NextResponse.json({
+        success: false,
+        decision: 'DUPLICATE',
+        message: `Game already has ${betType} pick: ${existingPicks[0].selection}`,
+        existing_pick_id: existingPicks[0].id
+      }, { status: 409 }) // 409 Conflict
+    }
+
+    // CRITICAL: Check for active cooldowns BEFORE running the wizard
+    const nowIso = new Date().toISOString()
+    const { data: cooldownData, error: cooldownError } = await supabase
+      .from('pick_generation_cooldowns')
+      .select('cooldown_until, result, reason')
+      .eq('game_id', game.id)
+      .eq('capper', 'shiva')
+      .eq('bet_type', betTypeLower)
+      .gt('cooldown_until', nowIso)
+      .single()
+
+    if (cooldownError && cooldownError.code !== 'PGRST116') { // PGRST116 = no rows found (OK)
+      console.error('[SHIVA:GeneratePick] Error checking cooldown:', cooldownError)
+      return NextResponse.json({
+        success: false,
+        error: 'Failed to check cooldown',
+        details: cooldownError.message,
+        decision: 'ERROR'
+      }, { status: 500 })
+    }
+
+    if (cooldownData) {
+      console.log(`⚠️ [SHIVA:GeneratePick] Game is in cooldown until ${cooldownData.cooldown_until}:`, cooldownData)
+      return NextResponse.json({
+        success: false,
+        decision: 'COOLDOWN',
+        message: `Game is in cooldown until ${cooldownData.cooldown_until}`,
+        cooldown_until: cooldownData.cooldown_until,
+        reason: cooldownData.reason
+      }, { status: 429 }) // 429 Too Many Requests
+    }
+
+    console.log('✅ [SHIVA:GeneratePick] No existing picks or cooldowns found, proceeding with wizard...')
+
     // Generate run ID
     const runId = `shiva_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
 

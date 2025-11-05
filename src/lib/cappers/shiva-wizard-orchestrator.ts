@@ -507,7 +507,7 @@ async function generatePredictions(runId: string, step3Result: any, sport: strin
     const predictedMargin = confidenceResult.edgeRaw * 1.5
 
     // Calculate predicted scores based on margin
-    // Assume average NBA game total is ~220 points
+    // Assume average NBA game total is ~220 points (only used for score distribution, NOT for total prediction)
     const avgGameTotal = 220
     const predictedAwayScore = (avgGameTotal / 2) + (predictedMargin / 2)
     const predictedHomeScore = (avgGameTotal / 2) - (predictedMargin / 2)
@@ -530,7 +530,7 @@ async function generatePredictions(runId: string, step3Result: any, sport: strin
         pace_exp: 100.0,
         delta_100: 0.0,
         spread_pred_points: predictedMargin,
-        total_pred_points: avgGameTotal,
+        total_pred_points: null, // NULL for SPREAD picks (only used for TOTALS)
         scores: {
           away: predictedAwayScore,
           home: predictedHomeScore
