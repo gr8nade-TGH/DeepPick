@@ -686,5 +686,6 @@ export function NewMainDashboard() {
           />
         )}
       </div>
-      )
+    </div>
+  )
 }
