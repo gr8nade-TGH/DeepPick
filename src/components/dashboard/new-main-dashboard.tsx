@@ -12,7 +12,7 @@ import {
   Lock,
   Unlock,
   Eye,
-  Fire,
+  Flame,
   Target,
   Crown,
   Star,
@@ -367,7 +367,7 @@ export function NewMainDashboard() {
                           {capper.name}
                         </span>
                         {capper.is_hot && (
-                          <Fire className="h-4 w-4 text-orange-500 animate-pulse" />
+                          <Flame className="h-4 w-4 text-orange-500 animate-pulse" />
                         )}
                       </div>
 
@@ -379,7 +379,7 @@ export function NewMainDashboard() {
                           <>
                             <span>•</span>
                             <span className="text-neon-green flex items-center gap-1">
-                              <Fire className="h-3 w-3" />
+                              <Flame className="h-3 w-3" />
                               {capper.streak}W streak
                             </span>
                           </>
