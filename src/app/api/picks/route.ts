@@ -5,6 +5,7 @@ import { z } from 'zod'
 const GetPicksSchema = z.object({
   capper: z.string().optional(),
   status: z.string().optional(),
+  pick_type: z.string().optional(),
   limit: z.string().optional().transform(val => val ? parseInt(val) : 20),
   offset: z.string().optional().transform(val => val ? parseInt(val) : 0)
 })
@@ -15,6 +16,7 @@ export async function GET(request: NextRequest) {
     const parse = GetPicksSchema.safeParse({
       capper: searchParams.get('capper') || undefined,
       status: searchParams.get('status') || undefined,
+      pick_type: searchParams.get('pick_type') || undefined,
       limit: searchParams.get('limit') || undefined,
       offset: searchParams.get('offset') || undefined
     })
@@ -27,7 +29,7 @@ export async function GET(request: NextRequest) {
       }, { status: 400 })
     }
 
-    const { capper, status, limit, offset } = parse.data
+    const { capper, status, pick_type, limit, offset } = parse.data
     const supabase = await getSupabase()
 
     // Build query
@@ -70,6 +72,11 @@ export async function GET(request: NextRequest) {
       } else {
         query = query.eq('status', status)
       }
+    }
+
+    // Filter by pick_type if provided (e.g., 'total', 'spread')
+    if (pick_type) {
+      query = query.eq('pick_type', pick_type.toLowerCase())
     }
 
     const { data: picks, error } = await query

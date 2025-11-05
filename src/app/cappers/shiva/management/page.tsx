@@ -118,6 +118,7 @@ export default function ShivaManagementPage() {
               <SHIVAManagementInbox
                 onGameSelect={handleGameSelect}
                 selectedGame={selectedGame}
+                betType={betType}
               />
             </div>
           </div>

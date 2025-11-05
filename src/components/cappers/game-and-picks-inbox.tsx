@@ -121,7 +121,7 @@ export function GameInbox({ capper, betType, onGameSelect, selectedGameId, selec
   )
 }
 
-export function GeneratedPicksInbox({ capper }: { capper: capper_type }) {
+export function GeneratedPicksInbox({ capper, betType }: { capper: capper_type; betType?: 'TOTAL' | 'SPREAD' }) {
   const [generatedPicks, setGeneratedPicks] = useState<GeneratedPick[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -132,8 +132,9 @@ export function GeneratedPicksInbox({ capper }: { capper: capper_type }) {
     setLoading(true)
     setError(null)
     try {
-      // Fetch real picks from the database
-      const response = await fetch(`/api/picks?capper=${capper}&limit=20`)
+      // Fetch real picks from the database with bet type filter
+      const betTypeParam = betType ? `&pick_type=${betType.toLowerCase()}` : ''
+      const response = await fetch(`/api/picks?capper=${capper}&limit=20${betTypeParam}`)
       if (!response.ok) {
         const errorText = await response.text()
         throw new Error(`API Error ${response.status}: ${errorText}`)
@@ -143,7 +144,7 @@ export function GeneratedPicksInbox({ capper }: { capper: capper_type }) {
 
       if (data.success) {
         if (!data.picks || data.picks.length === 0) {
-          setError(`No picks found for ${capper}. Try generating some picks first.`)
+          setError(`No ${betType || ''} picks found for ${capper}. Try generating some picks first.`)
           setGeneratedPicks([])
           return
         }
@@ -184,7 +185,7 @@ export function GeneratedPicksInbox({ capper }: { capper: capper_type }) {
 
   useEffect(() => {
     fetchGeneratedPicks()
-  }, [capper])
+  }, [capper, betType])
 
   return (
     <div className="bg-gray-800 border border-gray-600 rounded-lg p-4">
