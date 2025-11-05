@@ -30,6 +30,8 @@ DECLARE
   grading_notes TEXT;
 BEGIN
   -- Only grade when status changes to 'final' and we have scores
+  -- 'final' corresponds to MySportsFeeds API status 'COMPLETED' (fully reviewed, ~1 hour after game ends)
+  -- NOT 'COMPLETED_PENDING_REVIEW' (game just ended, stats still being verified)
   IF NEW.status = 'final' AND NEW.home_score IS NOT NULL AND NEW.away_score IS NOT NULL THEN
     
     RAISE NOTICE '🏀 [GRADING] Game completed: % @ % (% - %)', 
@@ -241,10 +243,12 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Create trigger to auto-grade picks
+-- Only triggers when status changes (not on every score update)
+-- Function checks for status = 'final' before grading
 CREATE TRIGGER trigger_grade_picks
-  AFTER UPDATE OF status, home_score, away_score, final_score ON games
+  AFTER UPDATE OF status ON games
   FOR EACH ROW
   EXECUTE FUNCTION grade_picks_for_game();
 
-COMMENT ON FUNCTION grade_picks_for_game() IS 'Automatically grades all pending picks when a game is marked as final. Handles TOTAL, SPREAD, and MONEYLINE picks with variable odds.';
+COMMENT ON FUNCTION grade_picks_for_game() IS 'Automatically grades all pending picks when a game status changes to final (COMPLETED). Handles TOTAL, SPREAD, and MONEYLINE picks with variable odds.';
 
