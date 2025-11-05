@@ -192,7 +192,10 @@ export function InsightCard(props: InsightCardProps) {
         {/* Subtitle */}
         <div className="px-6 py-3 bg-gradient-to-r from-slate-800 to-slate-700 border-b border-cyan-500/20">
           <div className="text-sm text-cyan-300 font-medium">
-            🎯 NBA Totals Model v1 — Advanced Statistical Analysis
+            {safePick.type === 'SPREAD'
+              ? '🎯 NBA Spread Model v1 — Advanced Statistical Analysis'
+              : '🎯 NBA Totals Model v1 — Advanced Statistical Analysis'
+            }
           </div>
         </div>
 
@@ -217,10 +220,17 @@ export function InsightCard(props: InsightCardProps) {
             <div className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-blue-300 mb-3 drop-shadow-lg tracking-tight">
               {safePick.units} {safePick.units === 1 ? 'UNIT' : 'UNITS'} on {safePick.selection}
             </div>
-            {(safePick as any).locked_odds?.total_line && (
+            {/* Show locked line based on pick type */}
+            {safePick.type === 'TOTAL' && (safePick as any).locked_odds?.total_line && (
               <div className="text-cyan-200 text-lg font-semibold flex items-center justify-center gap-2">
                 <span className="text-2xl">🔒</span>
-                <span>Locked at {(safePick as any).locked_odds.total_line}</span>
+                <span>Locked O/U {(safePick as any).locked_odds.total_line}</span>
+              </div>
+            )}
+            {safePick.type === 'SPREAD' && (safePick as any).locked_odds?.spread_line && (
+              <div className="text-cyan-200 text-lg font-semibold flex items-center justify-center gap-2">
+                <span className="text-2xl">🔒</span>
+                <span>Locked ATS {(safePick as any).locked_odds.spread_line > 0 ? '+' : ''}{(safePick as any).locked_odds.spread_line}</span>
               </div>
             )}
           </div>
@@ -290,10 +300,10 @@ export function InsightCard(props: InsightCardProps) {
               <div className="bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-xl p-5 border border-cyan-500/20 shadow-lg">
                 <div className="text-xs font-bold text-cyan-400 uppercase mb-3 flex items-center gap-2">
                   <span>🎯</span>
-                  <span>Score Projection</span>
+                  <span>{safePick.type === 'SPREAD' ? 'Spread Projection' : 'Score Projection'}</span>
                 </div>
                 <p className="text-cyan-100 text-sm font-medium mb-3">{props.writeups.gamePrediction}</p>
-                {/* Clear predicted score display */}
+                {/* Clear predicted score display - always show for both TOTAL and SPREAD */}
                 <div className="bg-gradient-to-r from-slate-800 to-slate-700 rounded-lg p-4 mt-3 border border-cyan-500/30">
                   <div className="text-center">
                     <div className="text-xs text-cyan-300 font-semibold mb-2">PREDICTED FINAL SCORE</div>

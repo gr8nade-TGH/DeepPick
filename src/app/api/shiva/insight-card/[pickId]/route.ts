@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 
 /**
- * Generate professional analyst-style writeup for the pick
+ * Generate professional analyst-style writeup for TOTAL picks
  */
 function generateProfessionalWriteup(
   pick: any,
@@ -47,6 +47,56 @@ function generateProfessionalWriteup(
     : 'This projection is based on comprehensive statistical analysis.'
 
   const confidenceStatement = `With a confidence score of ${confidence.toFixed(1)}/10.0, this represents a ${confidenceTier}-conviction play in our betting model.`
+
+  return `${intro} ${edgeAnalysis} ${factorSummary} ${confidenceStatement}`
+}
+
+/**
+ * Generate professional analyst-style writeup for SPREAD picks
+ */
+function generateSpreadWriteup(
+  pick: any,
+  confidence: number,
+  factors: any[],
+  edgeRaw: number,
+  awayTeam: string,
+  homeTeam: string
+): string {
+  const selection = pick.selection
+  const edge = Math.abs(edgeRaw)
+  const favoredTeam = edgeRaw > 0 ? awayTeam : homeTeam
+  const edgeDirection = edgeRaw > 0 ? 'favors the away team' : 'favors the home team'
+
+  // Confidence tier messaging
+  let confidenceTier = ''
+  let actionVerb = ''
+  if (confidence >= 9) {
+    confidenceTier = 'exceptional'
+    actionVerb = 'strongly recommend'
+  } else if (confidence >= 8) {
+    confidenceTier = 'high'
+    actionVerb = 'recommend'
+  } else if (confidence >= 7) {
+    confidenceTier = 'strong'
+    actionVerb = 'favor'
+  } else if (confidence >= 6) {
+    confidenceTier = 'moderate'
+    actionVerb = 'lean toward'
+  } else {
+    confidenceTier = 'developing'
+    actionVerb = 'identify value in'
+  }
+
+  // Build narrative
+  const intro = `Our advanced analytics model has identified ${confidenceTier} value on ${selection} in the ${awayTeam} at ${homeTeam} matchup.`
+
+  const edgeAnalysis = `The model's predicted point differential ${edgeDirection} by ${edge.toFixed(1)} points more than the current market spread. This ${edge.toFixed(1)}-point edge represents a significant market inefficiency that we ${actionVerb}.`
+
+  const factorSummary = factors.length > 0
+    ? `This projection is supported by ${factors.length} key factors, including ${factors.slice(0, 3).map(f => f.label.toLowerCase()).join(', ')}${factors.length > 3 ? ', and others' : ''}.`
+    : 'This projection is based on comprehensive statistical analysis.'
+
+  const confidenceStatement = `With a confidence score of ${confidence.toFixed(1)}/10.0, this represents a ${confidenceTier}-conviction play in our spread betting model.`
 
   return `${intro} ${edgeAnalysis} ${factorSummary} ${confidenceStatement}`
 }
@@ -244,24 +294,45 @@ export async function GET(
 // Build insight card data structure from run metadata
 function buildInsightCard({ pick, game, run, factorContributions, predictedTotal, baselineAvg, marketTotal, predictedHomeScore, predictedAwayScore, boldPredictions, conf7, confMarketAdj, confFinal }: any) {
 
+  // Detect pick type from pick.pick_type
+  const pickType = pick.pick_type?.toUpperCase() || 'TOTAL'
+  const isSpread = pickType === 'SPREAD'
+  const isTotal = pickType === 'TOTAL'
+
+  console.log('[buildInsightCard] Pick type detected:', pickType)
+
   // Map factors to insight card format
   const baseFactors = factorContributions.map((factor: any) => {
     // Get weight percentage
     const weightPct = factor.weight_percentage || factor.weight_total_pct || 0
     const weightDecimal = weightPct / 100
 
-    // Get scores from weighted_contributions if available
+    // Get scores based on pick type
     let overScore = 0
     let underScore = 0
 
     if (factor.weighted_contributions) {
-      overScore = factor.weighted_contributions.overScore || 0
-      underScore = factor.weighted_contributions.underScore || 0
+      if (isSpread) {
+        // SPREAD: Use awayScore/homeScore
+        overScore = factor.weighted_contributions.awayScore || 0
+        underScore = factor.weighted_contributions.homeScore || 0
+      } else {
+        // TOTAL: Use overScore/underScore
+        overScore = factor.weighted_contributions.overScore || 0
+        underScore = factor.weighted_contributions.underScore || 0
+      }
     } else if (factor.parsed_values_json) {
       // Calculate from parsed values
       const parsed = factor.parsed_values_json
-      overScore = (parsed.overScore || 0) * weightDecimal
-      underScore = (parsed.underScore || 0) * weightDecimal
+      if (isSpread) {
+        // SPREAD: Use awayScore/homeScore
+        overScore = (parsed.awayScore || 0) * weightDecimal
+        underScore = (parsed.homeScore || 0) * weightDecimal
+      } else {
+        // TOTAL: Use overScore/underScore
+        overScore = (parsed.overScore || 0) * weightDecimal
+        underScore = (parsed.underScore || 0) * weightDecimal
+      }
     }
 
     return {
@@ -275,29 +346,38 @@ function buildInsightCard({ pick, game, run, factorContributions, predictedTotal
     }
   })
 
-  // Calculate edge in points
-  const edgeRaw = predictedTotal - marketTotal
+  // Calculate edge based on pick type
+  let edgeRaw = 0
+  let edgePct = confMarketAdj || 0
 
-  // Calculate edge percentage properly:
-  // Edge % = (Our implied probability - Market implied probability)
-  // For totals: Convert point difference to probability difference
-  // Simplified: Use the confidence adjustment as the edge percentage
-  const edgePct = confMarketAdj || 0
+  if (isSpread) {
+    // SPREAD: Edge = predicted margin vs market spread
+    const predictedMargin = run.metadata?.steps?.step4?.predictions?.spread_pred_points || 0
+    const marketSpread = run.metadata?.steps?.step2?.snapshot?.spread?.line || 0
+    edgeRaw = predictedMargin - (-marketSpread) // Convert market spread to away perspective
+    console.log('[buildInsightCard] SPREAD edge:', { predictedMargin, marketSpread, edgeRaw })
+  } else {
+    // TOTAL: Edge = predicted total vs market total
+    edgeRaw = predictedTotal - marketTotal
+    console.log('[buildInsightCard] TOTAL edge:', { predictedTotal, marketTotal, edgeRaw })
+  }
 
   // Check if "Edge vs Market" factor already exists in baseFactors
-  const hasEdgeFactor = baseFactors.some((f: any) => f.key === 'edgeVsMarket')
+  const hasEdgeFactor = baseFactors.some((f: any) => f.key === 'edgeVsMarket' || f.key === 'edgeVsMarketSpread')
 
   // Only add "Edge vs Market" factor if it doesn't already exist
   const factors = hasEdgeFactor ? baseFactors : [
     ...baseFactors,
     {
-      key: 'edgeVsMarket',
-      label: 'Edge vs Market',
+      key: isSpread ? 'edgeVsMarketSpread' : 'edgeVsMarket',
+      label: isSpread ? 'Edge vs Market Spread' : 'Edge vs Market',
       icon: '💰',
       overScore: edgeRaw > 0 ? confMarketAdj : 0,
       underScore: edgeRaw < 0 ? Math.abs(confMarketAdj) : 0,
       weightAppliedPct: 100,
-      rationale: `Edge: ${edgeRaw > 0 ? '+' : ''}${edgeRaw.toFixed(1)} pts (Pred: ${predictedTotal.toFixed(1)} vs Mkt: ${marketTotal.toFixed(1)})`
+      rationale: isSpread
+        ? `Edge: ${edgeRaw > 0 ? '+' : ''}${edgeRaw.toFixed(1)} pts spread advantage`
+        : `Edge: ${edgeRaw > 0 ? '+' : ''}${edgeRaw.toFixed(1)} pts (Pred: ${predictedTotal.toFixed(1)} vs Mkt: ${marketTotal.toFixed(1)})`
     }
   ]
 
@@ -328,6 +408,21 @@ function buildInsightCard({ pick, game, run, factorContributions, predictedTotal
     spreadText = `${awayTeamName} ${awaySpread} @ ${homeTeamName} ${homeSpread}`
   }
 
+  // Format totalText based on pick type
+  const totalText = isSpread
+    ? `Locked ATS ${spreadLine ? (spreadLine > 0 ? `+${spreadLine}` : spreadLine) : 'N/A'}`
+    : `Locked O/U ${marketTotal.toFixed(1)}`
+
+  // Generate writeup based on pick type
+  const writeup = isSpread
+    ? generateSpreadWriteup(pick, confFinal, factors, edgeRaw, awayTeamName, homeTeamName)
+    : generateProfessionalWriteup(pick, confFinal, factors, predictedTotal, marketTotal, awayTeamName, homeTeamName)
+
+  // Generate game prediction text based on pick type
+  const gamePrediction = isSpread
+    ? `Predicted margin: ${edgeRaw > 0 ? 'Away' : 'Home'} by ${Math.abs(edgeRaw).toFixed(1)} pts`
+    : `Predicted total: ${predictedTotal.toFixed(1)} vs Market: ${marketTotal.toFixed(1)}`
+
   // Build the insight card
   return {
     capper: 'SHIVA',
@@ -340,11 +435,11 @@ function buildInsightCard({ pick, game, run, factorContributions, predictedTotal
       away: awayTeamName,
       home: homeTeamName,
       spreadText,
-      totalText: `Locked O/U ${marketTotal.toFixed(1)}`,
+      totalText,
       gameDateLocal: game.game_start_timestamp || game.game_date || new Date().toISOString()
     },
     pick: {
-      type: 'TOTAL' as const,
+      type: pickType as 'SPREAD' | 'TOTAL',
       selection: pick.selection,
       units: pick.units,
       confidence: confFinal,
@@ -360,8 +455,8 @@ function buildInsightCard({ pick, game, run, factorContributions, predictedTotal
       winner: 'TBD'
     },
     writeups: {
-      prediction: generateProfessionalWriteup(pick, confFinal, factors, predictedTotal, marketTotal, awayTeamName, homeTeamName),
-      gamePrediction: `Predicted total: ${predictedTotal.toFixed(1)} vs Market: ${marketTotal.toFixed(1)}`,
+      prediction: writeup,
+      gamePrediction,
       bold: boldPredictions?.summary || null
     },
     bold_predictions: boldPredictions,
@@ -371,7 +466,7 @@ function buildInsightCard({ pick, game, run, factorContributions, predictedTotal
       conf7: conf7,
       confAdj: confMarketAdj,
       confFinal: confFinal,
-      dominant: 'total' as const
+      dominant: isSpread ? 'spread' as const : 'total' as const
     },
     results: {
       status: pick.status === 'won' ? 'win'
