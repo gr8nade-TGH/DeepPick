@@ -181,7 +181,7 @@ BEGIN
       'matchup', jsonb_build_object(
         'away', COALESCE(game_record.away_team, pick_record.game_snapshot->'away_team'),
         'home', COALESCE(game_record.home_team, pick_record.game_snapshot->'home_team'),
-        'game_date', COALESCE(game_record.game_date, pick_record.game_snapshot->'game_date')
+        'game_date', COALESCE(game_record.game_date::TEXT, (pick_record.game_snapshot->>'game_date'))
       ),
       'factors', COALESCE(run_record.factor_contributions, '[]'::jsonb),
       'predictions', jsonb_build_object(
