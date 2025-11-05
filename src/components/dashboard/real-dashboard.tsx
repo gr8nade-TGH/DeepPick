@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
 import { TrendingUp, Activity, Lightbulb, AlertTriangle, Zap, BarChart, Rocket, MessageCircle, CheckCircle, XCircle, PlayCircle, Clock, BarChart3, Archive, Brain, X, Target, TrendingDown, Trophy } from 'lucide-react'
 import { NavBar } from '@/components/navigation/nav-bar'
 import Link from 'next/link'
@@ -399,43 +399,95 @@ export function RealDashboard() {
                             margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
                           >
                             <defs>
-                              <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
+                              {/* Gradient for positive profit */}
+                              <linearGradient id="colorProfitPositive" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="#10B981" stopOpacity={0.8} />
-                                <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
+                                <stop offset="95%" stopColor="#10B981" stopOpacity={0.1} />
+                              </linearGradient>
+                              {/* Gradient for negative profit */}
+                              <linearGradient id="colorProfitNegative" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#EF4444" stopOpacity={0.8} />
+                                <stop offset="95%" stopColor="#EF4444" stopOpacity={0.1} />
                               </linearGradient>
                             </defs>
                             <XAxis
                               dataKey="date"
-                              stroke="#4B5563"
+                              stroke="#6B7280"
+                              tick={{ fill: '#9CA3AF', fontSize: 12 }}
                               tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                               interval="preserveStartEnd"
                             />
-                            <YAxis stroke="#4B5563" tickFormatter={(value) => `$${value / 1000}K`} />
+                            <YAxis
+                              stroke="#6B7280"
+                              tick={{ fill: '#9CA3AF', fontSize: 12 }}
+                              tickFormatter={(value) => `${value >= 0 ? '+' : ''}${value.toFixed(0)}u`}
+                            />
+                            {/* Reference line at 0 */}
+                            <ReferenceLine y={0} stroke="#6B7280" strokeDasharray="3 3" strokeWidth={1} />
                             <Tooltip
-                              contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '4px' }}
-                              labelStyle={{ color: '#E5E7EB' }}
-                              formatter={(value: number) => {
-                                const color = value >= 0 ? '#10B981' : '#EF4444'
-                                return [`$${value.toFixed(2)}`, 'Profit']
+                              contentStyle={{
+                                backgroundColor: '#1F2937',
+                                border: '1px solid #374151',
+                                borderRadius: '8px',
+                                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)'
                               }}
-                              itemStyle={{ color: '#10B981' }}
-                              content={({ active, payload, label }) => {
-                                if (active && payload && payload?.length && payload[0]) {
-                                  const value = payload[0].value as number
-                                  const color = value >= 0 ? '#10B981' : '#EF4444'
+                              content={({ active, payload }) => {
+                                if (active && payload && payload.length > 0) {
+                                  const data = payload[0].payload
+                                  const cumulativeProfit = data.cumulative_profit || 0
+                                  const dailyProfit = data.profit || 0
+                                  const wins = data.wins || 0
+                                  const losses = data.losses || 0
+                                  const pushes = data.pushes || 0
+                                  const picks = data.picks || 0
+                                  const winRate = data.win_rate || 0
+                                  const profitColor = cumulativeProfit >= 0 ? '#10B981' : '#EF4444'
+                                  const dailyColor = dailyProfit >= 0 ? '#10B981' : '#EF4444'
+
                                   return (
-                                    <div style={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '4px', padding: '8px' }}>
-                                      <p style={{ color: '#E5E7EB', marginBottom: '4px' }}>{label}</p>
-                                      <p style={{ color: color, fontWeight: 'bold' }}>
-                                        Profit: ${value.toFixed(2)}
+                                    <div style={{
+                                      backgroundColor: '#1F2937',
+                                      border: '1px solid #374151',
+                                      borderRadius: '8px',
+                                      padding: '12px',
+                                      minWidth: '200px'
+                                    }}>
+                                      <p style={{ color: '#E5E7EB', marginBottom: '8px', fontWeight: 'bold', fontSize: '14px' }}>
+                                        {new Date(data.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                                       </p>
+                                      <div style={{ borderTop: '1px solid #374151', paddingTop: '8px', marginBottom: '8px' }}>
+                                        <p style={{ color: profitColor, fontWeight: 'bold', fontSize: '16px', marginBottom: '4px' }}>
+                                          Cumulative: {cumulativeProfit >= 0 ? '+' : ''}{cumulativeProfit.toFixed(2)}u
+                                        </p>
+                                        <p style={{ color: dailyColor, fontSize: '14px', marginBottom: '8px' }}>
+                                          Daily: {dailyProfit >= 0 ? '+' : ''}{dailyProfit.toFixed(2)}u
+                                        </p>
+                                      </div>
+                                      <div style={{ borderTop: '1px solid #374151', paddingTop: '8px' }}>
+                                        <p style={{ color: '#9CA3AF', fontSize: '12px', marginBottom: '4px' }}>
+                                          Record: <span style={{ color: '#10B981' }}>{wins}W</span> - <span style={{ color: '#EF4444' }}>{losses}L</span> - <span style={{ color: '#6B7280' }}>{pushes}P</span>
+                                        </p>
+                                        <p style={{ color: '#9CA3AF', fontSize: '12px', marginBottom: '4px' }}>
+                                          Win Rate: <span style={{ color: winRate >= 55 ? '#10B981' : winRate >= 50 ? '#FBBF24' : '#EF4444', fontWeight: 'bold' }}>{winRate.toFixed(1)}%</span>
+                                        </p>
+                                        <p style={{ color: '#9CA3AF', fontSize: '12px' }}>
+                                          Total Picks: {picks}
+                                        </p>
+                                      </div>
                                     </div>
                                   )
                                 }
                                 return null
                               }}
                             />
-                            <Area type="monotone" dataKey="cumulative_profit" stroke="#10B981" fillOpacity={1} fill="url(#colorProfit)" />
+                            <Area
+                              type="monotone"
+                              dataKey="cumulative_profit"
+                              stroke={(performance?.metrics?.net_units || 0) >= 0 ? '#10B981' : '#EF4444'}
+                              strokeWidth={2}
+                              fillOpacity={1}
+                              fill={(performance?.metrics?.net_units || 0) >= 0 ? 'url(#colorProfitPositive)' : 'url(#colorProfitNegative)'}
+                            />
                           </AreaChart>
                         </ResponsiveContainer>
                       )
