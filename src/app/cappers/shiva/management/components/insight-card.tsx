@@ -303,26 +303,70 @@ export function InsightCard(props: InsightCardProps) {
                   <span>{safePick.type === 'SPREAD' ? 'Spread Projection' : 'Score Projection'}</span>
                 </div>
                 <p className="text-cyan-100 text-sm font-medium mb-3">{props.writeups.gamePrediction}</p>
-                {/* Clear predicted score display - always show for both TOTAL and SPREAD */}
-                <div className="bg-gradient-to-r from-slate-800 to-slate-700 rounded-lg p-4 mt-3 border border-cyan-500/30">
-                  <div className="text-center">
-                    <div className="text-xs text-cyan-300 font-semibold mb-2">PREDICTED FINAL SCORE</div>
-                    <div className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-blue-300">
-                      {props.matchup?.away || 'Away'} {safePredictedScore.away} - {safePredictedScore.home} {props.matchup?.home || 'Home'}
+                {/* ONLY show predicted score for TOTAL picks - SPREAD picks don't need score projection */}
+                {safePick.type === 'TOTAL' && (
+                  <div className="bg-gradient-to-r from-slate-800 to-slate-700 rounded-lg p-4 mt-3 border border-cyan-500/30">
+                    <div className="text-center">
+                      <div className="text-xs text-cyan-300 font-semibold mb-2">PREDICTED FINAL SCORE</div>
+                      <div className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-blue-300">
+                        {props.matchup?.away || 'Away'} {safePredictedScore.away} - {safePredictedScore.home} {props.matchup?.home || 'Home'}
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             )}
 
-            {/* CHANGE 1: Temporarily disabled - Coming Soon placeholder */}
-            <div className="bg-gradient-to-br from-amber-900 to-amber-800 border border-amber-600 rounded-lg p-4">
-              <div className="text-xs font-semibold text-amber-300 uppercase mb-2">🎯 AI BOLD PREDICTIONS</div>
-              <div className="text-center py-3">
-                <p className="text-amber-100 text-sm font-medium">Bold Player Predictions Coming Soon</p>
-                <p className="text-amber-300 text-xs mt-1">Advanced AI-powered player performance predictions</p>
+            {/* AI BOLD PREDICTIONS - Show if available */}
+            {props.bold_predictions && props.bold_predictions.predictions && props.bold_predictions.predictions.length > 0 ? (
+              <div className="bg-gradient-to-br from-amber-900/80 to-amber-800/80 rounded-xl p-5 border border-amber-500/30 shadow-lg">
+                <div className="text-xs font-bold text-amber-300 uppercase mb-3 flex items-center gap-2">
+                  <span>🎯</span>
+                  <span>AI BOLD PREDICTIONS</span>
+                </div>
+
+                {/* Summary */}
+                {props.bold_predictions.summary && (
+                  <p className="text-amber-100 text-sm font-medium mb-4 leading-relaxed">{props.bold_predictions.summary}</p>
+                )}
+
+                {/* Individual Predictions */}
+                <div className="space-y-3">
+                  {props.bold_predictions.predictions.map((pred, index) => (
+                    <div key={index} className="bg-gradient-to-r from-slate-900/60 to-slate-800/60 rounded-lg p-4 border border-amber-500/20">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1">
+                          <div className="text-sm font-bold text-amber-200 mb-1">
+                            {pred.player} ({pred.team})
+                          </div>
+                          <div className="text-base font-semibold text-white mb-2">
+                            {pred.prediction}
+                          </div>
+                        </div>
+                        <div className="ml-3">
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${pred.confidence === 'HIGH' ? 'bg-green-600 text-white' :
+                              pred.confidence === 'MEDIUM' ? 'bg-yellow-600 text-black' :
+                                'bg-orange-600 text-white'
+                            }`}>
+                            {pred.confidence}
+                          </span>
+                        </div>
+                      </div>
+                      <p className="text-xs text-amber-200/80 leading-relaxed">{pred.reasoning}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : (
+              /* Fallback: Show "Coming Soon" only if no bold predictions available */
+              <div className="bg-gradient-to-br from-slate-900/60 to-slate-800/60 border border-slate-600/40 rounded-lg p-4">
+                <div className="text-xs font-semibold text-slate-400 uppercase mb-2">🎯 AI BOLD PREDICTIONS</div>
+                <div className="text-center py-2">
+                  <p className="text-slate-400 text-sm">No bold predictions available for this pick</p>
+                  <p className="text-slate-500 text-xs mt-1">Bold predictions are generated for manual wizard picks only</p>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
