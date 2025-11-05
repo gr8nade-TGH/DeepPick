@@ -24,31 +24,22 @@ export interface ConfidenceOutput {
     z: number
     weight: number
     contribution: number
-    // Add weighted scores for run log display (TOTALS)
+    // Weighted scores for run log display (supports both TOTALS and SPREAD)
     weighted_contributions?: {
-      overScore: number
-      underScore: number
-      net: number
-    }
-    // Add weighted scores for run log display (SPREAD/MONEYLINE)
-    weighted_spread_contributions?: {
-      awayScore: number
-      homeScore: number
+      overScore?: number  // TOTALS
+      underScore?: number // TOTALS
+      awayScore?: number  // SPREAD
+      homeScore?: number  // SPREAD
       net: number
     }
     // Add weight percentage for display
     weight_percentage?: number
-    // Add parsed values for fallback (TOTALS)
+    // Parsed values for fallback (supports both TOTALS and SPREAD)
     parsed_values_json?: {
-      overScore: number
-      underScore: number
-      signal: number
-      points: number
-    }
-    // Add parsed values for fallback (SPREAD/MONEYLINE)
-    parsed_spread_values_json?: {
-      awayScore: number
-      homeScore: number
+      overScore?: number  // TOTALS
+      underScore?: number // TOTALS
+      awayScore?: number  // SPREAD
+      homeScore?: number  // SPREAD
       signal: number
       points: number
     }
@@ -160,17 +151,17 @@ export function calculateConfidence(input: ConfidenceInput): ConfidenceOutput {
         z: factor.normalized_value || 0,
         weight: weightDecimal,
         contribution: effectiveAwayScore - effectiveHomeScore,
-        // Use same keys as TOTALS for consistency in UI
+        // SPREAD: Use awayScore/homeScore (NOT overScore/underScore)
         weighted_contributions: {
-          overScore: effectiveAwayScore,  // Map awayScore to overScore for UI compatibility
-          underScore: effectiveHomeScore, // Map homeScore to underScore for UI compatibility
+          awayScore: effectiveAwayScore,
+          homeScore: effectiveHomeScore,
           net: effectiveAwayScore - effectiveHomeScore
         },
         weight_percentage: weightPct,
-        // Use same keys as TOTALS for consistency in UI
+        // SPREAD: Use awayScore/homeScore (NOT overScore/underScore)
         parsed_values_json: {
-          overScore: rawAwayScore,  // Map awayScore to overScore for UI compatibility
-          underScore: rawHomeScore, // Map homeScore to underScore for UI compatibility
+          awayScore: rawAwayScore,
+          homeScore: rawHomeScore,
           signal: parsedValues.signal || 0,
           points: parsedValues.points || 0
         }

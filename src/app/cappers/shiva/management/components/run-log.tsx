@@ -834,22 +834,38 @@ export function RunLogTable({ betType = 'TOTAL' }: RunLogTableProps) {
                       {factorKeys.map(key => {
                         const factor = getFactor(run, key)
 
-                        // Get weighted scores for highlighting
-                        let overScore = 0
-                        let underScore = 0
+                        // Get weighted scores for highlighting (handle both TOTAL and SPREAD)
+                        let score1 = 0 // overScore for TOTAL, awayScore for SPREAD
+                        let score2 = 0 // underScore for TOTAL, homeScore for SPREAD
 
                         if (factor?.weighted_contributions) {
-                          overScore = factor.weighted_contributions.overScore || 0
-                          underScore = factor.weighted_contributions.underScore || 0
+                          // Check if this is SPREAD (has awayScore/homeScore) or TOTAL (has overScore/underScore)
+                          if ('awayScore' in factor.weighted_contributions || 'homeScore' in factor.weighted_contributions) {
+                            // SPREAD
+                            score1 = factor.weighted_contributions.awayScore || 0
+                            score2 = factor.weighted_contributions.homeScore || 0
+                          } else {
+                            // TOTAL
+                            score1 = factor.weighted_contributions.overScore || 0
+                            score2 = factor.weighted_contributions.underScore || 0
+                          }
                         } else if (factor?.parsed_values_json) {
                           // Fallback: calculate weighted scores manually
                           const parsedValues = factor.parsed_values_json
                           const weight = factor.weight_decimal || factor.weight || 0
-                          overScore = (parsedValues.overScore || 0) * weight
-                          underScore = (parsedValues.underScore || 0) * weight
+
+                          if ('awayScore' in parsedValues || 'homeScore' in parsedValues) {
+                            // SPREAD
+                            score1 = (parsedValues.awayScore || 0) * weight
+                            score2 = (parsedValues.homeScore || 0) * weight
+                          } else {
+                            // TOTAL
+                            score1 = (parsedValues.overScore || 0) * weight
+                            score2 = (parsedValues.underScore || 0) * weight
+                          }
                         }
 
-                        const maxScore = Math.max(overScore, underScore)
+                        const maxScore = Math.max(score1, score2)
                         const isSignificant = maxScore > 0.1
 
                         return (
