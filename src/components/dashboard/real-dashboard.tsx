@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, CartesianGrid } from 'recharts'
 import { TrendingUp, Activity, Lightbulb, AlertTriangle, Zap, BarChart, Rocket, MessageCircle, CheckCircle, XCircle, PlayCircle, Clock, BarChart3, Archive, Brain, X, Target, TrendingDown, Trophy } from 'lucide-react'
 import { NavBar } from '@/components/navigation/nav-bar'
 import Link from 'next/link'
@@ -394,50 +394,77 @@ export function RealDashboard() {
                   </div>
                 </div>
               ) : (
-                <div className="h-[250px]">
+                <div className="h-[280px]">
                   {(() => {
                     try {
                       const chartData = performance?.chartData?.filter(item => item && typeof item === 'object' && item.date && typeof item.cumulative_profit === 'number') || []
-                      console.log('📈 RENDERING CHART with data:', chartData)
+                      const isPositive = (performance?.metrics?.net_units || 0) >= 0
+
                       return (
                         <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart
+                          <LineChart
                             data={chartData}
-                            margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                            margin={{ top: 20, right: 20, left: 10, bottom: 10 }}
                           >
                             <defs>
-                              {/* Gradient for positive profit */}
-                              <linearGradient id="colorProfitPositive" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#10B981" stopOpacity={0.8} />
-                                <stop offset="95%" stopColor="#10B981" stopOpacity={0.1} />
+                              {/* Glow effect for the line */}
+                              <filter id="glow">
+                                <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+                                <feMerge>
+                                  <feMergeNode in="coloredBlur" />
+                                  <feMergeNode in="SourceGraphic" />
+                                </feMerge>
+                              </filter>
+
+                              {/* Gradient for positive line */}
+                              <linearGradient id="lineGradientPositive" x1="0" y1="0" x2="1" y2="0">
+                                <stop offset="0%" stopColor="#10B981" />
+                                <stop offset="100%" stopColor="#34D399" />
                               </linearGradient>
-                              {/* Gradient for negative profit */}
-                              <linearGradient id="colorProfitNegative" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#EF4444" stopOpacity={0.8} />
-                                <stop offset="95%" stopColor="#EF4444" stopOpacity={0.1} />
+
+                              {/* Gradient for negative line */}
+                              <linearGradient id="lineGradientNegative" x1="0" y1="0" x2="1" y2="0">
+                                <stop offset="0%" stopColor="#EF4444" />
+                                <stop offset="100%" stopColor="#F87171" />
                               </linearGradient>
                             </defs>
+
+                            {/* Subtle grid */}
+                            <CartesianGrid
+                              strokeDasharray="3 3"
+                              stroke="#374151"
+                              strokeOpacity={0.3}
+                              vertical={false}
+                            />
+
                             <XAxis
                               dataKey="date"
                               stroke="#6B7280"
-                              tick={{ fill: '#9CA3AF', fontSize: 12 }}
+                              tick={{ fill: '#9CA3AF', fontSize: 11 }}
                               tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                              interval="preserveStartEnd"
+                              axisLine={{ stroke: '#4B5563' }}
+                              tickLine={false}
                             />
+
                             <YAxis
                               stroke="#6B7280"
-                              tick={{ fill: '#9CA3AF', fontSize: 12 }}
+                              tick={{ fill: '#9CA3AF', fontSize: 11 }}
                               tickFormatter={(value) => `${value >= 0 ? '+' : ''}${value.toFixed(0)}u`}
+                              axisLine={{ stroke: '#4B5563' }}
+                              tickLine={false}
                             />
-                            {/* Reference line at 0 */}
-                            <ReferenceLine y={0} stroke="#6B7280" strokeDasharray="3 3" strokeWidth={1} />
+
+                            {/* Zero reference line */}
+                            <ReferenceLine
+                              y={0}
+                              stroke="#6B7280"
+                              strokeDasharray="5 5"
+                              strokeWidth={1.5}
+                              strokeOpacity={0.5}
+                            />
+
                             <Tooltip
-                              contentStyle={{
-                                backgroundColor: '#1F2937',
-                                border: '1px solid #374151',
-                                borderRadius: '8px',
-                                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)'
-                              }}
+                              cursor={{ stroke: isPositive ? '#10B981' : '#EF4444', strokeWidth: 1, strokeDasharray: '5 5' }}
                               content={({ active, payload }) => {
                                 if (active && payload && payload.length > 0) {
                                   const data = payload[0].payload
@@ -446,40 +473,57 @@ export function RealDashboard() {
                                   const wins = data.wins || 0
                                   const losses = data.losses || 0
                                   const pushes = data.pushes || 0
-                                  const picks = data.picks || 0
                                   const winRate = data.win_rate || 0
                                   const profitColor = cumulativeProfit >= 0 ? '#10B981' : '#EF4444'
                                   const dailyColor = dailyProfit >= 0 ? '#10B981' : '#EF4444'
 
                                   return (
-                                    <div style={{
-                                      backgroundColor: '#1F2937',
-                                      border: '1px solid #374151',
-                                      borderRadius: '8px',
-                                      padding: '12px',
-                                      minWidth: '200px'
-                                    }}>
-                                      <p style={{ color: '#E5E7EB', marginBottom: '8px', fontWeight: 'bold', fontSize: '14px' }}>
+                                    <div className="bg-gray-900/95 backdrop-blur-sm border border-gray-700 rounded-lg p-3 shadow-xl">
+                                      <p className="text-gray-200 font-semibold text-sm mb-2">
                                         {new Date(data.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                                       </p>
-                                      <div style={{ borderTop: '1px solid #374151', paddingTop: '8px', marginBottom: '8px' }}>
-                                        <p style={{ color: profitColor, fontWeight: 'bold', fontSize: '16px', marginBottom: '4px' }}>
-                                          Cumulative: {cumulativeProfit >= 0 ? '+' : ''}{cumulativeProfit.toFixed(2)}u
-                                        </p>
-                                        <p style={{ color: dailyColor, fontSize: '14px', marginBottom: '8px' }}>
-                                          Daily: {dailyProfit >= 0 ? '+' : ''}{dailyProfit.toFixed(2)}u
-                                        </p>
+
+                                      <div className="space-y-1.5 mb-2">
+                                        <div className="flex items-center justify-between gap-4">
+                                          <span className="text-gray-400 text-xs">Total:</span>
+                                          <span className="font-bold text-base" style={{ color: profitColor }}>
+                                            {cumulativeProfit >= 0 ? '+' : ''}{cumulativeProfit.toFixed(2)}u
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center justify-between gap-4">
+                                          <span className="text-gray-400 text-xs">Daily:</span>
+                                          <span className="font-semibold text-sm" style={{ color: dailyColor }}>
+                                            {dailyProfit >= 0 ? '+' : ''}{dailyProfit.toFixed(2)}u
+                                          </span>
+                                        </div>
                                       </div>
-                                      <div style={{ borderTop: '1px solid #374151', paddingTop: '8px' }}>
-                                        <p style={{ color: '#9CA3AF', fontSize: '12px', marginBottom: '4px' }}>
-                                          Record: <span style={{ color: '#10B981' }}>{wins}W</span> - <span style={{ color: '#EF4444' }}>{losses}L</span> - <span style={{ color: '#6B7280' }}>{pushes}P</span>
-                                        </p>
-                                        <p style={{ color: '#9CA3AF', fontSize: '12px', marginBottom: '4px' }}>
-                                          Win Rate: <span style={{ color: winRate >= 55 ? '#10B981' : winRate >= 50 ? '#FBBF24' : '#EF4444', fontWeight: 'bold' }}>{winRate.toFixed(1)}%</span>
-                                        </p>
-                                        <p style={{ color: '#9CA3AF', fontSize: '12px' }}>
-                                          Total Picks: {picks}
-                                        </p>
+
+                                      <div className="border-t border-gray-700 pt-2 space-y-1">
+                                        <div className="flex items-center justify-between gap-3 text-xs">
+                                          <span className="text-gray-400">Record:</span>
+                                          <span>
+                                            <span className="text-green-400 font-semibold">{wins}W</span>
+                                            <span className="text-gray-500 mx-1">-</span>
+                                            <span className="text-red-400 font-semibold">{losses}L</span>
+                                            {pushes > 0 && (
+                                              <>
+                                                <span className="text-gray-500 mx-1">-</span>
+                                                <span className="text-gray-400 font-semibold">{pushes}P</span>
+                                              </>
+                                            )}
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center justify-between gap-3 text-xs">
+                                          <span className="text-gray-400">Win Rate:</span>
+                                          <span
+                                            className="font-bold"
+                                            style={{
+                                              color: winRate >= 55 ? '#10B981' : winRate >= 50 ? '#FBBF24' : '#EF4444'
+                                            }}
+                                          >
+                                            {winRate.toFixed(1)}%
+                                          </span>
+                                        </div>
                                       </div>
                                     </div>
                                   )
@@ -487,21 +531,33 @@ export function RealDashboard() {
                                 return null
                               }}
                             />
-                            <Area
+
+                            <Line
                               type="monotone"
                               dataKey="cumulative_profit"
-                              stroke={(performance?.metrics?.net_units || 0) >= 0 ? '#10B981' : '#EF4444'}
-                              strokeWidth={2}
-                              fillOpacity={1}
-                              fill={(performance?.metrics?.net_units || 0) >= 0 ? 'url(#colorProfitPositive)' : 'url(#colorProfitNegative)'}
+                              stroke={isPositive ? 'url(#lineGradientPositive)' : 'url(#lineGradientNegative)'}
+                              strokeWidth={3}
+                              dot={{
+                                fill: isPositive ? '#10B981' : '#EF4444',
+                                strokeWidth: 2,
+                                stroke: '#1F2937',
+                                r: 4
+                              }}
+                              activeDot={{
+                                fill: isPositive ? '#10B981' : '#EF4444',
+                                strokeWidth: 3,
+                                stroke: '#1F2937',
+                                r: 6,
+                                filter: 'url(#glow)'
+                              }}
                             />
-                          </AreaChart>
+                          </LineChart>
                         </ResponsiveContainer>
                       )
                     } catch (error) {
                       console.error('🚨 CHART RENDERING ERROR:', error)
                       return (
-                        <div className="h-[250px] flex items-center justify-center text-red-400">
+                        <div className="h-[280px] flex items-center justify-center text-red-400">
                           <div className="text-center">
                             <p className="text-lg mb-2">Chart Error</p>
                             <p className="text-sm">Failed to render chart: {error instanceof Error ? error.message : 'Unknown error'}</p>
