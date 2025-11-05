@@ -1,0 +1,41 @@
+ONBOARDING PROMPT FOR NEW AI ASSISTANT
+========================================
+
+Hi! I'm working on the DeepPick App, specifically the SHIVA automated sports betting AI system for NBA games. We just fixed three critical bugs in the pick generation pipeline and pushed the fixes to production (commit 72c3e43 and 8d98d91).
+
+**CRITICAL CONTEXT**: Please read `SHIVA_PICK_GENERATION_CONTEXT.md` in the workspace root for complete technical documentation. This file contains detailed information about:
+- The 7-step wizard pipeline for pick generation
+- Bet types (TOTAL vs SPREAD) and their differences
+- Factor analysis system (F1-F5 for TOTALS, S1-S5 for SPREAD)
+- Cooldown system and duplicate prevention logic
+- Database schema (picks, runs, pick_generation_cooldowns, games tables)
+- The three critical bugs we just fixed
+
+**WHAT WE JUST FIXED**:
+1. **Duplicate SPREAD Picks**: Race condition where multiple cron jobs generated identical picks 8 minutes apart. Fixed by adding duplicate/cooldown checks at the START of the generate-pick endpoint (before running the wizard).
+2. **COALESCE Type Mismatch**: PostgreSQL error when saving picks due to mixing DATE and JSONB types. Fixed by casting both to TEXT in the trigger function.
+3. **Incorrect Proj/Avg Values for SPREAD**: SPREAD picks were showing predicted_total=220 and baseline_avg=220 (should be NULL). Fixed by setting total_pred_points=null for SPREAD picks in the wizard orchestrator and adding conditional extraction in the pick/generate endpoint.
+
+**CURRENT STATE**:
+- All fixes have been committed and pushed to main branch
+- Waiting for Vercel deployment to complete
+- Need to verify fixes work in production (monitor next cron run at top of the hour)
+- Need to check Run Log UI to confirm SPREAD picks no longer show Proj/Avg values
+- Need to verify no more duplicate picks are generated
+
+**NEXT STEPS**:
+1. Monitor Vercel deployment status
+2. Wait for next cron job to run (every 8 minutes at :00, :08, :16, :24, :32, :40, :48, :56)
+3. Check Run Log to verify SPREAD picks show NULL for predicted_total/baseline_avg
+4. Verify no duplicate picks are generated
+5. Test manual wizard to ensure SPREAD picks work correctly
+
+**KEY FILES TO KNOW**:
+- `src/app/api/shiva/generate-pick/route.ts` - Main cron entry point (now has duplicate checks)
+- `src/lib/cappers/shiva-wizard-orchestrator.ts` - 7-step wizard pipeline (now sets total_pred_points=null for SPREAD)
+- `src/app/api/shiva/pick/generate/route.ts` - Saves picks from wizard (now conditionally extracts TOTALS-only fields)
+- `supabase/migrations/047_fix_insight_card_coalesce_type_mismatch.sql` - Fixed COALESCE bug
+- `src/components/dashboard/professional-dashboard.tsx` - Bloomberg-style dashboard with performance graph
+
+Let me know if you need any clarification on the system architecture or the bugs we fixed!
+

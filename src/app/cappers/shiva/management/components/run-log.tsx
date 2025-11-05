@@ -156,7 +156,8 @@ export function RunLogTable({ betType = 'TOTAL' }: RunLogTableProps) {
     if (!run.pick_type) return 'UNKNOWN'
     const type = run.pick_type.toUpperCase()
     if (type === 'TOTAL') return 'TOTALS'
-    if (type === 'SPREAD' || type === 'MONEYLINE' || type === 'ML') return 'ML/ATS'
+    if (type === 'SPREAD') return 'SPREAD'
+    if (type === 'MONEYLINE' || type === 'ML') return 'MONEYLINE'
     return type
   }
 
@@ -177,6 +178,56 @@ export function RunLogTable({ betType = 'TOTAL' }: RunLogTableProps) {
     if (outcome === 'PASS') return 'text-yellow-400'
     if (outcome === 'ERROR') return 'text-red-400'
     return 'text-gray-400'
+  }
+
+  // Extract team abbreviations from matchup string
+  // Example: "Philadelphia 76ers @ Cleveland Cavaliers" → { away: "PHI", home: "CLE" }
+  const extractTeamAbbreviations = (matchup: string | undefined): { away: string; home: string } => {
+    if (!matchup) return { away: 'AWAY', home: 'HOME' }
+
+    const teamMap: Record<string, string> = {
+      'Atlanta Hawks': 'ATL',
+      'Boston Celtics': 'BOS',
+      'Brooklyn Nets': 'BKN',
+      'Charlotte Hornets': 'CHA',
+      'Chicago Bulls': 'CHI',
+      'Cleveland Cavaliers': 'CLE',
+      'Dallas Mavericks': 'DAL',
+      'Denver Nuggets': 'DEN',
+      'Detroit Pistons': 'DET',
+      'Golden State Warriors': 'GSW',
+      'Houston Rockets': 'HOU',
+      'Indiana Pacers': 'IND',
+      'LA Clippers': 'LAC',
+      'Los Angeles Lakers': 'LAL',
+      'Memphis Grizzlies': 'MEM',
+      'Miami Heat': 'MIA',
+      'Milwaukee Bucks': 'MIL',
+      'Minnesota Timberwolves': 'MIN',
+      'New Orleans Pelicans': 'NOP',
+      'New York Knicks': 'NYK',
+      'Oklahoma City Thunder': 'OKC',
+      'Orlando Magic': 'ORL',
+      'Philadelphia 76ers': 'PHI',
+      'Phoenix Suns': 'PHX',
+      'Portland Trail Blazers': 'POR',
+      'Sacramento Kings': 'SAC',
+      'San Antonio Spurs': 'SAS',
+      'Toronto Raptors': 'TOR',
+      'Utah Jazz': 'UTA',
+      'Washington Wizards': 'WAS'
+    }
+
+    const parts = matchup.split(' @ ')
+    if (parts.length !== 2) return { away: 'AWAY', home: 'HOME' }
+
+    const awayTeam = parts[0].trim()
+    const homeTeam = parts[1].trim()
+
+    return {
+      away: teamMap[awayTeam] || awayTeam.substring(0, 3).toUpperCase(),
+      home: teamMap[homeTeam] || homeTeam.substring(0, 3).toUpperCase()
+    }
   }
 
   // Factor key to short name mapping
@@ -201,10 +252,11 @@ export function RunLogTable({ betType = 'TOTAL' }: RunLogTableProps) {
     return mapping[key] || key.substring(0, 2).toUpperCase()
   }
 
-  // Format factor contribution with OVER/UNDER or AWAY/HOME indicator (3 decimal places for precision)
+  // Format factor contribution with OVER/UNDER or team-based SPREAD indicator (3 decimal places for precision)
   // Uses WEIGHTED contributions (overScore/underScore for TOTALS, awayScore/homeScore for SPREAD)
   // Returns JSX with colored text
-  const formatFactorContribution = (factor: any): JSX.Element => {
+  // For SPREAD: Shows team abbreviation (e.g., "+1.127 PHI" instead of "+1.127 AWAY")
+  const formatFactorContribution = (factor: any, teamAbbreviations?: { away: string; home: string }, marketSpread?: number): JSX.Element => {
     if (!factor) return <span>—</span>
 
     // First try to get weighted contributions (new format from debug export)
@@ -224,17 +276,21 @@ export function RunLogTable({ betType = 'TOTAL' }: RunLogTableProps) {
           return <span className="text-red-400">ERR</span>
         }
 
-        // Determine which score is higher
+        // Use team abbreviations if available, otherwise fallback to AWAY/HOME
+        const awayLabel = teamAbbreviations?.away || 'AWAY'
+        const homeLabel = teamAbbreviations?.home || 'HOME'
+
+        // Determine which score is higher and display with team abbreviation
         if (awayScore > homeScore) {
           return (
             <span>
-              +{awayScore.toFixed(3)} <span className="text-purple-400">AWAY</span>
+              +{awayScore.toFixed(3)} <span className="text-purple-400">{awayLabel}</span>
             </span>
           )
         } else if (homeScore > awayScore) {
           return (
             <span>
-              +{homeScore.toFixed(3)} <span className="text-cyan-400">HOME</span>
+              +{homeScore.toFixed(3)} <span className="text-cyan-400">{homeLabel}</span>
             </span>
           )
         } else {
@@ -317,16 +373,20 @@ export function RunLogTable({ betType = 'TOTAL' }: RunLogTableProps) {
         return <span className="text-gray-500">—</span>
       }
 
+      // Use team abbreviations if available, otherwise fallback to AWAY/HOME
+      const awayLabel = teamAbbreviations?.away || 'AWAY'
+      const homeLabel = teamAbbreviations?.home || 'HOME'
+
       if (awayScore > homeScore) {
         return (
           <span>
-            +{awayScore.toFixed(3)} <span className="text-purple-400">AWAY</span>
+            +{awayScore.toFixed(3)} <span className="text-purple-400">{awayLabel}</span>
           </span>
         )
       } else if (homeScore > awayScore) {
         return (
           <span>
-            +{homeScore.toFixed(3)} <span className="text-cyan-400">HOME</span>
+            +{homeScore.toFixed(3)} <span className="text-cyan-400">{homeLabel}</span>
           </span>
         )
       } else {
@@ -685,6 +745,10 @@ export function RunLogTable({ betType = 'TOTAL' }: RunLogTableProps) {
                   const betType = getBetType(run)
                   const shortRunId = run.run_id.length > 12 ? run.run_id.substring(0, 12) + '...' : run.run_id
 
+                  // Extract team abbreviations for SPREAD factor display
+                  const teamAbbreviations = extractTeamAbbreviations(run.matchup)
+                  const marketSpread = run.market_total || 0
+
                   return (
                     <tr key={idx} className="border-b border-gray-800 hover:bg-gray-800">
                       <td className="py-2 px-2 text-gray-300">{formatDateTime(run.created_at)}</td>
@@ -723,7 +787,7 @@ export function RunLogTable({ betType = 'TOTAL' }: RunLogTableProps) {
 
                         return (
                           <td key={key} className={`py-2 px-1 text-center text-xs font-mono ${factor ? (isSignificant ? 'text-green-400' : 'text-gray-300') : 'text-gray-500'}`}>
-                            {formatFactorContribution(factor)}
+                            {formatFactorContribution(factor, teamAbbreviations, marketSpread)}
                           </td>
                         )
                       })}
@@ -731,14 +795,38 @@ export function RunLogTable({ betType = 'TOTAL' }: RunLogTableProps) {
                         {run.confidence !== null && run.confidence !== undefined ? run.confidence.toFixed(3) : '—'}
                       </td>
                       <td className="py-2 px-2 text-gray-300">{run.units || 0}</td>
-                      <td className="py-2 px-2 text-gray-300 font-mono text-xs">
-                        {run.predicted_total ? run.predicted_total.toFixed(1) : '—'}
+                      <td className="py-2 px-2 font-mono text-xs">
+                        {run.predicted_total !== null && run.predicted_total !== undefined ? (
+                          betType === 'SPREAD' ? (
+                            <span className={run.predicted_total > 0 ? 'text-purple-400' : 'text-cyan-400'}>
+                              {run.predicted_total > 0 ? '+' : ''}{run.predicted_total.toFixed(1)}
+                            </span>
+                          ) : (
+                            <span className="text-gray-300">{run.predicted_total.toFixed(1)}</span>
+                          )
+                        ) : '—'}
                       </td>
-                      <td className="py-2 px-2 text-gray-300 font-mono text-xs">
-                        {run.baseline_avg ? run.baseline_avg.toFixed(1) : '—'}
+                      <td className="py-2 px-2 font-mono text-xs">
+                        {run.baseline_avg !== null && run.baseline_avg !== undefined ? (
+                          betType === 'SPREAD' ? (
+                            <span className={run.baseline_avg > 0 ? 'text-purple-400' : run.baseline_avg < 0 ? 'text-cyan-400' : 'text-gray-300'}>
+                              {run.baseline_avg > 0 ? '+' : ''}{run.baseline_avg.toFixed(1)}
+                            </span>
+                          ) : (
+                            <span className="text-gray-300">{run.baseline_avg.toFixed(1)}</span>
+                          )
+                        ) : '—'}
                       </td>
-                      <td className="py-2 px-2 text-gray-300 font-mono text-xs">
-                        {run.market_total ? run.market_total.toFixed(1) : '—'}
+                      <td className="py-2 px-2 font-mono text-xs">
+                        {run.market_total !== null && run.market_total !== undefined ? (
+                          betType === 'SPREAD' ? (
+                            <span className={run.market_total > 0 ? 'text-purple-400' : 'text-cyan-400'}>
+                              {run.market_total > 0 ? '+' : ''}{run.market_total.toFixed(1)}
+                            </span>
+                          ) : (
+                            <span className="text-gray-300">{run.market_total.toFixed(1)}</span>
+                          )
+                        ) : '—'}
                       </td>
                     </tr>
                   )

@@ -194,13 +194,32 @@ export async function POST(request: Request) {
 
     // Production schema (033_fix_runs_table.sql): id, run_id, game_id, state, metadata
     // Store all extra data in metadata JSONB column
-    // Get market total from Step 2 snapshot (always available, even for PASS)
-    const marketTotal = result.steps?.step2?.snapshot?.total?.line ||
-      result.pick?.lockedOdds?.total?.line ||
-      0
 
-    // Get baseline_avg from Step 3 (sum of both teams' PPG)
-    const baselineAvg = result.steps?.step3?.baseline_avg || 220
+    // Get market line and predicted value based on bet type
+    let marketLine: number
+    let predictedValue: number
+    let baselineAvg: number
+
+    if (betType === 'TOTAL') {
+      // TOTALS: Use total line and predicted total
+      marketLine = result.steps?.step2?.snapshot?.total?.line ||
+        result.pick?.lockedOdds?.total?.line ||
+        220
+      predictedValue = result.log?.finalPrediction?.total || 220
+      baselineAvg = result.steps?.step3?.baseline_avg || 220 // Sum of away PPG + home PPG
+    } else if (betType === 'SPREAD') {
+      // SPREAD: Use spread line and predicted margin
+      marketLine = result.steps?.step2?.snapshot?.spread?.line ||
+        result.pick?.lockedOdds?.spread?.line ||
+        0
+      predictedValue = result.steps?.step4?.predictions?.spread_pred_points || 0
+      baselineAvg = 0 // Baseline margin is 0 (no inherent advantage)
+    } else {
+      // Fallback for unknown bet types
+      marketLine = 0
+      predictedValue = 0
+      baselineAvg = 0
+    }
 
     const metadata = {
       capper: 'shiva',
@@ -211,9 +230,11 @@ export async function POST(request: Request) {
       pick_type: result.pick?.pickType || betType,
       selection: result.pick?.selection || 'PASS',
       factor_contributions: result.log?.factors || [], // Now contains F1-F5 or S1-S5 factors!
-      predicted_total: result.log?.finalPrediction?.total || 0,
-      baseline_avg: baselineAvg, // Sum of away PPG + home PPG
-      market_total: marketTotal,
+      predicted_total: predictedValue, // For TOTAL: predicted total, For SPREAD: predicted margin
+      baseline_avg: baselineAvg, // For TOTAL: sum of PPG, For SPREAD: 0
+      market_total: marketLine, // For TOTAL: market total line, For SPREAD: market spread line
+      predicted_home_score: result.log?.finalPrediction?.home || 0,
+      predicted_away_score: result.log?.finalPrediction?.away || 0,
       game: {
         home_team: typeof game.home_team === 'string' ? game.home_team : game.home_team?.name,
         away_team: typeof game.away_team === 'string' ? game.away_team : game.away_team?.name
@@ -228,6 +249,14 @@ export async function POST(request: Request) {
         run_id: runId,
         game_id: game.id,
         state: result.pick ? 'COMPLETE' : 'VOIDED',
+        // NEW: Store data in separate columns (PRIORITY)
+        factor_contributions: result.log?.factors || [],
+        predicted_total: predictedValue,
+        baseline_avg: baselineAvg,
+        market_total: marketLine,
+        predicted_home_score: result.log?.finalPrediction?.home || 0,
+        predicted_away_score: result.log?.finalPrediction?.away || 0,
+        // OLD: Also store in metadata for backwards compatibility
         metadata
       })
 

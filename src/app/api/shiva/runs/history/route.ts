@@ -18,10 +18,10 @@ export async function GET(request: NextRequest) {
     const supabase = getSupabaseAdmin()
 
     // Fetch runs from the runs table
-    // Production schema (033_fix_runs_table.sql): id, run_id, game_id, state, metadata
+    // Production schema: Includes separate columns for factor_contributions, predicted_total, baseline_avg, market_total
     const { data: runsData, error: runsError } = await supabase
       .from('runs')
-      .select('id, run_id, game_id, state, metadata, created_at')
+      .select('id, run_id, game_id, state, metadata, created_at, factor_contributions, predicted_total, baseline_avg, market_total, predicted_home_score, predicted_away_score')
       .order('created_at', { ascending: false })
       .limit(limit)
 
@@ -123,10 +123,13 @@ export async function GET(request: NextRequest) {
         units: cooldown?.units !== undefined ? cooldown.units : metadata.units,
         confidence: cooldown?.confidence_score !== undefined ? cooldown.confidence_score : metadata.confidence,
         created_at: run.created_at,
-        factor_contributions: metadata.factor_contributions || [],
-        predicted_total: metadata.predicted_total,
-        baseline_avg: metadata.baseline_avg,
-        market_total: metadata.market_total,
+        // PRIORITY: Read from separate columns first, fallback to metadata
+        factor_contributions: run.factor_contributions || metadata.factor_contributions || [],
+        predicted_total: run.predicted_total !== null && run.predicted_total !== undefined ? run.predicted_total : metadata.predicted_total,
+        baseline_avg: run.baseline_avg !== null && run.baseline_avg !== undefined ? run.baseline_avg : metadata.baseline_avg,
+        market_total: run.market_total !== null && run.market_total !== undefined ? run.market_total : metadata.market_total,
+        predicted_home_score: run.predicted_home_score || metadata.predicted_home_score,
+        predicted_away_score: run.predicted_away_score || metadata.predicted_away_score,
         matchup,
         cooldown_result: cooldown?.result || null,
         state: run.state

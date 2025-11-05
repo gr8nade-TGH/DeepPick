@@ -126,14 +126,28 @@ export async function POST(request: Request) {
 
               // Extract factor data from total_data if available
               const totalData = parse.data.inputs.total_data
+              const sideData = parse.data.inputs.side_data
               const factorContributions = totalData?.factor_contributions || null
 
-              // CRITICAL: Only set predicted_total, baseline_avg, market_total for TOTALS picks
-              // For SPREAD picks, these should be NULL
+              // CRITICAL: Set predicted_total, baseline_avg, market_total based on bet type
+              // For TOTAL picks: Use total_data (predicted total, baseline avg, market total line)
+              // For SPREAD picks: Use side_data (predicted margin, baseline 0, market spread)
               const isTotal = results.decision.pick_type === 'TOTAL'
-              const predictedTotal = isTotal ? (totalData?.predicted_total || null) : null
-              const baselineAvg = isTotal ? (totalData?.baseline_avg || null) : null
-              const marketTotal = isTotal ? (totalData?.market_total_line || null) : null
+              const isSpread = results.decision.pick_type === 'SPREAD'
+
+              let predictedTotal: number | null = null
+              let baselineAvg: number | null = null
+              let marketTotal: number | null = null
+
+              if (isTotal) {
+                predictedTotal = totalData?.predicted_total || null
+                baselineAvg = totalData?.baseline_avg || null
+                marketTotal = totalData?.market_total_line || null
+              } else if (isSpread) {
+                predictedTotal = sideData?.spread_pred || null // Predicted margin
+                baselineAvg = 0 // Baseline margin is 0 (no inherent advantage)
+                marketTotal = sideData?.market_spread || null // Market spread line
+              }
 
               const predictedHomeScore = totalData?.predicted_home_score || null
               const predictedAwayScore = totalData?.predicted_away_score || null
@@ -250,14 +264,28 @@ export async function POST(request: Request) {
 
         // Prepare factor data for runs table
         const totalData = parse.data.inputs.total_data
+        const sideData = parse.data.inputs.side_data
         const factorContributions = totalData?.factor_contributions || null
 
-        // CRITICAL: Only set predicted_total, baseline_avg, market_total for TOTALS picks
-        // For SPREAD picks, these should be NULL
+        // CRITICAL: Set predicted_total, baseline_avg, market_total based on bet type
+        // For TOTAL picks: Use total_data (predicted total, baseline avg, market total line)
+        // For SPREAD picks: Use side_data (predicted margin, baseline 0, market spread)
         const isTotal = results.decision.pick_type === 'TOTAL'
-        const predictedTotal = isTotal ? (totalData?.predicted_total || null) : null
-        const baselineAvg = isTotal ? (totalData?.baseline_avg || null) : null
-        const marketTotal = isTotal ? (totalData?.market_total_line || null) : null
+        const isSpread = results.decision.pick_type === 'SPREAD'
+
+        let predictedTotal: number | null = null
+        let baselineAvg: number | null = null
+        let marketTotal: number | null = null
+
+        if (isTotal) {
+          predictedTotal = totalData?.predicted_total || null
+          baselineAvg = totalData?.baseline_avg || null
+          marketTotal = totalData?.market_total_line || null
+        } else if (isSpread) {
+          predictedTotal = sideData?.spread_pred || null // Predicted margin
+          baselineAvg = 0 // Baseline margin is 0 (no inherent advantage)
+          marketTotal = sideData?.market_spread || null // Market spread line
+        }
 
         const predictedHomeScore = totalData?.predicted_home_score || null
         const predictedAwayScore = totalData?.predicted_away_score || null
