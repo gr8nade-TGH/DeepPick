@@ -85,8 +85,8 @@ export function ProfessionalDashboard() {
       setLoading(true)
 
       const [picksResponse, activityResponse, perfResponse] = await Promise.all([
-        fetch('/api/picks?status=pending&limit=8&sort=confidence'),
-        fetch('/api/picks?status=completed&limit=15'),
+        fetch('/api/picks?status=pending&limit=12&sort=confidence'),
+        fetch('/api/picks?status=completed&limit=20&sort=created_at'),
         fetch('/api/performance?period=30d')
       ])
 
@@ -112,6 +112,20 @@ export function ProfessionalDashboard() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const getGameStatus = (pick: Pick) => {
+    const gameStatus = pick.games?.status
+    if (gameStatus === 'Final' || gameStatus === 'Completed') {
+      return { text: 'FINAL', color: 'bg-slate-600 text-slate-300', icon: '✓' }
+    }
+    if (gameStatus === 'InProgress' || gameStatus === 'Live') {
+      return { text: 'LIVE', color: 'bg-red-600 text-white animate-pulse', icon: '●' }
+    }
+    if (gameStatus === 'Scheduled' || gameStatus === 'Pending') {
+      return { text: 'SCHEDULED', color: 'bg-blue-600/80 text-blue-200', icon: '○' }
+    }
+    return { text: 'PENDING', color: 'bg-slate-700 text-slate-400', icon: '○' }
   }
 
   const getConfidenceBadge = (confidence?: number) => {
@@ -193,8 +207,9 @@ export function ProfessionalDashboard() {
               </CardHeader>
 
               <CardContent className="px-3 py-2 space-y-1.5">
-                {todaysPicks.slice(0, 8).map((pick) => {
+                {todaysPicks.slice(0, 12).map((pick) => {
                   const confidenceBadge = getConfidenceBadge(pick.confidence)
+                  const gameStatus = getGameStatus(pick)
                   const homeTeam = pick.game_snapshot?.home_team
                   const awayTeam = pick.game_snapshot?.away_team
 
@@ -212,13 +227,18 @@ export function ProfessionalDashboard() {
                           <Badge className={`${confidenceBadge.color} text-white text-[10px] px-1.5 py-0`}>
                             {pick.confidence?.toFixed(0)}%
                           </Badge>
+                          <Badge className={`${gameStatus.color} text-[9px] px-1.5 py-0 font-semibold`}>
+                            {gameStatus.icon} {gameStatus.text}
+                          </Badge>
                           <span className="text-[10px] text-slate-400 uppercase tracking-wide">{pick.capper || 'DeepPick'}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
                           <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-slate-600">
                             {pick.pick_type?.toUpperCase()}
                           </Badge>
-                        </div>
-                        <div className="text-xs font-semibold text-emerald-400">
-                          {pick.units}u
+                          <div className="text-xs font-semibold text-emerald-400">
+                            {pick.units}u
+                          </div>
                         </div>
                       </div>
 
@@ -313,62 +333,105 @@ export function ProfessionalDashboard() {
               </CardContent>
             </Card>
 
-            {/* LIVE FEED - COMPACT */}
+            {/* PICK HISTORY - DETAILED */}
             <Card className="bg-slate-900/50 border-slate-800">
               <CardHeader className="pb-2 px-3 pt-2.5 border-b border-slate-800">
-                <CardTitle className="text-sm font-semibold text-white flex items-center gap-1.5">
-                  <Activity className="h-3.5 w-3.5 text-blue-500" />
-                  Recent Activity
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-semibold text-white flex items-center gap-1.5">
+                    <BarChart3 className="h-3.5 w-3.5 text-blue-500" />
+                    Pick History
+                  </CardTitle>
+                  <Link href="/pick-history">
+                    <Button variant="ghost" size="sm" className="text-[11px] h-6 px-2 text-slate-400 hover:text-white">
+                      View All
+                    </Button>
+                  </Link>
+                </div>
               </CardHeader>
 
-              <CardContent className="px-3 py-2 space-y-1 max-h-[400px] overflow-y-auto">
+              <CardContent className="px-3 py-2 space-y-1 max-h-[500px] overflow-y-auto">
                 {recentActivity.map((pick) => {
                   const isWin = pick.status === 'won'
                   const isLoss = pick.status === 'lost'
+                  const isPending = pick.status === 'pending'
                   const netUnits = pick.net_units || 0
+                  const homeTeam = pick.game_snapshot?.home_team
+                  const awayTeam = pick.game_snapshot?.away_team
 
                   return (
                     <div
                       key={pick.id}
-                      className="flex items-center gap-2 px-2 py-1.5 rounded bg-slate-800/20 border border-slate-700/30"
+                      className={`px-2 py-1.5 rounded border transition-all cursor-pointer hover:border-slate-600 ${isWin ? 'bg-emerald-500/5 border-emerald-500/20' :
+                          isLoss ? 'bg-red-500/5 border-red-500/20' :
+                            'bg-slate-800/20 border-slate-700/30'
+                        }`}
+                      onClick={() => {
+                        setSelectedPick(pick)
+                        setShowInsight(true)
+                      }}
                     >
-                      <div className="flex-shrink-0">
-                        {isWin ? (
-                          <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                            <CheckCircle className="h-3 w-3 text-emerald-400" />
-                          </div>
-                        ) : isLoss ? (
-                          <div className="w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center">
-                            <XCircle className="h-3 w-3 text-red-400" />
-                          </div>
-                        ) : (
-                          <div className="w-5 h-5 rounded-full bg-slate-500/20 flex items-center justify-center">
-                            <Clock className="h-3 w-3 text-slate-400" />
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[11px] font-semibold text-white truncate">
-                          {pick.selection}
+                      <div className="flex items-start gap-2">
+                        <div className="flex-shrink-0 mt-0.5">
+                          {isWin ? (
+                            <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                              <CheckCircle className="h-3 w-3 text-emerald-400" />
+                            </div>
+                          ) : isLoss ? (
+                            <div className="w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center">
+                              <XCircle className="h-3 w-3 text-red-400" />
+                            </div>
+                          ) : (
+                            <div className="w-5 h-5 rounded-full bg-slate-500/20 flex items-center justify-center">
+                              <Clock className="h-3 w-3 text-slate-400" />
+                            </div>
+                          )}
                         </div>
-                        <div className="text-[10px] text-slate-500">
-                          {pick.capper || 'DeepPick'} • {pick.units}u
-                        </div>
-                      </div>
 
-                      <div className="text-right flex-shrink-0">
-                        {isWin && (
-                          <div className="text-[11px] font-semibold text-emerald-400">
-                            +{netUnits.toFixed(1)}u
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <span className="text-[11px] font-semibold text-white truncate">
+                              {pick.selection}
+                            </span>
+                            <Badge variant="outline" className="text-[9px] px-1 py-0 border-slate-600">
+                              {pick.pick_type?.toUpperCase()}
+                            </Badge>
                           </div>
-                        )}
-                        {isLoss && (
-                          <div className="text-[11px] font-semibold text-red-400">
-                            {netUnits.toFixed(1)}u
+                          <div className="text-[10px] text-slate-500 mb-0.5">
+                            {awayTeam?.name || 'Away'} @ {homeTeam?.name || 'Home'}
                           </div>
-                        )}
+                          <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                            <span>{pick.capper || 'DeepPick'}</span>
+                            <span>•</span>
+                            <span>{pick.units}u</span>
+                            {pick.confidence && (
+                              <>
+                                <span>•</span>
+                                <span>{pick.confidence.toFixed(0)}%</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="text-right flex-shrink-0">
+                          {isWin && (
+                            <div className="text-xs font-bold text-emerald-400">
+                              +{netUnits.toFixed(1)}u
+                            </div>
+                          )}
+                          {isLoss && (
+                            <div className="text-xs font-bold text-red-400">
+                              {netUnits.toFixed(1)}u
+                            </div>
+                          )}
+                          {isPending && (
+                            <div className="text-[10px] text-slate-500">
+                              Pending
+                            </div>
+                          )}
+                          <div className="text-[9px] text-slate-600 mt-0.5">
+                            {new Date(pick.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )
