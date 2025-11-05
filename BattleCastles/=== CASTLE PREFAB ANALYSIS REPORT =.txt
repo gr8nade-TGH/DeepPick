@@ -1,0 +1,753 @@
+=== CASTLE PREFAB ANALYSIS REPORT ===
+
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:177)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+
+SM_Bld_Castle_Tower_Base_01:
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:182)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Size: (2.77, 0.93, 2.65)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:183)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Height: 0.93
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:184)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Width: 2.77
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:185)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Depth: 2.65
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:186)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Pivot Offset: (0.00, 0.00, 0.00)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:187)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Bounds Center: (0.00, 0.00, 0.00)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:188)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+
+SM_Bld_Castle_Tower_Base_02:
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:182)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Size: (2.84, 0.49, 2.84)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:183)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Height: 0.49
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:184)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Width: 2.84
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:185)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Depth: 2.84
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:186)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Pivot Offset: (0.00, 0.00, 0.00)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:187)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Bounds Center: (0.00, 0.00, 0.00)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:188)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+
+SM_Bld_Castle_Tower_Round_01:
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:182)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Size: (3.17, 3.00, 3.17)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:183)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Height: 3.00
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:184)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Width: 3.17
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:185)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Depth: 3.17
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:186)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Pivot Offset: (0.00, 1.50, 0.00)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:187)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Bounds Center: (0.00, 1.50, 0.00)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:188)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+
+SM_Bld_Castle_Tower_Round_02:
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:182)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Size: (2.97, 3.00, 2.97)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:183)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Height: 3.00
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:184)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Width: 2.97
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:185)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Depth: 2.97
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:186)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Pivot Offset: (0.00, 1.50, 0.00)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:187)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Bounds Center: (0.00, 1.50, 0.00)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:188)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+
+SM_Bld_Castle_Tower_Round_Top_01:
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:182)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Size: (3.35, 1.47, 3.35)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:183)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Height: 1.47
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:184)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Width: 3.35
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:185)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Depth: 3.35
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:186)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Pivot Offset: (0.00, 0.74, 0.00)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:187)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Bounds Center: (0.00, 0.74, 0.00)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:188)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+
+SM_Bld_Castle_Tower_Top_01:
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:182)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Size: (3.18, 1.64, 3.18)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:183)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Height: 1.64
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:184)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Width: 3.18
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:185)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Depth: 3.18
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:186)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Pivot Offset: (0.00, 0.82, 0.00)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:187)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Bounds Center: (0.00, 0.82, 0.00)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:188)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+
+SM_Bld_Castle_Wall_01:
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:182)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Size: (5.40, 5.09, 2.22)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:183)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Height: 5.09
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:184)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Width: 5.40
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:185)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Depth: 2.22
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:186)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Pivot Offset: (0.00, 2.54, 0.00)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:187)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Bounds Center: (0.00, 2.54, 0.00)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:188)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+
+SM_Bld_Castle_Wall_Gate_01:
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:182)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Size: (5.40, 5.13, 2.40)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:183)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Height: 5.13
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:184)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Width: 5.40
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:185)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Depth: 2.40
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:186)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Pivot Offset: (0.00, 2.52, -0.02)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:187)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Bounds Center: (0.00, 2.52, -0.02)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:188)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+
+SM_Bld_Castle_Wood_Battlement_01:
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:182)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Size: (5.32, 3.67, 4.70)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:183)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Height: 3.67
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:184)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Width: 5.32
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:185)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Depth: 4.70
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:186)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Pivot Offset: (0.00, 1.83, 0.00)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:187)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Bounds Center: (0.00, 1.83, 0.00)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:188)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+
+SM_Bld_Castle_Flagpole_01:
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:182)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Size: (0.24, 2.87, 0.21)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:183)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Height: 2.87
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:184)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Width: 0.24
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:185)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Depth: 0.21
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:186)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Pivot Offset: (0.00, 1.43, 0.00)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:187)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Bounds Center: (0.00, 1.43, 0.00)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:188)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+
+SM_Bld_Castle_Flag_01:
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:182)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Size: (1.79, 0.56, 0.14)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:183)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Height: 0.56
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:184)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Width: 1.79
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:185)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Depth: 0.14
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:186)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Pivot Offset: (-0.83, -0.03, 0.00)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:187)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Bounds Center: (-0.83, -0.03, 0.00)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:188)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+
+SM_Bld_Castle_Door_01:
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:182)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Size: (3.44, 3.07, 0.66)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:183)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Height: 3.07
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:184)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Width: 3.44
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:185)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Depth: 0.66
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:186)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Pivot Offset: (0.00, 1.54, 0.00)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:187)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Bounds Center: (0.00, 1.54, 0.00)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:188)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+
+SM_Bld_Castle_Tower_01:
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:182)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Size: (2.78, 3.04, 2.78)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:183)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Height: 3.04
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:184)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Width: 2.78
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:185)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Depth: 2.78
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:186)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Pivot Offset: (0.00, 1.52, 0.00)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:187)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Bounds Center: (0.00, 1.52, 0.00)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:188)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+
+SM_Bld_Castle_Tower_02:
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:182)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Size: (2.84, 3.02, 2.84)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:183)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Height: 3.02
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:184)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Width: 2.84
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:185)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Depth: 2.84
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:186)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Pivot Offset: (0.00, 1.51, 0.00)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:187)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Bounds Center: (0.00, 1.51, 0.00)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:188)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+
+SM_Bld_Castle_Tower_03:
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:182)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Size: (2.70, 3.00, 2.70)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:183)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Height: 3.00
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:184)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Width: 2.70
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:185)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Depth: 2.70
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:186)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Pivot Offset: (0.00, 1.50, 0.00)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:187)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Bounds Center: (0.00, 1.50, 0.00)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:188)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+
+SM_Bld_Castle_Tower_04:
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:182)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Size: (2.84, 3.02, 2.84)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:183)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Height: 3.02
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:184)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Width: 2.84
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:185)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Depth: 2.84
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:186)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Pivot Offset: (0.00, 1.51, 0.00)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:187)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Bounds Center: (0.00, 1.51, 0.00)
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:188)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+
+=== BUILDING RECOMMENDATIONS ===
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:191)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+
+📊 Found 2 tower bases, 2 tower mids, 2 tower tops, 2 walls
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:207)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+
+🏗️ TOWER STACKING:
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:213)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Base height: 0.93
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:214)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Mid section height: 3.00
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:215)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Stack offset: Place mid at Y = 0.93
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:216)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+
+🧱 WALL INFO:
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:221)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Wall width: 5.40
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:222)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+  Wall height: 5.09
+UnityEngine.Debug:Log (object)
+CastlePrefabAnalyzer:SaveAnalysisToConsole () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:223)
+CastlePrefabAnalyzer:OnGUI () (at Assets/BattleBets/Scripts/Editor/CastlePrefabAnalyzer.cs:74)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
