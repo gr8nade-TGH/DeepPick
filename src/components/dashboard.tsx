@@ -2,12 +2,12 @@
 
 import { Suspense } from 'react'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { NewMainDashboard } from './dashboard/new-main-dashboard'
+import { ProfessionalDashboard } from './dashboard/professional-dashboard'
 
 export function Dashboard() {
   return (
     <Suspense fallback={<LoadingSpinner />}>
-      <NewMainDashboard />
+      <ProfessionalDashboard />
     </Suspense>
   )
 }
