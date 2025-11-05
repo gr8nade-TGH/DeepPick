@@ -67,14 +67,20 @@ export async function GET(request: NextRequest) {
     // Fetch games data
     let gamesMap = new Map()
     if (gameIds.length > 0) {
-      const { data: gamesData } = await supabase
+      // Cast game_id strings to UUID for proper matching
+      const { data: gamesData, error: gamesError } = await supabase
         .from('games')
-        .select('id, home_team, away_team')
+        .select('id, home_team, away_team, home_team_name, away_team_name')
         .in('id', gameIds)
 
-      gamesData?.forEach(game => {
-        gamesMap.set(game.id, game)
-      })
+      if (gamesError) {
+        console.error('[Run History] Error fetching games:', gamesError)
+        // Continue without game data - will use game_id as fallback
+      } else {
+        gamesData?.forEach(game => {
+          gamesMap.set(game.id, game)
+        })
+      }
     }
 
     // Fetch cooldown records to get PASS/PICK_GENERATED outcomes
@@ -105,9 +111,10 @@ export async function GET(request: NextRequest) {
       // Format matchup from game data or metadata
       let matchup = run.game_id
       const game = gamesMap.get(run.game_id)
-      if (game && game.home_team && game.away_team) {
-        const homeName = typeof game.home_team === 'string' ? game.home_team : game.home_team.name
-        const awayName = typeof game.away_team === 'string' ? game.away_team : game.away_team.name
+      if (game) {
+        // Prioritize home_team_name/away_team_name columns (TEXT), fallback to JSONB
+        const homeName = game.home_team_name || (typeof game.home_team === 'string' ? game.home_team : game.home_team?.name) || 'Home'
+        const awayName = game.away_team_name || (typeof game.away_team === 'string' ? game.away_team : game.away_team?.name) || 'Away'
         matchup = `${awayName} @ ${homeName}`
       } else if (metadata.game?.home_team && metadata.game?.away_team) {
         matchup = `${metadata.game.away_team} @ ${metadata.game.home_team}`
