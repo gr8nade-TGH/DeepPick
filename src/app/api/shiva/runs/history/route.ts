@@ -132,7 +132,9 @@ export async function GET(request: NextRequest) {
         predicted_away_score: metadata.predicted_away_score,
         matchup,
         cooldown_result: cooldown?.result || null,
-        state: run.state
+        state: run.state,
+        // Include full metadata for accessing spread data in UI
+        metadata: run.metadata
       }
     })
 

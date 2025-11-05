@@ -29,6 +29,8 @@ interface RunLogEntry {
   // Baseline and market data
   baseline_avg?: number
   market_total?: number
+  // Full metadata object (includes steps.step2.snapshot with spread data)
+  metadata?: any
 }
 
 interface CooldownEntry {
@@ -256,7 +258,11 @@ export function RunLogTable({ betType = 'TOTAL' }: RunLogTableProps) {
   // Uses WEIGHTED contributions (overScore/underScore for TOTALS, awayScore/homeScore for SPREAD)
   // Returns JSX with colored text
   // For SPREAD: Shows team abbreviation (e.g., "+1.127 PHI" instead of "+1.127 AWAY")
-  const formatFactorContribution = (factor: any, teamAbbreviations?: { away: string; home: string }, marketSpread?: number): JSX.Element => {
+  const formatFactorContribution = (
+    factor: any,
+    teamAbbreviations?: { away: string; home: string },
+    run?: RunLogEntry
+  ): JSX.Element => {
     if (!factor) return <span>—</span>
 
     // First try to get weighted contributions (new format from debug export)
@@ -280,17 +286,48 @@ export function RunLogTable({ betType = 'TOTAL' }: RunLogTableProps) {
         const awayLabel = teamAbbreviations?.away || 'AWAY'
         const homeLabel = teamAbbreviations?.home || 'HOME'
 
-        // Determine which score is higher and display with team abbreviation
+        // Extract spread data from run.metadata.steps.step2.snapshot
+        let awaySpread: number | null = null
+        let homeSpread: number | null = null
+
+        if (run?.metadata?.steps?.step2?.snapshot?.spread) {
+          const spreadData = run.metadata.steps.step2.snapshot.spread
+          const spreadLine = spreadData.line
+          const favTeam = spreadData.fav_team
+          const awayTeam = run.metadata.steps.step2.snapshot.away_team
+          const homeTeam = run.metadata.steps.step2.snapshot.home_team
+
+          // Determine which team is favored and calculate spreads
+          if (favTeam === homeTeam) {
+            // Home team is favored
+            homeSpread = spreadLine
+            awaySpread = -spreadLine
+          } else {
+            // Away team is favored
+            awaySpread = spreadLine
+            homeSpread = -spreadLine
+          }
+        }
+
+        // Format spread for display
+        const formatSpread = (spread: number | null) => {
+          if (spread === null) return ''
+          return spread > 0 ? ` +${spread}` : ` ${spread}`
+        }
+
+        // Determine which score is higher and display with team abbreviation + spread
         if (awayScore > homeScore) {
+          const spreadDisplay = formatSpread(awaySpread)
           return (
             <span>
-              +{awayScore.toFixed(3)} <span className="text-purple-400">{awayLabel}</span>
+              +{awayScore.toFixed(3)} <span className="text-purple-400">{awayLabel}{spreadDisplay}</span>
             </span>
           )
         } else if (homeScore > awayScore) {
+          const spreadDisplay = formatSpread(homeSpread)
           return (
             <span>
-              +{homeScore.toFixed(3)} <span className="text-cyan-400">{homeLabel}</span>
+              +{homeScore.toFixed(3)} <span className="text-cyan-400">{homeLabel}{spreadDisplay}</span>
             </span>
           )
         } else {
@@ -377,16 +414,47 @@ export function RunLogTable({ betType = 'TOTAL' }: RunLogTableProps) {
       const awayLabel = teamAbbreviations?.away || 'AWAY'
       const homeLabel = teamAbbreviations?.home || 'HOME'
 
+      // Extract spread data from run.metadata.steps.step2.snapshot (same logic as above)
+      let awaySpread: number | null = null
+      let homeSpread: number | null = null
+
+      if (run?.metadata?.steps?.step2?.snapshot?.spread) {
+        const spreadData = run.metadata.steps.step2.snapshot.spread
+        const spreadLine = spreadData.line
+        const favTeam = spreadData.fav_team
+        const awayTeam = run.metadata.steps.step2.snapshot.away_team
+        const homeTeam = run.metadata.steps.step2.snapshot.home_team
+
+        // Determine which team is favored and calculate spreads
+        if (favTeam === homeTeam) {
+          // Home team is favored
+          homeSpread = spreadLine
+          awaySpread = -spreadLine
+        } else {
+          // Away team is favored
+          awaySpread = spreadLine
+          homeSpread = -spreadLine
+        }
+      }
+
+      // Format spread for display
+      const formatSpread = (spread: number | null) => {
+        if (spread === null) return ''
+        return spread > 0 ? ` +${spread}` : ` ${spread}`
+      }
+
       if (awayScore > homeScore) {
+        const spreadDisplay = formatSpread(awaySpread)
         return (
           <span>
-            +{awayScore.toFixed(3)} <span className="text-purple-400">{awayLabel}</span>
+            +{awayScore.toFixed(3)} <span className="text-purple-400">{awayLabel}{spreadDisplay}</span>
           </span>
         )
       } else if (homeScore > awayScore) {
+        const spreadDisplay = formatSpread(homeSpread)
         return (
           <span>
-            +{homeScore.toFixed(3)} <span className="text-cyan-400">{homeLabel}</span>
+            +{homeScore.toFixed(3)} <span className="text-cyan-400">{homeLabel}{spreadDisplay}</span>
           </span>
         )
       } else {
@@ -747,7 +815,6 @@ export function RunLogTable({ betType = 'TOTAL' }: RunLogTableProps) {
 
                   // Extract team abbreviations for SPREAD factor display
                   const teamAbbreviations = extractTeamAbbreviations(run.matchup)
-                  const marketSpread = run.market_total || 0
 
                   return (
                     <tr key={idx} className="border-b border-gray-800 hover:bg-gray-800">
@@ -787,7 +854,7 @@ export function RunLogTable({ betType = 'TOTAL' }: RunLogTableProps) {
 
                         return (
                           <td key={key} className={`py-2 px-1 text-center text-xs font-mono ${factor ? (isSignificant ? 'text-green-400' : 'text-gray-300') : 'text-gray-500'}`}>
-                            {formatFactorContribution(factor, teamAbbreviations, marketSpread)}
+                            {formatFactorContribution(factor, teamAbbreviations, run)}
                           </td>
                         )
                       })}
