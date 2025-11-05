@@ -208,6 +208,19 @@ export async function GET(
     const metadata = run.metadata || {}
     const game = pick.games || {}
 
+    // CRITICAL DEBUG: Log the full metadata structure to see what's available
+    console.log('[InsightCard] 🔍 FULL METADATA STRUCTURE:', {
+      pickId,
+      runId: run.run_id,
+      hasMetadata: !!metadata,
+      metadataKeys: metadata ? Object.keys(metadata) : [],
+      hasSteps: !!metadata.steps,
+      stepsKeys: metadata.steps ? Object.keys(metadata.steps) : [],
+      topLevelFactorContributions: metadata.factor_contributions,
+      nestedFactorContributions: metadata.steps?.step4?.confidence?.factorContributions,
+      fullMetadataSample: JSON.stringify(metadata).substring(0, 500) + '...'
+    })
+
     // Extract all data from metadata - check both top-level and nested in steps
     const factorContributions = metadata.factor_contributions
       || metadata.steps?.step4?.confidence?.factorContributions
@@ -244,10 +257,11 @@ export async function GET(
     const confMarketAdj = metadata.steps?.step5?.conf_market_adj || 0
     const confFinal = metadata.steps?.step5?.conf_final || run.conf_final || pick.confidence || 0
 
-    console.log('[InsightCard] Data extracted:', {
+    console.log('[InsightCard] ✅ Data extracted:', {
       pickId,
       runId: run.run_id,
       factorCount: factorContributions.length,
+      factorSample: factorContributions.length > 0 ? factorContributions[0] : 'NO FACTORS',
       predictedTotal,
       marketTotal,
       conf7,
