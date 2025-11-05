@@ -157,9 +157,10 @@ export async function GET(
       insightCardLockedAt: pick.insight_card_locked_at
     })
 
-    // CRITICAL: If insight card snapshot exists, return it directly (immutable record)
+    // CRITICAL: If insight card snapshot exists AND has factors, return it directly (immutable record)
     // This ensures transparency and prevents retroactive changes to pick rationale
-    if (pick.insight_card_snapshot) {
+    // BUGFIX: Only use snapshot if it has factors - otherwise fall through to rebuild from runs table
+    if (pick.insight_card_snapshot && pick.insight_card_snapshot.factors && pick.insight_card_snapshot.factors.length > 0) {
       console.log('[InsightCard] 🔒 Returning LOCKED insight card snapshot from:', pick.insight_card_locked_at)
 
       // The snapshot is already stored in a structured format
@@ -210,6 +211,9 @@ export async function GET(
         success: true,
         data: lockedInsightCard
       })
+    } else if (pick.insight_card_snapshot) {
+      console.warn('[InsightCard] ⚠️ Insight card snapshot exists but has NO FACTORS - falling back to rebuild from runs table')
+      console.warn('[InsightCard] Snapshot factors:', pick.insight_card_snapshot.factors)
     }
 
     // Check if run_id is null
