@@ -47,6 +47,7 @@ export async function GET(request: NextRequest) {
         net_units,
         created_at,
         game_snapshot,
+        result,
         game:games(
           home_team,
           away_team,

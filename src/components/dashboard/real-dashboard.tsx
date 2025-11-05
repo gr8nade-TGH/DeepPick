@@ -64,6 +64,13 @@ interface Pick {
   confidence?: number
   result?: {
     prediction_log?: PredictionLog
+    final_score?: {
+      home: number
+      away: number
+      winner?: string
+    }
+    outcome?: string
+    notes?: string
   }
   game_snapshot?: {
     sport: string
@@ -718,7 +725,9 @@ export function RealDashboard() {
               ) : (
                 (pickHistory || []).map((pick) => {
                   const capperInfo = CAPPERS.find(c => c.id === pick.capper) || CAPPERS[1]
-                  const finalScore = pick.games?.final_score
+                  // FIXED: Get final score from pick.result.final_score (stored by grading trigger)
+                  // Fallback to pick.games.final_score if game is still in games table
+                  const finalScore = pick.result?.final_score || pick.games?.final_score
 
                   return (
                     <tr key={pick.id} className="border-b border-gray-800 hover:bg-gray-800 transition-colors">
