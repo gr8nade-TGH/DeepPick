@@ -152,8 +152,65 @@ export async function GET(
       pickId: pick.id,
       runId: pick.run_id,
       selection: pick.selection,
-      hasGame: !!pick.games
+      hasGame: !!pick.games,
+      hasInsightCardSnapshot: !!pick.insight_card_snapshot,
+      insightCardLockedAt: pick.insight_card_locked_at
     })
+
+    // CRITICAL: If insight card snapshot exists, return it directly (immutable record)
+    // This ensures transparency and prevents retroactive changes to pick rationale
+    if (pick.insight_card_snapshot) {
+      console.log('[InsightCard] 🔒 Returning LOCKED insight card snapshot from:', pick.insight_card_locked_at)
+
+      // The snapshot is already stored in a structured format
+      // We need to transform it to match the InsightCardProps interface
+      const snapshot = pick.insight_card_snapshot
+
+      // Build the insight card data from the locked snapshot
+      const lockedInsightCard = {
+        capper: snapshot.capper || 'SHIVA',
+        sport: snapshot.sport || 'NBA',
+        gameId: snapshot.game_id,
+        pickId: snapshot.pick_id,
+        generatedAt: snapshot.locked_at || pick.created_at,
+        matchup: {
+          away: snapshot.matchup?.away?.name || snapshot.matchup?.away || 'Away',
+          home: snapshot.matchup?.home?.name || snapshot.matchup?.home || 'Home',
+          spreadText: `${snapshot.matchup?.away?.name || snapshot.matchup?.away || 'Away'} @ ${snapshot.matchup?.home?.name || snapshot.matchup?.home || 'Home'}`,
+          totalText: `O/U ${snapshot.predictions?.market_total || 0}`,
+          gameDateLocal: snapshot.matchup?.game_date || pick.created_at
+        },
+        pick: {
+          type: snapshot.pick?.type || 'TOTAL',
+          selection: snapshot.pick?.selection || pick.selection,
+          units: snapshot.pick?.units || pick.units,
+          confidence: snapshot.pick?.confidence || pick.confidence,
+          locked_odds: snapshot.pick?.locked_odds || null,
+          locked_at: snapshot.locked_at
+        },
+        predictedScore: {
+          away: 0,
+          home: 0,
+          winner: 'Unknown'
+        },
+        factors: snapshot.factors || [],
+        writeups: {
+          prediction: `🔒 LOCKED INSIGHT CARD - Generated at ${new Date(snapshot.locked_at).toLocaleString()}`,
+          gamePrediction: 'This insight card is locked and immutable for transparency.',
+          bold: 'Locked insight card - no modifications allowed'
+        },
+        metadata: {
+          ...snapshot.metadata,
+          isLocked: true,
+          lockedAt: snapshot.locked_at
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: lockedInsightCard
+      })
+    }
 
     // Check if run_id is null
     if (!pick.run_id) {
