@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     // Production schema: Includes separate columns for factor_contributions, predicted_total, baseline_avg, market_total
     const { data: runsData, error: runsError } = await supabase
       .from('runs')
-      .select('id, run_id, game_id, state, metadata, created_at, factor_contributions, predicted_total, baseline_avg, market_total, predicted_home_score, predicted_away_score')
+      .select('id, run_id, game_id, state, metadata, created_at, factor_contributions, predicted_total, baseline_avg, market_total')
       .order('created_at', { ascending: false })
       .limit(limit)
 
@@ -128,8 +128,8 @@ export async function GET(request: NextRequest) {
         predicted_total: run.predicted_total !== null && run.predicted_total !== undefined ? run.predicted_total : metadata.predicted_total,
         baseline_avg: run.baseline_avg !== null && run.baseline_avg !== undefined ? run.baseline_avg : metadata.baseline_avg,
         market_total: run.market_total !== null && run.market_total !== undefined ? run.market_total : metadata.market_total,
-        predicted_home_score: run.predicted_home_score || metadata.predicted_home_score,
-        predicted_away_score: run.predicted_away_score || metadata.predicted_away_score,
+        predicted_home_score: metadata.predicted_home_score,
+        predicted_away_score: metadata.predicted_away_score,
         matchup,
         cooldown_result: cooldown?.result || null,
         state: run.state
