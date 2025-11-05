@@ -156,7 +156,7 @@ export async function POST(request: Request) {
       // CRITICAL: Use UPSERT to handle expired cooldowns
       // The unique constraint on (game_id, capper, bet_type) means we need to update existing records
       // IMPORTANT: Use lowercase to match RPC function can_generate_pick (line 91 in migration 028)
-      const { error: cooldownError } = await supabase
+      const { error: cooldownInsertError } = await supabase
         .from('pick_generation_cooldowns')
         .upsert({
           game_id: game.id,
@@ -172,9 +172,9 @@ export async function POST(request: Request) {
           onConflict: 'game_id,capper,bet_type'
         })
 
-      if (cooldownError) {
-        console.error('[SHIVA:GeneratePick] Failed to create/update ERROR cooldown:', cooldownError)
-        console.error('[SHIVA:GeneratePick] Cooldown error details:', JSON.stringify(cooldownError, null, 2))
+      if (cooldownInsertError) {
+        console.error('[SHIVA:GeneratePick] Failed to create/update ERROR cooldown:', cooldownInsertError)
+        console.error('[SHIVA:GeneratePick] Cooldown error details:', JSON.stringify(cooldownInsertError, null, 2))
       } else {
         console.log(`[SHIVA:GeneratePick] ✅ ERROR cooldown created/updated until ${cooldownUntil.toISOString()}`)
       }
@@ -302,7 +302,7 @@ export async function POST(request: Request) {
       // CRITICAL: Use UPSERT to handle expired cooldowns
       // The unique constraint on (game_id, capper, bet_type) means we need to update existing records
       // IMPORTANT: Use lowercase 'total' to match RPC function can_generate_pick (line 91 in migration 028)
-      const { error: cooldownError } = await supabase
+      const { error: passCooldownError } = await supabase
         .from('pick_generation_cooldowns')
         .upsert({
           game_id: game.id,
@@ -318,9 +318,9 @@ export async function POST(request: Request) {
           onConflict: 'game_id,capper,bet_type'
         })
 
-      if (cooldownError) {
-        console.error('[SHIVA:GeneratePick] Error creating/updating PASS cooldown:', cooldownError)
-        console.error('[SHIVA:GeneratePick] Cooldown error details:', JSON.stringify(cooldownError, null, 2))
+      if (passCooldownError) {
+        console.error('[SHIVA:GeneratePick] Error creating/updating PASS cooldown:', passCooldownError)
+        console.error('[SHIVA:GeneratePick] Cooldown error details:', JSON.stringify(passCooldownError, null, 2))
       } else {
         console.log(`[SHIVA:GeneratePick] ✅ PASS cooldown created/updated until ${cooldownUntil.toISOString()}`)
       }
@@ -392,7 +392,7 @@ export async function POST(request: Request) {
     // The unique constraint on (game_id, capper, bet_type) means we need to update existing records
     // IMPORTANT: Use lowercase 'total' to match RPC function can_generate_pick (line 91 in migration 028)
     const cooldownUntil = new Date('2099-12-31T23:59:59Z')
-    const { error: cooldownError } = await supabase
+    const { error: pickCooldownError } = await supabase
       .from('pick_generation_cooldowns')
       .upsert({
         game_id: game.id,
@@ -408,9 +408,9 @@ export async function POST(request: Request) {
         onConflict: 'game_id,capper,bet_type'
       })
 
-    if (cooldownError) {
-      console.error('[SHIVA:GeneratePick] Error creating/updating PICK_GENERATED cooldown:', cooldownError)
-      console.error('[SHIVA:GeneratePick] Cooldown error details:', JSON.stringify(cooldownError, null, 2))
+    if (pickCooldownError) {
+      console.error('[SHIVA:GeneratePick] Error creating/updating PICK_GENERATED cooldown:', pickCooldownError)
+      console.error('[SHIVA:GeneratePick] Cooldown error details:', JSON.stringify(pickCooldownError, null, 2))
     } else {
       console.log(`[SHIVA:GeneratePick] ✅ PERMANENT cooldown created/updated for PICK_GENERATED (until ${cooldownUntil.toISOString()})`)
     }
