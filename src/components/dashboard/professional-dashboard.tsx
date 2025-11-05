@@ -323,7 +323,7 @@ export function ProfessionalDashboard() {
           {/* RIGHT COLUMN - LEADERBOARD + LIVE FEED (45%) */}
           <div className="col-span-5 space-y-3">
 
-            {/* LEADERBOARD - COMPACT */}
+            {/* LEADERBOARD - ENHANCED BLOOMBERG STYLE */}
             <Card className="bg-slate-900/50 border-slate-800">
               <CardHeader className="pb-2 px-3 pt-2.5 border-b border-slate-800">
                 <div className="flex items-center justify-between">
@@ -340,42 +340,138 @@ export function ProfessionalDashboard() {
               </CardHeader>
 
               <CardContent className="px-3 py-2 space-y-1.5">
-                {topCappers.map((capper, index) => (
-                  <div
-                    key={capper.id}
-                    className="flex items-center gap-2 px-2 py-1.5 rounded bg-slate-800/30 border border-slate-700/50 hover:border-slate-600 transition-all"
-                  >
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-bold text-white">
-                      #{capper.rank}
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 mb-0.5">
-                        <span className="text-xs font-semibold text-white truncate">{capper.name}</span>
-                        {capper.streak > 0 && (
-                          <span className="text-[10px] text-emerald-400">🔥{capper.streak}W</span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 text-[10px] text-slate-400">
-                        <span>{capper.win_rate.toFixed(1)}% WR</span>
-                        <span>•</span>
-                        <span>{capper.total_picks} picks</span>
-                      </div>
-                    </div>
-
-                    <div className="text-right flex-shrink-0">
-                      <div className="text-xs font-semibold text-emerald-400">
-                        +{capper.roi.toFixed(1)}%
-                      </div>
-                      <div className="text-[10px] text-slate-500">
-                        +{capper.total_units.toFixed(0)}u
-                      </div>
-                    </div>
+                {/* Column Headers */}
+                <div className="flex items-center gap-2 px-2 pb-1 border-b border-slate-800/50">
+                  <div className="flex-shrink-0 w-6 text-[9px] font-semibold text-slate-500 uppercase tracking-wider">
+                    #
                   </div>
-                ))}
+                  <div className="flex-1 text-[9px] font-semibold text-slate-500 uppercase tracking-wider">
+                    Capper
+                  </div>
+                  <div className="text-right flex-shrink-0 w-16 text-[9px] font-semibold text-slate-500 uppercase tracking-wider">
+                    ROI
+                  </div>
+                  <div className="text-right flex-shrink-0 w-12 text-[9px] font-semibold text-slate-500 uppercase tracking-wider">
+                    Units
+                  </div>
+                </div>
+
+                {topCappers.map((capper, index) => {
+                  const isTop3 = index < 3
+                  const rankColors = {
+                    0: 'from-amber-500/20 to-amber-600/5 border-amber-500/30',
+                    1: 'from-slate-400/20 to-slate-500/5 border-slate-400/30',
+                    2: 'from-orange-600/20 to-orange-700/5 border-orange-600/30'
+                  }
+                  const medalEmojis = ['🥇', '🥈', '🥉']
+                  const rankBgColors = {
+                    0: 'bg-gradient-to-br from-amber-500 to-amber-600',
+                    1: 'bg-gradient-to-br from-slate-400 to-slate-500',
+                    2: 'bg-gradient-to-br from-orange-600 to-orange-700'
+                  }
+
+                  return (
+                    <div
+                      key={capper.id}
+                      className={`
+                        group relative flex items-center gap-2 px-2 py-2 rounded
+                        border transition-all duration-200
+                        ${isTop3
+                          ? `bg-gradient-to-r ${rankColors[index as 0 | 1 | 2]} hover:border-opacity-60`
+                          : 'bg-slate-800/20 border-slate-700/40 hover:border-slate-600/60 hover:bg-slate-800/30'
+                        }
+                      `}
+                    >
+                      {/* Rank Badge */}
+                      <div className={`
+                        flex-shrink-0 w-6 h-6 rounded flex items-center justify-center
+                        text-[10px] font-bold text-white shadow-sm
+                        ${isTop3 ? rankBgColors[index as 0 | 1 | 2] : 'bg-slate-700'}
+                      `}>
+                        {isTop3 ? medalEmojis[index] : `#${capper.rank}`}
+                      </div>
+
+                      {/* Capper Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <span className={`text-xs font-semibold truncate ${isTop3 ? 'text-white' : 'text-slate-200'}`}>
+                            {capper.name}
+                          </span>
+                          {capper.streak > 0 && (
+                            <span className="text-[10px] font-medium text-emerald-400 flex items-center gap-0.5">
+                              🔥<span className="font-mono">{capper.streak}W</span>
+                            </span>
+                          )}
+                          {capper.is_hot && (
+                            <span className="text-[9px] px-1 py-0.5 rounded bg-red-500/20 text-red-400 font-semibold border border-red-500/30">
+                              HOT
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                          <span className="font-mono font-medium">
+                            {capper.win_rate.toFixed(1)}%
+                          </span>
+                          <span className="text-slate-600">•</span>
+                          <span className="text-slate-500">{capper.total_picks} picks</span>
+                        </div>
+                      </div>
+
+                      {/* ROI */}
+                      <div className="text-right flex-shrink-0 w-16">
+                        <div className={`
+                          text-xs font-bold font-mono
+                          ${capper.roi >= 0 ? 'text-emerald-400' : 'text-red-400'}
+                        `}>
+                          {capper.roi >= 0 ? '+' : ''}{capper.roi.toFixed(1)}%
+                        </div>
+                      </div>
+
+                      {/* Units */}
+                      <div className="text-right flex-shrink-0 w-12">
+                        <div className={`
+                          text-[11px] font-semibold font-mono
+                          ${capper.total_units >= 0 ? 'text-emerald-500' : 'text-red-500'}
+                        `}>
+                          {capper.total_units >= 0 ? '+' : ''}{capper.total_units.toFixed(1)}u
+                        </div>
+                      </div>
+
+                      {/* Hover Tooltip - Additional Stats */}
+                      <div className="
+                        absolute left-0 right-0 top-full mt-1 z-10
+                        opacity-0 group-hover:opacity-100 pointer-events-none
+                        transition-opacity duration-200
+                      ">
+                        <div className="bg-slate-950 border border-slate-700 rounded shadow-xl p-2 text-[10px]">
+                          <div className="grid grid-cols-3 gap-2">
+                            <div>
+                              <div className="text-slate-500 uppercase tracking-wider mb-0.5">Wins</div>
+                              <div className="text-emerald-400 font-semibold font-mono">
+                                {Math.round(capper.total_picks * capper.win_rate / 100)}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-slate-500 uppercase tracking-wider mb-0.5">Losses</div>
+                              <div className="text-red-400 font-semibold font-mono">
+                                {capper.total_picks - Math.round(capper.total_picks * capper.win_rate / 100)}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-slate-500 uppercase tracking-wider mb-0.5">Badge</div>
+                              <div className="text-amber-400 font-semibold capitalize">
+                                {capper.badge}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
 
                 <Link href="/become-capper">
-                  <Button className="w-full mt-2 bg-slate-800 hover:bg-slate-700 text-white text-xs h-8 border border-slate-700">
+                  <Button className="w-full mt-2 bg-slate-800 hover:bg-slate-700 text-white text-xs h-8 border border-slate-700 transition-all hover:border-slate-600">
                     Become a Capper
                   </Button>
                 </Link>
