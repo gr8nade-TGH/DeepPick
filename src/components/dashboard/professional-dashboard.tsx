@@ -85,6 +85,7 @@ export function ProfessionalDashboard() {
   const [selectedPick, setSelectedPick] = useState<Pick | null>(null)
   const [showInsight, setShowInsight] = useState(false)
   const [sportFilter, setSportFilter] = useState('all')
+  const [picksPage, setPicksPage] = useState(0) // Pagination for picks (10 per page)
 
   useEffect(() => {
     fetchDashboardData()
@@ -256,7 +257,7 @@ export function ProfessionalDashboard() {
               </CardHeader>
 
               <CardContent className="px-3 py-2 space-y-1.5">
-                {todaysPicks.slice(0, 12).map((pick) => {
+                {todaysPicks.slice(picksPage * 10, (picksPage + 1) * 10).map((pick) => {
                   const confidenceBadge = getConfidenceBadge(pick.confidence)
                   const gameStatus = getGameStatus(pick)
                   const homeTeam = pick.game_snapshot?.home_team
@@ -273,8 +274,8 @@ export function ProfessionalDashboard() {
                     >
                       <div className="flex items-center justify-between mb-1.5">
                         <div className="flex items-center gap-1.5">
-                          <Badge className={`${confidenceBadge.color} text-white text-[10px] px-1.5 py-0`}>
-                            {pick.confidence?.toFixed(0)}%
+                          <Badge className={`${confidenceBadge.color} text-white text-[10px] px-1.5 py-0 font-mono`}>
+                            {pick.confidence?.toFixed(1)}%
                           </Badge>
                           <Badge className={`${gameStatus.color} text-[9px] px-1.5 py-0 font-semibold`}>
                             {gameStatus.icon} {gameStatus.text}
@@ -310,6 +311,33 @@ export function ProfessionalDashboard() {
                     </div>
                   )
                 })}
+
+                {/* Pagination Controls */}
+                {todaysPicks.length > 10 && (
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-[10px] h-7 px-2 bg-slate-800/50 border-slate-700 hover:bg-slate-700"
+                      onClick={() => setPicksPage(Math.max(0, picksPage - 1))}
+                      disabled={picksPage === 0}
+                    >
+                      ← Previous
+                    </Button>
+                    <span className="text-[10px] text-slate-500">
+                      Page {picksPage + 1} of {Math.ceil(todaysPicks.length / 10)}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-[10px] h-7 px-2 bg-slate-800/50 border-slate-700 hover:bg-slate-700"
+                      onClick={() => setPicksPage(Math.min(Math.ceil(todaysPicks.length / 10) - 1, picksPage + 1))}
+                      disabled={picksPage >= Math.ceil(todaysPicks.length / 10) - 1}
+                    >
+                      Next →
+                    </Button>
+                  </div>
+                )}
 
                 <Link href="/picks">
                   <Button className="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white text-xs h-8">
