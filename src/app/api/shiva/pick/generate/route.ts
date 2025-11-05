@@ -31,8 +31,7 @@ const PickSchema = z.object({
       predicted_total: z.number().optional(),
       baseline_avg: z.number().optional(),
       market_total_line: z.number().optional(),
-      predicted_home_score: z.number().optional(),
-      predicted_away_score: z.number().optional(),
+      // NOTE: predicted_home_score and predicted_away_score not stored in database columns
       bold_predictions: z.any().optional()
     }).optional(),
   }).strict(),
@@ -173,8 +172,7 @@ export async function POST(request: Request) {
                 predicted_total: predictedTotal,
                 baseline_avg: baselineAvg,
                 market_total: marketTotal,
-                predicted_home_score: predictedHomeScore,
-                predicted_away_score: predictedAwayScore,
+                // NOTE: predicted_home_score and predicted_away_score columns don't exist in database
                 bold_predictions: boldPredictions
               }
 
@@ -339,8 +337,7 @@ export async function POST(request: Request) {
             predicted_total: predictedTotal,
             baseline_avg: baselineAvg,
             market_total: marketTotal,
-            predicted_home_score: predictedHomeScore,
-            predicted_away_score: predictedAwayScore,
+            // NOTE: predicted_home_score and predicted_away_score stored in metadata.steps.step4.predictions
             bold_predictions: boldPredictions
           }
 
@@ -350,8 +347,7 @@ export async function POST(request: Request) {
             predicted_total: predictedTotal,
             baseline_avg: baselineAvg,
             market_total: marketTotal,
-            predicted_home_score: predictedHomeScore,
-            predicted_away_score: predictedAwayScore,
+            // NOTE: predicted_home_score and predicted_away_score columns don't exist in database
             bold_predictions: boldPredictions,
             // OLD format (metadata JSONB) - for backwards compatibility with run log
             metadata: updatedMetadata,
@@ -419,8 +415,7 @@ export async function POST(request: Request) {
             predicted_total: predictedTotal,
             baseline_avg: baselineAvg,
             market_total: marketTotal,
-            predicted_home_score: predictedHomeScore,
-            predicted_away_score: predictedAwayScore,
+            // NOTE: predicted_home_score and predicted_away_score columns don't exist in database
             bold_predictions: boldPredictions
           }
 
