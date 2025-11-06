@@ -17,8 +17,10 @@ import {
   TrendingUp,
   TrendingDown,
   Play,
-  Pause
+  Pause,
+  Sparkles
 } from 'lucide-react'
+import Link from 'next/link'
 
 interface SystemHealthData {
   success: boolean
@@ -255,6 +257,12 @@ End of debug info
           </p>
         </div>
         <div className="flex gap-3">
+          <Link href="/cappers/create">
+            <Button variant="default" className="gap-2 bg-green-600 hover:bg-green-700">
+              <Sparkles className="w-4 h-4" />
+              Create Capper
+            </Button>
+          </Link>
           <Button
             onClick={copyDebugInfo}
             variant={copied ? "default" : "outline"}
