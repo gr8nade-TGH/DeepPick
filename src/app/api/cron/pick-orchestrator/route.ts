@@ -103,13 +103,13 @@ export async function GET(request: Request) {
     // Step 2: Find due schedules
     console.log('[ORCHESTRATOR] Step 2: Finding due schedules...')
 
-    const now = new Date().toISOString()
+    const nowISO = new Date().toISOString()
 
     const { data: dueSchedules, error: scheduleError } = await supabase
       .from('capper_execution_schedules')
       .select('*')
       .eq('enabled', true)
-      .or(`next_execution_at.is.null,next_execution_at.lte.${now}`)
+      .or(`next_execution_at.is.null,next_execution_at.lte.${nowISO}`)
       .order('priority', { ascending: false }) // Higher priority first
       .order('next_execution_at', { ascending: true }) // Oldest due first
 
