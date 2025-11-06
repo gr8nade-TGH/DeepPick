@@ -312,14 +312,13 @@ export async function GET(
       || metadata.steps?.step2?.snapshot?.total?.line  // OLDEST: Nested in steps
       || 0
 
-    const predictedHomeScore = run.predicted_home_score  // NEW: Separate column (PRIORITY)
-      || metadata.predicted_home_score                    // OLD: Top-level in metadata
-      || metadata.steps?.step4?.predictions?.scores?.home // OLDEST: Nested in steps
+    // Extract predicted scores from metadata (NO separate columns exist in runs table)
+    const predictedHomeScore = metadata.predicted_home_score                    // Top-level in metadata
+      || metadata.steps?.step4?.predictions?.scores?.home // Nested in steps
       || 0
 
-    const predictedAwayScore = run.predicted_away_score  // NEW: Separate column (PRIORITY)
-      || metadata.predicted_away_score                    // OLD: Top-level in metadata
-      || metadata.steps?.step4?.predictions?.scores?.away // OLDEST: Nested in steps
+    const predictedAwayScore = metadata.predicted_away_score                    // Top-level in metadata
+      || metadata.steps?.step4?.predictions?.scores?.away // Nested in steps
       || 0
 
     const boldPredictions = metadata.bold_predictions
