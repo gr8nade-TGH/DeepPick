@@ -43,7 +43,7 @@ export async function GET(request: Request) {
   try {
     // Step 1: Acquire global orchestrator lock
     console.log('[ORCHESTRATOR] Step 1: Acquiring global lock...')
-    
+
     const lockKey = 'pick_orchestrator_lock'
     const lockTimeout = 5 * 60 * 1000 // 5 minutes
 
@@ -54,8 +54,8 @@ export async function GET(request: Request) {
       .single()
 
     if (existingLock) {
-      const lockAge = Date.now() - new Date(existingLock.created_at).getTime()
-      
+      const lockAge = Date.now() - new Date(existingLock.locked_at).getTime()
+
       if (lockAge < lockTimeout) {
         console.log(`[ORCHESTRATOR] ⏸️  Lock held by another process (age: ${Math.round(lockAge / 1000)}s)`)
         return NextResponse.json({
@@ -74,12 +74,18 @@ export async function GET(request: Request) {
     }
 
     // Acquire lock
+    const now = new Date()
+    const expiresAt = new Date(now.getTime() + lockTimeout)
+
     const { error: lockError } = await supabase
       .from('system_locks')
       .insert({
         lock_key: lockKey,
         locked_by: 'pick-orchestrator',
-        created_at: new Date().toISOString()
+        locked_at: now.toISOString(),
+        expires_at: expiresAt.toISOString(),
+        created_at: now.toISOString(),
+        updated_at: now.toISOString()
       })
 
     if (lockError) {
@@ -115,7 +121,7 @@ export async function GET(request: Request) {
 
     if (!dueSchedules || dueSchedules.length === 0) {
       console.log('[ORCHESTRATOR] ✅ No schedules due - releasing lock')
-      
+
       await supabase
         .from('system_locks')
         .delete()
