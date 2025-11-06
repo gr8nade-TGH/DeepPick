@@ -2,21 +2,42 @@ import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 
 /**
- * ADMIN ENDPOINT: Clear all picks and cooldowns
+ * ADMIN ENDPOINT: Clear EVERYTHING for testing
  * POST /api/admin/clear-picks
- * 
- * This resets the picks system to start fresh
+ *
+ * This resets the entire SHIVA system to start fresh:
+ * - Clears all picks (including locked insight card snapshots)
+ * - Clears all cooldowns
+ * - Clears all runs (both runs and shiva_runs tables)
+ * - Clears all pick_generation_cooldowns
  */
 export async function POST(request: Request) {
   try {
     const supabase = getSupabaseAdmin()
 
-    console.log('[ADMIN] Clearing all picks and cooldowns...')
+    console.log('[ADMIN] 🧹 CLEARING EVERYTHING - Full system reset...')
 
-    // Delete all picks
-    const { error: picksError } = await supabase
+    // Step 1: Clear locked insight card snapshots from ALL picks
+    console.log('[ADMIN] Step 1: Clearing locked insight card snapshots...')
+    const { error: snapshotError, count: snapshotCount } = await supabase
       .from('picks')
-      .delete()
+      .update({
+        insight_card_snapshot: null,
+        insight_card_locked_at: null
+      })
+      .not('insight_card_snapshot', 'is', null)
+
+    if (snapshotError) {
+      console.error('[ADMIN] Error clearing snapshots:', snapshotError)
+    } else {
+      console.log(`[ADMIN] ✅ Cleared ${snapshotCount || 0} locked insight card snapshots`)
+    }
+
+    // Step 2: Delete all picks
+    console.log('[ADMIN] Step 2: Deleting all picks...')
+    const { error: picksError, count: picksCount } = await supabase
+      .from('picks')
+      .delete({ count: 'exact' })
       .neq('id', '00000000-0000-0000-0000-000000000000') // Delete all rows
 
     if (picksError) {
@@ -27,42 +48,73 @@ export async function POST(request: Request) {
         details: picksError.message
       }, { status: 500 })
     }
+    console.log(`[ADMIN] ✅ Deleted ${picksCount || 0} picks`)
 
-    // Delete all cooldowns
-    const { error: cooldownsError } = await supabase
+    // Step 3: Delete all shiva_cooldowns (legacy table)
+    console.log('[ADMIN] Step 3: Deleting shiva_cooldowns...')
+    const { error: cooldownsError, count: cooldownsCount } = await supabase
       .from('shiva_cooldowns')
-      .delete()
+      .delete({ count: 'exact' })
       .neq('id', '00000000-0000-0000-0000-000000000000') // Delete all rows
 
     if (cooldownsError) {
-      console.error('[ADMIN] Error deleting cooldowns:', cooldownsError)
-      return NextResponse.json({
-        success: false,
-        error: 'Failed to delete cooldowns',
-        details: cooldownsError.message
-      }, { status: 500 })
+      console.error('[ADMIN] Error deleting shiva_cooldowns:', cooldownsError)
+    } else {
+      console.log(`[ADMIN] ✅ Deleted ${cooldownsCount || 0} shiva_cooldowns`)
     }
 
-    // Delete all SHIVA runs
-    const { error: runsError } = await supabase
+    // Step 4: Delete all pick_generation_cooldowns (new table)
+    console.log('[ADMIN] Step 4: Deleting pick_generation_cooldowns...')
+    const { error: newCooldownsError, count: newCooldownsCount } = await supabase
+      .from('pick_generation_cooldowns')
+      .delete({ count: 'exact' })
+      .neq('id', '00000000-0000-0000-0000-000000000000') // Delete all rows
+
+    if (newCooldownsError) {
+      console.error('[ADMIN] Error deleting pick_generation_cooldowns:', newCooldownsError)
+    } else {
+      console.log(`[ADMIN] ✅ Deleted ${newCooldownsCount || 0} pick_generation_cooldowns`)
+    }
+
+    // Step 5: Delete all SHIVA runs from shiva_runs table
+    console.log('[ADMIN] Step 5: Deleting shiva_runs...')
+    const { error: shivaRunsError, count: shivaRunsCount } = await supabase
       .from('shiva_runs')
-      .delete()
+      .delete({ count: 'exact' })
+      .neq('run_id', '00000000-0000-0000-0000-000000000000') // Delete all rows
+
+    if (shivaRunsError) {
+      console.error('[ADMIN] Error deleting shiva_runs:', shivaRunsError)
+    } else {
+      console.log(`[ADMIN] ✅ Deleted ${shivaRunsCount || 0} shiva_runs`)
+    }
+
+    // Step 6: Delete all runs from runs table (parent table)
+    console.log('[ADMIN] Step 6: Deleting runs...')
+    const { error: runsError, count: runsCount } = await supabase
+      .from('runs')
+      .delete({ count: 'exact' })
       .neq('run_id', '00000000-0000-0000-0000-000000000000') // Delete all rows
 
     if (runsError) {
       console.error('[ADMIN] Error deleting runs:', runsError)
-      return NextResponse.json({
-        success: false,
-        error: 'Failed to delete runs',
-        details: runsError.message
-      }, { status: 500 })
+    } else {
+      console.log(`[ADMIN] ✅ Deleted ${runsCount || 0} runs`)
     }
 
-    console.log('[ADMIN] Successfully cleared all picks, cooldowns, and runs')
+    console.log('[ADMIN] 🎉 Successfully cleared EVERYTHING!')
 
     return NextResponse.json({
       success: true,
-      message: 'All picks, cooldowns, and runs cleared successfully',
+      message: '🧹 FULL SYSTEM RESET COMPLETE - All data cleared',
+      cleared: {
+        locked_snapshots: snapshotCount || 0,
+        picks: picksCount || 0,
+        shiva_cooldowns: cooldownsCount || 0,
+        pick_generation_cooldowns: newCooldownsCount || 0,
+        shiva_runs: shivaRunsCount || 0,
+        runs: runsCount || 0
+      },
       timestamp: new Date().toISOString()
     })
 
