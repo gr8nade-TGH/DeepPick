@@ -245,11 +245,9 @@ export function HeaderFilters(props: HeaderFiltersProps) {
             className="px-3 py-1 border border-gray-600 rounded text-sm bg-gray-800 text-white"
           >
             <option value="SHIVA">SHIVA</option>
-            <option value="IFRIT" disabled={!profile || profile.capper !== 'IFRIT'}>
-              IFRIT {!profile || profile.capper !== 'IFRIT' ? '(no profile)' : ''}
-            </option>
-            <option value="CERBERUS" disabled>CERBERUS (no profile)</option>
-            <option value="NEXUS" disabled>NEXUS (no profile)</option>
+            <option value="IFRIT">IFRIT</option>
+            <option value="CERBERUS" disabled>CERBERUS (coming soon)</option>
+            <option value="NEXUS" disabled>NEXUS (coming soon)</option>
           </select>
         </div>
 

@@ -59,6 +59,7 @@ export default function ShivaManagementPage() {
   const [betType, setBetType] = useState<'TOTAL' | 'SPREAD'>('TOTAL')
   const [providerOverrides, setProviderOverrides] = useState<{ step3?: string; step4?: string }>({})
   const [showFactorConfig, setShowFactorConfig] = useState(false)
+  const [selectedCapper, setSelectedCapper] = useState<string>('SHIVA')
 
   // Debug selectedGame changes
   useEffect(() => {
@@ -71,6 +72,7 @@ export default function ShivaManagementPage() {
 
   const handleProfileChange = (profile: CapperProfile | null, capper: string, sport: string) => {
     setCurrentProfile(profile)
+    setSelectedCapper(capper)
   }
 
   const handleGameSelect = (game: any) => {
@@ -135,45 +137,71 @@ export default function ShivaManagementPage() {
                 <span>⚙️</span>
                 Configure Factors
               </button>
-              <button
-                onClick={async () => {
-                  if (!confirm('⚠️ CLEAR EVERYTHING - This will delete ALL picks, runs, cooldowns, and locked snapshots. Continue?')) {
-                    return
-                  }
-                  try {
-                    console.log('🧹 [CLEAR EVERYTHING] Button clicked, calling comprehensive clear API...')
-                    const response = await fetch('/api/admin/clear-picks', { method: 'POST' })
-                    console.log('🧹 [CLEAR EVERYTHING] API response status:', response.status)
-                    const result = await response.json()
-                    console.log('🧹 [CLEAR EVERYTHING] API response data:', result)
+              <div className="relative group">
+                <button
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded font-medium transition flex items-center gap-2"
+                >
+                  <span>🧹</span>
+                  Clear Data ▼
+                </button>
+                <div className="absolute left-0 mt-1 w-64 bg-gray-800 border border-gray-700 rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                  <button
+                    onClick={async () => {
+                      if (!confirm(`⚠️ CLEAR ${selectedCapper} DATA - This will delete ALL ${selectedCapper} picks, runs, and cooldowns. Continue?`)) {
+                        return
+                      }
+                      try {
+                        console.log(`🧹 [CLEAR ${selectedCapper}] Button clicked...`)
+                        const response = await fetch(`/api/admin/clear-picks?capper=${selectedCapper.toLowerCase()}`, { method: 'POST' })
+                        const result = await response.json()
 
-                    if (result.success) {
-                      const summary = `✅ ${result.message}\n\nCleared:\n` +
-                        `• ${result.cleared.picks} picks\n` +
-                        `• ${result.cleared.runs} runs\n` +
-                        `• ${result.cleared.shiva_runs} shiva_runs\n` +
-                        `• ${result.cleared.pick_generation_cooldowns} pick_generation_cooldowns\n` +
-                        `• ${result.cleared.shiva_cooldowns} shiva_cooldowns\n` +
-                        `• ${result.cleared.locked_snapshots} locked insight card snapshots\n\n` +
-                        `Refreshing page...`
-                      alert(summary)
-                      console.log('🧹 [CLEAR EVERYTHING] Success, refreshing page...')
-                      // Refresh the page to update all data
-                      window.location.reload()
-                    } else {
-                      alert('❌ Error clearing data: ' + (result.error || 'Unknown error'))
-                      console.error('🧹 [CLEAR EVERYTHING] API error:', result)
-                    }
-                  } catch (error) {
-                    alert('❌ Error clearing data: ' + error)
-                    console.error('🧹 [CLEAR EVERYTHING] Network error:', error)
-                  }
-                }}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded font-medium transition flex items-center gap-2"
-              >
-                <span>🧹</span>
-                Clear EVERYTHING
-              </button>
+                        if (result.success) {
+                          alert(`✅ Cleared ${selectedCapper} data!\n\nCleared:\n• ${result.cleared.picks || 0} picks\n• ${result.cleared.runs || 0} runs\n• ${result.cleared.cooldowns || 0} cooldowns`)
+                          window.location.reload()
+                        } else {
+                          alert('❌ Error: ' + (result.error || 'Unknown error'))
+                        }
+                      } catch (error) {
+                        alert('❌ Error: ' + error)
+                      }
+                    }}
+                    className="w-full px-4 py-2 text-left hover:bg-gray-700 text-white text-sm"
+                  >
+                    🗑️ Clear {selectedCapper} Only
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (!confirm('⚠️ CLEAR ALL CAPPERS - This will delete ALL picks, runs, cooldowns, and locked snapshots from ALL cappers. Continue?')) {
+                        return
+                      }
+                      try {
+                        console.log('🧹 [CLEAR EVERYTHING] Button clicked, calling comprehensive clear API...')
+                        const response = await fetch('/api/admin/clear-picks', { method: 'POST' })
+                        const result = await response.json()
+
+                        if (result.success) {
+                          const summary = `✅ ${result.message}\n\nCleared:\n` +
+                            `• ${result.cleared.picks} picks\n` +
+                            `• ${result.cleared.runs} runs\n` +
+                            `• ${result.cleared.shiva_runs} shiva_runs\n` +
+                            `• ${result.cleared.pick_generation_cooldowns} pick_generation_cooldowns\n` +
+                            `• ${result.cleared.shiva_cooldowns} shiva_cooldowns\n` +
+                            `• ${result.cleared.locked_snapshots} locked insight card snapshots`
+                          alert(summary)
+                          window.location.reload()
+                        } else {
+                          alert('❌ Error: ' + (result.error || 'Unknown error'))
+                        }
+                      } catch (error) {
+                        alert('❌ Error: ' + error)
+                      }
+                    }}
+                    className="w-full px-4 py-2 text-left hover:bg-gray-700 text-white text-sm border-t border-gray-700"
+                  >
+                    💥 Clear ALL Cappers
+                  </button>
+                </div>
+              </div>
               <button
                 onClick={async () => {
                   try {

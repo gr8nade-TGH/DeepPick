@@ -2,19 +2,68 @@ import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 
 /**
- * ADMIN ENDPOINT: Clear EVERYTHING for testing
- * POST /api/admin/clear-picks
+ * ADMIN ENDPOINT: Clear data for testing
+ * POST /api/admin/clear-picks?capper=shiva (optional)
  *
- * This resets the entire SHIVA system to start fresh:
- * - Clears all picks (including locked insight card snapshots)
- * - Clears all cooldowns
- * - Clears all runs (both runs and shiva_runs tables)
- * - Clears all pick_generation_cooldowns
+ * If capper param provided: Clears only that capper's data
+ * If no capper param: Clears EVERYTHING from all cappers
  */
 export async function POST(request: Request) {
   try {
+    const { searchParams } = new URL(request.url)
+    const capper = searchParams.get('capper')
     const supabase = getSupabaseAdmin()
 
+    if (capper) {
+      // Clear specific capper only
+      console.log(`[ADMIN] 🧹 CLEARING ${capper.toUpperCase()} DATA...`)
+
+      // Delete picks for this capper
+      const { error: picksError, count: picksCount } = await supabase
+        .from('picks')
+        .delete({ count: 'exact' })
+        .eq('capper', capper.toLowerCase())
+
+      if (picksError) {
+        console.error(`[ADMIN] Error deleting ${capper} picks:`, picksError)
+        return NextResponse.json({
+          success: false,
+          error: 'Failed to delete picks',
+          details: picksError.message
+        }, { status: 500 })
+      }
+
+      // Delete runs for this capper
+      const { error: runsError, count: runsCount } = await supabase
+        .from('runs')
+        .delete({ count: 'exact' })
+        .eq('capper_id', capper.toLowerCase())
+
+      // Delete cooldowns for this capper
+      const { error: cooldownsError, count: cooldownsCount } = await supabase
+        .from('pick_generation_cooldowns')
+        .delete({ count: 'exact' })
+        .eq('capper_id', capper.toLowerCase())
+
+      console.log(`[ADMIN] ✅ Cleared ${capper.toUpperCase()} data:`, {
+        picks: picksCount || 0,
+        runs: runsCount || 0,
+        cooldowns: cooldownsCount || 0
+      })
+
+      return NextResponse.json({
+        success: true,
+        message: `🧹 ${capper.toUpperCase()} DATA CLEARED`,
+        cleared: {
+          picks: picksCount || 0,
+          runs: runsCount || 0,
+          cooldowns: cooldownsCount || 0
+        },
+        timestamp: new Date().toISOString()
+      })
+    }
+
+    // Clear EVERYTHING (all cappers)
     console.log('[ADMIN] 🧹 CLEARING EVERYTHING - Full system reset...')
 
     // Step 1: Clear locked insight card snapshots from ALL picks

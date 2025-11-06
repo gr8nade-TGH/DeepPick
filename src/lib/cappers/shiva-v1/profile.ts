@@ -168,7 +168,34 @@ export async function getCapperProfile(
   capper: string,
   sport: 'NBA' | 'MLB' | 'NFL' = 'NBA'
 ): Promise<CapperProfile | null> {
-  // Try loading from DB first
+  const capperLower = capper.toLowerCase()
+  const capperUpper = capper.toUpperCase()
+
+  // Try loading from user_cappers table first (for IFRIT, CERBERUS, etc.)
+  try {
+    const { getSupabaseAdmin } = await import('@/lib/supabase/server')
+    const admin = getSupabaseAdmin()
+
+    const userCapperResult = await admin
+      .from('user_cappers')
+      .select('*')
+      .eq('capper_id', capperLower)
+      .eq('sport', sport)
+      .eq('is_active', true)
+      .maybeSingle()
+
+    if (userCapperResult.data) {
+      console.log('[Profile] Loaded from user_cappers:', { capper, sport })
+
+      // Return a basic profile for user cappers
+      // The factor config is stored in user_cappers.factor_config
+      return shivaProfileV1 // Use SHIVA profile as template for now
+    }
+  } catch (error) {
+    console.warn('[Profile]', 'Failed to load from user_cappers', error)
+  }
+
+  // Try loading from capper_settings (for SHIVA)
   try {
     const { getSupabaseAdmin } = await import('@/lib/supabase/server')
     const admin = getSupabaseAdmin()
@@ -176,7 +203,7 @@ export async function getCapperProfile(
     const result = await admin
       .from('capper_settings')
       .select('profile_json, version')
-      .eq('capper', capper)
+      .eq('capper', capperUpper)
       .eq('sport', sport)
       .eq('is_active', true)
       .maybeSingle()
@@ -194,7 +221,7 @@ export async function getCapperProfile(
   }
 
   // Fallback to in-memory defaults
-  if (capper === 'SHIVA' && sport === 'NBA') return shivaProfileV1
+  if (capperUpper === 'SHIVA' && sport === 'NBA') return shivaProfileV1
 
   return null
 }
