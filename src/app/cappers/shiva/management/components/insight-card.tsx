@@ -283,19 +283,9 @@ export function InsightCard(props: InsightCardProps) {
           </div>
         </div>
 
-        {/* AI Writeups - Professional Analyst Style */}
+        {/* AI Writeups - Game Prediction and Bold Predictions (Professional Analysis moved below) */}
         {props.writeups && (
           <div className="p-6 bg-gradient-to-br from-slate-800 to-slate-700 border-b border-cyan-500/20 space-y-4">
-            {props.writeups.prediction && (
-              <div className="bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-xl p-5 border border-cyan-500/20 shadow-lg">
-                <div className="text-xs font-bold text-cyan-400 uppercase mb-3 flex items-center gap-2">
-                  <span>📊</span>
-                  <span>Professional Analysis</span>
-                </div>
-                <p className="text-white text-base leading-relaxed font-medium">{props.writeups.prediction}</p>
-              </div>
-            )}
-
             {props.writeups.gamePrediction && (
               <div className="bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-xl p-5 border border-cyan-500/20 shadow-lg">
                 <div className="text-xs font-bold text-cyan-400 uppercase mb-3 flex items-center gap-2">
@@ -345,8 +335,8 @@ export function InsightCard(props: InsightCardProps) {
                         </div>
                         <div className="ml-3">
                           <span className={`px-3 py-1 rounded-full text-xs font-bold ${pred.confidence === 'HIGH' ? 'bg-green-600 text-white' :
-                              pred.confidence === 'MEDIUM' ? 'bg-yellow-600 text-black' :
-                                'bg-orange-600 text-white'
+                            pred.confidence === 'MEDIUM' ? 'bg-yellow-600 text-black' :
+                              'bg-orange-600 text-white'
                             }`}>
                             {pred.confidence}
                           </span>
@@ -573,6 +563,19 @@ export function InsightCard(props: InsightCardProps) {
                   {props.injury_summary.total_impact > 0 ? '+' : ''}{props.injury_summary.total_impact.toFixed(1)} points
                 </span>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Professional Analysis - Moved here to be right above RESULTS */}
+        {props.writeups && props.writeups.prediction && (
+          <div className="p-6 bg-gradient-to-br from-slate-800 to-slate-700 border-b border-cyan-500/20">
+            <div className="bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-xl p-5 border border-cyan-500/20 shadow-lg">
+              <div className="text-xs font-bold text-cyan-400 uppercase mb-3 flex items-center gap-2">
+                <span>📊</span>
+                <span>Professional Analysis</span>
+              </div>
+              <div className="text-white text-base leading-relaxed font-medium whitespace-pre-wrap">{props.writeups.prediction}</div>
             </div>
           </div>
         )}
