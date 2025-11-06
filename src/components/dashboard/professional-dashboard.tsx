@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import { NavBar } from '@/components/navigation/nav-bar'
 import { PickInsightModal } from '@/components/dashboard/pick-insight-modal'
+import { BoldPredictionsTable } from '@/app/cappers/shiva/management/components/bold-predictions-table'
 import Link from 'next/link'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
 
@@ -717,6 +718,11 @@ export function ProfessionalDashboard() {
               </CardContent>
             </Card>
           </div>
+        </div>
+
+        {/* Bold Predictions Section - Full Width */}
+        <div className="mt-6">
+          <BoldPredictionsTable />
         </div>
       </div>
 
