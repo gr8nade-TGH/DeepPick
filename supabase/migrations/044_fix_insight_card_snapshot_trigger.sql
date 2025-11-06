@@ -49,10 +49,10 @@ BEGIN
   insight_card := jsonb_build_object(
     'pick', jsonb_build_object(
       'id', NEW.id,
+      'type', NEW.pick_type,
       'selection', NEW.selection,
       'units', NEW.units,
       'confidence', NEW.confidence,
-      'pick_type', NEW.pick_type,
       'odds', NEW.odds,
       'reasoning', NEW.reasoning
     ),
@@ -73,14 +73,16 @@ BEGIN
       'predicted_total', run_record.predicted_total,
       'baseline_avg', run_record.baseline_avg,
       'market_total', run_record.market_total,
-      'predicted_home_score', run_record.predicted_home_score,
-      'predicted_away_score', run_record.predicted_away_score
+      'predicted_home_score', run_record.metadata->'predicted_home_score',
+      'predicted_away_score', run_record.metadata->'predicted_away_score'
     ),
     'metadata', jsonb_build_object(
       'created_at', NEW.created_at,
       'locked_by', 'system',
       'version', '1.0',
-      'immutable', true
+      'immutable', true,
+      'pick_type', NEW.pick_type,
+      'bet_type', NEW.pick_type
     )
   );
 

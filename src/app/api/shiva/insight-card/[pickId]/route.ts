@@ -167,43 +167,102 @@ export async function GET(
       // We need to transform it to match the InsightCardProps interface
       const snapshot = pick.insight_card_snapshot
 
+      // Extract pick type from snapshot
+      const pickType = (snapshot.pick?.type || snapshot.metadata?.pick_type || pick.pick_type || 'TOTAL').toUpperCase()
+      const isSpread = pickType === 'SPREAD'
+
+      // Extract team names
+      const awayTeamName = snapshot.matchup?.away?.name || snapshot.matchup?.away || 'Away'
+      const homeTeamName = snapshot.matchup?.home?.name || snapshot.matchup?.home || 'Home'
+
+      // Extract predicted scores from snapshot
+      const predictedHomeScore = snapshot.predictions?.predicted_home_score || 0
+      const predictedAwayScore = snapshot.predictions?.predicted_away_score || 0
+      const predictedTotal = snapshot.predictions?.predicted_total || 0
+      const marketTotal = snapshot.predictions?.market_total || 0
+
+      // Format totalText based on pick type
+      const totalText = isSpread
+        ? snapshot.pick?.selection || pick.selection  // e.g., "Phoenix Suns -5.5"
+        : `O/U ${marketTotal.toFixed(1)}`
+
+      // Map factors to insight card format
+      const factors = (snapshot.factors || []).map((factor: any) => {
+        // Get scores based on pick type
+        let overScore = 0
+        let underScore = 0
+
+        if (factor.weighted_contributions) {
+          if (isSpread) {
+            // SPREAD: Use awayScore/homeScore
+            overScore = factor.weighted_contributions.awayScore || 0
+            underScore = factor.weighted_contributions.homeScore || 0
+          } else {
+            // TOTAL: Use overScore/underScore
+            overScore = factor.weighted_contributions.overScore || 0
+            underScore = factor.weighted_contributions.underScore || 0
+          }
+        }
+
+        return {
+          key: factor.key || factor.factor_key,
+          label: factor.name || factor.factor_name || factor.key,
+          icon: getFactorIcon(factor.key || factor.factor_key),
+          overScore,
+          underScore,
+          weightAppliedPct: factor.weight_percentage || 0,
+          rationale: factor.notes || 'No rationale provided'
+        }
+      })
+
       // Build the insight card data from the locked snapshot
       const lockedInsightCard = {
-        capper: snapshot.capper || 'SHIVA',
-        sport: snapshot.sport || 'NBA',
-        gameId: snapshot.game_id,
-        pickId: snapshot.pick_id,
-        generatedAt: snapshot.locked_at || pick.created_at,
+        capper: 'SHIVA',
+        sport: 'NBA',
+        gameId: pick.game_id,
+        pickId: pick.id,
+        generatedAt: pick.created_at,
         matchup: {
-          away: snapshot.matchup?.away?.name || snapshot.matchup?.away || 'Away',
-          home: snapshot.matchup?.home?.name || snapshot.matchup?.home || 'Home',
-          spreadText: `${snapshot.matchup?.away?.name || snapshot.matchup?.away || 'Away'} @ ${snapshot.matchup?.home?.name || snapshot.matchup?.home || 'Home'}`,
-          totalText: `O/U ${snapshot.predictions?.market_total || 0}`,
+          away: awayTeamName,
+          home: homeTeamName,
+          spreadText: `${awayTeamName} @ ${homeTeamName}`,
+          totalText,
           gameDateLocal: snapshot.matchup?.game_date || pick.created_at
         },
         pick: {
-          type: snapshot.pick?.type || 'TOTAL',
+          type: pickType as 'SPREAD' | 'TOTAL',
           selection: snapshot.pick?.selection || pick.selection,
           units: snapshot.pick?.units || pick.units,
           confidence: snapshot.pick?.confidence || pick.confidence,
-          locked_odds: snapshot.pick?.locked_odds || null,
-          locked_at: snapshot.locked_at
+          locked_odds: snapshot.odds || null,
+          locked_at: pick.insight_card_locked_at
         },
         predictedScore: {
-          away: 0,
-          home: 0,
-          winner: 'Unknown'
+          away: Math.round(predictedAwayScore || Math.floor(predictedTotal / 2)),
+          home: Math.round(predictedHomeScore || Math.ceil(predictedTotal / 2)),
+          winner: 'TBD'
         },
-        factors: snapshot.factors || [],
+        factors,
         writeups: {
-          prediction: `🔒 LOCKED INSIGHT CARD - Generated at ${new Date(snapshot.locked_at).toLocaleString()}`,
-          gamePrediction: 'This insight card is locked and immutable for transparency.',
+          prediction: `🔒 LOCKED INSIGHT CARD - Generated at ${new Date(pick.insight_card_locked_at).toLocaleString()}`,
+          gamePrediction: isSpread
+            ? `Predicted margin: ${predictedTotal > 0 ? 'Away' : 'Home'} by ${Math.abs(predictedTotal).toFixed(1)} pts`
+            : `Predicted total: ${predictedTotal.toFixed(1)} vs Market: ${marketTotal.toFixed(1)}`,
           bold: 'Locked insight card - no modifications allowed'
+        },
+        market: {
+          conf7: 0,
+          confAdj: 0,
+          confFinal: snapshot.pick?.confidence || pick.confidence,
+          dominant: isSpread ? 'spread' as const : 'total' as const
+        },
+        results: {
+          status: 'pending'
         },
         metadata: {
           ...snapshot.metadata,
           isLocked: true,
-          lockedAt: snapshot.locked_at
+          lockedAt: pick.insight_card_locked_at
         }
       }
 
