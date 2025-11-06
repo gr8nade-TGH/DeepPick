@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { executeWizardPipeline } from '@/lib/cappers/shiva-wizard-orchestrator'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { generateProfessionalAnalysis } from '@/lib/cappers/professional-analysis-generator'
+import { generateBoldPredictions } from '@/lib/cappers/bold-predictions-generator'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -257,64 +258,32 @@ export async function POST(request: Request) {
       console.log('[SHIVA:GeneratePick] Generating bold predictions and professional analysis...')
 
       try {
-        // Call Step 6 (Bold Player Predictions) API
-        // IMPORTANT: Must include Idempotency-Key header (not x-idempotency-key)
-        const step6IdempotencyKey = `${runId}-step6-bold-predictions`
+        // Generate Bold Player Predictions (Step 6)
+        // Call directly instead of HTTP request for reliability
+        console.log('[SHIVA:GeneratePick] Generating bold predictions...')
 
-        // Use same URL construction as cron jobs to ensure consistency
-        const baseUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
-          ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-          : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-
-        console.log('[SHIVA:GeneratePick] Calling Step 6 (Bold Predictions) at:', `${baseUrl}/api/shiva/factors/step5-5`)
-
-        const step6Response = await fetch(`${baseUrl}/api/shiva/factors/step5-5`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Idempotency-Key': step6IdempotencyKey
+        const boldResult = await generateBoldPredictions({
+          game: {
+            away_team: typeof game.away_team === 'string' ? game.away_team : game.away_team?.name,
+            home_team: typeof game.home_team === 'string' ? game.home_team : game.home_team?.name,
+            game_date: game.game_date
           },
-          body: JSON.stringify({
-            run_id: runId,
-            inputs: {
-              sport: 'NBA',
-              betType,
-              game_data: {
-                home_team: typeof game.home_team === 'string' ? game.home_team : game.home_team?.name,
-                away_team: typeof game.away_team === 'string' ? game.away_team : game.away_team?.name,
-                game_date: game.game_date
-              },
-              prediction_data: {
-                predicted_total: betType === 'TOTAL' ? predictedValue : undefined,
-                predicted_margin: betType === 'SPREAD' ? predictedValue : undefined,
-                market_total: betType === 'TOTAL' ? marketLine : undefined,
-                market_spread: betType === 'SPREAD' ? marketLine : undefined,
-                pick_direction: betType === 'TOTAL' ? result.pick.selection.split(' ')[0] : undefined,
-                selection: betType === 'SPREAD' ? result.pick.selection : undefined,
-                confidence: confFinal,
-                factors_summary: result.log?.factors?.map((f: any) => `${f.label}: ${f.weighted_contribution > 0 ? '+' : ''}${f.weighted_contribution.toFixed(1)}`).join(', ') || ''
-              }
-            }
-          })
+          predictedValue,
+          marketLine,
+          confidence: confFinal,
+          factors: result.log?.factors || [],
+          betType,
+          selection: result.pick.selection
         })
 
-        if (step6Response.ok) {
-          const step6Data = await step6Response.json()
-          boldPredictions = step6Data.bold_predictions
-          injurySummary = step6Data.injury_summary
-          console.log('[SHIVA:GeneratePick] Bold predictions generated successfully:', {
-            hasPredictions: !!boldPredictions,
-            predictionCount: boldPredictions?.predictions?.length || 0,
-            hasInjurySummary: !!injurySummary
-          })
-        } else {
-          const errorText = await step6Response.text()
-          console.error('[SHIVA:GeneratePick] Failed to generate bold predictions:', {
-            status: step6Response.status,
-            statusText: step6Response.statusText,
-            error: errorText
-          })
-        }
+        boldPredictions = boldResult.bold_predictions
+        injurySummary = boldResult.injury_summary
+
+        console.log('[SHIVA:GeneratePick] Bold predictions generated:', {
+          hasPredictions: !!boldPredictions,
+          predictionCount: boldPredictions?.predictions?.length || 0,
+          hasInjurySummary: !!injurySummary
+        })
       } catch (boldError) {
         console.error('[SHIVA:GeneratePick] Error generating bold predictions:', boldError)
       }
