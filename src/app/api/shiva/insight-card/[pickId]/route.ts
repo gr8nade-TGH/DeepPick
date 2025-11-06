@@ -498,9 +498,11 @@ function buildInsightCard({ pick, game, run, factorContributions, predictedTotal
   }
 
   // Format totalText based on pick type
+  // For SPREAD: Just show the predicted spread from selection (e.g., "Suns -5.5")
+  // For TOTAL: Show the locked market total (e.g., "O/U 227.5")
   const totalText = isSpread
-    ? `Locked ATS ${spreadLine ? (spreadLine > 0 ? `+${spreadLine}` : spreadLine) : 'N/A'}`
-    : `Locked O/U ${marketTotal.toFixed(1)}`
+    ? pick.selection  // e.g., "Phoenix Suns -5.5"
+    : `O/U ${marketTotal.toFixed(1)}`
 
   // Generate writeup based on pick type
   const writeup = isSpread
