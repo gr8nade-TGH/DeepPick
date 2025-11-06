@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Home, BarChart3, Trophy, Activity, Target, Brain, Map, Shield } from 'lucide-react'
+import { Home, BarChart3, Trophy, Activity, Target, Brain, Map, Shield, Sparkles } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 
 export function NavBar() {
@@ -83,6 +83,16 @@ export function NavBar() {
         >
           <Shield className="w-4 h-4" />
           System Health
+        </Button>
+      </Link>
+
+      <Link href="/cappers/create">
+        <Button
+          variant={isActive('/cappers/create') ? 'default' : 'outline'}
+          className="gap-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white border-0"
+        >
+          <Sparkles className="w-4 h-4" />
+          Become a Capper
         </Button>
       </Link>
     </nav>
