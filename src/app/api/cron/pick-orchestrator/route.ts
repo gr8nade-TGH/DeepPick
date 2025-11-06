@@ -249,7 +249,7 @@ export async function GET(request: Request) {
  * Execute pick generation for a specific schedule
  */
 async function executePick(schedule: ExecutionSchedule): Promise<any> {
-  // For now, route to SHIVA endpoints
+  // Route to existing cron endpoints
   // In Phase 3, this will use the unified /api/cappers/generate-pick endpoint
 
   if (schedule.capper_id === 'SHIVA') {
@@ -259,20 +259,18 @@ async function executePick(schedule: ExecutionSchedule): Promise<any> {
         ? `https://${process.env.VERCEL_URL}`
         : 'http://localhost:3000'
 
-    const endpoint = `${baseUrl}/api/shiva/generate-pick`
+    // Route to existing SHIVA cron endpoints based on bet type
+    const endpoint = schedule.bet_type === 'SPREAD'
+      ? `${baseUrl}/api/cron/shiva-auto-picks-spread`
+      : `${baseUrl}/api/cron/shiva-auto-picks`
 
     console.log(`[ORCHESTRATOR] Calling: ${endpoint}`)
 
     const response = await fetch(endpoint, {
-      method: 'POST',
+      method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
-        'User-Agent': 'DeepPick-Orchestrator'
-      },
-      body: JSON.stringify({
-        betType: schedule.bet_type,
-        sport: schedule.sport
-      })
+        'User-Agent': 'DeepPick-Orchestrator/1.0'
+      }
     })
 
     if (!response.ok) {
