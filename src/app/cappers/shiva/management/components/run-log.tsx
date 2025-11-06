@@ -46,9 +46,10 @@ interface CooldownEntry {
 
 export interface RunLogTableProps {
   betType?: 'TOTAL' | 'SPREAD'
+  capper?: string
 }
 
-export function RunLogTable({ betType = 'TOTAL' }: RunLogTableProps) {
+export function RunLogTable({ betType = 'TOTAL', capper = 'SHIVA' }: RunLogTableProps) {
   const [runs, setRuns] = useState<RunLogEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedRuns, setExpandedRuns] = useState<Set<string>>(new Set())
@@ -71,7 +72,7 @@ export function RunLogTable({ betType = 'TOTAL' }: RunLogTableProps) {
         // console.log('[RunLogTable] Fetching run history...')
         // Add cache-busting timestamp to prevent stale data
         const timestamp = Date.now()
-        const response = await fetch(`/api/shiva/runs/history?limit=50&betType=${betType}&_t=${timestamp}`, {
+        const response = await fetch(`/api/shiva/runs/history?limit=50&betType=${betType}&capper=${capper.toLowerCase()}&_t=${timestamp}`, {
           cache: 'no-store',
           headers: {
             'Cache-Control': 'no-cache'
@@ -96,7 +97,7 @@ export function RunLogTable({ betType = 'TOTAL' }: RunLogTableProps) {
       try {
         // Add cache-busting timestamp to prevent stale data
         const timestamp = Date.now()
-        const response = await fetch(`/api/shiva/cooldowns?betType=${betType}&_t=${timestamp}`, {
+        const response = await fetch(`/api/shiva/cooldowns?betType=${betType}&capper=${capper.toLowerCase()}&_t=${timestamp}`, {
           cache: 'no-store',
           headers: {
             'Cache-Control': 'no-cache'
@@ -121,7 +122,7 @@ export function RunLogTable({ betType = 'TOTAL' }: RunLogTableProps) {
       clearInterval(runInterval)
       clearInterval(cooldownInterval)
     }
-  }, [betType])
+  }, [betType, capper])
 
   // Update timer every second for countdown
   useEffect(() => {
@@ -587,7 +588,7 @@ export function RunLogTable({ betType = 'TOTAL' }: RunLogTableProps) {
         // Force refetch with cache-busting to verify deletion
         setTimeout(async () => {
           const timestamp = Date.now()
-          const verifyResponse = await fetch(`/api/shiva/runs/history?limit=50&betType=${betType}&_t=${timestamp}`, {
+          const verifyResponse = await fetch(`/api/shiva/runs/history?limit=50&betType=${betType}&capper=${capper.toLowerCase()}&_t=${timestamp}`, {
             cache: 'no-store',
             headers: { 'Cache-Control': 'no-cache' }
           })
@@ -597,7 +598,7 @@ export function RunLogTable({ betType = 'TOTAL' }: RunLogTableProps) {
             console.log('[RunLogTable] Verified runs after clear:', data.runs?.length || 0)
           }
 
-          const cooldownResponse = await fetch(`/api/shiva/cooldowns?betType=${betType}&_t=${timestamp}`, {
+          const cooldownResponse = await fetch(`/api/shiva/cooldowns?betType=${betType}&capper=${capper.toLowerCase()}&_t=${timestamp}`, {
             cache: 'no-store',
             headers: { 'Cache-Control': 'no-cache' }
           })

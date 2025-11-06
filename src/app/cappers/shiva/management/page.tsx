@@ -306,7 +306,7 @@ export default function ShivaManagementPage() {
 
         {/* Bottom: Run Log - Full Width */}
         <div className="w-full">
-          <RunLogTable betType={betType} />
+          <RunLogTable betType={betType} capper={selectedCapper} />
         </div>
 
         {/* Bold Predictions Log - Full Width */}

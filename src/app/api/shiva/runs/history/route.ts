@@ -6,14 +6,16 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0 // Disable caching completely
 
 /**
- * GET /api/shiva/runs/history
- * Returns history of SHIVA runs with their outcomes
+ * GET /api/shiva/runs/history?capper=shiva&betType=TOTAL
+ * Returns history of runs with their outcomes
+ * Supports filtering by capper (defaults to 'shiva' for backward compatibility)
  */
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
     const limit = parseInt(searchParams.get('limit') || '50')
     const betType = searchParams.get('betType') // 'TOTAL' or 'SPREAD'
+    const capper = searchParams.get('capper')?.toLowerCase() || 'shiva' // Default to 'shiva' for backward compatibility
 
     const supabase = getSupabaseAdmin()
 
@@ -27,28 +29,28 @@ export async function GET(request: NextRequest) {
 
     console.log('[Run History] Fetched', runsData?.length || 0, 'runs from database')
 
-    // Filter for SHIVA runs only (capper is in metadata)
-    let shivaRuns = (runsData || []).filter((run: any) => run.metadata?.capper === 'shiva')
+    // Filter for specified capper (capper is in metadata)
+    let capperRuns = (runsData || []).filter((run: any) => run.metadata?.capper === capper)
 
     // Filter by betType if provided
     if (betType) {
       const betTypeUpper = betType.toUpperCase() // 'TOTAL' or 'SPREAD'
-      shivaRuns = shivaRuns.filter((run: any) => {
+      capperRuns = capperRuns.filter((run: any) => {
         // Check metadata.bet_type (uppercase) or metadata.pick_type (uppercase)
         const runBetType = run.metadata?.bet_type?.toUpperCase()
         const runPickType = run.metadata?.pick_type?.toUpperCase()
         return runBetType === betTypeUpper || runPickType === betTypeUpper
       })
-      console.log('[Run History] Filtered to', shivaRuns.length, 'SHIVA runs with betType:', betType)
+      console.log('[Run History] Filtered to', capperRuns.length, capper.toUpperCase(), 'runs with betType:', betType)
     } else {
-      console.log('[Run History] Filtered to', shivaRuns.length, 'SHIVA runs (all bet types)')
+      console.log('[Run History] Filtered to', capperRuns.length, capper.toUpperCase(), 'runs (all bet types)')
     }
 
     // Log sample of first run to debug factor data
-    if (shivaRuns.length > 0) {
+    if (capperRuns.length > 0) {
       console.log('[Run History] Sample run:', {
-        run_id: shivaRuns[0].run_id,
-        metadata: shivaRuns[0].metadata
+        run_id: capperRuns[0].run_id,
+        metadata: capperRuns[0].metadata
       })
     }
 
@@ -62,7 +64,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Extract unique game IDs (excluding 'unknown')
-    const gameIds = [...new Set(shivaRuns.map((run: any) => run.game_id).filter((id: string) => id && id !== 'unknown'))]
+    const gameIds = [...new Set(capperRuns.map((run: any) => run.game_id).filter((id: string) => id && id !== 'unknown'))]
 
     // Fetch games data
     let gamesMap = new Map()
@@ -81,7 +83,7 @@ export async function GET(request: NextRequest) {
     const { data: cooldownsData } = await supabase
       .from('pick_generation_cooldowns')
       .select('run_id, result, units, confidence_score')
-      .eq('capper', 'shiva')
+      .eq('capper_id', capper)
 
     // Create a map of run_id -> cooldown data
     const cooldownMap = new Map()
@@ -90,7 +92,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Merge cooldown data into runs and format matchup
-    const runs = shivaRuns.map((run: any, idx: number) => {
+    const runs = capperRuns.map((run: any, idx: number) => {
       const cooldown = cooldownMap.get(run.run_id)
       const metadata = run.metadata || {}
 

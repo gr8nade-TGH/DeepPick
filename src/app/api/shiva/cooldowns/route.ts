@@ -9,6 +9,7 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const betType = searchParams.get('betType') // 'TOTAL' or 'SPREAD'
+    const capper = searchParams.get('capper')?.toLowerCase() || 'shiva' // Default to 'shiva' for backward compatibility
 
     const supabase = getSupabaseAdmin()
 
@@ -27,6 +28,7 @@ export async function GET(request: Request) {
         units,
         created_at
       `)
+      .eq('capper_id', capper) // Filter by capper
       .order('created_at', { ascending: false })
       .limit(50) // Limit to most recent 50 cooldowns
 
