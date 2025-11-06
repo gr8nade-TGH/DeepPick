@@ -134,11 +134,13 @@ INJURY REPORT:
 ${injuryContext}
 
 TASK:
-Generate 2-4 BOLD player predictions that align with our ${prediction_data.pick_direction} prediction.
+Generate 2-4 BOLD player predictions that SUPPORT our ${prediction_data.pick_direction} prediction.
+
+CRITICAL: Your predictions MUST align with the ${prediction_data.pick_direction} pick. DO NOT predict outcomes that would contradict this pick.
 
 PREDICTION CRITERIA:
-- If OVER: Focus on players likely to EXCEED their season averages
-- If UNDER: Focus on players likely to UNDERPERFORM their season averages
+- If OVER: Focus on players likely to EXCEED their season averages (high scoring, efficient shooting, fast pace)
+- If UNDER: Focus on players likely to UNDERPERFORM their season averages (defensive struggles, poor shooting, slow pace)
 - Consider injury impact (missing stars, role players stepping up)
 - Consider recent form (hot/cold streaks)
 - Consider matchup advantages/disadvantages
@@ -148,18 +150,28 @@ REQUIREMENTS:
    ✅ Good: "Jayson Tatum will score 30+ points and grab 8+ rebounds"
    ❌ Bad: "Tatum will have a good game"
 
-2. Predictions must ALIGN with our ${prediction_data.pick_direction} pick
-   - OVER picks: Predict high-scoring performances
-   - UNDER picks: Predict defensive struggles or off-nights
+2. Predictions MUST SUPPORT our ${prediction_data.pick_direction} pick
+   - OVER picks: Predict high-scoring performances, efficient shooting, fast-paced play
+   - UNDER picks: Predict defensive lockdowns, poor shooting nights, slow-paced grind
+   - NEVER predict outcomes that would push the total in the opposite direction
 
 3. Use PROVIDED DATA (injury reports, recent stats) in your reasoning
 
-4. Be BOLD but REALISTIC - these are high-conviction predictions
+4. Be BOLD but REALISTIC - these are high-conviction predictions that support our thesis
 
 5. Assign confidence levels based on:
-   - HIGH: Player has 3+ game streak supporting prediction
+   - HIGH: Player has 3+ game streak supporting prediction + favorable matchup
    - MEDIUM: Player has mixed recent form but favorable matchup
    - LOW: Prediction is bold but has risk factors
+
+EXAMPLES:
+For OVER 223.5 pick:
+✅ "Luka Doncic will score 35+ points and dish 10+ assists" (supports OVER)
+❌ "Luka Doncic will struggle to 18 points on poor shooting" (contradicts OVER)
+
+For UNDER 223.5 pick:
+✅ "Both teams will shoot under 42% from the field due to elite defense" (supports UNDER)
+❌ "Steph Curry will explode for 45 points on 10 threes" (contradicts UNDER)
 
 FORMAT:
 {
@@ -195,11 +207,13 @@ INJURY REPORT:
 ${injuryContext}
 
 TASK:
-Generate 2-4 BOLD player predictions that align with our ${prediction_data.selection} pick.
+Generate 2-4 BOLD player predictions that SUPPORT our ${prediction_data.selection} pick.
+
+CRITICAL: Your predictions MUST align with the ${prediction_data.selection} pick. DO NOT predict outcomes that would contradict this pick.
 
 PREDICTION CRITERIA:
-- If picking FAVORITE: Focus on star players dominating, role players contributing
-- If picking UNDERDOG: Focus on opponent stars struggling, underdog stars stepping up
+- If picking FAVORITE: Focus on star players dominating, role players contributing, opponent stars struggling
+- If picking UNDERDOG: Focus on opponent stars struggling, underdog stars stepping up, favorable matchups
 - Consider injury impact (missing defenders, offensive weapons)
 - Consider recent form (momentum, confidence)
 - Consider matchup advantages (size, speed, shooting)
@@ -209,18 +223,30 @@ REQUIREMENTS:
    ✅ Good: "Luka Doncic will score 35+ points and dish 10+ assists"
    ❌ Bad: "Luka will play well"
 
-2. Predictions must SUPPORT our ${prediction_data.selection} pick
-   - If picking favorite: Predict dominant performances from favorite's stars
-   - If picking underdog: Predict struggles from favorite's stars OR breakout from underdog
+2. Predictions MUST SUPPORT our ${prediction_data.selection} pick
+   - If picking favorite: Predict dominant performances from favorite's stars + struggles from underdog
+   - If picking underdog: Predict struggles from favorite's stars + breakout performances from underdog
+   - NEVER predict outcomes that would help the opposite team cover
 
 3. Use PROVIDED DATA (injury reports, recent stats) in your reasoning
 
-4. Be BOLD but REALISTIC - these are high-conviction predictions
+4. Be BOLD but REALISTIC - these are high-conviction predictions that support our thesis
 
 5. Assign confidence levels based on:
    - HIGH: Player has 3+ game streak supporting prediction + favorable matchup
    - MEDIUM: Player has mixed recent form but strong historical vs opponent
    - LOW: Prediction is bold but has risk factors (injury concern, tough matchup)
+
+EXAMPLES:
+For "Phoenix Suns -5.5" pick (picking favorite):
+✅ "Kevin Durant will score 32+ points on 55% shooting" (supports favorite covering)
+✅ "Clippers will shoot under 40% from field due to Suns defense" (supports favorite covering)
+❌ "Kawhi Leonard will dominate for 38 points" (contradicts favorite covering)
+
+For "Los Angeles Clippers +5.5" pick (picking underdog):
+✅ "Kawhi Leonard will score 30+ and lock down Durant defensively" (supports underdog covering)
+✅ "Suns will struggle with turnovers, committing 18+" (supports underdog covering)
+❌ "Kevin Durant will explode for 40 points on 65% shooting" (contradicts underdog covering)
 
 FORMAT:
 {
