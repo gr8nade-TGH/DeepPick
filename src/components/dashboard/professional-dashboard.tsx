@@ -241,7 +241,8 @@ export function ProfessionalDashboard() {
         <div className="grid grid-cols-12 gap-3">
 
           {/* LEFT COLUMN - TODAY'S PICKS (55%) */}
-          <div className="col-span-7">
+          <div className="col-span-7 space-y-3">
+            {/* Today's Elite Picks - Fixed Height */}
             <Card className="bg-slate-900/50 border-slate-800">
               <CardHeader className="pb-2 px-3 pt-2.5 border-b border-slate-800">
                 <div className="flex items-center justify-between">
@@ -257,8 +258,8 @@ export function ProfessionalDashboard() {
                 </div>
               </CardHeader>
 
-              <CardContent className="px-3 py-2 space-y-1.5">
-                {todaysPicks.slice(picksPage * 10, (picksPage + 1) * 10).map((pick) => {
+              <CardContent className="px-3 py-2 space-y-1.5 h-[400px] overflow-y-auto">
+                {todaysPicks.slice(0, 5).map((pick) => {
                   const confidenceBadge = getConfidenceBadge(pick.confidence)
                   const gameStatus = getGameStatus(pick)
                   const homeTeam = pick.game_snapshot?.home_team
@@ -314,39 +315,20 @@ export function ProfessionalDashboard() {
                 })}
 
                 {/* Pagination Controls */}
-                {todaysPicks.length > 10 && (
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-800">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-[10px] h-7 px-2 bg-slate-800/50 border-slate-700 hover:bg-slate-700"
-                      onClick={() => setPicksPage(Math.max(0, picksPage - 1))}
-                      disabled={picksPage === 0}
-                    >
-                      ← Previous
+                {todaysPicks.length > 5 && (
+                  <Link href="/picks">
+                    <Button className="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white text-xs h-8">
+                      View All {todaysPicks.length} Picks →
                     </Button>
-                    <span className="text-[10px] text-slate-500">
-                      Page {picksPage + 1} of {Math.ceil(todaysPicks.length / 10)}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-[10px] h-7 px-2 bg-slate-800/50 border-slate-700 hover:bg-slate-700"
-                      onClick={() => setPicksPage(Math.min(Math.ceil(todaysPicks.length / 10) - 1, picksPage + 1))}
-                      disabled={picksPage >= Math.ceil(todaysPicks.length / 10) - 1}
-                    >
-                      Next →
-                    </Button>
-                  </div>
+                  </Link>
                 )}
-
-                <Link href="/picks">
-                  <Button className="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white text-xs h-8">
-                    View All Active Picks
-                  </Button>
-                </Link>
               </CardContent>
             </Card>
+
+            {/* Bold Predictions - Same Width as Picks */}
+            <div className="w-full">
+              <BoldPredictionsTable />
+            </div>
           </div>
 
           {/* RIGHT COLUMN - LEADERBOARD + LIVE FEED (45%) */}
@@ -718,11 +700,6 @@ export function ProfessionalDashboard() {
               </CardContent>
             </Card>
           </div>
-        </div>
-
-        {/* Bold Predictions Section - Full Width */}
-        <div className="mt-6">
-          <BoldPredictionsTable />
         </div>
       </div>
 

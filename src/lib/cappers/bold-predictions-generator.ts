@@ -107,7 +107,7 @@ export async function generateBoldPredictions(input: BoldPredictionsInput): Prom
       const edge = Math.abs(input.predictedValue - input.marketLine)
       const pickDirection = input.selection.split(' ')[0] // "OVER" or "UNDER"
 
-      aiPrompt = `You are an expert NBA analyst specializing in player performance predictions.
+      aiPrompt = `You are an elite NBA analyst with a proven track record of accurate player performance predictions. Your reputation depends on ACCURACY, not volume.
 
 GAME CONTEXT:
 - Matchup: ${input.game.away_team} @ ${input.game.home_team}
@@ -125,47 +125,66 @@ INJURY REPORT:
 ${injuryContext}
 
 TASK:
-Generate 2-4 BOLD player predictions that SUPPORT our ${pickDirection} prediction.
+Generate 2-3 HIGH-PROBABILITY player predictions that STRONGLY SUPPORT our ${pickDirection} prediction.
 
-CRITICAL: Your predictions MUST align with the ${pickDirection} pick. DO NOT predict outcomes that would contradict this pick.
+⚠️ CRITICAL ACCURACY GUIDELINES:
+1. QUALITY OVER QUANTITY - Only make predictions you're highly confident in
+2. Each prediction MUST be backed by CONCRETE DATA from the factors/injuries above
+3. Predictions MUST align with the ${pickDirection} pick - NO contradictions
+4. Use CONSERVATIVE estimates - Better to under-promise and over-deliver
+5. Only assign HIGH confidence if you have STRONG statistical backing
 
-PREDICTION CRITERIA:
-- If OVER: Focus on players likely to EXCEED their season averages (high scoring, efficient shooting, fast pace)
-- If UNDER: Focus on players likely to UNDERPERFORM their season averages (defensive struggles, poor shooting, slow pace)
+PREDICTION CRITERIA FOR ${pickDirection}:
+${pickDirection === 'OVER' ? `
+- Focus on players with PROVEN recent scoring trends (last 5-10 games)
+- Target players facing WEAK defensive matchups (backed by factor data)
+- Look for pace-up situations and offensive-minded lineups
+- Avoid speculative "breakout" predictions without data support
+` : `
+- Focus on players facing ELITE defensive matchups (backed by factor data)
+- Target players with RECENT shooting struggles (last 5-10 games)
+- Look for pace-down situations and defensive-minded lineups
+- Avoid predicting career-low performances without strong evidence
+`}
 
-REQUIREMENTS:
-1. Each prediction must be SPECIFIC and MEASURABLE
-2. Predictions MUST SUPPORT our ${pickDirection} pick
-3. Include confidence level (HIGH, MEDIUM, LOW)
-4. Provide clear reasoning based on data
+CONFIDENCE LEVEL STANDARDS:
+- HIGH: Strong statistical evidence + recent trends + favorable matchup data
+- MEDIUM: Some statistical support + reasonable matchup analysis
+- LOW: Speculative but plausible based on limited data
 
-EXAMPLES:
+EXAMPLES OF GOOD PREDICTIONS:
 For OVER 223.5 pick:
-✅ "Luka Doncic will score 35+ points and dish 10+ assists" (supports OVER)
-❌ "Luka Doncic will struggle to 18 points on poor shooting" (contradicts OVER)
+✅ "Luka Doncic will score 32+ points - averaging 34.2 PPG in last 5 games vs teams ranked 25th+ in defensive efficiency"
+✅ "Both teams will combine for 15+ three-pointers - each shooting 38%+ from deep in last 3 games"
 
 For UNDER 223.5 pick:
-✅ "Both teams will shoot under 42% from the field due to elite defense" (supports UNDER)
-❌ "Steph Curry will explode for 45 points on 10 threes" (contradicts UNDER)
+✅ "Kawhi Leonard will score under 22 points - facing #1 ranked perimeter defense, averaging 18.5 PPG vs top-5 defenses this season"
+✅ "Both teams will shoot under 44% FG - elite defensive matchup, both teams holding opponents to 43% in last 5 games"
+
+❌ AVOID THESE:
+- Vague predictions: "Player X will have a big game"
+- Unsupported claims: "Player Y will break out for 40 points" (without recent scoring trend)
+- Contradictory predictions: Predicting high scoring for UNDER pick
 
 Return ONLY valid JSON in this exact format:
 {
   "predictions": [
     {
-      "player": "Player Name",
-      "team": "Team Name",
-      "prediction": "Specific measurable prediction",
-      "reasoning": "Why this is likely based on data/matchup",
+      "player": "Player Name or 'Both Teams' for team-level predictions",
+      "team": "Team Name or 'Both' for team-level predictions",
+      "prediction": "Specific measurable prediction with statistical target",
+      "reasoning": "Concrete data-driven reasoning citing recent stats, matchup data, or factor analysis",
       "confidence": "HIGH" | "MEDIUM" | "LOW"
     }
   ],
-  "summary": "Brief summary of how these predictions support the ${pickDirection} pick"
+  "summary": "Brief data-driven summary of how these predictions support the ${pickDirection} pick"
 }`
     } else {
       // SPREAD predictions
       const edge = Math.abs(input.predictedValue - input.marketLine)
-      
-      aiPrompt = `You are an expert NBA analyst specializing in player performance predictions.
+      const favoredTeam = input.selection.includes(input.game.away_team) ? input.game.away_team : input.game.home_team
+
+      aiPrompt = `You are an elite NBA analyst with a proven track record of accurate player performance predictions. Your reputation depends on ACCURACY, not volume.
 
 GAME CONTEXT:
 - Matchup: ${input.game.away_team} @ ${input.game.home_team}
@@ -173,6 +192,7 @@ GAME CONTEXT:
 - Predicted Margin: ${input.predictedValue.toFixed(1)} points
 - Market Spread: ${input.marketLine}
 - Pick: ${input.selection}
+- Favored Team: ${favoredTeam}
 - Confidence: ${input.confidence.toFixed(1)}/10.0
 - Edge: ${edge.toFixed(1)} points
 
@@ -183,28 +203,53 @@ INJURY REPORT:
 ${injuryContext}
 
 TASK:
-Generate 2-4 BOLD player predictions that SUPPORT our ${input.selection} pick.
+Generate 2-3 HIGH-PROBABILITY player predictions that STRONGLY SUPPORT our ${input.selection} pick.
 
-CRITICAL: Your predictions MUST align with the ${input.selection} pick. DO NOT predict outcomes that would contradict this pick.
+⚠️ CRITICAL ACCURACY GUIDELINES:
+1. QUALITY OVER QUANTITY - Only make predictions you're highly confident in
+2. Each prediction MUST be backed by CONCRETE DATA from the factors/injuries above
+3. Predictions MUST align with ${favoredTeam} covering the spread
+4. Use CONSERVATIVE estimates - Better to under-promise and over-deliver
+5. Only assign HIGH confidence if you have STRONG statistical backing
 
-REQUIREMENTS:
-1. Each prediction must be SPECIFIC and MEASURABLE
-2. Predictions MUST SUPPORT our ${input.selection} pick
-3. Include confidence level (HIGH, MEDIUM, LOW)
-4. Provide clear reasoning based on data
+PREDICTION CRITERIA FOR SPREAD PICKS:
+- Focus on KEY PLAYERS from ${favoredTeam} who will drive the margin
+- Target MATCHUP ADVANTAGES backed by factor data
+- Consider DEFENSIVE IMPACT on opposing team's stars
+- Look for RECENT PERFORMANCE TRENDS (last 5-10 games)
+- Avoid speculative predictions without statistical support
+
+CONFIDENCE LEVEL STANDARDS:
+- HIGH: Strong statistical evidence + recent trends + favorable matchup data
+- MEDIUM: Some statistical support + reasonable matchup analysis
+- LOW: Speculative but plausible based on limited data
+
+EXAMPLES OF GOOD PREDICTIONS:
+For Lakers -5.5 pick:
+✅ "LeBron James will score 28+ points and grab 8+ rebounds - averaging 31.2 PPG in last 5 home games vs this opponent"
+✅ "Lakers will hold opponent's leading scorer under 20 points - Lakers defense ranked #3 vs opposing position, allowing 18.5 PPG"
+
+For Celtics +3.5 pick:
+✅ "Jayson Tatum will score 30+ points - averaging 32.8 PPG in last 3 games as underdog, favorable matchup vs 22nd-ranked defense"
+✅ "Celtics will force 15+ turnovers - averaging 16.2 forced turnovers in last 5 games, opponent averaging 14.8 turnovers"
+
+❌ AVOID THESE:
+- Vague predictions: "Player X will dominate"
+- Unsupported claims: "Player Y will have career game" (without recent trend)
+- Contradictory predictions: Predicting poor performance for favored team's star
 
 Return ONLY valid JSON in this exact format:
 {
   "predictions": [
     {
-      "player": "Player Name",
+      "player": "Player Name or 'Team Defense' for team-level predictions",
       "team": "Team Name",
-      "prediction": "Specific measurable prediction",
-      "reasoning": "Why this is likely based on data/matchup",
+      "prediction": "Specific measurable prediction with statistical target",
+      "reasoning": "Concrete data-driven reasoning citing recent stats, matchup data, or factor analysis",
       "confidence": "HIGH" | "MEDIUM" | "LOW"
     }
   ],
-  "summary": "Brief summary of how these predictions support the pick"
+  "summary": "Brief data-driven summary of how these predictions support ${favoredTeam} covering the spread"
 }`
     }
 
@@ -222,7 +267,7 @@ Return ONLY valid JSON in this exact format:
         messages: [
           {
             role: 'system',
-            content: 'You are an expert NBA analyst specializing in player performance predictions. You provide specific, measurable predictions that align with the overall game prediction. Always respond with valid JSON.'
+            content: 'You are an elite NBA analyst with a proven track record of accurate player performance predictions. Your reputation depends on ACCURACY over volume. You only make predictions backed by concrete statistical evidence and recent performance trends. You provide specific, measurable, conservative predictions that align with the overall game prediction. Always respond with valid JSON.'
           },
           {
             role: 'user',
@@ -230,7 +275,7 @@ Return ONLY valid JSON in this exact format:
           }
         ],
         max_tokens: 1500,
-        temperature: 0.7,
+        temperature: 0.5,  // Lower temperature for more conservative, data-driven predictions
         response_format: { type: 'json_object' }
       })
     })

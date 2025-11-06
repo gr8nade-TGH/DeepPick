@@ -91,19 +91,19 @@ export function BoldPredictionsTable() {
   }
 
   return (
-    <div className="border border-gray-700 rounded bg-gray-900 flex flex-col max-h-[500px]">
+    <div className="border border-gray-700 rounded bg-gray-900 flex flex-col max-h-[400px]">
       {/* Header */}
-      <div className="p-4 border-b border-gray-700 bg-gradient-to-r from-purple-900/30 to-pink-900/30">
+      <div className="p-3 border-b border-gray-700 bg-gradient-to-r from-purple-900/30 to-pink-900/30">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">🎯</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xl">🎯</span>
             <div>
-              <h2 className="text-lg font-bold text-white">AI Bold Predictions Log</h2>
-              <p className="text-xs text-gray-400">Player-specific predictions from SHIVA picks</p>
+              <h2 className="text-sm font-bold text-white">Bold Predictions</h2>
+              <p className="text-[10px] text-gray-400">AI player predictions</p>
             </div>
           </div>
-          <div className="text-sm text-gray-400">
-            {entries.length} prediction{entries.length !== 1 ? 's' : ''}
+          <div className="text-xs text-gray-400">
+            {entries.length} total
           </div>
         </div>
       </div>
@@ -135,8 +135,8 @@ export function BoldPredictionsTable() {
                 return (
                   <>
                     {/* Main Row */}
-                    <tr 
-                      key={idx} 
+                    <tr
+                      key={idx}
                       className="border-b border-gray-800 hover:bg-gray-800 cursor-pointer"
                       onClick={() => toggleExpand(entry.run_id)}
                     >
@@ -152,11 +152,10 @@ export function BoldPredictionsTable() {
                         {entry.matchup}
                       </td>
                       <td className="py-2 px-3">
-                        <span className={`px-2 py-0.5 rounded text-xs font-bold ${
-                          entry.bet_type === 'total' 
-                            ? 'bg-blue-900 text-blue-200' 
+                        <span className={`px-2 py-0.5 rounded text-xs font-bold ${entry.bet_type === 'total'
+                            ? 'bg-blue-900 text-blue-200'
                             : 'bg-purple-900 text-purple-200'
-                        }`}>
+                          }`}>
                           {entry.bet_type.toUpperCase()}
                         </span>
                       </td>
@@ -191,7 +190,7 @@ export function BoldPredictionsTable() {
                             {/* Predictions Grid */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                               {entry.bold_predictions.predictions.map((pred, predIdx) => (
-                                <div 
+                                <div
                                   key={predIdx}
                                   className="bg-gray-900 border border-cyan-500/30 rounded-lg p-3 hover:border-cyan-500/50 transition-colors"
                                 >
