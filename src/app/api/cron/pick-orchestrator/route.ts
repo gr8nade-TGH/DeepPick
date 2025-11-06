@@ -252,7 +252,7 @@ async function executePick(schedule: ExecutionSchedule): Promise<any> {
   // Route to existing cron endpoints
   // In Phase 3, this will use the unified /api/cappers/generate-pick endpoint
 
-  if (schedule.capper_id === 'SHIVA') {
+  if (schedule.capper_id === 'shiva') {
     const baseUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
       ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
       : process.env.VERCEL_URL
