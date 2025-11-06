@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider'
 import { ArrowLeft, ArrowRight, CheckCircle, Sparkles } from 'lucide-react'
 
-type Step = 1 | 2 | 3 | 4 | 5
+type Step = 1 | 2 | 3 | 4
 
 interface CapperConfig {
   capper_id: string
@@ -29,6 +29,59 @@ interface CapperConfig {
   }
   execution_interval_minutes: number
   execution_priority: number
+}
+
+const FACTOR_DETAILS = {
+  F1: {
+    name: 'Recent Form Momentum',
+    description: 'Analyzes team performance trends over the last 5 games. Higher weight = more emphasis on hot/cold streaks.',
+    importance: 'Critical for identifying teams on winning or losing runs that affect scoring patterns.'
+  },
+  F2: {
+    name: 'Head-to-Head History',
+    description: 'Examines past matchups between these teams. Higher weight = more trust in historical patterns.',
+    importance: 'Teams often have consistent scoring patterns against specific opponents.'
+  },
+  F3: {
+    name: 'Home/Away Performance',
+    description: 'Compares home vs away scoring averages. Higher weight = stronger home court advantage impact.',
+    importance: 'Home teams typically score 2-4 more points per game than on the road.'
+  },
+  F4: {
+    name: 'Pace & Tempo Analysis',
+    description: 'Evaluates game speed and possession count. Higher weight = more emphasis on fast/slow pace impact.',
+    importance: 'Fast-paced games produce higher totals; slow-paced games produce lower totals.'
+  },
+  F5: {
+    name: 'Rest & Fatigue',
+    description: 'Considers days of rest and back-to-back games. Higher weight = more emphasis on tired teams.',
+    importance: 'Fatigued teams score fewer points and allow more points on defense.'
+  },
+  S1: {
+    name: 'Recent Form Momentum',
+    description: 'Analyzes team performance trends over the last 5 games. Higher weight = more emphasis on hot/cold streaks.',
+    importance: 'Critical for identifying teams on winning or losing runs that affect point margins.'
+  },
+  S2: {
+    name: 'Head-to-Head History',
+    description: 'Examines past matchups between these teams. Higher weight = more trust in historical patterns.',
+    importance: 'Teams often have consistent margin patterns against specific opponents.'
+  },
+  S3: {
+    name: 'Home/Away Performance',
+    description: 'Compares home vs away point differentials. Higher weight = stronger home court advantage impact.',
+    importance: 'Home teams typically cover spreads more often than road teams.'
+  },
+  S4: {
+    name: 'Offensive/Defensive Ratings',
+    description: 'Evaluates team efficiency on both ends. Higher weight = more emphasis on statistical dominance.',
+    importance: 'Elite offenses vs weak defenses create larger point margins.'
+  },
+  S5: {
+    name: 'Rest & Fatigue',
+    description: 'Considers days of rest and back-to-back games. Higher weight = more emphasis on tired teams.',
+    importance: 'Fatigued teams struggle to cover spreads, especially on the road.'
+  }
 }
 
 const AVAILABLE_FACTORS = {
@@ -76,6 +129,22 @@ export default function CreateCapperPage() {
 
   const updateConfig = (updates: Partial<CapperConfig>) => {
     setConfig(prev => ({ ...prev, ...updates }))
+  }
+
+  // Calculate total weight allocation for a bet type (max 250% = 2.5x per factor on average)
+  const calculateTotalWeight = (betType: string): number => {
+    const factorConfig = config.factor_config[betType]
+    if (!factorConfig) return 0
+
+    return factorConfig.enabled_factors.reduce((sum, factor) => {
+      return sum + (factorConfig.weights[factor] || 0)
+    }, 0)
+  }
+
+  const getTotalWeightPercentage = (betType: string): number => {
+    const total = calculateTotalWeight(betType)
+    const maxAllowed = 2.5 * (AVAILABLE_FACTORS[betType as keyof typeof AVAILABLE_FACTORS]?.length || 5)
+    return (total / maxAllowed) * 100
   }
 
   const handleCapperIdChange = (displayName: string) => {
@@ -137,8 +206,6 @@ export default function CreateCapperPage() {
         )
       case 4:
         return true
-      case 5:
-        return true
       default:
         return false
     }
@@ -183,15 +250,15 @@ export default function CreateCapperPage() {
 
       {/* Progress Steps */}
       <div className="flex items-center justify-between mb-8">
-        {[1, 2, 3, 4, 5].map((s) => (
+        {[1, 2, 3, 4].map((s) => (
           <div key={s} className="flex items-center">
             <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${s === step ? 'bg-primary text-primary-foreground' :
-                s < step ? 'bg-green-500 text-white' :
-                  'bg-muted text-muted-foreground'
+              s < step ? 'bg-green-500 text-white' :
+                'bg-muted text-muted-foreground'
               }`}>
               {s < step ? <CheckCircle className="w-5 h-5" /> : s}
             </div>
-            {s < 5 && <div className={`h-1 w-16 mx-2 ${s < step ? 'bg-green-500' : 'bg-muted'}`} />}
+            {s < 4 && <div className={`h-1 w-24 mx-2 ${s < step ? 'bg-green-500' : 'bg-muted'}`} />}
           </div>
         ))}
       </div>
@@ -202,15 +269,13 @@ export default function CreateCapperPage() {
             {step === 1 && 'Capper Identity'}
             {step === 2 && 'Sport & Bet Types'}
             {step === 3 && 'Factor Configuration'}
-            {step === 4 && 'Execution Schedule'}
-            {step === 5 && 'Review & Launch'}
+            {step === 4 && 'Review & Launch'}
           </CardTitle>
           <CardDescription>
             {step === 1 && 'Choose a unique name and description for your capper'}
             {step === 2 && 'Select which sport and bet types your capper will analyze'}
-            {step === 3 && 'Configure which factors to use and their weights'}
-            {step === 4 && 'Set how often your capper should generate picks'}
-            {step === 5 && 'Review your configuration and launch your capper'}
+            {step === 3 && 'Configure which factors to use and their weights (250% total allocation)'}
+            {step === 4 && 'Review your configuration and launch your capper'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -301,108 +366,104 @@ export default function CreateCapperPage() {
           {/* Step 3: Factor Configuration */}
           {step === 3 && (
             <div className="space-y-6">
-              {config.bet_types.map(betType => (
-                <div key={betType} className="space-y-4">
-                  <h3 className="font-semibold text-lg">{betType} Factors</h3>
+              {config.bet_types.map(betType => {
+                const totalWeight = calculateTotalWeight(betType)
+                const maxWeight = 2.5 * (AVAILABLE_FACTORS[betType as keyof typeof AVAILABLE_FACTORS]?.length || 5)
+                const percentage = (totalWeight / maxWeight) * 100
 
-                  {AVAILABLE_FACTORS[betType as keyof typeof AVAILABLE_FACTORS]?.map(factor => {
-                    const isEnabled = config.factor_config[betType]?.enabled_factors.includes(factor)
-                    const weight = config.factor_config[betType]?.weights[factor] || 1.0
-
-                    return (
-                      <div key={factor} className="border rounded-lg p-4 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`${betType}-${factor}`}
-                              checked={isEnabled}
-                              onCheckedChange={() => handleFactorToggle(betType, factor)}
-                            />
-                            <Label htmlFor={`${betType}-${factor}`} className="cursor-pointer font-medium">
-                              {factor}
-                            </Label>
-                          </div>
-                          <span className="text-sm text-muted-foreground">
-                            Weight: {weight.toFixed(1)}x
-                          </span>
-                        </div>
-
-                        {isEnabled && (
-                          <div className="space-y-2">
-                            <Slider
-                              value={[weight]}
-                              onValueChange={([value]) => handleWeightChange(betType, factor, value)}
-                              min={0.1}
-                              max={2.0}
-                              step={0.1}
-                              className="w-full"
-                            />
-                            <div className="flex justify-between text-xs text-muted-foreground">
-                              <span>0.1x (Low)</span>
-                              <span>1.0x (Normal)</span>
-                              <span>2.0x (High)</span>
-                            </div>
-                          </div>
-                        )}
+                return (
+                  <div key={betType} className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold text-lg">{betType} Factors</h3>
+                      <div className="text-sm">
+                        <span className={`font-bold ${percentage > 100 ? 'text-red-500' : percentage > 80 ? 'text-yellow-500' : 'text-green-500'}`}>
+                          {totalWeight.toFixed(1)} / {maxWeight.toFixed(1)}
+                        </span>
+                        <span className="text-muted-foreground ml-1">
+                          ({percentage.toFixed(0)}%)
+                        </span>
                       </div>
-                    )
-                  })}
-                </div>
-              ))}
+                    </div>
+
+                    {/* Allocation Bar */}
+                    <div className="space-y-1">
+                      <div className="h-3 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className={`h-full transition-all ${percentage > 100 ? 'bg-red-500' :
+                            percentage > 80 ? 'bg-yellow-500' :
+                              'bg-green-500'
+                            }`}
+                          style={{ width: `${Math.min(percentage, 100)}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        💡 You have <strong>250% total allocation</strong> to distribute across all factors. Higher weights = more influence on predictions.
+                      </p>
+                    </div>
+
+                    {AVAILABLE_FACTORS[betType as keyof typeof AVAILABLE_FACTORS]?.map(factor => {
+                      const isEnabled = config.factor_config[betType]?.enabled_factors.includes(factor)
+                      const weight = config.factor_config[betType]?.weights[factor] || 1.0
+                      const details = FACTOR_DETAILS[factor as keyof typeof FACTOR_DETAILS]
+
+                      return (
+                        <div key={factor} className="border rounded-lg p-4 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`${betType}-${factor}`}
+                                checked={isEnabled}
+                                onCheckedChange={() => handleFactorToggle(betType, factor)}
+                              />
+                              <div>
+                                <Label htmlFor={`${betType}-${factor}`} className="cursor-pointer font-medium">
+                                  {factor}: {details?.name}
+                                </Label>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  {details?.description}
+                                </p>
+                              </div>
+                            </div>
+                            <span className="text-sm font-semibold text-primary">
+                              {weight.toFixed(1)}x
+                            </span>
+                          </div>
+
+                          {isEnabled && (
+                            <>
+                              <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded p-2">
+                                <p className="text-xs text-blue-700 dark:text-blue-300">
+                                  <strong>Why it matters:</strong> {details?.importance}
+                                </p>
+                              </div>
+                              <div className="space-y-2">
+                                <Slider
+                                  value={[weight]}
+                                  onValueChange={([value]) => handleWeightChange(betType, factor, value)}
+                                  min={0.1}
+                                  max={2.0}
+                                  step={0.1}
+                                  className="w-full"
+                                />
+                                <div className="flex justify-between text-xs text-muted-foreground">
+                                  <span>0.1x (Minimal)</span>
+                                  <span>1.0x (Balanced)</span>
+                                  <span>2.0x (Maximum)</span>
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )
+              })}
             </div>
           )}
 
-          {/* Step 4: Execution Schedule */}
+          {/* Step 4: Review & Launch */}
           {step === 4 && (
-            <>
-              <div className="space-y-2">
-                <Label>Execution Interval *</Label>
-                <Select
-                  value={config.execution_interval_minutes.toString()}
-                  onValueChange={(value) => updateConfig({ execution_interval_minutes: parseInt(value) })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {INTERVAL_OPTIONS.map(option => (
-                      <SelectItem key={option.value} value={option.value.toString()}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-sm text-muted-foreground">
-                  How often should your capper check for new games and generate picks?
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Priority (1-10) *</Label>
-                <div className="space-y-2">
-                  <Slider
-                    value={[config.execution_priority]}
-                    onValueChange={([value]) => updateConfig({ execution_priority: value })}
-                    min={1}
-                    max={10}
-                    step={1}
-                    className="w-full"
-                  />
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>1 (Low)</span>
-                    <span className="font-medium text-foreground">{config.execution_priority}</span>
-                    <span>10 (High)</span>
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Higher priority cappers execute first when multiple cappers are due at the same time
-                </p>
-              </div>
-            </>
-          )}
-
-          {/* Step 5: Review & Launch */}
-          {step === 5 && (
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -422,14 +483,16 @@ export default function CreateCapperPage() {
                   <p className="font-medium">{config.bet_types.join(', ')}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Execution Interval</Label>
-                  <p className="font-medium">
-                    {INTERVAL_OPTIONS.find(o => o.value === config.execution_interval_minutes)?.label}
-                  </p>
+                  <Label className="text-muted-foreground">Color Theme</Label>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-6 h-6 rounded ${COLOR_THEMES.find(t => t.value === config.color_theme)?.class}`} />
+                    <p className="font-medium capitalize">{config.color_theme}</p>
+                  </div>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Priority</Label>
-                  <p className="font-medium">{config.execution_priority}/10</p>
+                  <Label className="text-muted-foreground">Execution Settings</Label>
+                  <p className="font-medium text-green-600">Auto-Optimized ✓</p>
+                  <p className="text-xs text-muted-foreground">15min interval, Priority 5</p>
                 </div>
               </div>
 
@@ -459,11 +522,11 @@ export default function CreateCapperPage() {
                 ))}
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded">
-                <p className="font-medium">Ready to launch!</p>
+              <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200 px-4 py-3 rounded">
+                <p className="font-medium">🚀 Ready to launch!</p>
                 <p className="text-sm mt-1">
-                  Your capper will be created and automatically added to the execution schedule.
-                  It will start generating picks within {config.execution_interval_minutes} minutes.
+                  Your capper will be created and automatically added to the execution schedule with optimized settings (15-minute interval, priority 5).
+                  It will start generating picks within 15 minutes.
                 </p>
               </div>
             </div>
@@ -486,7 +549,7 @@ export default function CreateCapperPage() {
               {step === 1 ? 'Cancel' : 'Back'}
             </Button>
 
-            {step < 5 ? (
+            {step < 4 ? (
               <Button
                 onClick={() => setStep((step + 1) as Step)}
                 disabled={!canProceed()}
