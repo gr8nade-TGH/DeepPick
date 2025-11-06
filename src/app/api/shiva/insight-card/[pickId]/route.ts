@@ -181,6 +181,11 @@ export async function GET(
       const predictedTotal = snapshot.predictions?.predicted_total || 0
       const marketTotal = snapshot.predictions?.market_total || 0
 
+      // Extract confidence values from snapshot
+      const conf7 = snapshot.confidence?.conf7 || 0
+      const confMarketAdj = snapshot.confidence?.conf_market_adj || 0
+      const confFinal = snapshot.confidence?.conf_final || snapshot.pick?.confidence || pick.confidence
+
       // Format totalText based on pick type
       const totalText = isSpread
         ? snapshot.pick?.selection || pick.selection  // e.g., "Phoenix Suns -5.5"
@@ -192,16 +197,17 @@ export async function GET(
         let overScore = 0
         let underScore = 0
 
-        if (factor.weighted_contributions) {
-          if (isSpread) {
-            // SPREAD: Use awayScore/homeScore
-            overScore = factor.weighted_contributions.awayScore || 0
-            underScore = factor.weighted_contributions.homeScore || 0
-          } else {
-            // TOTAL: Use overScore/underScore
-            overScore = factor.weighted_contributions.overScore || 0
-            underScore = factor.weighted_contributions.underScore || 0
-          }
+        // Check weighted_contributions first, then fall back to parsed_values_json
+        const contributions = factor.weighted_contributions || factor.parsed_values_json || {}
+
+        if (isSpread) {
+          // SPREAD: Use awayScore/homeScore (NOT overScore/underScore)
+          overScore = contributions.awayScore || 0
+          underScore = contributions.homeScore || 0
+        } else {
+          // TOTAL: Use overScore/underScore
+          overScore = contributions.overScore || 0
+          underScore = contributions.underScore || 0
         }
 
         return {
@@ -210,7 +216,7 @@ export async function GET(
           icon: getFactorIcon(factor.key || factor.factor_key),
           overScore,
           underScore,
-          weightAppliedPct: factor.weight_percentage || 0,
+          weightAppliedPct: factor.weight_percentage || factor.weight_total_pct || 0,
           rationale: factor.notes || 'No rationale provided'
         }
       })
@@ -251,10 +257,10 @@ export async function GET(
           bold: 'Locked insight card - no modifications allowed'
         },
         market: {
-          conf7: 0,
-          confAdj: 0,
-          confFinal: snapshot.pick?.confidence || pick.confidence,
-          dominant: isSpread ? 'spread' as const : 'total' as const
+          conf7,
+          confAdj: confMarketAdj,
+          confFinal,
+          dominant: isSpread ? pick.selection : 'total' as const
         },
         results: {
           status: 'pending'

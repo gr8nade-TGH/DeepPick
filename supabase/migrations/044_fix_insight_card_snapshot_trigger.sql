@@ -123,6 +123,11 @@ BEGIN
       'predicted_home_score', run_record.metadata->'predicted_home_score',
       'predicted_away_score', run_record.metadata->'predicted_away_score'
     ),
+    'confidence', jsonb_build_object(
+      'conf7', run_record.conf7,
+      'conf_market_adj', run_record.conf_market_adj,
+      'conf_final', run_record.conf_final
+    ),
     'metadata', jsonb_build_object(
       'created_at', NEW.created_at,
       'locked_by', 'system',

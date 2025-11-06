@@ -242,6 +242,11 @@ export async function POST(request: Request) {
       steps: result.steps // Store all step results for debugging
     }
 
+    // Extract confidence values from wizard steps (same for both TOTAL and SPREAD)
+    const conf7 = result.steps?.step4?.predictions?.conf7_score || 0
+    const confMarketAdj = result.steps?.step5?.conf_market_adj || 0
+    const confFinal = result.steps?.step5?.conf_final || confidence
+
     const { error: runError } = await supabase
       .from('runs')
       .insert({
@@ -254,6 +259,9 @@ export async function POST(request: Request) {
         predicted_total: predictedValue,
         baseline_avg: baselineAvg,
         market_total: marketLine,
+        conf7,
+        conf_market_adj: confMarketAdj,
+        conf_final: confFinal,
         // NOTE: predicted_home_score and predicted_away_score columns don't exist in database
         // These values are stored in metadata.steps.step4.predictions instead
         // OLD: Also store in metadata for backwards compatibility
