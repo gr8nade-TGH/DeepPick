@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Home, BarChart3, Trophy, Activity, Target, Brain, Map } from 'lucide-react'
+import { Home, BarChart3, Trophy, Activity, Target, Brain, Map, Shield } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 
 export function NavBar() {
@@ -73,6 +73,16 @@ export function NavBar() {
         >
           <Map className="w-4 h-4" />
           Battle Map
+        </Button>
+      </Link>
+
+      <Link href="/admin/system-health">
+        <Button
+          variant={isActive('/admin/system-health') ? 'default' : 'outline'}
+          className="gap-2"
+        >
+          <Shield className="w-4 h-4" />
+          System Health
         </Button>
       </Link>
     </nav>
