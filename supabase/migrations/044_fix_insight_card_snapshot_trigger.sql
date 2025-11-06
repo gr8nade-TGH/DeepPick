@@ -38,10 +38,11 @@ BEGIN
   END IF;
 
   -- Get game data
-  SELECT * INTO game_record FROM games WHERE id = NEW.game_id LIMIT 1;
+  -- CRITICAL: Cast run_record.game_id to UUID because runs.game_id is TEXT but games.id is UUID
+  SELECT * INTO game_record FROM games WHERE id = run_record.game_id::uuid LIMIT 1;
 
   IF NOT FOUND THEN
-    RAISE WARNING 'Game % not found for pick % - cannot lock insight card', NEW.game_id, NEW.id;
+    RAISE WARNING 'Game % not found for pick % - cannot lock insight card', run_record.game_id, NEW.id;
     RETURN NEW;
   END IF;
 
