@@ -388,7 +388,7 @@ FORMAT:
               ai_prompt: '',
               generated_at: new Date().toISOString(),
               confidence: 0,
-              bet_type: betType,
+              bet_type: (betType === 'SPREAD' || betType === 'TOTAL') ? betType : 'TOTAL',
               ai_call_success: false,
               error: error instanceof Error ? error.message : String(error)
             },
@@ -405,7 +405,7 @@ FORMAT:
             ai_prompt: '',
             generated_at: new Date().toISOString(),
             confidence: 0,
-            bet_type: betType,
+            bet_type: (betType === 'SPREAD' || betType === 'TOTAL') ? betType : 'TOTAL',
             ai_call_success: false,
             error: `Only NBA TOTAL and SPREAD bets supported for Bold Player Predictions (received: ${sport} ${betType})`
           },
