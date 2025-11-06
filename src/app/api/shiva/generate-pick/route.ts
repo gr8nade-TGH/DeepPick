@@ -254,6 +254,10 @@ export async function POST(request: Request) {
         run_id: runId,
         game_id: game.id,
         state: result.pick ? 'COMPLETE' : 'VOIDED',
+        // CRITICAL: Store bet_type and pick_type in columns (not just metadata)
+        bet_type: betType,
+        pick_type: betType,
+        capper: 'shiva',
         // NEW: Store data in separate columns (PRIORITY)
         factor_contributions: result.log?.factors || [],
         predicted_total: predictedValue,
