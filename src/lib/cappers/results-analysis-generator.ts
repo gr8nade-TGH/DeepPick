@@ -267,10 +267,12 @@ async function generateAIResultsAnalysis(
   // Format box score data
   const boxScoreSummary = formatBoxScoreSummary(boxScore, input.game)
 
-  // Format factor accuracy
-  const factorAccuracySummary = factorAccuracy.map(f =>
-    `- ${f.factorName}: ${f.wasCorrect ? '✅ CORRECT' : '❌ INCORRECT'} (${f.reasoning})`
-  ).join('\n')
+  // Format factor accuracy with impact indicators
+  const factorAccuracySummary = factorAccuracy.map(f => {
+    const icon = f.wasCorrect ? '✅' : '❌'
+    const impactBadge = f.impact === 'high' ? '🔥' : f.impact === 'medium' ? '⚡' : '💨'
+    return `• ${icon} ${impactBadge} ${f.factorName} (${f.contribution > 0 ? '+' : ''}${f.contribution.toFixed(1)} pts): ${f.reasoning}`
+  }).join('\n')
 
   // Build AI prompt
   const aiPrompt = buildResultsAnalysisPrompt(input, boxScoreSummary, factorAccuracySummary)
@@ -356,44 +358,55 @@ FACTOR ACCURACY:
 ${factorAccuracySummary}
 
 TASK:
-Write a direct, analytical review comparing the prediction to reality. Use bullet points.
+Write a direct, analytical review comparing the prediction to reality. Use bullet points with checkmarks (✅/❌) to grade each claim.
 
 REQUIRED FORMAT:
 
 **📊 PREDICTION VS REALITY**
-• "You predicted ${input.predictedValue.toFixed(1)} points, but the actual total was ${actualTotal}"
-• "You thought ${predictionDirection} by ${Math.abs(predictionDiff).toFixed(1)}, and ${actualDirection} hit by ${Math.abs(actualDiff).toFixed(1)}"
-• Was the prediction directionally correct? By how much?
+• You predicted ${input.predictedValue.toFixed(1)} points, but the actual total was ${actualTotal}
+• You thought ${predictionDirection} by ${Math.abs(predictionDiff).toFixed(1)}, and ${actualDirection} hit by ${Math.abs(actualDiff).toFixed(1)}
+• Prediction was ${predictionDirection === actualDirection ? '✅ DIRECTIONALLY CORRECT' : '❌ DIRECTIONALLY WRONG'}
 
-**✅ WHAT WAS RIGHT**
-• Which factors accurately predicted the outcome?
-• What analysis points were validated by the results?
-• What did you correctly identify that the market missed?
+**🔍 ORIGINAL ANALYSIS REVIEW**
+Review each major claim from the original prediction and grade it:
+• ✅ [Claim that was validated] - Explain why it was correct
+• ❌ [Claim that was wrong] - Explain why it missed
+• ⚠️ [Claim that was partially correct] - Explain the nuance
+• ➖ [Claim that cannot be verified from box score] - Note it's unverifiable
 
-**❌ WHAT WAS WRONG**
-• Which factors failed to predict correctly?
-• What did you miss or misjudge?
-• Why did the prediction differ from reality?
+Examples:
+• ✅ "Predicted high pace would lead to 110+ possessions" - Game had 112 possessions
+• ❌ "Expected strong defensive performance to limit scoring" - Defense allowed 58% shooting
+• ⚠️ "Injury to star player would reduce scoring by 15 points" - Reduced by only 8 points
+• ➖ "Motivation factor from rivalry game" - Cannot verify from box score
+
+**📊 FACTOR ACCURACY BREAKDOWN**
+${factorAccuracySummary}
 
 **🔍 KEY INSIGHTS FROM BOX SCORE**
-• What actually happened in the game that explains the result?
-• Were there unexpected performances or game flow issues?
-• Did injuries/lineup changes play out as expected?
+• What actually happened that explains the result?
+• Were there unexpected performances?
+• Did the game flow match expectations?
 
 **💡 LESSONS LEARNED**
 • What should be adjusted for future predictions?
 • Which factors need reweighting?
 • What new considerations should be added?
 
-TONE:
-- Direct and honest (don't sugarcoat mistakes)
+CRITICAL REQUIREMENTS:
+- Use ✅ for correct predictions/claims
+- Use ❌ for incorrect predictions/claims
+- Use ⚠️ for partially correct predictions/claims
+- Use ➖ for unverifiable claims (skip grading if you can't verify)
+- Be specific about WHY each claim was right or wrong
+- Reference actual box score data when possible
+- Direct and honest tone (no sugarcoating)
 - Analytical (explain WHY things happened)
-- Constructive (focus on learning and improvement)
-- No excuses or blame
+- Constructive (focus on learning)
 
-LENGTH: 300-400 words
+LENGTH: 350-450 words
 
-Return ONLY the bullet-point analysis.`
+Return ONLY the bullet-point analysis with checkmarks.`
   } else {
     // SPREAD analysis
     const predictionDiff = input.predictedValue - input.marketLine
@@ -420,27 +433,33 @@ FACTOR ACCURACY:
 ${factorAccuracySummary}
 
 TASK:
-Write a direct, analytical review comparing the prediction to reality. Use bullet points.
+Write a direct, analytical review comparing the prediction to reality. Use bullet points with checkmarks (✅/❌) to grade each claim.
 
 REQUIRED FORMAT:
 
 **📊 PREDICTION VS REALITY**
-• "You predicted a margin of ${input.predictedValue.toFixed(1)}, but the actual margin was ${actualMargin.toFixed(1)}"
-• Did the spread cover? By how much?
-• Was the prediction directionally correct?
+• You predicted a margin of ${input.predictedValue.toFixed(1)}, but the actual margin was ${actualMargin.toFixed(1)}
+• Spread ${input.outcome === 'won' ? '✅ COVERED' : input.outcome === 'push' ? '➖ PUSHED' : '❌ DID NOT COVER'}
+• Prediction was off by ${Math.abs(input.predictedValue - actualMargin).toFixed(1)} points
 
-**✅ WHAT WAS RIGHT**
-• Which factors accurately predicted the outcome?
-• What matchup advantages were validated?
-• What did you correctly identify?
+**🔍 ORIGINAL ANALYSIS REVIEW**
+Review each major claim from the original prediction and grade it:
+• ✅ [Claim that was validated] - Explain why it was correct
+• ❌ [Claim that was wrong] - Explain why it missed
+• ⚠️ [Claim that was partially correct] - Explain the nuance
+• ➖ [Claim that cannot be verified from box score] - Note it's unverifiable
 
-**❌ WHAT WAS WRONG**
-• Which factors failed to predict correctly?
-• What matchup analysis was incorrect?
-• Why did the prediction miss?
+Examples:
+• ✅ "Predicted home team's rebounding advantage would be decisive" - Out-rebounded by 12
+• ❌ "Expected away team's defense to shut down paint scoring" - Allowed 62 points in paint
+• ⚠️ "Injury to starting PG would hurt ball movement" - Assists down 15% (expected 30%)
+• ➖ "Revenge game motivation for home team" - Cannot verify from box score
+
+**📊 FACTOR ACCURACY BREAKDOWN**
+${factorAccuracySummary}
 
 **🔍 KEY INSIGHTS FROM BOX SCORE**
-• What actually happened in the game?
+• What actually happened that explains the result?
 • Were there unexpected performances?
 • Did the game flow match expectations?
 
@@ -449,15 +468,20 @@ REQUIRED FORMAT:
 • Which factors need reweighting?
 • What new considerations should be added?
 
-TONE:
-- Direct and honest
-- Analytical
-- Constructive
-- No excuses
+CRITICAL REQUIREMENTS:
+- Use ✅ for correct predictions/claims
+- Use ❌ for incorrect predictions/claims
+- Use ⚠️ for partially correct predictions/claims
+- Use ➖ for unverifiable claims (skip grading if you can't verify)
+- Be specific about WHY each claim was right or wrong
+- Reference actual box score data when possible
+- Direct and honest tone
+- Analytical (explain WHY)
+- Constructive (focus on learning)
 
-LENGTH: 300-400 words
+LENGTH: 350-450 words
 
-Return ONLY the bullet-point analysis.`
+Return ONLY the bullet-point analysis with checkmarks.`
   }
 }
 
