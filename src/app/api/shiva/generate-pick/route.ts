@@ -258,9 +258,15 @@ export async function POST(request: Request) {
 
       try {
         // Call Step 6 (Bold Player Predictions) API
+        // IMPORTANT: Must include x-idempotency-key header
+        const step6IdempotencyKey = `${runId}-step6-bold-predictions`
+
         const step6Response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/shiva/factors/step5-5`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'x-idempotency-key': step6IdempotencyKey
+          },
           body: JSON.stringify({
             run_id: runId,
             inputs: {
@@ -289,9 +295,18 @@ export async function POST(request: Request) {
           const step6Data = await step6Response.json()
           boldPredictions = step6Data.bold_predictions
           injurySummary = step6Data.injury_summary
-          console.log('[SHIVA:GeneratePick] Bold predictions generated successfully')
+          console.log('[SHIVA:GeneratePick] Bold predictions generated successfully:', {
+            hasPredictions: !!boldPredictions,
+            predictionCount: boldPredictions?.predictions?.length || 0,
+            hasInjurySummary: !!injurySummary
+          })
         } else {
-          console.warn('[SHIVA:GeneratePick] Failed to generate bold predictions:', await step6Response.text())
+          const errorText = await step6Response.text()
+          console.error('[SHIVA:GeneratePick] Failed to generate bold predictions:', {
+            status: step6Response.status,
+            statusText: step6Response.statusText,
+            error: errorText
+          })
         }
       } catch (boldError) {
         console.error('[SHIVA:GeneratePick] Error generating bold predictions:', boldError)
