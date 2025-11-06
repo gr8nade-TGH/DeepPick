@@ -51,46 +51,46 @@ BEGIN
 
   -- Validate factor_contributions exists and is not empty
   IF run_record.factor_contributions IS NULL OR jsonb_array_length(run_record.factor_contributions) = 0 THEN
-    RAISE WARNING 'VALIDATION FAILED: Pick % - Run % has NO factor_contributions - SKIPPING insight card lock', NEW.id, NEW.run_id;
+    RAISE WARNING 'VALIDATION FAILED: Pick has NO factor_contributions - SKIPPING insight card lock. Pick ID: %, Run ID: %', NEW.id, NEW.run_id;
     RETURN NEW;
   END IF;
 
   -- Validate predicted_total exists
   IF run_record.predicted_total IS NULL THEN
-    RAISE WARNING 'VALIDATION FAILED: Pick % - Run % has NO predicted_total - SKIPPING insight card lock', NEW.id, NEW.run_id;
+    RAISE WARNING 'VALIDATION FAILED: Pick has NO predicted_total - SKIPPING insight card lock. Pick ID: %, Run ID: %', NEW.id, NEW.run_id;
     RETURN NEW;
   END IF;
 
   -- Validate baseline_avg exists
   IF run_record.baseline_avg IS NULL THEN
-    RAISE WARNING 'VALIDATION FAILED: Pick % - Run % has NO baseline_avg - SKIPPING insight card lock', NEW.id, NEW.run_id;
+    RAISE WARNING 'VALIDATION FAILED: Pick has NO baseline_avg - SKIPPING insight card lock. Pick ID: %, Run ID: %', NEW.id, NEW.run_id;
     RETURN NEW;
   END IF;
 
   -- Validate market_total exists
   IF run_record.market_total IS NULL THEN
-    RAISE WARNING 'VALIDATION FAILED: Pick % - Run % has NO market_total - SKIPPING insight card lock', NEW.id, NEW.run_id;
+    RAISE WARNING 'VALIDATION FAILED: Pick has NO market_total - SKIPPING insight card lock. Pick ID: %, Run ID: %', NEW.id, NEW.run_id;
     RETURN NEW;
   END IF;
 
   -- Validate predicted scores exist in metadata
   IF run_record.metadata->'predicted_home_score' IS NULL THEN
-    RAISE WARNING 'VALIDATION FAILED: Pick % - Run % has NO predicted_home_score in metadata - SKIPPING insight card lock', NEW.id, NEW.run_id;
+    RAISE WARNING 'VALIDATION FAILED: Pick has NO predicted_home_score in metadata - SKIPPING insight card lock. Pick ID: %, Run ID: %', NEW.id, NEW.run_id;
     RETURN NEW;
   END IF;
 
   IF run_record.metadata->'predicted_away_score' IS NULL THEN
-    RAISE WARNING 'VALIDATION FAILED: Pick % - Run % has NO predicted_away_score in metadata - SKIPPING insight card lock', NEW.id, NEW.run_id;
+    RAISE WARNING 'VALIDATION FAILED: Pick has NO predicted_away_score in metadata - SKIPPING insight card lock. Pick ID: %, Run ID: %', NEW.id, NEW.run_id;
     RETURN NEW;
   END IF;
 
   -- Validate pick_type exists
   IF NEW.pick_type IS NULL OR NEW.pick_type = '' THEN
-    RAISE WARNING 'VALIDATION FAILED: Pick % - Run % has NO pick_type - SKIPPING insight card lock', NEW.id, NEW.run_id;
+    RAISE WARNING 'VALIDATION FAILED: Pick has NO pick_type - SKIPPING insight card lock. Pick ID: %, Run ID: %', NEW.id, NEW.run_id;
     RETURN NEW;
   END IF;
 
-  RAISE NOTICE 'VALIDATION PASSED: Pick % - Run % passed all validation checks - creating locked insight card snapshot', NEW.id, NEW.run_id;
+  RAISE NOTICE 'VALIDATION PASSED: Creating locked insight card snapshot. Pick ID: %, Run ID: %', NEW.id, NEW.run_id;
 
   -- Build insight card snapshot
   insight_card := jsonb_build_object(
