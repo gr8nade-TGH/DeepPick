@@ -265,7 +265,7 @@ export async function POST(request: Request) {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-idempotency-key': step6IdempotencyKey
+            'Idempotency-Key': step6IdempotencyKey
           },
           body: JSON.stringify({
             run_id: runId,
