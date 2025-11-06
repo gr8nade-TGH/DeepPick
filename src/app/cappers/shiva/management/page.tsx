@@ -5,6 +5,7 @@ import { SHIVAManagementInbox } from './components/inbox'
 import { SHIVAWizard } from './components/wizard'
 import { FactorConfigModal } from './components/factor-config-modal'
 import { RunLogTable } from './components/run-log'
+import { BoldPredictionsTable } from './components/bold-predictions-table'
 import type { CapperProfile } from '@/lib/cappers/shiva-v1/profile'
 import type { CapperProfile as FactorCapperProfile } from '@/types/factor-config'
 
@@ -278,6 +279,11 @@ export default function ShivaManagementPage() {
         {/* Bottom: Run Log - Full Width */}
         <div className="w-full">
           <RunLogTable betType={betType} />
+        </div>
+
+        {/* Bold Predictions Log - Full Width */}
+        <div className="w-full">
+          <BoldPredictionsTable />
         </div>
       </div>
 
