@@ -17,6 +17,7 @@ import { getSupabaseAdmin } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300 // 5 minutes max execution time
+export const runtime = 'nodejs'
 
 interface ExecutionSchedule {
   id: string
