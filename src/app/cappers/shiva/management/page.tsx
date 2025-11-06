@@ -136,34 +136,42 @@ export default function ShivaManagementPage() {
               </button>
               <button
                 onClick={async () => {
-                  if (!confirm('⚠️ This will delete ALL picks from ALL cappers. Continue?')) {
+                  if (!confirm('⚠️ CLEAR EVERYTHING - This will delete ALL picks, runs, cooldowns, and locked snapshots. Continue?')) {
                     return
                   }
                   try {
-                    console.log('🧹 [CLEAR ALL PICKS] Button clicked, calling API...')
-                    const response = await fetch('/api/debug/clear-all-picks', { method: 'POST' })
-                    console.log('🧹 [CLEAR ALL PICKS] API response status:', response.status)
+                    console.log('🧹 [CLEAR EVERYTHING] Button clicked, calling comprehensive clear API...')
+                    const response = await fetch('/api/admin/clear-picks', { method: 'POST' })
+                    console.log('🧹 [CLEAR EVERYTHING] API response status:', response.status)
                     const result = await response.json()
-                    console.log('🧹 [CLEAR ALL PICKS] API response data:', result)
+                    console.log('🧹 [CLEAR EVERYTHING] API response data:', result)
 
                     if (result.success) {
-                      alert(`✅ ${result.message}! Refreshing data...`)
-                      console.log('🧹 [CLEAR ALL PICKS] Success, refreshing page...')
+                      const summary = `✅ ${result.message}\n\nCleared:\n` +
+                        `• ${result.cleared.picks} picks\n` +
+                        `• ${result.cleared.runs} runs\n` +
+                        `• ${result.cleared.shiva_runs} shiva_runs\n` +
+                        `• ${result.cleared.pick_generation_cooldowns} pick_generation_cooldowns\n` +
+                        `• ${result.cleared.shiva_cooldowns} shiva_cooldowns\n` +
+                        `• ${result.cleared.locked_snapshots} locked insight card snapshots\n\n` +
+                        `Refreshing page...`
+                      alert(summary)
+                      console.log('🧹 [CLEAR EVERYTHING] Success, refreshing page...')
                       // Refresh the page to update all data
                       window.location.reload()
                     } else {
-                      alert('❌ Error clearing picks: ' + (result.error || 'Unknown error'))
-                      console.error('🧹 [CLEAR ALL PICKS] API error:', result)
+                      alert('❌ Error clearing data: ' + (result.error || 'Unknown error'))
+                      console.error('🧹 [CLEAR EVERYTHING] API error:', result)
                     }
                   } catch (error) {
-                    alert('❌ Error clearing picks: ' + error)
-                    console.error('🧹 [CLEAR ALL PICKS] Network error:', error)
+                    alert('❌ Error clearing data: ' + error)
+                    console.error('🧹 [CLEAR EVERYTHING] Network error:', error)
                   }
                 }}
                 className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded font-medium transition flex items-center gap-2"
               >
                 <span>🧹</span>
-                Clear ALL Picks
+                Clear EVERYTHING
               </button>
               <button
                 onClick={async () => {
