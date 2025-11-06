@@ -97,10 +97,7 @@ export function BoldPredictionsTable() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-xl">🎯</span>
-            <div>
-              <h2 className="text-sm font-bold text-white">Bold Predictions</h2>
-              <p className="text-[10px] text-gray-400">AI player predictions</p>
-            </div>
+            <h2 className="text-sm font-bold text-white">Bold Predictions</h2>
           </div>
           <div className="text-xs text-gray-400">
             {entries.length} total
@@ -153,8 +150,8 @@ export function BoldPredictionsTable() {
                       </td>
                       <td className="py-2 px-3">
                         <span className={`px-2 py-0.5 rounded text-xs font-bold ${entry.bet_type === 'total'
-                            ? 'bg-blue-900 text-blue-200'
-                            : 'bg-purple-900 text-purple-200'
+                          ? 'bg-blue-900 text-blue-200'
+                          : 'bg-purple-900 text-purple-200'
                           }`}>
                           {entry.bet_type.toUpperCase()}
                         </span>
