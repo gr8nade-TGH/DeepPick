@@ -310,6 +310,91 @@ export async function fetchTeamGameLogs(teamAbbrev: string, limit: number = 10):
   return result
 }
 
+/**
+ * In-memory cache for player injuries
+ * TTL: 5 minutes (injury status can change, but not that frequently)
+ */
+interface InjuryCacheEntry {
+  data: any
+  timestamp: number
+}
+
+const injuryCache = new Map<string, InjuryCacheEntry>()
+const INJURY_CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
+
+/**
+ * Fetch player injuries for a specific date
+ * Format: YYYYMMDD (e.g., 20250128)
+ *
+ * NOTE: 5-second backoff applies (enforced by global 30-second backoff)
+ * Cached for 5 minutes to reduce API calls
+ *
+ * @param date - Date in YYYYMMDD format
+ * @returns Player injury data including currentInjury status
+ */
+export async function fetchPlayerInjuries(date: string): Promise<any> {
+  const cacheKey = `injuries_${date}`
+
+  // Check cache first
+  const cached = injuryCache.get(cacheKey)
+  if (cached && Date.now() - cached.timestamp < INJURY_CACHE_TTL_MS) {
+    console.log(`[MySportsFeeds] Using cached injury data for ${date}`)
+    return cached.data
+  }
+
+  const season = getNBASeasonForDateString(date).season
+  console.log(`[MySportsFeeds] Fetching player injuries for ${date} (season: ${season})`)
+
+  const result = await fetchMySportsFeeds(`date/${date}/player_injuries.json`, season)
+
+  // Cache the result
+  injuryCache.set(cacheKey, {
+    data: result,
+    timestamp: Date.now()
+  })
+
+  console.log(`[MySportsFeeds] Player injuries response for ${date}:`, {
+    hasPlayers: !!result.players,
+    playerCount: result.players?.length || 0,
+    injuredCount: result.players?.filter((p: any) => p.currentInjury).length || 0
+  })
+
+  return result
+}
+
+/**
+ * Fetch player injuries for specific teams
+ * Filters the injury report to only include players from the specified teams
+ *
+ * @param date - Date in YYYYMMDD format
+ * @param teamAbbrevs - Array of team abbreviations (e.g., ["BOS", "LAL"])
+ * @returns Filtered injury data for specified teams
+ */
+export async function fetchPlayerInjuriesForTeams(date: string, teamAbbrevs: string[]): Promise<any> {
+  const allInjuries = await fetchPlayerInjuries(date)
+
+  if (!allInjuries.players) {
+    return { players: [] }
+  }
+
+  // Filter to only include players from specified teams
+  const filteredPlayers = allInjuries.players.filter((player: any) => {
+    const playerTeam = player.currentTeam?.abbreviation
+    return playerTeam && teamAbbrevs.includes(playerTeam)
+  })
+
+  console.log(`[MySportsFeeds] Filtered injuries for teams ${teamAbbrevs.join(', ')}:`, {
+    totalPlayers: allInjuries.players.length,
+    filteredPlayers: filteredPlayers.length,
+    injuredPlayers: filteredPlayers.filter((p: any) => p.currentInjury).length
+  })
+
+  return {
+    ...allInjuries,
+    players: filteredPlayers
+  }
+}
+
 // Export for testing
 export { fetchMySportsFeeds }
 

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { executeWizardPipeline } from '@/lib/cappers/shiva-wizard-orchestrator'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
+import { generateProfessionalAnalysis } from '@/lib/cappers/professional-analysis-generator'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -15,11 +16,11 @@ export const maxDuration = 300 // 5 minutes for full pick generation
  * Steps executed:
  * 1. Game Selection (already done by scanner)
  * 2. Odds Snapshot
- * 3. Factor Analysis (F1-F5: Pace Index, Offensive Form, Defensive Erosion, Three-Point Environment, Free-Throw Environment)
+ * 3. Factor Analysis (F1-F5 for TOTAL, S1-S5 for SPREAD)
  * 4. Score Predictions
  * 5. Pick Generation (Market Edge)
- * 6. Bold Player Predictions (SKIPPED for cron)
- * 7. Pick Finalization
+ * 6. Bold Player Predictions (AI-powered with MySportsFeeds injury data)
+ * 7. Pick Finalization + Professional Analysis (AI-generated)
  *
  * Usage: POST /api/shiva/generate-pick
  * Body: { selectedGame: { id, home_team, away_team, game_date, game_time, total_line, spread_line, odds, status } }
@@ -247,6 +248,79 @@ export async function POST(request: Request) {
     const confMarketAdj = result.steps?.step5?.conf_market_adj || 0
     const confFinal = result.steps?.step5?.conf_final || confidence
 
+    // Generate Bold Player Predictions and Professional Analysis (if pick was generated)
+    let boldPredictions: any = null
+    let professionalAnalysis: string = ''
+    let injurySummary: any = null
+
+    if (result.pick) {
+      console.log('[SHIVA:GeneratePick] Generating bold predictions and professional analysis...')
+
+      try {
+        // Call Step 6 (Bold Player Predictions) API
+        const step6Response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/shiva/factors/step5-5`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            run_id: runId,
+            inputs: {
+              sport: 'NBA',
+              betType,
+              game_data: {
+                home_team: typeof game.home_team === 'string' ? game.home_team : game.home_team?.name,
+                away_team: typeof game.away_team === 'string' ? game.away_team : game.away_team?.name,
+                game_date: game.game_date
+              },
+              prediction_data: {
+                predicted_total: betType === 'TOTAL' ? predictedValue : undefined,
+                predicted_margin: betType === 'SPREAD' ? predictedValue : undefined,
+                market_total: betType === 'TOTAL' ? marketLine : undefined,
+                market_spread: betType === 'SPREAD' ? marketLine : undefined,
+                pick_direction: betType === 'TOTAL' ? result.pick.selection.split(' ')[0] : undefined,
+                selection: betType === 'SPREAD' ? result.pick.selection : undefined,
+                confidence: confFinal,
+                factors_summary: result.log?.factors?.map((f: any) => `${f.label}: ${f.weighted_contribution > 0 ? '+' : ''}${f.weighted_contribution.toFixed(1)}`).join(', ') || ''
+              }
+            }
+          })
+        })
+
+        if (step6Response.ok) {
+          const step6Data = await step6Response.json()
+          boldPredictions = step6Data.bold_predictions
+          injurySummary = step6Data.injury_summary
+          console.log('[SHIVA:GeneratePick] Bold predictions generated successfully')
+        } else {
+          console.warn('[SHIVA:GeneratePick] Failed to generate bold predictions:', await step6Response.text())
+        }
+      } catch (boldError) {
+        console.error('[SHIVA:GeneratePick] Error generating bold predictions:', boldError)
+      }
+
+      try {
+        // Generate Professional Analysis
+        professionalAnalysis = await generateProfessionalAnalysis({
+          game: {
+            away_team: typeof game.away_team === 'string' ? game.away_team : game.away_team?.name,
+            home_team: typeof game.home_team === 'string' ? game.home_team : game.home_team?.name,
+            game_date: game.game_date
+          },
+          predictedValue,
+          marketLine,
+          confidence: confFinal,
+          units: result.pick.units || 0,
+          factors: result.log?.factors || [],
+          betType,
+          selection: result.pick.selection,
+          injuryData: injurySummary
+        })
+        console.log('[SHIVA:GeneratePick] Professional analysis generated successfully')
+      } catch (analysisError) {
+        console.error('[SHIVA:GeneratePick] Error generating professional analysis:', analysisError)
+        professionalAnalysis = '' // Will use fallback in insight card
+      }
+    }
+
     const { error: runError } = await supabase
       .from('runs')
       .insert({
@@ -266,6 +340,10 @@ export async function POST(request: Request) {
         conf7,
         conf_market_adj: confMarketAdj,
         conf_final: confFinal,
+        // NEW: Bold predictions, professional analysis, and injury summary
+        bold_predictions: boldPredictions,
+        professional_analysis: professionalAnalysis,
+        injury_summary: injurySummary,
         // NOTE: predicted_home_score and predicted_away_score columns don't exist in database
         // These values are stored in metadata.steps.step4.predictions instead
         // OLD: Also store in metadata for backwards compatibility

@@ -221,6 +221,23 @@ export async function GET(
         }
       })
 
+      // Extract bold predictions, professional analysis, and injury summary from snapshot
+      const boldPredictions = snapshot.bold_predictions || null
+      const professionalAnalysis = snapshot.professional_analysis || ''
+      const injurySummary = snapshot.injury_summary || null
+
+      // Generate professional writeup (use snapshot analysis if available, otherwise generate from data)
+      let writeup = professionalAnalysis
+      if (!writeup) {
+        // Fallback to template-based generation
+        if (isSpread) {
+          const edge = Math.abs(predictedTotal)
+          writeup = generateSpreadWriteup(snapshot.pick, confFinal, factors, predictedTotal, awayTeamName, homeTeamName)
+        } else {
+          writeup = generateProfessionalWriteup(snapshot.pick, confFinal, factors, predictedTotal, marketTotal, awayTeamName, homeTeamName)
+        }
+      }
+
       // Build the insight card data from the locked snapshot
       const lockedInsightCard = {
         capper: 'SHIVA',
@@ -250,12 +267,14 @@ export async function GET(
         },
         factors,
         writeups: {
-          prediction: `🔒 LOCKED INSIGHT CARD - Generated at ${new Date(pick.insight_card_locked_at).toLocaleString()}`,
+          prediction: writeup,
           gamePrediction: isSpread
             ? `Predicted margin: ${predictedTotal > 0 ? 'Away' : 'Home'} by ${Math.abs(predictedTotal).toFixed(1)} pts`
             : `Predicted total: ${predictedTotal.toFixed(1)} vs Market: ${marketTotal.toFixed(1)}`,
-          bold: 'Locked insight card - no modifications allowed'
+          bold: boldPredictions?.summary || null
         },
+        bold_predictions: boldPredictions,
+        injury_summary: injurySummary,
         market: {
           conf7,
           confAdj: confMarketAdj,
@@ -386,10 +405,22 @@ export async function GET(
       || metadata.steps?.step4?.predictions?.scores?.away // Nested in steps
       || 0
 
-    const boldPredictions = metadata.bold_predictions
+    // Extract bold predictions, professional analysis, and injury summary
+    // PRIORITY: Use dedicated columns from runs table (NEW)
+    // FALLBACK: Use metadata (OLD)
+    const boldPredictions = run.bold_predictions  // NEW: Separate column (PRIORITY)
+      || metadata.bold_predictions
       || metadata.steps?.step6?.bold_predictions
       || metadata.steps?.step5_5?.bold_predictions
       || metadata.steps?.['step5.5']?.bold_predictions
+      || null
+
+    const professionalAnalysis = run.professional_analysis  // NEW: Separate column (PRIORITY)
+      || metadata.professional_analysis
+      || ''
+
+    const injurySummary = run.injury_summary  // NEW: Separate column (PRIORITY)
+      || metadata.injury_summary
       || null
 
     // Extract confidence values
@@ -408,10 +439,11 @@ export async function GET(
       confMarketAdj,
       confFinal,
       hasBoldPredictions: !!boldPredictions,
-      boldPredictionsSource: boldPredictions ? 'found' : 'null',
-      metadataStepKeys: metadata.steps ? Object.keys(metadata.steps) : [],
-      step6Keys: metadata.steps?.step6 ? Object.keys(metadata.steps.step6) : [],
-      step5_5Keys: metadata.steps?.step5_5 ? Object.keys(metadata.steps.step5_5) : []
+      hasProfessionalAnalysis: !!professionalAnalysis,
+      hasInjurySummary: !!injurySummary,
+      boldPredictionsSource: run.bold_predictions ? 'runs.bold_predictions' : metadata.bold_predictions ? 'metadata' : 'null',
+      professionalAnalysisSource: run.professional_analysis ? 'runs.professional_analysis' : 'null',
+      injurySummarySource: run.injury_summary ? 'runs.injury_summary' : 'null'
     })
 
     // Step 4: Build insight card data structure
@@ -426,6 +458,8 @@ export async function GET(
       predictedHomeScore,
       predictedAwayScore,
       boldPredictions,
+      professionalAnalysis,
+      injurySummary,
       conf7,
       confMarketAdj,
       confFinal
@@ -446,7 +480,7 @@ export async function GET(
 }
 
 // Build insight card data structure from run metadata
-function buildInsightCard({ pick, game, run, factorContributions, predictedTotal, baselineAvg, marketTotal, predictedHomeScore, predictedAwayScore, boldPredictions, conf7, confMarketAdj, confFinal }: any) {
+function buildInsightCard({ pick, game, run, factorContributions, predictedTotal, baselineAvg, marketTotal, predictedHomeScore, predictedAwayScore, boldPredictions, professionalAnalysis, injurySummary, conf7, confMarketAdj, confFinal }: any) {
 
   // Detect pick type from pick.pick_type
   const pickType = pick.pick_type?.toUpperCase() || 'TOTAL'
@@ -569,10 +603,14 @@ function buildInsightCard({ pick, game, run, factorContributions, predictedTotal
     ? pick.selection  // e.g., "Phoenix Suns -5.5"
     : `O/U ${marketTotal.toFixed(1)}`
 
-  // Generate writeup based on pick type
-  const writeup = isSpread
-    ? generateSpreadWriteup(pick, confFinal, factors, edgeRaw, awayTeamName, homeTeamName)
-    : generateProfessionalWriteup(pick, confFinal, factors, predictedTotal, marketTotal, awayTeamName, homeTeamName)
+  // Generate writeup: Use professionalAnalysis if available, otherwise fallback to template
+  let writeup = professionalAnalysis
+  if (!writeup) {
+    // Fallback to template-based generation
+    writeup = isSpread
+      ? generateSpreadWriteup(pick, confFinal, factors, edgeRaw, awayTeamName, homeTeamName)
+      : generateProfessionalWriteup(pick, confFinal, factors, predictedTotal, marketTotal, awayTeamName, homeTeamName)
+  }
 
   // Generate game prediction text based on pick type
   const gamePrediction = isSpread
@@ -616,7 +654,7 @@ function buildInsightCard({ pick, game, run, factorContributions, predictedTotal
       bold: boldPredictions?.summary || null
     },
     bold_predictions: boldPredictions,
-    injury_summary: null,
+    injury_summary: injurySummary,
     factors,
     market: {
       conf7: conf7,
