@@ -90,6 +90,7 @@ export default function SystemHealthPage() {
   const [data, setData] = useState<SystemHealthData | null>(null)
   const [loading, setLoading] = useState(true)
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     fetchHealthData()
@@ -139,6 +140,84 @@ export default function SystemHealthPage() {
     return `${diffHours} hours ago`
   }
 
+  const copyDebugInfo = async () => {
+    if (!data) return
+
+    const debugInfo = `
+# SYSTEM HEALTH DEBUG INFO
+Generated: ${new Date().toISOString()}
+
+## SUMMARY
+- Total Executions: ${data.summary.total_executions}
+- Successful: ${data.summary.successful_executions}
+- Failed: ${data.summary.failed_executions}
+- Overall Success Rate: ${data.summary.overall_success_rate}%
+- Active Cappers: ${data.summary.enabled_cappers}/${data.summary.total_cappers}
+- Active Locks: ${data.summary.active_locks}
+- Stale Locks: ${data.summary.stale_locks}
+- Active Alerts: ${data.summary.active_alerts}
+
+## ORCHESTRATOR STATUS
+- Is Running: ${data.orchestrator.isRunning ? 'YES' : 'NO'}
+- Last Run: ${data.orchestrator.lastRun || 'Never'}
+- Locked By: ${data.orchestrator.lockedBy || 'N/A'}
+- Expires At: ${data.orchestrator.expiresAt || 'N/A'}
+
+## CAPPER SCHEDULES
+${data.cappers.map(c => `
+### ${c.capper_id} - ${c.sport} ${c.bet_type}
+- Enabled: ${c.enabled ? 'YES' : 'NO'}
+- Interval: ${c.interval_minutes} minutes
+- Priority: ${c.priority}
+- Last Execution: ${c.last_execution_at || 'Never'}
+- Next Execution: ${c.next_execution_at || 'Not scheduled'}
+- Is Due: ${c.is_due ? 'YES' : 'NO'}
+- Minutes Until Next: ${c.minutes_until_next !== null ? c.minutes_until_next : 'N/A'}
+- Total Executions: ${c.total_executions}
+- Successful: ${c.successful_executions}
+- Failed: ${c.failed_executions}
+- Success Rate: ${c.success_rate}%
+- Last Status: ${c.last_status || 'N/A'}
+- Last Error: ${c.last_error || 'None'}
+`).join('\n')}
+
+## RECENT EXECUTIONS (Last 10)
+${data.recent_executions.slice(0, 10).map(e => `
+- ${e.created_at} | ${e.capper.toUpperCase()} ${e.bet_type} | ${e.matchup} | ${e.selection || 'N/A'} | Conf: ${e.confidence?.toFixed(1) || 'N/A'} | State: ${e.state}
+`).join('\n')}
+
+## SYSTEM LOCKS
+${data.locks.map(l => `
+- ${l.lock_key}
+  - Locked By: ${l.locked_by}
+  - Locked At: ${l.locked_at}
+  - Expires At: ${l.expires_at}
+  - Age: ${l.age_minutes} minutes
+  - Active: ${l.is_active ? 'YES' : 'NO'}
+  - Expired: ${l.is_expired ? 'YES' : 'NO'}
+`).join('\n')}
+
+## ACTIVE ALERTS
+${data.alerts.length > 0 ? data.alerts.map(a => `
+- [${a.severity.toUpperCase()}] ${a.type}: ${a.message}
+  - Capper: ${a.capper || 'N/A'}
+  - Created: ${a.created_at}
+`).join('\n') : '- No active alerts'}
+
+---
+End of debug info
+`.trim()
+
+    try {
+      await navigator.clipboard.writeText(debugInfo)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (error) {
+      console.error('Failed to copy debug info:', error)
+      alert('Failed to copy to clipboard. Please check console.')
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-950">
@@ -176,6 +255,23 @@ export default function SystemHealthPage() {
           </p>
         </div>
         <div className="flex gap-3">
+          <Button
+            onClick={copyDebugInfo}
+            variant={copied ? "default" : "outline"}
+            className="gap-2"
+          >
+            {copied ? (
+              <>
+                <CheckCircle className="w-4 h-4" />
+                Copied!
+              </>
+            ) : (
+              <>
+                <Activity className="w-4 h-4" />
+                Copy Debug Info
+              </>
+            )}
+          </Button>
           <Button
             onClick={fetchHealthData}
             variant="outline"
@@ -290,8 +386,8 @@ export default function SystemHealthPage() {
                 <div
                   key={idx}
                   className={`p-3 rounded-lg border ${alert.severity === 'error'
-                      ? 'bg-red-900/20 border-red-800'
-                      : 'bg-yellow-900/20 border-yellow-800'
+                    ? 'bg-red-900/20 border-red-800'
+                    : 'bg-yellow-900/20 border-yellow-800'
                     }`}
                 >
                   <div className="flex items-start justify-between">
@@ -387,8 +483,8 @@ export default function SystemHealthPage() {
                     </td>
                     <td className="py-3 px-3 text-center">
                       <span className={`font-semibold ${capper.success_rate >= 80 ? 'text-green-400' :
-                          capper.success_rate >= 50 ? 'text-yellow-400' :
-                            'text-red-400'
+                        capper.success_rate >= 50 ? 'text-yellow-400' :
+                          'text-red-400'
                         }`}>
                         {capper.success_rate}%
                       </span>
@@ -458,8 +554,8 @@ export default function SystemHealthPage() {
                     <td className="py-3 px-3 text-center">
                       {execution.confidence ? (
                         <span className={`font-semibold ${execution.confidence >= 8 ? 'text-green-400' :
-                            execution.confidence >= 6 ? 'text-yellow-400' :
-                              'text-gray-400'
+                          execution.confidence >= 6 ? 'text-yellow-400' :
+                            'text-gray-400'
                           }`}>
                           {execution.confidence.toFixed(1)}
                         </span>
