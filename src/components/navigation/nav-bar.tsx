@@ -88,7 +88,6 @@ export function NavBar() {
 
       <Link href="/cappers/create">
         <Button
-          variant={isActive('/cappers/create') ? 'default' : 'outline'}
           className="gap-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white border-0"
         >
           <Sparkles className="w-4 h-4" />
