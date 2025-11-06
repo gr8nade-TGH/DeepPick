@@ -15,7 +15,7 @@ import { getSupabaseAdmin } from '@/lib/supabase/server'
 export async function GET(request: Request) {
   const executionTime = new Date().toISOString()
   const { searchParams } = new URL(request.url)
-  
+
   const capperId = searchParams.get('capperId')
   const sport = searchParams.get('sport') || 'NBA'
   const betType = searchParams.get('betType') || 'TOTAL'
@@ -37,7 +37,7 @@ export async function GET(request: Request) {
 
     // Step 1: Load capper configuration
     console.log(`🎯 [UNIFIED-PICK-GEN] Step 1: Loading capper config for '${capperId}'...`)
-    
+
     const { data: capper, error: capperError } = await supabase
       .from('user_cappers')
       .select('*')
@@ -90,7 +90,7 @@ export async function GET(request: Request) {
 
     if (lockError) {
       console.error(`🎯 [UNIFIED-PICK-GEN] ⚠️ Lock RPC failed, trying manual lock:`, lockError)
-      
+
       // Fallback to manual lock check
       const { data: existingLock } = await supabase
         .from('system_locks')
@@ -145,7 +145,7 @@ export async function GET(request: Request) {
         : 'http://localhost:3000'
 
     let endpoint: string
-    
+
     if (betType === 'SPREAD') {
       endpoint = `${baseUrl}/api/shiva/step1-scanner-spread`
     } else {
@@ -155,13 +155,18 @@ export async function GET(request: Request) {
     console.log(`🎯 [UNIFIED-PICK-GEN] Step 3: Calling scanner: ${endpoint}`)
 
     const scannerResponse = await fetch(endpoint, {
-      method: 'GET',
+      method: 'POST',
       headers: {
+        'Content-Type': 'application/json',
         'User-Agent': `DeepPick-Capper-${capperId}/1.0`,
         'X-Capper-ID': capperId,
         'X-Sport': sport,
         'X-Bet-Type': betType
-      }
+      },
+      body: JSON.stringify({
+        sport: sport,
+        betType: betType
+      })
     })
 
     if (!scannerResponse.ok) {
@@ -176,7 +181,7 @@ export async function GET(request: Request) {
     // Step 4: If scanner found a game, generate the pick with custom factor weights
     if (scannerResult.success && scannerResult.selectedGame) {
       console.log(`🎯 [UNIFIED-PICK-GEN] Step 4: Generating pick for game ${scannerResult.selectedGame.game_id}`)
-      
+
       const generateEndpoint = betType === 'SPREAD'
         ? `${baseUrl}/api/shiva/generate-pick-spread`
         : `${baseUrl}/api/shiva/generate-pick`
