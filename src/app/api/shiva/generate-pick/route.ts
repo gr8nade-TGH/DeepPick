@@ -258,10 +258,17 @@ export async function POST(request: Request) {
 
       try {
         // Call Step 6 (Bold Player Predictions) API
-        // IMPORTANT: Must include x-idempotency-key header
+        // IMPORTANT: Must include Idempotency-Key header (not x-idempotency-key)
         const step6IdempotencyKey = `${runId}-step6-bold-predictions`
 
-        const step6Response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/shiva/factors/step5-5`, {
+        // Use same URL construction as cron jobs to ensure consistency
+        const baseUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
+          ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+          : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+
+        console.log('[SHIVA:GeneratePick] Calling Step 6 (Bold Predictions) at:', `${baseUrl}/api/shiva/factors/step5-5`)
+
+        const step6Response = await fetch(`${baseUrl}/api/shiva/factors/step5-5`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
