@@ -30,7 +30,7 @@ export interface AnalysisInput {
  */
 export async function generateProfessionalAnalysis(input: AnalysisInput): Promise<string> {
   const startTime = Date.now()
-  
+
   try {
     console.log('[ProfessionalAnalysis] Starting generation:', {
       betType: input.betType,
@@ -45,7 +45,7 @@ export async function generateProfessionalAnalysis(input: AnalysisInput): Promis
         const gameDate = formatDateForAPI(new Date(input.game.game_date))
         const awayAbbrev = getTeamAbbrev(input.game.away_team)
         const homeAbbrev = getTeamAbbrev(input.game.home_team)
-        
+
         injuryData = await fetchPlayerInjuriesForTeams(gameDate, [awayAbbrev, homeAbbrev])
       } catch (injuryError) {
         console.warn('[ProfessionalAnalysis] Failed to fetch injury data:', {
@@ -77,12 +77,12 @@ export async function generateProfessionalAnalysis(input: AnalysisInput): Promis
 
     // Generate AI prompt based on bet type
     let aiPrompt = ''
-    
+
     if (input.betType === 'TOTAL') {
       const edge = Math.abs(input.predictedValue - input.marketLine)
       const direction = input.predictedValue > input.marketLine ? 'higher' : 'lower'
-      
-      aiPrompt = `You are a professional sports betting analyst writing a detailed game analysis for a premium betting service.
+
+      aiPrompt = `You are an elite sports betting analyst writing a comprehensive game breakdown for a premium analytics service. Your analysis will be reviewed post-game against actual results, so accuracy and depth matter more than speed.
 
 GAME CONTEXT:
 - Matchup: ${input.game.away_team} @ ${input.game.home_team}
@@ -94,50 +94,70 @@ GAME CONTEXT:
 - Confidence: ${input.confidence.toFixed(1)}/10.0
 - Units: ${input.units}
 
-FACTOR ANALYSIS:
+FACTOR ANALYSIS (Our Proprietary Model):
 ${factorBreakdown}
 
 INJURY REPORT:
 ${injuryContext}
 
 TASK:
-Write a professional 3-4 paragraph analysis explaining this pick to a sophisticated betting audience.
+Write a detailed, bullet-point analysis that demonstrates deep research and creative analytical thinking. This analysis will later be compared against the actual game result, so be specific about your reasoning.
 
-STRUCTURE:
+REQUIRED FORMAT (Use bullet points throughout):
 
-Paragraph 1 - MARKET EDGE:
-- Lead with our edge (${edge.toFixed(1)} points ${direction})
-- Explain why the market is mispriced
-- Reference confidence level and unit allocation
+**🎯 THE THESIS**
+• State our edge (${edge.toFixed(1)} points ${direction} than market)
+• Explain the core market inefficiency we're exploiting
+• Why this specific total is mispriced
 
-Paragraph 2 - FACTOR ANALYSIS:
-- Highlight the 2-3 most impactful factors
-- Use specific data points (pace, efficiency, recent trends)
-- Explain how factors combine to support the pick
+**📊 FACTOR DEEP DIVE**
+• Analyze the 2-3 most impactful factors from our model
+• For each factor, explain:
+  - What specific trend/stat/matchup it captures
+  - Why it matters for this specific game
+  - How it interacts with other factors
+• Connect the dots between factors (e.g., "pace advantage + defensive weakness = scoring explosion")
+• Use concrete numbers and percentages where possible
 
-Paragraph 3 - INJURY & CONTEXT:
-- Discuss key injuries and their impact
-- Mention recent team form (winning/losing streaks)
-- Note any scheduling advantages (rest, travel)
+**🏥 INJURY & LINEUP IMPACT**
+• Analyze how injuries affect pace, efficiency, and scoring
+• Discuss rotation changes and their ripple effects
+• Consider both direct impact (missing scorer) and indirect (defensive adjustments, usage changes)
 
-Paragraph 4 - CONCLUSION:
-- Summarize the thesis
-- Restate confidence level
-- Final recommendation
+**🔍 CONTEXTUAL FACTORS**
+• Recent form and momentum (last 5-10 games)
+• Schedule spot (rest days, travel, back-to-back)
+• Home/away splits and venue factors
+• Head-to-head history and stylistic matchups
+• Motivation factors (playoff race, rivalry, revenge game)
 
-TONE:
-- Professional and analytical (not hype or salesy)
-- Data-driven (cite specific stats and trends)
-- Confident but measured (acknowledge risks)
-- Avoid clichés ("lock of the day", "can't miss")
+**⚖️ RISK ASSESSMENT**
+• What could go wrong with this pick?
+• Which factors are most uncertain?
+• What would need to happen for the opposite outcome?
 
-LENGTH: 200-300 words
+**💡 FINAL VERDICT**
+• Synthesize all factors into a clear conclusion
+• Restate confidence level with justification
+• Specific prediction: "We project a final score of approximately [X-Y], landing [OVER/UNDER] the ${input.marketLine} total"
 
-Return ONLY the analysis text (no JSON, no formatting).`
+CRITICAL REQUIREMENTS:
+- Use bullet points for ALL sections (no paragraphs)
+- Be specific with numbers, percentages, and data points
+- Show creative analytical thinking (connect dots others miss)
+- Quality over speed - take time to think deeply
+- Avoid generic statements - every point should be specific to THIS game
+- No clichés or hype language
+- This will be reviewed against actual results, so be precise
+
+LENGTH: 400-600 words (prioritize quality over brevity)
+
+Return ONLY the bullet-point analysis (no JSON, no extra formatting).`
     } else if (input.betType === 'SPREAD') {
       const edge = Math.abs(input.predictedValue)
-      
-      aiPrompt = `You are a professional sports betting analyst writing a detailed game analysis for a premium betting service.
+      const favoredTeam = input.selection.includes(input.game.home_team) ? input.game.home_team : input.game.away_team
+
+      aiPrompt = `You are an elite sports betting analyst writing a comprehensive game breakdown for a premium analytics service. Your analysis will be reviewed post-game against actual results, so accuracy and depth matter more than speed.
 
 GAME CONTEXT:
 - Matchup: ${input.game.away_team} @ ${input.game.home_team}
@@ -149,51 +169,72 @@ GAME CONTEXT:
 - Confidence: ${input.confidence.toFixed(1)}/10.0
 - Units: ${input.units}
 
-FACTOR ANALYSIS:
+FACTOR ANALYSIS (Our Proprietary Model):
 ${factorBreakdown}
 
 INJURY REPORT:
 ${injuryContext}
 
 TASK:
-Write a professional 3-4 paragraph analysis explaining this spread pick to a sophisticated betting audience.
+Write a detailed, bullet-point analysis that demonstrates deep research and creative analytical thinking. This analysis will later be compared against the actual game result, so be specific about your reasoning.
 
-STRUCTURE:
+REQUIRED FORMAT (Use bullet points throughout):
 
-Paragraph 1 - MARKET EDGE:
-- Lead with our edge (${edge.toFixed(1)} points)
-- Explain why we favor ${input.selection}
-- Reference confidence level and unit allocation
+**🎯 THE THESIS**
+• State our edge (${edge.toFixed(1)} points)
+• Explain why we favor ${input.selection}
+• What market inefficiency are we exploiting?
 
-Paragraph 2 - MATCHUP ANALYSIS:
-- Highlight the 2-3 most impactful factors
-- Discuss offensive/defensive advantages
-- Use specific data points (efficiency, pace, recent form)
+**📊 FACTOR DEEP DIVE**
+• Analyze the 2-3 most impactful factors from our model
+• For each factor, explain:
+  - What specific matchup advantage it captures
+  - Why it matters for covering the spread
+  - How it interacts with other factors
+• Connect offensive/defensive advantages (e.g., "elite perimeter defense vs. three-point dependent offense")
+• Use concrete numbers and efficiency metrics
 
-Paragraph 3 - INJURY & CONTEXT:
-- Discuss key injuries and their impact on the spread
-- Mention recent team form and momentum
-- Note any scheduling advantages (rest, travel, home/away splits)
+**🏥 INJURY & LINEUP IMPACT**
+• How do injuries shift the spread?
+• Analyze rotation changes and depth chart implications
+• Consider both direct impact (missing star) and indirect (defensive schemes, usage redistribution)
+• Which team is more affected by injury situations?
 
-Paragraph 4 - CONCLUSION:
-- Summarize why ${input.selection} covers the spread
-- Restate confidence level
-- Final recommendation
+**🔍 CONTEXTUAL FACTORS**
+• Recent form and momentum (last 5-10 games ATS)
+• Schedule spot (rest advantage, travel fatigue, back-to-back)
+• Home/away performance and venue factors
+• Head-to-head history and stylistic matchups
+• Motivation factors (playoff implications, rivalry intensity, revenge narrative)
 
-TONE:
-- Professional and analytical (not hype or salesy)
-- Data-driven (cite specific stats and trends)
-- Confident but measured (acknowledge risks)
-- Avoid clichés ("lock of the day", "can't miss")
+**⚖️ RISK ASSESSMENT**
+• What could prevent ${favoredTeam} from covering?
+• Which factors are most uncertain?
+• What's the worst-case scenario for this pick?
+• How much margin for error do we have?
 
-LENGTH: 200-300 words
+**💡 FINAL VERDICT**
+• Synthesize all factors into a clear conclusion
+• Restate confidence level with justification
+• Specific prediction: "We project ${favoredTeam} to win by approximately [X] points, comfortably covering the ${input.marketLine} spread"
 
-Return ONLY the analysis text (no JSON, no formatting).`
+CRITICAL REQUIREMENTS:
+- Use bullet points for ALL sections (no paragraphs)
+- Be specific with numbers, percentages, and efficiency metrics
+- Show creative analytical thinking (identify matchup advantages others miss)
+- Quality over speed - take time to think deeply
+- Avoid generic statements - every point should be specific to THIS game
+- No clichés or hype language
+- This will be reviewed against actual results, so be precise
+
+LENGTH: 400-600 words (prioritize quality over brevity)
+
+Return ONLY the bullet-point analysis (no JSON, no extra formatting).`
     }
 
     // Call OpenAI API
     console.log('[ProfessionalAnalysis] Calling OpenAI API...')
-    
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -205,15 +246,15 @@ Return ONLY the analysis text (no JSON, no formatting).`
         messages: [
           {
             role: 'system',
-            content: 'You are a professional sports betting analyst. Write clear, data-driven analysis without hype or clichés.'
+            content: 'You are an elite sports betting analyst with deep expertise in NBA analytics. Your analysis is thorough, data-driven, and creative. You identify market inefficiencies that others miss. Quality and accuracy matter more than speed. Your work will be reviewed against actual game results.'
           },
           {
             role: 'user',
             content: aiPrompt
           }
         ],
-        max_tokens: 800,
-        temperature: 0.7
+        max_tokens: 1500,  // Increased from 800 to allow for 400-600 word analysis
+        temperature: 0.8   // Increased from 0.7 for more creative analytical thinking
       })
     })
 
@@ -253,15 +294,15 @@ Return ONLY the analysis text (no JSON, no formatting).`
 function generateFallbackAnalysis(input: AnalysisInput): string {
   const confidenceTier = input.confidence >= 7.0 ? 'high' : input.confidence >= 5.0 ? 'moderate' : 'developing'
   const actionVerb = input.confidence >= 7.0 ? 'recommend' : 'identify value in'
-  
+
   if (input.betType === 'TOTAL') {
     const edge = Math.abs(input.predictedValue - input.marketLine)
     const edgeDirection = input.predictedValue > input.marketLine ? 'higher' : 'lower'
-    
+
     return `Our advanced analytics model has identified ${confidenceTier} value on ${input.selection} in the ${input.game.away_team} at ${input.game.home_team} matchup. The model projects a total of ${input.predictedValue.toFixed(1)} points, which is ${edge.toFixed(1)} points ${edgeDirection} than the current market line. This ${edge.toFixed(1)}-point edge represents a market inefficiency that we ${actionVerb}. With a confidence score of ${input.confidence.toFixed(1)}/10.0, this represents a ${confidenceTier}-conviction play in our betting model.`
   } else {
     const edge = Math.abs(input.predictedValue)
-    
+
     return `Our advanced analytics model has identified ${confidenceTier} value on ${input.selection} in the ${input.game.away_team} at ${input.game.home_team} matchup. The model's predicted point differential represents a ${edge.toFixed(1)}-point edge over the current market spread. This edge represents a market inefficiency that we ${actionVerb}. With a confidence score of ${input.confidence.toFixed(1)}/10.0, this represents a ${confidenceTier}-conviction play in our spread betting model.`
   }
 }
