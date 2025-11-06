@@ -60,10 +60,11 @@ export async function GET(request: Request) {
     const { getSupabaseAdmin } = await import('@/lib/supabase/server')
     const supabase = getSupabaseAdmin()
 
-    const lockKey = 'shiva_auto_picks_lock'
+    // New lock key format: {capper_id}_{sport}_{bet_type}_lock
+    const lockKey = 'shiva_nba_total_lock'
     const lockTimeout = 5 * 60 * 1000 // 5 minutes
     const now = new Date()
-    const lockId = `cron_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
+    const lockId = `cron_shiva_nba_total_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
 
     console.log(`🤖 [SHIVA-AUTO-PICKS] Attempting to acquire lock: ${lockId}`)
 
@@ -305,7 +306,7 @@ export async function GET(request: Request) {
       await supabase
         .from('system_locks')
         .delete()
-        .eq('lock_key', 'shiva_auto_picks_lock')
+        .eq('lock_key', 'shiva_nba_total_lock')
       console.log('🤖 [SHIVA-AUTO-PICKS] ✅ Lock released (error path)')
     } catch (lockErr) {
       console.error('🤖 [SHIVA-AUTO-PICKS] Error releasing lock on error:', lockErr)

@@ -249,39 +249,30 @@ export async function GET(request: Request) {
  * Execute pick generation for a specific schedule
  */
 async function executePick(schedule: ExecutionSchedule): Promise<any> {
-  // Route to existing cron endpoints
-  // In Phase 3, this will use the unified /api/cappers/generate-pick endpoint
+  // Use unified pick generation endpoint for ALL cappers
+  const baseUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : 'http://localhost:3000'
 
-  if (schedule.capper_id === 'shiva') {
-    const baseUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
-      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-      : process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : 'http://localhost:3000'
+  const endpoint = `${baseUrl}/api/cappers/generate-pick?capperId=${schedule.capper_id}&sport=${schedule.sport}&betType=${schedule.bet_type}`
 
-    // Route to existing SHIVA cron endpoints based on bet type
-    const endpoint = schedule.bet_type === 'SPREAD'
-      ? `${baseUrl}/api/cron/shiva-auto-picks-spread`
-      : `${baseUrl}/api/cron/shiva-auto-picks`
+  console.log(`[ORCHESTRATOR] Calling unified endpoint: ${endpoint}`)
 
-    console.log(`[ORCHESTRATOR] Calling: ${endpoint}`)
-
-    const response = await fetch(endpoint, {
-      method: 'GET',
-      headers: {
-        'User-Agent': 'DeepPick-Orchestrator/1.0'
-      }
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`Pick generation failed: ${response.status} - ${errorText}`)
+  const response = await fetch(endpoint, {
+    method: 'GET',
+    headers: {
+      'User-Agent': 'DeepPick-Orchestrator/1.0'
     }
+  })
 
-    return await response.json()
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(`Pick generation failed: ${response.status} - ${errorText}`)
   }
 
-  throw new Error(`Unknown capper: ${schedule.capper_id}`)
+  return await response.json()
 }
 
 // Also allow POST for manual triggers
