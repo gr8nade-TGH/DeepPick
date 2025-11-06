@@ -183,20 +183,6 @@ export function InsightCard(props: InsightCardProps) {
               ×
             </button>
           </div>
-          <div className="mt-4 text-right text-slate-300 text-xs space-y-1">
-            <div>GAME DATE: {formatLocalDate(props.matchup?.gameDateLocal || props.generatedAt)}</div>
-            <div>PICK GENERATED: {formatLocalTime(props.generatedAt)}</div>
-          </div>
-        </div>
-
-        {/* Subtitle */}
-        <div className="px-6 py-3 bg-gradient-to-r from-slate-800 to-slate-700 border-b border-cyan-500/20">
-          <div className="text-sm text-cyan-300 font-medium">
-            {safePick.type === 'SPREAD'
-              ? '🎯 NBA Spread Model v1 — Advanced Statistical Analysis'
-              : '🎯 NBA Totals Model v1 — Advanced Statistical Analysis'
-            }
-          </div>
         </div>
 
         {/* Matchup Line */}
@@ -612,8 +598,24 @@ export function InsightCard(props: InsightCardProps) {
           </div>
         </div>
 
-        {/* Close Button */}
-        <div className="p-4 bg-slate-900 rounded-b-xl">
+        {/* Footer with Metadata */}
+        <div className="p-4 bg-slate-900 border-t border-slate-700">
+          {/* Metadata */}
+          <div className="text-center text-slate-400 text-[10px] space-y-0.5 mb-3">
+            <div>
+              {safePick.type === 'SPREAD'
+                ? '🎯 NBA Spread Model v1 — Advanced Statistical Analysis'
+                : '🎯 NBA Totals Model v1 — Advanced Statistical Analysis'
+              }
+            </div>
+            <div className="flex items-center justify-center gap-3">
+              <span>GAME DATE: {formatLocalDate(props.matchup?.gameDateLocal || props.generatedAt)}</span>
+              <span>•</span>
+              <span>PICK GENERATED: {formatLocalTime(props.generatedAt)}</span>
+            </div>
+          </div>
+
+          {/* Buttons */}
           <div className="flex justify-center gap-4">
             <button
               onClick={props.onClose}
