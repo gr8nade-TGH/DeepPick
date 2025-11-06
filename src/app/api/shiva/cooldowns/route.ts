@@ -28,7 +28,7 @@ export async function GET(request: Request) {
         units,
         created_at
       `)
-      .eq('capper_id', capper) // Filter by capper
+      .eq('capper', capper) // Filter by capper
       .order('created_at', { ascending: false })
       .limit(50) // Limit to most recent 50 cooldowns
 

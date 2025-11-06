@@ -22,9 +22,10 @@ interface SHIVAManagementInboxProps {
   onGameSelect?: (game: any) => void
   selectedGame?: any
   betType?: 'TOTAL' | 'SPREAD'
+  capper?: string
 }
 
-export function SHIVAManagementInbox({ onGameSelect, selectedGame, betType }: SHIVAManagementInboxProps = {}) {
+export function SHIVAManagementInbox({ onGameSelect, selectedGame, betType, capper = 'SHIVA' }: SHIVAManagementInboxProps = {}) {
   const [games, setGames] = useState<GameInboxItem[]>([])
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
@@ -150,7 +151,7 @@ export function SHIVAManagementInbox({ onGameSelect, selectedGame, betType }: SH
   return (
     <div className="space-y-4">
       {/* Generated Picks Inbox - MOVED TO TOP FOR VISIBILITY */}
-      <GeneratedPicksInbox capper="shiva" betType={betType} />
+      <GeneratedPicksInbox capper={capper.toLowerCase() as any} betType={betType} />
 
       {/* Game Inbox with fixed height and scroll */}
       <div>

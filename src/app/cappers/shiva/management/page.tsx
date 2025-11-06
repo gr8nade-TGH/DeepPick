@@ -122,6 +122,7 @@ export default function ShivaManagementPage() {
                 onGameSelect={handleGameSelect}
                 selectedGame={selectedGame}
                 betType={betType}
+                capper={selectedCapper}
               />
             </div>
           </div>

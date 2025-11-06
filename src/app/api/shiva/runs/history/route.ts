@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
     const { data: cooldownsData } = await supabase
       .from('pick_generation_cooldowns')
       .select('run_id, result, units, confidence_score')
-      .eq('capper_id', capper)
+      .eq('capper', capper)
 
     // Create a map of run_id -> cooldown data
     const cooldownMap = new Map()
