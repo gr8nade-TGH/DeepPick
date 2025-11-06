@@ -11,10 +11,19 @@ export async function GET() {
   try {
     const admin = getSupabaseAdmin()
 
-    // Fetch runs with bold_predictions (not null)
+    // Fetch runs with bold_predictions (not null) and join with games table for matchup info
     const { data: runs, error } = await admin
       .from('runs')
-      .select('run_id, created_at, matchup, capper, pick_type, selection, bold_predictions')
+      .select(`
+        run_id,
+        created_at,
+        capper,
+        pick_type,
+        selection,
+        bold_predictions,
+        game_id,
+        games!inner(away_team, home_team)
+      `)
       .not('bold_predictions', 'is', null)
       .order('created_at', { ascending: false })
       .limit(50)
@@ -28,15 +37,22 @@ export async function GET() {
     }
 
     // Format entries
-    const entries = runs.map(run => ({
-      run_id: run.run_id,
-      created_at: run.created_at,
-      matchup: run.matchup || 'Unknown Game',
-      capper: run.capper || 'SHIVA',
-      bet_type: run.pick_type || 'total',
-      selection: run.selection || 'N/A',
-      bold_predictions: run.bold_predictions
-    }))
+    const entries = runs.map(run => {
+      const game = run.games as any
+      const matchup = game
+        ? `${game.away_team} @ ${game.home_team}`
+        : 'Unknown Game'
+
+      return {
+        run_id: run.run_id,
+        created_at: run.created_at,
+        matchup,
+        capper: run.capper || 'SHIVA',
+        bet_type: run.pick_type || 'total',
+        selection: run.selection || 'N/A',
+        bold_predictions: run.bold_predictions
+      }
+    })
 
     return NextResponse.json({
       success: true,
