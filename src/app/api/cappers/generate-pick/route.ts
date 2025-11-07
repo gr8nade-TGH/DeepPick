@@ -159,7 +159,8 @@ export async function GET(request: Request) {
       },
       body: JSON.stringify({
         sport: sport,
-        betType: betType
+        betType: betType,
+        capper: capperId // CRITICAL: Pass capper to scanner for capper-specific filtering
       })
     })
 
@@ -173,8 +174,10 @@ export async function GET(request: Request) {
     console.log(`🎯 [UNIFIED-PICK-GEN] Scanner result:`, scannerResult.success ? '✅ Success' : '❌ Failed')
 
     // Step 4: If scanner found a game, generate the pick with custom factor weights
-    if (scannerResult.success && scannerResult.selectedGame) {
-      console.log(`🎯 [UNIFIED-PICK-GEN] Step 4: Generating pick for game ${scannerResult.selectedGame.game_id}`)
+    // Scanner returns 'selected_game' (snake_case)
+    const selectedGame = scannerResult.selected_game || scannerResult.selectedGame
+    if (scannerResult.success && selectedGame) {
+      console.log(`🎯 [UNIFIED-PICK-GEN] Step 4: Generating pick for game ${selectedGame.id}`)
 
       const generateEndpoint = `${baseUrl}/api/shiva/generate-pick`
 
@@ -186,7 +189,7 @@ export async function GET(request: Request) {
           'X-Capper-ID': capperId
         },
         body: JSON.stringify({
-          selectedGame: scannerResult.selectedGame,
+          selectedGame: selectedGame, // Use the normalized selectedGame variable
           betType: betType, // Pass bet type to generate-pick endpoint
           capperId: capperId, // Pass capper ID so picks are saved with correct capper
           factorConfig: capper.factor_config[betType] // Use custom factor weights!
