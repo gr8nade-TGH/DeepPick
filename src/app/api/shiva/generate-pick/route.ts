@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     console.log('🎯 [SHIVA:GeneratePick] Starting unified wizard pipeline...')
 
     const body = await request.json()
-    const { selectedGame, betType = 'TOTAL' } = body
+    const { selectedGame, betType = 'TOTAL', capperId = 'shiva' } = body
 
     if (!selectedGame || !selectedGame.id) {
       return NextResponse.json({
@@ -72,7 +72,7 @@ export async function POST(request: Request) {
       .from('picks')
       .select('id, pick_type, status, selection')
       .eq('game_id', game.id)
-      .eq('capper', 'shiva')
+      .eq('capper', capperId)
       .eq('pick_type', betTypeLower)
       .in('status', ['pending', 'won', 'lost', 'push'])
 
@@ -102,7 +102,7 @@ export async function POST(request: Request) {
       .from('pick_generation_cooldowns')
       .select('cooldown_until, result, reason')
       .eq('game_id', game.id)
-      .eq('capper', 'shiva')
+      .eq('capper', capperId)
       .eq('bet_type', betTypeLower)
       .gt('cooldown_until', nowIso)
       .single()
@@ -131,7 +131,7 @@ export async function POST(request: Request) {
     console.log('✅ [SHIVA:GeneratePick] No existing picks or cooldowns found, proceeding with wizard...')
 
     // Generate run ID
-    const runId = `shiva_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
+    const runId = `${capperId}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
 
     console.log('[SHIVA:GeneratePick] Running unified wizard pipeline...')
 
@@ -162,7 +162,7 @@ export async function POST(request: Request) {
         .from('pick_generation_cooldowns')
         .upsert({
           game_id: game.id,
-          capper: 'shiva',
+          capper: capperId,
           bet_type: betType.toLowerCase(), // ← lowercase to match RPC function can_generate_pick
           result: 'ERROR',
           units: 0,
@@ -224,7 +224,7 @@ export async function POST(request: Request) {
     }
 
     const metadata = {
-      capper: 'shiva',
+      capper: capperId,
       sport: 'NBA',
       bet_type: betType,
       units: result.pick?.units || 0,
@@ -322,7 +322,7 @@ export async function POST(request: Request) {
         // CRITICAL: Store bet_type and pick_type in columns (not just metadata)
         bet_type: betType,
         pick_type: betType,
-        capper: 'shiva',
+        capper: capperId,
         // NEW: Store data in separate columns (PRIORITY)
         factor_contributions: result.log?.factors || [],
         predicted_total: predictedValue,
@@ -387,7 +387,7 @@ export async function POST(request: Request) {
         .from('pick_generation_cooldowns')
         .upsert({
           game_id: game.id,
-          capper: 'shiva',
+          capper: capperId,
           bet_type: betType.toLowerCase(), // ← lowercase to match RPC function can_generate_pick
           result: 'PASS',
           units: 0,
@@ -428,7 +428,7 @@ export async function POST(request: Request) {
       .insert({
         game_id: game.id,
         run_id: runId, // CRITICAL: Link pick to run for insight card
-        capper: 'shiva',
+        capper: capperId,
         pick_type: pick.pickType.toLowerCase(),
         selection: pick.selection,
         odds: pick.lockedOdds?.total?.over_odds || -110,
@@ -477,7 +477,7 @@ export async function POST(request: Request) {
       .from('pick_generation_cooldowns')
       .upsert({
         game_id: game.id,
-        capper: 'shiva',
+        capper: capperId,
         bet_type: betType.toLowerCase(), // ← lowercase to match RPC function can_generate_pick
         result: 'PICK_GENERATED',
         units: pick.units,

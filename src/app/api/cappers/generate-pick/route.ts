@@ -188,6 +188,7 @@ export async function GET(request: Request) {
         body: JSON.stringify({
           selectedGame: scannerResult.selectedGame,
           betType: betType, // Pass bet type to generate-pick endpoint
+          capperId: capperId, // Pass capper ID so picks are saved with correct capper
           factorConfig: capper.factor_config[betType] // Use custom factor weights!
         })
       })
