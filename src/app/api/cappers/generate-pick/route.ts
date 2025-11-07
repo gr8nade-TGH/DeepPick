@@ -137,22 +137,16 @@ export async function GET(request: Request) {
 
     console.log(`🎯 [UNIFIED-PICK-GEN] ✅ Lock acquired`)
 
-    // Step 3: Route to appropriate pick generation logic based on bet type
+    // Step 3: Call scanner endpoint (handles both TOTAL and SPREAD via betType parameter)
     const baseUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
       ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
       : process.env.VERCEL_URL
         ? `https://${process.env.VERCEL_URL}`
         : 'http://localhost:3000'
 
-    let endpoint: string
+    const endpoint = `${baseUrl}/api/shiva/step1-scanner`
 
-    if (betType === 'SPREAD') {
-      endpoint = `${baseUrl}/api/shiva/step1-scanner-spread`
-    } else {
-      endpoint = `${baseUrl}/api/shiva/step1-scanner`
-    }
-
-    console.log(`🎯 [UNIFIED-PICK-GEN] Step 3: Calling scanner: ${endpoint}`)
+    console.log(`🎯 [UNIFIED-PICK-GEN] Step 3: Calling scanner: ${endpoint} (betType: ${betType})`)
 
     const scannerResponse = await fetch(endpoint, {
       method: 'POST',
@@ -182,9 +176,7 @@ export async function GET(request: Request) {
     if (scannerResult.success && scannerResult.selectedGame) {
       console.log(`🎯 [UNIFIED-PICK-GEN] Step 4: Generating pick for game ${scannerResult.selectedGame.game_id}`)
 
-      const generateEndpoint = betType === 'SPREAD'
-        ? `${baseUrl}/api/shiva/generate-pick-spread`
-        : `${baseUrl}/api/shiva/generate-pick`
+      const generateEndpoint = `${baseUrl}/api/shiva/generate-pick`
 
       const generateResponse = await fetch(generateEndpoint, {
         method: 'POST',
@@ -195,6 +187,7 @@ export async function GET(request: Request) {
         },
         body: JSON.stringify({
           selectedGame: scannerResult.selectedGame,
+          betType: betType, // Pass bet type to generate-pick endpoint
           factorConfig: capper.factor_config[betType] // Use custom factor weights!
         })
       })
