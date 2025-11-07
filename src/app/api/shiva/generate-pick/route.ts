@@ -422,6 +422,35 @@ export async function POST(request: Request) {
 
     console.log(`✅ [SHIVA:GeneratePick] Pick generated: ${pick.selection} (${pick.units} units, ${confidence.toFixed(2)} confidence)`)
 
+    // CRITICAL: Create PERMANENT cooldown FIRST, before saving pick
+    // This ensures that even if pick save fails (e.g., RLS policy error), we still create the cooldown
+    // to prevent infinite retry loops on the same game
+    // Once a pick is generated for a game, we should NEVER generate another pick for that game/bet_type
+    // Set cooldown to year 2099 to make it effectively permanent
+    const cooldownUntil = new Date('2099-12-31T23:59:59Z')
+    const { error: pickCooldownError } = await supabase
+      .from('pick_generation_cooldowns')
+      .upsert({
+        game_id: game.id,
+        capper: capperId,
+        bet_type: betType.toLowerCase(), // ← lowercase to match RPC function can_generate_pick
+        result: 'PICK_GENERATED',
+        units: pick.units,
+        confidence_score: confidence,
+        reason: `Pick generated: ${pick.selection}`,
+        cooldown_until: cooldownUntil.toISOString(),
+        created_at: new Date().toISOString()
+      }, {
+        onConflict: 'game_id,capper,bet_type'
+      })
+
+    if (pickCooldownError) {
+      console.error('[SHIVA:GeneratePick] Error creating/updating PICK_GENERATED cooldown:', pickCooldownError)
+      console.error('[SHIVA:GeneratePick] Cooldown error details:', JSON.stringify(pickCooldownError, null, 2))
+    } else {
+      console.log(`[SHIVA:GeneratePick] ✅ PERMANENT cooldown created/updated for PICK_GENERATED (until ${cooldownUntil.toISOString()})`)
+    }
+
     // Save pick to database
     const { data: savedPick, error: saveError } = await supabase
       .from('picks')
@@ -448,8 +477,8 @@ export async function POST(request: Request) {
         },
         status: 'pending',
         is_system_pick: true,
-        reasoning: `SHIVA pick generated via wizard pipeline`,
-        algorithm_version: 'shiva_v1'
+        reasoning: `${capperId.toUpperCase()} pick generated via wizard pipeline`,
+        algorithm_version: `${capperId}_v1`
       })
       .select()
       .single()
@@ -465,36 +494,6 @@ export async function POST(request: Request) {
     }
 
     console.log(`💾 [SHIVA:GeneratePick] Pick saved to database: ${savedPick.id}`)
-
-    // Create PERMANENT cooldown for PICK_GENERATED decision
-    // Once a pick is generated for a game, we should NEVER generate another pick for that game/bet_type
-    // Set cooldown to year 2099 to make it effectively permanent
-    // CRITICAL: Use UPSERT to handle expired cooldowns
-    // The unique constraint on (game_id, capper, bet_type) means we need to update existing records
-    // IMPORTANT: Use lowercase 'total' to match RPC function can_generate_pick (line 91 in migration 028)
-    const cooldownUntil = new Date('2099-12-31T23:59:59Z')
-    const { error: pickCooldownError } = await supabase
-      .from('pick_generation_cooldowns')
-      .upsert({
-        game_id: game.id,
-        capper: capperId,
-        bet_type: betType.toLowerCase(), // ← lowercase to match RPC function can_generate_pick
-        result: 'PICK_GENERATED',
-        units: pick.units,
-        confidence_score: confidence,
-        reason: `Pick generated: ${pick.selection}`,
-        cooldown_until: cooldownUntil.toISOString(),
-        created_at: new Date().toISOString()
-      }, {
-        onConflict: 'game_id,capper,bet_type'
-      })
-
-    if (pickCooldownError) {
-      console.error('[SHIVA:GeneratePick] Error creating/updating PICK_GENERATED cooldown:', pickCooldownError)
-      console.error('[SHIVA:GeneratePick] Cooldown error details:', JSON.stringify(pickCooldownError, null, 2))
-    } else {
-      console.log(`[SHIVA:GeneratePick] ✅ PERMANENT cooldown created/updated for PICK_GENERATED (until ${cooldownUntil.toISOString()})`)
-    }
 
     return NextResponse.json({
       success: true,
