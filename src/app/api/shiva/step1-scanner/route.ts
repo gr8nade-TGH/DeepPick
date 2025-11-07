@@ -16,7 +16,8 @@ const ScannerSchema = z.object({
   sport: z.enum(['NBA', 'NFL', 'MLB']).default('NBA'),
   betType: z.enum(['TOTAL', 'SPREAD']).default('TOTAL'),
   limit: z.number().min(1).max(50).default(10),
-  selectedGame: z.any().optional() // Optional selected game to check first
+  selectedGame: z.any().optional(), // Optional selected game to check first
+  capper: z.string().default('shiva') // Capper ID (shiva, ifrit, etc.)
 })
 
 export async function POST(request: NextRequest) {
@@ -48,10 +49,10 @@ export async function POST(request: NextRequest) {
           }, { status: 400 })
         }
 
-        const { sport, betType, limit, selectedGame: selectedGameFromProps } = parse.data
+        const { sport, betType, limit, selectedGame: selectedGameFromProps, capper } = parse.data
         const supabase = getSupabase()
 
-        console.log(`[SHIVA_SCANNER] Starting scan for ${sport} ${betType} games`)
+        console.log(`[SHIVA_SCANNER] Starting scan for ${sport} ${betType} games (capper: ${capper})`)
         console.log(`[SHIVA_SCANNER] Selected game:`, selectedGameFromProps)
 
         // If a specific game is selected, check if it's eligible first
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest) {
 
           // Check if this game can be processed
           console.log(`[SHIVA_SCANNER] About to check game eligibility...`)
-          const canProcess = await checkGameEligibility(selectedGameFromProps, sport, betType, supabase)
+          const canProcess = await checkGameEligibility(selectedGameFromProps, sport, betType, capper, supabase)
           console.log(`[SHIVA_SCANNER] Game eligibility result:`, canProcess)
 
           if (canProcess) {
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest) {
               filters: {
                 sport,
                 betType,
-                capper: 'SHIVA',
+                capper: capper.toUpperCase(),
                 selectedGame: selectedGameFromProps.game_id
               }
             })
@@ -96,7 +97,7 @@ export async function POST(request: NextRequest) {
         console.log(`[SHIVA_SCANNER] Scanning for eligible ${sport} ${betType} games`)
         console.log(`[SHIVA_SCANNER] About to call scanForEligibleGames...`)
 
-        const scanResult = await scanForEligibleGames(sport, betType, limit, supabase)
+        const scanResult = await scanForEligibleGames(sport, betType, limit, capper, supabase)
         const eligibleGames = scanResult.games
 
         console.log(`[SHIVA_SCANNER] scanForEligibleGames returned:`, eligibleGames.length, 'games')
@@ -111,7 +112,7 @@ export async function POST(request: NextRequest) {
             filters: {
               sport,
               betType,
-              capper: 'SHIVA'
+              capper: capper.toUpperCase()
             },
             debug: scanResult.debug
           })
@@ -152,7 +153,7 @@ export async function POST(request: NextRequest) {
           filters: {
             sport,
             betType,
-            capper: 'SHIVA'
+            capper: capper.toUpperCase()
           },
           available_games_count: eligibleGames.length
         })
@@ -186,6 +187,7 @@ async function checkGameEligibility(
   game: any,
   sport: string,
   betType: string,
+  capper: string,
   supabase: any
 ): Promise<boolean> {
   try {
@@ -233,7 +235,7 @@ async function checkGameEligibility(
       .from('picks')
       .select('id, pick_type, status')
       .eq('game_id', game.game_id)
-      .eq('capper', 'shiva')
+      .eq('capper', capper)
       .eq('pick_type', betTypeLower)
       .in('status', ['pending', 'won', 'lost', 'push'])
 
@@ -251,7 +253,7 @@ async function checkGameEligibility(
     // The RPC function can_generate_pick automatically converts bet_type to lowercase (migration 028 line 91)
     const canGenerate = await pickGenerationService.canGeneratePick(
       game.game_id,
-      'shiva',
+      capper,
       betTypeLower,
       2 // 2 hour cooldown
     )
@@ -265,7 +267,7 @@ async function checkGameEligibility(
           .from('pick_generation_cooldowns')
           .select('total_line, cooldown_until')
           .eq('game_id', game.game_id)
-          .eq('capper', 'shiva')
+          .eq('capper', capper)
           .eq('bet_type', betTypeLower)
           .gt('cooldown_until', new Date().toISOString())
           .single()
@@ -282,7 +284,7 @@ async function checkGameEligibility(
               .from('pick_generation_cooldowns')
               .delete()
               .eq('game_id', game.game_id)
-              .eq('capper', 'shiva')
+              .eq('capper', capper)
               .eq('bet_type', betTypeLower)
 
             console.log(`[SHIVA_SCANNER] Game is eligible for processing (total line changed)`)
@@ -313,6 +315,7 @@ async function scanForEligibleGames(
   sport: string,
   betType: string,
   limit: number,
+  capper: string,
   supabase: any
 ): Promise<{ games: any[], debug: any }> {
   try {
@@ -423,13 +426,13 @@ async function scanForEligibleGames(
     // Filter out games that already have picks
     const gameIds = processedGames.map((game: any) => game.id)
     console.log(`[SHIVA_SCANNER] Checking existing picks for ${gameIds.length} games`)
-    console.log(`[SHIVA_SCANNER] Looking for capper: shiva, pick_type: ${betTypeLower}`)
+    console.log(`[SHIVA_SCANNER] Looking for capper: ${capper}, pick_type: ${betTypeLower}`)
 
     const { data: existingPicks, error: picksError } = await supabase
       .from('picks')
       .select('game_id, pick_type, status')
       .in('game_id', gameIds)
-      .eq('capper', 'shiva')
+      .eq('capper', capper)
       .eq('pick_type', betTypeLower)
       .in('status', ['pending', 'won', 'lost', 'push'])
 
@@ -483,7 +486,7 @@ async function scanForEligibleGames(
       .from('pick_generation_cooldowns')
       .select('game_id, cooldown_until, result, units, created_at, bet_type')
       .in('game_id', availableGames.map((g: any) => g.id))
-      .eq('capper', 'shiva')
+      .eq('capper', capper)
       .eq('bet_type', betTypeLower)
       .gt('cooldown_until', nowIso)
 
