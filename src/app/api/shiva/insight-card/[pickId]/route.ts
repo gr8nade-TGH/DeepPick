@@ -480,7 +480,8 @@ export async function GET(
       injurySummary,
       conf7,
       confMarketAdj,
-      confFinal
+      confFinal,
+      resultsAnalysis
     })
 
     return NextResponse.json({
@@ -498,7 +499,7 @@ export async function GET(
 }
 
 // Build insight card data structure from run metadata
-function buildInsightCard({ pick, game, run, factorContributions, predictedTotal, baselineAvg, marketTotal, predictedHomeScore, predictedAwayScore, boldPredictions, professionalAnalysis, injurySummary, conf7, confMarketAdj, confFinal }: any) {
+function buildInsightCard({ pick, game, run, factorContributions, predictedTotal, baselineAvg, marketTotal, predictedHomeScore, predictedAwayScore, boldPredictions, professionalAnalysis, injurySummary, conf7, confMarketAdj, confFinal, resultsAnalysis }: any) {
 
   // Detect pick type from pick.pick_type
   const pickType = pick.pick_type?.toUpperCase() || 'TOTAL'
