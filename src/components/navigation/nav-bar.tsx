@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Home, BarChart3, Trophy, Activity, Target, Brain, Map, Shield, Sparkles } from 'lucide-react'
+import { Home, BarChart3, Trophy, Activity, Target, Brain, Map, Shield, Sparkles, PlusCircle } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 
 export function NavBar() {
@@ -26,16 +26,6 @@ export function NavBar() {
         </Button>
       </Link>
 
-      <Link href="/odds">
-        <Button
-          variant={isActive('/odds') ? 'default' : 'outline'}
-          className="gap-2"
-        >
-          <BarChart3 className="w-4 h-4" />
-          Odds & Factors
-        </Button>
-      </Link>
-
       <Link href="/leaderboard">
         <Button
           variant={isActive('/leaderboard') ? 'default' : 'outline'}
@@ -53,6 +43,16 @@ export function NavBar() {
         >
           <Brain className="w-4 h-4" />
           SHIVA Management
+        </Button>
+      </Link>
+
+      <Link href="/picks/manual">
+        <Button
+          variant={isActive('/picks/manual') ? 'default' : 'outline'}
+          className="gap-2"
+        >
+          <PlusCircle className="w-4 h-4" />
+          Manual Picks
         </Button>
       </Link>
 

@@ -1,0 +1,376 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { NavBar } from '@/components/navigation/nav-bar'
+import { BettingSlip, BetSelection } from '@/components/picks/betting-slip'
+import { RefreshCw } from 'lucide-react'
+
+interface Game {
+  id: string
+  home_team: { name: string; abbreviation: string }
+  away_team: { name: string; abbreviation: string }
+  game_date: string
+  game_time: string
+  game_start_timestamp: string
+  status: string
+  odds: {
+    spread: { line: number; home_odds: number; away_odds: number } | null
+    total: { line: number; over_odds: number; under_odds: number } | null
+    moneyline: { home: number; away: number } | null
+  }
+}
+
+export default function ManualPicksPage() {
+  const [games, setGames] = useState<Game[]>([])
+  const [loading, setLoading] = useState(true)
+  const [selections, setSelections] = useState<BetSelection[]>([])
+  const [existingPicks, setExistingPicks] = useState<Set<string>>(new Set())
+  const capperId = 'shiva' // TODO: Get from user context
+
+  useEffect(() => {
+    fetchGames()
+    fetchExistingPicks()
+  }, [])
+
+  const fetchGames = async () => {
+    setLoading(true)
+    try {
+      const response = await fetch('/api/games/today')
+      const data = await response.json()
+      if (data.success) {
+        setGames(data.games || [])
+      }
+    } catch (error) {
+      console.error('Error fetching games:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchExistingPicks = async () => {
+    try {
+      const response = await fetch(`/api/picks?capper=${capperId}&status=pending`)
+      const data = await response.json()
+      if (data.success) {
+        const gameIds = new Set(data.picks.map((p: any) => p.game_id))
+        setExistingPicks(gameIds)
+      }
+    } catch (error) {
+      console.error('Error fetching existing picks:', error)
+    }
+  }
+
+  const addSelection = (game: Game, betType: 'spread' | 'total' | 'moneyline', side: 'home' | 'away' | 'over' | 'under') => {
+    // Check if game already has a pick
+    if (existingPicks.has(game.id)) {
+      alert('You already have a pick on this game!')
+      return
+    }
+
+    let team = ''
+    let line = ''
+    let odds = 0
+
+    if (betType === 'spread') {
+      if (!game.odds.spread) return
+      team = side === 'home' ? game.home_team.abbreviation : game.away_team.abbreviation
+      const spreadLine = side === 'home' ? -game.odds.spread.line : game.odds.spread.line
+      line = `${spreadLine > 0 ? '+' : ''}${spreadLine.toFixed(1)}`
+      odds = game.odds.spread.home_odds
+    } else if (betType === 'total') {
+      if (!game.odds.total) return
+      team = side === 'over' ? 'OVER' : 'UNDER'
+      line = `${side === 'over' ? 'O' : 'U'} ${game.odds.total.line.toFixed(1)}`
+      odds = side === 'over' ? game.odds.total.over_odds : game.odds.total.under_odds
+    } else if (betType === 'moneyline') {
+      if (!game.odds.moneyline) return
+      team = side === 'home' ? game.home_team.abbreviation : game.away_team.abbreviation
+      line = 'ML'
+      odds = side === 'home' ? game.odds.moneyline.home : game.odds.moneyline.away
+    }
+
+    const selection: BetSelection = {
+      id: `${game.id}-${betType}-${side}`,
+      gameId: game.id,
+      team,
+      betType,
+      line,
+      odds,
+      homeTeam: game.home_team.abbreviation,
+      awayTeam: game.away_team.abbreviation,
+      gameTime: game.game_time
+    }
+
+    // Check if already in slip
+    if (selections.find(s => s.id === selection.id)) {
+      alert('This selection is already in your bet slip!')
+      return
+    }
+
+    // Check if conflicting selection exists (same game, different side)
+    const conflictingSelection = selections.find(s => s.gameId === game.id)
+    if (conflictingSelection) {
+      alert('You already have a selection for this game. Remove it first.')
+      return
+    }
+
+    setSelections([...selections, selection])
+  }
+
+  const removeSelection = (id: string) => {
+    setSelections(selections.filter(s => s.id !== id))
+  }
+
+  const clearSelections = () => {
+    setSelections([])
+  }
+
+  const placeBets = async (stakes: { [id: string]: number }) => {
+    try {
+      const picks = selections.map(sel => {
+        const game = games.find(g => g.id === sel.gameId)!
+        const stake = stakes[sel.id] || 1.0
+
+        let pickType = ''
+        let selection = ''
+        let odds = sel.odds
+
+        if (sel.betType === 'spread') {
+          pickType = 'spread'
+          selection = `${sel.team} ${sel.line}`
+        } else if (sel.betType === 'total') {
+          pickType = sel.line.startsWith('O') ? 'total' : 'total'
+          selection = `${sel.line}`
+        } else if (sel.betType === 'moneyline') {
+          pickType = 'moneyline'
+          selection = sel.team
+        }
+
+        return {
+          game_id: sel.gameId,
+          capper: capperId,
+          pick_type: pickType,
+          selection,
+          odds,
+          units: stake,
+          is_system_pick: false,
+          confidence: null,
+          reasoning: 'Manual pick',
+          algorithm_version: null
+        }
+      })
+
+      // Submit all picks
+      const results = await Promise.all(
+        picks.map(pick =>
+          fetch('/api/place-pick', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(pick)
+          }).then(r => r.json())
+        )
+      )
+
+      const failed = results.filter(r => !r.success)
+      if (failed.length > 0) {
+        alert(`Failed to place ${failed.length} pick(s). Check console for details.`)
+        console.error('Failed picks:', failed)
+      } else {
+        alert(`Successfully placed ${results.length} pick(s)!`)
+        clearSelections()
+        fetchExistingPicks() // Refresh existing picks
+      }
+    } catch (error) {
+      console.error('Error placing bets:', error)
+      alert('Error placing bets. Please try again.')
+    }
+  }
+
+  const formatTime = (time: string) => {
+    const [hours, minutes] = time.split(':')
+    const hour = parseInt(hours)
+    const ampm = hour >= 12 ? 'PM' : 'AM'
+    const displayHour = hour % 12 || 12
+    return `${displayHour}:${minutes} ${ampm}`
+  }
+
+  const formatOdds = (odds: number) => {
+    return odds > 0 ? `+${odds}` : `${odds}`
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-white mb-2">Manual Picks</h1>
+            <p className="text-slate-400">Select games to add to your bet slip</p>
+          </div>
+          <NavBar />
+        </div>
+
+        {/* Refresh Button */}
+        <div className="mb-4">
+          <button
+            onClick={fetchGames}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh Games
+          </button>
+        </div>
+
+        {/* Games List */}
+        <div className="space-y-4 pb-6">
+          {loading ? (
+            <div className="text-center py-12 text-slate-400">
+              <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-2" />
+              <p>Loading games...</p>
+            </div>
+          ) : games.length === 0 ? (
+            <div className="text-center py-12 text-slate-400">
+              <p className="text-lg">No games available</p>
+              <p className="text-sm mt-2">Check back later for today's games</p>
+            </div>
+          ) : (
+            games.map(game => {
+              const hasPick = existingPicks.has(game.id)
+              
+              return (
+                <div
+                  key={game.id}
+                  className={`bg-slate-900 border rounded-lg overflow-hidden ${
+                    hasPick ? 'border-green-500/50 opacity-60' : 'border-slate-700'
+                  }`}
+                >
+                  {/* Game Header */}
+                  <div className="bg-slate-800 px-4 py-3 border-b border-slate-700">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-white font-semibold">
+                          {game.away_team.name} <span className="text-slate-500">@</span> {game.home_team.name}
+                        </div>
+                        <div className="text-xs text-slate-400 mt-1">
+                          <span className="bg-green-600 text-white px-2 py-0.5 rounded text-xs font-semibold mr-2">
+                            SGP
+                          </span>
+                          Today {formatTime(game.game_time)}
+                        </div>
+                      </div>
+                      {hasPick && (
+                        <div className="bg-green-600 text-white px-3 py-1 rounded text-xs font-semibold">
+                          PICK PLACED
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Odds Grid */}
+                  <div className="grid grid-cols-2 gap-px bg-slate-700">
+                    {/* Spread Column */}
+                    <div className="bg-slate-900 p-4">
+                      <div className="text-xs text-slate-400 font-semibold mb-3 text-center">Spread</div>
+                      {game.odds.spread ? (
+                        <div className="space-y-2">
+                          {/* Away Spread */}
+                          <button
+                            onClick={() => !hasPick && addSelection(game, 'spread', 'away')}
+                            disabled={hasPick}
+                            className={`w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded p-3 transition-colors text-left ${
+                              hasPick ? 'cursor-not-allowed opacity-50' : ''
+                            }`}
+                          >
+                            <div className="flex justify-between items-center">
+                              <span className="text-white font-semibold text-sm">{game.away_team.abbreviation}</span>
+                              <div className="text-right">
+                                <div className="text-white font-bold">
+                                  {game.odds.spread.line > 0 ? '+' : ''}{game.odds.spread.line.toFixed(1)}
+                                </div>
+                                <div className="text-green-400 text-xs">{formatOdds(game.odds.spread.away_odds)}</div>
+                              </div>
+                            </div>
+                          </button>
+                          {/* Home Spread */}
+                          <button
+                            onClick={() => !hasPick && addSelection(game, 'spread', 'home')}
+                            disabled={hasPick}
+                            className={`w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded p-3 transition-colors text-left ${
+                              hasPick ? 'cursor-not-allowed opacity-50' : ''
+                            }`}
+                          >
+                            <div className="flex justify-between items-center">
+                              <span className="text-white font-semibold text-sm">{game.home_team.abbreviation}</span>
+                              <div className="text-right">
+                                <div className="text-white font-bold">
+                                  {-game.odds.spread.line > 0 ? '+' : ''}{(-game.odds.spread.line).toFixed(1)}
+                                </div>
+                                <div className="text-green-400 text-xs">{formatOdds(game.odds.spread.home_odds)}</div>
+                              </div>
+                            </div>
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="text-center text-slate-500 text-sm py-4">No spread available</div>
+                      )}
+                    </div>
+
+                    {/* Total Column */}
+                    <div className="bg-slate-900 p-4">
+                      <div className="text-xs text-slate-400 font-semibold mb-3 text-center">Total</div>
+                      {game.odds.total ? (
+                        <div className="space-y-2">
+                          {/* Over */}
+                          <button
+                            onClick={() => !hasPick && addSelection(game, 'total', 'over')}
+                            disabled={hasPick}
+                            className={`w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded p-3 transition-colors text-left ${
+                              hasPick ? 'cursor-not-allowed opacity-50' : ''
+                            }`}
+                          >
+                            <div className="flex justify-between items-center">
+                              <span className="text-white font-semibold text-sm">O {game.odds.total.line.toFixed(1)}</span>
+                              <div className="text-green-400 text-xs font-bold">{formatOdds(game.odds.total.over_odds)}</div>
+                            </div>
+                          </button>
+                          {/* Under */}
+                          <button
+                            onClick={() => !hasPick && addSelection(game, 'total', 'under')}
+                            disabled={hasPick}
+                            className={`w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded p-3 transition-colors text-left ${
+                              hasPick ? 'cursor-not-allowed opacity-50' : ''
+                            }`}
+                          >
+                            <div className="flex justify-between items-center">
+                              <span className="text-white font-semibold text-sm">U {game.odds.total.line.toFixed(1)}</span>
+                              <div className="text-green-400 text-xs font-bold">{formatOdds(game.odds.total.under_odds)}</div>
+                            </div>
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="text-center text-slate-500 text-sm py-4">No total available</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })
+          )}
+        </div>
+      </div>
+
+      {/* Betting Slip */}
+      {selections.length > 0 && (
+        <BettingSlip
+          selections={selections}
+          onRemove={removeSelection}
+          onClear={clearSelections}
+          onPlaceBets={placeBets}
+          capperId={capperId}
+        />
+      )}
+    </div>
+  )
+}
+
