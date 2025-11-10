@@ -83,8 +83,8 @@ export async function GET(request: NextRequest) {
         const dayWinRate = (data.wins + data.losses) > 0 ? (data.wins / (data.wins + data.losses)) * 100 : 0
         return {
           date,
-          profit: data.profit,
-          cumulative_profit: cumulativeProfit,
+          daily_units: data.profit, // Daily profit for this date
+          cumulative_units: cumulativeProfit, // Running total (matches chart dataKey)
           wins: data.wins,
           losses: data.losses,
           pushes: data.pushes,
