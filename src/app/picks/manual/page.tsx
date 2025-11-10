@@ -52,7 +52,7 @@ export default function ManualPicksPage() {
       const response = await fetch(`/api/picks?capper=${capperId}&status=pending`)
       const data = await response.json()
       if (data.success) {
-        const gameIds = new Set(data.picks.map((p: any) => p.game_id))
+        const gameIds = new Set<string>(data.picks.map((p: any) => p.game_id as string))
         setExistingPicks(gameIds)
       }
     } catch (error) {
@@ -237,13 +237,12 @@ export default function ManualPicksPage() {
           ) : (
             games.map(game => {
               const hasPick = existingPicks.has(game.id)
-              
+
               return (
                 <div
                   key={game.id}
-                  className={`bg-slate-900 border rounded-lg overflow-hidden ${
-                    hasPick ? 'border-green-500/50 opacity-60' : 'border-slate-700'
-                  }`}
+                  className={`bg-slate-900 border rounded-lg overflow-hidden ${hasPick ? 'border-green-500/50 opacity-60' : 'border-slate-700'
+                    }`}
                 >
                   {/* Game Header */}
                   <div className="bg-slate-800 px-4 py-3 border-b border-slate-700">
@@ -278,9 +277,8 @@ export default function ManualPicksPage() {
                           <button
                             onClick={() => !hasPick && addSelection(game, 'spread', 'away')}
                             disabled={hasPick}
-                            className={`w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded p-3 transition-colors text-left ${
-                              hasPick ? 'cursor-not-allowed opacity-50' : ''
-                            }`}
+                            className={`w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded p-3 transition-colors text-left ${hasPick ? 'cursor-not-allowed opacity-50' : ''
+                              }`}
                           >
                             <div className="flex justify-between items-center">
                               <span className="text-white font-semibold text-sm">{game.away_team.abbreviation}</span>
@@ -296,9 +294,8 @@ export default function ManualPicksPage() {
                           <button
                             onClick={() => !hasPick && addSelection(game, 'spread', 'home')}
                             disabled={hasPick}
-                            className={`w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded p-3 transition-colors text-left ${
-                              hasPick ? 'cursor-not-allowed opacity-50' : ''
-                            }`}
+                            className={`w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded p-3 transition-colors text-left ${hasPick ? 'cursor-not-allowed opacity-50' : ''
+                              }`}
                           >
                             <div className="flex justify-between items-center">
                               <span className="text-white font-semibold text-sm">{game.home_team.abbreviation}</span>
@@ -325,9 +322,8 @@ export default function ManualPicksPage() {
                           <button
                             onClick={() => !hasPick && addSelection(game, 'total', 'over')}
                             disabled={hasPick}
-                            className={`w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded p-3 transition-colors text-left ${
-                              hasPick ? 'cursor-not-allowed opacity-50' : ''
-                            }`}
+                            className={`w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded p-3 transition-colors text-left ${hasPick ? 'cursor-not-allowed opacity-50' : ''
+                              }`}
                           >
                             <div className="flex justify-between items-center">
                               <span className="text-white font-semibold text-sm">O {game.odds.total.line.toFixed(1)}</span>
@@ -338,9 +334,8 @@ export default function ManualPicksPage() {
                           <button
                             onClick={() => !hasPick && addSelection(game, 'total', 'under')}
                             disabled={hasPick}
-                            className={`w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded p-3 transition-colors text-left ${
-                              hasPick ? 'cursor-not-allowed opacity-50' : ''
-                            }`}
+                            className={`w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded p-3 transition-colors text-left ${hasPick ? 'cursor-not-allowed opacity-50' : ''
+                              }`}
                           >
                             <div className="flex justify-between items-center">
                               <span className="text-white font-semibold text-sm">U {game.odds.total.line.toFixed(1)}</span>
