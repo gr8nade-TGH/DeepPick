@@ -20,7 +20,6 @@ import {
 } from 'lucide-react'
 import { NavBar } from '@/components/navigation/nav-bar'
 import { PickInsightModal } from '@/components/dashboard/pick-insight-modal'
-import { BoldPredictionsTable } from '@/app/cappers/shiva/management/components/bold-predictions-table'
 import Link from 'next/link'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
 
@@ -86,6 +85,8 @@ export function ProfessionalDashboard() {
   const [selectedPick, setSelectedPick] = useState<Pick | null>(null)
   const [showInsight, setShowInsight] = useState(false)
   const [sportFilter, setSportFilter] = useState('all')
+  const [boldPredictionsMap, setBoldPredictionsMap] = useState<Map<string, any>>(new Map())
+  const [expandedPicks, setExpandedPicks] = useState<Set<string>>(new Set())
   const [picksPage, setPicksPage] = useState(0) // Pagination for picks (10 per page)
 
   useEffect(() => {
@@ -126,11 +127,47 @@ export function ProfessionalDashboard() {
       // Fetch real capper data from user_cappers and performance API
       await fetchTopCappers()
 
+      // Fetch bold predictions and map to picks
+      await fetchBoldPredictions()
+
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
     } finally {
       setLoading(false)
     }
+  }
+
+  const fetchBoldPredictions = async () => {
+    try {
+      const response = await fetch('/api/shiva/bold-predictions-log')
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.entries) {
+          // Create a map of game_id + capper -> bold_predictions
+          const predictionsMap = new Map()
+          data.entries.forEach((entry: any) => {
+            // We'll need to match by game and capper
+            const key = `${entry.matchup}_${entry.capper}`
+            predictionsMap.set(key, entry.bold_predictions)
+          })
+          setBoldPredictionsMap(predictionsMap)
+        }
+      }
+    } catch (error) {
+      console.error('[Dashboard] Error fetching bold predictions:', error)
+    }
+  }
+
+  const togglePickExpansion = (pickId: string) => {
+    setExpandedPicks(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(pickId)) {
+        newSet.delete(pickId)
+      } else {
+        newSet.add(pickId)
+      }
+      return newSet
+    })
   }
 
   const fetchTopCappers = async () => {
@@ -139,8 +176,11 @@ export function ProfessionalDashboard() {
       const cappersResponse = await fetch('/api/user-cappers')
       const cappersData = await cappersResponse.json()
 
-      if (!cappersData.success || !cappersData.cappers) {
-        console.error('Failed to fetch cappers')
+      console.log('[Dashboard] Fetched cappers:', cappersData)
+
+      if (!cappersData.success || !cappersData.cappers || cappersData.cappers.length === 0) {
+        console.error('[Dashboard] Failed to fetch cappers or no cappers found')
+        setTopCappers([]) // Clear any existing data
         return
       }
 
@@ -149,6 +189,8 @@ export function ProfessionalDashboard() {
         cappersData.cappers.map(async (capper: any) => {
           const perfResponse = await fetch(`/api/performance?period=all_time&capper=${capper.capper_id}`)
           const perfData = await perfResponse.json()
+
+          console.log(`[Dashboard] Performance for ${capper.capper_id}:`, perfData)
 
           if (perfData.success && perfData.data) {
             const metrics = perfData.data.metrics
@@ -179,9 +221,11 @@ export function ProfessionalDashboard() {
         capper.rank = index + 1
       })
 
+      console.log('[Dashboard] Final top cappers:', validCappers)
       setTopCappers(validCappers)
     } catch (error) {
-      console.error('Error fetching top cappers:', error)
+      console.error('[Dashboard] Error fetching top cappers:', error)
+      setTopCappers([]) // Clear on error
     }
   }
 
@@ -319,55 +363,131 @@ export function ProfessionalDashboard() {
                   const gameStatus = getGameStatus(pick)
                   const homeTeam = pick.game_snapshot?.home_team
                   const awayTeam = pick.game_snapshot?.away_team
+                  const matchup = `${awayTeam?.name || 'Away'} @ ${homeTeam?.name || 'Home'}`
+                  const boldPredictionsKey = `${matchup}_${pick.capper}`
+                  const boldPredictions = boldPredictionsMap.get(boldPredictionsKey)
+                  const isExpanded = expandedPicks.has(pick.id)
+                  const hasPredictions = boldPredictions && boldPredictions.predictions && boldPredictions.predictions.length > 0
 
                   return (
                     <div
                       key={pick.id}
-                      className="bg-slate-800/30 border border-slate-700/50 hover:border-blue-500/50 rounded px-2.5 py-2 cursor-pointer transition-all group"
-                      onClick={() => {
-                        setSelectedPick(pick)
-                        setShowInsight(true)
-                      }}
+                      className="bg-slate-800/30 border border-slate-700/50 hover:border-blue-500/50 rounded px-2.5 py-2 transition-all"
                     >
-                      <div className="flex items-center justify-between mb-1.5">
-                        <div className="flex items-center gap-1.5">
-                          <Badge className={`${confidenceBadge.color} text-white text-[10px] px-1.5 py-0 font-mono`}>
-                            {pick.confidence?.toFixed(1)} / 10 Confidence Score
-                          </Badge>
-                          <Badge className={`${gameStatus.color} text-[9px] px-1.5 py-0 font-semibold`}>
-                            {gameStatus.icon} {gameStatus.text}
-                          </Badge>
-                          {/* Capper Badge - Styled like Bold Predictions table */}
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-gradient-to-r from-purple-900 to-pink-900 text-purple-200 uppercase tracking-wide">
-                            {pick.capper || 'DeepPick'}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-slate-600">
-                            {pick.pick_type?.toUpperCase()}
-                          </Badge>
-                          <div className="text-xs font-semibold text-emerald-400">
-                            {pick.units}u
+                      {/* Main Pick Card - Clickable */}
+                      <div
+                        className="cursor-pointer group"
+                        onClick={() => {
+                          setSelectedPick(pick)
+                          setShowInsight(true)
+                        }}
+                      >
+                        <div className="flex items-center justify-between mb-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <Badge className={`${confidenceBadge.color} text-white text-[10px] px-1.5 py-0 font-mono`}>
+                              {pick.confidence?.toFixed(1)} / 10 Confidence Score
+                            </Badge>
+                            <Badge className={`${gameStatus.color} text-[9px] px-1.5 py-0 font-semibold`}>
+                              {gameStatus.icon} {gameStatus.text}
+                            </Badge>
+                            {/* Capper Badge */}
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-gradient-to-r from-purple-900 to-pink-900 text-purple-200 uppercase tracking-wide">
+                              {pick.capper || 'DeepPick'}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-slate-600">
+                              {pick.pick_type?.toUpperCase()}
+                            </Badge>
+                            <div className="text-xs font-semibold text-emerald-400">
+                              {pick.units}u
+                            </div>
                           </div>
                         </div>
+
+                        <div className="mb-1">
+                          <div className="text-[11px] text-slate-500 mb-0.5">
+                            {matchup}
+                          </div>
+                          <div className="text-xs font-semibold text-white group-hover:text-blue-400 transition-colors">
+                            {pick.selection}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1 text-[10px] text-slate-500">
+                            <Clock className="h-2.5 w-2.5" />
+                            {new Date(pick.game_snapshot?.game_date || pick.created_at).toLocaleDateString()}
+                          </div>
+                          <ChevronRight className="h-3.5 w-3.5 text-slate-600 group-hover:text-blue-400 transition-colors" />
+                        </div>
                       </div>
 
-                      <div className="mb-1">
-                        <div className="text-[11px] text-slate-500 mb-0.5">
-                          {awayTeam?.name || 'Away'} @ {homeTeam?.name || 'Home'}
+                      {/* Bold Predictions Toggle Button */}
+                      {hasPredictions && (
+                        <div className="mt-2 pt-2 border-t border-slate-700/50">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              togglePickExpansion(pick.id)
+                            }}
+                            className="w-full flex items-center justify-between text-[10px] text-purple-400 hover:text-purple-300 transition-colors"
+                          >
+                            <span className="flex items-center gap-1">
+                              <span className="font-semibold">🎯 AI Player Predictions</span>
+                              <span className="text-slate-500">({boldPredictions.predictions.length})</span>
+                            </span>
+                            <span className="text-slate-500">{isExpanded ? '▼' : '▶'}</span>
+                          </button>
                         </div>
-                        <div className="text-xs font-semibold text-white group-hover:text-blue-400 transition-colors">
-                          {pick.selection}
-                        </div>
-                      </div>
+                      )}
 
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1 text-[10px] text-slate-500">
-                          <Clock className="h-2.5 w-2.5" />
-                          {new Date(pick.game_snapshot?.game_date || pick.created_at).toLocaleDateString()}
+                      {/* Expanded Bold Predictions */}
+                      {isExpanded && hasPredictions && (
+                        <div className="mt-2 pt-2 border-t border-slate-700/50 space-y-2">
+                          {/* Summary */}
+                          {boldPredictions.summary && (
+                            <div className="bg-gradient-to-r from-purple-900/20 to-pink-900/20 border border-purple-500/30 rounded p-2">
+                              <div className="text-[9px] font-bold text-purple-400 uppercase mb-1">
+                                📊 Summary
+                              </div>
+                              <div className="text-[10px] text-slate-300 leading-relaxed">
+                                {boldPredictions.summary}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Predictions */}
+                          <div className="space-y-1.5">
+                            {boldPredictions.predictions.map((pred: any, idx: number) => (
+                              <div key={idx} className="bg-slate-900/50 border border-slate-700/50 rounded p-2">
+                                <div className="flex items-start justify-between mb-1">
+                                  <div className="flex-1">
+                                    <div className="text-[10px] font-bold text-white">
+                                      {pred.player}
+                                    </div>
+                                    <div className="text-[9px] text-slate-400">
+                                      {pred.team}
+                                    </div>
+                                  </div>
+                                  <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${pred.confidence === 'HIGH' ? 'bg-emerald-900/50 text-emerald-400' :
+                                    pred.confidence === 'MEDIUM' ? 'bg-yellow-900/50 text-yellow-400' :
+                                      'bg-slate-700/50 text-slate-400'
+                                    }`}>
+                                    {pred.confidence}
+                                  </span>
+                                </div>
+                                <div className="text-[10px] text-cyan-400 font-semibold mb-1">
+                                  {pred.prediction}
+                                </div>
+                                <div className="text-[9px] text-slate-400 leading-relaxed">
+                                  {pred.reasoning}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                        <ChevronRight className="h-3.5 w-3.5 text-slate-600 group-hover:text-blue-400 transition-colors" />
-                      </div>
+                      )}
                     </div>
                   )
                 })}
@@ -382,11 +502,6 @@ export function ProfessionalDashboard() {
                 )}
               </CardContent>
             </Card>
-
-            {/* Bold Predictions - Same Width as Picks */}
-            <div className="w-full">
-              <BoldPredictionsTable />
-            </div>
           </div>
 
           {/* RIGHT COLUMN - LEADERBOARD + LIVE FEED (45%) */}
