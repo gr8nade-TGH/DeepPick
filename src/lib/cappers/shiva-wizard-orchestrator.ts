@@ -169,10 +169,11 @@ export async function executeWizardPipeline(input: WizardOrchestratorInput): Pro
       pickDirection = predictedMargin > 0 ? awayTeam : homeTeam
 
       // Calculate edge: predicted margin vs market spread
-      // Market spread convention: negative = home favored (e.g., -4.5 means home favored by 4.5)
-      // Convert to away perspective: awaySpread = -marketSpread
-      const awaySpread = -marketSpread
-      marketEdgePts = predictedMargin - awaySpread
+      // marketSpread is from home perspective (negative = home favored, positive = away favored)
+      // predictedMargin is from away perspective (positive = away wins, negative = home wins)
+      // Direct subtraction gives us the edge
+      // Example: Mkt=+4 (away favored by 4), Pred=-2 (home wins by 2) → Edge=-6 (home undervalued)
+      marketEdgePts = predictedMargin - marketSpread
 
       // Create Edge vs Market Spread factor (100% weight, max 5.0 points)
       edgeVsMarketFactor = createEdgeVsMarketSpreadFactor(predictedMargin, marketSpread, marketEdgePts)
