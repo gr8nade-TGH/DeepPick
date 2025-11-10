@@ -290,6 +290,29 @@ export function ProfessionalDashboard() {
     return { text: 'FAIR', color: 'bg-slate-500' }
   }
 
+  const getCapperBadge = (capper: string) => {
+    const capperUpper = capper?.toUpperCase() || 'DEEPPICK'
+
+    // Different gradient for each capper
+    if (capperUpper === 'SHIVA') {
+      return {
+        gradient: 'bg-gradient-to-r from-purple-900 to-pink-900',
+        text: 'text-purple-200'
+      }
+    } else if (capperUpper === 'IFRIT') {
+      return {
+        gradient: 'bg-gradient-to-r from-orange-900 to-red-900',
+        text: 'text-orange-200'
+      }
+    } else {
+      // Default for other cappers
+      return {
+        gradient: 'bg-gradient-to-r from-blue-900 to-cyan-900',
+        text: 'text-blue-200'
+      }
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950">
@@ -395,9 +418,14 @@ export function ProfessionalDashboard() {
                               {gameStatus.icon} {gameStatus.text}
                             </Badge>
                             {/* Capper Badge */}
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-gradient-to-r from-purple-900 to-pink-900 text-purple-200 uppercase tracking-wide">
-                              {pick.capper || 'DeepPick'}
-                            </span>
+                            {(() => {
+                              const capperBadge = getCapperBadge(pick.capper || 'DeepPick')
+                              return (
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${capperBadge.gradient} ${capperBadge.text} uppercase tracking-wide`}>
+                                  {pick.capper || 'DeepPick'}
+                                </span>
+                              )
+                            })()}
                           </div>
                           <div className="flex items-center gap-1.5">
                             <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-slate-600">
@@ -840,19 +868,30 @@ export function ProfessionalDashboard() {
                             {pick.pick_type?.toUpperCase()}
                           </Badge>
                         </div>
-                        <div className="text-[10px] text-slate-500 mb-0.5">
+                        <div className="text-[10px] text-slate-500 mb-1">
                           {awayTeam?.name || 'Away'} @ {homeTeam?.name || 'Home'}
                         </div>
-                        <div className="flex items-center gap-2 text-[10px] text-slate-500">
-                          <span>{pick.capper || 'DeepPick'}</span>
-                          <span>•</span>
-                          <span>{pick.units}u</span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {/* Capper Badge */}
+                          {(() => {
+                            const capperBadge = getCapperBadge(pick.capper || 'DeepPick')
+                            return (
+                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${capperBadge.gradient} ${capperBadge.text} uppercase tracking-wide`}>
+                                {pick.capper || 'DeepPick'}
+                              </span>
+                            )
+                          })()}
+                          <span className="text-[10px] text-slate-500">{pick.units}U</span>
                           {pick.confidence && (
                             <>
-                              <span>•</span>
-                              <span>{pick.confidence.toFixed(0)}%</span>
+                              <span className="text-slate-600">•</span>
+                              <span className="text-[10px] text-slate-500">{pick.confidence.toFixed(1)}/10</span>
                             </>
                           )}
+                          <span className="text-slate-600">•</span>
+                          <span className="text-[10px] text-slate-400">
+                            {new Date(pick.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </span>
                         </div>
                       </div>
 
@@ -872,9 +911,6 @@ export function ProfessionalDashboard() {
                             Pending
                           </div>
                         )}
-                        <div className="text-[9px] text-slate-600 mt-0.5">
-                          {new Date(pick.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                        </div>
                       </div>
                     </div>
                   </div>
