@@ -5,6 +5,7 @@ import { Providers } from '@/components/providers'
 import { Toaster } from '@/components/ui/toaster'
 import { GlobalBettingSlipWrapper } from '@/components/picks/global-betting-slip-wrapper'
 import { BettingSlipProvider } from '@/contexts/betting-slip-context'
+import { AuthProvider } from '@/contexts/auth-context'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -60,13 +61,15 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body className={inter.className}>
         <Providers>
-          <BettingSlipProvider>
-            <div className="min-h-screen bg-gradient-to-br from-dark-50 via-dark-100 to-dark-200">
-              {children}
-            </div>
-            <GlobalBettingSlipWrapper />
-            <Toaster />
-          </BettingSlipProvider>
+          <AuthProvider>
+            <BettingSlipProvider>
+              <div className="min-h-screen bg-gradient-to-br from-dark-50 via-dark-100 to-dark-200">
+                {children}
+              </div>
+              <GlobalBettingSlipWrapper />
+              <Toaster />
+            </BettingSlipProvider>
+          </AuthProvider>
         </Providers>
       </body>
     </html>
