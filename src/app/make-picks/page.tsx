@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { NavBar } from '@/components/navigation/nav-bar'
-import { BettingSlip, BetSelection } from '@/components/picks/betting-slip'
 import { RefreshCw } from 'lucide-react'
+import { useBettingSlip, BetSelection } from '@/contexts/betting-slip-context'
 
 interface Game {
   id: string
@@ -21,9 +21,9 @@ interface Game {
 }
 
 export default function ManualPicksPage() {
+  const { addSelection: addToSlip, hasSelection } = useBettingSlip()
   const [games, setGames] = useState<Game[]>([])
   const [loading, setLoading] = useState(true)
-  const [selections, setSelections] = useState<BetSelection[]>([])
   const [existingPicks, setExistingPicks] = useState<Set<string>>(new Set())
   const capperId = 'shiva' // TODO: Get from user context
 
@@ -115,89 +115,8 @@ export default function ManualPicksPage() {
       gameTime: game.game_time
     }
 
-    // Check if already in slip
-    if (selections.find(s => s.id === selection.id)) {
-      alert('This selection is already in your bet slip!')
-      return
-    }
-
-    // Check if conflicting selection exists (same game, different side)
-    const conflictingSelection = selections.find(s => s.gameId === game.id)
-    if (conflictingSelection) {
-      alert('You already have a selection for this game. Remove it first.')
-      return
-    }
-
-    setSelections([...selections, selection])
-  }
-
-  const removeSelection = (id: string) => {
-    setSelections(selections.filter(s => s.id !== id))
-  }
-
-  const clearSelections = () => {
-    setSelections([])
-  }
-
-  const placeBets = async (stakes: { [id: string]: number }) => {
-    try {
-      const picks = selections.map(sel => {
-        const game = games.find(g => g.id === sel.gameId)!
-        const stake = stakes[sel.id] || 1.0
-
-        let pickType = ''
-        let selection = ''
-        let odds = sel.odds
-
-        if (sel.betType === 'spread') {
-          pickType = 'spread'
-          selection = `${sel.team} ${sel.line}`
-        } else if (sel.betType === 'total') {
-          pickType = sel.line.startsWith('O') ? 'total' : 'total'
-          selection = `${sel.line}`
-        } else if (sel.betType === 'moneyline') {
-          pickType = 'moneyline'
-          selection = sel.team
-        }
-
-        return {
-          game_id: sel.gameId,
-          capper: capperId,
-          pick_type: pickType,
-          selection,
-          odds,
-          units: stake,
-          is_system_pick: false,
-          confidence: null,
-          reasoning: 'Manual pick',
-          algorithm_version: null
-        }
-      })
-
-      // Submit all picks
-      const results = await Promise.all(
-        picks.map(pick =>
-          fetch('/api/place-pick', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(pick)
-          }).then(r => r.json())
-        )
-      )
-
-      const failed = results.filter(r => !r.success)
-      if (failed.length > 0) {
-        alert(`Failed to place ${failed.length} pick(s). Check console for details.`)
-        console.error('Failed picks:', failed)
-      } else {
-        alert(`Successfully placed ${results.length} pick(s)!`)
-        clearSelections()
-        fetchExistingPicks() // Refresh existing picks
-      }
-    } catch (error) {
-      console.error('Error placing bets:', error)
-      alert('Error placing bets. Please try again.')
-    }
+    // Add to global betting slip (context handles validation)
+    addToSlip(selection)
   }
 
   const formatGameDateTime = (timestamp: string) => {
@@ -382,16 +301,7 @@ export default function ManualPicksPage() {
         </div>
       </div>
 
-      {/* Betting Slip */}
-      {selections.length > 0 && (
-        <BettingSlip
-          selections={selections}
-          onRemove={removeSelection}
-          onClear={clearSelections}
-          onPlaceBets={placeBets}
-          capperId={capperId}
-        />
-      )}
+      {/* Betting Slip - Hidden, selections managed by global slip */}
     </div>
   )
 }

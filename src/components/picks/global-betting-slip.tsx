@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { X, Grid3x3 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { useBettingSlip } from '@/contexts/betting-slip-context'
 
 interface Pick {
   id: string
@@ -30,10 +32,13 @@ interface GlobalBettingSlipProps {
 
 export function GlobalBettingSlip({ capperId, isCapper }: GlobalBettingSlipProps) {
   const router = useRouter()
+  const { selections, removeSelection, clearSelections } = useBettingSlip()
   const [activeTab, setActiveTab] = useState<'slip' | 'open'>('slip')
   const [isExpanded, setIsExpanded] = useState(false)
   const [openPicks, setOpenPicks] = useState<Pick[]>([])
   const [loading, setLoading] = useState(false)
+  const [stakes, setStakes] = useState<{ [id: string]: number }>({})
+  const [isPlacing, setIsPlacing] = useState(false)
 
   // Don't show if not a capper
   if (!isCapper) return null
@@ -73,6 +78,74 @@ export function GlobalBettingSlip({ capperId, isCapper }: GlobalBettingSlipProps
     return `${dateStr} ${timeStr}`
   }
 
+  // Get stake for a selection (default 1 unit, max 5 units)
+  const getStake = (id: string) => stakes[id] || 1
+
+  const setStake = (id: string, value: number) => {
+    // Enforce max 5 units and integer values
+    const clampedValue = Math.max(1, Math.min(5, Math.round(value)))
+    setStakes(prev => ({ ...prev, [id]: clampedValue }))
+  }
+
+  // Calculate potential winnings for a single bet
+  const calculateWin = (odds: number, stake: number): number => {
+    if (odds > 0) {
+      return (odds / 100) * stake
+    } else {
+      return (100 / Math.abs(odds)) * stake
+    }
+  }
+
+  // Place all bets in the slip
+  const placeBets = async () => {
+    setIsPlacing(true)
+    try {
+      const picks = selections.map(sel => {
+        const stake = getStake(sel.id)
+        return {
+          game_id: sel.gameId,
+          capper: capperId,
+          pick_type: sel.betType,
+          selection: sel.betType === 'spread' ? `${sel.team} ${sel.line}` : sel.line,
+          odds: sel.odds,
+          units: stake,
+          is_system_pick: false,
+          confidence: null,
+          reasoning: 'Manual pick',
+          algorithm_version: null
+        }
+      })
+
+      const results = await Promise.all(
+        picks.map(pick =>
+          fetch('/api/place-pick', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(pick)
+          }).then(r => r.json())
+        )
+      )
+
+      const failed = results.filter(r => !r.success)
+      if (failed.length > 0) {
+        alert(`Failed to place ${failed.length} pick(s). Check console for details.`)
+        console.error('Failed picks:', failed)
+      } else {
+        alert(`Successfully placed ${results.length} pick(s)!`)
+        clearSelections()
+        setStakes({})
+        // Switch to open bets tab to see the placed picks
+        setActiveTab('open')
+        fetchOpenPicks()
+      }
+    } catch (error) {
+      console.error('Error placing bets:', error)
+      alert('Error placing bets. Please try again.')
+    } finally {
+      setIsPlacing(false)
+    }
+  }
+
   return (
     <>
       {/* Collapsed Tabs - Always visible at bottom right */}
@@ -107,8 +180,8 @@ export function GlobalBettingSlip({ capperId, isCapper }: GlobalBettingSlipProps
             <button
               onClick={() => setActiveTab('slip')}
               className={`flex-1 py-3 px-4 text-sm font-semibold transition-colors relative ${activeTab === 'slip'
-                  ? 'text-white bg-slate-800'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                ? 'text-white bg-slate-800'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
                 }`}
             >
               BET SLIP
@@ -116,8 +189,8 @@ export function GlobalBettingSlip({ capperId, isCapper }: GlobalBettingSlipProps
             <button
               onClick={() => setActiveTab('open')}
               className={`flex-1 py-3 px-4 text-sm font-semibold transition-colors ${activeTab === 'open'
-                  ? 'text-white bg-slate-800'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                ? 'text-white bg-slate-800'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
                 }`}
             >
               OPEN BETS
@@ -138,14 +211,123 @@ export function GlobalBettingSlip({ capperId, isCapper }: GlobalBettingSlipProps
           {/* Content */}
           <div className="flex-1 overflow-y-auto">
             {activeTab === 'slip' && (
-              <div className="p-8 text-center">
-                <p className="text-sm text-slate-400 mb-4">Your bet slip is empty</p>
-                <Button
-                  onClick={() => router.push('/make-picks')}
-                  className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
-                >
-                  Make Picks
-                </Button>
+              <div>
+                {selections.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <p className="text-sm text-slate-400 mb-4">Your bet slip is empty</p>
+                    <Button
+                      onClick={() => router.push('/make-picks')}
+                      className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
+                    >
+                      Make Picks
+                    </Button>
+                  </div>
+                ) : (
+                  <div>
+                    {/* Selections */}
+                    <div className="divide-y divide-slate-700">
+                      {selections.map((selection) => {
+                        const stake = getStake(selection.id)
+                        const win = calculateWin(selection.odds, stake)
+
+                        return (
+                          <div key={selection.id} className="p-4 hover:bg-slate-800/50 transition-colors">
+                            {/* Header */}
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-semibold text-white">
+                                    {selection.team}
+                                  </span>
+                                  <span className="text-xs text-slate-400">
+                                    {selection.line} ({selection.odds > 0 ? '+' : ''}{selection.odds})
+                                  </span>
+                                </div>
+                                <div className="text-xs text-slate-500 mt-1">
+                                  {selection.betType === 'spread' ? 'Point Spread' :
+                                    selection.betType === 'total' ? 'Total' : 'Moneyline'}
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => removeSelection(selection.id)}
+                                className="text-slate-400 hover:text-white transition-colors"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+
+                            {/* Stake and Win */}
+                            <div className="grid grid-cols-2 gap-3 mt-3">
+                              <div>
+                                <label className="text-xs text-slate-400 block mb-1">Risk (1-5 units)</label>
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  max="5"
+                                  step="1"
+                                  value={stake}
+                                  onChange={(e) => setStake(selection.id, parseFloat(e.target.value) || 1)}
+                                  className="bg-slate-800 border-slate-600 text-white text-right h-9"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-xs text-slate-400 block mb-1">Win</label>
+                                <div className="bg-slate-800 border border-slate-600 rounded-md px-3 h-9 flex items-center justify-end text-white">
+                                  {win.toFixed(2)}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+
+                    {/* Clear All */}
+                    <div className="px-4 py-2 border-b border-slate-700">
+                      <button
+                        onClick={clearSelections}
+                        className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+                      >
+                        Clear all selections
+                      </button>
+                    </div>
+
+                    {/* Summary */}
+                    <div className="bg-slate-800 p-4 space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-300">Total Bets:</span>
+                        <span className="text-white font-semibold">{selections.length}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-300">Total Stake:</span>
+                        <span className="text-white font-semibold">
+                          {selections.reduce((sum, sel) => sum + getStake(sel.id), 0).toFixed(0)} units
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-300">Possible Winnings:</span>
+                        <span className="text-white font-semibold">
+                          {selections.reduce((sum, sel) => {
+                            const stake = getStake(sel.id)
+                            const win = calculateWin(sel.odds, stake)
+                            return sum + win
+                          }, 0).toFixed(2)} units
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Place Bets Button */}
+                    <div className="p-4">
+                      <Button
+                        onClick={placeBets}
+                        disabled={isPlacing || selections.length === 0}
+                        className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 text-sm uppercase tracking-wide"
+                      >
+                        {isPlacing ? 'PLACING BETS...' : 'PLACE BETS'}
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -179,8 +361,8 @@ export function GlobalBettingSlip({ capperId, isCapper }: GlobalBettingSlipProps
                         {/* Pick Type Badge */}
                         <div className="flex items-center justify-between mb-2">
                           <span className={`text-xs font-semibold px-2 py-1 rounded ${pick.is_system_pick
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-green-600 text-white'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-green-600 text-white'
                             }`}>
                             {pick.is_system_pick ? 'GENERATED' : 'MANUAL'}
                           </span>
