@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Home, BarChart3, Trophy, Activity, Target, Brain, Map, Shield, Sparkles, PlusCircle } from 'lucide-react'
 import { usePathname } from 'next/navigation'
+import { UserMenu } from '@/components/auth/user-menu'
 
 export function NavBar() {
   const pathname = usePathname()
@@ -15,7 +16,7 @@ export function NavBar() {
   }
 
   return (
-    <nav className="flex gap-2">
+    <nav className="flex gap-2 items-center">
       <Link href="/">
         <Button
           variant={isActive('/') ? 'default' : 'outline'}
@@ -93,6 +94,11 @@ export function NavBar() {
           Become a Capper
         </Button>
       </Link>
+
+      {/* User Menu */}
+      <div className="ml-auto">
+        <UserMenu />
+      </div>
     </nav>
   )
 }

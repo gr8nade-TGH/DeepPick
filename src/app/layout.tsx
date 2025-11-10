@@ -6,6 +6,7 @@ import { Toaster } from '@/components/ui/toaster'
 import { GlobalBettingSlipWrapper } from '@/components/picks/global-betting-slip-wrapper'
 import { BettingSlipProvider } from '@/contexts/betting-slip-context'
 import { AuthProvider } from '@/contexts/auth-context'
+import { EmailVerificationBanner } from '@/components/auth/email-verification-banner'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -63,6 +64,7 @@ export default function RootLayout({
         <Providers>
           <AuthProvider>
             <BettingSlipProvider>
+              <EmailVerificationBanner />
               <div className="min-h-screen bg-gradient-to-br from-dark-50 via-dark-100 to-dark-200">
                 {children}
               </div>
