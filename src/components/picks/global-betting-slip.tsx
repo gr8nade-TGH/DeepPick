@@ -61,14 +61,14 @@ export function GlobalBettingSlip({ capperId, isCapper }: GlobalBettingSlipProps
 
   const formatGameDateTime = (timestamp: string) => {
     const date = new Date(timestamp)
-    const dateStr = date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric' 
+    const dateStr = date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric'
     })
-    const timeStr = date.toLocaleTimeString('en-US', { 
-      hour: 'numeric', 
+    const timeStr = date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
       minute: '2-digit',
-      hour12: true 
+      hour12: true
     })
     return `${dateStr} ${timeStr}`
   }
@@ -77,13 +77,13 @@ export function GlobalBettingSlip({ capperId, isCapper }: GlobalBettingSlipProps
     <>
       {/* Collapsed Tabs - Always visible at bottom right */}
       {!isExpanded && (
-        <div className="fixed bottom-6 right-6 flex gap-2 z-50">
+        <div className="fixed bottom-0 right-6 flex gap-0 z-50">
           <button
             onClick={() => {
               setActiveTab('slip')
               setIsExpanded(true)
             }}
-            className="bg-slate-900 border border-slate-700 rounded-t-lg px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 transition-colors shadow-lg"
+            className="bg-gradient-to-t from-emerald-700 to-emerald-600 border-t border-l border-r border-emerald-500 rounded-t-lg px-4 py-3 text-sm font-bold text-white hover:from-emerald-600 hover:to-emerald-500 transition-all shadow-lg"
           >
             BET SLIP
           </button>
@@ -92,7 +92,7 @@ export function GlobalBettingSlip({ capperId, isCapper }: GlobalBettingSlipProps
               setActiveTab('open')
               setIsExpanded(true)
             }}
-            className="bg-slate-900 border border-slate-700 rounded-t-lg px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 transition-colors shadow-lg"
+            className="bg-gradient-to-t from-blue-700 to-blue-600 border-t border-l border-r border-blue-500 rounded-t-lg px-4 py-3 text-sm font-bold text-white hover:from-blue-600 hover:to-blue-500 transition-all shadow-lg"
           >
             OPEN BETS
           </button>
@@ -106,21 +106,19 @@ export function GlobalBettingSlip({ capperId, isCapper }: GlobalBettingSlipProps
           <div className="flex border-b border-slate-700">
             <button
               onClick={() => setActiveTab('slip')}
-              className={`flex-1 py-3 px-4 text-sm font-semibold transition-colors relative ${
-                activeTab === 'slip'
+              className={`flex-1 py-3 px-4 text-sm font-semibold transition-colors relative ${activeTab === 'slip'
                   ? 'text-white bg-slate-800'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-              }`}
+                }`}
             >
               BET SLIP
             </button>
             <button
               onClick={() => setActiveTab('open')}
-              className={`flex-1 py-3 px-4 text-sm font-semibold transition-colors ${
-                activeTab === 'open'
+              className={`flex-1 py-3 px-4 text-sm font-semibold transition-colors ${activeTab === 'open'
                   ? 'text-white bg-slate-800'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-              }`}
+                }`}
             >
               OPEN BETS
               {openPicks.length > 0 && (
@@ -180,11 +178,10 @@ export function GlobalBettingSlip({ capperId, isCapper }: GlobalBettingSlipProps
                       <div key={pick.id} className="p-4 hover:bg-slate-800/50 transition-colors">
                         {/* Pick Type Badge */}
                         <div className="flex items-center justify-between mb-2">
-                          <span className={`text-xs font-semibold px-2 py-1 rounded ${
-                            pick.is_system_pick 
-                              ? 'bg-blue-600 text-white' 
+                          <span className={`text-xs font-semibold px-2 py-1 rounded ${pick.is_system_pick
+                              ? 'bg-blue-600 text-white'
                               : 'bg-green-600 text-white'
-                          }`}>
+                            }`}>
                             {pick.is_system_pick ? 'GENERATED' : 'MANUAL'}
                           </span>
                           <span className="text-xs text-slate-400">
