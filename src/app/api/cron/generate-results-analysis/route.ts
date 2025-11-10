@@ -31,7 +31,7 @@ export async function GET() {
   try {
     // Find graded picks without results analysis
     console.log('🔍 [RESULTS-ANALYSIS-CRON] Finding graded picks without analysis...')
-    
+
     const { data: picks, error: picksError } = await admin
       .from('picks')
       .select(`
@@ -53,9 +53,9 @@ export async function GET() {
 
     if (picksError) {
       console.error('❌ [RESULTS-ANALYSIS-CRON] Error fetching picks:', picksError)
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: 'Failed to fetch picks',
-        details: picksError.message 
+        details: picksError.message
       }, { status: 500 })
     }
 
@@ -147,7 +147,7 @@ export async function GET() {
           gameId: pick.game_id || 'archived',
           betType: betType as 'TOTAL' | 'SPREAD',
           selection: pick.selection,
-          predictedValue: isTotal 
+          predictedValue: isTotal
             ? (step4.predicted_total || 0)
             : (step4.predicted_margin || 0),
           marketLine,
@@ -162,9 +162,9 @@ export async function GET() {
             home: finalScore.home
           },
           game: {
-            homeTeam: metadata.game?.home_team?.name || 'Home',
-            awayTeam: metadata.game?.away_team?.name || 'Away',
-            gameDate: metadata.game?.game_date || new Date().toISOString().split('T')[0]
+            away_team: metadata.game?.away_team?.name || 'Away',
+            home_team: metadata.game?.home_team?.name || 'Home',
+            game_date: metadata.game?.game_date || new Date().toISOString().split('T')[0]
           }
         }
 
