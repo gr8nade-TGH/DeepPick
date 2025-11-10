@@ -667,9 +667,13 @@ function buildInsightCard({ pick, game, run, factorContributions, predictedTotal
         : pick.status === 'lost' ? 'loss'
           : pick.status === 'push' ? 'push'
             : 'pending',
+      // Try game.final_score first, then fall back to pick.result.final_score
       finalScore: game.final_score ? {
         away: game.final_score.away,
         home: game.final_score.home
+      } : pick.result?.final_score ? {
+        away: pick.result.final_score.away,
+        home: pick.result.final_score.home
       } : undefined,
       postMortem: undefined
     },
