@@ -111,22 +111,77 @@ export function ProfessionalDashboard() {
       if (picksData.success) setTodaysPicks(picksData.data)
       if (activityData.success) {
         setRecentActivity(activityData.data)
-        // Calculate chart data from activity
-        calculateChartData(activityData.data)
       }
-      if (perfData.success) setPerformance(perfData.data.metrics)
+      if (perfData.success) {
+        setPerformance(perfData.data.metrics)
+        // Use chart data from performance API (more complete than activity picks)
+        if (perfData.data.chartData && perfData.data.chartData.length > 0) {
+          setChartData(perfData.data.chartData)
+        } else {
+          // Fallback to calculating from activity if no chart data
+          calculateChartData(activityData.data)
+        }
+      }
 
-      // Mock capper data
-      setTopCappers([
-        { id: 'shiva', name: 'SHIVA', avatar: '🔱', rank: 1, roi: 24.5, win_rate: 68.2, total_units: 127.5, streak: 7, total_picks: 156, badge: 'diamond', is_hot: true },
-        { id: 'deeppick', name: 'DeepPick', avatar: '🎯', rank: 2, roi: 18.3, win_rate: 64.1, total_units: 89.2, streak: 3, total_picks: 203, badge: 'platinum', is_hot: true },
-        { id: 'nexus', name: 'Nexus', avatar: '⚡', rank: 3, roi: 15.7, win_rate: 61.5, total_units: 72.8, streak: -2, total_picks: 178, badge: 'gold', is_hot: false }
-      ])
+      // Fetch real capper data from user_cappers and performance API
+      await fetchTopCappers()
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchTopCappers = async () => {
+    try {
+      // Fetch all cappers from user_cappers table
+      const cappersResponse = await fetch('/api/user-cappers')
+      const cappersData = await cappersResponse.json()
+
+      if (!cappersData.success || !cappersData.cappers) {
+        console.error('Failed to fetch cappers')
+        return
+      }
+
+      // Fetch performance for each capper
+      const capperPerformance = await Promise.all(
+        cappersData.cappers.map(async (capper: any) => {
+          const perfResponse = await fetch(`/api/performance?period=all_time&capper=${capper.capper_id}`)
+          const perfData = await perfResponse.json()
+
+          if (perfData.success && perfData.data) {
+            const metrics = perfData.data.metrics
+            return {
+              id: capper.capper_id,
+              name: capper.capper_id.toUpperCase(),
+              avatar: capper.capper_id === 'shiva' ? '🔱' : capper.capper_id === 'ifrit' ? '🔥' : '🎯',
+              rank: 0, // Will be set after sorting
+              roi: metrics.roi || 0,
+              win_rate: metrics.win_rate || 0,
+              total_units: metrics.net_units || 0,
+              streak: 0, // TODO: Calculate streak
+              total_picks: metrics.total_picks || 0,
+              badge: metrics.roi > 20 ? 'diamond' : metrics.roi > 10 ? 'platinum' : 'gold',
+              is_hot: metrics.roi > 0
+            }
+          }
+          return null
+        })
+      )
+
+      // Filter out nulls and sort by ROI
+      const validCappers = capperPerformance.filter(c => c !== null) as Capper[]
+      validCappers.sort((a, b) => b.roi - a.roi)
+
+      // Assign ranks
+      validCappers.forEach((capper, index) => {
+        capper.rank = index + 1
+      })
+
+      setTopCappers(validCappers)
+    } catch (error) {
+      console.error('Error fetching top cappers:', error)
     }
   }
 
@@ -277,7 +332,7 @@ export function ProfessionalDashboard() {
                       <div className="flex items-center justify-between mb-1.5">
                         <div className="flex items-center gap-1.5">
                           <Badge className={`${confidenceBadge.color} text-white text-[10px] px-1.5 py-0 font-mono`}>
-                            {pick.confidence?.toFixed(1)} / 10
+                            {pick.confidence?.toFixed(1)} / 10 Confidence Score
                           </Badge>
                           <Badge className={`${gameStatus.color} text-[9px] px-1.5 py-0 font-semibold`}>
                             {gameStatus.icon} {gameStatus.text}
