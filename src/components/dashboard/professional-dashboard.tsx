@@ -277,12 +277,15 @@ export function ProfessionalDashboard() {
                       <div className="flex items-center justify-between mb-1.5">
                         <div className="flex items-center gap-1.5">
                           <Badge className={`${confidenceBadge.color} text-white text-[10px] px-1.5 py-0 font-mono`}>
-                            {pick.confidence?.toFixed(1)}%
+                            {pick.confidence?.toFixed(1)} / 10
                           </Badge>
                           <Badge className={`${gameStatus.color} text-[9px] px-1.5 py-0 font-semibold`}>
                             {gameStatus.icon} {gameStatus.text}
                           </Badge>
-                          <span className="text-[10px] text-slate-400 uppercase tracking-wide">{pick.capper || 'DeepPick'}</span>
+                          {/* Capper Badge - Styled like Bold Predictions table */}
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-gradient-to-r from-purple-900 to-pink-900 text-purple-200 uppercase tracking-wide">
+                            {pick.capper || 'DeepPick'}
+                          </span>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-slate-600">
