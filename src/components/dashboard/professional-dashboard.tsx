@@ -119,6 +119,7 @@ export function ProfessionalDashboard() {
         // Use chart data from performance API (more complete than activity picks)
         if (perfData.data.chartData && perfData.data.chartData.length > 0) {
           console.log('[Dashboard] Setting chart data from API:', perfData.data.chartData)
+          console.log('[Dashboard] Chart data details:', JSON.stringify(perfData.data.chartData, null, 2))
           setChartData(perfData.data.chartData)
         } else {
           console.log('[Dashboard] No chart data from API, calculating from activity')
@@ -339,14 +340,14 @@ export function ProfessionalDashboard() {
           </div>
         )}
 
-        {/* MAIN CONTENT - THREE COLUMN LAYOUT */}
-        <div className="grid grid-cols-12 gap-3">
+        {/* MAIN CONTENT - FIXED HEIGHT DASHBOARD */}
+        <div className="grid grid-cols-12 gap-3 mb-3">
 
-          {/* LEFT COLUMN - TODAY'S PICKS (55%) */}
-          <div className="col-span-7 space-y-3">
-            {/* Today's Elite Picks - Fixed Height */}
-            <Card className="bg-slate-900/50 border-slate-800">
-              <CardHeader className="pb-2 px-3 pt-2.5 border-b border-slate-800">
+          {/* LEFT COLUMN - TODAY'S PICKS (60%) */}
+          <div className="col-span-7">
+            {/* Today's Elite Picks - Fixed Height to match right column */}
+            <Card className="bg-slate-900/50 border-slate-800 h-[550px] flex flex-col">
+              <CardHeader className="pb-2 px-3 pt-2.5 border-b border-slate-800 flex-shrink-0">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm font-semibold text-white">Today's Elite Picks</CardTitle>
                   <Tabs value={sportFilter} onValueChange={setSportFilter}>
@@ -360,7 +361,7 @@ export function ProfessionalDashboard() {
                 </div>
               </CardHeader>
 
-              <CardContent className="px-3 py-2 space-y-1.5 h-[400px] overflow-y-auto">
+              <CardContent className="px-3 py-2 space-y-1.5 flex-1 overflow-y-auto">
                 {todaysPicks.slice(0, 5).map((pick) => {
                   const confidenceBadge = getConfidenceBadge(pick.confidence)
                   const gameStatus = getGameStatus(pick)
@@ -402,8 +403,8 @@ export function ProfessionalDashboard() {
                             <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-slate-600">
                               {pick.pick_type?.toUpperCase()}
                             </Badge>
-                            <div className="text-xs font-semibold text-emerald-400">
-                              {pick.units}u
+                            <div className="text-base font-bold text-emerald-400">
+                              {pick.units}U
                             </div>
                           </div>
                         </div>
@@ -437,7 +438,7 @@ export function ProfessionalDashboard() {
                             className="w-full flex items-center justify-between text-[10px] text-purple-400 hover:text-purple-300 transition-colors"
                           >
                             <span className="flex items-center gap-1">
-                              <span className="font-semibold">🎯 AI Player Predictions</span>
+                              <span className="font-semibold">🎯 Bold Player Predictions</span>
                               <span className="text-slate-500">({boldPredictions.predictions.length})</span>
                             </span>
                             <span className="text-slate-500">{isExpanded ? '▼' : '▶'}</span>
@@ -507,12 +508,12 @@ export function ProfessionalDashboard() {
             </Card>
           </div>
 
-          {/* RIGHT COLUMN - LEADERBOARD + LIVE FEED (45%) */}
+          {/* RIGHT COLUMN - LEADERBOARD + PERFORMANCE TREND (40%) */}
           <div className="col-span-5 space-y-3">
 
-            {/* LEADERBOARD - ENHANCED BLOOMBERG STYLE */}
-            <Card className="bg-slate-900/50 border-slate-800">
-              <CardHeader className="pb-2 px-3 pt-2.5 border-b border-slate-800">
+            {/* LEADERBOARD - Fixed Height */}
+            <Card className="bg-slate-900/50 border-slate-800 h-[310px] flex flex-col">
+              <CardHeader className="pb-2 px-3 pt-2.5 border-b border-slate-800 flex-shrink-0">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm font-semibold text-white flex items-center gap-1.5">
                     <Trophy className="h-3.5 w-3.5 text-amber-500" />
@@ -526,7 +527,7 @@ export function ProfessionalDashboard() {
                 </div>
               </CardHeader>
 
-              <CardContent className="px-3 py-2 space-y-1.5">
+              <CardContent className="px-3 py-2 space-y-1.5 flex-1 overflow-y-auto">
                 {/* Column Headers */}
                 <div className="flex items-center gap-2 px-2 pb-1 border-b border-slate-800/50">
                   <div className="flex-shrink-0 w-6 text-[9px] font-semibold text-slate-500 uppercase tracking-wider">
@@ -665,25 +666,25 @@ export function ProfessionalDashboard() {
               </CardContent>
             </Card>
 
-            {/* PERFORMANCE TREND GRAPH - COMPACT */}
-            <Card className="bg-slate-900/50 border-slate-800">
-              <CardHeader className="pb-2 px-3 pt-2.5 border-b border-slate-800">
+            {/* PERFORMANCE TREND GRAPH - Fixed Height */}
+            <Card className="bg-slate-900/50 border-slate-800 h-[227px] flex flex-col">
+              <CardHeader className="pb-2 px-3 pt-2.5 border-b border-slate-800 flex-shrink-0">
                 <CardTitle className="text-sm font-semibold text-white flex items-center gap-1.5">
                   <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
                   Performance Trend
                 </CardTitle>
               </CardHeader>
 
-              <CardContent className="px-3 py-2">
+              <CardContent className="px-3 py-2 flex-1">
                 {chartData.length === 0 ? (
-                  <div className="h-[200px] flex items-center justify-center">
+                  <div className="h-full flex items-center justify-center">
                     <div className="text-center">
                       <p className="text-[11px] text-slate-500">No performance data yet</p>
                       <p className="text-[9px] text-slate-600 mt-1">Check console for debug info</p>
                     </div>
                   </div>
                 ) : (
-                  <div className="h-[200px]">
+                  <div className="h-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart
                         data={chartData}
@@ -772,114 +773,116 @@ export function ProfessionalDashboard() {
                 )}
               </CardContent>
             </Card>
+          </div>
+        </div>
 
-            {/* PICK HISTORY - DETAILED */}
-            <Card className="bg-slate-900/50 border-slate-800">
-              <CardHeader className="pb-2 px-3 pt-2.5 border-b border-slate-800">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-semibold text-white flex items-center gap-1.5">
-                    <BarChart3 className="h-3.5 w-3.5 text-blue-500" />
-                    Pick History
-                  </CardTitle>
-                  <Link href="/pick-history">
-                    <Button variant="ghost" size="sm" className="text-[11px] h-6 px-2 text-slate-400 hover:text-white">
-                      View All
-                    </Button>
-                  </Link>
-                </div>
-              </CardHeader>
+        {/* PICK HISTORY - FULL WIDTH AT BOTTOM */}
+        <Card className="bg-slate-900/50 border-slate-800 h-[250px] flex flex-col">
+          <CardHeader className="pb-2 px-3 pt-2.5 border-b border-slate-800 flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold text-white flex items-center gap-1.5">
+                <BarChart3 className="h-3.5 w-3.5 text-blue-500" />
+                Pick History
+              </CardTitle>
+              <Link href="/pick-history">
+                <Button variant="ghost" size="sm" className="text-[11px] h-6 px-2 text-slate-400 hover:text-white">
+                  View All
+                </Button>
+              </Link>
+            </div>
+          </CardHeader>
 
-              <CardContent className="px-3 py-2 space-y-1 max-h-[500px] overflow-y-auto">
-                {recentActivity.map((pick) => {
-                  const isWin = pick.status === 'won'
-                  const isLoss = pick.status === 'lost'
-                  const isPending = pick.status === 'pending'
-                  const netUnits = pick.net_units || 0
-                  const homeTeam = pick.game_snapshot?.home_team
-                  const awayTeam = pick.game_snapshot?.away_team
+          <CardContent className="px-3 py-2 flex-1 overflow-y-auto">
+            <div className="grid grid-cols-2 gap-2">
+              {recentActivity.map((pick) => {
+                const isWin = pick.status === 'won'
+                const isLoss = pick.status === 'lost'
+                const isPending = pick.status === 'pending'
+                const netUnits = pick.net_units || 0
+                const homeTeam = pick.game_snapshot?.home_team
+                const awayTeam = pick.game_snapshot?.away_team
 
-                  return (
-                    <div
-                      key={pick.id}
-                      className={`px-2 py-1.5 rounded border transition-all cursor-pointer hover:border-slate-600 ${isWin ? 'bg-emerald-500/5 border-emerald-500/20' :
-                        isLoss ? 'bg-red-500/5 border-red-500/20' :
-                          'bg-slate-800/20 border-slate-700/30'
-                        }`}
-                      onClick={() => {
-                        setSelectedPick(pick)
-                        setShowInsight(true)
-                      }}
-                    >
-                      <div className="flex items-start gap-2">
-                        <div className="flex-shrink-0 mt-0.5">
-                          {isWin ? (
-                            <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                              <CheckCircle className="h-3 w-3 text-emerald-400" />
-                            </div>
-                          ) : isLoss ? (
-                            <div className="w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center">
-                              <XCircle className="h-3 w-3 text-red-400" />
-                            </div>
-                          ) : (
-                            <div className="w-5 h-5 rounded-full bg-slate-500/20 flex items-center justify-center">
-                              <Clock className="h-3 w-3 text-slate-400" />
-                            </div>
+                return (
+                  <div
+                    key={pick.id}
+                    className={`px-2 py-1.5 rounded border transition-all cursor-pointer hover:border-slate-600 ${isWin ? 'bg-emerald-500/5 border-emerald-500/20' :
+                      isLoss ? 'bg-red-500/5 border-red-500/20' :
+                        'bg-slate-800/20 border-slate-700/30'
+                      }`}
+                    onClick={() => {
+                      setSelectedPick(pick)
+                      setShowInsight(true)
+                    }}
+                  >
+                    <div className="flex items-start gap-2">
+                      <div className="flex-shrink-0 mt-0.5">
+                        {isWin ? (
+                          <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                            <CheckCircle className="h-3 w-3 text-emerald-400" />
+                          </div>
+                        ) : isLoss ? (
+                          <div className="w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center">
+                            <XCircle className="h-3 w-3 text-red-400" />
+                          </div>
+                        ) : (
+                          <div className="w-5 h-5 rounded-full bg-slate-500/20 flex items-center justify-center">
+                            <Clock className="h-3 w-3 text-slate-400" />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <span className="text-[11px] font-semibold text-white truncate">
+                            {pick.selection}
+                          </span>
+                          <Badge variant="outline" className="text-[9px] px-1 py-0 border-slate-600">
+                            {pick.pick_type?.toUpperCase()}
+                          </Badge>
+                        </div>
+                        <div className="text-[10px] text-slate-500 mb-0.5">
+                          {awayTeam?.name || 'Away'} @ {homeTeam?.name || 'Home'}
+                        </div>
+                        <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                          <span>{pick.capper || 'DeepPick'}</span>
+                          <span>•</span>
+                          <span>{pick.units}u</span>
+                          {pick.confidence && (
+                            <>
+                              <span>•</span>
+                              <span>{pick.confidence.toFixed(0)}%</span>
+                            </>
                           )}
                         </div>
+                      </div>
 
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5 mb-0.5">
-                            <span className="text-[11px] font-semibold text-white truncate">
-                              {pick.selection}
-                            </span>
-                            <Badge variant="outline" className="text-[9px] px-1 py-0 border-slate-600">
-                              {pick.pick_type?.toUpperCase()}
-                            </Badge>
+                      <div className="text-right flex-shrink-0">
+                        {isWin && (
+                          <div className="text-xs font-bold text-emerald-400">
+                            +{netUnits.toFixed(1)}u
                           </div>
-                          <div className="text-[10px] text-slate-500 mb-0.5">
-                            {awayTeam?.name || 'Away'} @ {homeTeam?.name || 'Home'}
+                        )}
+                        {isLoss && (
+                          <div className="text-xs font-bold text-red-400">
+                            {netUnits.toFixed(1)}u
                           </div>
-                          <div className="flex items-center gap-2 text-[10px] text-slate-500">
-                            <span>{pick.capper || 'DeepPick'}</span>
-                            <span>•</span>
-                            <span>{pick.units}u</span>
-                            {pick.confidence && (
-                              <>
-                                <span>•</span>
-                                <span>{pick.confidence.toFixed(0)}%</span>
-                              </>
-                            )}
+                        )}
+                        {isPending && (
+                          <div className="text-[10px] text-slate-500">
+                            Pending
                           </div>
-                        </div>
-
-                        <div className="text-right flex-shrink-0">
-                          {isWin && (
-                            <div className="text-xs font-bold text-emerald-400">
-                              +{netUnits.toFixed(1)}u
-                            </div>
-                          )}
-                          {isLoss && (
-                            <div className="text-xs font-bold text-red-400">
-                              {netUnits.toFixed(1)}u
-                            </div>
-                          )}
-                          {isPending && (
-                            <div className="text-[10px] text-slate-500">
-                              Pending
-                            </div>
-                          )}
-                          <div className="text-[9px] text-slate-600 mt-0.5">
-                            {new Date(pick.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                          </div>
+                        )}
+                        <div className="text-[9px] text-slate-600 mt-0.5">
+                          {new Date(pick.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                         </div>
                       </div>
                     </div>
-                  )
-                })}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+                  </div>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Insight Modal */}
