@@ -212,10 +212,10 @@ export async function GET() {
         if (results.tuningSuggestions && results.tuningSuggestions.length > 0) {
           const tuningSuggestionRecords = results.tuningSuggestions.map(ts => ({
             pick_id: pick.id,
-            factor_key: ts.factorKey,
+            factor_key: ts.factorId,
             current_weight: ts.currentWeight,
             suggested_weight: ts.suggestedWeight,
-            reasoning: ts.reasoning,
+            reasoning: ts.reason,
             confidence: ts.confidence
           }))
 
