@@ -331,32 +331,32 @@ export function ProfessionalDashboard() {
     <div className="min-h-screen bg-slate-950">
       <NavBar />
 
-      <div className="px-4 py-3">
+      <div className="px-4 py-4 max-w-[1800px] mx-auto">
 
         {/* PERFORMANCE STATS BAR - COMPACT */}
         {performance && (
-          <div className="mb-3 grid grid-cols-5 gap-2">
-            <div className="bg-slate-900/50 border border-slate-800 rounded px-3 py-1.5">
-              <div className="text-[10px] text-slate-500 mb-0.5 uppercase tracking-wide">Total Picks</div>
-              <div className="text-base font-semibold text-white">{performance.total_picks}</div>
+          <div className="mb-4 grid grid-cols-5 gap-3">
+            <div className="bg-slate-900/50 border border-slate-800 rounded-lg px-4 py-2">
+              <div className="text-[10px] text-slate-500 mb-1 uppercase tracking-wider font-medium">Total Picks</div>
+              <div className="text-lg font-bold text-white">{performance.total_picks}</div>
             </div>
-            <div className="bg-slate-900/50 border border-slate-800 rounded px-3 py-1.5">
-              <div className="text-[10px] text-slate-500 mb-0.5 uppercase tracking-wide">Win Rate</div>
-              <div className="text-base font-semibold text-emerald-400">{performance.win_rate.toFixed(1)}%</div>
+            <div className="bg-slate-900/50 border border-slate-800 rounded-lg px-4 py-2">
+              <div className="text-[10px] text-slate-500 mb-1 uppercase tracking-wider font-medium">Win Rate</div>
+              <div className="text-lg font-bold text-emerald-400">{performance.win_rate.toFixed(1)}%</div>
             </div>
-            <div className="bg-slate-900/50 border border-slate-800 rounded px-3 py-1.5">
-              <div className="text-[10px] text-slate-500 mb-0.5 uppercase tracking-wide">W / L</div>
-              <div className="text-base font-semibold text-white">{performance.wins} / {performance.losses}</div>
+            <div className="bg-slate-900/50 border border-slate-800 rounded-lg px-4 py-2">
+              <div className="text-[10px] text-slate-500 mb-1 uppercase tracking-wider font-medium">W / L</div>
+              <div className="text-lg font-bold text-white">{performance.wins} / {performance.losses}</div>
             </div>
-            <div className="bg-slate-900/50 border border-slate-800 rounded px-3 py-1.5">
-              <div className="text-[10px] text-slate-500 mb-0.5 uppercase tracking-wide">ROI</div>
-              <div className={`text-base font-semibold ${performance.roi >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            <div className="bg-slate-900/50 border border-slate-800 rounded-lg px-4 py-2">
+              <div className="text-[10px] text-slate-500 mb-1 uppercase tracking-wider font-medium">ROI</div>
+              <div className={`text-lg font-bold ${performance.roi >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                 {performance.roi >= 0 ? '+' : ''}{performance.roi?.toFixed(1) || '0.0'}%
               </div>
             </div>
-            <div className="bg-slate-900/50 border border-emerald-900/20 rounded px-3 py-1.5">
-              <div className="text-[10px] text-slate-500 mb-0.5 uppercase tracking-wide">Net Units</div>
-              <div className={`text-base font-semibold ${performance.net_units >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            <div className="bg-slate-900/50 border border-emerald-900/20 rounded-lg px-4 py-2">
+              <div className="text-[10px] text-slate-500 mb-1 uppercase tracking-wider font-medium">Net Units</div>
+              <div className={`text-lg font-bold ${performance.net_units >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                 {performance.net_units >= 0 ? '+' : ''}{performance.net_units.toFixed(1)}u
               </div>
             </div>
@@ -384,8 +384,16 @@ export function ProfessionalDashboard() {
                 </div>
               </CardHeader>
 
-              <CardContent className="px-3 py-2 space-y-1.5 flex-1 overflow-y-auto">
-                {todaysPicks.slice(0, 5).map((pick) => {
+              <CardContent className="px-3 py-2 space-y-2 flex-1 overflow-y-auto">
+                {todaysPicks.length === 0 ? (
+                  <div className="h-full flex items-center justify-center">
+                    <div className="text-center">
+                      <Activity className="h-12 w-12 text-slate-600 mx-auto mb-3" />
+                      <p className="text-sm text-slate-400 font-medium">No picks available</p>
+                      <p className="text-xs text-slate-600 mt-1">Check back later for today's elite picks</p>
+                    </div>
+                  </div>
+                ) : todaysPicks.slice(0, 5).map((pick) => {
                   const confidenceBadge = getConfidenceBadge(pick.confidence)
                   const gameStatus = getGameStatus(pick)
                   const homeTeam = pick.game_snapshot?.home_team
@@ -399,7 +407,7 @@ export function ProfessionalDashboard() {
                   return (
                     <div
                       key={pick.id}
-                      className="bg-slate-800/30 border border-slate-700/50 hover:border-blue-500/50 rounded px-2.5 py-2 transition-all"
+                      className="bg-slate-800/30 border border-slate-700/50 hover:border-blue-500/50 rounded-lg px-3 py-2.5 transition-all"
                     >
                       {/* Main Pick Card - Clickable */}
                       <div
@@ -409,15 +417,10 @@ export function ProfessionalDashboard() {
                           setShowInsight(true)
                         }}
                       >
-                        <div className="flex items-center justify-between mb-1.5">
-                          <div className="flex items-center gap-1.5">
-                            <Badge className={`${confidenceBadge.color} text-white text-[10px] px-1.5 py-0 font-mono`}>
-                              {pick.confidence?.toFixed(1)} / 10 Sharp Score
-                            </Badge>
-                            <Badge className={`${gameStatus.color} text-[9px] px-1.5 py-0 font-semibold`}>
-                              {gameStatus.icon} {gameStatus.text}
-                            </Badge>
-                            {/* Capper Badge */}
+                        {/* Top Row: Badges */}
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {/* Capper Badge - Most Prominent */}
                             {(() => {
                               const capperBadge = getCapperBadge(pick.capper || 'DeepPick')
                               return (
@@ -426,32 +429,44 @@ export function ProfessionalDashboard() {
                                 </span>
                               )
                             })()}
+                            <Badge className={`${confidenceBadge.color} text-white text-[10px] px-1.5 py-0.5 font-mono`}>
+                              {pick.confidence?.toFixed(1)} / 10
+                            </Badge>
+                            <Badge className={`${gameStatus.color} text-[9px] px-1.5 py-0.5 font-semibold`}>
+                              {gameStatus.icon} {gameStatus.text}
+                            </Badge>
                           </div>
-                          <div className="flex items-center gap-1.5">
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-slate-600">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-slate-600 font-semibold">
                               {pick.pick_type?.toUpperCase()}
                             </Badge>
-                            <div className="text-base font-bold text-emerald-400">
+                            <div className="text-lg font-bold text-emerald-400">
                               {pick.units}U
                             </div>
                           </div>
                         </div>
 
-                        <div className="mb-1">
-                          <div className="text-[11px] text-slate-500 mb-0.5">
+                        {/* Middle: Matchup and Selection */}
+                        <div className="mb-2">
+                          <div className="text-[11px] text-slate-400 mb-1 font-medium">
                             {matchup}
                           </div>
-                          <div className="text-xs font-semibold text-white group-hover:text-blue-400 transition-colors">
+                          <div className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors">
                             {pick.selection}
                           </div>
                         </div>
 
+                        {/* Bottom: Date and Arrow */}
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1 text-[10px] text-slate-500">
-                            <Clock className="h-2.5 w-2.5" />
-                            {new Date(pick.game_snapshot?.game_date || pick.created_at).toLocaleDateString()}
+                          <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
+                            <Clock className="h-3 w-3" />
+                            {new Date(pick.game_snapshot?.game_date || pick.created_at).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric'
+                            })}
                           </div>
-                          <ChevronRight className="h-3.5 w-3.5 text-slate-600 group-hover:text-blue-400 transition-colors" />
+                          <ChevronRight className="h-4 w-4 text-slate-600 group-hover:text-blue-400 transition-colors" />
                         </div>
                       </div>
 
@@ -735,10 +750,6 @@ export function ProfessionalDashboard() {
                           dataKey="date"
                           tick={{ fontSize: 10, fill: '#64748b' }}
                           stroke="#334155"
-                          tickFormatter={(value) => {
-                            const date = new Date(value)
-                            return `${date.getMonth() + 1}/${date.getDate()}`
-                          }}
                           interval="preserveStartEnd"
                         />
 
@@ -821,102 +832,112 @@ export function ProfessionalDashboard() {
           </CardHeader>
 
           <CardContent className="px-3 py-2 flex-1 overflow-y-auto">
-            <div className="grid grid-cols-2 gap-2">
-              {recentActivity.map((pick) => {
-                const isWin = pick.status === 'won'
-                const isLoss = pick.status === 'lost'
-                const isPending = pick.status === 'pending'
-                const netUnits = pick.net_units || 0
-                const homeTeam = pick.game_snapshot?.home_team
-                const awayTeam = pick.game_snapshot?.away_team
+            {recentActivity.length === 0 ? (
+              <div className="h-full flex items-center justify-center">
+                <div className="text-center">
+                  <BarChart3 className="h-12 w-12 text-slate-600 mx-auto mb-3" />
+                  <p className="text-sm text-slate-400 font-medium">No pick history yet</p>
+                  <p className="text-xs text-slate-600 mt-1">Your completed picks will appear here</p>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2.5">
+                {recentActivity.map((pick) => {
+                  const isWin = pick.status === 'won'
+                  const isLoss = pick.status === 'lost'
+                  const isPending = pick.status === 'pending'
+                  const netUnits = pick.net_units || 0
+                  const homeTeam = pick.game_snapshot?.home_team
+                  const awayTeam = pick.game_snapshot?.away_team
 
-                return (
-                  <div
-                    key={pick.id}
-                    className={`px-2 py-1.5 rounded border transition-all cursor-pointer hover:border-slate-600 ${isWin ? 'bg-emerald-500/5 border-emerald-500/20' :
-                      isLoss ? 'bg-red-500/5 border-red-500/20' :
-                        'bg-slate-800/20 border-slate-700/30'
-                      }`}
-                    onClick={() => {
-                      setSelectedPick(pick)
-                      setShowInsight(true)
-                    }}
-                  >
-                    <div className="flex items-start gap-2">
-                      <div className="flex-shrink-0 mt-0.5">
-                        {isWin ? (
-                          <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                            <CheckCircle className="h-3 w-3 text-emerald-400" />
-                          </div>
-                        ) : isLoss ? (
-                          <div className="w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center">
-                            <XCircle className="h-3 w-3 text-red-400" />
-                          </div>
-                        ) : (
-                          <div className="w-5 h-5 rounded-full bg-slate-500/20 flex items-center justify-center">
-                            <Clock className="h-3 w-3 text-slate-400" />
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 mb-0.5">
-                          <span className="text-[11px] font-semibold text-white truncate">
-                            {pick.selection}
-                          </span>
-                          <Badge variant="outline" className="text-[9px] px-1 py-0 border-slate-600">
-                            {pick.pick_type?.toUpperCase()}
-                          </Badge>
-                        </div>
-                        <div className="text-[10px] text-slate-500 mb-1">
-                          {awayTeam?.name || 'Away'} @ {homeTeam?.name || 'Home'}
-                        </div>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          {/* Capper Badge */}
-                          {(() => {
-                            const capperBadge = getCapperBadge(pick.capper || 'DeepPick')
-                            return (
-                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${capperBadge.gradient} ${capperBadge.text} uppercase tracking-wide`}>
-                                {pick.capper || 'DeepPick'}
-                              </span>
-                            )
-                          })()}
-                          <span className="text-[10px] text-slate-500">{pick.units}U</span>
-                          {pick.confidence && (
-                            <>
-                              <span className="text-slate-600">•</span>
-                              <span className="text-[10px] text-slate-500">{pick.confidence.toFixed(1)}/10</span>
-                            </>
+                  return (
+                    <div
+                      key={pick.id}
+                      className={`px-2.5 py-2 rounded-lg border transition-all cursor-pointer hover:border-slate-600 ${isWin ? 'bg-emerald-500/5 border-emerald-500/20' :
+                        isLoss ? 'bg-red-500/5 border-red-500/20' :
+                          'bg-slate-800/20 border-slate-700/30'
+                        }`}
+                      onClick={() => {
+                        setSelectedPick(pick)
+                        setShowInsight(true)
+                      }}
+                    >
+                      <div className="flex items-start gap-2">
+                        <div className="flex-shrink-0 mt-0.5">
+                          {isWin ? (
+                            <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                              <CheckCircle className="h-3 w-3 text-emerald-400" />
+                            </div>
+                          ) : isLoss ? (
+                            <div className="w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center">
+                              <XCircle className="h-3 w-3 text-red-400" />
+                            </div>
+                          ) : (
+                            <div className="w-5 h-5 rounded-full bg-slate-500/20 flex items-center justify-center">
+                              <Clock className="h-3 w-3 text-slate-400" />
+                            </div>
                           )}
-                          <span className="text-slate-600">•</span>
-                          <span className="text-[10px] text-slate-400">
-                            {new Date(pick.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                          </span>
                         </div>
-                      </div>
 
-                      <div className="text-right flex-shrink-0">
-                        {isWin && (
-                          <div className="text-xs font-bold text-emerald-400">
-                            +{netUnits.toFixed(1)}u
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <span className="text-[11px] font-semibold text-white truncate">
+                              {pick.selection}
+                            </span>
+                            <Badge variant="outline" className="text-[9px] px-1 py-0 border-slate-600">
+                              {pick.pick_type?.toUpperCase()}
+                            </Badge>
                           </div>
-                        )}
-                        {isLoss && (
-                          <div className="text-xs font-bold text-red-400">
-                            {netUnits.toFixed(1)}u
+                          <div className="text-[10px] text-slate-500 mb-1">
+                            {awayTeam?.name || 'Away'} @ {homeTeam?.name || 'Home'}
                           </div>
-                        )}
-                        {isPending && (
-                          <div className="text-[10px] text-slate-500">
-                            Pending
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {/* Capper Badge */}
+                            {(() => {
+                              const capperBadge = getCapperBadge(pick.capper || 'DeepPick')
+                              return (
+                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${capperBadge.gradient} ${capperBadge.text} uppercase tracking-wide`}>
+                                  {pick.capper || 'DeepPick'}
+                                </span>
+                              )
+                            })()}
+                            <span className="text-[10px] text-slate-500">{pick.units}U</span>
+                            {pick.confidence && (
+                              <>
+                                <span className="text-slate-600">•</span>
+                                <span className="text-[10px] text-slate-500">{pick.confidence.toFixed(1)}/10</span>
+                              </>
+                            )}
+                            <span className="text-slate-600">•</span>
+                            <span className="text-[10px] text-slate-400">
+                              {new Date(pick.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </span>
                           </div>
-                        )}
+                        </div>
+
+                        <div className="text-right flex-shrink-0">
+                          {isWin && (
+                            <div className="text-xs font-bold text-emerald-400">
+                              +{netUnits.toFixed(1)}u
+                            </div>
+                          )}
+                          {isLoss && (
+                            <div className="text-xs font-bold text-red-400">
+                              {netUnits.toFixed(1)}u
+                            </div>
+                          )}
+                          {isPending && (
+                            <div className="text-[10px] text-slate-500">
+                              Pending
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )
-              })}
-            </div>
+                  )
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
