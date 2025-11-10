@@ -76,7 +76,7 @@ export function NavBar() {
         </Button>
       </Link>
 
-      <Link href="/picks/manual">
+      <Link href="/make-picks">
         <Button
           className="gap-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white border-0 shadow-lg shadow-green-500/50"
         >

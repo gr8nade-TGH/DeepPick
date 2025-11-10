@@ -38,7 +38,13 @@ export default function ManualPicksPage() {
       const response = await fetch('/api/games/today')
       const data = await response.json()
       if (data.success) {
-        setGames(data.games || [])
+        // Filter out games that have already started
+        const now = new Date()
+        const upcomingGames = (data.games || []).filter((game: Game) => {
+          const gameStartTime = new Date(game.game_start_timestamp)
+          return gameStartTime > now
+        })
+        setGames(upcomingGames)
       }
     } catch (error) {
       console.error('Error fetching games:', error)
@@ -61,6 +67,14 @@ export default function ManualPicksPage() {
   }
 
   const addSelection = (game: Game, betType: 'spread' | 'total' | 'moneyline', side: 'home' | 'away' | 'over' | 'under') => {
+    // CRITICAL: Check if game has already started
+    const gameStartTime = new Date(game.game_start_timestamp)
+    const now = new Date()
+    if (now >= gameStartTime) {
+      alert('⚠️ GAME HAS STARTED - Cannot place picks on games that have already begun!')
+      return
+    }
+
     // Check if game already has a pick
     if (existingPicks.has(game.id)) {
       alert('You already have a pick on this game!')
@@ -186,12 +200,25 @@ export default function ManualPicksPage() {
     }
   }
 
-  const formatTime = (time: string) => {
-    const [hours, minutes] = time.split(':')
-    const hour = parseInt(hours)
-    const ampm = hour >= 12 ? 'PM' : 'AM'
-    const displayHour = hour % 12 || 12
-    return `${displayHour}:${minutes} ${ampm}`
+  const formatGameDateTime = (timestamp: string) => {
+    // Parse the UTC timestamp and convert to local time
+    const date = new Date(timestamp)
+
+    // Format date as "Mon, Jan 15"
+    const dateStr = date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric'
+    })
+
+    // Format time as "6:00 PM"
+    const timeStr = date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    })
+
+    return `${dateStr} at ${timeStr}`
   }
 
   const formatOdds = (odds: number) => {
@@ -255,7 +282,7 @@ export default function ManualPicksPage() {
                           <span className="bg-green-600 text-white px-2 py-0.5 rounded text-xs font-semibold mr-2">
                             SGP
                           </span>
-                          Today {formatTime(game.game_time)}
+                          {formatGameDateTime(game.game_start_timestamp)}
                         </div>
                       </div>
                       {hasPick && (

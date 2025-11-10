@@ -15,17 +15,19 @@ export async function GET() {
     const supabase = getSupabase()
     const now = new Date()
     const today = now.toISOString().split('T')[0]
-    
-    // Fetch today's scheduled NBA games
+
+    // Fetch today's and upcoming scheduled NBA games
+    // CRITICAL: Only return games that haven't started yet to prevent picks on live games
     const { data: games, error } = await supabase
       .from('games')
       .select('*')
       .eq('sport', 'nba')
       .eq('status', 'scheduled')
       .gte('game_date', today)
+      .gte('game_start_timestamp', now.toISOString())
       .order('game_date', { ascending: true })
       .order('game_time', { ascending: true })
-    
+
     if (error) {
       console.error('[Games:Today] Error fetching games:', error)
       return NextResponse.json({
@@ -33,18 +35,18 @@ export async function GET() {
         error: error.message
       }, { status: 500 })
     }
-    
+
     // Transform games to include calculated odds averages
     const transformedGames = (games || []).map(game => {
       const odds = game.odds || {}
       const sportsbooks = Object.keys(odds)
-      
+
       // Calculate average spread
       let avgSpread = null
       let avgSpreadOdds = null
       const spreads: number[] = []
       const spreadOdds: number[] = []
-      
+
       sportsbooks.forEach(book => {
         const bookOdds = odds[book]
         if (bookOdds?.spread?.line !== undefined) {
@@ -52,14 +54,14 @@ export async function GET() {
           if (bookOdds.spread.home_odds) spreadOdds.push(bookOdds.spread.home_odds)
         }
       })
-      
+
       if (spreads.length > 0) {
         avgSpread = spreads.reduce((a, b) => a + b, 0) / spreads.length
-        avgSpreadOdds = spreadOdds.length > 0 
+        avgSpreadOdds = spreadOdds.length > 0
           ? Math.round(spreadOdds.reduce((a, b) => a + b, 0) / spreadOdds.length)
           : -110
       }
-      
+
       // Calculate average total
       let avgTotal = null
       let avgOverOdds = null
@@ -67,7 +69,7 @@ export async function GET() {
       const totals: number[] = []
       const overOdds: number[] = []
       const underOdds: number[] = []
-      
+
       sportsbooks.forEach(book => {
         const bookOdds = odds[book]
         if (bookOdds?.total?.line !== undefined) {
@@ -76,7 +78,7 @@ export async function GET() {
           if (bookOdds.total.under_odds) underOdds.push(bookOdds.total.under_odds)
         }
       })
-      
+
       if (totals.length > 0) {
         avgTotal = totals.reduce((a, b) => a + b, 0) / totals.length
         avgOverOdds = overOdds.length > 0
@@ -86,26 +88,26 @@ export async function GET() {
           ? Math.round(underOdds.reduce((a, b) => a + b, 0) / underOdds.length)
           : -110
       }
-      
+
       // Calculate average moneyline
       let avgHomeMl = null
       let avgAwayMl = null
       const homeMLs: number[] = []
       const awayMLs: number[] = []
-      
+
       sportsbooks.forEach(book => {
         const bookOdds = odds[book]
         if (bookOdds?.moneyline?.home) homeMLs.push(bookOdds.moneyline.home)
         if (bookOdds?.moneyline?.away) awayMLs.push(bookOdds.moneyline.away)
       })
-      
+
       if (homeMLs.length > 0) {
         avgHomeMl = Math.round(homeMLs.reduce((a, b) => a + b, 0) / homeMLs.length)
       }
       if (awayMLs.length > 0) {
         avgAwayMl = Math.round(awayMLs.reduce((a, b) => a + b, 0) / awayMLs.length)
       }
-      
+
       return {
         id: game.id,
         home_team: game.home_team,
@@ -133,13 +135,13 @@ export async function GET() {
         raw_odds: odds // Include raw odds for reference
       }
     })
-    
+
     return NextResponse.json({
       success: true,
       games: transformedGames,
       count: transformedGames.length
     })
-    
+
   } catch (error) {
     console.error('[Games:Today] Unexpected error:', error)
     return NextResponse.json({
