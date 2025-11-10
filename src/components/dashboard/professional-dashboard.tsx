@@ -114,11 +114,14 @@ export function ProfessionalDashboard() {
         setRecentActivity(activityData.data)
       }
       if (perfData.success) {
+        console.log('[Dashboard] Performance data:', perfData.data)
         setPerformance(perfData.data.metrics)
         // Use chart data from performance API (more complete than activity picks)
         if (perfData.data.chartData && perfData.data.chartData.length > 0) {
+          console.log('[Dashboard] Setting chart data from API:', perfData.data.chartData)
           setChartData(perfData.data.chartData)
         } else {
+          console.log('[Dashboard] No chart data from API, calculating from activity')
           // Fallback to calculating from activity if no chart data
           calculateChartData(activityData.data)
         }
@@ -385,7 +388,7 @@ export function ProfessionalDashboard() {
                         <div className="flex items-center justify-between mb-1.5">
                           <div className="flex items-center gap-1.5">
                             <Badge className={`${confidenceBadge.color} text-white text-[10px] px-1.5 py-0 font-mono`}>
-                              {pick.confidence?.toFixed(1)} / 10 Confidence Score
+                              {pick.confidence?.toFixed(1)} / 10 Sharp Score
                             </Badge>
                             <Badge className={`${gameStatus.color} text-[9px] px-1.5 py-0 font-semibold`}>
                               {gameStatus.icon} {gameStatus.text}
@@ -674,7 +677,10 @@ export function ProfessionalDashboard() {
               <CardContent className="px-3 py-2">
                 {chartData.length === 0 ? (
                   <div className="h-[200px] flex items-center justify-center">
-                    <p className="text-[11px] text-slate-500">No performance data yet</p>
+                    <div className="text-center">
+                      <p className="text-[11px] text-slate-500">No performance data yet</p>
+                      <p className="text-[9px] text-slate-600 mt-1">Check console for debug info</p>
+                    </div>
                   </div>
                 ) : (
                   <div className="h-[200px]">
