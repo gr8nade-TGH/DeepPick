@@ -94,15 +94,15 @@ export function calculateNetRatingDiffPoints(input: NetRatingDiffInput): NetRati
   let edgeForSignal = expectedMargin // Default to expected margin
 
   if (spreadLine !== undefined) {
-    // Spread line convention: negative = home favored
-    // Example: -4.5 means home favored by 4.5
-    // Convert to away perspective: +4.5 means away is getting 4.5 points
-    const awaySpread = -spreadLine
+    // Spread line is from home perspective (negative = home favored, positive = away favored)
+    // Expected margin is from away perspective (positive = away wins, negative = home wins)
+    // Direct subtraction gives us the edge
+    // Example: spreadLine=+4 (away favored by 4), expectedMargin=-2 (home wins by 2) → edge=-6 (home undervalued)
 
     // Calculate edge: how much better is our expected margin vs the spread?
     // Positive edge = away team has value
     // Negative edge = home team has value
-    spreadEdge = expectedMargin - awaySpread
+    spreadEdge = expectedMargin - spreadLine
     edgeForSignal = spreadEdge
   }
 

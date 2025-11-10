@@ -86,21 +86,26 @@ export function calculatePaceMismatchPoints(input: PaceMismatchInput): PaceMisma
   // When home team is faster (paceDiff < 0), away team (slower) gets slight edge
   // Each possession difference ≈ 0.3 points of ATS edge for slower team
   const IMPACT_PER_POSSESSION = 0.3
-  const expectedImpact = paceDiff * IMPACT_PER_POSSESSION
+
+  // NEGATE paceDiff so slower team gets positive signal in their favor
+  // This maintains the convention: positive signal → away, negative signal → home
+  const expectedImpact = -paceDiff * IMPACT_PER_POSSESSION
 
   // Apply tanh scaling for smooth saturation
   const signal = clamp(tanh(expectedImpact / 3.0), -1, 1)
 
   // Award points based on signal direction
+  // Positive signal → AWAY team (slower when paceDiff < 0)
+  // Negative signal → HOME team (slower when paceDiff > 0)
   let awayScore = 0
   let homeScore = 0
 
   if (signal > 0) {
-    // Positive signal = away team plays faster, home team (slower) gets ATS edge
-    homeScore = Math.abs(signal) * MAX_POINTS
-  } else if (signal < 0) {
-    // Negative signal = home team plays faster, away team (slower) gets ATS edge
+    // Positive signal = away team has ATS edge (away is slower)
     awayScore = Math.abs(signal) * MAX_POINTS
+  } else if (signal < 0) {
+    // Negative signal = home team has ATS edge (home is slower)
+    homeScore = Math.abs(signal) * MAX_POINTS
   }
 
   return {
