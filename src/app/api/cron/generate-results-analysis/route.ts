@@ -155,8 +155,10 @@ export async function GET() {
           actualMargin: isSpread ? actualMargin : undefined,
           outcome: pick.status as 'won' | 'lost' | 'push',
           confidence: parseFloat(pick.confidence || '0'),
+          units: parseFloat(pick.units || '1.0'),
           factors: step3.factors || [],
           professionalAnalysis: run.professional_analysis || 'No analysis available',
+          boldPredictions: run.bold_predictions || null,
           finalScore: {
             away: finalScore.away,
             home: finalScore.home
@@ -194,7 +196,7 @@ export async function GET() {
         if (results.factorAccuracy && results.factorAccuracy.length > 0) {
           const factorAccuracyRecords = results.factorAccuracy.map(fa => ({
             pick_id: pick.id,
-            factor_key: fa.factorKey,
+            factor_key: fa.factorId,
             factor_name: fa.factorName,
             contribution: fa.contribution,
             was_correct: fa.wasCorrect,
