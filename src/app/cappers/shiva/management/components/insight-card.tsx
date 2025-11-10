@@ -585,8 +585,11 @@ export function InsightCard(props: InsightCardProps) {
                   </div>
                 )}
                 {props.results.postMortem && (
-                  <div className="text-xs text-slate-300">
-                    {props.results.postMortem}
+                  <div className="mt-3 pt-3 border-t border-slate-600">
+                    <div className="text-xs font-semibold text-slate-300 mb-2">AI POST-MORTEM ANALYSIS</div>
+                    <div className="text-xs text-slate-200 whitespace-pre-line leading-relaxed">
+                      {props.results.postMortem}
+                    </div>
                   </div>
                 )}
               </div>
