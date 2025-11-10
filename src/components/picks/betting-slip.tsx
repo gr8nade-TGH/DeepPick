@@ -71,11 +71,10 @@ export function BettingSlip({ selections, onRemove, onClear, onPlaceBets, capper
       <div className="flex border-b border-slate-700">
         <button
           onClick={() => setActiveTab('slip')}
-          className={`flex-1 py-3 px-4 text-sm font-semibold transition-colors relative ${
-            activeTab === 'slip'
+          className={`flex-1 py-3 px-4 text-sm font-semibold transition-colors relative ${activeTab === 'slip'
               ? 'text-white bg-slate-800'
               : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-          }`}
+            }`}
         >
           BET SLIP
           {selections.length > 0 && (
@@ -86,11 +85,10 @@ export function BettingSlip({ selections, onRemove, onClear, onPlaceBets, capper
         </button>
         <button
           onClick={() => setActiveTab('open')}
-          className={`flex-1 py-3 px-4 text-sm font-semibold transition-colors ${
-            activeTab === 'open'
+          className={`flex-1 py-3 px-4 text-sm font-semibold transition-colors ${activeTab === 'open'
               ? 'text-white bg-slate-800'
               : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-          }`}
+            }`}
         >
           OPEN BETS
         </button>
@@ -112,7 +110,7 @@ export function BettingSlip({ selections, onRemove, onClear, onPlaceBets, capper
                   {selections.map((selection) => {
                     const stake = getStake(selection.id)
                     const win = calculateWin(selection.odds, stake)
-                    
+
                     return (
                       <div key={selection.id} className="p-4 hover:bg-slate-800/50 transition-colors">
                         {/* Header */}
@@ -127,8 +125,8 @@ export function BettingSlip({ selections, onRemove, onClear, onPlaceBets, capper
                               </span>
                             </div>
                             <div className="text-xs text-slate-500 mt-1">
-                              {selection.betType === 'spread' ? 'Point Spread' : 
-                               selection.betType === 'total' ? 'Total' : 'Moneyline'}
+                              {selection.betType === 'spread' ? 'Point Spread' :
+                                selection.betType === 'total' ? 'Total' : 'Moneyline'}
                             </div>
                           </div>
                           <button
@@ -158,13 +156,6 @@ export function BettingSlip({ selections, onRemove, onClear, onPlaceBets, capper
                               {win.toFixed(2)}
                             </div>
                           </div>
-                        </div>
-
-                        {/* Cash Out Available */}
-                        <div className="mt-2 text-xs text-slate-400 flex items-center gap-1">
-                          <span>Cash Out</span>
-                          <span className="text-white">available</span>
-                          <span className="text-slate-500">ⓘ</span>
                         </div>
                       </div>
                     )

@@ -48,11 +48,15 @@ export async function GET(request: NextRequest) {
         created_at,
         game_snapshot,
         result,
-        game:games(
-          home_team,
+        is_system_pick,
+        odds,
+        games!inner(
+          id,
           away_team,
+          home_team,
           status,
-          final_score
+          final_score,
+          game_start_timestamp
         )
       `)
       .order('created_at', { ascending: false })

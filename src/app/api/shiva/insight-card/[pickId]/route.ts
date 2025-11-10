@@ -644,6 +644,7 @@ function buildInsightCard({ pick, game, run, factorContributions, predictedTotal
     gameId: game.id,
     pickId: pick.id,
     generatedAt: pick.created_at,
+    is_system_pick: pick.is_system_pick !== false,  // Default to true if not specified
     matchup: {
       away: awayTeamName,
       home: homeTeamName,

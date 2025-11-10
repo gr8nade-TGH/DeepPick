@@ -9,6 +9,7 @@ export interface InsightCardProps {
   gameId: string
   pickId?: string | null  // Only present for generated picks (not PASS)
   generatedAt: string
+  is_system_pick?: boolean  // True for generated picks, false for manual picks
   matchup: {
     away: string
     home: string
@@ -172,7 +173,15 @@ export function InsightCard(props: InsightCardProps) {
                 <span className="text-3xl">❄️</span>
               </div>
               <div>
-                <h1 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">{props.capper || 'SHIVA'}'S PICK</h1>
+                <div className="flex items-center gap-3">
+                  <h1 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">{props.capper || 'SHIVA'}'S PICK</h1>
+                  <span className={`text-xs font-semibold px-3 py-1 rounded-full ${props.is_system_pick !== false
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-green-600 text-white'
+                    }`}>
+                    {props.is_system_pick !== false ? 'GENERATED' : 'MANUAL'}
+                  </span>
+                </div>
                 <div className="text-cyan-300 text-sm font-semibold">Professional Sports Analytics</div>
               </div>
             </div>
