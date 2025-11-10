@@ -46,16 +46,6 @@ export function NavBar() {
         </Button>
       </Link>
 
-      <Link href="/picks/manual">
-        <Button
-          variant={isActive('/picks/manual') ? 'default' : 'outline'}
-          className="gap-2"
-        >
-          <PlusCircle className="w-4 h-4" />
-          Manual Picks
-        </Button>
-      </Link>
-
       <Link href="/monitoring">
         <Button
           variant={isActive('/monitoring') ? 'default' : 'outline'}
@@ -83,6 +73,15 @@ export function NavBar() {
         >
           <Shield className="w-4 h-4" />
           System Health
+        </Button>
+      </Link>
+
+      <Link href="/picks/manual">
+        <Button
+          className="gap-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white border-0 shadow-lg shadow-green-500/50"
+        >
+          <PlusCircle className="w-4 h-4" />
+          Make Picks
         </Button>
       </Link>
 
