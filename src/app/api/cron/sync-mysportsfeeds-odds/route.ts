@@ -89,67 +89,93 @@ export async function GET() {
           continue
         }
 
-        // Parse odds from MySportsFeeds format
+        // Parse odds from MySportsFeeds format - PROCESS ALL SPORTSBOOKS
         let oddsData: any = {}
-        let totalLine = 0
-        let spreadLine = 0
+        const totalLines: number[] = []
+        const spreadLines: number[] = []
 
         if (gameLine.lines && gameLine.lines.length > 0) {
-          const lines = gameLine.lines[0]
-          const sportsbookName = lines.sportsbook || 'MySportsFeeds'
+          console.log(`📊 [MYSPORTSFEEDS-ODDS-SYNC] Processing ${gameLine.lines.length} sportsbooks for game ${gameId}`)
 
-          // Initialize sportsbook object
-          oddsData[sportsbookName] = {}
+          // Process ALL sportsbooks, not just the first one
+          for (const lines of gameLine.lines) {
+            const sportsbookName = lines.sportsbook || 'MySportsFeeds'
 
-          // Parse spread
-          if (lines.pointSpreads && lines.pointSpreads.length > 0) {
-            const fullSpread = lines.pointSpreads.find((s: any) => s.pointSpread?.gameSegment === 'FULL')
-            if (fullSpread) {
-              const homeDecimal = fullSpread.pointSpread?.homeLine?.decimal
-              const awayDecimal = fullSpread.pointSpread?.awayLine?.decimal
-              const homeSpread = fullSpread.pointSpread?.homeSpread || 0
-              const awaySpread = fullSpread.pointSpread?.awaySpread || 0
+            // Initialize sportsbook object
+            oddsData[sportsbookName] = {}
 
-              oddsData[sportsbookName].spread = {
-                home: homeDecimal ? decimalToAmerican(homeDecimal) : 0,
-                away: awayDecimal ? decimalToAmerican(awayDecimal) : 0,
-                line: homeSpread || -awaySpread
+            // Parse spread
+            if (lines.pointSpreads && lines.pointSpreads.length > 0) {
+              const fullSpread = lines.pointSpreads.find((s: any) => s.pointSpread?.gameSegment === 'FULL')
+              if (fullSpread) {
+                const homeDecimal = fullSpread.pointSpread?.homeLine?.decimal
+                const awayDecimal = fullSpread.pointSpread?.awayLine?.decimal
+                const homeSpread = fullSpread.pointSpread?.homeSpread || 0
+                const awaySpread = fullSpread.pointSpread?.awaySpread || 0
+
+                oddsData[sportsbookName].spread = {
+                  home: homeDecimal ? decimalToAmerican(homeDecimal) : 0,
+                  away: awayDecimal ? decimalToAmerican(awayDecimal) : 0,
+                  line: homeSpread || -awaySpread
+                }
+
+                // Collect for averaging
+                const spreadValue = homeSpread || -awaySpread
+                if (spreadValue !== 0) {
+                  spreadLines.push(spreadValue)
+                }
               }
-              spreadLine = homeSpread || -awaySpread
+            }
+
+            // Parse total (over/under)
+            if (lines.overUnders && lines.overUnders.length > 0) {
+              const fullOverUnder = lines.overUnders.find((o: any) => o.overUnder?.gameSegment === 'FULL')
+              if (fullOverUnder) {
+                const overDecimal = fullOverUnder.overUnder?.overLine?.decimal
+                const underDecimal = fullOverUnder.overUnder?.underLine?.decimal
+                const overUnderLine = fullOverUnder.overUnder?.overUnder || 0
+
+                oddsData[sportsbookName].total = {
+                  over: overDecimal ? decimalToAmerican(overDecimal) : 0,
+                  under: underDecimal ? decimalToAmerican(underDecimal) : 0,
+                  line: overUnderLine
+                }
+
+                // Collect for averaging
+                if (overUnderLine > 0) {
+                  totalLines.push(overUnderLine)
+                }
+              }
+            }
+
+            // Parse moneyline
+            if (lines.moneyLines && lines.moneyLines.length > 0) {
+              const fullML = lines.moneyLines.find((m: any) => m.moneyLine?.gameSegment === 'FULL')
+              if (fullML) {
+                const homeDecimal = fullML.moneyLine?.homeLine?.decimal
+                const awayDecimal = fullML.moneyLine?.awayLine?.decimal
+
+                oddsData[sportsbookName].moneyline = {
+                  home: homeDecimal ? decimalToAmerican(homeDecimal) : 0,
+                  away: awayDecimal ? decimalToAmerican(awayDecimal) : 0
+                }
+              }
             }
           }
 
-          // Parse total (over/under)
-          if (lines.overUnders && lines.overUnders.length > 0) {
-            const fullOverUnder = lines.overUnders.find((o: any) => o.overUnder?.gameSegment === 'FULL')
-            if (fullOverUnder) {
-              const overDecimal = fullOverUnder.overUnder?.overLine?.decimal
-              const underDecimal = fullOverUnder.overUnder?.underLine?.decimal
-              const overUnderLine = fullOverUnder.overUnder?.overUnder || 0
-
-              oddsData[sportsbookName].total = {
-                over: overDecimal ? decimalToAmerican(overDecimal) : 0,
-                under: underDecimal ? decimalToAmerican(underDecimal) : 0,
-                line: overUnderLine
-              }
-              totalLine = overUnderLine
-            }
-          }
-
-          // Parse moneyline
-          if (lines.moneyLines && lines.moneyLines.length > 0) {
-            const fullML = lines.moneyLines.find((m: any) => m.moneyLine?.gameSegment === 'FULL')
-            if (fullML) {
-              const homeDecimal = fullML.moneyLine?.homeLine?.decimal
-              const awayDecimal = fullML.moneyLine?.awayLine?.decimal
-
-              oddsData[sportsbookName].moneyline = {
-                home: homeDecimal ? decimalToAmerican(homeDecimal) : 0,
-                away: awayDecimal ? decimalToAmerican(awayDecimal) : 0
-              }
-            }
-          }
+          console.log(`📊 [MYSPORTSFEEDS-ODDS-SYNC] Game ${gameId} - Collected ${spreadLines.length} spread lines, ${totalLines.length} total lines`)
         }
+
+        // Calculate averages from all sportsbooks
+        const avgTotalLine = totalLines.length > 0
+          ? parseFloat((totalLines.reduce((a, b) => a + b, 0) / totalLines.length).toFixed(1))
+          : 0
+
+        const avgSpreadLine = spreadLines.length > 0
+          ? parseFloat((spreadLines.reduce((a, b) => a + b, 0) / spreadLines.length).toFixed(1))
+          : 0
+
+        console.log(`📊 [MYSPORTSFEEDS-ODDS-SYNC] Game ${gameId} - Averages: Total=${avgTotalLine} (from ${totalLines.length} books), Spread=${avgSpreadLine} (from ${spreadLines.length} books)`)
 
         // Upsert game to database
         const { error } = await supabase
@@ -171,9 +197,9 @@ export async function GET() {
             game_start_timestamp: startTime, // Store complete ISO-8601 timestamp in UTC
             status: 'scheduled',
             venue: '',
-            odds: oddsData,
-            total_line: totalLine,
-            spread_line: spreadLine,
+            odds: oddsData, // Store all sportsbooks in JSONB
+            total_line: avgTotalLine, // Average total line across all books
+            spread_line: avgSpreadLine, // Average spread line across all books
             updated_at: new Date().toISOString()
           }, {
             onConflict: 'api_event_id',

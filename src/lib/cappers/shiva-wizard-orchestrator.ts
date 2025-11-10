@@ -325,6 +325,30 @@ async function captureOddsSnapshot(runId: string, game: any, sport: string) {
     booksConsidered: totalLines.length
   })
 
+  // Calculate average spread line from all sportsbooks
+  const spreadLines = sportsbooks
+    .map(book => odds[book]?.spread?.line)
+    .filter(line => line !== undefined && line !== null)
+
+  // REQUIRE valid spread data for SPREAD picks - no fallbacks!
+  if (spreadLines.length === 0) {
+    throw new Error(`No valid spread line data available from sportsbooks. Cannot generate SPREAD pick without accurate market odds. Game: ${homeTeam} vs ${awayTeam}`)
+  }
+
+  const avgSpreadLine = parseFloat((spreadLines.reduce((a, b) => a + b, 0) / spreadLines.length).toFixed(1))
+
+  // Determine favored team based on average spread
+  // Negative spread = home team favored, positive = away team favored
+  const favTeam = avgSpreadLine < 0 ? homeTeam : awayTeam
+
+  console.log('[WizardOrchestrator:Step2] Spread line calculation:', {
+    sportsbooks: sportsbooks.length,
+    spreadLines,
+    avgSpreadLine,
+    favTeam,
+    booksConsidered: spreadLines.length
+  })
+
   // Build snapshot from game data
   const snapshot = {
     game_id: game.id,
@@ -335,7 +359,7 @@ async function captureOddsSnapshot(runId: string, game: any, sport: string) {
     captured_at_utc: new Date().toISOString(),
     books_considered: sportsbooks.length,
     moneyline: gameData.odds?.moneyline || { home_avg: -150, away_avg: 130 },
-    spread: gameData.odds?.spread || { fav_team: homeTeam, line: -5.5, odds: -110 },
+    spread: { fav_team: favTeam, line: avgSpreadLine, odds: -110 },
     total: { line: avgTotalLine, over_odds: -110, under_odds: -110 },
     raw_payload: gameData.odds || {}
   }
