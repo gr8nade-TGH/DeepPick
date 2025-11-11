@@ -186,21 +186,32 @@ export default function LeaderboardPage() {
                       {/* Capper Info */}
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-3">
-                          {/* Avatar for users */}
+                          {/* Avatar for users - clickable to profile */}
                           {capper.type === 'user' && (
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
-                              {capper.avatar_url ? (
-                                <img src={capper.avatar_url} alt={capper.name} className="w-full h-full rounded-full object-cover" />
-                              ) : (
-                                <User className="w-5 h-5" />
-                              )}
-                            </div>
+                            <Link href={`/profile/${capper.id}`}>
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold hover:scale-110 transition-transform cursor-pointer">
+                                {capper.avatar_url ? (
+                                  <img src={capper.avatar_url} alt={capper.name} className="w-full h-full rounded-full object-cover" />
+                                ) : (
+                                  <User className="w-5 h-5" />
+                                )}
+                              </div>
+                            </Link>
                           )}
 
-                          <Badge className={`bg-gradient-to-r ${capperColor} text-white font-bold text-lg px-4 py-2`}>
-                            {capperIcon && <span className="mr-2">{capperIcon}</span>}
-                            {capper.name}
-                          </Badge>
+                          {/* Capper name - clickable for users */}
+                          {capper.type === 'user' ? (
+                            <Link href={`/profile/${capper.id}`}>
+                              <Badge className={`bg-gradient-to-r ${capperColor} text-white font-bold text-lg px-4 py-2 hover:scale-105 transition-transform cursor-pointer`}>
+                                {capper.name}
+                              </Badge>
+                            </Link>
+                          ) : (
+                            <Badge className={`bg-gradient-to-r ${capperColor} text-white font-bold text-lg px-4 py-2`}>
+                              {capperIcon && <span className="mr-2">{capperIcon}</span>}
+                              {capper.name}
+                            </Badge>
+                          )}
 
                           {capper.rank === 1 && (
                             <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/50">

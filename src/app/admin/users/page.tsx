@@ -14,21 +14,23 @@ import {
 } from '@/components/ui/select'
 import { UserRoleSelector } from '@/components/admin/user-role-selector'
 import { UserStatsCard } from '@/components/admin/user-stats-card'
-import { 
-  Users, 
-  Search, 
-  RefreshCw, 
-  Shield, 
-  User, 
+import {
+  Users,
+  Search,
+  RefreshCw,
+  Shield,
+  User,
   Crown,
   Loader2,
   Mail,
   Calendar,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  ExternalLink
 } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import type { UserWithStats, UserRole } from '@/types/admin'
 import { useToast } from '@/hooks/use-toast'
 
@@ -325,6 +327,15 @@ export default function AdminUsersPage() {
                               <RoleIcon className="w-3 h-3" />
                               {roleBadge.label}
                             </Badge>
+                            {/* View Profile link for CAPPER and ADMIN */}
+                            {(user.role === 'capper' || user.role === 'admin') && (
+                              <Link href={`/profile/${user.id}`} target="_blank">
+                                <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-blue-400 hover:text-blue-300">
+                                  <ExternalLink className="w-3 h-3 mr-1" />
+                                  View Profile
+                                </Button>
+                              </Link>
+                            )}
                           </div>
                           <div className="flex items-center gap-4 text-sm text-slate-400">
                             <div className="flex items-center gap-1">
