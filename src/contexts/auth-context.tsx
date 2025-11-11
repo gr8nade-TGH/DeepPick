@@ -87,75 +87,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Initialize auth state
   useEffect(() => {
-    console.log('[AuthContext] Initializing...')
+    console.log('[AuthContext] Initializing - SKIPPING getSession(), using ONLY onAuthStateChange')
     let mounted = true
+    let initialCheckDone = false
 
-    // Get initial session with timeout protection
-    const getInitialSession = async () => {
-      try {
-        console.log('[AuthContext] Calling getSession()...')
-
-        // Add timeout protection
-        const sessionPromise = supabase.auth.getSession()
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('getSession timeout after 2s')), 2000)
-        )
-
-        const result = await Promise.race([sessionPromise, timeoutPromise]) as any
-
-        if (!mounted) {
-          console.log('[AuthContext] Component unmounted, aborting')
-          return
-        }
-
-        console.log('[AuthContext] getSession() completed:', !!result?.data?.session)
-
-        const initialSession = result?.data?.session
-
-        if (initialSession?.user) {
-          console.log('[AuthContext] Found user:', initialSession.user.id)
-          setUser(initialSession.user)
-          setSession(initialSession)
-
-          const profileData = await fetchProfile(initialSession.user.id)
-          if (mounted) {
-            setProfile(profileData)
-            setLoading(false)
-          }
-        } else {
-          console.log('[AuthContext] No session found, setting loading to false')
-          setLoading(false)
-        }
-      } catch (error) {
-        console.error('[AuthContext] getSession error:', error)
-        if (mounted) {
-          console.log('[AuthContext] Setting loading to false after error')
-          setLoading(false)
-        }
+    // Set a safety timeout to stop loading after 1 second if no auth event fires
+    const safetyTimeout = setTimeout(() => {
+      if (!initialCheckDone && mounted) {
+        console.log('[AuthContext] Safety timeout - no auth event received, stopping loading')
+        setLoading(false)
+        initialCheckDone = true
       }
-    }
+    }, 1000)
 
-    getInitialSession()
-
-    // Listen for auth changes
-    console.log('[AuthContext] Setting up onAuthStateChange listener...')
+    // Listen for auth changes - this will fire immediately with current session
+    console.log('[AuthContext] Setting up onAuthStateChange listener (will fire immediately with current session)...')
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       if (!mounted) return
 
-      console.log('[AuthContext] Auth state changed:', event, 'User:', !!newSession?.user, newSession?.user?.id)
+      console.log('[AuthContext] Auth event:', event, 'User:', !!newSession?.user, newSession?.user?.id)
+
+      // Mark that we got an auth event
+      if (!initialCheckDone) {
+        initialCheckDone = true
+        clearTimeout(safetyTimeout)
+      }
+
       setSession(newSession)
       setUser(newSession?.user ?? null)
 
       if (newSession?.user) {
+        console.log('[AuthContext] Loading profile for user:', newSession.user.id)
         const profileData = await fetchProfile(newSession.user.id)
-        setProfile(profileData)
+        if (mounted) {
+          setProfile(profileData)
+          setLoading(false)
+        }
       } else {
-        setProfile(null)
+        console.log('[AuthContext] No user, clearing profile and stopping loading')
+        if (mounted) {
+          setProfile(null)
+          setLoading(false)
+        }
       }
     })
 
     return () => {
       console.log('[AuthContext] Cleaning up auth listener')
+      clearTimeout(safetyTimeout)
       mounted = false
       subscription.unsubscribe()
     }
