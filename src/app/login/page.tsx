@@ -20,9 +20,11 @@ export default function LoginPage() {
   useEffect(() => {
     if (user) {
       console.log('[LOGIN] User detected, redirecting to dashboard...')
-      router.push('/')
+      // Use window.location.href to force a full page reload
+      // This ensures auth state is properly initialized on the dashboard
+      window.location.href = '/'
     }
-  }, [user, router])
+  }, [user])
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault()
