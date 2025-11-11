@@ -21,24 +21,32 @@ export default function LoginPage() {
     setLoading(true)
     setError(null)
 
-    try {
-      console.log('[LOGIN] Starting sign in...')
-      const result = await signIn(email, password)
-      console.log('[LOGIN] Sign in result:', result)
+    console.log('[LOGIN] Form submitted, email:', email)
 
-      if (result.error) {
-        console.error('[LOGIN] Sign in error:', result.error)
+    try {
+      console.log('[LOGIN] Calling signIn function...')
+      const result = await signIn(email, password)
+      console.log('[LOGIN] signIn returned, result:', JSON.stringify(result))
+
+      if (result?.error) {
+        console.error('[LOGIN] Sign in error detected:', result.error)
         setError(result.error.message)
         setLoading(false)
-      } else {
-        console.log('[LOGIN] Sign in successful, waiting for auth state...')
-        // Wait a moment for auth state to propagate, then redirect
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        console.log('[LOGIN] Redirecting to dashboard...')
-        window.location.href = '/'
+        return
       }
+
+      console.log('[LOGIN] No error detected, sign in successful!')
+      console.log('[LOGIN] Waiting 1 second for auth state to propagate...')
+
+      // Wait for auth state to propagate
+      await new Promise(resolve => setTimeout(resolve, 1000))
+
+      console.log('[LOGIN] Timeout complete, redirecting to dashboard...')
+      window.location.href = '/'
+      console.log('[LOGIN] Redirect called')
+
     } catch (err) {
-      console.error('[LOGIN] Unexpected error:', err)
+      console.error('[LOGIN] Caught exception:', err)
       setError('An unexpected error occurred. Please try again.')
       setLoading(false)
     }
