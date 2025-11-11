@@ -1,13 +1,17 @@
 'use client'
 
+import { useAuth } from '@/contexts/auth-context'
 import { GlobalBettingSlip } from './global-betting-slip'
 
 export function GlobalBettingSlipWrapper() {
-  // TODO: Get actual user/capper info from auth context
-  // For now, hardcode as capper for testing
-  const isCapper = true
-  const capperId = 'shiva'
+  const { user, profile } = useAuth()
 
-  return <GlobalBettingSlip capperId={capperId} isCapper={isCapper} />
+  // Only show betting slip for logged-in cappers and admins
+  if (!user || !profile) return null
+
+  const isCapper = profile.role === 'capper' || profile.role === 'admin'
+  if (!isCapper) return null
+
+  return <GlobalBettingSlip capperId={user.id} isCapper={isCapper} />
 }
 

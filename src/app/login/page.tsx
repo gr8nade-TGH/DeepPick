@@ -23,11 +23,12 @@ export default function LoginPage() {
 
     try {
       console.log('[LOGIN] Starting sign in...')
-      const { error: signInError } = await signIn(email, password)
+      const result = await signIn(email, password)
+      console.log('[LOGIN] Sign in result:', result)
 
-      if (signInError) {
-        console.error('[LOGIN] Sign in error:', signInError)
-        setError(signInError.message)
+      if (result.error) {
+        console.error('[LOGIN] Sign in error:', result.error)
+        setError(result.error.message)
         setLoading(false)
       } else {
         console.log('[LOGIN] Sign in successful, waiting for auth state...')
