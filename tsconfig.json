@@ -30,6 +30,7 @@
     "checkpoints/**/*",
     "**/*.backup",
     "**/*.old",
-    "edge-functions/**/*"
+    "edge-functions/**/*",
+    "src/battle-bets/**/*"
   ]
 }
