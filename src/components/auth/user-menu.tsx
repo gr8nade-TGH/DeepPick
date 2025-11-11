@@ -15,7 +15,9 @@ export function UserMenu() {
 
   // Debug logging
   useEffect(() => {
-    console.log('[UserMenu] Auth state:', { user: !!user, profile: !!profile, loading })
+    console.log('[UserMenu] Auth state - user:', !!user, 'profile:', !!profile, 'loading:', loading)
+    if (user) console.log('[UserMenu] User ID:', user.id)
+    if (profile) console.log('[UserMenu] Profile role:', profile.role)
   }, [user, profile, loading])
 
   // Close menu when clicking outside

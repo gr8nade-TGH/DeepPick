@@ -78,20 +78,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Initialize auth state
   useEffect(() => {
+    console.log('[AuthContext] Initializing...')
+
     const initAuth = async () => {
       try {
+        console.log('[AuthContext] Getting initial session...')
         // Get initial session
         const { data: { session: initialSession } } = await supabase.auth.getSession()
+        console.log('[AuthContext] Initial session:', !!initialSession, initialSession?.user?.id)
         setSession(initialSession)
         setUser(initialSession?.user ?? null)
 
         if (initialSession?.user) {
+          console.log('[AuthContext] Fetching profile for user:', initialSession.user.id)
           const profileData = await fetchProfile(initialSession.user.id)
+          console.log('[AuthContext] Profile loaded:', profileData?.role)
           setProfile(profileData)
+        } else {
+          console.log('[AuthContext] No user in initial session')
         }
       } catch (error) {
-        console.error('Error initializing auth:', error)
+        console.error('[AuthContext] Error initializing auth:', error)
       } finally {
+        console.log('[AuthContext] Initialization complete, setting loading to false')
         setLoading(false)
       }
     }
@@ -99,15 +108,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initAuth()
 
     // Listen for auth changes
+    console.log('[AuthContext] Setting up auth state listener...')
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-      console.log('Auth state changed:', event)
+      console.log('[AuthContext] Auth state changed:', event, 'User:', !!newSession?.user)
       setSession(newSession)
       setUser(newSession?.user ?? null)
 
       if (newSession?.user) {
+        console.log('[AuthContext] Fetching profile after auth change...')
         const profileData = await fetchProfile(newSession.user.id)
+        console.log('[AuthContext] Profile loaded after auth change:', profileData?.role)
         setProfile(profileData)
       } else {
+        console.log('[AuthContext] No user after auth change, clearing profile')
         setProfile(null)
       }
 
@@ -115,6 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
 
     return () => {
+      console.log('[AuthContext] Cleaning up auth listener')
       subscription.unsubscribe()
     }
   }, [])
