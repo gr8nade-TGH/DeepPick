@@ -83,8 +83,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const initAuth = async () => {
       try {
         console.log('[AuthContext] Getting initial session...')
-        // Get initial session
-        const { data: { session: initialSession } } = await supabase.auth.getSession()
+
+        // Add timeout to prevent hanging forever
+        const sessionPromise = supabase.auth.getSession()
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Session fetch timeout')), 5000)
+        )
+
+        const { data: { session: initialSession } } = await Promise.race([
+          sessionPromise,
+          timeoutPromise
+        ]) as any
+
         console.log('[AuthContext] Initial session:', !!initialSession, initialSession?.user?.id)
         setSession(initialSession)
         setUser(initialSession?.user ?? null)
@@ -99,6 +109,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } catch (error) {
         console.error('[AuthContext] Error initializing auth:', error)
+        // Set to null on error so UI can still function
+        setSession(null)
+        setUser(null)
+        setProfile(null)
       } finally {
         console.log('[AuthContext] Initialization complete, setting loading to false')
         setLoading(false)
