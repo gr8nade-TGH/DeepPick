@@ -110,8 +110,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const initAuth = async () => {
       try {
         console.log('[AuthContext] Getting initial session...')
-        console.log('[AuthContext] Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
-        console.log('[AuthContext] Supabase Key exists:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
 
         const { data: { session: initialSession }, error } = await supabase.auth.getSession()
 
