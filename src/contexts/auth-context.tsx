@@ -114,24 +114,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false)
     })
 
-    // Trigger initial auth check by calling getUser() which doesn't hang
-    // This will fire the onAuthStateChange event with the current session
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!mounted) return
+    // Check initial auth state using getUser() which doesn't hang like getSession()
+    const checkInitialAuth = async () => {
+      try {
+        console.log('[AuthContext] Checking initial auth state...')
+        const { data: { user }, error } = await supabase.auth.getUser()
 
-      console.log('[AuthContext] Initial user check:', !!user, user?.id)
+        if (!mounted) return
 
-      // If no user found and still loading, stop loading
-      if (!user && loading) {
-        console.log('[AuthContext] No user found, stopping loading state')
+        if (error) {
+          console.error('[AuthContext] Error getting user:', error)
+          setLoading(false)
+          return
+        }
+
+        console.log('[AuthContext] Initial user:', !!user, user?.id)
+
+        if (user) {
+          setUser(user)
+          console.log('[AuthContext] Fetching profile for initial user...')
+          const profileData = await fetchProfile(user.id)
+          console.log('[AuthContext] Initial profile loaded:', profileData?.role)
+          setProfile(profileData)
+        }
+
         setLoading(false)
+      } catch (error) {
+        console.error('[AuthContext] Exception checking initial auth:', error)
+        if (mounted) {
+          setLoading(false)
+        }
       }
-    }).catch((error) => {
-      console.error('[AuthContext] Error checking initial user:', error)
-      if (mounted) {
-        setLoading(false)
-      }
-    })
+    }
+
+    checkInitialAuth()
 
     return () => {
       console.log('[AuthContext] Cleaning up auth listener')
