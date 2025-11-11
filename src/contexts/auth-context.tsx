@@ -82,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log('[AuthContext] Initializing...')
     let mounted = true
 
-    // Listen for auth changes FIRST
+    // Listen for auth changes
     console.log('[AuthContext] Setting up auth state listener...')
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       if (!mounted) return
@@ -100,11 +100,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('[AuthContext] No user after auth change, clearing profile')
         setProfile(null)
       }
-
-      setLoading(false)
     })
 
-    // Then get initial session
+    // Get initial session
     const initAuth = async () => {
       try {
         console.log('[AuthContext] Getting initial session...')
@@ -121,20 +119,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         console.log('[AuthContext] Initial session:', !!initialSession, initialSession?.user?.id)
 
-        // Only update state if we got a session
-        // If no session, the onAuthStateChange will handle it
-        if (initialSession) {
+        if (initialSession?.user) {
           setSession(initialSession)
           setUser(initialSession.user)
-
-          if (initialSession.user) {
-            console.log('[AuthContext] Fetching profile for user:', initialSession.user.id)
-            const profileData = await fetchProfile(initialSession.user.id)
-            console.log('[AuthContext] Profile loaded:', profileData?.role)
-            setProfile(profileData)
-          }
+          console.log('[AuthContext] Fetching profile for user:', initialSession.user.id)
+          const profileData = await fetchProfile(initialSession.user.id)
+          console.log('[AuthContext] Profile loaded:', profileData?.role)
+          setProfile(profileData)
         } else {
-          console.log('[AuthContext] No initial session')
+          console.log('[AuthContext] No initial session - user not logged in')
         }
       } catch (error) {
         console.error('[AuthContext] Exception in initAuth:', error)
@@ -153,7 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       mounted = false
       subscription.unsubscribe()
     }
-  }, [])
+  }, [supabase])
 
   // Sign in with email/password
   const signIn = async (email: string, password: string) => {
