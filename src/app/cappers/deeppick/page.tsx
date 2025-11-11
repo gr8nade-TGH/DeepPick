@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { NavBar } from '@/components/navigation/nav-bar'
 import { Home, Sparkles, Brain, BarChart3, Shield, Flame } from 'lucide-react'
 import AlgorithmDebugLogs from '@/components/cappers/algorithm-debug-logs'
 
@@ -35,19 +34,16 @@ export default function DeepPickCapperPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-8">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-xl bg-gradient-to-r from-blue-500 via-purple-500 to-green-500 flex items-center justify-center shadow-lg shadow-purple-500/50">
-              <Sparkles className="w-8 h-8 text-white" />
-            </div>
-            <div>
-              <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-green-400 bg-clip-text text-transparent">
-                DEEPPICK
-              </h1>
-              <p className="text-gray-400 text-lg">Meta-Algorithm Aggregator</p>
-            </div>
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 rounded-xl bg-gradient-to-r from-blue-500 via-purple-500 to-green-500 flex items-center justify-center shadow-lg shadow-purple-500/50">
+            <Sparkles className="w-8 h-8 text-white" />
           </div>
-          <NavBar />
+          <div>
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-green-400 bg-clip-text text-transparent">
+              DEEPPICK
+            </h1>
+            <p className="text-gray-400 text-lg">Meta-Algorithm Aggregator</p>
+          </div>
         </div>
 
         {/* Capper Integration Overview */}
@@ -103,7 +99,7 @@ export default function DeepPickCapperPage() {
               <div>
                 <h3 className="text-lg font-semibold text-white mb-3">Core Philosophy</h3>
                 <p className="text-gray-400 italic mb-4">"Wisdom of the crowd. Aggregate the best minds."</p>
-                
+
                 <h4 className="font-semibold text-white mb-2">Consensus Logic:</h4>
                 <ul className="space-y-2 text-sm">
                   <li className="flex items-start gap-2">
@@ -147,8 +143,8 @@ export default function DeepPickCapperPage() {
             <div className="mt-6 p-4 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-green-500/10 border border-purple-500/30 rounded-lg">
               <div className="font-semibold text-white mb-2">🎯 Why Aggregation Works</div>
               <p className="text-sm text-gray-400">
-                By combining multiple algorithms with different approaches, DeepPick reduces individual biases and captures 
-                opportunities that all experts agree on. This "wisdom of the crowd" approach historically produces the most 
+                By combining multiple algorithms with different approaches, DeepPick reduces individual biases and captures
+                opportunities that all experts agree on. This "wisdom of the crowd" approach historically produces the most
                 consistent long-term results.
               </p>
             </div>

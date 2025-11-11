@@ -7,8 +7,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
-import { 
-  RefreshCw, 
+import {
+  RefreshCw,
   Home,
   BarChart3,
   Calendar,
@@ -47,11 +47,11 @@ export default function HistoryPage() {
   const fetchHistory = async () => {
     setLoading(true)
     setError(null)
-    
+
     try {
       const response = await fetch(`/api/games-history?sport=${selectedSport}`, { cache: 'no-store' })
       const data = await response.json()
-      
+
       if (data.success) {
         setGames(data.data || [])
       } else {
@@ -86,26 +86,14 @@ export default function HistoryPage() {
     <div className="min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <Link 
-            href="/"
-            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-neon-blue/30 hover:bg-neon-blue/10 transition-all text-neon-blue hover:border-neon-blue"
-          >
-            <Home className="w-4 h-4" />
-            <span className="font-semibold">Dashboard</span>
-          </Link>
-          
-          <h1 className="text-4xl font-bold text-gradient bg-gradient-to-r from-neon-purple via-neon-blue to-neon-green bg-clip-text text-transparent">
-            Games History
-          </h1>
-          
-          <Link 
-            href="/odds"
-            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-neon-green/30 hover:bg-neon-green/10 transition-all text-neon-green hover:border-neon-green"
-          >
-            <BarChart3 className="w-4 h-4" />
-            <span className="font-semibold">Live Odds</span>
-          </Link>
+        <div className="flex items-center gap-3">
+          <Archive className="w-10 h-10 text-neon-blue" />
+          <div>
+            <h1 className="text-4xl font-bold text-gradient bg-gradient-to-r from-neon-purple via-neon-blue to-neon-green bg-clip-text text-transparent">
+              Games History
+            </h1>
+            <p className="text-slate-400 text-sm mt-1">View archived and completed games</p>
+          </div>
         </div>
 
         {/* Controls */}
@@ -132,11 +120,10 @@ export default function HistoryPage() {
                       key={sport.key}
                       onClick={() => setSelectedSport(sport.key)}
                       variant={selectedSport === sport.key ? 'default' : 'outline'}
-                      className={`flex items-center gap-2 ${
-                        selectedSport === sport.key 
-                          ? 'bg-neon-blue text-white' 
+                      className={`flex items-center gap-2 ${selectedSport === sport.key
+                          ? 'bg-neon-blue text-white'
                           : 'border-gray-500 text-gray-400 hover:bg-gray-700/20'
-                      }`}
+                        }`}
                       size="sm"
                     >
                       <Icon className="w-4 h-4" />
@@ -159,7 +146,7 @@ export default function HistoryPage() {
               <div className="text-sm text-muted-foreground">Archived Games</div>
             </CardContent>
           </Card>
-          
+
           <Card className="glass-effect">
             <CardContent className="p-4 text-center">
               <div className="text-2xl font-bold text-neon-blue">
@@ -168,7 +155,7 @@ export default function HistoryPage() {
               <div className="text-sm text-muted-foreground">Completed</div>
             </CardContent>
           </Card>
-          
+
           <Card className="glass-effect">
             <CardContent className="p-4 text-center">
               <div className="text-2xl font-bold text-neon-purple">
@@ -224,11 +211,11 @@ export default function HistoryPage() {
                             {game.status}
                           </Badge>
                         </div>
-                        
+
                         <div className="text-lg font-semibold mb-1">
                           {game.away_team.name} @ {game.home_team.name}
                         </div>
-                        
+
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
                           <div className="flex items-center gap-1">
                             <Calendar className="w-4 h-4" />
@@ -239,7 +226,7 @@ export default function HistoryPage() {
                           </div>
                         </div>
                       </div>
-                      
+
                       {game.final_score && (
                         <div className="text-right">
                           <div className="text-2xl font-bold">
@@ -252,9 +239,9 @@ export default function HistoryPage() {
                             </span>
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            {game.final_score.winner === 'tie' ? 'Tie Game' : 
-                             game.final_score.winner === 'home' ? `${game.home_team.name} Won` :
-                             `${game.away_team.name} Won`}
+                            {game.final_score.winner === 'tie' ? 'Tie Game' :
+                              game.final_score.winner === 'home' ? `${game.home_team.name} Won` :
+                                `${game.away_team.name} Won`}
                             {game.final_score.margin && ` by ${game.final_score.margin}`}
                           </div>
                         </div>

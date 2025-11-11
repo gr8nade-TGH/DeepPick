@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { NavBar } from '@/components/navigation/nav-bar'
 import { RefreshCw } from 'lucide-react'
 import { useBettingSlip, BetSelection } from '@/contexts/betting-slip-context'
 
@@ -148,12 +147,9 @@ export default function ManualPicksPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-white mb-2">Manual Picks</h1>
-            <p className="text-slate-400">Select games to add to your bet slip</p>
-          </div>
-          <NavBar />
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-white mb-2">Manual Picks</h1>
+          <p className="text-slate-400">Select games to add to your bet slip</p>
         </div>
 
         {/* Refresh Button */}

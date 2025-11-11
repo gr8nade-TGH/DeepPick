@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { NavBar } from '@/components/navigation/nav-bar'
 import { Home, Brain, TrendingUp, Target, Zap } from 'lucide-react'
 import AlgorithmDebugLogs from '@/components/cappers/algorithm-debug-logs'
 
@@ -58,19 +57,16 @@ export default function NexusCapperPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-8">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/50">
-              <Brain className="w-8 h-8 text-white" />
-            </div>
-            <div>
-              <h1 className="text-5xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                NEXUS
-              </h1>
-              <p className="text-gray-400 text-lg">Pattern Recognition Specialist</p>
-            </div>
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/50">
+            <Brain className="w-8 h-8 text-white" />
           </div>
-          <NavBar />
+          <div>
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+              NEXUS
+            </h1>
+            <p className="text-gray-400 text-lg">Pattern Recognition Specialist</p>
+          </div>
         </div>
 
         {/* Strategy Overview */}
@@ -114,8 +110,8 @@ export default function NexusCapperPage() {
                 <h3 className="text-xl font-semibold text-white mb-2">Algorithm Control</h3>
                 <p className="text-sm text-gray-400">Manually trigger Nexus to analyze current games and generate picks</p>
               </div>
-              <Button 
-                onClick={runAlgorithm} 
+              <Button
+                onClick={runAlgorithm}
                 disabled={running || loading}
                 className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold px-8 py-6 text-lg shadow-lg shadow-purple-500/50"
               >
@@ -135,7 +131,7 @@ export default function NexusCapperPage() {
               <div>
                 <h3 className="text-lg font-semibold text-white mb-3">Core Philosophy</h3>
                 <p className="text-gray-400 italic mb-4">"History repeats itself. Patterns reveal the future."</p>
-                
+
                 <h4 className="font-semibold text-white mb-2">Confidence Factors:</h4>
                 <ul className="space-y-2 text-sm">
                   <li className="flex items-start gap-2">

@@ -18,7 +18,7 @@ import {
   ChevronRight,
   TrendingDown
 } from 'lucide-react'
-import { NavBar } from '@/components/navigation/nav-bar'
+
 import { PickInsightModal } from '@/components/dashboard/pick-insight-modal'
 import Link from 'next/link'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
@@ -316,7 +316,6 @@ export function ProfessionalDashboard() {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950">
-        <NavBar />
         <div className="flex items-center justify-center h-screen">
           <div className="text-center">
             <Activity className="h-12 w-12 text-blue-500 animate-pulse mx-auto mb-4" />
@@ -329,8 +328,6 @@ export function ProfessionalDashboard() {
 
   return (
     <div className="min-h-screen bg-slate-950">
-      <NavBar />
-
       <div className="px-4 py-4 max-w-[1800px] mx-auto">
 
         {/* PERFORMANCE STATS BAR - COMPACT */}
