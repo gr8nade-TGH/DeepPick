@@ -93,31 +93,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Initialize auth state
   useEffect(() => {
-    console.log('[AuthContext] Initializing - SKIPPING getSession(), using ONLY onAuthStateChange')
+    console.log('[AuthContext] Initializing with @supabase/ssr pattern...')
     let mounted = true
-    let initialCheckDone = false
 
-    // Set a safety timeout to stop loading after 1 second if no auth event fires
-    const safetyTimeout = setTimeout(() => {
-      if (!initialCheckDone && mounted) {
-        console.log('[AuthContext] Safety timeout - no auth event received, stopping loading')
-        setLoading(false)
-        initialCheckDone = true
+    const initializeAuth = async () => {
+      try {
+        console.log('[AuthContext] Calling getSession() to read session from cookies...')
+
+        // With @supabase/ssr, getSession() reads from cookies and should be fast
+        const { data: { session: initialSession }, error } = await supabase.auth.getSession()
+
+        if (error) {
+          console.error('[AuthContext] getSession error:', error)
+          if (mounted) {
+            setLoading(false)
+          }
+          return
+        }
+
+        console.log('[AuthContext] getSession completed. User:', !!initialSession?.user, initialSession?.user?.id)
+
+        if (mounted) {
+          setSession(initialSession)
+          setUser(initialSession?.user ?? null)
+
+          if (initialSession?.user) {
+            console.log('[AuthContext] Loading profile for user:', initialSession.user.id)
+            const profileData = await fetchProfile(initialSession.user.id)
+            if (mounted) {
+              setProfile(profileData)
+            }
+          }
+
+          setLoading(false)
+        }
+      } catch (err) {
+        console.error('[AuthContext] Initialization error:', err)
+        if (mounted) {
+          setLoading(false)
+        }
       }
-    }, 1000)
+    }
 
-    // Listen for auth changes - this will fire immediately with current session
-    console.log('[AuthContext] Setting up onAuthStateChange listener (will fire immediately with current session)...')
+    // Set up auth state change listener for future changes
+    console.log('[AuthContext] Setting up onAuthStateChange listener for future auth changes...')
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       if (!mounted) return
 
       console.log('[AuthContext] Auth event:', event, 'User:', !!newSession?.user, newSession?.user?.id)
-
-      // Mark that we got an auth event
-      if (!initialCheckDone) {
-        initialCheckDone = true
-        clearTimeout(safetyTimeout)
-      }
 
       setSession(newSession)
       setUser(newSession?.user ?? null)
@@ -127,24 +150,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const profileData = await fetchProfile(newSession.user.id)
         if (mounted) {
           setProfile(profileData)
-          setLoading(false)
         }
       } else {
-        console.log('[AuthContext] No user, clearing profile and stopping loading')
+        console.log('[AuthContext] No user, clearing profile')
         if (mounted) {
           setProfile(null)
-          setLoading(false)
         }
       }
     })
 
+    // Initialize auth state
+    initializeAuth()
+
     return () => {
       console.log('[AuthContext] Cleaning up auth listener')
-      clearTimeout(safetyTimeout)
       mounted = false
       subscription.unsubscribe()
     }
-  }, [])
+  }, [supabase])
 
   // Sign in with email/password
   const signIn = async (email: string, password: string) => {
