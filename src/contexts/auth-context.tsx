@@ -89,6 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     console.log('[AuthContext] Initializing...')
     let mounted = true
+    let initialCheckDone = false
 
     // Listen for auth changes
     console.log('[AuthContext] Setting up auth state listener...')
@@ -111,58 +112,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Set loading to false after handling auth state change
       setLoading(false)
+      initialCheckDone = true
     })
 
-    // CRITICAL FIX: Supabase client methods hang in browser
-    // Use server-side API to check auth instead
-    const checkInitialAuth = async () => {
+    // Manually check initial session with timeout protection
+    const checkInitialSession = async () => {
       try {
-        console.log('[AuthContext] Checking auth via server API...')
+        console.log('[AuthContext] Checking initial session with timeout...')
 
-        const response = await fetch('/api/auth/session', {
-          credentials: 'include',
-          cache: 'no-store'
-        })
+        // Race between getSession and a 1-second timeout
+        const sessionPromise = supabase.auth.getSession()
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('getSession timeout')), 1000)
+        )
+
+        const { data: { session: initialSession }, error } = await Promise.race([
+          sessionPromise,
+          timeoutPromise
+        ]) as any
 
         if (!mounted) return
 
-        console.log('[AuthContext] API response status:', response.status, response.ok)
-
-        if (!response.ok) {
-          console.log('[AuthContext] No session found - response not ok')
+        if (error) {
+          console.error('[AuthContext] Error getting initial session:', error)
           setLoading(false)
           return
         }
 
-        const data = await response.json()
-        console.log('[AuthContext] Full session data:', JSON.stringify(data, null, 2))
-        console.log('[AuthContext] Session data - user:', !!data.user, 'userId:', data.user?.id, 'profile:', !!data.profile)
+        console.log('[AuthContext] Initial session:', !!initialSession, initialSession?.user?.id)
 
-        if (data.user) {
-          setUser(data.user)
-          setSession(data.session)
-
-          if (data.profile) {
-            console.log('[AuthContext] Profile loaded:', data.profile.role)
-            setProfile(data.profile)
-          }
-        } else {
-          console.log('[AuthContext] No user in response data')
+        if (initialSession?.user) {
+          setUser(initialSession.user)
+          setSession(initialSession)
+          const profileData = await fetchProfile(initialSession.user.id)
+          setProfile(profileData)
         }
 
         setLoading(false)
+        initialCheckDone = true
       } catch (error) {
-        console.error('[AuthContext] Exception checking auth:', error)
+        console.error('[AuthContext] getSession timed out or failed:', error)
         if (mounted) {
           setLoading(false)
         }
       }
     }
 
-    checkInitialAuth()
+    checkInitialSession()
+
+    // Set a backup timeout to stop loading if everything fails
+    const loadingTimeout = setTimeout(() => {
+      if (!initialCheckDone && mounted) {
+        console.log('[AuthContext] Backup timeout - stopping loading')
+        setLoading(false)
+      }
+    }, 3000)
 
     return () => {
       console.log('[AuthContext] Cleaning up auth listener')
+      clearTimeout(loadingTimeout)
       mounted = false
       subscription.unsubscribe()
     }
