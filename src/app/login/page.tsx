@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
 import { Button } from '@/components/ui/button'
@@ -10,11 +10,19 @@ import Link from 'next/link'
 
 export default function LoginPage() {
   const router = useRouter()
-  const { signIn, signInWithGoogle, signInWithTwitter } = useAuth()
+  const { user, signIn, signInWithGoogle, signInWithTwitter } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      console.log('[LOGIN] User detected, redirecting to dashboard...')
+      router.push('/')
+    }
+  }, [user, router])
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -23,33 +31,22 @@ export default function LoginPage() {
 
     console.log('[LOGIN] Form submitted, email:', email)
 
-    try {
-      console.log('[LOGIN] Calling signIn function...')
-      const result = await signIn(email, password)
-      console.log('[LOGIN] signIn returned, result:', JSON.stringify(result))
+    // Don't await the signIn - it may not resolve due to auth state change
+    // Instead, let the useEffect handle the redirect when user state updates
+    signIn(email, password).then(result => {
+      console.log('[LOGIN] signIn completed, result:', JSON.stringify(result))
 
       if (result?.error) {
-        console.error('[LOGIN] Sign in error detected:', result.error)
+        console.error('[LOGIN] Sign in error:', result.error)
         setError(result.error.message)
         setLoading(false)
-        return
       }
-
-      console.log('[LOGIN] No error detected, sign in successful!')
-      console.log('[LOGIN] Waiting 1 second for auth state to propagate...')
-
-      // Wait for auth state to propagate
-      await new Promise(resolve => setTimeout(resolve, 1000))
-
-      console.log('[LOGIN] Timeout complete, redirecting to dashboard...')
-      window.location.href = '/'
-      console.log('[LOGIN] Redirect called')
-
-    } catch (err) {
-      console.error('[LOGIN] Caught exception:', err)
+      // If no error, the useEffect will handle redirect when user state updates
+    }).catch(err => {
+      console.error('[LOGIN] Sign in exception:', err)
       setError('An unexpected error occurred. Please try again.')
       setLoading(false)
-    }
+    })
   }
 
   const handleGoogleLogin = async () => {
