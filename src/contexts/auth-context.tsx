@@ -165,16 +165,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Sign in with email/password
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error, data } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
+
+    // If successful, manually update state since onAuthStateChange might not fire
+    if (!error && data.user) {
+      console.log('[AuthContext] Sign in successful, updating state...')
+      setUser(data.user)
+      setSession(data.session)
+
+      // Fetch profile
+      const profileData = await fetchProfile(data.user.id)
+      setProfile(profileData)
+      setLoading(false)
+    }
+
     return { error }
   }
 
   // Sign up with email/password
   const signUp = async (email: string, password: string, fullName?: string) => {
-    const { error } = await supabase.auth.signUp({
+    const { error, data } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -184,6 +197,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     })
+
+    // If successful, manually update state
+    if (!error && data.user) {
+      console.log('[AuthContext] Sign up successful, updating state...')
+      setUser(data.user)
+      setSession(data.session)
+
+      // Fetch profile
+      const profileData = await fetchProfile(data.user.id)
+      setProfile(profileData)
+      setLoading(false)
+    }
+
     return { error }
   }
 
