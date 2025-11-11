@@ -1,8 +1,8 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, ReactNode, useMemo } from 'react'
 import { User, Session } from '@supabase/supabase-js'
-import { supabase } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/client'
 
 export type UserRole = 'free' | 'capper' | 'admin'
 
@@ -41,6 +41,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+
+  // Create Supabase client in the browser (not at module load time)
+  const supabase = useMemo(() => {
+    console.log('[AuthContext] Creating Supabase client in browser...')
+    return createClient()
+  }, [])
 
   // Fetch user profile from profiles table
   const fetchProfile = async (userId: string) => {

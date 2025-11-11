@@ -1,5 +1,7 @@
 import { createBrowserClient } from '@supabase/ssr'
 
+// DO NOT create a singleton! Each component should call createClient() to get a fresh instance
+// This ensures the client is created in the browser, not during build/server-side
 export function createClient() {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -13,6 +15,3 @@ export function createClient() {
 
     return client
 }
-
-// Export a singleton instance for backwards compatibility
-export const supabase = createClient()

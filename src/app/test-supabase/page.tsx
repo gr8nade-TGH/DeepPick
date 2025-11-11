@@ -1,11 +1,14 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase/client'
+import { useEffect, useState, useMemo } from 'react'
+import { createClient } from '@/lib/supabase/client'
 
 export default function TestSupabasePage() {
   const [logs, setLogs] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
+
+  // Create client in browser
+  const supabase = useMemo(() => createClient(), [])
 
   const addLog = (message: string) => {
     console.log(message)
