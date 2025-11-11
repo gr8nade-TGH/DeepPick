@@ -21,14 +21,21 @@ export default function LoginPage() {
     setLoading(true)
     setError(null)
 
-    const { error: signInError } = await signIn(email, password)
+    try {
+      const { error: signInError } = await signIn(email, password)
 
-    if (signInError) {
-      setError(signInError.message)
+      if (signInError) {
+        setError(signInError.message)
+        setLoading(false)
+      } else {
+        // Wait a moment for auth state to propagate, then redirect
+        await new Promise(resolve => setTimeout(resolve, 500))
+        window.location.href = '/'
+      }
+    } catch (err) {
+      console.error('Login error:', err)
+      setError('An unexpected error occurred. Please try again.')
       setLoading(false)
-    } else {
-      // Force a hard refresh to update auth state
-      window.location.href = '/'
     }
   }
 
