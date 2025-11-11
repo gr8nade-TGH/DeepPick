@@ -79,52 +79,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Initialize auth state
   useEffect(() => {
     console.log('[AuthContext] Initializing...')
+    let mounted = true
 
-    const initAuth = async () => {
-      try {
-        console.log('[AuthContext] Getting initial session...')
-
-        // Add timeout to prevent hanging forever
-        const sessionPromise = supabase.auth.getSession()
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Session fetch timeout')), 5000)
-        )
-
-        const { data: { session: initialSession } } = await Promise.race([
-          sessionPromise,
-          timeoutPromise
-        ]) as any
-
-        console.log('[AuthContext] Initial session:', !!initialSession, initialSession?.user?.id)
-        setSession(initialSession)
-        setUser(initialSession?.user ?? null)
-
-        if (initialSession?.user) {
-          console.log('[AuthContext] Fetching profile for user:', initialSession.user.id)
-          const profileData = await fetchProfile(initialSession.user.id)
-          console.log('[AuthContext] Profile loaded:', profileData?.role)
-          setProfile(profileData)
-        } else {
-          console.log('[AuthContext] No user in initial session')
-        }
-      } catch (error) {
-        console.error('[AuthContext] Error initializing auth:', error)
-        // Set to null on error so UI can still function
-        setSession(null)
-        setUser(null)
-        setProfile(null)
-      } finally {
-        console.log('[AuthContext] Initialization complete, setting loading to false')
-        setLoading(false)
-      }
-    }
-
-    initAuth()
-
-    // Listen for auth changes
+    // Listen for auth changes FIRST
     console.log('[AuthContext] Setting up auth state listener...')
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-      console.log('[AuthContext] Auth state changed:', event, 'User:', !!newSession?.user)
+      if (!mounted) return
+
+      console.log('[AuthContext] Auth state changed:', event, 'User:', !!newSession?.user, newSession?.user?.id)
       setSession(newSession)
       setUser(newSession?.user ?? null)
 
@@ -141,8 +103,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false)
     })
 
+    // Then get initial session
+    const initAuth = async () => {
+      try {
+        console.log('[AuthContext] Getting initial session...')
+
+        // Add timeout to prevent hanging forever
+        const sessionPromise = supabase.auth.getSession()
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Session fetch timeout')), 5000)
+        )
+
+        const { data: { session: initialSession } } = await Promise.race([
+          sessionPromise,
+          timeoutPromise
+        ]) as any
+
+        if (!mounted) return
+
+        console.log('[AuthContext] Initial session:', !!initialSession, initialSession?.user?.id)
+
+        // Only update state if we got a session
+        // If no session, the onAuthStateChange will handle it
+        if (initialSession) {
+          setSession(initialSession)
+          setUser(initialSession.user)
+
+          if (initialSession.user) {
+            console.log('[AuthContext] Fetching profile for user:', initialSession.user.id)
+            const profileData = await fetchProfile(initialSession.user.id)
+            console.log('[AuthContext] Profile loaded:', profileData?.role)
+            setProfile(profileData)
+          }
+        } else {
+          console.log('[AuthContext] No initial session')
+        }
+      } catch (error) {
+        console.error('[AuthContext] Error initializing auth:', error)
+        // Don't reset state on timeout - let onAuthStateChange handle it
+      } finally {
+        if (mounted) {
+          console.log('[AuthContext] Initialization complete, setting loading to false')
+          setLoading(false)
+        }
+      }
+    }
+
+    initAuth()
+
     return () => {
       console.log('[AuthContext] Cleaning up auth listener')
+      mounted = false
       subscription.unsubscribe()
     }
   }, [])
