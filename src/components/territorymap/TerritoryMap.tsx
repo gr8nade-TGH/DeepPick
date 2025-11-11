@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
+import Link from 'next/link'
 import Map from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { NBA_TEAM_COORDINATES } from './nba-team-coordinates'
@@ -232,7 +233,7 @@ export function TerritoryMap() {
         <h3 className="text-sm font-bold text-[#3E2723] mb-2 border-b border-[#3E2723] pb-2">
           📊 Territory Stats
         </h3>
-        <div className="space-y-1 text-xs">
+        <div className="space-y-1 text-xs mb-3">
           <div className="flex justify-between gap-4">
             <span className="text-gray-700">Claimed:</span>
             <span className="font-bold text-green-600">{stats.claimed}</span>
@@ -246,6 +247,14 @@ export function TerritoryMap() {
             <span className="font-bold text-gray-500">{stats.unclaimed}</span>
           </div>
         </div>
+
+        {/* Battle Bets Link */}
+        <Link
+          href="/battle-bets"
+          className="block w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white text-center py-2 px-3 rounded-md text-xs font-bold transition-all duration-200 shadow-md hover:shadow-lg border border-red-800"
+        >
+          ⚔️ Active Battles
+        </Link>
       </div>
 
       {/* Hover Tooltip */}
