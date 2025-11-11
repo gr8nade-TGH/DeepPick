@@ -51,17 +51,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Fetch user profile from profiles table
   const fetchProfile = async (userId: string) => {
     try {
-      const { data, error } = await supabase
+      console.log('[AuthContext] fetchProfile - Starting query for userId:', userId)
+
+      // Add timeout to prevent infinite hang
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Profile fetch timeout after 3s')), 3000)
+      )
+
+      const queryPromise = supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single()
 
+      const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any
+
       if (error) {
         console.error('[AuthContext] Error fetching profile:', error)
+        console.error('[AuthContext] Error code:', error.code)
+        console.error('[AuthContext] Error details:', error.details)
+        console.error('[AuthContext] Error hint:', error.hint)
+        console.error('[AuthContext] Error message:', error.message)
         return null
       }
 
+      console.log('[AuthContext] Profile fetched successfully:', data?.role)
       return data as Profile
     } catch (error) {
       console.error('[AuthContext] Exception in fetchProfile:', error)
