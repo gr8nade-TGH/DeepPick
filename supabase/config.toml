@@ -89,10 +89,22 @@ double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
 enable_confirmations = false
 
-# Uncomment to customize email template
-# [auth.email.template.invite]
-# subject = "You have been invited"
-# content_path = "./supabase/templates/invite.html"
+# Custom email templates for Sharp Siege
+[auth.email.template.confirmation]
+subject = "Verify Your Email - Sharp Siege"
+content_path = "./supabase/templates/confirm-signup.html"
+
+[auth.email.template.recovery]
+subject = "Reset Your Password - Sharp Siege"
+content_path = "./supabase/templates/recovery.html"
+
+[auth.email.template.magic_link]
+subject = "Sign In to Sharp Siege"
+content_path = "./supabase/templates/magic-link.html"
+
+[auth.email.template.email_change]
+subject = "Confirm Your Email Change - Sharp Siege"
+content_path = "./supabase/templates/email-change.html"
 
 [auth.sms]
 # Allow/disallow new user signups via SMS to your project.

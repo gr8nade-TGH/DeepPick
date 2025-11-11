@@ -59,7 +59,7 @@ export default function LoginPage() {
             Welcome Back
           </CardTitle>
           <CardDescription className="text-center text-slate-400">
-            Sign in to your DeepPick account
+            Sign in to your Sharp Siege account
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

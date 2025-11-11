@@ -11,7 +11,7 @@ import Link from 'next/link'
 export default function SignupPage() {
   const router = useRouter()
   const { signUp, signInWithGoogle, signInWithTwitter } = useAuth()
-  const [fullName, setFullName] = useState('')
+  const [profileName, setProfileName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -38,7 +38,7 @@ export default function SignupPage() {
       return
     }
 
-    const { error: signUpError } = await signUp(email, password, fullName)
+    const { error: signUpError } = await signUp(email, password, profileName)
 
     if (signUpError) {
       setError(signUpError.message)
@@ -104,7 +104,7 @@ export default function SignupPage() {
             Create Account
           </CardTitle>
           <CardDescription className="text-center text-slate-400">
-            Join DeepPick and start tracking your picks
+            Join Sharp Siege and start tracking your picks
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -162,15 +162,15 @@ export default function SignupPage() {
           {/* Email/Password Form */}
           <form onSubmit={handleEmailSignup} className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="fullName" className="text-sm font-medium text-slate-300">
-                Full Name
+              <label htmlFor="profileName" className="text-sm font-medium text-slate-300">
+                Profile Name
               </label>
               <Input
-                id="fullName"
+                id="profileName"
                 type="text"
-                placeholder="John Doe"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Your display name"
+                value={profileName}
+                onChange={(e) => setProfileName(e.target.value)}
                 required
                 className="bg-slate-800 border-slate-600 text-white"
               />
