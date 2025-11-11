@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,17 +14,68 @@ export async function POST(request: NextRequest) {
       selection,
       odds,
       units = 1.0,
-      is_system_pick = true,
+      is_system_pick = false, // Default to false for manual picks
       confidence,
       reasoning,
       algorithm_version
     } = body
 
-    // Validate required fields (including capper to prevent defaulting to 'deeppick')
-    if (!game_id || !capper || !pick_type || !selection || !odds) {
+    // Get authenticated user
+    const cookieStore = cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value
+          },
+          set(name: string, value: string, options: CookieOptions) {
+            cookieStore.set({ name, value, ...options })
+          },
+          remove(name: string, options: CookieOptions) {
+            cookieStore.set({ name, value: '', ...options })
+          },
+        },
+      }
+    )
+
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
       return NextResponse.json({
         success: false,
-        error: 'Missing required fields: game_id, capper, pick_type, selection, odds'
+        error: 'Authentication required'
+      }, { status: 401 })
+    }
+
+    // Get user profile to check role
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile) {
+      return NextResponse.json({
+        success: false,
+        error: 'User profile not found'
+      }, { status: 404 })
+    }
+
+    // Check if user has CAPPER or ADMIN role
+    if (profile.role !== 'capper' && profile.role !== 'admin') {
+      return NextResponse.json({
+        success: false,
+        error: 'Capper role required. Please upgrade your account to make picks.'
+      }, { status: 403 })
+    }
+
+    // Validate required fields
+    if (!game_id || !pick_type || !selection || !odds) {
+      return NextResponse.json({
+        success: false,
+        error: 'Missing required fields: game_id, pick_type, selection, odds'
       }, { status: 400 })
     }
 
@@ -53,12 +106,12 @@ export async function POST(request: NextRequest) {
       status: game.status
     }
 
-    // Insert the pick
+    // Insert the pick with user_id
     const { data: pick, error: pickError } = await getSupabaseAdmin()
       .from('picks')
       .insert({
         game_id,
-        capper,
+        capper: capper || 'manual', // Use 'manual' as default for user picks
         pick_type,
         selection,
         odds,
@@ -68,7 +121,8 @@ export async function POST(request: NextRequest) {
         confidence,
         reasoning,
         algorithm_version,
-        status: 'pending'
+        status: 'pending',
+        user_id: user.id // Link pick to user
       })
       .select()
       .single()
