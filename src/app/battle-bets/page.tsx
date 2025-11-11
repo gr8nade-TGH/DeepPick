@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 export const metadata = {
   title: 'Battle Bets | DeepPick',
   description: 'Watch NBA betting battles come to life with castle defense gameplay',
@@ -33,12 +35,20 @@ export default function BattleBetsPage() {
           </div>
           
           <div className="text-center">
-            <p className="text-yellow-400 font-bold text-lg">
+            <p className="text-yellow-400 font-bold text-lg mb-4">
               🚧 Under Construction 🚧
             </p>
-            <p className="text-gray-400 mt-2">
+            <p className="text-gray-400 mb-6">
               The Battle Bets arena is currently being integrated into DeepPick. Check back soon!
             </p>
+
+            {/* Test Game Button */}
+            <Link
+              href="/battle-bets-test"
+              className="inline-block bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-bold py-3 px-8 rounded-lg text-lg transition-all duration-200 shadow-lg hover:shadow-xl border-2 border-purple-400"
+            >
+              🎮 Test Game Map
+            </Link>
           </div>
         </div>
       </div>
