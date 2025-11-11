@@ -43,10 +43,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   // Use the singleton client from client.ts
-  const supabase = useMemo(() => createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  ), [])
+  const supabase = useMemo(() => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    console.log('[AuthContext] Creating Supabase client...')
+    console.log('[AuthContext] URL exists:', !!url)
+    console.log('[AuthContext] Key exists:', !!key)
+    console.log('[AuthContext] URL:', url?.substring(0, 30) + '...')
+
+    if (!url || !key) {
+      console.error('[AuthContext] MISSING ENVIRONMENT VARIABLES!')
+      console.error('[AuthContext] URL:', url)
+      console.error('[AuthContext] Key:', key)
+    }
+
+    return createBrowserClient(url!, key!)
+  }, [])
 
   // Fetch user profile from profiles table
   const fetchProfile = async (userId: string) => {
@@ -121,7 +134,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         console.log('[AuthContext] Getting initial session...')
 
-        const { data: { session: initialSession }, error } = await supabase.auth.getSession()
+        // Add timeout to getSession to prevent infinite hang
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('getSession timeout after 3s')), 3000)
+        )
+
+        const sessionPromise = supabase.auth.getSession()
+
+        const result = await Promise.race([sessionPromise, timeoutPromise]) as any
+        const { data: { session: initialSession }, error } = result
 
         if (!mounted) return
 
@@ -145,6 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } catch (error) {
         console.error('[AuthContext] Exception in initAuth:', error)
+        console.error('[AuthContext] Error type:', error instanceof Error ? error.message : 'Unknown')
       } finally {
         if (mounted) {
           console.log('[AuthContext] Initialization complete, setting loading to false')
