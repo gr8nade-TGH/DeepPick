@@ -1,8 +1,8 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, useMemo, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { User, Session } from '@supabase/supabase-js'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 
 export type UserRole = 'free' | 'capper' | 'admin'
 
@@ -41,15 +41,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
-
-  // Use the singleton client from client.ts
-  const supabase = useMemo(() => {
-    console.log('[AuthContext] Creating Supabase client...')
-    console.log('[AuthContext] URL exists:', !!process.env.NEXT_PUBLIC_SUPABASE_URL)
-    console.log('[AuthContext] Key exists:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
-
-    return createClient()
-  }, [])
 
   // Fetch user profile from profiles table
   const fetchProfile = async (userId: string) => {
@@ -117,50 +108,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('[AuthContext] No user after auth change, clearing profile')
         setProfile(null)
       }
+
+      // Set loading to false after handling auth state change
+      setLoading(false)
     })
 
-    // Get initial session
+    // Get initial session - but don't wait for it, just trigger it
     const initAuth = async () => {
       try {
-        console.log('[AuthContext] Getting initial user...')
+        console.log('[AuthContext] Getting initial session...')
 
-        // Use getUser() instead of getSession() - it's more reliable
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('getUser timeout after 3s')), 3000)
-        )
-
-        const userPromise = supabase.auth.getUser()
-
-        const result = await Promise.race([userPromise, timeoutPromise]) as any
-        const { data: { user: initialUser }, error } = result
+        const { data: { session: initialSession }, error } = await supabase.auth.getSession()
 
         if (!mounted) return
 
         if (error) {
-          console.error('[AuthContext] Error getting user:', error)
-          // Don't return - continue to set loading to false
+          console.error('[AuthContext] Error getting session:', error)
+          setLoading(false)
+          return
         }
 
-        console.log('[AuthContext] Initial user:', !!initialUser, initialUser?.id)
+        console.log('[AuthContext] Initial session:', !!initialSession, initialSession?.user?.id)
 
-        if (initialUser) {
-          setUser(initialUser)
-          console.log('[AuthContext] Fetching profile for user:', initialUser.id)
-          const profileData = await fetchProfile(initialUser.id)
+        if (initialSession?.user) {
+          setSession(initialSession)
+          setUser(initialSession.user)
+          console.log('[AuthContext] Fetching profile for user:', initialSession.user.id)
+          const profileData = await fetchProfile(initialSession.user.id)
           console.log('[AuthContext] Profile loaded:', profileData?.role)
           setProfile(profileData)
         } else {
-          console.log('[AuthContext] No initial user - not logged in')
+          console.log('[AuthContext] No initial session - not logged in')
         }
+
+        setLoading(false)
       } catch (error) {
         console.error('[AuthContext] Exception in initAuth:', error)
-        console.error('[AuthContext] Error type:', error instanceof Error ? error.message : 'Unknown')
-        // Don't throw - we want to continue and set loading to false
-      } finally {
-        if (mounted) {
-          console.log('[AuthContext] Initialization complete, setting loading to false')
-          setLoading(false)
-        }
+        setLoading(false)
       }
     }
 
@@ -171,7 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       mounted = false
       subscription.unsubscribe()
     }
-  }, [supabase])
+  }, [])
 
   // Sign in with email/password
   const signIn = async (email: string, password: string) => {
