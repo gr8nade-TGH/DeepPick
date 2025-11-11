@@ -126,14 +126,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (!mounted) return
 
+        console.log('[AuthContext] API response status:', response.status, response.ok)
+
         if (!response.ok) {
-          console.log('[AuthContext] No session found')
+          console.log('[AuthContext] No session found - response not ok')
           setLoading(false)
           return
         }
 
         const data = await response.json()
-        console.log('[AuthContext] Session data:', !!data.user, data.user?.id)
+        console.log('[AuthContext] Full session data:', JSON.stringify(data, null, 2))
+        console.log('[AuthContext] Session data - user:', !!data.user, 'userId:', data.user?.id, 'profile:', !!data.profile)
 
         if (data.user) {
           setUser(data.user)
@@ -143,6 +146,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.log('[AuthContext] Profile loaded:', data.profile.role)
             setProfile(data.profile)
           }
+        } else {
+          console.log('[AuthContext] No user in response data')
         }
 
         setLoading(false)
