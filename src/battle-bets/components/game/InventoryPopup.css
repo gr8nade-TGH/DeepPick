@@ -1,0 +1,259 @@
+/**
+ * InventoryPopup Styles - Medieval/Fantasy themed inventory UI
+ */
+
+/* Overlay - Dark background that dims the battle scene */
+.inventory-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Main popup container */
+.inventory-popup {
+  background: linear-gradient(135deg, #1a1f35 0%, #0f1420 100%);
+  border: 3px solid #3b82f6;
+  border-radius: 16px;
+  box-shadow: 0 0 40px rgba(59, 130, 246, 0.5),
+              0 0 80px rgba(59, 130, 246, 0.3),
+              inset 0 0 60px rgba(59, 130, 246, 0.1);
+  max-width: 800px;
+  width: 90%;
+  max-height: 85vh;
+  overflow: hidden;
+  animation: slideUp 0.3s ease-out;
+  position: relative;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Header */
+.inventory-header {
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+  padding: 20px 24px;
+  border-bottom: 2px solid #3b82f6;
+  position: relative;
+}
+
+.inventory-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: bold;
+  color: #ffffff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  letter-spacing: 1px;
+}
+
+.inventory-subtitle {
+  margin: 8px 0 0 0;
+  font-size: 14px;
+  color: #93c5fd;
+  font-weight: 500;
+}
+
+.inventory-close-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 20px;
+  color: #ffffff;
+  transition: all 0.2s ease;
+}
+
+.inventory-close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: scale(1.1);
+}
+
+/* Item Grid */
+.inventory-grid {
+  padding: 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+/* Custom scrollbar */
+.inventory-grid::-webkit-scrollbar {
+  width: 10px;
+}
+
+.inventory-grid::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 5px;
+}
+
+.inventory-grid::-webkit-scrollbar-thumb {
+  background: #3b82f6;
+  border-radius: 5px;
+}
+
+.inventory-grid::-webkit-scrollbar-thumb:hover {
+  background: #2563eb;
+}
+
+/* Individual Item Card */
+.inventory-item {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border: 2px solid #475569;
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.inventory-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, transparent 0%, rgba(59, 130, 246, 0.1) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.inventory-item:hover::before {
+  opacity: 1;
+}
+
+.inventory-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4),
+              0 0 20px rgba(59, 130, 246, 0.3);
+  border-width: 3px;
+}
+
+.inventory-item.item-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.inventory-item.item-disabled:hover {
+  transform: translateY(-2px);
+}
+
+/* Item Icon */
+.item-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 12px;
+  border: 3px solid;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.item-emoji {
+  font-size: 48px;
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.5));
+}
+
+/* Item Info */
+.item-info {
+  text-align: center;
+}
+
+.item-name {
+  margin: 0 0 4px 0;
+  font-size: 18px;
+  font-weight: bold;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.item-rarity {
+  margin: 0 0 8px 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: #94a3b8;
+}
+
+.item-description {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #cbd5e1;
+}
+
+.item-coming-soon {
+  display: inline-block;
+  padding: 6px 12px;
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid #ef4444;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fca5a5;
+}
+
+.item-status {
+  display: inline-block;
+  padding: 6px 12px;
+  background: rgba(34, 197, 94, 0.2);
+  border: 1px solid #22c55e;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #86efac;
+}
+
+/* Footer */
+.inventory-footer {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 16px 24px;
+  border-top: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.inventory-hint {
+  margin: 0;
+  font-size: 14px;
+  color: #93c5fd;
+  text-align: center;
+}
+
