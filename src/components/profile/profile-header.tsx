@@ -2,11 +2,15 @@
 
 import { PublicUserProfile } from '@/types/admin'
 import { Badge } from '@/components/ui/badge'
-import { Crown, Shield, User, Calendar } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Crown, Shield, User, Calendar, Twitter, Instagram, Settings } from 'lucide-react'
 import { format } from 'date-fns'
+import Link from 'next/link'
 
 interface ProfileHeaderProps {
   profile: PublicUserProfile
+  isOwnProfile?: boolean
+  currentUserId?: string
 }
 
 const ROLE_CONFIG = {
@@ -30,7 +34,7 @@ const ROLE_CONFIG = {
   }
 }
 
-export function ProfileHeader({ profile }: ProfileHeaderProps) {
+export function ProfileHeader({ profile, isOwnProfile = false, currentUserId }: ProfileHeaderProps) {
   const roleConfig = ROLE_CONFIG[profile.role]
   const RoleIcon = roleConfig.icon
 
@@ -56,7 +60,7 @@ export function ProfileHeader({ profile }: ProfileHeaderProps) {
     <div className="relative overflow-hidden rounded-xl border border-slate-700 bg-gradient-to-br from-slate-800/50 to-slate-900/50 p-8">
       {/* Background gradient */}
       <div className={`absolute inset-0 bg-gradient-to-br ${roleConfig.gradient} opacity-5`} />
-      
+
       <div className="relative flex flex-col md:flex-row items-center md:items-start gap-6">
         {/* Avatar */}
         <div className="relative">
@@ -71,7 +75,7 @@ export function ProfileHeader({ profile }: ProfileHeaderProps) {
               {getInitials()}
             </div>
           )}
-          
+
           {/* Role badge on avatar */}
           <div className="absolute -bottom-2 -right-2">
             <div className={`p-2 rounded-full border-2 border-slate-800 ${roleConfig.color}`}>
@@ -85,7 +89,7 @@ export function ProfileHeader({ profile }: ProfileHeaderProps) {
           <h1 className="text-3xl font-bold text-white mb-2">
             {displayName}
           </h1>
-          
+
           {profile.username && profile.full_name && (
             <p className="text-slate-400 mb-3">@{profile.username}</p>
           )}
@@ -104,9 +108,51 @@ export function ProfileHeader({ profile }: ProfileHeaderProps) {
             </div>
           </div>
 
-          {/* Email (only show if different from display name) */}
-          {displayName !== profile.email.split('@')[0] && (
-            <p className="text-sm text-slate-500">{profile.email}</p>
+          {/* Bio */}
+          {profile.bio && (
+            <p className="text-slate-300 text-sm mt-3 max-w-2xl">
+              {profile.bio}
+            </p>
+          )}
+
+          {/* Social Links */}
+          {(profile.twitter_url || profile.instagram_url) && (
+            <div className="flex items-center gap-3 mt-4">
+              {profile.twitter_url && (
+                <a
+                  href={profile.twitter_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-3 py-1.5 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors text-sm text-slate-300 hover:text-white"
+                >
+                  <Twitter className="w-4 h-4" />
+                  Twitter
+                </a>
+              )}
+              {profile.instagram_url && (
+                <a
+                  href={profile.instagram_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-3 py-1.5 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors text-sm text-slate-300 hover:text-white"
+                >
+                  <Instagram className="w-4 h-4" />
+                  Instagram
+                </a>
+              )}
+            </div>
+          )}
+
+          {/* Edit Profile Button (only for own profile) */}
+          {isOwnProfile && (
+            <div className="mt-4">
+              <Link href="/settings/profile">
+                <Button variant="outline" className="border-slate-700 hover:bg-slate-800">
+                  <Settings className="w-4 h-4 mr-2" />
+                  Edit Profile
+                </Button>
+              </Link>
+            </div>
           )}
         </div>
       </div>

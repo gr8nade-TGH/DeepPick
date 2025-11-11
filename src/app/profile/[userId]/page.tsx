@@ -10,14 +10,19 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, RefreshCw, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
+import { useAuth } from '@/contexts/auth-context'
 
 export default function ProfilePage() {
   const params = useParams()
   const userId = params.userId as string
+  const { user } = useAuth()
 
   const [profileData, setProfileData] = useState<UserProfileData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // Check if viewing own profile
+  const isOwnProfile = user?.id === userId
 
   const fetchProfile = async () => {
     setLoading(true)
@@ -74,8 +79,8 @@ export default function ProfilePage() {
               <CardContent className="py-12 text-center">
                 <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
                 <h2 className="text-xl font-bold text-white mb-2">
-                  {error === 'Profile not available for FREE users' 
-                    ? 'Profile Not Available' 
+                  {error === 'Profile not available for FREE users'
+                    ? 'Profile Not Available'
                     : 'Error Loading Profile'}
                 </h2>
                 <p className="text-slate-400 mb-6">
@@ -122,7 +127,11 @@ export default function ProfilePage() {
         </div>
 
         {/* Profile header */}
-        <ProfileHeader profile={profileData.profile} />
+        <ProfileHeader
+          profile={profileData.profile}
+          isOwnProfile={isOwnProfile}
+          currentUserId={user?.id}
+        />
 
         {/* Stats overview */}
         <div>

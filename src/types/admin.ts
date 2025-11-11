@@ -62,6 +62,9 @@ export interface PublicUserProfile {
   username: string | null
   role: UserRole
   avatar_url: string | null
+  bio: string | null
+  twitter_url: string | null
+  instagram_url: string | null
   created_at: string
 }
 

@@ -15,6 +15,8 @@ export interface Profile {
   email_verified: boolean
   avatar_url: string | null
   bio: string | null
+  twitter_url: string | null
+  instagram_url: string | null
   created_at: string
   updated_at: string
 }

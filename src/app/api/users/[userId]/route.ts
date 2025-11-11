@@ -197,6 +197,9 @@ export async function GET(
         username: profile.username,
         role: profile.role,
         avatar_url: profile.avatar_url,
+        bio: profile.bio,
+        twitter_url: profile.twitter_url,
+        instagram_url: profile.instagram_url,
         created_at: profile.created_at
       },
       stats: {
