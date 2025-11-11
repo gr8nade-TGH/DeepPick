@@ -19,40 +19,59 @@ export default function TestSupabasePage() {
         addLog(`📍 Supabase URL: ${process.env.NEXT_PUBLIC_SUPABASE_URL}`)
         addLog(`🔑 Anon Key exists: ${!!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`)
         addLog(`🔑 Anon Key length: ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.length}`)
-        
+
+        // Check localStorage
+        const storageKey = 'sb-xckbsyeaywrfzvcahhtk-auth-token'
+        const storedData = localStorage.getItem(storageKey)
+        addLog(`💾 LocalStorage key exists: ${!!storedData}`)
+        if (storedData) {
+          addLog(`💾 LocalStorage data length: ${storedData.length}`)
+        }
+
         addLog('⏳ Calling supabase.auth.getSession()...')
         const startTime = Date.now()
-        
-        const { data, error } = await supabase.auth.getSession()
-        
+
+        // Add timeout to prevent infinite hang
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => {
+            addLog('⏰ TIMEOUT: getSession() took more than 5 seconds!')
+            reject(new Error('getSession timeout after 5s'))
+          }, 5000)
+        )
+
+        const sessionPromise = supabase.auth.getSession()
+
+        const result = await Promise.race([sessionPromise, timeoutPromise]) as any
+        const { data, error } = result
+
         const endTime = Date.now()
         const duration = endTime - startTime
-        
+
         addLog(`✅ getSession() completed in ${duration}ms`)
-        addLog(`📊 Session exists: ${!!data.session}`)
-        addLog(`👤 User exists: ${!!data.session?.user}`)
-        
+        addLog(`📊 Session exists: ${!!data?.session}`)
+        addLog(`👤 User exists: ${!!data?.session?.user}`)
+
         if (error) {
           addLog(`❌ Error: ${error.message}`)
           setError(error.message)
         } else {
           addLog('✅ No errors!')
         }
-        
+
         // Test a simple query
         addLog('⏳ Testing database query...')
         const queryStart = Date.now()
-        
+
         const { data: profiles, error: queryError } = await supabase
           .from('profiles')
           .select('count')
           .limit(1)
-        
+
         const queryEnd = Date.now()
         const queryDuration = queryEnd - queryStart
-        
+
         addLog(`✅ Query completed in ${queryDuration}ms`)
-        
+
         if (queryError) {
           addLog(`❌ Query error: ${queryError.message}`)
           addLog(`❌ Query error code: ${queryError.code}`)
@@ -60,7 +79,7 @@ export default function TestSupabasePage() {
         } else {
           addLog('✅ Query successful!')
         }
-        
+
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : String(err)
         addLog(`💥 Exception: ${errorMessage}`)
@@ -75,14 +94,14 @@ export default function TestSupabasePage() {
     <div className="min-h-screen bg-slate-950 p-8">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold text-white mb-8">Supabase Connection Test</h1>
-        
+
         {error && (
           <div className="bg-red-900/20 border border-red-500 rounded-lg p-4 mb-6">
             <h2 className="text-red-400 font-semibold mb-2">Error Detected</h2>
             <p className="text-red-300">{error}</p>
           </div>
         )}
-        
+
         <div className="bg-slate-900 rounded-lg p-6 border border-slate-800">
           <h2 className="text-xl font-semibold text-white mb-4">Test Logs</h2>
           <div className="space-y-2 font-mono text-sm">
@@ -97,7 +116,7 @@ export default function TestSupabasePage() {
             )}
           </div>
         </div>
-        
+
         <div className="mt-6 bg-slate-900 rounded-lg p-6 border border-slate-800">
           <h2 className="text-xl font-semibold text-white mb-4">Instructions</h2>
           <ol className="list-decimal list-inside space-y-2 text-slate-300">
