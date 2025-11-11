@@ -132,41 +132,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Get initial session
     const initAuth = async () => {
       try {
-        console.log('[AuthContext] Getting initial session...')
+        console.log('[AuthContext] Getting initial user...')
 
-        // Add timeout to getSession to prevent infinite hang
+        // Use getUser() instead of getSession() - it's more reliable
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('getSession timeout after 3s')), 3000)
+          setTimeout(() => reject(new Error('getUser timeout after 3s')), 3000)
         )
 
-        const sessionPromise = supabase.auth.getSession()
+        const userPromise = supabase.auth.getUser()
 
-        const result = await Promise.race([sessionPromise, timeoutPromise]) as any
-        const { data: { session: initialSession }, error } = result
+        const result = await Promise.race([userPromise, timeoutPromise]) as any
+        const { data: { user: initialUser }, error } = result
 
         if (!mounted) return
 
         if (error) {
-          console.error('[AuthContext] Error getting session:', error)
-          setLoading(false)
-          return
+          console.error('[AuthContext] Error getting user:', error)
+          // Don't return - continue to set loading to false
         }
 
-        console.log('[AuthContext] Initial session:', !!initialSession, initialSession?.user?.id)
+        console.log('[AuthContext] Initial user:', !!initialUser, initialUser?.id)
 
-        if (initialSession?.user) {
-          setSession(initialSession)
-          setUser(initialSession.user)
-          console.log('[AuthContext] Fetching profile for user:', initialSession.user.id)
-          const profileData = await fetchProfile(initialSession.user.id)
+        if (initialUser) {
+          setUser(initialUser)
+          console.log('[AuthContext] Fetching profile for user:', initialUser.id)
+          const profileData = await fetchProfile(initialUser.id)
           console.log('[AuthContext] Profile loaded:', profileData?.role)
           setProfile(profileData)
         } else {
-          console.log('[AuthContext] No initial session - user not logged in')
+          console.log('[AuthContext] No initial user - not logged in')
         }
       } catch (error) {
         console.error('[AuthContext] Exception in initAuth:', error)
         console.error('[AuthContext] Error type:', error instanceof Error ? error.message : 'Unknown')
+        // Don't throw - we want to continue and set loading to false
       } finally {
         if (mounted) {
           console.log('[AuthContext] Initialization complete, setting loading to false')
