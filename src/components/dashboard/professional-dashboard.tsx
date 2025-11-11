@@ -698,9 +698,9 @@ export function ProfessionalDashboard() {
                   )
                 })}
 
-                <Link href="/become-capper">
+                <Link href="/upgrade">
                   <Button className="w-full mt-2 bg-slate-800 hover:bg-slate-700 text-white text-xs h-8 border border-slate-700 transition-all hover:border-slate-600">
-                    Become a Capper
+                    Upgrade to Capper
                   </Button>
                 </Link>
               </CardContent>
@@ -820,7 +820,7 @@ export function ProfessionalDashboard() {
                 <BarChart3 className="h-3.5 w-3.5 text-blue-500" />
                 Pick History
               </CardTitle>
-              <Link href="/pick-history">
+              <Link href="/history">
                 <Button variant="ghost" size="sm" className="text-[11px] h-6 px-2 text-slate-400 hover:text-white">
                   View All
                 </Button>

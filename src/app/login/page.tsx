@@ -27,7 +27,8 @@ export default function LoginPage() {
       setError(signInError.message)
       setLoading(false)
     } else {
-      router.push('/')
+      // Force a hard refresh to update auth state
+      window.location.href = '/'
     }
   }
 

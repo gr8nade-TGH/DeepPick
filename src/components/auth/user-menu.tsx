@@ -131,17 +131,19 @@ export function UserMenu() {
 
           {/* Menu Items */}
           <div className="p-2">
-            <Link href="/profile">
-              <button
-                onClick={() => setIsOpen(false)}
-                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 rounded-lg transition-colors"
-              >
-                <User className="w-4 h-4" />
-                Profile
-              </button>
-            </Link>
+            {(profile.role === 'capper' || profile.role === 'admin') && (
+              <Link href={`/profile/${user.id}`}>
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 rounded-lg transition-colors"
+                >
+                  <User className="w-4 h-4" />
+                  Profile
+                </button>
+              </Link>
+            )}
 
-            <Link href="/settings">
+            <Link href="/settings/profile">
               <button
                 onClick={() => setIsOpen(false)}
                 className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 rounded-lg transition-colors"
