@@ -90,8 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log('[AuthContext] Initializing...')
     let mounted = true
 
-    // Listen for auth changes - this is the ONLY way to get session in client
-    // DO NOT call getSession() directly as it hangs in the browser
+    // Listen for auth changes
     console.log('[AuthContext] Setting up auth state listener...')
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       if (!mounted) return
@@ -114,33 +113,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false)
     })
 
-    // Check initial auth state using getUser() which doesn't hang like getSession()
+    // CRITICAL FIX: Supabase client methods hang in browser
+    // Use server-side API to check auth instead
     const checkInitialAuth = async () => {
       try {
-        console.log('[AuthContext] Checking initial auth state...')
-        const { data: { user }, error } = await supabase.auth.getUser()
+        console.log('[AuthContext] Checking auth via server API...')
+
+        const response = await fetch('/api/auth/session', {
+          credentials: 'include',
+          cache: 'no-store'
+        })
 
         if (!mounted) return
 
-        if (error) {
-          console.error('[AuthContext] Error getting user:', error)
+        if (!response.ok) {
+          console.log('[AuthContext] No session found')
           setLoading(false)
           return
         }
 
-        console.log('[AuthContext] Initial user:', !!user, user?.id)
+        const data = await response.json()
+        console.log('[AuthContext] Session data:', !!data.user, data.user?.id)
 
-        if (user) {
-          setUser(user)
-          console.log('[AuthContext] Fetching profile for initial user...')
-          const profileData = await fetchProfile(user.id)
-          console.log('[AuthContext] Initial profile loaded:', profileData?.role)
-          setProfile(profileData)
+        if (data.user) {
+          setUser(data.user)
+          setSession(data.session)
+
+          if (data.profile) {
+            console.log('[AuthContext] Profile loaded:', data.profile.role)
+            setProfile(data.profile)
+          }
         }
 
         setLoading(false)
       } catch (error) {
-        console.error('[AuthContext] Exception checking initial auth:', error)
+        console.error('[AuthContext] Exception checking auth:', error)
         if (mounted) {
           setLoading(false)
         }
