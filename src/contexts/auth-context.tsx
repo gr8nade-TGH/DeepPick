@@ -51,6 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Fetch user profile from profiles table
   const fetchProfile = async (userId: string) => {
     try {
+      console.log('[AuthContext] fetchProfile called for userId:', userId)
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -58,13 +59,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .single()
 
       if (error) {
-        console.error('Error fetching profile:', error)
+        console.error('[AuthContext] Error fetching profile:', error)
         return null
       }
 
+      console.log('[AuthContext] Profile data fetched successfully:', data)
       return data as Profile
     } catch (error) {
-      console.error('Error fetching profile:', error)
+      console.error('[AuthContext] Exception in fetchProfile:', error)
       return null
     }
   }
@@ -109,10 +111,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         console.log('[AuthContext] Getting initial session...')
 
-        // Add timeout to prevent hanging forever
+        // Add timeout to prevent hanging forever (reduced to 2s for faster feedback)
         const sessionPromise = supabase.auth.getSession()
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Session fetch timeout')), 5000)
+          setTimeout(() => reject(new Error('Session fetch timeout')), 2000)
         )
 
         const { data: { session: initialSession } } = await Promise.race([
