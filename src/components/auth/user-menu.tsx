@@ -8,10 +8,15 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 export function UserMenu() {
-  const { user, profile, signOut } = useAuth()
+  const { user, profile, signOut, loading } = useAuth()
   const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
+
+  // Debug logging
+  useEffect(() => {
+    console.log('[UserMenu] Auth state:', { user: !!user, profile: !!profile, loading })
+  }, [user, profile, loading])
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -34,6 +39,16 @@ export function UserMenu() {
     await signOut()
     setIsOpen(false)
     router.push('/login')
+  }
+
+  // Show loading state while auth is initializing
+  if (loading) {
+    return (
+      <div className="flex gap-2">
+        <div className="h-10 w-20 bg-slate-800 animate-pulse rounded-lg"></div>
+        <div className="h-10 w-24 bg-slate-800 animate-pulse rounded-lg"></div>
+      </div>
+    )
   }
 
   // If not logged in, show login/signup buttons
