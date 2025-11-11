@@ -2,7 +2,7 @@ import Link from 'next/link'
 
 export const metadata = {
   title: 'Battle Bets | DeepPick',
-  description: 'Watch NBA betting battles come to life with castle defense gameplay',
+  description: 'Watch NBA betting battles come to life with castle defense gameplay - V3',
 }
 
 export default function BattleBetsPage() {
