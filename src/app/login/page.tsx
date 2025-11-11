@@ -22,18 +22,22 @@ export default function LoginPage() {
     setError(null)
 
     try {
+      console.log('[LOGIN] Starting sign in...')
       const { error: signInError } = await signIn(email, password)
 
       if (signInError) {
+        console.error('[LOGIN] Sign in error:', signInError)
         setError(signInError.message)
         setLoading(false)
       } else {
+        console.log('[LOGIN] Sign in successful, waiting for auth state...')
         // Wait a moment for auth state to propagate, then redirect
-        await new Promise(resolve => setTimeout(resolve, 500))
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        console.log('[LOGIN] Redirecting to dashboard...')
         window.location.href = '/'
       }
     } catch (err) {
-      console.error('Login error:', err)
+      console.error('[LOGIN] Unexpected error:', err)
       setError('An unexpected error occurred. Please try again.')
       setLoading(false)
     }
