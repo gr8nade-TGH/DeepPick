@@ -90,7 +90,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log('[AuthContext] Initializing...')
     let mounted = true
 
-    // Listen for auth changes
+    // Listen for auth changes - this is the ONLY way to get session in client
+    // DO NOT call getSession() directly as it hangs in the browser
     console.log('[AuthContext] Setting up auth state listener...')
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       if (!mounted) return
@@ -113,42 +114,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false)
     })
 
-    // Get initial session - but don't wait for it, just trigger it
-    const initAuth = async () => {
-      try {
-        console.log('[AuthContext] Getting initial session...')
+    // Trigger initial auth check by calling getUser() which doesn't hang
+    // This will fire the onAuthStateChange event with the current session
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!mounted) return
 
-        const { data: { session: initialSession }, error } = await supabase.auth.getSession()
+      console.log('[AuthContext] Initial user check:', !!user, user?.id)
 
-        if (!mounted) return
-
-        if (error) {
-          console.error('[AuthContext] Error getting session:', error)
-          setLoading(false)
-          return
-        }
-
-        console.log('[AuthContext] Initial session:', !!initialSession, initialSession?.user?.id)
-
-        if (initialSession?.user) {
-          setSession(initialSession)
-          setUser(initialSession.user)
-          console.log('[AuthContext] Fetching profile for user:', initialSession.user.id)
-          const profileData = await fetchProfile(initialSession.user.id)
-          console.log('[AuthContext] Profile loaded:', profileData?.role)
-          setProfile(profileData)
-        } else {
-          console.log('[AuthContext] No initial session - not logged in')
-        }
-
-        setLoading(false)
-      } catch (error) {
-        console.error('[AuthContext] Exception in initAuth:', error)
+      // If no user found and still loading, stop loading
+      if (!user && loading) {
+        console.log('[AuthContext] No user found, stopping loading state')
         setLoading(false)
       }
-    }
-
-    initAuth()
+    }).catch((error) => {
+      console.error('[AuthContext] Error checking initial user:', error)
+      if (mounted) {
+        setLoading(false)
+      }
+    })
 
     return () => {
       console.log('[AuthContext] Cleaning up auth listener')
