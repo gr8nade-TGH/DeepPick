@@ -1,8 +1,8 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, useMemo, ReactNode } from 'react'
-import { createBrowserClient } from '@supabase/ssr'
 import { User, Session } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase/client'
 
 export type UserRole = 'free' | 'capper' | 'admin'
 
@@ -44,21 +44,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Use the singleton client from client.ts
   const supabase = useMemo(() => {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
     console.log('[AuthContext] Creating Supabase client...')
-    console.log('[AuthContext] URL exists:', !!url)
-    console.log('[AuthContext] Key exists:', !!key)
-    console.log('[AuthContext] URL:', url?.substring(0, 30) + '...')
+    console.log('[AuthContext] URL exists:', !!process.env.NEXT_PUBLIC_SUPABASE_URL)
+    console.log('[AuthContext] Key exists:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
 
-    if (!url || !key) {
-      console.error('[AuthContext] MISSING ENVIRONMENT VARIABLES!')
-      console.error('[AuthContext] URL:', url)
-      console.error('[AuthContext] Key:', key)
-    }
-
-    return createBrowserClient(url!, key!)
+    return createClient()
   }, [])
 
   // Fetch user profile from profiles table
