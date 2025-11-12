@@ -32,6 +32,7 @@ export interface TerritoryData {
   activePick?: ActivePickData
   leaderboard?: CapperRanking[] // Top 3 cappers for this territory
   gameTime?: string // For active picks - when the game starts
+  gameStatus?: string // Game status: 'scheduled', 'in_progress', 'final', etc.
 }
 
 export interface ActivePickData {

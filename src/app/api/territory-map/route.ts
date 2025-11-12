@@ -201,7 +201,7 @@ export async function GET() {
       }
 
       // Check which cappers have pending picks for this team
-      const cappersWithPicks = new Map<string, { pickId: string, gameTime: string }>()
+      const cappersWithPicks = new Map<string, { pickId: string, gameTime: string, gameStatus: string }>()
 
         ; (pendingPicks || []).forEach(pick => {
           if (!pick.game_snapshot) return
@@ -209,6 +209,7 @@ export async function GET() {
           let homeTeam: string | undefined
           let awayTeam: string | undefined
           let gameTime: string | undefined
+          let gameStatus: string | undefined
 
           try {
             if (typeof pick.game_snapshot.home_team === 'string') {
@@ -223,9 +224,10 @@ export async function GET() {
               awayTeam = pick.game_snapshot.away_team?.abbreviation
             }
 
-            // Get game time from game_snapshot
+            // Get game time and status from game_snapshot
             gameTime = pick.game_snapshot.game_start_timestamp ||
               `${pick.game_snapshot.game_date}T${pick.game_snapshot.game_time}`
+            gameStatus = pick.game_snapshot.status || 'scheduled'
           } catch (e) {
             return
           }
@@ -239,7 +241,8 @@ export async function GET() {
           if (capperId) {
             cappersWithPicks.set(capperId, {
               pickId: pick.id,
-              gameTime: gameTime || ''
+              gameTime: gameTime || '',
+              gameStatus: gameStatus || 'scheduled'
             })
           }
         })
@@ -250,6 +253,7 @@ export async function GET() {
       let hasActivePick = false
       let activePickId: string | undefined
       let gameTime: string | undefined
+      let gameStatus: string | undefined
 
       for (let i = 0; i < leaderboard.length; i++) {
         const capper = leaderboard[i]
@@ -262,6 +266,7 @@ export async function GET() {
           hasActivePick = true
           activePickId = pickInfo.pickId
           gameTime = pickInfo.gameTime
+          gameStatus = pickInfo.gameStatus
           break
         }
       }
@@ -311,7 +316,8 @@ export async function GET() {
         losses: displayCapper.losses,
         pushes: displayCapper.pushes,
         leaderboard: leaderboardData,
-        gameTime: gameTime
+        gameTime: gameTime,
+        gameStatus: gameStatus
       }
 
       // Store pick ID for modal

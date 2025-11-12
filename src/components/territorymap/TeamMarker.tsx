@@ -125,30 +125,44 @@ export function TeamMarker({ team, territory, onClick, onHover }: TeamMarkerProp
             </div>
           )}
 
-          {/* LIVE Badge for Active Picks */}
-          {isActive && (
-            <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
-              <span className="px-1.5 py-0.5 bg-red-600 text-white text-[9px] font-bold rounded-full animate-pulse shadow-lg">
-                LIVE
-              </span>
-            </div>
+          {/* LIVE Badge - Only show if game is actually in progress */}
+          {isActive && territory.gameTime && territory.gameStatus && (
+            (() => {
+              const now = new Date()
+              const gameStart = new Date(territory.gameTime)
+              const isGameStarted = now >= gameStart
+              const isInProgress = territory.gameStatus === 'in_progress' ||
+                territory.gameStatus === 'live' ||
+                territory.gameStatus === 'in progress'
+
+              // Only show LIVE if game has started AND status indicates in progress
+              const shouldShowLive = isGameStarted && isInProgress
+
+              return shouldShowLive ? (
+                <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
+                  <span className="px-1.5 py-0.5 bg-red-600 text-white text-[9px] font-bold rounded-full animate-pulse shadow-lg">
+                    LIVE
+                  </span>
+                </div>
+              ) : null
+            })()
           )}
         </div>
 
-        {/* Capper Info (for claimed/active territories) - ENHANCED */}
+        {/* Capper Info (for claimed/active territories) - COMPACT */}
         {!isUnclaimed && territory.capperUsername && (
-          <div className="absolute -bottom-14 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
-            {/* Capper Badge */}
+          <div className="absolute -bottom-9 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+            {/* Capper Badge - COMPACT: Only name, rank, eye icon, and game time */}
             <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-2 py-1 rounded-md shadow-lg border border-amber-500/50 relative">
               {/* Capper Name with Rank Badge and View Icon */}
-              <div className="text-[10px] font-bold text-amber-400 tracking-wide mb-0.5 flex items-center gap-1">
+              <div className="text-[10px] font-bold text-amber-400 tracking-wide flex items-center gap-1 justify-center">
                 {/* Rank Badge */}
                 {territory.capperRank && (
                   <span
                     className={`text-[8px] font-black px-1 rounded ${territory.capperRank === 1 ? 'bg-yellow-500 text-black' :
-                        territory.capperRank === 2 ? 'bg-slate-400 text-black' :
-                          territory.capperRank === 3 ? 'bg-amber-700 text-white' :
-                            'bg-slate-600 text-white'
+                      territory.capperRank === 2 ? 'bg-slate-400 text-black' :
+                        territory.capperRank === 3 ? 'bg-amber-700 text-white' :
+                          'bg-slate-600 text-white'
                       }`}
                     title={`Rank #${territory.capperRank} for ${territory.teamAbbr}`}
                   >
@@ -166,24 +180,7 @@ export function TeamMarker({ team, territory, onClick, onHover }: TeamMarkerProp
                 )}
               </div>
 
-              {/* Stats Row */}
-              <div className="flex items-center justify-center gap-1.5 text-[9px]">
-                {/* Net Units */}
-                <span className="text-emerald-400 font-bold">
-                  +{territory.units?.toFixed(1)}u
-                </span>
-
-                {/* Separator */}
-                <span className="text-slate-600">•</span>
-
-                {/* W-L Record */}
-                <span className="text-slate-300 font-medium">
-                  {territory.wins}-{territory.losses}
-                  {territory.pushes ? `-${territory.pushes}` : ''}
-                </span>
-              </div>
-
-              {/* Game Time for Active Picks */}
+              {/* Game Time for Active Picks - ONLY show for active picks */}
               {isActive && territory.gameTime && (
                 <div className="text-[8px] text-blue-300 text-center mt-0.5 font-semibold">
                   {new Date(territory.gameTime).toLocaleTimeString('en-US', {

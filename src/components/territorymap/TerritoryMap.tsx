@@ -64,13 +64,19 @@ export function TerritoryMap() {
         map.setLayoutProperty(layerId, 'visibility', 'none')
       }
 
-      // Hide city/place labels - only show state names
-      if (layerId.includes('place-label') && !layerId.includes('state')) {
-        map.setLayoutProperty(layerId, 'visibility', 'none')
+      // Hide ALL place labels except state labels
+      if (layerId.includes('place-label')) {
+        // Only show state labels
+        if (layerId.includes('state')) {
+          // Keep state labels visible
+        } else {
+          // Hide everything else (cities, towns, etc.)
+          map.setLayoutProperty(layerId, 'visibility', 'none')
+        }
       }
 
-      // Hide settlement labels (cities, towns)
-      if (layerId.includes('settlement-label') || layerId.includes('settlement-subdivision-label')) {
+      // Hide settlement labels (cities, towns, neighborhoods)
+      if (layerId.includes('settlement') || layerId.includes('subdivision')) {
         map.setLayoutProperty(layerId, 'visibility', 'none')
       }
 
@@ -132,6 +138,9 @@ export function TerritoryMap() {
         setPickIdMap(data.pickIdMap || {})
         setActiveMatchups(data.activeMatchups || [])
         setLastUpdated(new Date())
+
+        // Debug logging for matchup lines
+        console.log('[TerritoryMap] Active matchups:', data.activeMatchups?.length || 0, data.activeMatchups)
       } else {
         console.error('[TerritoryMap] Failed to fetch:', response.status, response.statusText)
       }
@@ -325,14 +334,15 @@ export function TerritoryMap() {
               type="line"
               paint={{
                 'line-color': '#D4AF37', // Medieval gold
-                'line-width': 2,
-                'line-opacity': 0.4,
-                'line-dasharray': [2, 2] // Dashed line for "active battle" effect
+                'line-width': 3,
+                'line-opacity': 0.7,
+                'line-dasharray': [3, 3] // Dashed line for "active battle" effect
               }}
               layout={{
                 'line-cap': 'round',
                 'line-join': 'round'
               }}
+              beforeId="team-markers" // Render behind markers
             />
           </Source>
         )}
@@ -365,7 +375,7 @@ export function TerritoryMap() {
       <MapLegend />
 
       {/* Stats Summary - ENHANCED WITH SCROLLING */}
-      <div className="absolute bottom-4 left-4 bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-amber-500 rounded-lg p-4 shadow-2xl max-h-[calc(100vh-12rem)] overflow-y-auto">
+      <div className="absolute bottom-4 left-4 bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-amber-500 rounded-lg p-4 shadow-2xl max-h-[calc(100vh-16rem)] overflow-y-auto">
         <h3 className="text-sm font-bold text-amber-400 mb-3 border-b border-amber-500/30 pb-2 flex items-center gap-2">
           <span>📊</span>
           <span>Territory Stats</span>
