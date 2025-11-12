@@ -93,68 +93,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Initialize auth state
   useEffect(() => {
-    console.log('[AuthContext] Initializing with @supabase/ssr pattern...')
+    console.log('[AuthContext] Initializing - FINAL FIX: Skip getSession entirely, use ONLY listener + immediate stop loading')
     let mounted = true
+    let authInitialized = false
 
-    const initializeAuth = async () => {
-      try {
-        console.log('[AuthContext] Calling getSession() to read session from cookies...')
-
-        // Add a timeout to prevent infinite hanging
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('getSession timeout after 500ms')), 500)
-        })
-
-        const sessionPromise = supabase.auth.getSession()
-
-        const result = await Promise.race([sessionPromise, timeoutPromise]) as any
-
-        console.log('[AuthContext] getSession completed. Result:', result)
-
-        const { data: { session: initialSession } = { session: null }, error } = result || {}
-
-        if (error) {
-          console.error('[AuthContext] getSession error:', error)
-          if (mounted) {
-            setLoading(false)
-          }
-          return
-        }
-
-        console.log('[AuthContext] Session data. User:', !!initialSession?.user, initialSession?.user?.id)
-
-        if (mounted) {
-          setSession(initialSession)
-          setUser(initialSession?.user ?? null)
-
-          if (initialSession?.user) {
-            console.log('[AuthContext] Loading profile for user:', initialSession.user.id)
-            const profileData = await fetchProfile(initialSession.user.id)
-            if (mounted) {
-              setProfile(profileData)
-            }
-          }
-
-          setLoading(false)
-        }
-      } catch (err) {
-        console.error('[AuthContext] Initialization error:', err)
-        // Even on error, we need to stop loading so buttons appear
-        if (mounted) {
-          setUser(null)
-          setSession(null)
-          setProfile(null)
-          setLoading(false)
-        }
-      }
-    }
-
-    // Set up auth state change listener for future changes
-    console.log('[AuthContext] Setting up onAuthStateChange listener for future auth changes...')
+    // Set up auth state change listener - this should fire immediately
+    console.log('[AuthContext] Setting up onAuthStateChange listener...')
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       if (!mounted) return
 
       console.log('[AuthContext] Auth event:', event, 'User:', !!newSession?.user, newSession?.user?.id)
+
+      // Mark as initialized on first event
+      if (!authInitialized) {
+        authInitialized = true
+        console.log('[AuthContext] First auth event received, auth initialized')
+      }
 
       setSession(newSession)
       setUser(newSession?.user ?? null)
@@ -164,20 +118,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const profileData = await fetchProfile(newSession.user.id)
         if (mounted) {
           setProfile(profileData)
+          setLoading(false)
         }
       } else {
-        console.log('[AuthContext] No user, clearing profile')
+        console.log('[AuthContext] No user, clearing profile and stopping loading')
         if (mounted) {
           setProfile(null)
+          setLoading(false)
         }
       }
     })
 
-    // Initialize auth state
-    initializeAuth()
+    // CRITICAL: Stop loading immediately if no auth event fires within 100ms
+    // This ensures buttons appear even if the listener never fires
+    const immediateTimeout = setTimeout(() => {
+      if (!authInitialized && mounted) {
+        console.log('[AuthContext] No auth event after 100ms - stopping loading to show buttons')
+        setLoading(false)
+      }
+    }, 100)
 
     return () => {
       console.log('[AuthContext] Cleaning up auth listener')
+      clearTimeout(immediateTimeout)
       mounted = false
       subscription.unsubscribe()
     }
