@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useAuth } from '@/contexts/auth-context'
 import { Button } from '@/components/ui/button'
 import { Mail, X } from 'lucide-react'
-import { createBrowserClient } from '@supabase/ssr'
+import { createClient } from '@/lib/supabase/client'
 
 export function EmailVerificationBanner() {
   const { user, profile } = useAuth()
@@ -26,10 +26,8 @@ export function EmailVerificationBanner() {
   const handleResendEmail = async () => {
     setResending(true)
     try {
-      const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      )
+      console.log('[EmailVerificationBanner] Resending verification email to:', user.email)
+      const supabase = createClient()
 
       const { error } = await supabase.auth.resend({
         type: 'signup',
@@ -37,14 +35,15 @@ export function EmailVerificationBanner() {
       })
 
       if (error) {
-        console.error('Error resending email:', error)
-        alert('Failed to resend verification email. Please try again.')
+        console.error('[EmailVerificationBanner] Error resending email:', error)
+        alert(`Failed to resend verification email: ${error.message}`)
       } else {
+        console.log('[EmailVerificationBanner] Verification email sent successfully')
         setResent(true)
         setTimeout(() => setResent(false), 5000)
       }
     } catch (error) {
-      console.error('Error resending email:', error)
+      console.error('[EmailVerificationBanner] Exception resending email:', error)
       alert('Failed to resend verification email. Please try again.')
     } finally {
       setResending(false)

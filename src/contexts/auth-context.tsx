@@ -220,10 +220,27 @@ export function AuthProvider({
 
   // Sign out
   const signOut = async () => {
-    await supabase.auth.signOut()
-    setUser(null)
-    setProfile(null)
-    setSession(null)
+    try {
+      console.log('[AuthContext] Signing out...')
+      const { error } = await supabase.auth.signOut()
+      if (error) {
+        console.error('[AuthContext] Sign out error:', error)
+      } else {
+        console.log('[AuthContext] Sign out successful')
+      }
+      // Clear state regardless of error
+      setUser(null)
+      setProfile(null)
+      setSession(null)
+      setLoading(false)
+    } catch (error) {
+      console.error('[AuthContext] Sign out exception:', error)
+      // Clear state even on exception
+      setUser(null)
+      setProfile(null)
+      setSession(null)
+      setLoading(false)
+    }
   }
 
   return (
