@@ -3,6 +3,7 @@
 import { Marker } from 'react-map-gl/mapbox'
 import { TerritoryData, TerritoryTier } from './types'
 import { NBATeamCoordinate } from './nba-team-coordinates'
+import { NBA_TEAM_COLORS } from './nba-team-colors'
 import Image from 'next/image'
 
 interface TeamMarkerProps {
@@ -27,6 +28,9 @@ export function TeamMarker({ team, territory, onClick, onHover }: TeamMarkerProp
   const isActive = territory.state === 'active'
   const borderWidth = getTierBorderWidth(territory.tier)
 
+  // Get team colors
+  const teamColors = NBA_TEAM_COLORS[team.abbr] || { primary: '#3E2723', secondary: '#8B4513' }
+
   // Get tier-based styling
   const getTierGlow = () => {
     if (isUnclaimed) return ''
@@ -42,6 +46,15 @@ export function TeamMarker({ team, territory, onClick, onHover }: TeamMarkerProp
       default:
         return ''
     }
+  }
+
+  // Get border color based on state and tier
+  const getBorderColor = () => {
+    if (isUnclaimed) return '#94A3B8'
+    if (isActive) return '#F59E0B'
+
+    // Use team primary color for claimed territories
+    return teamColors.primary
   }
 
   return (
@@ -73,13 +86,18 @@ export function TeamMarker({ team, territory, onClick, onHover }: TeamMarkerProp
           `}
           style={{
             borderWidth: `${borderWidth}px`,
-            borderColor: isUnclaimed ? '#94A3B8' : isActive ? '#F59E0B' : '#78350F',
+            borderColor: getBorderColor(),
             borderStyle: isUnclaimed ? 'dashed' : 'solid',
           }}
         >
-          {/* Inner ring for claimed territories */}
+          {/* Inner ring for claimed territories with team color accent */}
           {!isUnclaimed && (
-            <div className="absolute inset-1 rounded-full bg-gradient-to-br from-amber-50 to-white opacity-50"></div>
+            <div
+              className="absolute inset-1 rounded-full opacity-20"
+              style={{
+                background: `linear-gradient(135deg, ${teamColors.primary}, ${teamColors.secondary})`
+              }}
+            ></div>
           )}
 
           {/* Team Logo */}
@@ -98,10 +116,17 @@ export function TeamMarker({ team, territory, onClick, onHover }: TeamMarkerProp
             </span>
           )}
 
-          {/* Crown Icon for Dominant Territories */}
+          {/* Crown Icon for Dominant Territories - ENHANCED */}
           {territory.tier === 'dominant' && !isUnclaimed && (
-            <div className="absolute -top-2 -right-2 text-xl">
+            <div className="absolute -top-3 -right-3 text-2xl animate-bounce-slow drop-shadow-lg">
               👑
+            </div>
+          )}
+
+          {/* Shield Icon for Strong Territories */}
+          {territory.tier === 'strong' && !isUnclaimed && (
+            <div className="absolute -top-2 -right-2 text-lg drop-shadow-md">
+              🛡️
             </div>
           )}
 
