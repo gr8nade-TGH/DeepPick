@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl
     const period = searchParams.get('period') || 'all'
+    const teamFilter = searchParams.get('team') || null // Team abbreviation (e.g., 'LAL')
 
     const admin = getSupabaseAdmin()
 
@@ -30,16 +31,17 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch all graded picks (with optional date filter)
+    // Need to fetch game_snapshot to filter by team
     let picksQuery = admin
       .from('picks')
-      .select('capper, user_id, status, units, net_units, is_system_pick')
+      .select('capper, user_id, status, units, net_units, is_system_pick, game_snapshot')
       .in('status', ['won', 'lost', 'push'])
 
     if (dateFilter) {
       picksQuery = picksQuery.gte('created_at', dateFilter.toISOString())
     }
 
-    const { data: picks, error: picksError } = await picksQuery
+    const { data: allPicks, error: picksError } = await picksQuery
 
     if (picksError) {
       console.error('[Leaderboard] Error fetching picks:', picksError)
@@ -47,6 +49,17 @@ export async function GET(request: NextRequest) {
         success: false,
         error: 'Failed to fetch picks'
       }, { status: 500 })
+    }
+
+    // Filter picks by team if team filter is provided
+    let picks = allPicks
+    if (teamFilter) {
+      picks = allPicks.filter(pick => {
+        const homeTeam = pick.game_snapshot?.home_team?.abbreviation
+        const awayTeam = pick.game_snapshot?.away_team?.abbreviation
+        // Include pick if either home or away team matches the filter
+        return homeTeam === teamFilter || awayTeam === teamFilter
+      })
     }
 
     // Fetch all user profiles (to get roles and filter FREE users)
@@ -176,7 +189,7 @@ export async function GET(request: NextRequest) {
         pushes: stats.pushes,
         totalPicks: stats.totalPicks,
         netUnits: parseFloat(stats.netUnits.toFixed(2)),
-        winRate: stats.totalPicks > 0 
+        winRate: stats.totalPicks > 0
           ? parseFloat(((stats.wins / (stats.wins + stats.losses)) * 100).toFixed(1))
           : 0,
         roi: stats.unitsBet > 0

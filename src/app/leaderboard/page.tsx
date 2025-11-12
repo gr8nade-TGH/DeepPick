@@ -40,19 +40,58 @@ const CAPPER_ICONS: Record<string, string> = {
   'deeppick': '🎯',
 }
 
+const NBA_TEAMS = [
+  { name: 'All Teams', abbreviation: 'all' },
+  { name: 'Atlanta Hawks', abbreviation: 'ATL' },
+  { name: 'Boston Celtics', abbreviation: 'BOS' },
+  { name: 'Brooklyn Nets', abbreviation: 'BKN' },
+  { name: 'Charlotte Hornets', abbreviation: 'CHA' },
+  { name: 'Chicago Bulls', abbreviation: 'CHI' },
+  { name: 'Cleveland Cavaliers', abbreviation: 'CLE' },
+  { name: 'Dallas Mavericks', abbreviation: 'DAL' },
+  { name: 'Denver Nuggets', abbreviation: 'DEN' },
+  { name: 'Detroit Pistons', abbreviation: 'DET' },
+  { name: 'Golden State Warriors', abbreviation: 'GSW' },
+  { name: 'Houston Rockets', abbreviation: 'HOU' },
+  { name: 'Indiana Pacers', abbreviation: 'IND' },
+  { name: 'LA Clippers', abbreviation: 'LAC' },
+  { name: 'Los Angeles Lakers', abbreviation: 'LAL' },
+  { name: 'Memphis Grizzlies', abbreviation: 'MEM' },
+  { name: 'Miami Heat', abbreviation: 'MIA' },
+  { name: 'Milwaukee Bucks', abbreviation: 'MIL' },
+  { name: 'Minnesota Timberwolves', abbreviation: 'MIN' },
+  { name: 'New Orleans Pelicans', abbreviation: 'NOP' },
+  { name: 'New York Knicks', abbreviation: 'NYK' },
+  { name: 'Oklahoma City Thunder', abbreviation: 'OKC' },
+  { name: 'Orlando Magic', abbreviation: 'ORL' },
+  { name: 'Philadelphia 76ers', abbreviation: 'PHI' },
+  { name: 'Phoenix Suns', abbreviation: 'PHX' },
+  { name: 'Portland Trail Blazers', abbreviation: 'POR' },
+  { name: 'Sacramento Kings', abbreviation: 'SAC' },
+  { name: 'San Antonio Spurs', abbreviation: 'SAS' },
+  { name: 'Toronto Raptors', abbreviation: 'TOR' },
+  { name: 'Utah Jazz', abbreviation: 'UTA' },
+  { name: 'Washington Wizards', abbreviation: 'WAS' },
+]
+
 export default function LeaderboardPage() {
   const [timeframe, setTimeframe] = useState<'7d' | '30d' | 'all'>('all')
+  const [teamFilter, setTeamFilter] = useState<string>('all')
   const [leaderboard, setLeaderboard] = useState<CapperStats[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetchLeaderboard()
-  }, [timeframe])
+  }, [timeframe, teamFilter])
 
   const fetchLeaderboard = async () => {
     setLoading(true)
     try {
-      const response = await fetch(`/api/leaderboard?period=${timeframe}`)
+      const params = new URLSearchParams({ period: timeframe })
+      if (teamFilter !== 'all') {
+        params.append('team', teamFilter)
+      }
+      const response = await fetch(`/api/leaderboard?${params.toString()}`)
       const data = await response.json()
 
       if (data.success && data.data) {
@@ -108,39 +147,63 @@ export default function LeaderboardPage() {
               <h1 className="text-5xl font-bold bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
                 LEADERBOARD
               </h1>
-              <p className="text-gray-400 text-lg">Top Performing Cappers</p>
+              <p className="text-gray-400 text-lg">
+                {teamFilter === 'all'
+                  ? 'Top Performing Cappers'
+                  : `Top Cappers Predicting ${NBA_TEAMS.find(t => t.abbreviation === teamFilter)?.name || 'Team'} Games`
+                }
+              </p>
             </div>
           </div>
           <NavBar />
         </div>
 
-        {/* Timeframe Selector */}
+        {/* Filters */}
         <Card className="glass-effect border-yellow-500/30">
           <CardContent className="pt-6">
-            <div className="flex items-center justify-center gap-4">
-              <span className="text-gray-400 font-semibold">Timeframe:</span>
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => setTimeframe('7d')}
-                  variant={timeframe === '7d' ? 'default' : 'outline'}
-                  className={timeframe === '7d' ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : ''}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Timeframe Selector */}
+              <div className="flex items-center justify-center gap-4">
+                <span className="text-gray-400 font-semibold">Timeframe:</span>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => setTimeframe('7d')}
+                    variant={timeframe === '7d' ? 'default' : 'outline'}
+                    className={timeframe === '7d' ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : ''}
+                  >
+                    Last 7 Days
+                  </Button>
+                  <Button
+                    onClick={() => setTimeframe('30d')}
+                    variant={timeframe === '30d' ? 'default' : 'outline'}
+                    className={timeframe === '30d' ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : ''}
+                  >
+                    Last 30 Days
+                  </Button>
+                  <Button
+                    onClick={() => setTimeframe('all')}
+                    variant={timeframe === 'all' ? 'default' : 'outline'}
+                    className={timeframe === 'all' ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : ''}
+                  >
+                    All Time
+                  </Button>
+                </div>
+              </div>
+
+              {/* Team Filter */}
+              <div className="flex items-center justify-center gap-4">
+                <span className="text-gray-400 font-semibold">Team:</span>
+                <select
+                  value={teamFilter}
+                  onChange={(e) => setTeamFilter(e.target.value)}
+                  className="px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white font-semibold hover:border-yellow-500 transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-500"
                 >
-                  Last 7 Days
-                </Button>
-                <Button
-                  onClick={() => setTimeframe('30d')}
-                  variant={timeframe === '30d' ? 'default' : 'outline'}
-                  className={timeframe === '30d' ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : ''}
-                >
-                  Last 30 Days
-                </Button>
-                <Button
-                  onClick={() => setTimeframe('all')}
-                  variant={timeframe === 'all' ? 'default' : 'outline'}
-                  className={timeframe === 'all' ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : ''}
-                >
-                  All Time
-                </Button>
+                  {NBA_TEAMS.map(team => (
+                    <option key={team.abbreviation} value={team.abbreviation}>
+                      {team.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </CardContent>
