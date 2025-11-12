@@ -139,124 +139,139 @@ export default function LeaderboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+      <NavBar />
+
+      <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-xl bg-gradient-to-r from-yellow-500 to-orange-500 flex items-center justify-center shadow-lg shadow-yellow-500/50">
-              <Trophy className="w-8 h-8 text-white" />
-            </div>
-            <div>
-              <h1 className="text-5xl font-bold bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
-                LEADERBOARD
-              </h1>
-              <p className="text-gray-400 text-lg">
-                {teamFilter === 'all'
-                  ? 'Top Performing Cappers'
-                  : `Top Cappers Predicting ${NBA_TEAMS.find(t => t.abbreviation === teamFilter)?.name || 'Team'} Games`
-                }
-              </p>
-            </div>
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-yellow-500 to-orange-500 mb-4 shadow-2xl shadow-yellow-500/30">
+            <Trophy className="w-10 h-10 text-white" />
           </div>
-          <NavBar />
+          <h1 className="text-6xl font-black bg-gradient-to-r from-yellow-400 via-orange-400 to-yellow-500 bg-clip-text text-transparent mb-2">
+            LEADERBOARD
+          </h1>
+          <p className="text-slate-400 text-xl font-medium">
+            {teamFilter === 'all' && betTypeFilter === 'all'
+              ? 'Top Performing Cappers'
+              : teamFilter !== 'all' && betTypeFilter === 'all'
+                ? `Top Cappers Predicting ${NBA_TEAMS.find(t => t.abbreviation === teamFilter)?.name || 'Team'} Games`
+                : teamFilter === 'all' && betTypeFilter !== 'all'
+                  ? `Top ${betTypeFilter.toUpperCase()} Cappers`
+                  : `Top ${betTypeFilter.toUpperCase()} Cappers on ${NBA_TEAMS.find(t => t.abbreviation === teamFilter)?.name || 'Team'} Games`
+            }
+          </p>
         </div>
 
         {/* Filters */}
-        <Card className="glass-effect border-yellow-500/30">
-          <CardContent className="pt-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Timeframe Selector */}
-              <div className="flex items-center justify-center gap-4">
-                <span className="text-gray-400 font-semibold">Timeframe:</span>
-                <div className="flex gap-2">
-                  <Button
-                    onClick={() => setTimeframe('7d')}
-                    variant={timeframe === '7d' ? 'default' : 'outline'}
-                    className={timeframe === '7d' ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : ''}
-                  >
-                    Last 7 Days
-                  </Button>
-                  <Button
-                    onClick={() => setTimeframe('30d')}
-                    variant={timeframe === '30d' ? 'default' : 'outline'}
-                    className={timeframe === '30d' ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : ''}
-                  >
-                    Last 30 Days
-                  </Button>
-                  <Button
-                    onClick={() => setTimeframe('all')}
-                    variant={timeframe === 'all' ? 'default' : 'outline'}
-                    className={timeframe === 'all' ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : ''}
-                  >
-                    All Time
-                  </Button>
-                </div>
-              </div>
-
-              {/* Team Filter */}
-              <div className="flex items-center justify-center gap-4">
-                <span className="text-gray-400 font-semibold">Team:</span>
-                <select
-                  value={teamFilter}
-                  onChange={(e) => setTeamFilter(e.target.value)}
-                  className="px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white font-semibold hover:border-yellow-500 transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-500"
+        <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6 shadow-xl">
+          <div className="flex flex-col gap-6">
+            {/* Timeframe */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <span className="text-slate-400 font-semibold min-w-[100px]">Timeframe:</span>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  onClick={() => setTimeframe('7d')}
+                  size="sm"
+                  className={timeframe === '7d'
+                    ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold shadow-lg'
+                    : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600'
+                  }
                 >
-                  {NBA_TEAMS.map(team => (
-                    <option key={team.abbreviation} value={team.abbreviation}>
-                      {team.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Bet Type Filter */}
-              <div className="flex items-center justify-center gap-4">
-                <span className="text-gray-400 font-semibold">Bet Type:</span>
-                <div className="flex gap-2">
-                  <Button
-                    onClick={() => setBetTypeFilter('all')}
-                    variant={betTypeFilter === 'all' ? 'default' : 'outline'}
-                    className={betTypeFilter === 'all' ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : ''}
-                  >
-                    All
-                  </Button>
-                  <Button
-                    onClick={() => setBetTypeFilter('total')}
-                    variant={betTypeFilter === 'total' ? 'default' : 'outline'}
-                    className={betTypeFilter === 'total' ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : ''}
-                  >
-                    Total
-                  </Button>
-                  <Button
-                    onClick={() => setBetTypeFilter('spread')}
-                    variant={betTypeFilter === 'spread' ? 'default' : 'outline'}
-                    className={betTypeFilter === 'spread' ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : ''}
-                  >
-                    Spread
-                  </Button>
-                </div>
+                  Last 7 Days
+                </Button>
+                <Button
+                  onClick={() => setTimeframe('30d')}
+                  size="sm"
+                  className={timeframe === '30d'
+                    ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold shadow-lg'
+                    : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600'
+                  }
+                >
+                  Last 30 Days
+                </Button>
+                <Button
+                  onClick={() => setTimeframe('all')}
+                  size="sm"
+                  className={timeframe === 'all'
+                    ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold shadow-lg'
+                    : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600'
+                  }
+                >
+                  All Time
+                </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
+
+            {/* Team Filter */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <span className="text-slate-400 font-semibold min-w-[100px]">Team:</span>
+              <select
+                value={teamFilter}
+                onChange={(e) => setTeamFilter(e.target.value)}
+                className="px-4 py-2 rounded-lg bg-slate-800 border border-slate-600 text-white font-semibold hover:border-yellow-500 transition-all focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 cursor-pointer"
+              >
+                {NBA_TEAMS.map(team => (
+                  <option key={team.abbreviation} value={team.abbreviation}>
+                    {team.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Bet Type Filter */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <span className="text-slate-400 font-semibold min-w-[100px]">Bet Type:</span>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  onClick={() => setBetTypeFilter('all')}
+                  size="sm"
+                  className={betTypeFilter === 'all'
+                    ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold shadow-lg'
+                    : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600'
+                  }
+                >
+                  All
+                </Button>
+                <Button
+                  onClick={() => setBetTypeFilter('total')}
+                  size="sm"
+                  className={betTypeFilter === 'total'
+                    ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold shadow-lg'
+                    : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600'
+                  }
+                >
+                  Total
+                </Button>
+                <Button
+                  onClick={() => setBetTypeFilter('spread')}
+                  size="sm"
+                  className={betTypeFilter === 'spread'
+                    ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold shadow-lg'
+                    : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600'
+                  }
+                >
+                  Spread
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Leaderboard */}
         {loading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
-            <p className="text-gray-400 mt-4">Loading leaderboard...</p>
+          <div className="text-center py-16">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-yellow-500 border-t-transparent mx-auto"></div>
+            <p className="text-slate-400 mt-6 text-lg font-medium">Loading leaderboard...</p>
           </div>
         ) : leaderboard.length === 0 ? (
-          <Card className="glass-effect border-gray-700">
-            <CardContent className="py-12 text-center text-gray-400">
-              <Trophy className="w-16 h-16 mx-auto mb-4 text-gray-600" />
-              <p className="text-xl">No data yet for this timeframe</p>
-              <p className="text-sm mt-2">Cappers need to generate picks to appear on the leaderboard</p>
-            </CardContent>
-          </Card>
+          <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-12 text-center">
+            <Trophy className="w-20 h-20 mx-auto mb-6 text-slate-600" />
+            <p className="text-2xl font-bold text-slate-300 mb-2">No data yet for this timeframe</p>
+            <p className="text-slate-500">Cappers need to generate picks to appear on the leaderboard</p>
+          </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {leaderboard.map((capper) => {
               const capperColor = capper.type === 'system'
                 ? CAPPER_COLORS[capper.id] || 'from-gray-500 to-gray-600'
@@ -266,118 +281,99 @@ export default function LeaderboardPage() {
                 : null
 
               return (
-                <Card
+                <div
                   key={capper.id}
-                  className={`glass-effect ${getRankColor(capper.rank)} transition-all hover:scale-[1.02]`}
+                  className={`bg-slate-900/70 backdrop-blur-sm border ${getRankColor(capper.rank)} rounded-xl p-5 transition-all hover:scale-[1.01] hover:shadow-2xl`}
                 >
-                  <CardContent className="p-6">
-                    <div className="flex items-center gap-6">
-                      {/* Rank */}
-                      <div className="flex flex-col items-center justify-center min-w-[80px]">
-                        {getRankIcon(capper.rank)}
-                        <span className="text-2xl font-bold text-white mt-2">#{capper.rank}</span>
-                      </div>
+                  <div className="flex items-center gap-4">
+                    {/* Rank Badge */}
+                    <div className="flex flex-col items-center justify-center min-w-[70px]">
+                      {getRankIcon(capper.rank)}
+                      <span className="text-xl font-black text-white mt-1">#{capper.rank}</span>
+                    </div>
 
-                      {/* Capper Info */}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-3">
-                          {/* Avatar for users - clickable to profile */}
-                          {capper.type === 'user' && (
-                            <Link href={`/profile/${capper.id}`}>
-                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold hover:scale-110 transition-transform cursor-pointer">
-                                {capper.avatar_url ? (
-                                  <img src={capper.avatar_url} alt={capper.name} className="w-full h-full rounded-full object-cover" />
-                                ) : (
-                                  <User className="w-5 h-5" />
-                                )}
-                              </div>
-                            </Link>
-                          )}
-
-                          {/* Capper name - clickable for users */}
-                          {capper.type === 'user' ? (
-                            <Link href={`/profile/${capper.id}`}>
-                              <Badge className={`bg-gradient-to-r ${capperColor} text-white font-bold text-lg px-4 py-2 hover:scale-105 transition-transform cursor-pointer`}>
-                                {capper.name}
-                              </Badge>
-                            </Link>
-                          ) : (
-                            <Badge className={`bg-gradient-to-r ${capperColor} text-white font-bold text-lg px-4 py-2`}>
-                              {capperIcon && <span className="mr-2">{capperIcon}</span>}
+                    {/* Capper Info */}
+                    <div className="flex-1 min-w-0">
+                      {/* Name Row */}
+                      <div className="flex items-center gap-2 mb-3 flex-wrap">
+                        {capper.type === 'user' ? (
+                          <Link href={`/profile/${capper.id}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold flex-shrink-0">
+                              {capper.avatar_url ? (
+                                <img src={capper.avatar_url} alt={capper.name} className="w-full h-full rounded-full object-cover" />
+                              ) : (
+                                <User className="w-4 h-4" />
+                              )}
+                            </div>
+                            <span className={`bg-gradient-to-r ${capperColor} text-white font-bold text-base px-3 py-1 rounded-lg`}>
                               {capper.name}
-                            </Badge>
-                          )}
+                            </span>
+                          </Link>
+                        ) : (
+                          <span className={`bg-gradient-to-r ${capperColor} text-white font-bold text-base px-3 py-1 rounded-lg inline-flex items-center gap-1`}>
+                            {capperIcon && <span>{capperIcon}</span>}
+                            {capper.name}
+                          </span>
+                        )}
 
-                          {capper.rank === 1 && (
-                            <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/50">
-                              👑 CHAMPION
-                            </Badge>
-                          )}
-
-                          {capper.type === 'user' && (
-                            <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/50">
-                              USER CAPPER
-                            </Badge>
-                          )}
-                        </div>
-
-                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                          {/* Record */}
-                          <div>
-                            <p className="text-xs text-gray-500 mb-1">Record</p>
-                            <p className="text-lg font-bold text-white">
-                              {capper.wins}-{capper.losses}-{capper.pushes}
-                            </p>
-                          </div>
-
-                          {/* Win Rate */}
-                          <div>
-                            <p className="text-xs text-gray-500 mb-1">Win Rate</p>
-                            <p className={`text-lg font-bold ${capper.winRate >= 55 ? 'text-green-400' : capper.winRate >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
-                              {capper.winRate.toFixed(1)}%
-                            </p>
-                          </div>
-
-                          {/* Net Units */}
-                          <div>
-                            <p className="text-xs text-gray-500 mb-1">Net Units</p>
-                            <p className={`text-lg font-bold ${capper.netUnits >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                              {capper.netUnits >= 0 ? '+' : ''}{capper.netUnits.toFixed(2)}u
-                            </p>
-                          </div>
-
-                          {/* ROI */}
-                          <div>
-                            <p className="text-xs text-gray-500 mb-1">ROI</p>
-                            <p className={`text-lg font-bold ${capper.roi >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                              {capper.roi >= 0 ? '+' : ''}{capper.roi.toFixed(1)}%
-                            </p>
-                          </div>
-
-                          {/* Total Picks */}
-                          <div>
-                            <p className="text-xs text-gray-500 mb-1">Total Picks</p>
-                            <p className="text-lg font-bold text-blue-400">
-                              {capper.totalPicks}
-                            </p>
-                          </div>
-                        </div>
+                        {capper.rank === 1 && (
+                          <span className="bg-yellow-500/20 text-yellow-400 border border-yellow-500/50 text-xs px-2 py-0.5 rounded-md font-bold">
+                            👑 CHAMPION
+                          </span>
+                        )}
                       </div>
 
-                      {/* Action Button */}
-                      <div>
-                        <Link href={capper.type === 'system' ? `/?capper=${capper.id}` : `/profile/${capper.id}`} target="_blank">
-                          <Button
-                            className={`bg-gradient-to-r ${capperColor} hover:opacity-90 text-white font-semibold shadow-lg`}
-                          >
-                            <ExternalLink className="w-4 h-4 mr-2" />
-                            View Picks
-                          </Button>
-                        </Link>
+                      {/* Stats Grid */}
+                      <div className="grid grid-cols-5 gap-3 text-center">
+                        <div className="bg-slate-800/50 rounded-lg p-2">
+                          <p className="text-[10px] text-slate-500 uppercase font-semibold mb-0.5">Record</p>
+                          <p className="text-sm font-bold text-white">
+                            {capper.wins}-{capper.losses}-{capper.pushes}
+                          </p>
+                        </div>
+
+                        <div className="bg-slate-800/50 rounded-lg p-2">
+                          <p className="text-[10px] text-slate-500 uppercase font-semibold mb-0.5">Win Rate</p>
+                          <p className={`text-sm font-bold ${capper.winRate >= 55 ? 'text-green-400' : capper.winRate >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
+                            {capper.winRate.toFixed(1)}%
+                          </p>
+                        </div>
+
+                        <div className="bg-slate-800/50 rounded-lg p-2">
+                          <p className="text-[10px] text-slate-500 uppercase font-semibold mb-0.5">Net Units</p>
+                          <p className={`text-sm font-bold ${capper.netUnits >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                            {capper.netUnits >= 0 ? '+' : ''}{capper.netUnits.toFixed(2)}u
+                          </p>
+                        </div>
+
+                        <div className="bg-slate-800/50 rounded-lg p-2">
+                          <p className="text-[10px] text-slate-500 uppercase font-semibold mb-0.5">ROI</p>
+                          <p className={`text-sm font-bold ${capper.roi >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                            {capper.roi >= 0 ? '+' : ''}{capper.roi.toFixed(1)}%
+                          </p>
+                        </div>
+
+                        <div className="bg-slate-800/50 rounded-lg p-2">
+                          <p className="text-[10px] text-slate-500 uppercase font-semibold mb-0.5">Picks</p>
+                          <p className="text-sm font-bold text-cyan-400">
+                            {capper.totalPicks}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+
+                    {/* View Picks Button */}
+                    <Link href={capper.type === 'system' ? `/?capper=${capper.id}` : `/profile/${capper.id}`} target="_blank">
+                      <Button
+                        size="sm"
+                        className={`bg-gradient-to-r ${capperColor} hover:opacity-90 text-white font-bold shadow-lg whitespace-nowrap`}
+                      >
+                        <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                        View Picks
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
               )
             })}
           </div>
@@ -385,43 +381,39 @@ export default function LeaderboardPage() {
 
         {/* Stats Summary */}
         {!loading && leaderboard.length > 0 && (
-          <Card className="glass-effect border-purple-500/30">
-            <CardHeader>
-              <CardTitle className="text-xl text-purple-400 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5" />
-                Overall Statistics
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-                <div>
-                  <p className="text-gray-400 text-sm mb-1">Total Picks</p>
-                  <p className="text-3xl font-bold text-white">
-                    {leaderboard.reduce((sum, c) => sum + c.totalPicks, 0)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-gray-400 text-sm mb-1">Combined Units</p>
-                  <p className={`text-3xl font-bold ${leaderboard.reduce((sum, c) => sum + c.netUnits, 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {leaderboard.reduce((sum, c) => sum + c.netUnits, 0) >= 0 ? '+' : ''}
-                    {leaderboard.reduce((sum, c) => sum + c.netUnits, 0).toFixed(2)}u
-                  </p>
-                </div>
-                <div>
-                  <p className="text-gray-400 text-sm mb-1">Best Win Rate</p>
-                  <p className="text-3xl font-bold text-green-400">
-                    {Math.max(...leaderboard.map(c => c.winRate)).toFixed(1)}%
-                  </p>
-                </div>
-                <div>
-                  <p className="text-gray-400 text-sm mb-1">Best ROI</p>
-                  <p className="text-3xl font-bold text-blue-400">
-                    {Math.max(...leaderboard.map(c => c.roi)).toFixed(1)}%
-                  </p>
-                </div>
+          <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6 shadow-xl">
+            <div className="flex items-center gap-2 mb-6">
+              <TrendingUp className="w-6 h-6 text-cyan-400" />
+              <h2 className="text-2xl font-bold text-white">Overall Statistics</h2>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-slate-800/50 rounded-xl p-4 text-center">
+                <p className="text-slate-400 text-xs uppercase font-semibold mb-2">Total Picks</p>
+                <p className="text-3xl font-black text-white">
+                  {leaderboard.reduce((sum, c) => sum + c.totalPicks, 0)}
+                </p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="bg-slate-800/50 rounded-xl p-4 text-center">
+                <p className="text-slate-400 text-xs uppercase font-semibold mb-2">Combined Units</p>
+                <p className={`text-3xl font-black ${leaderboard.reduce((sum, c) => sum + c.netUnits, 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {leaderboard.reduce((sum, c) => sum + c.netUnits, 0) >= 0 ? '+' : ''}
+                  {leaderboard.reduce((sum, c) => sum + c.netUnits, 0).toFixed(2)}u
+                </p>
+              </div>
+              <div className="bg-slate-800/50 rounded-xl p-4 text-center">
+                <p className="text-slate-400 text-xs uppercase font-semibold mb-2">Best Win Rate</p>
+                <p className="text-3xl font-black text-green-400">
+                  {Math.max(...leaderboard.map(c => c.winRate)).toFixed(1)}%
+                </p>
+              </div>
+              <div className="bg-slate-800/50 rounded-xl p-4 text-center">
+                <p className="text-slate-400 text-xs uppercase font-semibold mb-2">Best ROI</p>
+                <p className="text-3xl font-black text-green-400">
+                  +{Math.max(...leaderboard.map(c => c.roi)).toFixed(1)}%
+                </p>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
