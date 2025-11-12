@@ -122,6 +122,43 @@ export function TerritoryMap() {
         }
       }
     })
+
+    // Add country boundaries source for Mexico/Canada overlay
+    if (!map.getSource('country-boundaries')) {
+      map.addSource('country-boundaries', {
+        type: 'vector',
+        url: 'mapbox://mapbox.country-boundaries-v1'
+      })
+    }
+
+    // Add gray overlay for Mexico and Canada to de-emphasize them
+    // This keeps focus on the United States where all NBA teams are located
+    if (!map.getLayer('mexico-canada-overlay')) {
+      // Worldview filter for US perspective (avoids disputed border overlaps)
+      const worldviewFilter = [
+        'all',
+        ['==', ['get', 'disputed'], 'false'],
+        [
+          'any',
+          ['==', 'all', ['get', 'worldview']],
+          ['in', 'US', ['get', 'worldview']]
+        ],
+        // Filter to only show Mexico (MX) and Canada (CA)
+        ['in', ['get', 'iso_3166_1'], ['literal', ['MX', 'CA']]]
+      ]
+
+      map.addLayer({
+        id: 'mexico-canada-overlay',
+        type: 'fill',
+        source: 'country-boundaries',
+        'source-layer': 'country_boundaries',
+        paint: {
+          'fill-color': '#2a2a2a', // Dark gray overlay
+          'fill-opacity': 0.5 // Semi-transparent to maintain subtle effect
+        },
+        filter: worldviewFilter
+      })
+    }
   }, [])
 
   // Fetch territory data from API
