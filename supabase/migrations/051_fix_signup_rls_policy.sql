@@ -12,9 +12,10 @@
 DROP POLICY IF EXISTS "Users can insert own profile" ON profiles;
 
 -- Recreate with NULL check to allow trigger inserts during signup
+-- CRITICAL: Remove "TO authenticated" so policy applies to ALL roles (including postgres/service role)
+-- The trigger runs as postgres (SECURITY DEFINER), not as authenticated role
 CREATE POLICY "Users can insert own profile" ON profiles
   FOR INSERT
-  TO authenticated
   WITH CHECK (
     auth.uid() = id           -- Users can insert their own profile
     OR auth.uid() IS NULL     -- Trigger can insert during signup when user not authenticated yet
