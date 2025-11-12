@@ -77,12 +77,13 @@ const NBA_TEAMS = [
 export default function LeaderboardPage() {
   const [timeframe, setTimeframe] = useState<'7d' | '30d' | 'all'>('all')
   const [teamFilter, setTeamFilter] = useState<string>('all')
+  const [betTypeFilter, setBetTypeFilter] = useState<'all' | 'total' | 'spread'>('all')
   const [leaderboard, setLeaderboard] = useState<CapperStats[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetchLeaderboard()
-  }, [timeframe, teamFilter])
+  }, [timeframe, teamFilter, betTypeFilter])
 
   const fetchLeaderboard = async () => {
     setLoading(true)
@@ -90,6 +91,9 @@ export default function LeaderboardPage() {
       const params = new URLSearchParams({ period: timeframe })
       if (teamFilter !== 'all') {
         params.append('team', teamFilter)
+      }
+      if (betTypeFilter !== 'all') {
+        params.append('bet_type', betTypeFilter)
       }
       const response = await fetch(`/api/leaderboard?${params.toString()}`)
       const data = await response.json()
@@ -161,7 +165,7 @@ export default function LeaderboardPage() {
         {/* Filters */}
         <Card className="glass-effect border-yellow-500/30">
           <CardContent className="pt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Timeframe Selector */}
               <div className="flex items-center justify-center gap-4">
                 <span className="text-gray-400 font-semibold">Timeframe:</span>
@@ -204,6 +208,34 @@ export default function LeaderboardPage() {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              {/* Bet Type Filter */}
+              <div className="flex items-center justify-center gap-4">
+                <span className="text-gray-400 font-semibold">Bet Type:</span>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => setBetTypeFilter('all')}
+                    variant={betTypeFilter === 'all' ? 'default' : 'outline'}
+                    className={betTypeFilter === 'all' ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : ''}
+                  >
+                    All
+                  </Button>
+                  <Button
+                    onClick={() => setBetTypeFilter('total')}
+                    variant={betTypeFilter === 'total' ? 'default' : 'outline'}
+                    className={betTypeFilter === 'total' ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : ''}
+                  >
+                    Total
+                  </Button>
+                  <Button
+                    onClick={() => setBetTypeFilter('spread')}
+                    variant={betTypeFilter === 'spread' ? 'default' : 'outline'}
+                    className={betTypeFilter === 'spread' ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : ''}
+                  >
+                    Spread
+                  </Button>
+                </div>
               </div>
             </div>
           </CardContent>

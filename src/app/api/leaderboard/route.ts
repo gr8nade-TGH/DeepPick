@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = request.nextUrl
     const period = searchParams.get('period') || 'all'
     const teamFilter = searchParams.get('team') || null // Team abbreviation (e.g., 'LAL')
+    const betTypeFilter = searchParams.get('bet_type') || null // Bet type (e.g., 'total', 'spread')
 
     const admin = getSupabaseAdmin()
 
@@ -31,10 +32,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch all graded picks (with optional date filter)
-    // Need to fetch game_snapshot to filter by team
+    // Need to fetch game_snapshot to filter by team, and pick_type to filter by bet type
     let picksQuery = admin
       .from('picks')
-      .select('capper, user_id, status, units, net_units, is_system_pick, game_snapshot')
+      .select('capper, user_id, status, units, net_units, is_system_pick, game_snapshot, pick_type')
       .in('status', ['won', 'lost', 'push'])
 
     if (dateFilter) {
@@ -54,12 +55,25 @@ export async function GET(request: NextRequest) {
     // Filter picks by team if team filter is provided
     let picks = allPicks
     if (teamFilter) {
-      picks = allPicks.filter(pick => {
+      console.log(`[Leaderboard] Filtering by team: ${teamFilter}`)
+      console.log(`[Leaderboard] Total picks before team filter: ${allPicks.length}`)
+      picks = picks.filter(pick => {
         const homeTeam = pick.game_snapshot?.home_team?.abbreviation
         const awayTeam = pick.game_snapshot?.away_team?.abbreviation
         // Include pick if either home or away team matches the filter
         return homeTeam === teamFilter || awayTeam === teamFilter
       })
+      console.log(`[Leaderboard] Total picks after team filter: ${picks.length}`)
+    }
+
+    // Filter picks by bet type if bet type filter is provided
+    if (betTypeFilter) {
+      console.log(`[Leaderboard] Filtering by bet type: ${betTypeFilter}`)
+      console.log(`[Leaderboard] Total picks before bet type filter: ${picks.length}`)
+      picks = picks.filter(pick => {
+        return pick.pick_type === betTypeFilter
+      })
+      console.log(`[Leaderboard] Total picks after bet type filter: ${picks.length}`)
     }
 
     // Fetch all user profiles (to get roles and filter FREE users)
