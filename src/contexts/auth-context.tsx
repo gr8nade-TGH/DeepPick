@@ -107,9 +107,13 @@ export function AuthProvider({
     let mounted = true
 
     // Profile is already provided from server, no need to fetch
-    // Just set loading to false if we have initial data
+    // Set loading to false immediately since we have initial state from server
     if (initialUser && initialProfile) {
       console.log('[AuthContext] Using server-provided profile, stopping loading')
+      setLoading(false)
+    } else if (!initialUser) {
+      // No user from server, we're not loading - show login/signup buttons
+      console.log('[AuthContext] No initial user from server, stopping loading')
       setLoading(false)
     }
 
