@@ -11,6 +11,7 @@ import { NavBar } from '@/components/navigation/nav-bar'
 import { createClient } from '@/lib/supabase/server'
 
 // Force dynamic rendering - don't cache this layout with user data
+// This prevents user sessions from being cached and served to other users
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
