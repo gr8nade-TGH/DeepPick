@@ -8,6 +8,7 @@ import { BettingSlipProvider } from '@/contexts/betting-slip-context'
 import { AuthProvider } from '@/contexts/auth-context'
 import { EmailVerificationBanner } from '@/components/auth/email-verification-banner'
 import { NavBar } from '@/components/navigation/nav-bar'
+import { createClient } from '@/lib/supabase/server'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -54,16 +55,20 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  // Get initial user state from server
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
   return (
     <html lang="en" className="dark">
       <body className={inter.className}>
         <Providers>
-          <AuthProvider>
+          <AuthProvider initialUser={user}>
             <BettingSlipProvider>
               <EmailVerificationBanner />
               <NavBar />

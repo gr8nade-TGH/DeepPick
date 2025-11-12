@@ -36,15 +36,22 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
+export function AuthProvider({
+  children,
+  initialUser = null
+}: {
+  children: ReactNode
+  initialUser?: User | null
+}) {
+  const [user, setUser] = useState<User | null>(initialUser)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [session, setSession] = useState<Session | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!initialUser) // If we have initial user, we're not loading
 
   // Create Supabase client in the browser (not at module load time)
   const supabase = useMemo(() => {
     console.log('[AuthContext] Creating Supabase client in browser...')
+    console.log('[AuthContext] Initial user from server:', !!initialUser, initialUser?.id)
     return createClient()
   }, [])
 
@@ -93,22 +100,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Initialize auth state
   useEffect(() => {
-    console.log('[AuthContext] Initializing - FINAL FIX: Skip getSession entirely, use ONLY listener + immediate stop loading')
+    console.log('[AuthContext] Initializing with server-provided initial user')
     let mounted = true
-    let authInitialized = false
 
-    // Set up auth state change listener - this should fire immediately
-    console.log('[AuthContext] Setting up onAuthStateChange listener...')
+    // If we have an initial user from the server, fetch their profile
+    if (initialUser) {
+      console.log('[AuthContext] Fetching profile for initial user:', initialUser.id)
+      fetchProfile(initialUser.id).then(profileData => {
+        if (mounted) {
+          setProfile(profileData)
+          setLoading(false)
+        }
+      })
+    }
+
+    // Set up auth state change listener for future changes (login, logout, etc.)
+    console.log('[AuthContext] Setting up onAuthStateChange listener for auth changes...')
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       if (!mounted) return
 
       console.log('[AuthContext] Auth event:', event, 'User:', !!newSession?.user, newSession?.user?.id)
-
-      // Mark as initialized on first event
-      if (!authInitialized) {
-        authInitialized = true
-        console.log('[AuthContext] First auth event received, auth initialized')
-      }
 
       setSession(newSession)
       setUser(newSession?.user ?? null)
@@ -121,7 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setLoading(false)
         }
       } else {
-        console.log('[AuthContext] No user, clearing profile and stopping loading')
+        console.log('[AuthContext] No user, clearing profile')
         if (mounted) {
           setProfile(null)
           setLoading(false)
@@ -129,22 +140,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     })
 
-    // CRITICAL: Stop loading immediately if no auth event fires within 100ms
-    // This ensures buttons appear even if the listener never fires
-    const immediateTimeout = setTimeout(() => {
-      if (!authInitialized && mounted) {
-        console.log('[AuthContext] No auth event after 100ms - stopping loading to show buttons')
-        setLoading(false)
-      }
-    }, 100)
-
     return () => {
       console.log('[AuthContext] Cleaning up auth listener')
-      clearTimeout(immediateTimeout)
       mounted = false
       subscription.unsubscribe()
     }
-  }, [supabase])
+  }, [supabase, initialUser])
 
   // Sign in with email/password
   const signIn = async (email: string, password: string) => {
