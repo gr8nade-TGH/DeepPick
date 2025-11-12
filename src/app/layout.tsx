@@ -10,6 +10,10 @@ import { EmailVerificationBanner } from '@/components/auth/email-verification-ba
 import { NavBar } from '@/components/navigation/nav-bar'
 import { createClient } from '@/lib/supabase/server'
 
+// Force dynamic rendering - don't cache this layout with user data
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
