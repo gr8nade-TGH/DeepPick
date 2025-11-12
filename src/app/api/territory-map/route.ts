@@ -365,7 +365,7 @@ export async function GET() {
                 homeTeam,
                 awayTeam,
                 gameTime: gameTime || '',
-                status: gameStatus
+                status: gameStatus || 'scheduled'
               })
             }
           }
