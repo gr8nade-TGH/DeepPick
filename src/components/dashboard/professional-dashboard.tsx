@@ -22,6 +22,8 @@ import {
 import { PickInsightModal } from '@/components/dashboard/pick-insight-modal'
 import Link from 'next/link'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
+import { useAuth } from '@/contexts/auth-context'
+import { Lock } from 'lucide-react'
 
 interface Pick {
   id: string
@@ -76,6 +78,7 @@ interface ChartDataPoint {
 }
 
 export function ProfessionalDashboard() {
+  const { user } = useAuth()
   const [todaysPicks, setTodaysPicks] = useState<Pick[]>([])
   const [topCappers, setTopCappers] = useState<Capper[]>([])
   const [recentActivity, setRecentActivity] = useState<Pick[]>([])
@@ -381,7 +384,7 @@ export function ProfessionalDashboard() {
                 </div>
               </CardHeader>
 
-              <CardContent className="px-3 py-2 space-y-2 flex-1 overflow-y-auto">
+              <CardContent className="px-3 py-2 space-y-3 flex-1 overflow-y-auto">
                 {todaysPicks.length === 0 ? (
                   <div className="h-full flex items-center justify-center">
                     <div className="text-center">
@@ -390,7 +393,7 @@ export function ProfessionalDashboard() {
                       <p className="text-xs text-slate-600 mt-1">Check back later for today's elite picks</p>
                     </div>
                   </div>
-                ) : todaysPicks.slice(0, 5).map((pick) => {
+                ) : todaysPicks.slice(0, 5).map((pick, index) => {
                   const confidenceBadge = getConfidenceBadge(pick.confidence)
                   const gameStatus = getGameStatus(pick)
                   const homeTeam = pick.game_snapshot?.home_team
@@ -400,82 +403,108 @@ export function ProfessionalDashboard() {
                   const boldPredictions = boldPredictionsMap.get(boldPredictionsKey)
                   const isExpanded = expandedPicks.has(pick.id)
                   const hasPredictions = boldPredictions && boldPredictions.predictions && boldPredictions.predictions.length > 0
+                  const isLocked = !user && index >= 2 // Lock picks 3+ for non-authenticated users
 
                   return (
                     <div
                       key={pick.id}
-                      className="bg-slate-800/30 border border-slate-700/50 hover:border-blue-500/50 rounded-lg px-3 py-2.5 transition-all"
+                      className={`relative rounded-xl transition-all ${isLocked
+                        ? 'bg-slate-900/80 border-2 border-slate-700/50'
+                        : 'bg-gradient-to-br from-slate-800/90 to-slate-900/90 border-2 border-cyan-500/30 hover:border-cyan-400/50 shadow-lg hover:shadow-cyan-500/20'
+                        }`}
                     >
+                      {/* Locked Overlay */}
+                      {isLocked && (
+                        <div className="absolute inset-0 z-10 bg-slate-900/95 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center">
+                          <div className="bg-gradient-to-br from-cyan-500/20 to-blue-500/20 p-4 rounded-full mb-3 border border-cyan-500/30">
+                            <Lock className="h-8 w-8 text-cyan-400" />
+                          </div>
+                          <h3 className="text-lg font-bold text-white mb-2">Premium Pick</h3>
+                          <p className="text-sm text-slate-400 mb-4 text-center px-4">
+                            Sign up to unlock all elite picks
+                          </p>
+                          <Link href="/signup">
+                            <Button className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold px-6">
+                              Sign Up Free
+                            </Button>
+                          </Link>
+                        </div>
+                      )}
+
                       {/* Main Pick Card - Clickable */}
                       <div
-                        className="cursor-pointer group"
+                        className={`cursor-pointer group p-5 ${isLocked ? 'blur-sm' : ''}`}
                         onClick={() => {
-                          setSelectedPick(pick)
-                          setShowInsight(true)
+                          if (!isLocked) {
+                            setSelectedPick(pick)
+                            setShowInsight(true)
+                          }
                         }}
                       >
-                        {/* Top Row: Badges */}
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            {/* Capper Badge - Most Prominent */}
+                        {/* Top Row: Capper & Confidence - PROMINENT */}
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-2">
+                            {/* Capper Badge - LARGE & BOLD */}
                             {(() => {
                               const capperBadge = getCapperBadge(pick.capper || 'DeepPick')
                               return (
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${capperBadge.gradient} ${capperBadge.text} uppercase tracking-wide`}>
+                                <span className={`px-3 py-1.5 rounded-lg text-sm font-black ${capperBadge.gradient} ${capperBadge.text} uppercase tracking-wider shadow-lg`}>
                                   {pick.capper || 'DeepPick'}
                                 </span>
                               )
                             })()}
-                            <Badge className={`${confidenceBadge.color} text-white text-[10px] px-1.5 py-0.5 font-mono`}>
+                            {/* Confidence Badge - LARGE */}
+                            <Badge className={`${confidenceBadge.color} text-white text-sm px-3 py-1.5 font-bold shadow-lg`}>
                               {pick.confidence?.toFixed(1)} / 10
                             </Badge>
-                            <Badge className={`${gameStatus.color} text-[9px] px-1.5 py-0.5 font-semibold`}>
-                              {gameStatus.icon} {gameStatus.text}
-                            </Badge>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-slate-600 font-semibold">
-                              {pick.pick_type?.toUpperCase()}
-                            </Badge>
-                            <div className="text-lg font-bold text-emerald-400">
-                              {pick.units}U
-                            </div>
+                          {/* Units - VERY PROMINENT */}
+                          <div className="text-3xl font-black bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">
+                            {pick.units}U
                           </div>
                         </div>
 
-                        {/* Middle: Matchup and Selection */}
-                        <div className="mb-2">
-                          <div className="text-[11px] text-slate-400 mb-1 font-medium">
+                        {/* Middle: THE PICK - HERO SECTION */}
+                        <div className="mb-4 bg-slate-800/50 rounded-lg p-4 border border-slate-700/50">
+                          <div className="text-xs text-slate-400 mb-2 font-semibold uppercase tracking-wide">
                             {matchup}
                           </div>
-                          <div className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors">
+                          <div className="text-2xl font-black text-white group-hover:text-cyan-400 transition-colors mb-2">
                             {pick.selection}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs px-2 py-1 border-slate-600 font-bold">
+                              {pick.pick_type?.toUpperCase()}
+                            </Badge>
+                            <Badge className={`${gameStatus.color} text-xs px-2 py-1 font-semibold`}>
+                              {gameStatus.icon} {gameStatus.text}
+                            </Badge>
                           </div>
                         </div>
 
                         {/* Bottom: Date and Arrow */}
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
-                            <Clock className="h-3 w-3" />
+                          <div className="flex items-center gap-2 text-xs text-slate-400">
+                            <Clock className="h-4 w-4" />
                             {new Date(pick.game_snapshot?.game_date || pick.created_at).toLocaleDateString('en-US', {
                               month: 'short',
                               day: 'numeric',
                               year: 'numeric'
                             })}
                           </div>
-                          <ChevronRight className="h-4 w-4 text-slate-600 group-hover:text-blue-400 transition-colors" />
+                          <ChevronRight className="h-5 w-5 text-slate-600 group-hover:text-cyan-400 transition-colors" />
                         </div>
                       </div>
 
                       {/* Bold Predictions Toggle Button */}
-                      {hasPredictions && (
-                        <div className="mt-2 pt-2 border-t border-slate-700/50">
+                      {hasPredictions && !isLocked && (
+                        <div className="mt-2 pt-2 border-t border-slate-700/50 px-5 pb-2">
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
                               togglePickExpansion(pick.id)
                             }}
-                            className="w-full flex items-center justify-between text-[10px] text-purple-400 hover:text-purple-300 transition-colors"
+                            className="w-full flex items-center justify-between text-xs text-purple-400 hover:text-purple-300 transition-colors"
                           >
                             <span className="flex items-center gap-1">
                               <span className="font-semibold">🎯 Bold Player Predictions</span>
@@ -487,8 +516,8 @@ export function ProfessionalDashboard() {
                       )}
 
                       {/* Expanded Bold Predictions */}
-                      {isExpanded && hasPredictions && (
-                        <div className="mt-2 pt-2 border-t border-slate-700/50 space-y-2">
+                      {isExpanded && hasPredictions && !isLocked && (
+                        <div className="px-5 pb-3 space-y-2">
                           {/* Summary */}
                           {boldPredictions.summary && (
                             <div className="bg-gradient-to-r from-purple-900/20 to-pink-900/20 border border-purple-500/30 rounded p-2">
