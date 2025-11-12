@@ -69,14 +69,13 @@ export function TerritoryMap() {
         }
       }
 
-      // Style land/background with parchment tone for US/Canada, gray for others
+      // Style land with parchment tone - use Mapbox's built-in land layer
       if (layerId.includes('land') || layerId === 'background') {
         if (layer.type === 'background') {
-          map.setPaintProperty(layerId, 'background-color', '#D0D0D0')
+          map.setPaintProperty(layerId, 'background-color', '#F4E8D0')
         } else if (layer.type === 'fill') {
-          // Gray out all land by default
-          map.setPaintProperty(layerId, 'fill-color', '#D0D0D0')
-          map.setPaintProperty(layerId, 'fill-opacity', 0.4)
+          map.setPaintProperty(layerId, 'fill-color', '#F4E8D0')
+          map.setPaintProperty(layerId, 'fill-opacity', 0.9)
         }
       }
 
@@ -98,42 +97,6 @@ export function TerritoryMap() {
         }
       }
     })
-
-    // Add a custom layer to highlight US and Canada with parchment color
-    if (!map.getSource('us-canada-highlight')) {
-      map.addSource('us-canada-highlight', {
-        type: 'geojson',
-        data: {
-          type: 'FeatureCollection',
-          features: [
-            {
-              type: 'Feature',
-              properties: {},
-              geometry: {
-                type: 'Polygon',
-                coordinates: [[
-                  [-125, 24], // Southwest corner
-                  [-125, 50], // Northwest corner
-                  [-66, 50],  // Northeast corner
-                  [-66, 24],  // Southeast corner
-                  [-125, 24]  // Close polygon
-                ]]
-              }
-            }
-          ]
-        }
-      })
-
-      map.addLayer({
-        id: 'us-canada-highlight-layer',
-        type: 'fill',
-        source: 'us-canada-highlight',
-        paint: {
-          'fill-color': '#F4E8D0',
-          'fill-opacity': 0.9
-        }
-      }, 'waterway-label') // Add before labels
-    }
   }, [])
 
   // Fetch real territory data from API
@@ -250,6 +213,10 @@ export function TerritoryMap() {
         }}
         minZoom={3.5}
         maxZoom={6}
+        maxBounds={[
+          [-130, 20],  // Southwest corner [longitude, latitude]
+          [-60, 55]    // Northeast corner [longitude, latitude]
+        ]}
         style={{ width: '100%', height: '100%' }}
         attributionControl={false}
         logoPosition="bottom-right"
@@ -282,8 +249,8 @@ export function TerritoryMap() {
       {/* Legend */}
       <MapLegend />
 
-      {/* Stats Summary - ENHANCED */}
-      <div className="absolute bottom-4 left-4 bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-amber-500 rounded-lg p-4 shadow-2xl">
+      {/* Stats Summary - ENHANCED WITH SCROLLING */}
+      <div className="absolute bottom-4 left-4 bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-amber-500 rounded-lg p-4 shadow-2xl max-h-[calc(100vh-8rem)] overflow-y-auto">
         <h3 className="text-sm font-bold text-amber-400 mb-3 border-b border-amber-500/30 pb-2 flex items-center gap-2">
           <span>📊</span>
           <span>Territory Stats</span>

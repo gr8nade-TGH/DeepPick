@@ -64,24 +64,24 @@ export function TeamMarker({ team, territory, onClick, onHover }: TeamMarkerProp
       anchor="center"
     >
       <div
-        className="relative cursor-pointer transition-all duration-300 hover:scale-125 hover:z-50"
+        className="relative cursor-pointer transition-all duration-200 hover:scale-110 hover:z-50"
         onClick={onClick}
         onMouseEnter={() => onHover(team.abbr)}
         onMouseLeave={() => onHover(null)}
       >
-        {/* Territory Marker - ENHANCED */}
+        {/* Territory Marker - COMPACT BADGE DESIGN */}
         <div
           className={`
             relative
-            w-24 h-24
+            w-14 h-14
             rounded-full
             flex items-center justify-center
-            transition-all duration-300
+            transition-all duration-200
             ${isUnclaimed
               ? 'bg-gradient-to-br from-slate-400 to-slate-500 border-dashed'
-              : 'bg-gradient-to-br from-white to-slate-50 shadow-2xl'
+              : 'bg-gradient-to-br from-white to-slate-100 shadow-lg'
             }
-            ${isActive ? 'animate-pulse-glow ring-4 ring-amber-400/50' : ''}
+            ${isActive ? 'ring-2 ring-amber-400/70' : ''}
             ${getTierGlow()}
           `}
           style={{
@@ -93,106 +93,83 @@ export function TeamMarker({ team, territory, onClick, onHover }: TeamMarkerProp
           {/* Inner ring for claimed territories with team color accent */}
           {!isUnclaimed && (
             <div
-              className="absolute inset-1 rounded-full opacity-20"
+              className="absolute inset-1 rounded-full opacity-15"
               style={{
                 background: `linear-gradient(135deg, ${teamColors.primary}, ${teamColors.secondary})`
               }}
             ></div>
           )}
 
-          {/* Team Logo */}
-          {!isUnclaimed ? (
-            <div className="relative w-16 h-16 z-10">
-              <Image
-                src={`/nba_territory_logos/${team.abbr}.png`}
-                alt={team.abbr}
-                fill
-                className="object-contain p-1 drop-shadow-md"
-              />
-            </div>
-          ) : (
-            <span className="text-base font-bold text-slate-700 z-10">
-              {team.abbr}
-            </span>
-          )}
+          {/* Team Acronym - Always visible */}
+          <span
+            className={`text-sm font-black z-10 tracking-tight ${isUnclaimed ? 'text-slate-700' : 'text-gray-900'
+              }`}
+            style={{
+              textShadow: isUnclaimed ? 'none' : '0 1px 2px rgba(0,0,0,0.1)'
+            }}
+          >
+            {team.abbr}
+          </span>
 
-          {/* Crown Icon for Dominant Territories - ENHANCED */}
+          {/* Crown Icon for Dominant Territories */}
           {territory.tier === 'dominant' && !isUnclaimed && (
-            <div className="absolute -top-3 -right-3 text-2xl animate-bounce-slow drop-shadow-lg">
+            <div className="absolute -top-2 -right-2 text-lg animate-bounce-slow drop-shadow-lg">
               👑
             </div>
           )}
 
           {/* Shield Icon for Strong Territories */}
           {territory.tier === 'strong' && !isUnclaimed && (
-            <div className="absolute -top-2 -right-2 text-lg drop-shadow-md">
+            <div className="absolute -top-1.5 -right-1.5 text-sm drop-shadow-md">
               🛡️
             </div>
           )}
 
-          {/* LIVE Badge and Crossed Swords for Active Picks */}
+          {/* LIVE Badge for Active Picks */}
           {isActive && (
-            <>
-              {/* Crossed Swords Animation - Above LIVE badge */}
-              <div className="absolute -top-14 left-1/2 transform -translate-x-1/2 flex items-center justify-center">
-                <div className="relative w-8 h-8">
-                  {/* Left Sword */}
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 animate-sword-clash">
-                    <span className="text-lg">⚔️</span>
-                  </div>
-                  {/* Right Sword */}
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 animate-sword-clash-reverse">
-                    <span className="text-lg">⚔️</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                <span className="px-2 py-0.5 bg-red-600 text-white text-xs font-bold rounded-full animate-pulse">
-                  LIVE
-                </span>
-              </div>
-            </>
+            <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
+              <span className="px-1.5 py-0.5 bg-red-600 text-white text-[9px] font-bold rounded-full animate-pulse shadow-lg">
+                LIVE
+              </span>
+            </div>
           )}
         </div>
 
-        {/* Capper Info (for claimed/active territories) - REDESIGNED */}
+        {/* Capper Info (for claimed/active territories) - COMPACT */}
         {!isUnclaimed && territory.capperUsername && (
-          <div className="absolute -bottom-14 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+          <div className="absolute -bottom-11 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
             {/* Capper Badge */}
-            <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-3 py-1.5 rounded-lg shadow-lg border-2 border-amber-500/50">
+            <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-2 py-1 rounded-md shadow-lg border border-amber-500/50">
               {/* Capper Name */}
-              <div className="text-xs font-bold text-amber-400 tracking-wide mb-0.5">
+              <div className="text-[10px] font-bold text-amber-400 tracking-wide mb-0.5">
                 {territory.capperUsername}
               </div>
 
               {/* Stats Row */}
-              <div className="flex items-center justify-center gap-2 text-[10px]">
+              <div className="flex items-center justify-center gap-1.5 text-[9px]">
                 {/* Net Units */}
-                <div className="flex items-center gap-0.5">
-                  <span className="text-emerald-400 font-bold">
-                    +{territory.units?.toFixed(1)}u
-                  </span>
-                </div>
+                <span className="text-emerald-400 font-bold">
+                  +{territory.units?.toFixed(1)}u
+                </span>
 
                 {/* Separator */}
                 <span className="text-slate-600">•</span>
 
                 {/* W-L Record */}
-                <div className="text-slate-300 font-medium">
+                <span className="text-slate-300 font-medium">
                   {territory.wins}-{territory.losses}
                   {territory.pushes ? `-${territory.pushes}` : ''}
-                </div>
+                </span>
               </div>
             </div>
           </div>
         )}
 
-        {/* Unclaimed Label - REDESIGNED */}
+        {/* Unclaimed Label - COMPACT */}
         {isUnclaimed && (
-          <div className="absolute -bottom-10 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
-            <div className="bg-slate-700/80 px-2.5 py-1 rounded-md border border-slate-600">
-              <span className="text-[10px] text-slate-300 font-semibold tracking-wide">UNCLAIMED</span>
+          <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+            <div className="bg-slate-700/80 px-2 py-0.5 rounded-md border border-slate-600">
+              <span className="text-[9px] text-slate-300 font-semibold tracking-wide">UNCLAIMED</span>
             </div>
           </div>
         )}
