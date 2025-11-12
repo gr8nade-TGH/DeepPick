@@ -65,11 +65,9 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  // Get initial user state from server using getUser()
-  // Note: We use getUser() here instead of getClaims() because we need the full User object
-  // getUser() makes a network request but is acceptable in the layout since it runs on the server
+  // Get initial user state from server
   const supabase = createClient()
-  const { data: { user }, error } = await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
 
   // Get initial profile from server if user exists
   let initialProfile = null

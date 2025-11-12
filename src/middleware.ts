@@ -54,22 +54,18 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Get user session using getClaims() for security
-  // getClaims() validates the JWT signature, preventing session spoofing
-  const { data: claims, error } = await supabase.auth.getClaims()
-
-  // Extract user ID from JWT claims (sub = subject = user ID)
-  const userId = claims?.sub ?? null
+  // Get user session
+  const { data: { user } } = await supabase.auth.getUser()
 
   // Get user profile with role
   let userRole: string | null = null
-  if (userId) {
+  if (user) {
     const { data: profile } = await supabase
       .from('profiles')
       .select('role')
-      .eq('id', userId)
+      .eq('id', user.id)
       .single()
-
+    
     userRole = profile?.role || null
   }
 
@@ -88,21 +84,21 @@ export async function middleware(request: NextRequest) {
   const isAdminRoute = adminRoutes.some(route => path.startsWith(route))
 
   // Redirect to login if auth required and not logged in
-  if (isAuthRequired && !userId) {
+  if (isAuthRequired && !user) {
     const redirectUrl = new URL('/login', request.url)
     redirectUrl.searchParams.set('redirect', path)
     return NextResponse.redirect(redirectUrl)
   }
 
   // Redirect to upgrade page if capper route and user is FREE
-  if (isCapperRoute && userId && userRole === 'free') {
+  if (isCapperRoute && user && userRole === 'free') {
     const redirectUrl = new URL('/upgrade', request.url)
     redirectUrl.searchParams.set('reason', 'capper_required')
     return NextResponse.redirect(redirectUrl)
   }
 
   // Redirect to home if admin route and user is not ADMIN
-  if (isAdminRoute && userId && userRole !== 'admin') {
+  if (isAdminRoute && user && userRole !== 'admin') {
     return NextResponse.redirect(new URL('/', request.url))
   }
 
