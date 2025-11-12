@@ -9,6 +9,7 @@ import { NBA_TEAM_COORDINATES } from './nba-team-coordinates'
 import { TeamMarker } from './TeamMarker'
 import { MapLegend } from './MapLegend'
 import { MapFiltersPanel } from './MapFiltersPanel'
+import { MatchupSwords } from './MatchupSwords'
 import { MapFilters, MapStats, TerritoryData, ActiveMatchup } from './types'
 import { PickInsightModal } from '@/components/dashboard/pick-insight-modal'
 import { useAuth } from '@/contexts/auth-context'
@@ -299,52 +300,138 @@ export function TerritoryMap() {
         logoPosition="bottom-right"
         onLoad={handleMapLoad}
       >
-        {/* Matchup Lines - Active Battles */}
+        {/* Matchup Lines - Active Battles - ENHANCED VISIBILITY */}
         {activeMatchups.length > 0 && (
-          <Source
-            id="matchup-lines"
-            type="geojson"
-            data={{
-              type: 'FeatureCollection',
-              features: activeMatchups.map(matchup => {
-                const homeCoords = NBA_TEAM_COORDINATES.find(t => t.abbr === matchup.homeTeam)
-                const awayCoords = NBA_TEAM_COORDINATES.find(t => t.abbr === matchup.awayTeam)
+          <>
+            {/* Glow layer for live games */}
+            <Source
+              id="matchup-lines-glow"
+              type="geojson"
+              data={{
+                type: 'FeatureCollection',
+                features: activeMatchups
+                  .filter(m => m.status === 'in_progress' || m.status === 'live' || m.status === 'inprogress')
+                  .map(matchup => {
+                    const homeCoords = NBA_TEAM_COORDINATES.find(t => t.abbr === matchup.homeTeam)
+                    const awayCoords = NBA_TEAM_COORDINATES.find(t => t.abbr === matchup.awayTeam)
 
-                if (!homeCoords || !awayCoords) return null
+                    if (!homeCoords || !awayCoords) return null
 
-                return {
-                  type: 'Feature',
-                  properties: {
-                    gameId: matchup.gameId,
-                    status: matchup.status
-                  },
-                  geometry: {
-                    type: 'LineString',
-                    coordinates: [
-                      [awayCoords.longitude, awayCoords.latitude],
-                      [homeCoords.longitude, homeCoords.latitude]
-                    ]
-                  }
-                }
-              }).filter(Boolean) as any[]
-            }}
-          >
-            <Layer
-              id="matchup-lines-layer"
-              type="line"
-              paint={{
-                'line-color': '#D4AF37', // Medieval gold
-                'line-width': 3,
-                'line-opacity': 0.7,
-                'line-dasharray': [3, 3] // Dashed line for "active battle" effect
+                    return {
+                      type: 'Feature',
+                      properties: {
+                        gameId: matchup.gameId,
+                        status: matchup.status
+                      },
+                      geometry: {
+                        type: 'LineString',
+                        coordinates: [
+                          [awayCoords.longitude, awayCoords.latitude],
+                          [homeCoords.longitude, homeCoords.latitude]
+                        ]
+                      }
+                    }
+                  }).filter(Boolean) as any[]
               }}
-              layout={{
-                'line-cap': 'round',
-                'line-join': 'round'
+            >
+              <Layer
+                id="matchup-lines-glow-layer"
+                type="line"
+                paint={{
+                  'line-color': '#FFD700', // Bright gold glow
+                  'line-width': 8,
+                  'line-opacity': 0.4,
+                  'line-blur': 4
+                }}
+                layout={{
+                  'line-cap': 'round',
+                  'line-join': 'round'
+                }}
+              />
+            </Source>
+
+            {/* Main matchup lines */}
+            <Source
+              id="matchup-lines"
+              type="geojson"
+              data={{
+                type: 'FeatureCollection',
+                features: activeMatchups.map(matchup => {
+                  const homeCoords = NBA_TEAM_COORDINATES.find(t => t.abbr === matchup.homeTeam)
+                  const awayCoords = NBA_TEAM_COORDINATES.find(t => t.abbr === matchup.awayTeam)
+
+                  if (!homeCoords || !awayCoords) return null
+
+                  const isLive = matchup.status === 'in_progress' || matchup.status === 'live' || matchup.status === 'inprogress'
+
+                  return {
+                    type: 'Feature',
+                    properties: {
+                      gameId: matchup.gameId,
+                      status: matchup.status,
+                      isLive
+                    },
+                    geometry: {
+                      type: 'LineString',
+                      coordinates: [
+                        [awayCoords.longitude, awayCoords.latitude],
+                        [homeCoords.longitude, homeCoords.latitude]
+                      ]
+                    }
+                  }
+                }).filter(Boolean) as any[]
+              }}
+            >
+              <Layer
+                id="matchup-lines-layer"
+                type="line"
+                paint={{
+                  'line-color': [
+                    'case',
+                    ['get', 'isLive'],
+                    '#FFD700', // Bright gold for live games
+                    '#FFA500'  // Orange for scheduled games
+                  ],
+                  'line-width': 4,
+                  'line-opacity': 0.9,
+                  'line-dasharray': [4, 4] // Dashed line for "active battle" effect
+                }}
+                layout={{
+                  'line-cap': 'round',
+                  'line-join': 'round'
+                }}
+              />
+            </Source>
+          </>
+        )}
+
+        {/* Sword clash markers at midpoint of each matchup */}
+        {activeMatchups.map(matchup => {
+          const homeCoords = NBA_TEAM_COORDINATES.find(t => t.abbr === matchup.homeTeam)
+          const awayCoords = NBA_TEAM_COORDINATES.find(t => t.abbr === matchup.awayTeam)
+
+          if (!homeCoords || !awayCoords) return null
+
+          // Calculate midpoint
+          const midLat = (homeCoords.latitude + awayCoords.latitude) / 2
+          const midLng = (homeCoords.longitude + awayCoords.longitude) / 2
+
+          return (
+            <MatchupSwords
+              key={matchup.gameId}
+              latitude={midLat}
+              longitude={midLng}
+              gameId={matchup.gameId}
+              status={matchup.status}
+              homeTeam={matchup.homeTeam}
+              awayTeam={matchup.awayTeam}
+              onClick={() => {
+                // TODO: Navigate to active battle view
+                console.log('[TerritoryMap] Clicked matchup:', matchup)
               }}
             />
-          </Source>
-        )}
+          )
+        })}
 
         {/* Render team markers */}
         {NBA_TEAM_COORDINATES.map((team) => {
