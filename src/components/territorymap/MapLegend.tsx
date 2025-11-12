@@ -2,79 +2,80 @@
 
 export function MapLegend() {
   return (
-    <div className="absolute bottom-4 right-4 bg-[#F4E8D0] border-2 border-[#3E2723] rounded-lg p-4 shadow-lg max-w-xs">
-      <h3 className="text-sm font-bold text-[#3E2723] mb-3 border-b border-[#3E2723] pb-2">
-        🗺️ Territory Legend
+    <div className="absolute bottom-4 right-4 bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-amber-500 rounded-lg p-4 shadow-2xl max-w-xs">
+      <h3 className="text-sm font-bold text-amber-400 mb-3 border-b border-amber-500/30 pb-2 flex items-center gap-2">
+        <span>🗺️</span>
+        <span>Territory Legend</span>
       </h3>
 
       {/* Territory States */}
       <div className="space-y-3 mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gray-300 border-2 border-dashed border-gray-500 flex items-center justify-center">
-            <span className="text-xs font-bold text-gray-500">NYK</span>
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-400 to-slate-500 border-2 border-dashed border-slate-600 flex items-center justify-center">
+            <span className="text-xs font-bold text-slate-700">NYK</span>
           </div>
           <div className="text-xs">
-            <div className="font-semibold text-[#3E2723]">Unclaimed</div>
-            <div className="text-gray-600">No positive units</div>
+            <div className="font-semibold text-slate-200">Unclaimed</div>
+            <div className="text-slate-400">No positive units</div>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-white border-2 border-[#3E2723] flex items-center justify-center">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-white to-slate-50 border-2 border-[#552583] flex items-center justify-center shadow-md">
             <span className="text-xs font-bold text-gray-900">LAL</span>
           </div>
           <div className="text-xs">
-            <div className="font-semibold text-[#3E2723]">Claimed</div>
-            <div className="text-gray-600">Capper has positive units</div>
+            <div className="font-semibold text-slate-200">Claimed</div>
+            <div className="text-slate-400">Capper has positive units</div>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="relative w-10 h-10 rounded-full bg-white border-2 border-[#D4AF37] flex items-center justify-center shadow-[0_0_20px_rgba(255,215,0,0.6)]">
+          <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-white to-slate-50 border-2 border-amber-500 flex items-center justify-center shadow-[0_0_20px_rgba(245,158,11,0.6)] ring-2 ring-amber-400/30">
             <span className="text-xs font-bold text-gray-900">GSW</span>
             <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
-              <span className="px-1.5 py-0.5 bg-red-600 text-white text-[10px] font-bold rounded-full">
+              <span className="px-1.5 py-0.5 bg-red-600 text-white text-[10px] font-bold rounded-full animate-pulse">
                 LIVE
               </span>
             </div>
           </div>
           <div className="text-xs">
-            <div className="font-semibold text-[#3E2723]">Active Pick</div>
-            <div className="text-gray-600">Game today/upcoming</div>
+            <div className="font-semibold text-slate-200">Active Pick</div>
+            <div className="text-slate-400">Game today/upcoming</div>
           </div>
         </div>
       </div>
 
       {/* Territory Tiers */}
-      <div className="border-t border-[#3E2723] pt-3 space-y-2">
-        <div className="text-xs font-semibold text-[#3E2723] mb-2">Territory Strength</div>
+      <div className="border-t border-amber-500/30 pt-3 space-y-2">
+        <div className="text-xs font-semibold text-amber-400 mb-2">Territory Strength</div>
 
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-white border-4 border-[#007A33] flex items-center justify-center relative shadow-md">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-white to-slate-50 border-4 border-[#007A33] flex items-center justify-center relative shadow-lg shadow-amber-500/20">
             <span className="text-[10px] font-bold">BOS</span>
             <div className="absolute -top-1 -right-1 text-sm">👑</div>
           </div>
-          <div className="text-xs text-gray-700">
-            <span className="font-semibold text-amber-700">Dominant:</span> +20u or more
+          <div className="text-xs text-slate-300">
+            <span className="font-semibold text-amber-400">Dominant:</span> +20u or more
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-white border-3 border-[#98002E] flex items-center justify-center relative shadow-md">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-white to-slate-50 border-3 border-[#98002E] flex items-center justify-center relative shadow-md">
             <span className="text-[10px] font-bold">MIA</span>
             <div className="absolute -top-1 -right-1 text-xs">🛡️</div>
           </div>
-          <div className="text-xs text-gray-700">
-            <span className="font-semibold text-blue-700">Strong:</span> +10 to +19.9u
+          <div className="text-xs text-slate-300">
+            <span className="font-semibold text-blue-400">Strong:</span> +10 to +19.9u
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-white border-2 border-[#00538C] flex items-center justify-center shadow-sm">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-white to-slate-50 border-2 border-[#00538C] flex items-center justify-center shadow-sm">
             <span className="text-[10px] font-bold">DAL</span>
           </div>
-          <div className="text-xs text-gray-700">
-            <span className="font-semibold text-green-700">Weak:</span> +0.1 to +9.9u
+          <div className="text-xs text-slate-300">
+            <span className="font-semibold text-emerald-400">Weak:</span> +0.1 to +9.9u
           </div>
         </div>
       </div>

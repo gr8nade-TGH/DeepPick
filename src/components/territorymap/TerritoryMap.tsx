@@ -296,32 +296,42 @@ export function TerritoryMap() {
       {/* Legend */}
       <MapLegend />
 
-      {/* Stats Summary */}
-      <div className="absolute bottom-4 left-4 bg-[#F4E8D0] border-2 border-[#3E2723] rounded-lg p-4 shadow-lg">
-        <h3 className="text-sm font-bold text-[#3E2723] mb-2 border-b border-[#3E2723] pb-2">
-          📊 Territory Stats
+      {/* Stats Summary - ENHANCED */}
+      <div className="absolute bottom-4 left-4 bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-amber-500 rounded-lg p-4 shadow-2xl">
+        <h3 className="text-sm font-bold text-amber-400 mb-3 border-b border-amber-500/30 pb-2 flex items-center gap-2">
+          <span>📊</span>
+          <span>Territory Stats</span>
         </h3>
-        <div className="space-y-1 text-xs mb-3">
-          <div className="flex justify-between gap-4">
-            <span className="text-gray-700">Claimed:</span>
-            <span className="font-bold text-green-600">{stats.claimed}</span>
+        <div className="space-y-2 text-sm mb-4">
+          <div className="flex justify-between gap-6 items-center">
+            <span className="text-slate-400">Claimed:</span>
+            <div className="flex items-center gap-1">
+              <span className="font-bold text-emerald-400 text-base">{stats.claimed}</span>
+              <span className="text-xs text-slate-500">/ 30</span>
+            </div>
           </div>
-          <div className="flex justify-between gap-4">
-            <span className="text-gray-700">Active:</span>
-            <span className="font-bold text-red-600">{stats.active}</span>
+          <div className="flex justify-between gap-6 items-center">
+            <span className="text-slate-400">Active:</span>
+            <div className="flex items-center gap-1">
+              <span className="font-bold text-red-400 text-base">{stats.active}</span>
+              {stats.active > 0 && <span className="text-xs animate-pulse">🔴</span>}
+            </div>
           </div>
-          <div className="flex justify-between gap-4">
-            <span className="text-gray-700">Unclaimed:</span>
-            <span className="font-bold text-gray-500">{stats.unclaimed}</span>
+          <div className="flex justify-between gap-6 items-center">
+            <span className="text-slate-400">Unclaimed:</span>
+            <span className="font-bold text-slate-500 text-base">{stats.unclaimed}</span>
           </div>
         </div>
 
         {/* Battle Bets Link */}
         <Link
           href="/battle-bets"
-          className="block w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white text-center py-2 px-3 rounded-md text-xs font-bold transition-all duration-200 shadow-md hover:shadow-lg border border-red-800"
+          className="block w-full bg-gradient-to-r from-red-600 via-orange-600 to-red-600 hover:from-red-700 hover:via-orange-700 hover:to-red-700 text-white text-center py-2.5 px-4 rounded-lg text-sm font-bold transition-all duration-200 shadow-lg hover:shadow-xl border-2 border-red-800 hover:scale-105"
         >
-          ⚔️ Active Battles
+          <span className="flex items-center justify-center gap-2">
+            <span>⚔️</span>
+            <span>Active Battles</span>
+          </span>
         </Link>
       </div>
 
