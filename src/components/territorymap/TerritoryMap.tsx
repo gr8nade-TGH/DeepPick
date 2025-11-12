@@ -2,15 +2,16 @@
 
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
-import Map from 'react-map-gl/mapbox'
+import Map, { Source, Layer } from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { NBA_TEAM_COORDINATES } from './nba-team-coordinates'
 import { TeamMarker } from './TeamMarker'
 import { MapLegend } from './MapLegend'
 import { MapFiltersPanel } from './MapFiltersPanel'
-import { MapFilters, MapStats, TerritoryData } from './types'
+import { MapFilters, MapStats, TerritoryData, ActiveMatchup } from './types'
 import { PickInsightModal } from '@/components/dashboard/pick-insight-modal'
 import type { MapRef } from 'react-map-gl/mapbox'
+import type { LineLayer } from 'react-map-gl/mapbox'
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || 'pk.eyJ1IjoiZ3I4bmFkZSIsImEiOiJjbWhpcjVuM2IxNTRkMmtwcTM0dHoyc2N4In0.xTuWFyLgmwGbuQKWLOGv4A'
 
@@ -26,6 +27,7 @@ export function TerritoryMap() {
   const [territoryData, setTerritoryData] = useState<TerritoryData[]>([])
   const [loading, setLoading] = useState(true)
   const [pickIdMap, setPickIdMap] = useState<Record<string, string>>({})
+  const [activeMatchups, setActiveMatchups] = useState<ActiveMatchup[]>([])
 
   // Apply medieval/fantasy map styling when map loads
   const handleMapLoad = useCallback(() => {
@@ -53,6 +55,16 @@ export function TerritoryMap() {
 
       // Hide country labels except US and Canada
       if (layerId.includes('country-label')) {
+        map.setLayoutProperty(layerId, 'visibility', 'none')
+      }
+
+      // Hide city/place labels - only show state names
+      if (layerId.includes('place-label') && !layerId.includes('state')) {
+        map.setLayoutProperty(layerId, 'visibility', 'none')
+      }
+
+      // Hide settlement labels (cities, towns)
+      if (layerId.includes('settlement-label') || layerId.includes('settlement-subdivision-label')) {
         map.setLayoutProperty(layerId, 'visibility', 'none')
       }
 
@@ -109,6 +121,7 @@ export function TerritoryMap() {
           const data = await response.json()
           setTerritoryData(data.territories)
           setPickIdMap(data.pickIdMap || {})
+          setActiveMatchups(data.activeMatchups || [])
         } else {
           console.error('[TerritoryMap] Failed to fetch:', response.status, response.statusText)
         }
@@ -222,6 +235,53 @@ export function TerritoryMap() {
         logoPosition="bottom-right"
         onLoad={handleMapLoad}
       >
+        {/* Matchup Lines - Active Battles */}
+        {activeMatchups.length > 0 && (
+          <Source
+            id="matchup-lines"
+            type="geojson"
+            data={{
+              type: 'FeatureCollection',
+              features: activeMatchups.map(matchup => {
+                const homeCoords = NBA_TEAM_COORDINATES.find(t => t.abbr === matchup.homeTeam)
+                const awayCoords = NBA_TEAM_COORDINATES.find(t => t.abbr === matchup.awayTeam)
+
+                if (!homeCoords || !awayCoords) return null
+
+                return {
+                  type: 'Feature',
+                  properties: {
+                    gameId: matchup.gameId,
+                    status: matchup.status
+                  },
+                  geometry: {
+                    type: 'LineString',
+                    coordinates: [
+                      [awayCoords.longitude, awayCoords.latitude],
+                      [homeCoords.longitude, homeCoords.latitude]
+                    ]
+                  }
+                }
+              }).filter(Boolean) as any[]
+            }}
+          >
+            <Layer
+              id="matchup-lines-layer"
+              type="line"
+              paint={{
+                'line-color': '#D4AF37', // Medieval gold
+                'line-width': 2,
+                'line-opacity': 0.4,
+                'line-dasharray': [2, 2] // Dashed line for "active battle" effect
+              }}
+              layout={{
+                'line-cap': 'round',
+                'line-join': 'round'
+              }}
+            />
+          </Source>
+        )}
+
         {/* Render team markers */}
         {NBA_TEAM_COORDINATES.map((team) => {
           const territory = getTerritoryData(team.abbr)

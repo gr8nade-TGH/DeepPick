@@ -225,9 +225,55 @@ export async function GET() {
       territories.push(territoryData)
     }
 
+    // Fetch active matchups (games today that are not complete)
+    const today = new Date().toISOString().split('T')[0]
+    const { data: activeGames, error: gamesError } = await admin
+      .from('games')
+      .select('id, home_team, away_team, game_date, game_time, status, game_start_timestamp')
+      .eq('sport', 'nba')
+      .gte('game_date', today)
+      .not('status', 'in', '(final,complete,completed)')
+      .order('game_start_timestamp', { ascending: true })
+      .limit(50)
+
+    if (gamesError) {
+      console.error('[Territory Map] Error fetching active games:', gamesError)
+    }
+
+    // Transform active games into matchup data
+    const activeMatchups = (activeGames || []).map(game => {
+      let homeTeamAbbr: string | undefined
+      let awayTeamAbbr: string | undefined
+
+      try {
+        if (typeof game.home_team === 'string') {
+          homeTeamAbbr = JSON.parse(game.home_team).abbreviation
+        } else {
+          homeTeamAbbr = game.home_team?.abbreviation
+        }
+
+        if (typeof game.away_team === 'string') {
+          awayTeamAbbr = JSON.parse(game.away_team).abbreviation
+        } else {
+          awayTeamAbbr = game.away_team?.abbreviation
+        }
+      } catch (e) {
+        console.error('[Territory Map] Error parsing team data:', e)
+      }
+
+      return {
+        gameId: game.id,
+        homeTeam: homeTeamAbbr,
+        awayTeam: awayTeamAbbr,
+        gameTime: game.game_start_timestamp || `${game.game_date}T${game.game_time}`,
+        status: game.status
+      }
+    }).filter(m => m.homeTeam && m.awayTeam)
+
     return NextResponse.json({
       territories,
       pickIdMap,
+      activeMatchups,
       timestamp: new Date().toISOString()
     })
 

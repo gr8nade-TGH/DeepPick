@@ -40,3 +40,11 @@ export interface MapStats {
   unclaimed: number
 }
 
+export interface ActiveMatchup {
+  gameId: string
+  homeTeam: string
+  awayTeam: string
+  gameTime: string
+  status: string
+}
+
