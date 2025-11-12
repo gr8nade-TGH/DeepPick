@@ -5,7 +5,6 @@ import Link from 'next/link'
 import Map from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { NBA_TEAM_COORDINATES } from './nba-team-coordinates'
-import { MOCK_TERRITORY_DATA } from './mock-data'
 import { TeamMarker } from './TeamMarker'
 import { MapLegend } from './MapLegend'
 import { MapFiltersPanel } from './MapFiltersPanel'
@@ -24,7 +23,7 @@ export function TerritoryMap() {
     capper: null,
     activePicksOnly: false
   })
-  const [territoryData, setTerritoryData] = useState<TerritoryData[]>(MOCK_TERRITORY_DATA)
+  const [territoryData, setTerritoryData] = useState<TerritoryData[]>([])
   const [loading, setLoading] = useState(true)
   const [pickIdMap, setPickIdMap] = useState<Record<string, string>>({})
 
@@ -183,6 +182,16 @@ export function TerritoryMap() {
       <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10 bg-[#3E2723] text-[#D4AF37] px-6 py-3 rounded-lg shadow-lg border-2 border-[#D4AF37]">
         <h1 className="text-2xl font-bold tracking-wide">🏀 NBA TERRITORY MAP 🗺️</h1>
       </div>
+
+      {/* Loading Overlay */}
+      {loading && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#F4E8D0]/90">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#D4AF37] border-t-transparent mx-auto mb-4"></div>
+            <p className="text-[#3E2723] text-xl font-bold">Loading Territory Data...</p>
+          </div>
+        </div>
+      )}
 
       {/* Map - Medieval/Fantasy gameboard style */}
       <Map
