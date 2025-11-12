@@ -342,7 +342,6 @@ export function TerritoryMap() {
                 'line-cap': 'round',
                 'line-join': 'round'
               }}
-              beforeId="team-markers" // Render behind markers
             />
           </Source>
         )}
