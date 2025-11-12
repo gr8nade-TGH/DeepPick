@@ -135,16 +135,32 @@ export function TeamMarker({ team, territory, onClick, onHover }: TeamMarkerProp
           )}
         </div>
 
-        {/* Capper Info (for claimed/active territories) - COMPACT */}
+        {/* Capper Info (for claimed/active territories) - ENHANCED */}
         {!isUnclaimed && territory.capperUsername && (
-          <div className="absolute -bottom-11 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+          <div className="absolute -bottom-14 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
             {/* Capper Badge */}
             <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-2 py-1 rounded-md shadow-lg border border-amber-500/50 relative">
-              {/* Capper Name with View Icon for Active Picks */}
+              {/* Capper Name with Rank Badge and View Icon */}
               <div className="text-[10px] font-bold text-amber-400 tracking-wide mb-0.5 flex items-center gap-1">
+                {/* Rank Badge */}
+                {territory.capperRank && (
+                  <span
+                    className={`text-[8px] font-black px-1 rounded ${territory.capperRank === 1 ? 'bg-yellow-500 text-black' :
+                        territory.capperRank === 2 ? 'bg-slate-400 text-black' :
+                          territory.capperRank === 3 ? 'bg-amber-700 text-white' :
+                            'bg-slate-600 text-white'
+                      }`}
+                    title={`Rank #${territory.capperRank} for ${territory.teamAbbr}`}
+                  >
+                    #{territory.capperRank}
+                  </span>
+                )}
                 <span>{territory.capperUsername}</span>
                 {isActive && (
-                  <span className="text-[8px] text-blue-400 cursor-pointer hover:text-blue-300" title="Click to view pick">
+                  <span
+                    className="text-[10px] text-blue-400 cursor-pointer hover:text-blue-300 animate-pulse"
+                    title="Click to view pick"
+                  >
                     👁️
                   </span>
                 )}
@@ -166,6 +182,17 @@ export function TeamMarker({ team, territory, onClick, onHover }: TeamMarkerProp
                   {territory.pushes ? `-${territory.pushes}` : ''}
                 </span>
               </div>
+
+              {/* Game Time for Active Picks */}
+              {isActive && territory.gameTime && (
+                <div className="text-[8px] text-blue-300 text-center mt-0.5 font-semibold">
+                  {new Date(territory.gameTime).toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                  })}
+                </div>
+              )}
             </div>
           </div>
         )}

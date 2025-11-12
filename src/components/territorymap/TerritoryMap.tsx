@@ -33,6 +33,8 @@ export function TerritoryMap() {
   const [loading, setLoading] = useState(true)
   const [pickIdMap, setPickIdMap] = useState<Record<string, string>>({})
   const [activeMatchups, setActiveMatchups] = useState<ActiveMatchup[]>([])
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   // Apply medieval/fantasy map styling when map loads
   const handleMapLoad = useCallback(() => {
@@ -116,28 +118,46 @@ export function TerritoryMap() {
     })
   }, [])
 
-  // Fetch real territory data from API
-  useEffect(() => {
-    async function fetchTerritoryData() {
-      try {
-        const response = await fetch('/api/territory-map')
-
-        if (response.ok) {
-          const data = await response.json()
-          setTerritoryData(data.territories)
-          setPickIdMap(data.pickIdMap || {})
-          setActiveMatchups(data.activeMatchups || [])
-        } else {
-          console.error('[TerritoryMap] Failed to fetch:', response.status, response.statusText)
-        }
-      } catch (error) {
-        console.error('[TerritoryMap] Failed to fetch territory data:', error)
-      } finally {
-        setLoading(false)
-      }
+  // Fetch territory data from API
+  const fetchTerritoryData = useCallback(async (isManualRefresh = false) => {
+    if (isManualRefresh) {
+      setIsRefreshing(true)
     }
-    fetchTerritoryData()
+
+    try {
+      const response = await fetch('/api/territory-map')
+
+      if (response.ok) {
+        const data = await response.json()
+        setTerritoryData(data.territories)
+        setPickIdMap(data.pickIdMap || {})
+        setActiveMatchups(data.activeMatchups || [])
+        setLastUpdated(new Date())
+      } else {
+        console.error('[TerritoryMap] Failed to fetch:', response.status, response.statusText)
+      }
+    } catch (error) {
+      console.error('[TerritoryMap] Failed to fetch territory data:', error)
+    } finally {
+      setLoading(false)
+      setIsRefreshing(false)
+    }
   }, [])
+
+  // Initial fetch
+  useEffect(() => {
+    fetchTerritoryData()
+  }, [fetchTerritoryData])
+
+  // Auto-refresh every 5 minutes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      console.log('[TerritoryMap] Auto-refreshing data...')
+      fetchTerritoryData()
+    }, 5 * 60 * 1000) // 5 minutes
+
+    return () => clearInterval(interval)
+  }, [fetchTerritoryData])
 
   // Filter territories based on current filters
   const filteredTerritories = useMemo(() => {
@@ -211,9 +231,33 @@ export function TerritoryMap() {
       {/* Medieval parchment texture overlay */}
       <div className="medieval-map-overlay z-[1]" />
 
-      {/* Title Overlay */}
+      {/* Title Overlay with Refresh */}
       <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10 bg-[#3E2723] text-[#D4AF37] px-6 py-3 rounded-lg shadow-lg border-2 border-[#D4AF37]">
-        <h1 className="text-2xl font-bold tracking-wide">🏀 NBA TERRITORY MAP 🗺️</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-bold tracking-wide">🏀 NBA TERRITORY MAP 🗺️</h1>
+
+          {/* Refresh Button */}
+          <button
+            onClick={() => fetchTerritoryData(true)}
+            disabled={isRefreshing}
+            className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 disabled:bg-amber-800 text-white text-sm font-semibold rounded transition-colors flex items-center gap-1.5"
+            title="Refresh territory data"
+          >
+            <span className={isRefreshing ? 'animate-spin' : ''}>🔄</span>
+            <span>{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
+          </button>
+
+          {/* Last Updated */}
+          {lastUpdated && (
+            <div className="text-xs text-amber-300 font-medium">
+              Updated: {lastUpdated.toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Loading Overlay */}
@@ -378,31 +422,78 @@ export function TerritoryMap() {
               <span>Territory unclaimed - No capper has positive units</span>
             </div>
           ) : (
-            <div className="space-y-2 text-sm">
-              {/* Capper Name */}
-              <div className="flex justify-between items-center">
-                <span className="text-slate-400">Capper:</span>
-                <span className="font-bold text-amber-400">{hoveredTerritory.capperUsername}</span>
+            <div className="space-y-3 text-sm">
+              {/* Current Display Capper */}
+              <div className="bg-slate-800/50 p-2 rounded border border-amber-500/30">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-slate-400">Current Owner:</span>
+                  <div className="flex items-center gap-1">
+                    {hoveredTerritory.capperRank && (
+                      <span
+                        className={`text-[8px] font-black px-1 rounded ${hoveredTerritory.capperRank === 1 ? 'bg-yellow-500 text-black' :
+                            hoveredTerritory.capperRank === 2 ? 'bg-slate-400 text-black' :
+                              hoveredTerritory.capperRank === 3 ? 'bg-amber-700 text-white' :
+                                'bg-slate-600 text-white'
+                          }`}
+                      >
+                        #{hoveredTerritory.capperRank}
+                      </span>
+                    )}
+                    <span className="font-bold text-amber-400">{hoveredTerritory.capperUsername}</span>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-400">Units:</span>
+                  <span className="font-bold text-emerald-400">+{hoveredTerritory.units?.toFixed(1)}u</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-400">Record:</span>
+                  <span className="font-semibold text-slate-200">
+                    {hoveredTerritory.wins}W - {hoveredTerritory.losses}L
+                    {hoveredTerritory.pushes ? ` - ${hoveredTerritory.pushes}P` : ''}
+                  </span>
+                </div>
               </div>
 
-              {/* Net Units */}
-              <div className="flex justify-between items-center">
-                <span className="text-slate-400">Net Units:</span>
-                <span className="font-bold text-emerald-400">+{hoveredTerritory.units?.toFixed(1)}u</span>
-              </div>
-
-              {/* Record */}
-              <div className="flex justify-between items-center">
-                <span className="text-slate-400">Record:</span>
-                <span className="font-semibold text-slate-200">
-                  {hoveredTerritory.wins}W - {hoveredTerritory.losses}L
-                  {hoveredTerritory.pushes ? ` - ${hoveredTerritory.pushes}P` : ''}
-                </span>
-              </div>
+              {/* Leaderboard - Top 3 */}
+              {hoveredTerritory.leaderboard && hoveredTerritory.leaderboard.length > 1 && (
+                <div>
+                  <div className="text-xs text-slate-400 mb-1.5 font-semibold">Top Performers:</div>
+                  <div className="space-y-1">
+                    {hoveredTerritory.leaderboard.map((capper) => (
+                      <div
+                        key={capper.capperId}
+                        className={`flex items-center justify-between text-xs p-1.5 rounded ${capper.hasActivePick ? 'bg-blue-900/30 border border-blue-500/30' : 'bg-slate-800/30'
+                          }`}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className={`text-[8px] font-black px-1 rounded ${capper.rank === 1 ? 'bg-yellow-500 text-black' :
+                                capper.rank === 2 ? 'bg-slate-400 text-black' :
+                                  capper.rank === 3 ? 'bg-amber-700 text-white' :
+                                    'bg-slate-600 text-white'
+                              }`}
+                          >
+                            #{capper.rank}
+                          </span>
+                          <span className="text-slate-200 font-medium">{capper.capperName}</span>
+                          {capper.hasActivePick && (
+                            <span className="text-[8px] text-blue-400 animate-pulse">👁️</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-emerald-400 font-semibold">+{capper.netUnits.toFixed(1)}u</span>
+                          <span className="text-slate-400">{capper.wins}-{capper.losses}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Win Rate */}
               {hoveredTerritory.wins !== undefined && hoveredTerritory.losses !== undefined && (
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center pt-2 border-t border-slate-700">
                   <span className="text-slate-400">Win Rate:</span>
                   <span className="font-semibold text-blue-400">
                     {((hoveredTerritory.wins / (hoveredTerritory.wins + hoveredTerritory.losses)) * 100).toFixed(1)}%

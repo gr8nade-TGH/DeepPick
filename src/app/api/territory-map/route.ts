@@ -187,7 +187,7 @@ export async function GET() {
         }
       })
 
-      // Find the king (top capper by net units)
+      // Build leaderboard (top cappers by net units)
       const leaderboard = Array.from(capperStats.values())
         .filter(stats => stats.totalPicks > 0)
         .sort((a, b) => b.netUnits - a.netUnits)
@@ -200,11 +200,74 @@ export async function GET() {
         continue
       }
 
-      const king = leaderboard[0]
+      // Check which cappers have pending picks for this team
+      const cappersWithPicks = new Map<string, { pickId: string, gameTime: string }>()
 
-      // Only claim territory if king has positive units
-      if (king.netUnits <= 0) {
-        // No one has positive performance - unclaimed
+        ; (pendingPicks || []).forEach(pick => {
+          if (!pick.game_snapshot) return
+
+          let homeTeam: string | undefined
+          let awayTeam: string | undefined
+          let gameTime: string | undefined
+
+          try {
+            if (typeof pick.game_snapshot.home_team === 'string') {
+              homeTeam = JSON.parse(pick.game_snapshot.home_team).abbreviation
+            } else {
+              homeTeam = pick.game_snapshot.home_team?.abbreviation
+            }
+
+            if (typeof pick.game_snapshot.away_team === 'string') {
+              awayTeam = JSON.parse(pick.game_snapshot.away_team).abbreviation
+            } else {
+              awayTeam = pick.game_snapshot.away_team?.abbreviation
+            }
+
+            // Get game time from game_snapshot
+            gameTime = pick.game_snapshot.game_start_timestamp ||
+              `${pick.game_snapshot.game_date}T${pick.game_snapshot.game_time}`
+          } catch (e) {
+            return
+          }
+
+          // Check if this pick is for this team
+          const isForThisTeam = homeTeam === teamAbbr || awayTeam === teamAbbr
+          if (!isForThisTeam) return
+
+          // Store pick info by capper ID
+          const capperId = pick.is_system_pick ? pick.capper : pick.user_id
+          if (capperId) {
+            cappersWithPicks.set(capperId, {
+              pickId: pick.id,
+              gameTime: gameTime || ''
+            })
+          }
+        })
+
+      // DYNAMIC OWNERSHIP: Find highest-ranked capper with an active pick
+      let displayCapper = leaderboard[0] // Default to #1
+      let displayRank = 1
+      let hasActivePick = false
+      let activePickId: string | undefined
+      let gameTime: string | undefined
+
+      for (let i = 0; i < leaderboard.length; i++) {
+        const capper = leaderboard[i]
+        const pickInfo = cappersWithPicks.get(capper.id)
+
+        if (pickInfo) {
+          // Found a capper with an active pick
+          displayCapper = capper
+          displayRank = i + 1
+          hasActivePick = true
+          activePickId = pickInfo.pickId
+          gameTime = pickInfo.gameTime
+          break
+        }
+      }
+
+      // Only claim territory if top capper has positive units
+      if (leaderboard[0].netUnits <= 0) {
         territories.push({
           teamAbbr,
           state: 'unclaimed'
@@ -212,62 +275,48 @@ export async function GET() {
         continue
       }
 
-      // Determine tier based on net units
+      // Determine tier based on TOP capper's net units (not displayed capper)
       let tier: 'dominant' | 'strong' | 'weak' | undefined
-      if (king.netUnits >= 20) {
+      const topUnits = leaderboard[0].netUnits
+      if (topUnits >= 20) {
         tier = 'dominant'
-      } else if (king.netUnits >= 10) {
+      } else if (topUnits >= 10) {
         tier = 'strong'
-      } else if (king.netUnits > 0) {
+      } else if (topUnits > 0) {
         tier = 'weak'
       }
 
-      // Check if this team has a pending pick from the king capper
-      const kingPendingPick = (pendingPicks || []).find(pick => {
-        if (!pick.game_snapshot) return false
-
-        let homeTeam: string | undefined
-        let awayTeam: string | undefined
-
-        try {
-          if (typeof pick.game_snapshot.home_team === 'string') {
-            homeTeam = JSON.parse(pick.game_snapshot.home_team).abbreviation
-          } else {
-            homeTeam = pick.game_snapshot.home_team?.abbreviation
-          }
-
-          if (typeof pick.game_snapshot.away_team === 'string') {
-            awayTeam = JSON.parse(pick.game_snapshot.away_team).abbreviation
-          } else {
-            awayTeam = pick.game_snapshot.away_team?.abbreviation
-          }
-        } catch (e) {
-          return false
-        }
-
-        // Check if this pick is for this team AND from the king capper
-        const isForThisTeam = homeTeam === teamAbbr || awayTeam === teamAbbr
-        const isFromKing = pick.is_system_pick
-          ? pick.capper === king.id
-          : pick.user_id === king.id
-
-        return isForThisTeam && isFromKing
-      })
+      // Build leaderboard data for tooltip (top 3)
+      const leaderboardData = leaderboard.slice(0, 3).map((capper, idx) => ({
+        rank: idx + 1,
+        capperId: capper.id,
+        capperName: capper.name,
+        netUnits: parseFloat(capper.netUnits.toFixed(2)),
+        wins: capper.wins,
+        losses: capper.losses,
+        pushes: capper.pushes,
+        totalPicks: capper.totalPicks,
+        hasActivePick: cappersWithPicks.has(capper.id),
+        activePickId: cappersWithPicks.get(capper.id)?.pickId
+      }))
 
       const territoryData: TerritoryData = {
         teamAbbr,
-        state: kingPendingPick ? 'active' : 'claimed',
+        state: hasActivePick ? 'active' : 'claimed',
         tier,
-        capperUsername: king.name,
-        units: parseFloat(king.netUnits.toFixed(2)),
-        wins: king.wins,
-        losses: king.losses,
-        pushes: king.pushes
+        capperUsername: displayCapper.name,
+        capperRank: displayRank,
+        units: parseFloat(displayCapper.netUnits.toFixed(2)),
+        wins: displayCapper.wins,
+        losses: displayCapper.losses,
+        pushes: displayCapper.pushes,
+        leaderboard: leaderboardData,
+        gameTime: gameTime
       }
 
-      // If there's a pending pick, store the pick ID for the modal
-      if (kingPendingPick) {
-        pickIdMap[teamAbbr] = kingPendingPick.id
+      // Store pick ID for modal
+      if (activePickId) {
+        pickIdMap[teamAbbr] = activePickId
       }
 
       territories.push(territoryData)

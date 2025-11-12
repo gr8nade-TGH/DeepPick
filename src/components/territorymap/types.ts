@@ -6,16 +6,32 @@ export type TerritoryState = 'unclaimed' | 'claimed' | 'active'
 export type TerritoryTier = 'dominant' | 'strong' | 'weak'
 export type TimePeriod = 'all-time' | 'current-season' | 'last-30-days' | 'last-7-days'
 
+export interface CapperRanking {
+  rank: number
+  capperId: string
+  capperName: string
+  netUnits: number
+  wins: number
+  losses: number
+  pushes: number
+  totalPicks: number
+  hasActivePick: boolean
+  activePickId?: string
+}
+
 export interface TerritoryData {
   teamAbbr: string
   state: TerritoryState
   tier?: TerritoryTier
   capperUsername?: string
+  capperRank?: number // Rank of the displayed capper (#1, #2, #3, etc.)
   units?: number
   wins?: number
   losses?: number
   pushes?: number
   activePick?: ActivePickData
+  leaderboard?: CapperRanking[] // Top 3 cappers for this territory
+  gameTime?: string // For active picks - when the game starts
 }
 
 export interface ActivePickData {
