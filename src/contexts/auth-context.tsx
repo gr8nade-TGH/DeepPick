@@ -222,24 +222,28 @@ export function AuthProvider({
   const signOut = async () => {
     try {
       console.log('[AuthContext] Signing out...')
-      const { error } = await supabase.auth.signOut()
-      if (error) {
-        console.error('[AuthContext] Sign out error:', error)
-      } else {
-        console.log('[AuthContext] Sign out successful')
-      }
-      // Clear state regardless of error
+
+      // Clear local state immediately
       setUser(null)
       setProfile(null)
       setSession(null)
       setLoading(false)
+
+      // Call server-side sign out API to clear cookies
+      console.log('[AuthContext] Calling server-side sign out API...')
+      fetch('/api/auth/signout', { method: 'POST' })
+        .then(() => console.log('[AuthContext] Server-side sign out complete'))
+        .catch((error) => console.log('[AuthContext] Server-side sign out error (ignored):', error))
+
+      // Force a full page reload to clear all state
+      console.log('[AuthContext] Redirecting to login page...')
+      setTimeout(() => {
+        window.location.href = '/login'
+      }, 100) // Small delay to ensure state is cleared
     } catch (error) {
       console.error('[AuthContext] Sign out exception:', error)
-      // Clear state even on exception
-      setUser(null)
-      setProfile(null)
-      setSession(null)
-      setLoading(false)
+      // Force reload even on exception
+      window.location.href = '/login'
     }
   }
 
