@@ -151,9 +151,9 @@ export function TeamMarker({ team, territory, onClick, onHover }: TeamMarkerProp
 
         {/* Capper Info (for claimed/active territories) - COMPACT */}
         {!isUnclaimed && territory.capperUsername && (
-          <div className="absolute -bottom-7 left-1/2 transform -translate-x-1/2 whitespace-nowrap flex flex-col items-center gap-0.5">
+          <div className="absolute -bottom-7 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
             {/* Capper Badge - COMPACT: Only name, rank, and eye icon */}
-            <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-2 py-1 rounded-md shadow-lg border border-amber-500/50">
+            <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-2 py-1 rounded-md shadow-lg border border-amber-500/50 relative">
               {/* Capper Name with Rank Badge and View Icon */}
               <div className="text-[10px] font-bold text-amber-400 tracking-wide flex items-center gap-1 justify-center">
                 {/* Rank Badge */}
@@ -179,18 +179,18 @@ export function TeamMarker({ team, territory, onClick, onHover }: TeamMarkerProp
                   </span>
                 )}
               </div>
-            </div>
 
-            {/* Game Time - OUTSIDE the box, only for active picks */}
-            {isActive && territory.gameTime && (
-              <div className="text-[8px] text-blue-300 font-semibold bg-slate-900/80 px-1.5 py-0.5 rounded">
-                {new Date(territory.gameTime).toLocaleTimeString('en-US', {
-                  hour: 'numeric',
-                  minute: '2-digit',
-                  hour12: true
-                })}
-              </div>
-            )}
+              {/* Game Time - Absolute positioned below, doesn't affect box position */}
+              {isActive && territory.gameTime && (
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 text-[8px] text-blue-300 font-semibold bg-slate-900/90 px-1.5 py-0.5 rounded border border-blue-500/30">
+                  {new Date(territory.gameTime).toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         )}
 

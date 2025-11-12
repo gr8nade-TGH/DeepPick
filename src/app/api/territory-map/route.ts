@@ -328,50 +328,62 @@ export async function GET() {
       territories.push(territoryData)
     }
 
-    // Fetch active matchups (games today that are not complete)
-    const today = new Date().toISOString().split('T')[0]
-    const { data: activeGames, error: gamesError } = await admin
-      .from('games')
-      .select('id, home_team, away_team, game_date, game_time, status, game_start_timestamp')
-      .eq('sport', 'nba')
-      .gte('game_date', today)
-      .not('status', 'in', '(final,complete,completed)')
-      .order('game_start_timestamp', { ascending: true })
-      .limit(50)
+    // Extract active matchups from pending picks (games with active picks)
+    const activeMatchupsMap = new Map<string, { homeTeam: string, awayTeam: string, gameTime: string, status: string }>()
 
-    if (gamesError) {
-      console.error('[Territory Map] Error fetching active games:', gamesError)
-    }
+      ; (pendingPicks || []).forEach(pick => {
+        if (!pick.game_snapshot) return
 
-    // Transform active games into matchup data
-    const activeMatchups = (activeGames || []).map(game => {
-      let homeTeamAbbr: string | undefined
-      let awayTeamAbbr: string | undefined
+        try {
+          let homeTeam: string | undefined
+          let awayTeam: string | undefined
+          let gameTime: string | undefined
+          let gameStatus: string | undefined
+          let gameId: string | undefined
 
-      try {
-        if (typeof game.home_team === 'string') {
-          homeTeamAbbr = JSON.parse(game.home_team).abbreviation
-        } else {
-          homeTeamAbbr = game.home_team?.abbreviation
+          if (typeof pick.game_snapshot.home_team === 'string') {
+            homeTeam = JSON.parse(pick.game_snapshot.home_team).abbreviation
+          } else {
+            homeTeam = pick.game_snapshot.home_team?.abbreviation
+          }
+
+          if (typeof pick.game_snapshot.away_team === 'string') {
+            awayTeam = JSON.parse(pick.game_snapshot.away_team).abbreviation
+          } else {
+            awayTeam = pick.game_snapshot.away_team?.abbreviation
+          }
+
+          gameTime = pick.game_snapshot.game_start_timestamp ||
+            `${pick.game_snapshot.game_date}T${pick.game_snapshot.game_time}`
+          gameStatus = pick.game_snapshot.status || 'scheduled'
+          gameId = pick.game_snapshot.game_id || `${homeTeam}-${awayTeam}-${pick.game_snapshot.game_date}`
+
+          if (homeTeam && awayTeam && gameId) {
+            // Use gameId as key to avoid duplicates
+            if (!activeMatchupsMap.has(gameId)) {
+              activeMatchupsMap.set(gameId, {
+                homeTeam,
+                awayTeam,
+                gameTime: gameTime || '',
+                status: gameStatus
+              })
+            }
+          }
+        } catch (e) {
+          console.error('[Territory Map] Error parsing game snapshot for matchup:', e)
         }
+      })
 
-        if (typeof game.away_team === 'string') {
-          awayTeamAbbr = JSON.parse(game.away_team).abbreviation
-        } else {
-          awayTeamAbbr = game.away_team?.abbreviation
-        }
-      } catch (e) {
-        console.error('[Territory Map] Error parsing team data:', e)
-      }
+    // Convert map to array
+    const activeMatchups = Array.from(activeMatchupsMap.entries()).map(([gameId, data]) => ({
+      gameId,
+      ...data
+    }))
 
-      return {
-        gameId: game.id,
-        homeTeam: homeTeamAbbr,
-        awayTeam: awayTeamAbbr,
-        gameTime: game.game_start_timestamp || `${game.game_date}T${game.game_time}`,
-        status: game.status
-      }
-    }).filter(m => m.homeTeam && m.awayTeam)
+    console.log('[Territory Map] Active matchups from pending picks:', {
+      matchupsCount: activeMatchups.length,
+      matchups: activeMatchups
+    })
 
     return NextResponse.json({
       territories,
