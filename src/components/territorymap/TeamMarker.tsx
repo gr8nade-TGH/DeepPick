@@ -139,10 +139,15 @@ export function TeamMarker({ team, territory, onClick, onHover }: TeamMarkerProp
         {!isUnclaimed && territory.capperUsername && (
           <div className="absolute -bottom-11 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
             {/* Capper Badge */}
-            <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-2 py-1 rounded-md shadow-lg border border-amber-500/50">
-              {/* Capper Name */}
-              <div className="text-[10px] font-bold text-amber-400 tracking-wide mb-0.5">
-                {territory.capperUsername}
+            <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-2 py-1 rounded-md shadow-lg border border-amber-500/50 relative">
+              {/* Capper Name with View Icon for Active Picks */}
+              <div className="text-[10px] font-bold text-amber-400 tracking-wide mb-0.5 flex items-center gap-1">
+                <span>{territory.capperUsername}</span>
+                {isActive && (
+                  <span className="text-[8px] text-blue-400 cursor-pointer hover:text-blue-300" title="Click to view pick">
+                    👁️
+                  </span>
+                )}
               </div>
 
               {/* Stats Row */}

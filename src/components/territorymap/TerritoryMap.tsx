@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import Map, { Source, Layer } from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { NBA_TEAM_COORDINATES } from './nba-team-coordinates'
@@ -10,15 +11,19 @@ import { MapLegend } from './MapLegend'
 import { MapFiltersPanel } from './MapFiltersPanel'
 import { MapFilters, MapStats, TerritoryData, ActiveMatchup } from './types'
 import { PickInsightModal } from '@/components/dashboard/pick-insight-modal'
+import { useAuth } from '@/contexts/auth-context'
 import type { MapRef } from 'react-map-gl/mapbox'
 import type { LineLayer } from 'react-map-gl/mapbox'
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || 'pk.eyJ1IjoiZ3I4bmFkZSIsImEiOiJjbWhpcjVuM2IxNTRkMmtwcTM0dHoyc2N4In0.xTuWFyLgmwGbuQKWLOGv4A'
 
 export function TerritoryMap() {
+  const router = useRouter()
+  const { user } = useAuth()
   const mapRef = useRef<MapRef>(null)
   const [hoveredTeam, setHoveredTeam] = useState<string | null>(null)
   const [selectedPickId, setSelectedPickId] = useState<string | null>(null)
+  const [showLoginMessage, setShowLoginMessage] = useState(false)
   const [filters, setFilters] = useState<MapFilters>({
     timePeriod: 'all-time',
     capper: null,
@@ -180,13 +185,20 @@ export function TerritoryMap() {
       return // No action for unclaimed territories
     }
 
-    // For active picks, show the insight modal if we have a pick ID
-    if (territory.state === 'active' && territory.activePick?.gameId) {
+    // For active picks, check authentication and show insight modal
+    if (territory.state === 'active') {
+      // Check if user is logged in
+      if (!user) {
+        setShowLoginMessage(true)
+        return
+      }
+
+      // Get the pick ID for this territory
       const pickId = pickIdMap[territory.teamAbbr]
       if (pickId) {
         setSelectedPickId(pickId)
       } else {
-        alert(`Active Pick: ${territory.activePick?.prediction}\nConfidence: ${territory.activePick?.confidence}/10\nGame: ${territory.activePick?.opponent}`)
+        alert(`No active pick available for ${territory.teamAbbr}`)
       }
     } else {
       // For claimed territories, show summary
@@ -428,6 +440,35 @@ export function TerritoryMap() {
           pickId={selectedPickId}
           onClose={() => setSelectedPickId(null)}
         />
+      )}
+
+      {/* Login Required Message */}
+      {showLoginMessage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-amber-500 rounded-lg p-8 shadow-2xl max-w-md mx-4">
+            <div className="text-center">
+              <div className="text-6xl mb-4">🔒</div>
+              <h3 className="text-2xl font-bold text-amber-400 mb-3">Login Required</h3>
+              <p className="text-slate-300 mb-6">
+                You must be logged in to view pick details and insight cards.
+              </p>
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={() => router.push('/login')}
+                  className="px-6 py-2.5 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white font-bold rounded-lg transition-all duration-200 shadow-lg"
+                >
+                  Login
+                </button>
+                <button
+                  onClick={() => setShowLoginMessage(false)}
+                  className="px-6 py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-lg transition-all duration-200"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

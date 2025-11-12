@@ -33,6 +33,17 @@ export async function GET() {
       return NextResponse.json({ error: 'Failed to fetch picks' }, { status: 500 })
     }
 
+    // Fetch pending SPREAD picks for active territories
+    const { data: pendingPicks, error: pendingError } = await admin
+      .from('picks')
+      .select('id, capper, user_id, game_snapshot, pick_type, selection, confidence')
+      .eq('status', 'pending')
+      .eq('pick_type', 'spread')
+
+    if (pendingError) {
+      console.error('[Territory Map] Error fetching pending picks:', pendingError)
+    }
+
 
 
     // Fetch user profiles for user cappers
@@ -211,15 +222,52 @@ export async function GET() {
         tier = 'weak'
       }
 
+      // Check if this team has a pending pick from the king capper
+      const kingPendingPick = (pendingPicks || []).find(pick => {
+        if (!pick.game_snapshot) return false
+
+        let homeTeam: string | undefined
+        let awayTeam: string | undefined
+
+        try {
+          if (typeof pick.game_snapshot.home_team === 'string') {
+            homeTeam = JSON.parse(pick.game_snapshot.home_team).abbreviation
+          } else {
+            homeTeam = pick.game_snapshot.home_team?.abbreviation
+          }
+
+          if (typeof pick.game_snapshot.away_team === 'string') {
+            awayTeam = JSON.parse(pick.game_snapshot.away_team).abbreviation
+          } else {
+            awayTeam = pick.game_snapshot.away_team?.abbreviation
+          }
+        } catch (e) {
+          return false
+        }
+
+        // Check if this pick is for this team AND from the king capper
+        const isForThisTeam = homeTeam === teamAbbr || awayTeam === teamAbbr
+        const isFromKing = pick.is_system_pick
+          ? pick.capper === king.id
+          : pick.user_id === king.id
+
+        return isForThisTeam && isFromKing
+      })
+
       const territoryData: TerritoryData = {
         teamAbbr,
-        state: 'claimed',
+        state: kingPendingPick ? 'active' : 'claimed',
         tier,
         capperUsername: king.name,
         units: parseFloat(king.netUnits.toFixed(2)),
         wins: king.wins,
         losses: king.losses,
         pushes: king.pushes
+      }
+
+      // If there's a pending pick, store the pick ID for the modal
+      if (kingPendingPick) {
+        pickIdMap[teamAbbr] = kingPendingPick.id
       }
 
       territories.push(territoryData)
