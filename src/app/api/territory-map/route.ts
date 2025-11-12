@@ -36,7 +36,7 @@ export async function GET() {
     // Fetch pending SPREAD picks for active territories
     const { data: pendingPicks, error: pendingError } = await admin
       .from('picks')
-      .select('id, capper, user_id, game_snapshot, pick_type, selection, confidence')
+      .select('id, capper, user_id, is_system_pick, game_snapshot, pick_type, selection, confidence')
       .eq('status', 'pending')
       .eq('pick_type', 'spread')
 
