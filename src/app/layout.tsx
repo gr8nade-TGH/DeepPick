@@ -64,11 +64,22 @@ export default async function RootLayout({
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
+  // Get initial profile from server if user exists
+  let initialProfile = null
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single()
+    initialProfile = profile
+  }
+
   return (
     <html lang="en" className="dark">
       <body className={inter.className}>
         <Providers>
-          <AuthProvider initialUser={user}>
+          <AuthProvider initialUser={user} initialProfile={initialProfile}>
             <BettingSlipProvider>
               <EmailVerificationBanner />
               <NavBar />

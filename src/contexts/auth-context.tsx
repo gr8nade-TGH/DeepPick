@@ -38,13 +38,15 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({
   children,
-  initialUser = null
+  initialUser = null,
+  initialProfile = null
 }: {
   children: ReactNode
   initialUser?: User | null
+  initialProfile?: Profile | null
 }) {
   const [user, setUser] = useState<User | null>(initialUser)
-  const [profile, setProfile] = useState<Profile | null>(null)
+  const [profile, setProfile] = useState<Profile | null>(initialProfile)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(!initialUser) // If we have initial user, we're not loading
 
@@ -52,6 +54,7 @@ export function AuthProvider({
   const supabase = useMemo(() => {
     console.log('[AuthContext] Creating Supabase client in browser...')
     console.log('[AuthContext] Initial user from server:', !!initialUser, initialUser?.id)
+    console.log('[AuthContext] Initial profile from server:', !!initialProfile, initialProfile?.role)
     return createClient()
   }, [])
 
@@ -100,18 +103,14 @@ export function AuthProvider({
 
   // Initialize auth state
   useEffect(() => {
-    console.log('[AuthContext] Initializing with server-provided initial user')
+    console.log('[AuthContext] Initializing with server-provided initial user and profile')
     let mounted = true
 
-    // If we have an initial user from the server, fetch their profile
-    if (initialUser) {
-      console.log('[AuthContext] Fetching profile for initial user:', initialUser.id)
-      fetchProfile(initialUser.id).then(profileData => {
-        if (mounted) {
-          setProfile(profileData)
-          setLoading(false)
-        }
-      })
+    // Profile is already provided from server, no need to fetch
+    // Just set loading to false if we have initial data
+    if (initialUser && initialProfile) {
+      console.log('[AuthContext] Using server-provided profile, stopping loading')
+      setLoading(false)
     }
 
     // Set up auth state change listener for future changes (login, logout, etc.)
@@ -145,7 +144,7 @@ export function AuthProvider({
       mounted = false
       subscription.unsubscribe()
     }
-  }, [supabase, initialUser])
+  }, [supabase, initialUser, initialProfile])
 
   // Sign in with email/password
   const signIn = async (email: string, password: string) => {
