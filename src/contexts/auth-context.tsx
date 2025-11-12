@@ -100,8 +100,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         console.log('[AuthContext] Calling getSession() to read session from cookies...')
 
-        // With @supabase/ssr, getSession() reads from cookies and should be fast
-        const { data: { session: initialSession }, error } = await supabase.auth.getSession()
+        // Add a timeout to prevent infinite hanging
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('getSession timeout after 500ms')), 500)
+        })
+
+        const sessionPromise = supabase.auth.getSession()
+
+        const result = await Promise.race([sessionPromise, timeoutPromise]) as any
+
+        console.log('[AuthContext] getSession completed. Result:', result)
+
+        const { data: { session: initialSession } = { session: null }, error } = result || {}
 
         if (error) {
           console.error('[AuthContext] getSession error:', error)
@@ -111,7 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return
         }
 
-        console.log('[AuthContext] getSession completed. User:', !!initialSession?.user, initialSession?.user?.id)
+        console.log('[AuthContext] Session data. User:', !!initialSession?.user, initialSession?.user?.id)
 
         if (mounted) {
           setSession(initialSession)
@@ -129,7 +139,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } catch (err) {
         console.error('[AuthContext] Initialization error:', err)
+        // Even on error, we need to stop loading so buttons appear
         if (mounted) {
+          setUser(null)
+          setSession(null)
+          setProfile(null)
           setLoading(false)
         }
       }
