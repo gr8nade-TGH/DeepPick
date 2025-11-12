@@ -61,8 +61,29 @@ export async function GET() {
     for (const teamAbbr of allNBATeams) {
       // Filter picks for this team (home or away)
       const teamPicks = allPicks.filter(pick => {
-        const homeTeam = pick.game_snapshot?.home_team?.abbreviation
-        const awayTeam = pick.game_snapshot?.away_team?.abbreviation
+        if (!pick.game_snapshot) return false
+
+        // game_snapshot.home_team and away_team are JSON strings, need to parse
+        let homeTeam: string | undefined
+        let awayTeam: string | undefined
+
+        try {
+          if (typeof pick.game_snapshot.home_team === 'string') {
+            homeTeam = JSON.parse(pick.game_snapshot.home_team).abbreviation
+          } else {
+            homeTeam = pick.game_snapshot.home_team?.abbreviation
+          }
+
+          if (typeof pick.game_snapshot.away_team === 'string') {
+            awayTeam = JSON.parse(pick.game_snapshot.away_team).abbreviation
+          } else {
+            awayTeam = pick.game_snapshot.away_team?.abbreviation
+          }
+        } catch (e) {
+          console.error('[Territory Map] Error parsing team data:', e)
+          return false
+        }
+
         return homeTeam === teamAbbr || awayTeam === teamAbbr
       })
 
