@@ -33,6 +33,8 @@ export async function GET(request: NextRequest) {
     const supabase = await getSupabase()
 
     // Build query
+    // FIXED: Use left join instead of inner join so picks without games (archived) still appear
+    // Completed games are moved to games_history, so inner join would exclude them
     let query = supabase
       .from('picks')
       .select(`
@@ -50,7 +52,7 @@ export async function GET(request: NextRequest) {
         result,
         is_system_pick,
         odds,
-        games!inner(
+        games(
           id,
           away_team,
           home_team,
