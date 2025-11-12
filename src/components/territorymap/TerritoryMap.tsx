@@ -13,7 +13,6 @@ import { MapFilters, MapStats, TerritoryData, ActiveMatchup } from './types'
 import { PickInsightModal } from '@/components/dashboard/pick-insight-modal'
 import { useAuth } from '@/contexts/auth-context'
 import type { MapRef } from 'react-map-gl/mapbox'
-import type { LineLayer } from 'react-map-gl/mapbox'
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || 'pk.eyJ1IjoiZ3I4bmFkZSIsImEiOiJjbWhpcjVuM2IxNTRkMmtwcTM0dHoyc2N4In0.xTuWFyLgmwGbuQKWLOGv4A'
 
@@ -431,9 +430,9 @@ export function TerritoryMap() {
                     {hoveredTerritory.capperRank && (
                       <span
                         className={`text-[8px] font-black px-1 rounded ${hoveredTerritory.capperRank === 1 ? 'bg-yellow-500 text-black' :
-                            hoveredTerritory.capperRank === 2 ? 'bg-slate-400 text-black' :
-                              hoveredTerritory.capperRank === 3 ? 'bg-amber-700 text-white' :
-                                'bg-slate-600 text-white'
+                          hoveredTerritory.capperRank === 2 ? 'bg-slate-400 text-black' :
+                            hoveredTerritory.capperRank === 3 ? 'bg-amber-700 text-white' :
+                              'bg-slate-600 text-white'
                           }`}
                       >
                         #{hoveredTerritory.capperRank}
@@ -469,9 +468,9 @@ export function TerritoryMap() {
                         <div className="flex items-center gap-1.5">
                           <span
                             className={`text-[8px] font-black px-1 rounded ${capper.rank === 1 ? 'bg-yellow-500 text-black' :
-                                capper.rank === 2 ? 'bg-slate-400 text-black' :
-                                  capper.rank === 3 ? 'bg-amber-700 text-white' :
-                                    'bg-slate-600 text-white'
+                              capper.rank === 2 ? 'bg-slate-400 text-black' :
+                                capper.rank === 3 ? 'bg-amber-700 text-white' :
+                                  'bg-slate-600 text-white'
                               }`}
                           >
                             #{capper.rank}
