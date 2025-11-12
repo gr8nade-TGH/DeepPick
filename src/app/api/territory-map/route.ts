@@ -206,7 +206,7 @@ export async function GET() {
         tier = 'weak'
       }
 
-      const territoryData = {
+      const territoryData: TerritoryData = {
         teamAbbr,
         state: king.netUnits > 0 ? 'claimed' : 'unclaimed',
         tier,
