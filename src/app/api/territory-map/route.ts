@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getSupabase } from '@/lib/supabase/server'
+import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { TerritoryData } from '@/components/territorymap/types'
 
 export const dynamic = 'force-dynamic'
@@ -7,108 +7,187 @@ export const dynamic = 'force-dynamic'
 /**
  * GET /api/territory-map
  *
- * Returns territory data for all NBA teams based on capper performance
+ * Returns territory data for all NBA teams based on capper SPREAD performance
+ * The "king" of each team is determined by the top-ranked capper for SPREAD picks involving that team
  */
 export async function GET() {
   try {
-    const supabase = getSupabase()
+    const admin = getSupabaseAdmin()
 
-    // Fetch all picks with their outcomes grouped by team
-    const { data: picks, error } = await supabase
-      .from('picks')
-      .select('*')
-      .eq('sport', 'NBA')
-      .order('created_at', { ascending: false })
-
-    if (error) {
-      console.error('Error fetching picks:', error)
-      return NextResponse.json({ error: 'Failed to fetch picks' }, { status: 500 })
-    }
-
-    // Calculate territory data for each team
-    const territoryMap = new Map<string, TerritoryData>()
-    const pickIdMap: Record<string, string> = {}
-
-    // Process picks to build territory data
-    for (const pick of picks || []) {
-      // Extract team abbreviation from matchup (e.g., "LAL vs GSW" -> "LAL")
-      const teamMatch = pick.matchup?.match(/^([A-Z]{2,3})/)
-      if (!teamMatch) continue
-
-      const teamAbbr = teamMatch[1]
-
-      // Get existing territory or create new one
-      let territory = territoryMap.get(teamAbbr)
-      if (!territory) {
-        territory = {
-          teamAbbr,
-          state: 'unclaimed',
-          capperUsername: pick.capper_username || 'Unknown',
-          units: 0,
-          wins: 0,
-          losses: 0,
-          pushes: 0
-        }
-        territoryMap.set(teamAbbr, territory)
-      }
-
-      // Update stats based on outcome
-      if (pick.outcome === 'WIN') {
-        territory.wins = (territory.wins || 0) + 1
-        territory.units = (territory.units || 0) + (pick.units || 1)
-      } else if (pick.outcome === 'LOSS') {
-        territory.losses = (territory.losses || 0) + 1
-        territory.units = (territory.units || 0) - (pick.units || 1)
-      } else if (pick.outcome === 'PUSH') {
-        territory.pushes = (territory.pushes || 0) + 1
-      }
-
-      // Check if this is an active pick (no outcome yet)
-      if (!pick.outcome && pick.pick_status === 'CURRENT') {
-        territory.state = 'active'
-        territory.activePick = {
-          gameId: pick.id,
-          opponent: pick.matchup?.split(' vs ')[1] || pick.matchup?.split(' @ ')[1] || 'TBD',
-          gameTime: pick.game_start_time || new Date().toISOString(),
-          prediction: pick.selection || 'N/A',
-          confidence: pick.confidence || 5,
-          betType: pick.bet_type as 'TOTAL' | 'SPREAD',
-          line: pick.line || 0
-        }
-        // Store pick ID for insight modal
-        pickIdMap[teamAbbr] = pick.id
-      }
-
-      // Determine territory tier based on units
-      if (territory.units && territory.units > 0) {
-        territory.state = territory.state === 'active' ? 'active' : 'claimed'
-        if (territory.units >= 20) {
-          territory.tier = 'dominant'
-        } else if (territory.units >= 10) {
-          territory.tier = 'strong'
-        } else {
-          territory.tier = 'weak'
-        }
-      }
-    }
-
-    // Convert map to array
-    const territories = Array.from(territoryMap.values())
-
-    // Add unclaimed territories for teams with no picks
+    // All NBA teams
     const allNBATeams = [
       'ATL', 'BOS', 'BKN', 'CHA', 'CHI', 'CLE', 'DAL', 'DEN', 'DET', 'GSW',
       'HOU', 'IND', 'LAC', 'LAL', 'MEM', 'MIA', 'MIL', 'MIN', 'NOP', 'NYK',
       'OKC', 'ORL', 'PHI', 'PHX', 'POR', 'SAC', 'SAS', 'TOR', 'UTA', 'WAS'
     ]
 
+    // Fetch all graded SPREAD picks with game_snapshot
+    const { data: allPicks, error: picksError } = await admin
+      .from('picks')
+      .select('capper, user_id, status, units, net_units, is_system_pick, game_snapshot, pick_type')
+      .in('status', ['won', 'lost', 'push'])
+      .eq('pick_type', 'spread') // Only SPREAD picks
+
+    if (picksError) {
+      console.error('[Territory Map] Error fetching picks:', picksError)
+      return NextResponse.json({ error: 'Failed to fetch picks' }, { status: 500 })
+    }
+
+    // Fetch user profiles for user cappers
+    const { data: profiles, error: profilesError } = await admin
+      .from('profiles')
+      .select('id, full_name, username, role, avatar_url')
+      .in('role', ['capper', 'admin'])
+
+    if (profilesError) {
+      console.error('[Territory Map] Error fetching profiles:', profilesError)
+    }
+
+    const profileMap = new Map(profiles?.map(p => [p.id, p]) || [])
+
+    // System cappers
+    const SYSTEM_CAPPERS = [
+      { id: 'shiva', name: 'SHIVA' },
+      { id: 'ifrit', name: 'IFRIT' },
+      { id: 'nexus', name: 'NEXUS' },
+      { id: 'cerberus', name: 'CERBERUS' },
+      { id: 'deeppick', name: 'DeepPick' },
+    ]
+
+    // For each team, calculate leaderboard and find the king
+    const territories: TerritoryData[] = []
+    const pickIdMap: Record<string, string> = {}
+
     for (const teamAbbr of allNBATeams) {
-      if (!territoryMap.has(teamAbbr)) {
+      // Filter picks for this team (home or away)
+      const teamPicks = allPicks.filter(pick => {
+        const homeTeam = pick.game_snapshot?.home_team?.abbreviation
+        const awayTeam = pick.game_snapshot?.away_team?.abbreviation
+        return homeTeam === teamAbbr || awayTeam === teamAbbr
+      })
+
+      if (teamPicks.length === 0) {
+        // No picks for this team - unclaimed
         territories.push({
           teamAbbr,
           state: 'unclaimed'
         })
+        continue
       }
+
+      // Calculate stats for each capper on this team
+      const capperStats = new Map<string, {
+        id: string
+        name: string
+        type: 'system' | 'user'
+        wins: number
+        losses: number
+        pushes: number
+        totalPicks: number
+        netUnits: number
+        unitsBet: number
+      }>()
+
+      // Initialize system cappers
+      SYSTEM_CAPPERS.forEach(capper => {
+        capperStats.set(capper.id, {
+          id: capper.id,
+          name: capper.name,
+          type: 'system',
+          wins: 0,
+          losses: 0,
+          pushes: 0,
+          totalPicks: 0,
+          netUnits: 0,
+          unitsBet: 0
+        })
+      })
+
+      // Process picks for this team
+      teamPicks.forEach(pick => {
+        let capperId: string
+        let capperName: string
+        let capperType: 'system' | 'user'
+        let profile: any = null
+
+        if (pick.is_system_pick) {
+          capperId = pick.capper
+          capperName = SYSTEM_CAPPERS.find(c => c.id === capperId)?.name || capperId.toUpperCase()
+          capperType = 'system'
+        } else {
+          if (!pick.user_id) return
+          profile = profileMap.get(pick.user_id)
+          if (!profile) return
+
+          capperId = pick.user_id
+          capperName = profile.username || profile.full_name || 'Unknown User'
+          capperType = 'user'
+        }
+
+        if (!capperStats.has(capperId)) {
+          capperStats.set(capperId, {
+            id: capperId,
+            name: capperName,
+            type: capperType,
+            wins: 0,
+            losses: 0,
+            pushes: 0,
+            totalPicks: 0,
+            netUnits: 0,
+            unitsBet: 0
+          })
+        }
+
+        const stats = capperStats.get(capperId)!
+        stats.totalPicks++
+        stats.unitsBet += pick.units || 0
+
+        if (pick.status === 'won') {
+          stats.wins++
+          stats.netUnits += pick.net_units || 0
+        } else if (pick.status === 'lost') {
+          stats.losses++
+          stats.netUnits += pick.net_units || 0
+        } else if (pick.status === 'push') {
+          stats.pushes++
+        }
+      })
+
+      // Find the king (top capper by net units)
+      const leaderboard = Array.from(capperStats.values())
+        .filter(stats => stats.totalPicks > 0)
+        .sort((a, b) => b.netUnits - a.netUnits)
+
+      if (leaderboard.length === 0) {
+        territories.push({
+          teamAbbr,
+          state: 'unclaimed'
+        })
+        continue
+      }
+
+      const king = leaderboard[0]
+
+      // Determine tier based on net units
+      let tier: 'dominant' | 'strong' | 'weak' | undefined
+      if (king.netUnits >= 20) {
+        tier = 'dominant'
+      } else if (king.netUnits >= 10) {
+        tier = 'strong'
+      } else if (king.netUnits > 0) {
+        tier = 'weak'
+      }
+
+      territories.push({
+        teamAbbr,
+        state: king.netUnits > 0 ? 'claimed' : 'unclaimed',
+        tier,
+        capperUsername: king.name,
+        units: parseFloat(king.netUnits.toFixed(2)),
+        wins: king.wins,
+        losses: king.losses,
+        pushes: king.pushes
+      })
     }
 
     return NextResponse.json({
@@ -118,7 +197,7 @@ export async function GET() {
     })
 
   } catch (error) {
-    console.error('Territory map API error:', error)
+    console.error('[Territory Map] Error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
