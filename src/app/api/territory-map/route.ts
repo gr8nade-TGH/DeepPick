@@ -33,10 +33,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Failed to fetch picks' }, { status: 500 })
     }
 
-    console.log('[Territory Map] Total SPREAD picks fetched:', allPicks?.length || 0)
-    if (allPicks && allPicks.length > 0) {
-      console.log('[Territory Map] Sample pick:', JSON.stringify(allPicks[0], null, 2))
-    }
+
 
     // Fetch user profiles for user cappers
     const { data: profiles, error: profilesError } = await admin
@@ -91,8 +88,6 @@ export async function GET() {
 
         return homeTeam === teamAbbr || awayTeam === teamAbbr
       })
-
-      console.log(`[Territory Map] ${teamAbbr}: ${teamPicks.length} picks`)
 
       if (teamPicks.length === 0) {
         // No picks for this team - unclaimed
@@ -203,7 +198,6 @@ export async function GET() {
           teamAbbr,
           state: 'unclaimed'
         })
-        console.log(`[Territory Map] ${teamAbbr}: Unclaimed (best: ${king.name} with ${king.netUnits} units)`)
         continue
       }
 
@@ -228,13 +222,8 @@ export async function GET() {
         pushes: king.pushes
       }
 
-      console.log(`[Territory Map] ${teamAbbr} king:`, king.name, king.netUnits, 'units')
       territories.push(territoryData)
     }
-
-    console.log('[Territory Map] Total territories:', territories.length)
-    console.log('[Territory Map] Claimed:', territories.filter(t => t.state === 'claimed').length)
-    console.log('[Territory Map] Unclaimed:', territories.filter(t => t.state === 'unclaimed').length)
 
     return NextResponse.json({
       territories,

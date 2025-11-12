@@ -140,15 +140,10 @@ export function TerritoryMap() {
   useEffect(() => {
     async function fetchTerritoryData() {
       try {
-        console.log('[TerritoryMap] Fetching territory data...')
         const response = await fetch('/api/territory-map')
-        console.log('[TerritoryMap] Response status:', response.status)
 
         if (response.ok) {
           const data = await response.json()
-          console.log('[TerritoryMap] Data received:', data)
-          console.log('[TerritoryMap] Territories count:', data.territories?.length)
-          console.log('[TerritoryMap] Claimed territories:', data.territories?.filter((t: any) => t.state === 'claimed').length)
           setTerritoryData(data.territories)
           setPickIdMap(data.pickIdMap || {})
         } else {
@@ -156,7 +151,6 @@ export function TerritoryMap() {
         }
       } catch (error) {
         console.error('[TerritoryMap] Failed to fetch territory data:', error)
-        // Fall back to mock data on error
       } finally {
         setLoading(false)
       }
@@ -166,9 +160,6 @@ export function TerritoryMap() {
 
   // Filter territories based on current filters
   const filteredTerritories = useMemo(() => {
-    console.log('[TerritoryMap] Filtering territories. Total:', territoryData.length)
-    console.log('[TerritoryMap] Filters:', filters)
-
     let filtered = territoryData
 
     // Filter by capper
@@ -176,17 +167,12 @@ export function TerritoryMap() {
       filtered = filtered.filter(t =>
         t.state === 'unclaimed' || t.capperUsername === filters.capper
       )
-      console.log('[TerritoryMap] After capper filter:', filtered.length)
     }
 
     // Filter by active picks only
     if (filters.activePicksOnly) {
       filtered = filtered.filter(t => t.state === 'active')
-      console.log('[TerritoryMap] After active picks filter:', filtered.length)
     }
-
-    console.log('[TerritoryMap] Final filtered count:', filtered.length)
-    console.log('[TerritoryMap] Claimed in filtered:', filtered.filter(t => t.state === 'claimed').length)
 
     return filtered
   }, [territoryData, filters])
