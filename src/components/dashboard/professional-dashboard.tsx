@@ -77,6 +77,29 @@ interface ChartDataPoint {
   losses: number
 }
 
+// Helper function to get countdown to game start
+function getCountdown(gameDate: string | undefined): string {
+  if (!gameDate) return ''
+
+  const now = new Date()
+  const game = new Date(gameDate)
+  const diff = game.getTime() - now.getTime()
+
+  if (diff < 0) return '' // Game has started or passed
+
+  const hours = Math.floor(diff / (1000 * 60 * 60))
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+
+  if (hours > 24) {
+    const days = Math.floor(hours / 24)
+    return `${days}d ${hours % 24}h`
+  } else if (hours > 0) {
+    return `${hours}h ${minutes}m`
+  } else {
+    return `${minutes}m`
+  }
+}
+
 export function ProfessionalDashboard() {
   const { user } = useAuth()
   const [todaysPicks, setTodaysPicks] = useState<Pick[]>([])
@@ -91,10 +114,20 @@ export function ProfessionalDashboard() {
   const [boldPredictionsMap, setBoldPredictionsMap] = useState<Map<string, any>>(new Map())
   const [expandedPicks, setExpandedPicks] = useState<Set<string>>(new Set())
   const [picksPage, setPicksPage] = useState(0) // Pagination for picks (10 per page)
+  const [currentTime, setCurrentTime] = useState(new Date())
 
   useEffect(() => {
     fetchDashboardData()
   }, [sportFilter])
+
+  // Update countdown every minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date())
+    }, 60000) // Update every minute
+
+    return () => clearInterval(interval)
+  }, [])
 
   const fetchDashboardData = async () => {
     try {
@@ -459,11 +492,32 @@ export function ProfessionalDashboard() {
                             <div className="text-base font-black text-white group-hover:text-cyan-400 transition-colors truncate">
                               {pick.selection}
                             </div>
-                            <div className="flex items-center gap-2 mt-0.5">
+                            <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                               <span className="text-[10px] text-slate-400 font-medium">{matchup}</span>
                               <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-slate-600 h-4">
                                 {pick.pick_type?.toUpperCase()}
                               </Badge>
+                              <Badge className={`${gameStatus.color} text-[9px] px-1.5 py-0 font-semibold h-4`}>
+                                {gameStatus.icon} {gameStatus.text}
+                              </Badge>
+                              {(() => {
+                                const gameDate = pick.game_snapshot?.game_date
+                                const countdown = getCountdown(gameDate)
+                                return (
+                                  <>
+                                    {gameDate && (
+                                      <span className="text-[10px] text-slate-500">
+                                        {new Date(gameDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                      </span>
+                                    )}
+                                    {countdown && (
+                                      <span className="text-[10px] text-cyan-400 font-semibold">
+                                        🕐 {countdown}
+                                      </span>
+                                    )}
+                                  </>
+                                )
+                              })()}
                             </div>
                           </div>
 
