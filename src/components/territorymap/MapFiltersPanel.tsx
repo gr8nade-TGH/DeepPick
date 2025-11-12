@@ -1,13 +1,14 @@
 'use client'
 
-import { MapFilters, TimePeriod } from './types'
+import { MapFilters, TimePeriod, TerritoryData } from './types'
 
 interface MapFiltersPanelProps {
   filters: MapFilters
   onFiltersChange: (filters: MapFilters) => void
+  territories: TerritoryData[]
 }
 
-export function MapFiltersPanel({ filters, onFiltersChange }: MapFiltersPanelProps) {
+export function MapFiltersPanel({ filters, onFiltersChange, territories }: MapFiltersPanelProps) {
   const timePeriods: { value: TimePeriod; label: string }[] = [
     { value: 'all-time', label: 'All-Time' },
     { value: 'current-season', label: 'Current Season' },
@@ -15,7 +16,16 @@ export function MapFiltersPanel({ filters, onFiltersChange }: MapFiltersPanelPro
     { value: 'last-7-days', label: 'Last 7 Days' },
   ]
 
-  const cappers = ['All Cappers', 'SHIVA', 'Oracle', 'DeepValue']
+  // Get unique cappers from territories
+  const uniqueCappers = Array.from(
+    new Set(
+      territories
+        .filter(t => t.state === 'claimed' && t.capperUsername)
+        .map(t => t.capperUsername!)
+    )
+  ).sort()
+
+  const cappers = ['All Cappers', ...uniqueCappers]
 
   return (
     <div className="absolute top-4 left-4 bg-[#F4E8D0] border-2 border-[#3E2723] rounded-lg p-4 shadow-lg min-w-[250px]">
@@ -49,9 +59,9 @@ export function MapFiltersPanel({ filters, onFiltersChange }: MapFiltersPanelPro
           </label>
           <select
             value={filters.capper || 'All Cappers'}
-            onChange={(e) => onFiltersChange({ 
-              ...filters, 
-              capper: e.target.value === 'All Cappers' ? null : e.target.value 
+            onChange={(e) => onFiltersChange({
+              ...filters,
+              capper: e.target.value === 'All Cappers' ? null : e.target.value
             })}
             className="w-full px-3 py-2 bg-white border border-[#3E2723] rounded text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
           >

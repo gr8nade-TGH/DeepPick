@@ -248,7 +248,7 @@ export function TerritoryMap() {
       </Map>
 
       {/* Filters Panel */}
-      <MapFiltersPanel filters={filters} onFiltersChange={setFilters} />
+      <MapFiltersPanel filters={filters} onFiltersChange={setFilters} territories={territoryData} />
 
       {/* Legend */}
       <MapLegend />
