@@ -48,32 +48,33 @@ export function MapLegend() {
       {/* Territory Tiers */}
       <div className="border-t border-[#3E2723] pt-3 space-y-2">
         <div className="text-xs font-semibold text-[#3E2723] mb-2">Territory Strength</div>
-        
+
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-white border-4 border-[#3E2723] flex items-center justify-center relative">
+          <div className="w-8 h-8 rounded-full bg-white border-4 border-[#007A33] flex items-center justify-center relative shadow-md">
             <span className="text-[10px] font-bold">BOS</span>
             <div className="absolute -top-1 -right-1 text-sm">👑</div>
           </div>
           <div className="text-xs text-gray-700">
-            <span className="font-semibold">Dominant:</span> +20u or more
+            <span className="font-semibold text-amber-700">Dominant:</span> +20u or more
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-white border-3 border-[#3E2723] flex items-center justify-center">
+          <div className="w-8 h-8 rounded-full bg-white border-3 border-[#98002E] flex items-center justify-center relative shadow-md">
             <span className="text-[10px] font-bold">MIA</span>
+            <div className="absolute -top-1 -right-1 text-xs">🛡️</div>
           </div>
           <div className="text-xs text-gray-700">
-            <span className="font-semibold">Strong:</span> +10 to +19.9u
+            <span className="font-semibold text-blue-700">Strong:</span> +10 to +19.9u
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-white border-2 border-[#3E2723] flex items-center justify-center">
+          <div className="w-8 h-8 rounded-full bg-white border-2 border-[#00538C] flex items-center justify-center shadow-sm">
             <span className="text-[10px] font-bold">DAL</span>
           </div>
           <div className="text-xs text-gray-700">
-            <span className="font-semibold">Weak:</span> +0.1 to +9.9u
+            <span className="font-semibold text-green-700">Weak:</span> +0.1 to +9.9u
           </div>
         </div>
       </div>

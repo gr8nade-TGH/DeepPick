@@ -325,38 +325,72 @@ export function TerritoryMap() {
         </Link>
       </div>
 
-      {/* Hover Tooltip */}
+      {/* Hover Tooltip - ENHANCED */}
       {hoveredTerritory && hoveredTeamInfo && (
-        <div className="absolute top-20 left-1/2 transform -translate-x-1/2 bg-white border-2 border-[#3E2723] rounded-lg p-3 shadow-lg z-20 min-w-[250px]">
-          <div className="text-sm font-bold text-[#3E2723] mb-2">
-            {hoveredTeamInfo.name}
+        <div className="absolute top-20 left-1/2 transform -translate-x-1/2 bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-amber-500 rounded-lg p-4 shadow-2xl z-20 min-w-[280px]">
+          {/* Team Header */}
+          <div className="flex items-center gap-2 mb-3 pb-2 border-b border-amber-500/30">
+            <div className="text-base font-bold text-amber-400">
+              {hoveredTeamInfo.name}
+            </div>
+            {hoveredTerritory.tier === 'dominant' && <span className="text-lg">👑</span>}
+            {hoveredTerritory.tier === 'strong' && <span className="text-base">🛡️</span>}
           </div>
+
           {hoveredTerritory.state === 'unclaimed' ? (
-            <div className="text-xs text-gray-600 italic">Territory unclaimed</div>
+            <div className="text-sm text-slate-400 italic flex items-center gap-2">
+              <span>⚔️</span>
+              <span>Territory unclaimed - No capper has positive units</span>
+            </div>
           ) : (
-            <div className="space-y-1 text-xs">
-              <div className="flex justify-between">
-                <span className="text-gray-700">Capper:</span>
-                <span className="font-semibold">{hoveredTerritory.capperUsername}</span>
+            <div className="space-y-2 text-sm">
+              {/* Capper Name */}
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400">Capper:</span>
+                <span className="font-bold text-amber-400">{hoveredTerritory.capperUsername}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-700">Units:</span>
-                <span className="font-bold text-green-600">+{hoveredTerritory.units?.toFixed(1)}u</span>
+
+              {/* Net Units */}
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400">Net Units:</span>
+                <span className="font-bold text-emerald-400">+{hoveredTerritory.units?.toFixed(1)}u</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-700">Record:</span>
-                <span className="font-semibold">{hoveredTerritory.wins}-{hoveredTerritory.losses}-{hoveredTerritory.pushes}</span>
+
+              {/* Record */}
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400">Record:</span>
+                <span className="font-semibold text-slate-200">
+                  {hoveredTerritory.wins}W - {hoveredTerritory.losses}L
+                  {hoveredTerritory.pushes ? ` - ${hoveredTerritory.pushes}P` : ''}
+                </span>
               </div>
+
+              {/* Win Rate */}
+              {hoveredTerritory.wins !== undefined && hoveredTerritory.losses !== undefined && (
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400">Win Rate:</span>
+                  <span className="font-semibold text-blue-400">
+                    {((hoveredTerritory.wins / (hoveredTerritory.wins + hoveredTerritory.losses)) * 100).toFixed(1)}%
+                  </span>
+                </div>
+              )}
+
+              {/* Active Pick Info */}
               {hoveredTerritory.activePick && (
                 <>
-                  <div className="border-t border-gray-300 my-2"></div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-700">Pick:</span>
-                    <span className="font-bold text-blue-600">{hoveredTerritory.activePick.prediction}</span>
+                  <div className="border-t border-amber-500/30 my-2 pt-2">
+                    <div className="text-xs text-amber-400 font-semibold mb-1 flex items-center gap-1">
+                      <span className="animate-pulse">🔴</span>
+                      <span>ACTIVE PICK</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-700">Confidence:</span>
-                    <span className="font-semibold">{hoveredTerritory.activePick.confidence}/10</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400">Pick:</span>
+                    <span className="font-bold text-blue-400">{hoveredTerritory.activePick.prediction}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400">Confidence:</span>
+                    <span className="font-semibold text-purple-400">{hoveredTerritory.activePick.confidence}/10</span>
                   </div>
                 </>
               )}
