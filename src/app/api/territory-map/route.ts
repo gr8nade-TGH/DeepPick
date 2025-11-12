@@ -196,6 +196,17 @@ export async function GET() {
 
       const king = leaderboard[0]
 
+      // Only claim territory if king has positive units
+      if (king.netUnits <= 0) {
+        // No one has positive performance - unclaimed
+        territories.push({
+          teamAbbr,
+          state: 'unclaimed'
+        })
+        console.log(`[Territory Map] ${teamAbbr}: Unclaimed (best: ${king.name} with ${king.netUnits} units)`)
+        continue
+      }
+
       // Determine tier based on net units
       let tier: 'dominant' | 'strong' | 'weak' | undefined
       if (king.netUnits >= 20) {
@@ -208,7 +219,7 @@ export async function GET() {
 
       const territoryData: TerritoryData = {
         teamAbbr,
-        state: king.netUnits > 0 ? 'claimed' : 'unclaimed',
+        state: 'claimed',
         tier,
         capperUsername: king.name,
         units: parseFloat(king.netUnits.toFixed(2)),
