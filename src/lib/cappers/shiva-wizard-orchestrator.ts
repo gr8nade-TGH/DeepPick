@@ -104,7 +104,7 @@ export async function executeWizardPipeline(input: WizardOrchestratorInput): Pro
 
     // Step 3: Factor Analysis (F1-F5)
     console.log('[WizardOrchestrator] Step 3: Computing factors...')
-    steps.step3 = await computeFactors(runId, { home: homeTeam, away: awayTeam }, sport, betType, aiProvider, newsWindowHours)
+    steps.step3 = await computeFactors(runId, { home: homeTeam, away: awayTeam }, sport, betType, capperId, aiProvider, newsWindowHours)
     console.log('[WizardOrchestrator] Step 3: Factors computed:', steps.step3.factors?.length || 0, 'factors')
 
     // Step 4: Score Predictions
@@ -381,6 +381,7 @@ async function computeFactors(
   teams: { home: string; away: string },
   sport: string,
   betType: string,
+  capperId: string,
   aiProvider: string,
   newsWindowHours: number
 ) {
