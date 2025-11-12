@@ -65,13 +65,11 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  // Get initial user state from server using getClaims() for security
-  // getClaims() validates the JWT signature, preventing session spoofing
+  // Get initial user state from server using getUser()
+  // Note: We use getUser() here instead of getClaims() because we need the full User object
+  // getUser() makes a network request but is acceptable in the layout since it runs on the server
   const supabase = createClient()
-  const { data, error } = await supabase.auth.getClaims()
-
-  // Extract user from claims
-  const user = data?.user ?? null
+  const { data: { user }, error } = await supabase.auth.getUser()
 
   // Get initial profile from server if user exists
   let initialProfile = null
