@@ -27,6 +27,23 @@ export function TeamMarker({ team, territory, onClick, onHover }: TeamMarkerProp
   const isActive = territory.state === 'active'
   const borderWidth = getTierBorderWidth(territory.tier)
 
+  // Get tier-based styling
+  const getTierGlow = () => {
+    if (isUnclaimed) return ''
+    if (isActive) return 'shadow-[0_0_20px_rgba(212,175,55,0.6)]'
+
+    switch (territory.tier) {
+      case 'dominant':
+        return 'shadow-[0_0_15px_rgba(255,215,0,0.5)]'
+      case 'strong':
+        return 'shadow-[0_0_10px_rgba(212,175,55,0.4)]'
+      case 'weak':
+        return 'shadow-[0_0_5px_rgba(139,69,19,0.3)]'
+      default:
+        return ''
+    }
+  }
+
   return (
     <Marker
       longitude={team.longitude}
@@ -34,40 +51,49 @@ export function TeamMarker({ team, territory, onClick, onHover }: TeamMarkerProp
       anchor="center"
     >
       <div
-        className="relative cursor-pointer transition-transform hover:scale-110"
+        className="relative cursor-pointer transition-all duration-300 hover:scale-125 hover:z-50"
         onClick={onClick}
         onMouseEnter={() => onHover(team.abbr)}
         onMouseLeave={() => onHover(null)}
       >
-        {/* Territory Marker */}
+        {/* Territory Marker - ENHANCED */}
         <div
           className={`
             relative
-            w-20 h-20
+            w-24 h-24
             rounded-full
             flex items-center justify-center
             transition-all duration-300
-            ${isUnclaimed ? 'bg-gray-300/80 border-dashed' : 'bg-white shadow-lg'}
-            ${isActive ? 'animate-pulse-glow' : ''}
+            ${isUnclaimed
+              ? 'bg-gradient-to-br from-slate-400 to-slate-500 border-dashed'
+              : 'bg-gradient-to-br from-white to-slate-50 shadow-2xl'
+            }
+            ${isActive ? 'animate-pulse-glow ring-4 ring-amber-400/50' : ''}
+            ${getTierGlow()}
           `}
           style={{
             borderWidth: `${borderWidth}px`,
-            borderColor: isUnclaimed ? '#9CA3AF' : isActive ? '#D4AF37' : '#3E2723',
+            borderColor: isUnclaimed ? '#94A3B8' : isActive ? '#F59E0B' : '#78350F',
             borderStyle: isUnclaimed ? 'dashed' : 'solid',
           }}
         >
+          {/* Inner ring for claimed territories */}
+          {!isUnclaimed && (
+            <div className="absolute inset-1 rounded-full bg-gradient-to-br from-amber-50 to-white opacity-50"></div>
+          )}
+
           {/* Team Logo */}
           {!isUnclaimed ? (
-            <div className="relative w-14 h-14">
+            <div className="relative w-16 h-16 z-10">
               <Image
                 src={`/nba_territory_logos/${team.abbr}.png`}
                 alt={team.abbr}
                 fill
-                className="object-contain p-1"
+                className="object-contain p-1 drop-shadow-md"
               />
             </div>
           ) : (
-            <span className="text-sm font-bold text-gray-500">
+            <span className="text-base font-bold text-slate-700 z-10">
               {team.abbr}
             </span>
           )}
@@ -105,22 +131,44 @@ export function TeamMarker({ team, territory, onClick, onHover }: TeamMarkerProp
           )}
         </div>
 
-        {/* Capper Info (for claimed/active territories) */}
+        {/* Capper Info (for claimed/active territories) - REDESIGNED */}
         {!isUnclaimed && territory.capperUsername && (
-          <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-center">
-            <div className="text-xs font-semibold text-gray-900">
-              {territory.capperUsername}
-            </div>
-            <div className="text-xs text-green-600 font-bold">
-              +{territory.units?.toFixed(1)}u
+          <div className="absolute -bottom-14 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+            {/* Capper Badge */}
+            <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-3 py-1.5 rounded-lg shadow-lg border-2 border-amber-500/50">
+              {/* Capper Name */}
+              <div className="text-xs font-bold text-amber-400 tracking-wide mb-0.5">
+                {territory.capperUsername}
+              </div>
+
+              {/* Stats Row */}
+              <div className="flex items-center justify-center gap-2 text-[10px]">
+                {/* Net Units */}
+                <div className="flex items-center gap-0.5">
+                  <span className="text-emerald-400 font-bold">
+                    +{territory.units?.toFixed(1)}u
+                  </span>
+                </div>
+
+                {/* Separator */}
+                <span className="text-slate-600">•</span>
+
+                {/* W-L Record */}
+                <div className="text-slate-300 font-medium">
+                  {territory.wins}-{territory.losses}
+                  {territory.pushes ? `-${territory.pushes}` : ''}
+                </div>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Unclaimed Label */}
+        {/* Unclaimed Label - REDESIGNED */}
         {isUnclaimed && (
-          <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
-            <span className="text-xs text-gray-500 italic">Unclaimed</span>
+          <div className="absolute -bottom-10 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+            <div className="bg-slate-700/80 px-2.5 py-1 rounded-md border border-slate-600">
+              <span className="text-[10px] text-slate-300 font-semibold tracking-wide">UNCLAIMED</span>
+            </div>
           </div>
         )}
       </div>

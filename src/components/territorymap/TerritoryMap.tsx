@@ -51,9 +51,14 @@ export function TerritoryMap() {
         map.setLayoutProperty(layerId, 'visibility', 'none')
       }
 
+      // Hide country labels except US and Canada
+      if (layerId.includes('country-label')) {
+        map.setLayoutProperty(layerId, 'visibility', 'none')
+      }
+
       // Reduce road visibility for cleaner look
       if (layerId.includes('road') && layer.type === 'line') {
-        map.setPaintProperty(layerId, 'line-opacity', 0.3)
+        map.setPaintProperty(layerId, 'line-opacity', 0.2)
       }
 
       // Style water with vintage blue
@@ -64,25 +69,27 @@ export function TerritoryMap() {
         }
       }
 
-      // Style land/background with parchment tone
+      // Style land/background with parchment tone for US/Canada, gray for others
       if (layerId.includes('land') || layerId === 'background') {
         if (layer.type === 'background') {
-          map.setPaintProperty(layerId, 'background-color', '#F4E8D0')
+          map.setPaintProperty(layerId, 'background-color', '#D0D0D0')
         } else if (layer.type === 'fill') {
-          map.setPaintProperty(layerId, 'fill-color', '#F4E8D0')
+          // Gray out all land by default
+          map.setPaintProperty(layerId, 'fill-color', '#D0D0D0')
+          map.setPaintProperty(layerId, 'fill-opacity', 0.4)
         }
       }
 
       // Enhance admin boundaries with medieval aesthetic
       if (layerId.includes('admin')) {
         if (layer.type === 'line') {
-          // State boundaries
+          // State boundaries (US/Canada provinces)
           if (layerId.includes('1')) {
             map.setPaintProperty(layerId, 'line-color', '#8B4513')
             map.setPaintProperty(layerId, 'line-width', 2)
             map.setPaintProperty(layerId, 'line-opacity', 0.7)
           }
-          // Country boundaries
+          // Country boundaries - make more prominent
           if (layerId.includes('0')) {
             map.setPaintProperty(layerId, 'line-color', '#654321')
             map.setPaintProperty(layerId, 'line-width', 3)
@@ -91,6 +98,42 @@ export function TerritoryMap() {
         }
       }
     })
+
+    // Add a custom layer to highlight US and Canada with parchment color
+    if (!map.getSource('us-canada-highlight')) {
+      map.addSource('us-canada-highlight', {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: [
+            {
+              type: 'Feature',
+              properties: {},
+              geometry: {
+                type: 'Polygon',
+                coordinates: [[
+                  [-125, 24], // Southwest corner
+                  [-125, 50], // Northwest corner
+                  [-66, 50],  // Northeast corner
+                  [-66, 24],  // Southeast corner
+                  [-125, 24]  // Close polygon
+                ]]
+              }
+            }
+          ]
+        }
+      })
+
+      map.addLayer({
+        id: 'us-canada-highlight-layer',
+        type: 'fill',
+        source: 'us-canada-highlight',
+        paint: {
+          'fill-color': '#F4E8D0',
+          'fill-opacity': 0.9
+        }
+      }, 'waterway-label') // Add before labels
+    }
   }, [])
 
   // Fetch real territory data from API
