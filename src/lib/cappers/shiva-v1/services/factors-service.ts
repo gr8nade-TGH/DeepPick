@@ -96,7 +96,7 @@ async function getFactorWeights(capperId: string, sport: string, betType: string
   const profileRes = await admin
     .from('capper_profiles')
     .select('factors')
-    .eq('capper_id', 'SHIVA')
+    .eq('capper_id', capperId)
     .eq('sport', sport)
     .eq('bet_type', betType)
     .eq('is_default', true)

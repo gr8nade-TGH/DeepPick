@@ -139,6 +139,7 @@ export async function POST(request: Request) {
     const result = await executeWizardPipeline({
       game,
       runId,
+      capperId,
       sport: 'NBA',
       betType: betType as 'TOTAL' | 'SPREAD',
       aiProvider: 'perplexity',

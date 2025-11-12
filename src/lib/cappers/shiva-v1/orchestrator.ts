@@ -166,7 +166,7 @@ async function computeFactors(runId: string, input: PipelineInput, oddsSnapshot:
     const profileRes = await admin
       .from('capper_profiles')
       .select('factors')
-      .eq('capper_id', 'SHIVA')
+      .eq('capper_id', input.capperId)
       .eq('sport', input.sport)
       .eq('bet_type', input.betType)
       .eq('is_default', true)

@@ -26,6 +26,7 @@ export interface WizardOrchestratorInput {
     spread_line?: number
   }
   runId: string
+  capperId?: string
   sport?: 'NBA' | 'NFL' | 'MLB'
   betType?: 'TOTAL' | 'SPREAD'
   aiProvider?: 'perplexity' | 'openai'
@@ -73,7 +74,7 @@ export interface WizardOrchestratorResult {
  */
 export async function executeWizardPipeline(input: WizardOrchestratorInput): Promise<WizardOrchestratorResult> {
   const startTime = Date.now()
-  const { game, runId, sport = 'NBA', betType = 'TOTAL', aiProvider = 'perplexity', newsWindowHours = 24 } = input
+  const { game, runId, capperId = 'SHIVA', sport = 'NBA', betType = 'TOTAL', aiProvider = 'perplexity', newsWindowHours = 24 } = input
 
   const steps: any = {}
 
@@ -390,11 +391,11 @@ async function computeFactors(
   // NO FALLBACK WEIGHTS - must be configured in UI (except Edge vs Market which is always 100%)
   let factorWeights: Record<string, number> = {}
 
-  // Query for SHIVA profile (uppercase, removed is_active filter since all profiles are inactive)
+  // Query for capper profile (uppercase, removed is_active filter since all profiles are inactive)
   const { data: profileData, error: profileError } = await supabase
     .from('capper_profiles')
     .select('*')
-    .eq('capper_id', 'SHIVA')
+    .eq('capper_id', capperId.toUpperCase())
     .eq('sport', sport)
     .eq('bet_type', betType)
     .eq('is_default', true)

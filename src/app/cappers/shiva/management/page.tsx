@@ -320,7 +320,7 @@ export default function ShivaManagementPage() {
       <FactorConfigModal
         isOpen={showFactorConfig}
         onClose={() => setShowFactorConfig(false)}
-        capperId="SHIVA"
+        capperId={selectedCapper}
         sport="NBA"
         betType={betType}
         onSave={(profile: FactorCapperProfile) => {
