@@ -2,7 +2,7 @@
 
 export function MapLegend() {
   return (
-    <div className="absolute bottom-4 right-4 bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-amber-500 rounded-lg p-4 shadow-2xl max-w-xs max-h-[calc(100vh-16rem)] overflow-y-auto">
+    <div className="absolute bottom-20 right-4 bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-amber-500 rounded-lg p-4 shadow-2xl max-w-xs max-h-[calc(100vh-24rem)] overflow-y-auto">
       <h3 className="text-sm font-bold text-amber-400 mb-3 border-b border-amber-500/30 pb-2 flex items-center gap-2">
         <span>🗺️</span>
         <span>Territory Legend</span>
