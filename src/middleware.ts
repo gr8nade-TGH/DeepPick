@@ -54,8 +54,10 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Get user session
-  const { data: { user } } = await supabase.auth.getUser()
+  // Get user session using getClaims() for security
+  // getClaims() validates the JWT signature, preventing session spoofing
+  const { data, error } = await supabase.auth.getClaims()
+  const user = data?.user ?? null
 
   // Get user profile with role
   let userRole: string | null = null
@@ -65,7 +67,7 @@ export async function middleware(request: NextRequest) {
       .select('role')
       .eq('id', user.id)
       .single()
-    
+
     userRole = profile?.role || null
   }
 
