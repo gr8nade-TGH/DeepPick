@@ -114,7 +114,11 @@ export function ProfessionalDashboard() {
 
       if (picksData.success) setTodaysPicks(picksData.data)
       if (activityData.success) {
+        console.log('[Dashboard] Recent activity data:', activityData.data)
+        console.log('[Dashboard] Recent activity count:', activityData.data?.length)
         setRecentActivity(activityData.data)
+      } else {
+        console.error('[Dashboard] Failed to fetch recent activity:', activityData)
       }
       if (perfData.success) {
         console.log('[Dashboard] Performance data:', perfData.data)
@@ -855,6 +859,8 @@ export function ProfessionalDashboard() {
                   const netUnits = pick.net_units || 0
                   const homeTeam = pick.game_snapshot?.home_team
                   const awayTeam = pick.game_snapshot?.away_team
+                  const gameDate = pick.game_snapshot?.game_date
+                  const gameStatus = getGameStatus(pick)
 
                   return (
                     <div
@@ -915,8 +921,12 @@ export function ProfessionalDashboard() {
                               </>
                             )}
                             <span className="text-slate-600">•</span>
+                            <Badge className={`${gameStatus.color} text-[9px] px-1.5 py-0.5 font-semibold`}>
+                              {gameStatus.icon} {gameStatus.text}
+                            </Badge>
+                            <span className="text-slate-600">•</span>
                             <span className="text-[10px] text-slate-400">
-                              {new Date(pick.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              {gameDate ? new Date(gameDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'TBD'}
                             </span>
                           </div>
                         </div>
