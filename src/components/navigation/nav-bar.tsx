@@ -69,12 +69,31 @@ export function NavBar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo & Brand */}
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="relative w-10 h-10 rounded-lg bg-gradient-to-br from-orange-500 via-red-500 to-pink-600 flex items-center justify-center shadow-lg shadow-orange-500/50 group-hover:shadow-orange-500/70 transition-all group-hover:scale-105">
-              <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" className="animate-pulse" />
-                <path d="M12 6v6l4 2" />
+            <div className="relative w-10 h-10 rounded-lg bg-gradient-to-br from-orange-500 via-red-500 to-pink-600 flex items-center justify-center shadow-lg shadow-orange-500/50 group-hover:shadow-orange-500/70 transition-all group-hover:scale-105 overflow-hidden">
+              {/* Custom Basketball + Brain AI Icon */}
+              <svg className="w-7 h-7 text-white relative z-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                {/* Basketball seams */}
+                <circle cx="12" cy="12" r="9" strokeWidth="2.5" />
+                <path d="M12 3 C 8 8, 8 16, 12 21" strokeWidth="1.5" />
+                <path d="M12 3 C 16 8, 16 16, 12 21" strokeWidth="1.5" />
+                <path d="M3 12 C 8 10, 16 10, 21 12" strokeWidth="1.5" />
+                <path d="M3 12 C 8 14, 16 14, 21 12" strokeWidth="1.5" />
+                {/* AI Neural node in center */}
+                <circle cx="12" cy="12" r="2.5" fill="currentColor" className="animate-pulse" />
+                {/* Neural connections */}
+                <circle cx="7" cy="7" r="1" fill="currentColor" opacity="0.6" />
+                <circle cx="17" cy="7" r="1" fill="currentColor" opacity="0.6" />
+                <circle cx="7" cy="17" r="1" fill="currentColor" opacity="0.6" />
+                <circle cx="17" cy="17" r="1" fill="currentColor" opacity="0.6" />
+                <line x1="12" y1="12" x2="7" y2="7" strokeWidth="0.5" opacity="0.4" />
+                <line x1="12" y1="12" x2="17" y2="7" strokeWidth="0.5" opacity="0.4" />
+                <line x1="12" y1="12" x2="7" y2="17" strokeWidth="0.5" opacity="0.4" />
+                <line x1="12" y1="12" x2="17" y2="17" strokeWidth="0.5" opacity="0.4" />
               </svg>
-              <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-orange-400/20 to-transparent animate-pulse" />
+              {/* Animated glow effect */}
+              <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-orange-400/30 to-transparent animate-pulse" />
+              {/* Rotating ring effect */}
+              <div className="absolute inset-0 rounded-lg border border-white/20 group-hover:border-white/40 transition-all" />
             </div>
             <div className="hidden sm:flex flex-col">
               <span className="text-xl font-black tracking-tight bg-gradient-to-r from-orange-400 via-red-400 to-pink-400 bg-clip-text text-transparent">
