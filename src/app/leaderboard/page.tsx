@@ -139,27 +139,7 @@ export default function LeaderboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-yellow-500 to-orange-500 mb-4 shadow-2xl shadow-yellow-500/30">
-            <Trophy className="w-10 h-10 text-white" />
-          </div>
-          <h1 className="text-6xl font-black bg-gradient-to-r from-yellow-400 via-orange-400 to-yellow-500 bg-clip-text text-transparent mb-2">
-            LEADERBOARD
-          </h1>
-          <p className="text-slate-400 text-xl font-medium">
-            {teamFilter === 'all' && betTypeFilter === 'all'
-              ? 'Top Performing Cappers'
-              : teamFilter !== 'all' && betTypeFilter === 'all'
-                ? `Top Cappers Predicting ${NBA_TEAMS.find(t => t.abbreviation === teamFilter)?.name || 'Team'} Games`
-                : teamFilter === 'all' && betTypeFilter !== 'all'
-                  ? `Top ${betTypeFilter.toUpperCase()} Cappers`
-                  : `Top ${betTypeFilter.toUpperCase()} Cappers on ${NBA_TEAMS.find(t => t.abbreviation === teamFilter)?.name || 'Team'} Games`
-            }
-          </p>
-        </div>
-
+      <div className="max-w-7xl mx-auto px-4 py-6 space-y-4">
         {/* Filters */}
         <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6 shadow-xl">
           <div className="flex flex-col gap-6">
