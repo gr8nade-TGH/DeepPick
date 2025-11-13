@@ -67,16 +67,27 @@ export default async function RootLayout({
 }) {
   // Get initial user state from server
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+  console.log('[RootLayout] Server-side auth check')
+  console.log('[RootLayout] User present:', !!user)
+  console.log('[RootLayout] User ID:', user?.id)
+  console.log('[RootLayout] User email:', user?.email)
+  console.log('[RootLayout] User error:', userError)
 
   // Get initial profile from server if user exists
   let initialProfile = null
   if (user) {
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', user.id)
       .single()
+
+    console.log('[RootLayout] Profile present:', !!profile)
+    console.log('[RootLayout] Profile role:', profile?.role)
+    console.log('[RootLayout] Profile error:', profileError)
+
     initialProfile = profile
   }
 

@@ -58,6 +58,12 @@ export async function GET(request: NextRequest) {
     console.log('[Auth Callback] Session exchange successful!')
     console.log('[Auth Callback] User ID:', data.user?.id)
     console.log('[Auth Callback] User email:', data.user?.email)
+    console.log('[Auth Callback] Session expires at:', data.session?.expires_at)
+    console.log('[Auth Callback] Access token present:', !!data.session?.access_token)
+    console.log('[Auth Callback] Refresh token present:', !!data.session?.refresh_token)
+
+    // Log cookies being set
+    console.log('[Auth Callback] Response cookies:', response.cookies.getAll().map(c => c.name))
 
     return response
   }
