@@ -69,12 +69,21 @@ export function NavBar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo & Brand */}
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/50 group-hover:shadow-cyan-500/70 transition-all">
-              <span className="text-2xl font-bold text-white">⚔️</span>
+            <div className="relative w-10 h-10 rounded-lg bg-gradient-to-br from-orange-500 via-red-500 to-pink-600 flex items-center justify-center shadow-lg shadow-orange-500/50 group-hover:shadow-orange-500/70 transition-all group-hover:scale-105">
+              <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" className="animate-pulse" />
+                <path d="M12 6v6l4 2" />
+              </svg>
+              <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-orange-400/20 to-transparent animate-pulse" />
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent hidden sm:block">
-              Sharp Siege
-            </span>
+            <div className="hidden sm:flex flex-col">
+              <span className="text-xl font-black tracking-tight bg-gradient-to-r from-orange-400 via-red-400 to-pink-400 bg-clip-text text-transparent">
+                DEEP PICK
+              </span>
+              <span className="text-[10px] font-semibold text-slate-500 -mt-1 tracking-wider">
+                AI SPORTS INTEL
+              </span>
+            </div>
           </Link>
 
           {/* Desktop Navigation */}
