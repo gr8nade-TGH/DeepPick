@@ -16,7 +16,8 @@ import {
   CheckCircle,
   XCircle,
   ChevronRight,
-  TrendingDown
+  TrendingDown,
+  Star
 } from 'lucide-react'
 
 import { PickInsightModal } from '@/components/dashboard/pick-insight-modal'
@@ -98,6 +99,51 @@ function getCountdown(gameDate: string | undefined): string {
   } else {
     return `${minutes}m`
   }
+}
+
+// Helper function to render confidence stars
+// Maps confidence scores to star ratings based on ACTUAL units allocation thresholds:
+// > 9.0 → 5 stars (5 units - max confidence)
+// > 8.0 → 4 stars (4 units)
+// > 7.0 → 3 stars (3 units)
+// > 6.0 → 2 stars (2 units)
+// > 5.0 → 1 star  (1 unit)
+// ≤ 5.0 → 0 stars (PASS - no pick generated)
+function renderConfidenceStars(confidence?: number) {
+  if (!confidence) return null
+
+  // Determine star count based on exact units thresholds
+  let starCount = 0
+  if (confidence > 9.0) starCount = 5
+  else if (confidence > 8.0) starCount = 4
+  else if (confidence > 7.0) starCount = 3
+  else if (confidence > 6.0) starCount = 2
+  else if (confidence > 5.0) starCount = 1
+  else starCount = 0 // PASS threshold
+
+  const stars = []
+
+  for (let i = 0; i < 5; i++) {
+    if (i < starCount) {
+      // Filled star with gradient glow effect
+      stars.push(
+        <Star
+          key={i}
+          className="w-4 h-4 fill-amber-400 text-amber-400 drop-shadow-[0_0_3px_rgba(251,191,36,0.5)]"
+        />
+      )
+    } else {
+      // Empty star - subtle gray
+      stars.push(
+        <Star
+          key={i}
+          className="w-4 h-4 text-slate-700/50"
+        />
+      )
+    }
+  }
+
+  return <div className="flex items-center gap-0.5">{stars}</div>
 }
 
 export function ProfessionalDashboard() {
@@ -523,9 +569,12 @@ export function ProfessionalDashboard() {
 
                           {/* Right: Confidence & Units */}
                           <div className="flex items-center gap-2 flex-shrink-0">
-                            <Badge className={`${confidenceBadge.color} text-white text-xs px-2 py-1 font-bold shadow-md`}>
-                              {pick.confidence?.toFixed(1)}
-                            </Badge>
+                            <div className="flex flex-col items-end gap-1">
+                              {renderConfidenceStars(pick.confidence)}
+                              <Badge className={`${confidenceBadge.color} text-white text-xs px-2 py-0.5 font-bold shadow-md`}>
+                                {pick.confidence?.toFixed(1)}
+                              </Badge>
+                            </div>
                             <div className="text-xl font-black bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">
                               {pick.units}U
                             </div>
