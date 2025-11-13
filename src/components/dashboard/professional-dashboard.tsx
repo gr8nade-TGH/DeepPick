@@ -180,7 +180,7 @@ export function ProfessionalDashboard() {
       setLoading(true)
 
       const [picksResponse, activityResponse, perfResponse] = await Promise.all([
-        fetch('/api/picks?status=pending&limit=12&sort=confidence'),
+        fetch('/api/picks?status=pending&limit=50&sort=confidence'), // Fetch more to sort client-side
         fetch('/api/picks?status=completed&limit=20&sort=created_at'),
         fetch('/api/performance?period=30d')
       ])
@@ -191,7 +191,10 @@ export function ProfessionalDashboard() {
         perfResponse.json()
       ])
 
-      if (picksData.success) setTodaysPicks(picksData.data)
+      if (picksData.success) {
+        // We'll sort these after fetching capper performance
+        setTodaysPicks(picksData.data)
+      }
       if (activityData.success) {
         console.log('[Dashboard] Recent activity data:', activityData.data)
         console.log('[Dashboard] Recent activity count:', activityData.data?.length)
@@ -313,10 +316,52 @@ export function ProfessionalDashboard() {
 
       console.log('[Dashboard] Final top cappers:', validCappers)
       setTopCappers(validCappers)
+
+      // Sort picks by capper performance + confidence
+      sortPicksByQuality(validCappers)
     } catch (error) {
       console.error('[Dashboard] Error fetching top cappers:', error)
       setTopCappers([]) // Clear on error
     }
+  }
+
+  const sortPicksByQuality = (cappers: Capper[]) => {
+    // Create a map of capper -> performance score
+    const capperScoreMap = new Map<string, number>()
+    cappers.forEach(capper => {
+      // Performance score = ROI * win_rate (both as decimals)
+      // This gives higher weight to cappers with both high ROI and high win rate
+      const performanceScore = (capper.roi / 100) * (capper.win_rate / 100)
+      capperScoreMap.set(capper.id.toLowerCase(), performanceScore)
+    })
+
+    // Sort picks by: (capper performance * confidence)
+    setTodaysPicks(prev => {
+      const sorted = [...prev].sort((a, b) => {
+        const capperA = a.capper?.toLowerCase() || 'deeppick'
+        const capperB = b.capper?.toLowerCase() || 'deeppick'
+
+        const perfA = capperScoreMap.get(capperA) || 0
+        const perfB = capperScoreMap.get(capperB) || 0
+
+        const confA = a.confidence || 0
+        const confB = b.confidence || 0
+
+        // Combined score: capper performance (0-1) * confidence (0-10)
+        const scoreA = perfA * confA
+        const scoreB = perfB * confB
+
+        return scoreB - scoreA // Descending order (best first)
+      })
+
+      console.log('[Dashboard] Sorted picks by quality:', sorted.map(p => ({
+        capper: p.capper,
+        confidence: p.confidence,
+        selection: p.selection
+      })))
+
+      return sorted
+    })
   }
 
   const calculateChartData = (picks: Pick[]) => {
@@ -574,9 +619,9 @@ export function ProfessionalDashboard() {
                             </div>
 
                             {/* Units - Clean & Bold */}
-                            <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl shadow-lg">
-                              <div className="text-3xl font-black text-white">
-                                {pick.units}<span className="text-lg">U</span>
+                            <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-600 rounded-lg shadow-lg">
+                              <div className="text-xl font-black text-white">
+                                {pick.units}<span className="text-sm">U</span>
                               </div>
                             </div>
 
