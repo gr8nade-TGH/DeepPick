@@ -125,25 +125,25 @@ function renderConfidenceStars(confidence?: number) {
 
   for (let i = 0; i < 5; i++) {
     if (i < starCount) {
-      // Filled star - larger with stronger glow
+      // Filled star - clean and bright
       stars.push(
         <Star
           key={i}
-          className="w-5 h-5 fill-yellow-400 text-yellow-400 drop-shadow-[0_0_6px_rgba(250,204,21,0.8)]"
+          className="w-4 h-4 fill-yellow-400 text-yellow-400"
         />
       )
     } else {
-      // Empty star - darker and more subtle
+      // Empty star - very subtle
       stars.push(
         <Star
           key={i}
-          className="w-5 h-5 text-slate-800/60 fill-slate-800/20"
+          className="w-4 h-4 text-slate-700/40"
         />
       )
     }
   }
 
-  return <div className="flex items-center gap-1">{stars}</div>
+  return <div className="flex items-center gap-0.5">{stars}</div>
 }
 
 export function ProfessionalDashboard() {
@@ -513,7 +513,7 @@ export function ProfessionalDashboard() {
 
                       {/* Main Pick Card - Clickable */}
                       <div
-                        className={`cursor-pointer group p-3 ${isLocked ? 'blur-sm' : ''}`}
+                        className={`cursor-pointer group p-4 ${isLocked ? 'blur-sm' : ''}`}
                         onClick={() => {
                           if (!isLocked) {
                             setSelectedPick(pick)
@@ -521,69 +521,62 @@ export function ProfessionalDashboard() {
                           }
                         }}
                       >
-                        {/* Single Row Layout - Everything Horizontal */}
-                        <div className="flex items-center gap-3">
-                          {/* Left: Capper Badge */}
-                          {(() => {
-                            const capperBadge = getCapperBadge(pick.capper || 'DeepPick')
-                            return (
-                              <div className={`px-3 py-1.5 rounded-md text-xs font-black ${capperBadge.gradient} ${capperBadge.text} uppercase tracking-wider shadow-md flex-shrink-0`}>
-                                {pick.capper || 'DeepPick'}
-                              </div>
-                            )
-                          })()}
+                        <div className="flex items-center justify-between gap-4">
+                          {/* LEFT SECTION: Capper + Pick Info */}
+                          <div className="flex items-center gap-4 flex-1 min-w-0">
+                            {/* Capper Badge - Minimal */}
+                            {(() => {
+                              const capperBadge = getCapperBadge(pick.capper || 'DeepPick')
+                              return (
+                                <div className={`px-2.5 py-1 rounded text-[10px] font-bold ${capperBadge.gradient} ${capperBadge.text} uppercase tracking-wide flex-shrink-0`}>
+                                  {pick.capper || 'DeepPick'}
+                                </div>
+                              )
+                            })()}
 
-                          {/* Center: The Pick (Main Focus) */}
-                          <div className="flex-1 min-w-0">
-                            <div className="text-base font-black text-white group-hover:text-cyan-400 transition-colors truncate">
-                              {pick.selection}
-                            </div>
-                            <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                              <span className="text-[10px] text-slate-400 font-medium">{matchup}</span>
-                              <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-slate-600 h-4">
-                                {pick.pick_type?.toUpperCase()}
-                              </Badge>
-                              <Badge className={`${gameStatus.color} text-[9px] px-1.5 py-0 font-semibold h-4`}>
-                                {gameStatus.icon} {gameStatus.text}
-                              </Badge>
-                              {(() => {
-                                const gameDate = pick.game_snapshot?.game_date
-                                const countdown = getCountdown(gameDate)
-                                return (
-                                  <>
-                                    {gameDate && (
-                                      <span className="text-[10px] text-slate-500">
-                                        {new Date(gameDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                                      </span>
-                                    )}
-                                    {countdown && (
-                                      <span className="text-[10px] text-cyan-400 font-semibold">
-                                        🕐 {countdown}
-                                      </span>
-                                    )}
-                                  </>
-                                )
-                              })()}
+                            {/* Pick Details */}
+                            <div className="flex-1 min-w-0">
+                              {/* The Pick - HERO */}
+                              <div className="text-xl font-black text-white group-hover:text-cyan-400 transition-colors truncate mb-1">
+                                {pick.selection}
+                              </div>
+
+                              {/* Metadata Row - Clean & Minimal */}
+                              <div className="flex items-center gap-2 text-xs text-slate-400">
+                                <span className="font-medium">{matchup}</span>
+                                <span className="text-slate-600">•</span>
+                                <span className="uppercase font-semibold">{pick.pick_type}</span>
+                                <span className="text-slate-600">•</span>
+                                <span className={`font-semibold ${gameStatus.color.includes('green') ? 'text-green-400' : gameStatus.color.includes('yellow') ? 'text-yellow-400' : 'text-slate-400'}`}>
+                                  {gameStatus.text}
+                                </span>
+                                {(() => {
+                                  const countdown = getCountdown(pick.game_snapshot?.game_date)
+                                  return countdown ? (
+                                    <>
+                                      <span className="text-slate-600">•</span>
+                                      <span className="text-cyan-400 font-semibold">🕐 {countdown}</span>
+                                    </>
+                                  ) : null
+                                })()}
+                              </div>
                             </div>
                           </div>
 
-                          {/* Right: Confidence & Units - HERO ELEMENT */}
-                          <div className="flex items-center gap-3 flex-shrink-0">
-                            {/* Confidence Score Card */}
-                            <div className="flex flex-col items-center gap-1 px-4 py-2 bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-lg border border-slate-700/50 shadow-lg">
+                          {/* RIGHT SECTION: Stars + Units */}
+                          <div className="flex items-center gap-4 flex-shrink-0">
+                            {/* Stars + Confidence */}
+                            <div className="flex flex-col items-end gap-1.5">
                               {renderConfidenceStars(pick.confidence)}
-                              <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mt-0.5">
-                                {pick.confidence?.toFixed(1)} Sharp
+                              <div className="text-xs font-bold text-slate-500">
+                                {pick.confidence?.toFixed(1)}
                               </div>
                             </div>
 
-                            {/* Units Badge - Big & Bold */}
-                            <div className="flex flex-col items-center justify-center px-5 py-3 bg-gradient-to-br from-emerald-500 to-green-600 rounded-lg shadow-xl border-2 border-emerald-400/30">
-                              <div className="text-2xl font-black text-white leading-none">
-                                {pick.units}U
-                              </div>
-                              <div className="text-[9px] font-bold text-emerald-100 uppercase tracking-wide mt-0.5">
-                                Risk
+                            {/* Units - Clean & Bold */}
+                            <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl shadow-lg">
+                              <div className="text-3xl font-black text-white">
+                                {pick.units}<span className="text-lg">U</span>
                               </div>
                             </div>
 
