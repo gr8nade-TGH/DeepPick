@@ -125,25 +125,25 @@ function renderConfidenceStars(confidence?: number) {
 
   for (let i = 0; i < 5; i++) {
     if (i < starCount) {
-      // Filled star with gradient glow effect
+      // Filled star - larger with stronger glow
       stars.push(
         <Star
           key={i}
-          className="w-4 h-4 fill-amber-400 text-amber-400 drop-shadow-[0_0_3px_rgba(251,191,36,0.5)]"
+          className="w-5 h-5 fill-yellow-400 text-yellow-400 drop-shadow-[0_0_6px_rgba(250,204,21,0.8)]"
         />
       )
     } else {
-      // Empty star - subtle gray
+      // Empty star - darker and more subtle
       stars.push(
         <Star
           key={i}
-          className="w-4 h-4 text-slate-700/50"
+          className="w-5 h-5 text-slate-800/60 fill-slate-800/20"
         />
       )
     }
   }
 
-  return <div className="flex items-center gap-0.5">{stars}</div>
+  return <div className="flex items-center gap-1">{stars}</div>
 }
 
 export function ProfessionalDashboard() {
@@ -567,18 +567,27 @@ export function ProfessionalDashboard() {
                             </div>
                           </div>
 
-                          {/* Right: Confidence & Units */}
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            <div className="flex flex-col items-end gap-1">
+                          {/* Right: Confidence & Units - HERO ELEMENT */}
+                          <div className="flex items-center gap-3 flex-shrink-0">
+                            {/* Confidence Score Card */}
+                            <div className="flex flex-col items-center gap-1 px-4 py-2 bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-lg border border-slate-700/50 shadow-lg">
                               {renderConfidenceStars(pick.confidence)}
-                              <Badge className={`${confidenceBadge.color} text-white text-xs px-2 py-0.5 font-bold shadow-md`}>
-                                {pick.confidence?.toFixed(1)}
-                              </Badge>
+                              <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mt-0.5">
+                                {pick.confidence?.toFixed(1)} Sharp
+                              </div>
                             </div>
-                            <div className="text-xl font-black bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">
-                              {pick.units}U
+
+                            {/* Units Badge - Big & Bold */}
+                            <div className="flex flex-col items-center justify-center px-5 py-3 bg-gradient-to-br from-emerald-500 to-green-600 rounded-lg shadow-xl border-2 border-emerald-400/30">
+                              <div className="text-2xl font-black text-white leading-none">
+                                {pick.units}U
+                              </div>
+                              <div className="text-[9px] font-bold text-emerald-100 uppercase tracking-wide mt-0.5">
+                                Risk
+                              </div>
                             </div>
-                            <ChevronRight className="h-4 w-4 text-slate-600 group-hover:text-cyan-400 transition-colors" />
+
+                            <ChevronRight className="h-5 w-5 text-slate-600 group-hover:text-cyan-400 transition-colors" />
                           </div>
                         </div>
                       </div>
