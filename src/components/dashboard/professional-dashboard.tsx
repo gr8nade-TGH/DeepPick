@@ -181,6 +181,11 @@ export function ProfessionalDashboard() {
     try {
       setLoading(true)
 
+      // Only fetch pending picks for games that haven't started yet (future games)
+      // This prevents old stale picks from showing up
+      const now = new Date()
+      const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000) // 24 hours ago
+
       const [picksResponse, activityResponse, perfResponse] = await Promise.all([
         fetch('/api/picks?status=pending&limit=50&sort=confidence'), // Fetch more to sort client-side
         fetch('/api/picks?status=completed&limit=20&sort=created_at'),
@@ -194,8 +199,27 @@ export function ProfessionalDashboard() {
       ])
 
       if (picksData.success) {
-        // We'll sort these after fetching capper performance
-        setTodaysPicks(picksData.data)
+        // Filter out stale picks (games that started more than 24 hours ago)
+        const filteredPicks = (picksData.data || []).filter((pick: Pick) => {
+          // If game has a start timestamp, check if it's in the future or recent past (within 24 hours)
+          const gameTime = pick.game_snapshot?.game_start_timestamp || pick.games?.game_start_timestamp
+          if (gameTime) {
+            const gameDate = new Date(gameTime)
+            const hoursSinceGame = (now.getTime() - gameDate.getTime()) / (1000 * 60 * 60)
+            // Only show picks for games that haven't started yet or started within last 24 hours
+            return hoursSinceGame < 24
+          }
+          // If no timestamp, keep the pick (fallback)
+          return true
+        })
+
+        console.log('[Dashboard] Filtered picks:', {
+          total: picksData.data?.length || 0,
+          afterFilter: filteredPicks.length,
+          removed: (picksData.data?.length || 0) - filteredPicks.length
+        })
+
+        setTodaysPicks(filteredPicks)
       }
       if (activityData.success) {
         console.log('[Dashboard] Recent activity data:', activityData.data)
