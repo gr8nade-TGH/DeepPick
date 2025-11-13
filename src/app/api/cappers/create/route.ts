@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -34,6 +36,38 @@ interface CreateCapperRequest {
  */
 export async function POST(request: Request) {
   try {
+    // Get authenticated user
+    const cookieStore = await cookies()
+    const supabaseAuth = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              )
+            } catch {
+              // Ignore
+            }
+          },
+        },
+      }
+    )
+
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized - must be logged in to create a capper' },
+        { status: 401 }
+      )
+    }
+
     const body: CreateCapperRequest = await request.json()
 
     // Validation
@@ -109,11 +143,11 @@ export async function POST(request: Request) {
       }, { status: 409 })
     }
 
-    // Insert new capper
+    // Insert new capper (linked to authenticated user)
     const { data: newCapper, error: insertError } = await supabase
       .from('user_cappers')
       .insert({
-        user_id: null, // TODO: Get from auth session when user auth is implemented
+        user_id: user.id, // Link to authenticated user
         capper_id: body.capper_id,
         display_name: body.display_name,
         description: body.description || null,
@@ -139,6 +173,18 @@ export async function POST(request: Request) {
         success: false,
         error: insertError.message
       }, { status: 500 })
+    }
+
+    // Upgrade user's role to 'capper' if they're currently 'free'
+    const { error: roleUpdateError } = await supabase
+      .from('profiles')
+      .update({ role: 'capper' })
+      .eq('id', user.id)
+      .eq('role', 'free') // Only update if currently 'free' (don't downgrade admins)
+
+    if (roleUpdateError) {
+      console.error('[CreateCapper] Role update error:', roleUpdateError)
+      // Don't fail the request, just log the error
     }
 
     // Fetch the auto-created execution schedules

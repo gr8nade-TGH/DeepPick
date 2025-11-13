@@ -256,8 +256,8 @@ export default function CreateCapperPage() {
         throw new Error(data.error || data.errors?.join(', ') || 'Failed to create capper')
       }
 
-      // Success! Redirect to system health to see the new capper
-      router.push('/admin/system-health')
+      // Success! Redirect to capper dashboard
+      router.push('/dashboard/capper')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
       setIsSubmitting(false)

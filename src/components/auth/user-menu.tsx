@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '@/contexts/auth-context'
 import { Button } from '@/components/ui/button'
-import { User, LogOut, Settings, Crown, Shield } from 'lucide-react'
+import { User, LogOut, Settings, Crown, Shield, Sliders } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
@@ -156,6 +156,18 @@ export function UserMenu() {
                 >
                   <User className="w-4 h-4" />
                   Profile
+                </button>
+              </Link>
+            )}
+
+            {profile.role === 'capper' && (
+              <Link href="/dashboard/capper">
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 rounded-lg transition-colors"
+                >
+                  <Sliders className="w-4 h-4" />
+                  My Capper Dashboard
                 </button>
               </Link>
             )}
