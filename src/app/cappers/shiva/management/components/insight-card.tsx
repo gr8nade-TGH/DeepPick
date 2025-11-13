@@ -176,8 +176,8 @@ export function InsightCard(props: InsightCardProps) {
                 <div className="flex items-center gap-3">
                   <h1 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">{props.capper || 'SHIVA'}'S PICK</h1>
                   <span className={`text-xs font-semibold px-3 py-1 rounded-full ${props.is_system_pick !== false
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-green-600 text-white'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-green-600 text-white'
                     }`}>
                     {props.is_system_pick !== false ? 'GENERATED' : 'MANUAL'}
                   </span>
@@ -304,53 +304,60 @@ export function InsightCard(props: InsightCardProps) {
 
             {/* AI BOLD PREDICTIONS - Show if available */}
             {props.bold_predictions && props.bold_predictions.predictions && props.bold_predictions.predictions.length > 0 ? (
-              <div className="bg-gradient-to-br from-amber-900/80 to-amber-800/80 rounded-xl p-5 border border-amber-500/30 shadow-lg">
-                <div className="text-xs font-bold text-amber-300 uppercase mb-3 flex items-center gap-2">
-                  <span>🎯</span>
-                  <span>AI BOLD PREDICTIONS</span>
+              <div className="space-y-4">
+                {/* Section Header */}
+                <div className="flex items-center gap-2 pb-2 border-b border-slate-700">
+                  <span className="text-lg">🎯</span>
+                  <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wide">AI Bold Predictions</h3>
                 </div>
 
                 {/* Summary */}
                 {props.bold_predictions.summary && (
-                  <p className="text-amber-100 text-sm font-medium mb-4 leading-relaxed">{props.bold_predictions.summary}</p>
+                  <p className="text-slate-300 text-sm leading-relaxed">{props.bold_predictions.summary}</p>
                 )}
 
-                {/* Individual Predictions */}
+                {/* Individual Predictions - Clean Cards */}
                 <div className="space-y-3">
                   {props.bold_predictions.predictions.map((pred, index) => (
-                    <div key={index} className="bg-gradient-to-r from-slate-900/60 to-slate-800/60 rounded-lg p-4 border border-amber-500/20">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <div className="text-sm font-bold text-amber-200 mb-1">
-                            {pred.player} ({pred.team})
+                    <div key={index} className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/50 hover:border-slate-600 transition-colors">
+                      {/* Player + Confidence Badge */}
+                      <div className="flex items-start justify-between gap-3 mb-3">
+                        <div>
+                          <div className="text-sm font-bold text-white">
+                            {pred.player}
                           </div>
-                          <div className="text-base font-semibold text-white mb-2">
-                            {pred.prediction}
+                          <div className="text-xs text-slate-400 font-medium">
+                            {pred.team}
                           </div>
                         </div>
-                        <div className="ml-3">
-                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${pred.confidence === 'HIGH' ? 'bg-green-600 text-white' :
-                            pred.confidence === 'MEDIUM' ? 'bg-yellow-600 text-black' :
-                              'bg-orange-600 text-white'
-                            }`}>
-                            {pred.confidence}
-                          </span>
-                        </div>
+                        <span className={`px-2.5 py-1 rounded-md text-xs font-bold flex-shrink-0 ${pred.confidence === 'HIGH' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
+                          pred.confidence === 'MEDIUM' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
+                            'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                          }`}>
+                          {pred.confidence}
+                        </span>
                       </div>
-                      <p className="text-xs text-amber-200/80 leading-relaxed">{pred.reasoning}</p>
+
+                      {/* The Prediction - HERO */}
+                      <div className="text-base font-bold text-cyan-300 mb-2">
+                        {pred.prediction}
+                      </div>
+
+                      {/* Reasoning */}
+                      <p className="text-xs text-slate-400 leading-relaxed">{pred.reasoning}</p>
                     </div>
                   ))}
                 </div>
               </div>
             ) : (
-              /* Fallback: Show "Coming Soon" only if no bold predictions available */
-              <div className="bg-gradient-to-br from-slate-900/60 to-slate-800/60 border border-slate-600/40 rounded-lg p-4">
-                <div className="text-xs font-semibold text-slate-400 uppercase mb-2">🎯 AI BOLD PREDICTIONS</div>
-                <div className="text-center py-2">
-                  <p className="text-slate-400 text-sm">No bold predictions available for this pick</p>
-                  <p className="text-slate-500 text-xs mt-1">Bold predictions are generated for manual wizard picks only</p>
-                </div>
+              /* Fallback: Show "Coming Soon" only if no bold predictions available */}
+            <div className="bg-slate-800/30 border border-slate-700/40 rounded-lg p-4">
+              <div className="text-xs font-semibold text-slate-400 uppercase mb-2">🎯 AI BOLD PREDICTIONS</div>
+              <div className="text-center py-2">
+                <p className="text-slate-400 text-sm">No bold predictions available for this pick</p>
+                <p className="text-slate-500 text-xs mt-1">Bold predictions are generated for manual wizard picks only</p>
               </div>
+            </div>
             )}
           </div>
         )}
@@ -379,29 +386,20 @@ export function InsightCard(props: InsightCardProps) {
 
         {/* Confidence Factors Table - Professional Design */}
         <div className="p-6 bg-gradient-to-br from-slate-800 to-slate-700 border-b border-cyan-500/20">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-6">
             <div className="text-base font-bold text-cyan-300 flex items-center gap-2">
-              <span>📈</span>
+              <span className="text-xl">📈</span>
               <span>EDGE FACTORS</span>
             </div>
             {sortedFactors.length > 0 && (
-              <div className="text-xs px-4 py-2 bg-gradient-to-r from-cyan-900 to-blue-900 text-cyan-200 rounded-full border border-cyan-500/40 font-semibold">
+              <div className="text-xs px-3 py-1.5 bg-cyan-500/10 text-cyan-300 rounded-lg border border-cyan-500/30 font-semibold">
                 🏆 Dominant: {sortedFactors[0].label}
               </div>
             )}
           </div>
 
-          {/* Header Row - Over/Under Direction */}
-          <div className="grid grid-cols-[50px_1fr_1fr] gap-3 mb-3 text-xs font-bold text-cyan-400">
-            <div className="text-center">ICON</div>
-            <div className="text-center">FACTOR</div>
-            <div className="text-center">
-              <div className="text-xs text-cyan-300 mb-1">OVER / UNDER</div>
-            </div>
-          </div>
-
-          {/* Factor Rows - Over/Under Direction */}
-          <div className="space-y-1">
+          {/* Factor Rows - Clean & Spacious */}
+          <div className="space-y-2">
             {sortedFactors.map((factor) => {
               const factorMeta = getFactorMeta(factor.key)
               const icon = factorMeta?.icon || 'ℹ️'
@@ -409,7 +407,6 @@ export function InsightCard(props: InsightCardProps) {
               const tooltip = factorMeta?.description || factor.rationale || 'Factor'
 
               // Calculate Over/Under direction from factor scores
-              // For NBA Totals: overScore = points toward OVER, underScore = points toward UNDER
               const netContribution = (factor.overScore || 0) - (factor.underScore || 0)
               const isOver = factor.overScore > 0
               const isUnder = factor.underScore > 0
@@ -418,43 +415,50 @@ export function InsightCard(props: InsightCardProps) {
               return (
                 <div
                   key={factor.key}
-                  className="grid grid-cols-[50px_1fr_1fr] gap-3 items-center py-3 bg-gradient-to-r from-slate-900/60 to-slate-800/60 rounded-lg hover:from-slate-800/80 hover:to-slate-700/80 transition-all border border-cyan-500/20 hover:border-cyan-500/40"
+                  className="bg-slate-900/40 rounded-lg p-4 border border-slate-700/50 hover:border-slate-600 transition-all group"
                   onMouseEnter={() => setHoveredFactor(factor.key)}
                   onMouseLeave={() => setHoveredFactor(null)}
                 >
-                  {/* Icon with tooltip */}
-                  <div className="text-center text-lg relative">
-                    <span title={tooltip}>{icon}</span>
-                    {hoveredFactor === factor.key && (
-                      <div className="absolute left-full ml-3 top-0 z-20 w-64 bg-slate-800 text-white text-xs p-2 rounded shadow-lg border border-slate-600">
-                        {tooltip}
+                  <div className="flex items-center gap-4">
+                    {/* Icon - Larger */}
+                    <div className="text-2xl flex-shrink-0 relative">
+                      <span title={tooltip}>{icon}</span>
+                      {hoveredFactor === factor.key && (
+                        <div className="absolute left-full ml-3 top-0 z-20 w-64 bg-slate-800 text-white text-xs p-3 rounded-lg shadow-xl border border-slate-600">
+                          {tooltip}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Factor Name */}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-bold text-white">
+                        {shortName}
                       </div>
-                    )}
-                  </div>
+                    </div>
 
-                  {/* Factor Name */}
-                  <div className="text-sm font-bold text-white text-center">
-                    {shortName}
-                  </div>
-
-                  {/* Over/Under Direction */}
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 text-right">
-                      <span className={`text-sm font-mono ${isOver ? 'text-green-400' : isUnder ? 'text-red-400' : 'text-slate-400'}`}>
+                    {/* Direction Label + Bar + Value */}
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      {/* Direction Label */}
+                      <span className={`text-xs font-bold uppercase w-16 text-right ${isOver ? 'text-green-400' : isUnder ? 'text-red-400' : 'text-slate-500'
+                        }`}>
                         {isOver ? 'OVER' : isUnder ? 'UNDER' : 'NEUTRAL'}
                       </span>
-                    </div>
-                    <div className="w-20 h-1.5 bg-slate-600 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full ${isOver ? 'bg-green-500' : isUnder ? 'bg-red-500' : 'bg-slate-500'}`}
-                        style={{
-                          width: `${Math.min(Math.abs(netContribution) / 2 * 100, 100)}%`,
-                          marginLeft: isOver ? '0%' : isUnder ? `${100 - Math.min(Math.abs(netContribution) / 2 * 100, 100)}%` : '50%'
-                        }}
-                      />
-                    </div>
-                    <div className="flex-1 text-left">
-                      <span className={`text-xs font-mono ${isOver ? 'text-green-400' : isUnder ? 'text-red-400' : 'text-slate-400'}`}>
+
+                      {/* Progress Bar */}
+                      <div className="w-24 h-2 bg-slate-700 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full ${isOver ? 'bg-green-500' : isUnder ? 'bg-red-500' : 'bg-slate-500'}`}
+                          style={{
+                            width: `${Math.min(Math.abs(netContribution) / 2 * 100, 100)}%`,
+                            marginLeft: isOver ? '0%' : isUnder ? `${100 - Math.min(Math.abs(netContribution) / 2 * 100, 100)}%` : '50%'
+                          }}
+                        />
+                      </div>
+
+                      {/* Value */}
+                      <span className={`text-sm font-mono font-bold w-12 ${isOver ? 'text-green-400' : isUnder ? 'text-red-400' : 'text-slate-500'
+                        }`}>
                         {isOver ? `+${factor.overScore.toFixed(1)}` : isUnder ? `+${factor.underScore.toFixed(1)}` : '0.0'}
                       </span>
                     </div>
@@ -465,28 +469,28 @@ export function InsightCard(props: InsightCardProps) {
           </div>
         </div>
 
-        {/* Market Summary Strip */}
-        <div className="p-4 bg-slate-800 border-b border-slate-700">
-          <div className="grid grid-cols-4 gap-4 text-center mb-3">
-            <div className="bg-slate-700 rounded p-2">
-              <div className="text-xs text-slate-400 uppercase mb-1">CONF7</div>
-              <div className="text-lg font-mono font-bold text-white">{safeMarket.conf7.toFixed(2)}</div>
+        {/* Market Summary Strip - Enhanced */}
+        <div className="p-6 bg-slate-800 border-b border-slate-700">
+          <div className="grid grid-cols-4 gap-3 text-center">
+            <div className="bg-slate-900/60 rounded-lg p-3 border border-slate-700/50">
+              <div className="text-xs text-slate-400 uppercase mb-1.5 font-semibold">CONF7</div>
+              <div className="text-2xl font-mono font-bold text-white">{safeMarket.conf7.toFixed(2)}</div>
             </div>
-            <div className="bg-slate-700 rounded p-2">
-              <div className="text-xs text-slate-400 uppercase mb-1">MARKET ADJ</div>
-              <div className={`text-lg font-mono font-bold ${safeMarket.confAdj > 0 ? 'text-green-400' : safeMarket.confAdj < 0 ? 'text-red-400' : 'text-slate-400'}`}>
+            <div className="bg-slate-900/60 rounded-lg p-3 border border-slate-700/50">
+              <div className="text-xs text-slate-400 uppercase mb-1.5 font-semibold">MARKET ADJ</div>
+              <div className={`text-2xl font-mono font-bold ${safeMarket.confAdj > 0 ? 'text-green-400' : safeMarket.confAdj < 0 ? 'text-red-400' : 'text-slate-400'}`}>
                 {safeMarket.confAdj > 0 ? '+' : ''}{safeMarket.confAdj.toFixed(2)}
               </div>
             </div>
-            <div className="bg-slate-600 rounded p-2 border border-slate-500">
-              <div className="text-xs text-slate-300 uppercase mb-1">CONF FINAL</div>
-              <div className="text-xl font-mono font-bold text-white">
+            <div className="bg-gradient-to-br from-cyan-900/40 to-blue-900/40 rounded-lg p-3 border-2 border-cyan-500/40">
+              <div className="text-xs text-cyan-300 uppercase mb-1.5 font-bold">CONF FINAL</div>
+              <div className="text-2xl font-mono font-bold text-white">
                 {safeMarket.confFinal.toFixed(2)}
               </div>
             </div>
-            <div className="bg-slate-700 rounded p-2">
-              <div className="text-xs text-slate-400 uppercase mb-1">DOMINANT EDGE</div>
-              <div className="text-sm font-bold text-white">
+            <div className="bg-slate-900/60 rounded-lg p-3 border border-slate-700/50">
+              <div className="text-xs text-slate-400 uppercase mb-1.5 font-semibold">DOMINANT EDGE</div>
+              <div className="text-base font-bold text-white">
                 {safePick.type === 'TOTAL' ? (safePick.selection?.includes('OVER') ? 'OVER' : 'UNDER') : safeMarket.dominant.toUpperCase()}
               </div>
             </div>
