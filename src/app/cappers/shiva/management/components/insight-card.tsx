@@ -83,6 +83,23 @@ export interface InsightCardProps {
     status: 'pending' | 'win' | 'loss' | 'push'
     finalScore?: { away: number; home: number }
     postMortem?: string
+    factorAccuracy?: Array<{
+      factor_key: string
+      factor_name: string
+      contribution: number
+      was_correct: boolean
+      accuracy_score: number
+      impact: 'high' | 'medium' | 'low'
+      reasoning: string
+    }>
+    tuningSuggestions?: Array<{
+      factor_key: string
+      current_weight: number
+      suggested_weight: number
+      reasoning: string
+      confidence: number
+    }>
+    overallAccuracy?: number
   }
   onClose: () => void
 }
@@ -579,39 +596,152 @@ export function InsightCard(props: InsightCardProps) {
           </div>
         )}
 
-        {/* RESULTS Section */}
-        <div className="p-4 bg-slate-800">
-          <div className="text-center">
-            <div className="text-sm font-semibold text-white mb-3">RESULTS</div>
-            {props.results && props.results.status !== 'pending' ? (
-              <div className={`p-3 rounded-lg border ${props.results.status === 'win' ? 'bg-green-900 border-green-700' :
-                props.results.status === 'loss' ? 'bg-red-900 border-red-700' :
-                  'bg-yellow-900 border-yellow-700'
-                }`}>
-                <div className="text-lg font-bold text-white mb-2">
-                  {props.results.status === 'win' ? '✅ WIN' :
-                    props.results.status === 'loss' ? '❌ LOSS' : '🤝 PUSH'}
-                </div>
-                {props.results.finalScore && (
-                  <div className="text-sm text-white mb-2">
-                    Final: {props.results.finalScore.away} - {props.results.finalScore.home}
+        {/* RESULTS Section - Redesigned */}
+        <div className="p-6 bg-gradient-to-br from-slate-900 to-slate-800 border-t border-cyan-500/20">
+          {props.results && props.results.status !== 'pending' ? (
+            <div className="space-y-6">
+              {/* Result Header */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`text-3xl font-bold ${props.results.status === 'win' ? 'text-green-400' :
+                      props.results.status === 'loss' ? 'text-red-400' : 'text-yellow-400'
+                    }`}>
+                    {props.results.status === 'win' ? '✅ WIN' :
+                      props.results.status === 'loss' ? '❌ LOSS' : '🤝 PUSH'}
                   </div>
-                )}
-                {props.results.postMortem && (
-                  <div className="mt-3 pt-3 border-t border-slate-600">
-                    <div className="text-xs font-semibold text-slate-300 mb-2">AI POST-MORTEM ANALYSIS</div>
-                    <div className="text-xs text-slate-200 whitespace-pre-line leading-relaxed">
-                      {props.results.postMortem}
+                  {props.results.finalScore && (
+                    <div className="text-lg text-slate-300 font-semibold">
+                      {props.results.finalScore.away} - {props.results.finalScore.home}
+                    </div>
+                  )}
+                </div>
+                {props.results.overallAccuracy !== undefined && (
+                  <div className="text-right">
+                    <div className="text-xs text-slate-400 uppercase tracking-wide mb-1">Model Accuracy</div>
+                    <div className={`text-2xl font-bold ${props.results.overallAccuracy >= 0.8 ? 'text-green-400' :
+                        props.results.overallAccuracy >= 0.6 ? 'text-yellow-400' : 'text-red-400'
+                      }`}>
+                      {(props.results.overallAccuracy * 100).toFixed(0)}%
                     </div>
                   </div>
                 )}
               </div>
-            ) : (
-              <div className="text-sm text-slate-400">
-                Game has not started yet. Check back to see the outcome and our assessment of what we did right or wrong in predicting this matchup!
+
+              {/* AI Post-Mortem Analysis */}
+              {props.results.postMortem && (
+                <div className="bg-slate-800/50 rounded-lg p-5 border border-slate-700/50">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-lg">🧠</span>
+                    <h3 className="text-sm font-bold text-cyan-300 uppercase tracking-wide">AI Post-Mortem Analysis</h3>
+                  </div>
+                  <div className="text-sm text-slate-200 leading-relaxed whitespace-pre-line">
+                    {props.results.postMortem}
+                  </div>
+                </div>
+              )}
+
+              {/* Factor Accuracy Breakdown */}
+              {props.results.factorAccuracy && props.results.factorAccuracy.length > 0 && (
+                <div className="bg-slate-800/50 rounded-lg p-5 border border-slate-700/50">
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="text-lg">📊</span>
+                    <h3 className="text-sm font-bold text-cyan-300 uppercase tracking-wide">Factor Accuracy</h3>
+                  </div>
+                  <div className="space-y-3">
+                    {props.results.factorAccuracy.map((factor, index) => (
+                      <div key={index} className="flex items-start gap-3 p-3 bg-slate-900/50 rounded-lg border border-slate-700/30">
+                        <div className={`text-xl flex-shrink-0 ${factor.was_correct ? 'text-green-400' : 'text-red-400'}`}>
+                          {factor.was_correct ? '✅' : '❌'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <div className="text-sm font-semibold text-white">{factor.factor_name}</div>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs px-2 py-0.5 rounded ${factor.impact === 'high' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' :
+                                  factor.impact === 'medium' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' :
+                                    'bg-slate-500/20 text-slate-300 border border-slate-500/30'
+                                }`}>
+                                {factor.impact.toUpperCase()}
+                              </span>
+                              <span className={`text-sm font-bold ${factor.accuracy_score >= 0.8 ? 'text-green-400' :
+                                  factor.accuracy_score >= 0.6 ? 'text-yellow-400' : 'text-red-400'
+                                }`}>
+                                {(factor.accuracy_score * 100).toFixed(0)}%
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-xs text-slate-400 leading-relaxed">{factor.reasoning}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Tuning Suggestions */}
+              {props.results.tuningSuggestions && props.results.tuningSuggestions.length > 0 && (
+                <div className="bg-gradient-to-br from-amber-900/20 to-orange-900/20 rounded-lg p-5 border border-amber-500/30">
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="text-lg">🎯</span>
+                    <h3 className="text-sm font-bold text-amber-300 uppercase tracking-wide">Recommended Adjustments</h3>
+                  </div>
+                  <div className="space-y-3">
+                    {props.results.tuningSuggestions.map((suggestion, index) => {
+                      const changePercent = ((suggestion.suggested_weight - suggestion.current_weight) / suggestion.current_weight * 100)
+                      const isIncrease = changePercent > 0
+                      return (
+                        <div key={index} className="p-3 bg-slate-900/50 rounded-lg border border-amber-500/20">
+                          <div className="flex items-center justify-between gap-3 mb-2">
+                            <div className="text-sm font-semibold text-white">{suggestion.factor_key}</div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-slate-400">
+                                {suggestion.current_weight}% → {suggestion.suggested_weight}%
+                              </span>
+                              <span className={`text-xs font-bold px-2 py-0.5 rounded ${isIncrease ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
+                                }`}>
+                                {isIncrease ? '↑' : '↓'} {Math.abs(changePercent).toFixed(0)}%
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-xs text-slate-400 leading-relaxed mb-2">{suggestion.reasoning}</div>
+                          <div className="flex items-center gap-2">
+                            <div className="text-xs text-slate-500">Confidence:</div>
+                            <div className="flex-1 bg-slate-800 rounded-full h-1.5">
+                              <div
+                                className={`h-full rounded-full ${suggestion.confidence >= 0.8 ? 'bg-green-500' :
+                                    suggestion.confidence >= 0.6 ? 'bg-yellow-500' : 'bg-orange-500'
+                                  }`}
+                                style={{ width: `${suggestion.confidence * 100}%` }}
+                              />
+                            </div>
+                            <div className="text-xs font-semibold text-slate-300">
+                              {(suggestion.confidence * 100).toFixed(0)}%
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-amber-500/20">
+                    <a
+                      href="/cappers/shiva/management"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block w-full text-center py-2.5 px-4 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-semibold rounded-lg transition-all duration-200 text-sm"
+                    >
+                      Apply in Configure Factors →
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <div className="text-slate-400 text-sm leading-relaxed">
+                Game has not started yet. Check back to see the outcome and our AI's assessment of what we did right or wrong in predicting this matchup!
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Footer with Metadata */}
