@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 
 export default function UpgradePage() {
-  const { profile, loading } = useAuth()
+  const { user, profile, loading } = useAuth()
   const router = useRouter()
 
   // Redirect if already a capper or admin
@@ -19,6 +19,7 @@ export default function UpgradePage() {
     }
   }, [profile, loading, router])
 
+  // Show loading state while auth is initializing
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
@@ -27,7 +28,9 @@ export default function UpgradePage() {
     )
   }
 
-  if (!profile) {
+  // Only show "Sign In Required" if we're done loading AND there's no user
+  // This prevents the flash when profile is temporarily null during auth state changes
+  if (!loading && !user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-6">
         <Card className="w-full max-w-md bg-slate-900 border-slate-700">
@@ -43,6 +46,16 @@ export default function UpgradePage() {
             </Link>
           </CardContent>
         </Card>
+      </div>
+    )
+  }
+
+  // If we have a user but no profile yet, show loading
+  // This handles the case where profile is still being fetched
+  if (user && !profile) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+        <div className="text-white">Loading your profile...</div>
       </div>
     )
   }

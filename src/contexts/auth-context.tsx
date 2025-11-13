@@ -128,12 +128,29 @@ export function AuthProvider({
       setUser(newSession?.user ?? null)
 
       if (newSession?.user) {
-        console.log('[AuthContext] Loading profile for user:', newSession.user.id)
-        const profileData = await fetchProfile(newSession.user.id)
-        if (mounted) {
-          setProfile(profileData)
-          setLoading(false)
-        }
+        // Only fetch profile if we don't already have one for this user
+        // This prevents unnecessary refetches when auth state changes but user hasn't changed
+        setProfile((currentProfile) => {
+          const currentUserId = newSession.user.id
+          const hasProfileForUser = currentProfile?.id === currentUserId
+
+          if (!hasProfileForUser) {
+            console.log('[AuthContext] Loading profile for user:', currentUserId)
+            fetchProfile(currentUserId).then((profileData) => {
+              if (mounted) {
+                setProfile(profileData)
+                setLoading(false)
+              }
+            })
+            return currentProfile // Keep current profile while loading
+          } else {
+            console.log('[AuthContext] Profile already loaded for user:', currentUserId, '- skipping refetch')
+            if (mounted) {
+              setLoading(false)
+            }
+            return currentProfile // Keep existing profile
+          }
+        })
       } else {
         console.log('[AuthContext] No user, clearing profile')
         if (mounted) {
