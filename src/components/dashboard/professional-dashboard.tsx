@@ -41,9 +41,11 @@ interface Pick {
     away_team: any
     game_date: string
     game_time: string
+    game_start_timestamp?: string
   }
   games?: {
     status: string
+    game_start_timestamp?: string
   }
 }
 
@@ -596,7 +598,11 @@ export function ProfessionalDashboard() {
                                   {gameStatus.text}
                                 </span>
                                 {(() => {
-                                  const countdown = getCountdown(pick.game_snapshot?.game_date)
+                                  // Try multiple sources for game start time
+                                  const gameTime = pick.games?.game_start_timestamp ||
+                                    pick.game_snapshot?.game_start_timestamp ||
+                                    pick.game_snapshot?.game_date
+                                  const countdown = getCountdown(gameTime)
                                   return countdown ? (
                                     <>
                                       <span className="text-slate-600">•</span>
