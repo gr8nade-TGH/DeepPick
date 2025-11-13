@@ -38,61 +38,81 @@ interface CapperConfig {
 }
 
 const FACTOR_DETAILS = {
-  F1: {
-    name: 'Recent Form Momentum',
-    description: 'Analyzes team performance trends over the last 5 games. Higher weight = more emphasis on hot/cold streaks.',
-    importance: 'Critical for identifying teams on winning or losing runs that affect scoring patterns.'
+  paceIndex: {
+    name: 'Pace Index',
+    description: 'Expected game pace based on both teams\' recent pace (last 10 games)',
+    importance: 'Fast-paced games produce higher totals; slow-paced games produce lower totals.',
+    example: 'High pace game (+12 possessions vs league avg) → Strong Over signal. Slow pace game (-8 possessions) → Strong Under signal.',
+    defaultWeight: 30
   },
-  F2: {
-    name: 'Head-to-Head History',
-    description: 'Examines past matchups between these teams. Higher weight = more trust in historical patterns.',
-    importance: 'Teams often have consistent scoring patterns against specific opponents.'
+  netRating: {
+    name: 'Net Rating',
+    description: 'Combined offensive and defensive efficiency differential',
+    importance: 'Elite offenses vs weak defenses create higher scoring games.',
+    example: 'Strong offense (+8 net rating) vs weak defense (-6 net rating) → Strong Over signal.',
+    defaultWeight: 30
   },
-  F3: {
-    name: 'Home/Away Performance',
-    description: 'Compares home vs away scoring averages. Higher weight = stronger home court advantage impact.',
-    importance: 'Home teams typically score 2-4 more points per game than on the road.'
+  shooting: {
+    name: 'Shooting Performance',
+    description: '3PT% and FG% trends over last 5 games',
+    importance: 'Hot shooting teams score more points; cold shooting teams score fewer.',
+    example: 'Team shooting 40% from 3PT (vs 35% avg) → +2.5 points per game.',
+    defaultWeight: 25
   },
-  F4: {
-    name: 'Pace & Tempo Analysis',
-    description: 'Evaluates game speed and possession count. Higher weight = more emphasis on fast/slow pace impact.',
-    importance: 'Fast-paced games produce higher totals; slow-paced games produce lower totals.'
+  homeAwayDiff: {
+    name: 'Home/Away Split',
+    description: 'Home vs away scoring differential',
+    importance: 'Home teams typically score 2-4 more points per game than on the road.',
+    example: 'Home team averages +3.5 PPG at home → Slight Over lean.',
+    defaultWeight: 20
   },
-  F5: {
+  restDays: {
     name: 'Rest & Fatigue',
-    description: 'Considers days of rest and back-to-back games. Higher weight = more emphasis on tired teams.',
-    importance: 'Fatigued teams score fewer points and allow more points on defense.'
+    description: 'Days of rest and back-to-back game impact',
+    importance: 'Fatigued teams score fewer points and allow more points on defense.',
+    example: 'Team on back-to-back (0 days rest) → -3 to -5 points expected.',
+    defaultWeight: 20
   },
-  S1: {
-    name: 'Recent Form Momentum',
-    description: 'Analyzes team performance trends over the last 5 games. Higher weight = more emphasis on hot/cold streaks.',
-    importance: 'Critical for identifying teams on winning or losing runs that affect point margins.'
+  recentForm: {
+    name: 'Recent Form (ATS)',
+    description: 'Against-the-spread performance over last 3 and 10 games',
+    importance: 'Teams on hot ATS streaks tend to continue covering spreads.',
+    example: 'Team is 8-2 ATS in last 10 games → Strong cover signal.',
+    defaultWeight: 30
   },
-  S2: {
-    name: 'Head-to-Head History',
-    description: 'Examines past matchups between these teams. Higher weight = more trust in historical patterns.',
-    importance: 'Teams often have consistent margin patterns against specific opponents.'
+  paceMismatch: {
+    name: 'Pace Mismatch',
+    description: 'Fast vs slow tempo differential between teams',
+    importance: 'Slower team typically gets ATS edge in pace mismatches.',
+    example: 'Fast team (105 pace) vs slow team (95 pace) → Slower team gets +3.8 ATS edge.',
+    defaultWeight: 20
   },
-  S3: {
-    name: 'Home/Away Performance',
-    description: 'Compares home vs away point differentials. Higher weight = stronger home court advantage impact.',
-    importance: 'Home teams typically cover spreads more often than road teams.'
+  offDefBalance: {
+    name: 'Offensive/Defensive Balance',
+    description: 'Team efficiency ratings on both ends of the floor',
+    importance: 'Elite offenses vs weak defenses create larger point margins.',
+    example: 'Elite offense (+8 rating) vs weak defense (-6 rating) → Large spread advantage.',
+    defaultWeight: 25
   },
-  S4: {
-    name: 'Offensive/Defensive Ratings',
-    description: 'Evaluates team efficiency on both ends. Higher weight = more emphasis on statistical dominance.',
-    importance: 'Elite offenses vs weak defenses create larger point margins.'
+  homeCourtEdge: {
+    name: 'Home Court Advantage',
+    description: 'Home vs away point differential and win rate',
+    importance: 'Home teams cover spreads more often than road teams.',
+    example: 'Strong home team (+6.5 PPG at home) → Home spread advantage.',
+    defaultWeight: 15
   },
-  S5: {
-    name: 'Rest & Fatigue',
-    description: 'Considers days of rest and back-to-back games. Higher weight = more emphasis on tired teams.',
-    importance: 'Fatigued teams struggle to cover spreads, especially on the road.'
+  clutchPerformance: {
+    name: 'Clutch Performance',
+    description: 'Performance in close games (within 5 points in 4th quarter)',
+    importance: 'Clutch teams cover spreads in tight games.',
+    example: 'Team is 12-3 in clutch situations → Strong spread cover signal.',
+    defaultWeight: 15
   }
 }
 
 const AVAILABLE_FACTORS = {
-  TOTAL: ['F1', 'F2', 'F3', 'F4', 'F5'],
-  SPREAD: ['S1', 'S2', 'S3', 'S4', 'S5']
+  TOTAL: ['paceIndex', 'netRating', 'shooting', 'homeAwayDiff', 'restDays'],
+  SPREAD: ['recentForm', 'paceMismatch', 'offDefBalance', 'homeCourtEdge', 'clutchPerformance']
 }
 
 const NBA_TEAMS = [
@@ -119,14 +139,14 @@ export default function CreateCapperPage() {
     auto_generate_hours_before: 4,
     excluded_teams: [],
     factor_config: {
-      // Initialize with default weights for both bet types
+      // Initialize with default weights for both bet types (50% each = 250% total)
       TOTAL: {
-        enabled_factors: ['F1', 'F2', 'F3', 'F4', 'F5'],
-        weights: { F1: 1.0, F2: 1.0, F3: 1.0, F4: 1.0, F5: 1.0 }
+        enabled_factors: ['paceIndex', 'netRating', 'shooting', 'homeAwayDiff', 'restDays'],
+        weights: { paceIndex: 50, netRating: 50, shooting: 50, homeAwayDiff: 50, restDays: 50 }
       },
       SPREAD: {
-        enabled_factors: ['S1', 'S2', 'S3', 'S4', 'S5'],
-        weights: { S1: 1.0, S2: 1.0, S3: 1.0, S4: 1.0, S5: 1.0 }
+        enabled_factors: ['recentForm', 'paceMismatch', 'offDefBalance', 'homeCourtEdge', 'clutchPerformance'],
+        weights: { recentForm: 50, paceMismatch: 50, offDefBalance: 50, homeCourtEdge: 50, clutchPerformance: 50 }
       }
     },
     execution_interval_minutes: 15,
@@ -155,7 +175,7 @@ export default function CreateCapperPage() {
     setConfig(prev => ({ ...prev, ...updates }))
   }
 
-  // Calculate total weight allocation for a bet type (max 250% = 2.5x per factor on average)
+  // Calculate total weight allocation for a bet type (must equal 250%)
   const calculateTotalWeight = (betType: string): number => {
     const factorConfig = config.factor_config[betType]
     if (!factorConfig) return 0
@@ -165,10 +185,10 @@ export default function CreateCapperPage() {
     }, 0)
   }
 
-  const getTotalWeightPercentage = (betType: string): number => {
+  // Check if weight allocation is valid (must equal 250%)
+  const isWeightValid = (betType: string): boolean => {
     const total = calculateTotalWeight(betType)
-    const maxAllowed = 2.5 * (AVAILABLE_FACTORS[betType as keyof typeof AVAILABLE_FACTORS]?.length || 5)
-    return (total / maxAllowed) * 100
+    return Math.abs(total - 250) < 0.01 // Allow tiny floating point errors
   }
 
   const handleTeamToggle = (team: string) => {
@@ -206,10 +226,8 @@ export default function CreateCapperPage() {
       case 2:
         // If manual mode, skip factor config - always can proceed
         if (config.pick_mode === 'manual') return true
-        // Otherwise, ensure all bet types have at least one factor enabled
-        return config.bet_types.every(bt =>
-          config.factor_config[bt]?.enabled_factors.length > 0
-        )
+        // Otherwise, ensure all bet types have valid weight allocation (250%)
+        return config.bet_types.every(bt => isWeightValid(bt))
       case 3:
         // Review step - always can proceed
         return true
@@ -462,42 +480,51 @@ export default function CreateCapperPage() {
             <div className="space-y-6">
               {config.bet_types.map(betType => {
                 const totalWeight = calculateTotalWeight(betType)
-                const maxWeight = 2.5 * (AVAILABLE_FACTORS[betType as keyof typeof AVAILABLE_FACTORS]?.length || 5)
-                const percentage = (totalWeight / maxWeight) * 100
+                const remainingWeight = 250 - totalWeight
+                const isValid = isWeightValid(betType)
 
                 return (
                   <div key={betType} className="space-y-4">
                     <div className="flex items-center justify-between">
                       <h3 className="font-semibold text-lg">{betType} Factors</h3>
-                      <div className="text-sm">
-                        <span className={`font-bold ${percentage > 100 ? 'text-red-500' : percentage > 80 ? 'text-yellow-500' : 'text-green-500'}`}>
-                          {totalWeight.toFixed(1)} / {maxWeight.toFixed(1)}
-                        </span>
-                        <span className="text-muted-foreground ml-1">
-                          ({percentage.toFixed(0)}%)
-                        </span>
+                    </div>
+
+                    {/* Weight Budget Display */}
+                    <div className={`p-3 rounded border ${isValid
+                      ? 'bg-green-500/10 border-green-500/30'
+                      : remainingWeight > 0
+                        ? 'bg-blue-500/10 border-blue-500/30'
+                        : 'bg-red-500/10 border-red-500/30'
+                      }`}>
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <div className="text-sm font-medium text-white">
+                            Weight Budget: {totalWeight.toFixed(0)}% / 250%
+                          </div>
+                          <div className={`text-xs mt-1 ${isValid
+                            ? 'text-green-400'
+                            : remainingWeight > 0
+                              ? 'text-blue-400'
+                              : 'text-red-400'
+                            }`}>
+                            {isValid
+                              ? '✓ Perfect! All weight allocated.'
+                              : remainingWeight > 0
+                                ? `${remainingWeight.toFixed(0)}% remaining to allocate`
+                                : `Over budget by ${Math.abs(remainingWeight).toFixed(0)}%`
+                            }
+                          </div>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Allocation Bar */}
-                    <div className="space-y-1">
-                      <div className="h-3 bg-muted rounded-full overflow-hidden">
-                        <div
-                          className={`h-full transition-all ${percentage > 100 ? 'bg-red-500' :
-                            percentage > 80 ? 'bg-yellow-500' :
-                              'bg-green-500'
-                            }`}
-                          style={{ width: `${Math.min(percentage, 100)}%` }}
-                        />
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        💡 You have <strong>250% total allocation</strong> to distribute across all factors. Higher weights = more influence on predictions.
-                      </p>
-                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      💡 Distribute <strong>250% total weight</strong> across all factors. Higher weights = more influence on predictions.
+                    </p>
 
                     {AVAILABLE_FACTORS[betType as keyof typeof AVAILABLE_FACTORS]?.map(factor => {
                       const isEnabled = config.factor_config[betType]?.enabled_factors.includes(factor)
-                      const weight = config.factor_config[betType]?.weights[factor] || 1.0
+                      const weight = config.factor_config[betType]?.weights[factor] || 50
                       const details = FACTOR_DETAILS[factor as keyof typeof FACTOR_DETAILS]
 
                       return (
@@ -509,9 +536,9 @@ export default function CreateCapperPage() {
                                 checked={isEnabled}
                                 onCheckedChange={() => handleFactorToggle(betType, factor)}
                               />
-                              <div>
+                              <div className="flex-1">
                                 <Label htmlFor={`${betType}-${factor}`} className="cursor-pointer font-medium">
-                                  {factor}: {details?.name}
+                                  {details?.name}
                                 </Label>
                                 <p className="text-xs text-muted-foreground mt-0.5">
                                   {details?.description}
@@ -519,7 +546,7 @@ export default function CreateCapperPage() {
                               </div>
                             </div>
                             <span className="text-sm font-semibold text-primary">
-                              {weight.toFixed(1)}x
+                              {weight}%
                             </span>
                           </div>
 
@@ -530,19 +557,24 @@ export default function CreateCapperPage() {
                                   <strong>Why it matters:</strong> {details?.importance}
                                 </p>
                               </div>
+                              <div className="bg-purple-50 dark:bg-purple-950 border border-purple-200 dark:border-purple-800 rounded p-2">
+                                <p className="text-xs text-purple-700 dark:text-purple-300">
+                                  <strong>Example:</strong> {details?.example}
+                                </p>
+                              </div>
                               <div className="space-y-2">
-                                <Slider
-                                  value={[weight]}
-                                  onValueChange={([value]) => handleWeightChange(betType, factor, value)}
-                                  min={0.1}
-                                  max={2.0}
-                                  step={0.1}
-                                  className="w-full"
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max="100"
+                                  value={weight}
+                                  onChange={e => handleWeightChange(betType, factor, parseInt(e.target.value))}
+                                  className="w-full cursor-pointer"
                                 />
                                 <div className="flex justify-between text-xs text-muted-foreground">
-                                  <span>0.1x (Minimal)</span>
-                                  <span>1.0x (Balanced)</span>
-                                  <span>2.0x (Maximum)</span>
+                                  <span>0% (Disabled)</span>
+                                  <span>50% (Balanced)</span>
+                                  <span>100% (Maximum)</span>
                                 </div>
                               </div>
                             </>
