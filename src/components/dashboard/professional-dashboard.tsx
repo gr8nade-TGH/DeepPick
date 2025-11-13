@@ -507,8 +507,8 @@ export function ProfessionalDashboard() {
                     <TabsList className="bg-slate-800/50 border border-slate-700 h-7">
                       <TabsTrigger value="all" className="text-[11px] px-2 py-0.5">All</TabsTrigger>
                       <TabsTrigger value="nba" className="text-[11px] px-2 py-0.5">NBA</TabsTrigger>
-                      <TabsTrigger value="nfl" className="text-[11px] px-2 py-0.5">NFL</TabsTrigger>
-                      <TabsTrigger value="mlb" className="text-[11px] px-2 py-0.5">MLB</TabsTrigger>
+                      <TabsTrigger value="nfl" className="text-[11px] px-2 py-0.5 opacity-40 cursor-not-allowed" disabled>NFL</TabsTrigger>
+                      <TabsTrigger value="mlb" className="text-[11px] px-2 py-0.5 opacity-40 cursor-not-allowed" disabled>MLB</TabsTrigger>
                     </TabsList>
                   </Tabs>
                 </div>

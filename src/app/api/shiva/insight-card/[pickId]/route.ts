@@ -672,7 +672,7 @@ function buildInsightCard({ pick, game, run, factorContributions, predictedTotal
 
   // Build the insight card
   return {
-    capper: 'SHIVA',
+    capper: (pick.capper || 'SHIVA').toUpperCase(),
     capperIconUrl: null,
     sport: 'NBA' as const,
     gameId: game.id,

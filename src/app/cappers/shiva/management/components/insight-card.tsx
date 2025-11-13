@@ -104,6 +104,15 @@ export interface InsightCardProps {
   onClose: () => void
 }
 
+// Capper branding configuration
+const CAPPER_BRANDING: Record<string, { icon: string; color: string; gradient: string }> = {
+  'SHIVA': { icon: '🔱', color: 'cyan', gradient: 'from-blue-600 to-cyan-700' },
+  'IFRIT': { icon: '🔥', color: 'orange', gradient: 'from-orange-600 to-red-700' },
+  'NEXUS': { icon: '🔷', color: 'purple', gradient: 'from-purple-600 to-pink-700' },
+  'CERBERUS': { icon: '🐺', color: 'red', gradient: 'from-red-600 to-orange-700' },
+  'DEEPPICK': { icon: '🎯', color: 'blue', gradient: 'from-blue-600 to-cyan-700' }
+}
+
 export function InsightCard(props: InsightCardProps) {
   const [hoveredFactor, setHoveredFactor] = useState<string | null>(null)
 
@@ -117,6 +126,10 @@ export function InsightCard(props: InsightCardProps) {
   }
 
   console.debug('InsightCard props', { props })
+
+  // Get capper branding
+  const capperName = (props.capper || 'SHIVA').toUpperCase()
+  const branding = CAPPER_BRANDING[capperName] || CAPPER_BRANDING['SHIVA']
 
   // Safe defaults for all fields
   const safeFactors = (props.factors ?? []).map(f => ({
@@ -181,17 +194,17 @@ export function InsightCard(props: InsightCardProps) {
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl shadow-2xl border-2 border-cyan-500/30 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        {/* CHANGE 3: Professional Header with Navy/Teal Theme */}
-        <div className="bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 p-6 rounded-t-2xl border-b-2 border-cyan-500/40">
+      <div className={`bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl shadow-2xl border-2 border-${branding.color}-500/30 max-w-4xl w-full max-h-[90vh] overflow-y-auto`}>
+        {/* Professional Header with Dynamic Capper Branding */}
+        <div className={`bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 p-6 rounded-t-2xl border-b-2 border-${branding.color}-500/40`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-gradient-to-br from-cyan-600 to-blue-700 rounded-full flex items-center justify-center border-2 border-cyan-400 shadow-lg">
-                <span className="text-3xl">❄️</span>
+              <div className={`w-14 h-14 bg-gradient-to-br ${branding.gradient} rounded-full flex items-center justify-center border-2 border-${branding.color}-400 shadow-lg`}>
+                <span className="text-3xl">{branding.icon}</span>
               </div>
               <div>
                 <div className="flex items-center gap-3">
-                  <h1 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">{props.capper || 'SHIVA'}'S PICK</h1>
+                  <h1 className={`text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-${branding.color}-400 to-${branding.color === 'cyan' ? 'blue' : branding.color}-400`}>{capperName}'S PICK</h1>
                   <span className={`text-xs font-semibold px-3 py-1 rounded-full ${props.is_system_pick !== false
                     ? 'bg-blue-600 text-white'
                     : 'bg-green-600 text-white'
@@ -199,12 +212,12 @@ export function InsightCard(props: InsightCardProps) {
                     {props.is_system_pick !== false ? 'GENERATED' : 'MANUAL'}
                   </span>
                 </div>
-                <div className="text-cyan-300 text-sm font-semibold">Professional Sports Analytics</div>
+                <div className={`text-${branding.color}-300 text-sm font-semibold`}>Professional Sports Analytics</div>
               </div>
             </div>
             <button
               onClick={props.onClose}
-              className="text-slate-400 hover:text-cyan-400 text-3xl font-bold transition-colors"
+              className={`text-slate-400 hover:text-${branding.color}-400 text-3xl font-bold transition-colors`}
             >
               ×
             </button>
@@ -604,7 +617,7 @@ export function InsightCard(props: InsightCardProps) {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className={`text-3xl font-bold ${props.results.status === 'win' ? 'text-green-400' :
-                      props.results.status === 'loss' ? 'text-red-400' : 'text-yellow-400'
+                    props.results.status === 'loss' ? 'text-red-400' : 'text-yellow-400'
                     }`}>
                     {props.results.status === 'win' ? '✅ WIN' :
                       props.results.status === 'loss' ? '❌ LOSS' : '🤝 PUSH'}
@@ -619,7 +632,7 @@ export function InsightCard(props: InsightCardProps) {
                   <div className="text-right">
                     <div className="text-xs text-slate-400 uppercase tracking-wide mb-1">Model Accuracy</div>
                     <div className={`text-2xl font-bold ${props.results.overallAccuracy >= 0.8 ? 'text-green-400' :
-                        props.results.overallAccuracy >= 0.6 ? 'text-yellow-400' : 'text-red-400'
+                      props.results.overallAccuracy >= 0.6 ? 'text-yellow-400' : 'text-red-400'
                       }`}>
                       {(props.results.overallAccuracy * 100).toFixed(0)}%
                     </div>
@@ -658,13 +671,13 @@ export function InsightCard(props: InsightCardProps) {
                             <div className="text-sm font-semibold text-white">{factor.factor_name}</div>
                             <div className="flex items-center gap-2">
                               <span className={`text-xs px-2 py-0.5 rounded ${factor.impact === 'high' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' :
-                                  factor.impact === 'medium' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' :
-                                    'bg-slate-500/20 text-slate-300 border border-slate-500/30'
+                                factor.impact === 'medium' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' :
+                                  'bg-slate-500/20 text-slate-300 border border-slate-500/30'
                                 }`}>
                                 {factor.impact.toUpperCase()}
                               </span>
                               <span className={`text-sm font-bold ${factor.accuracy_score >= 0.8 ? 'text-green-400' :
-                                  factor.accuracy_score >= 0.6 ? 'text-yellow-400' : 'text-red-400'
+                                factor.accuracy_score >= 0.6 ? 'text-yellow-400' : 'text-red-400'
                                 }`}>
                                 {(factor.accuracy_score * 100).toFixed(0)}%
                               </span>
@@ -709,7 +722,7 @@ export function InsightCard(props: InsightCardProps) {
                             <div className="flex-1 bg-slate-800 rounded-full h-1.5">
                               <div
                                 className={`h-full rounded-full ${suggestion.confidence >= 0.8 ? 'bg-green-500' :
-                                    suggestion.confidence >= 0.6 ? 'bg-yellow-500' : 'bg-orange-500'
+                                  suggestion.confidence >= 0.6 ? 'bg-yellow-500' : 'bg-orange-500'
                                   }`}
                                 style={{ width: `${suggestion.confidence * 100}%` }}
                               />
