@@ -55,7 +55,14 @@ export async function middleware(request: NextRequest) {
   )
 
   // Get user session
+  // IMPORTANT: Use getUser() instead of getSession() for security
+  // getUser() validates the JWT with the auth server
+  // This ensures the session is valid and not tampered with
   const { data: { user } } = await supabase.auth.getUser()
+
+  // Refresh the session to ensure cookies are up to date
+  // This fixes the "sign in twice" issue where cookies aren't immediately available
+  await supabase.auth.getSession()
 
   // Get user profile with role
   let userRole: string | null = null
@@ -65,7 +72,7 @@ export async function middleware(request: NextRequest) {
       .select('role')
       .eq('id', user.id)
       .single()
-    
+
     userRole = profile?.role || null
   }
 

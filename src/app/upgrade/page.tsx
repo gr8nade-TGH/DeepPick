@@ -3,7 +3,7 @@
 import { useAuth } from '@/contexts/auth-context'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Check, Crown, Zap, TrendingUp, Target, Shield } from 'lucide-react'
+import { Check, Crown, Zap, TrendingUp, Target, Shield, Sparkles } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
@@ -116,10 +116,13 @@ export default function UpgradePage() {
                 <Crown className="w-6 h-6 text-yellow-400" />
                 <CardTitle className="text-2xl text-white">Capper</CardTitle>
               </div>
-              <CardDescription className="text-3xl font-bold text-white">
-                $19.99<span className="text-lg text-slate-400">/month</span>
+              <CardDescription className="text-3xl font-bold text-white flex items-center gap-3">
+                <span className="text-slate-500 line-through">$19.99</span>
+                <span className="text-4xl bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
+                  FREE
+                </span>
               </CardDescription>
-              <p className="text-sm text-yellow-400 mt-2">Coming Soon - Payment Integration</p>
+              <p className="text-sm text-yellow-400 mt-2 font-semibold">🎉 FREE DURING BETA - Limited Time!</p>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3">
@@ -146,14 +149,15 @@ export default function UpgradePage() {
               </div>
 
               <Button
-                disabled
-                className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold text-lg py-6 disabled:opacity-50"
+                onClick={() => router.push('/cappers/create')}
+                className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold text-lg py-6 shadow-lg shadow-yellow-500/30 hover:shadow-yellow-500/50 transition-all"
               >
-                Coming Soon
+                <Sparkles className="w-5 h-5 mr-2" />
+                Create Your Capper - FREE!
               </Button>
 
-              <p className="text-xs text-slate-400 text-center">
-                Payment integration will be added soon. For now, contact an admin to upgrade.
+              <p className="text-xs text-slate-300 text-center">
+                🚀 Get started immediately! Create your custom AI capper and start making picks.
               </p>
             </CardContent>
           </Card>
