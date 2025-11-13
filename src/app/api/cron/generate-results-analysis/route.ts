@@ -47,7 +47,7 @@ export async function GET() {
         run_id
       `)
       .in('status', ['won', 'lost', 'push'])
-      .is('game_id', null) // Only picks with archived games (game_id is NULL)
+      // REMOVED: .is('game_id', null) - Process ALL graded picks, not just archived ones
       .order('graded_at', { ascending: false })
       .limit(10) // Process max 10 picks per run
 
