@@ -269,7 +269,7 @@ export default function CreateCapperPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <Sparkles className="w-8 h-8 text-yellow-500" />
-          Create a Capper
+          Become a Capper
         </h1>
         <p className="text-muted-foreground mt-2">
           Build your own automated sports betting AI with custom factor configurations
@@ -740,7 +740,7 @@ export default function CreateCapperPage() {
                 onClick={handleSubmit}
                 disabled={!canProceed() || isSubmitting}
               >
-                {isSubmitting ? 'Creating...' : 'Create Capper'}
+                {isSubmitting ? 'Becoming a Capper...' : 'Become a Capper'}
                 <Sparkles className="w-4 h-4 ml-2" />
               </Button>
             )}

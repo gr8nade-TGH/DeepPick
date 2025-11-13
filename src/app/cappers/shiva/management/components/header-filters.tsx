@@ -48,6 +48,8 @@ export function HeaderFilters(props: HeaderFiltersProps) {
     return 'write'
   })
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
+  const [availableCappers, setAvailableCappers] = useState<Array<{ capper_id: string; display_name: string; is_system_capper: boolean }>>([])
+  const [loadingCappers, setLoadingCappers] = useState(true)
 
   // Sync with prop when it changes
   useEffect(() => {
@@ -76,6 +78,31 @@ export function HeaderFilters(props: HeaderFiltersProps) {
       setGameSearch(`${props.selectedGame.away} @ ${props.selectedGame.home}`)
     }
   }, [props.selectedGame])
+
+  // Fetch available cappers on mount
+  useEffect(() => {
+    async function loadCappers() {
+      try {
+        const res = await fetch('/api/user-cappers')
+        if (res.ok) {
+          const data = await res.json()
+          if (data.success && data.cappers) {
+            setAvailableCappers(data.cappers.map((c: any) => ({
+              capper_id: c.capper_id,
+              display_name: c.display_name,
+              is_system_capper: c.is_system_capper
+            })))
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load cappers:', error)
+      } finally {
+        setLoadingCappers(false)
+      }
+    }
+
+    loadCappers()
+  }, [])
 
   // Fetch profile when capper/sport changes
   useEffect(() => {
@@ -243,11 +270,19 @@ export function HeaderFilters(props: HeaderFiltersProps) {
             value={capper}
             onChange={(e) => handleCapperChange(e.target.value)}
             className="px-3 py-1 border border-gray-600 rounded text-sm bg-gray-800 text-white"
+            disabled={loadingCappers}
           >
-            <option value="SHIVA">SHIVA</option>
-            <option value="IFRIT">IFRIT</option>
-            <option value="CERBERUS" disabled>CERBERUS (coming soon)</option>
-            <option value="NEXUS" disabled>NEXUS (coming soon)</option>
+            {loadingCappers ? (
+              <option>Loading cappers...</option>
+            ) : availableCappers.length > 0 ? (
+              availableCappers.map(c => (
+                <option key={c.capper_id} value={c.capper_id.toUpperCase()}>
+                  {c.display_name} {!c.is_system_capper && '(Custom)'}
+                </option>
+              ))
+            ) : (
+              <option value="SHIVA">SHIVA</option>
+            )}
           </select>
         </div>
 
