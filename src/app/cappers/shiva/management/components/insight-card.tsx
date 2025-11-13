@@ -104,13 +104,41 @@ export interface InsightCardProps {
   onClose: () => void
 }
 
-// Capper branding configuration
-const CAPPER_BRANDING: Record<string, { icon: string; color: string; gradient: string }> = {
+// Capper branding configuration - Known cappers with custom branding
+const KNOWN_CAPPER_BRANDING: Record<string, { icon: string; color: string; gradient: string }> = {
   'SHIVA': { icon: '🔱', color: 'cyan', gradient: 'from-blue-600 to-cyan-700' },
   'IFRIT': { icon: '🔥', color: 'orange', gradient: 'from-orange-600 to-red-700' },
   'NEXUS': { icon: '🔷', color: 'purple', gradient: 'from-purple-600 to-pink-700' },
   'CERBERUS': { icon: '🐺', color: 'red', gradient: 'from-red-600 to-orange-700' },
   'DEEPPICK': { icon: '🎯', color: 'blue', gradient: 'from-blue-600 to-cyan-700' }
+}
+
+// Dynamic branding generator for new/unknown cappers
+function getCapperBranding(capperName: string): { icon: string; color: string; gradient: string } {
+  const upperName = capperName.toUpperCase()
+
+  // Return known branding if available
+  if (KNOWN_CAPPER_BRANDING[upperName]) {
+    return KNOWN_CAPPER_BRANDING[upperName]
+  }
+
+  // Generate dynamic branding for new cappers based on name hash
+  const colorPalettes = [
+    { color: 'emerald', gradient: 'from-emerald-600 to-green-700', icon: '💎' },
+    { color: 'violet', gradient: 'from-violet-600 to-purple-700', icon: '⚡' },
+    { color: 'amber', gradient: 'from-amber-600 to-yellow-700', icon: '⭐' },
+    { color: 'rose', gradient: 'from-rose-600 to-pink-700', icon: '🌟' },
+    { color: 'indigo', gradient: 'from-indigo-600 to-blue-700', icon: '🎲' },
+    { color: 'teal', gradient: 'from-teal-600 to-cyan-700', icon: '🎯' },
+    { color: 'fuchsia', gradient: 'from-fuchsia-600 to-pink-700', icon: '✨' },
+    { color: 'lime', gradient: 'from-lime-600 to-green-700', icon: '🍀' }
+  ]
+
+  // Simple hash function to consistently assign colors based on capper name
+  const hash = upperName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
+  const paletteIndex = hash % colorPalettes.length
+
+  return colorPalettes[paletteIndex]
 }
 
 export function InsightCard(props: InsightCardProps) {
@@ -127,9 +155,9 @@ export function InsightCard(props: InsightCardProps) {
 
   console.debug('InsightCard props', { props })
 
-  // Get capper branding
+  // Get capper branding (dynamic for new cappers)
   const capperName = (props.capper || 'SHIVA').toUpperCase()
-  const branding = CAPPER_BRANDING[capperName] || CAPPER_BRANDING['SHIVA']
+  const branding = getCapperBranding(capperName)
 
   // Safe defaults for all fields
   const safeFactors = (props.factors ?? []).map(f => ({

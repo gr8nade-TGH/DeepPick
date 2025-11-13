@@ -12,6 +12,9 @@ interface CreateCapperRequest {
   color_theme?: string
   sport: string
   bet_types: string[]
+  pick_mode: 'manual' | 'auto' | 'hybrid'
+  auto_generate_hours_before?: number
+  excluded_teams?: string[]
   factor_config: {
     [betType: string]: {
       enabled_factors: string[]
@@ -57,8 +60,22 @@ export async function POST(request: Request) {
       errors.push('bet_types must only include: TOTAL, SPREAD, MONEYLINE')
     }
 
-    if (!body.factor_config || Object.keys(body.factor_config).length === 0) {
-      errors.push('factor_config is required')
+    if (!body.pick_mode || !['manual', 'auto', 'hybrid'].includes(body.pick_mode)) {
+      errors.push('pick_mode must be one of: manual, auto, hybrid')
+    }
+
+    // For auto/hybrid modes, validate auto-generation settings
+    if (body.pick_mode === 'auto' || body.pick_mode === 'hybrid') {
+      if (!body.auto_generate_hours_before || body.auto_generate_hours_before < 1 || body.auto_generate_hours_before > 48) {
+        errors.push('auto_generate_hours_before must be between 1 and 48 for auto/hybrid modes')
+      }
+    }
+
+    // For manual mode, factor_config is optional
+    if (body.pick_mode !== 'manual') {
+      if (!body.factor_config || Object.keys(body.factor_config).length === 0) {
+        errors.push('factor_config is required for auto/hybrid modes')
+      }
     }
 
     if (!body.execution_interval_minutes || body.execution_interval_minutes < 5 || body.execution_interval_minutes > 1440) {
@@ -104,7 +121,10 @@ export async function POST(request: Request) {
         color_theme: body.color_theme || 'blue',
         sport: body.sport,
         bet_types: body.bet_types,
-        factor_config: body.factor_config,
+        pick_mode: body.pick_mode,
+        auto_generate_hours_before: body.auto_generate_hours_before || null,
+        excluded_teams: body.excluded_teams || [],
+        factor_config: body.factor_config || {},
         execution_interval_minutes: body.execution_interval_minutes,
         execution_priority: body.execution_priority,
         is_active: body.is_active !== undefined ? body.is_active : true,
