@@ -350,14 +350,14 @@ export function InsightCard(props: InsightCardProps) {
                 </div>
               </div>
             ) : (
-              /* Fallback: Show "Coming Soon" only if no bold predictions available */}
-            <div className="bg-slate-800/30 border border-slate-700/40 rounded-lg p-4">
-              <div className="text-xs font-semibold text-slate-400 uppercase mb-2">🎯 AI BOLD PREDICTIONS</div>
-              <div className="text-center py-2">
-                <p className="text-slate-400 text-sm">No bold predictions available for this pick</p>
-                <p className="text-slate-500 text-xs mt-1">Bold predictions are generated for manual wizard picks only</p>
+              /* Fallback: Show "Coming Soon" only if no bold predictions available */
+              <div className="bg-slate-800/30 border border-slate-700/40 rounded-lg p-4">
+                <div className="text-xs font-semibold text-slate-400 uppercase mb-2">🎯 AI BOLD PREDICTIONS</div>
+                <div className="text-center py-2">
+                  <p className="text-slate-400 text-sm">No bold predictions available for this pick</p>
+                  <p className="text-slate-500 text-xs mt-1">Bold predictions are generated for manual wizard picks only</p>
+                </div>
               </div>
-            </div>
             )}
           </div>
         )}
