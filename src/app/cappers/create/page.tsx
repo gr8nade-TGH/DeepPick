@@ -11,9 +11,26 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
-import { ArrowLeft, ArrowRight, CheckCircle, Sparkles, Zap, Hand, GitMerge, Clock, Ban, Gauge, TrendingUp, Target, Home, Battery, Wind, BarChart3, Shield, Trophy, Flame } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CheckCircle, Sparkles, Zap, Hand, GitMerge, Clock, Ban, Gauge, TrendingUp, Target, Home, Battery, Wind, BarChart3, Shield, Trophy, Flame, UserX, Anchor, Scale, Rocket, Castle, TrendingDown } from 'lucide-react'
 
 type Step = 1 | 2 | 3
+
+interface PresetConfig {
+  id: string
+  name: string
+  description: string
+  icon: any
+  color: string
+  philosophy: string
+  totalFactors: {
+    enabled: string[]
+    weights: { [factor: string]: number }
+  }
+  spreadFactors: {
+    enabled: string[]
+    weights: { [factor: string]: number }
+  }
+}
 
 type PickMode = 'manual' | 'auto' | 'hybrid'
 
@@ -127,13 +144,173 @@ const FACTOR_DETAILS = {
     example: 'Team is 12-3 in clutch situations → Strong spread cover signal.',
     defaultWeight: 15,
     color: 'amber'
+  },
+  injuryImpact: {
+    name: 'Key Injuries & Availability',
+    icon: UserX,
+    description: 'Impact of injured players on game outcome (deterministic formula)',
+    importance: 'Missing key players significantly impacts scoring (TOTALS) and competitive balance (SPREAD).',
+    example: 'Star player (30 PPG, 36 MPG) OUT → 4.5 point impact. TOTALS: favors Under. SPREAD: opponent gets ATS edge.',
+    defaultWeight: 25,
+    color: 'red'
   }
 }
 
 const AVAILABLE_FACTORS = {
-  TOTAL: ['paceIndex', 'netRating', 'shooting', 'homeAwayDiff', 'restDays'],
-  SPREAD: ['recentForm', 'paceMismatch', 'offDefBalance', 'homeCourtEdge', 'clutchPerformance']
+  TOTAL: ['paceIndex', 'netRating', 'shooting', 'homeAwayDiff', 'restDays', 'injuryImpact'],
+  SPREAD: ['recentForm', 'paceMismatch', 'offDefBalance', 'homeCourtEdge', 'clutchPerformance', 'injuryImpact']
 }
+
+const PRESET_CONFIGS: PresetConfig[] = [
+  {
+    id: 'conservative',
+    name: 'The Conservative',
+    description: 'Low-risk, high-confidence plays. Focus on proven, stable factors.',
+    icon: Anchor,
+    color: 'blue',
+    philosophy: 'Risk-averse strategy emphasizing efficiency, rest, and injury impact. Targets 58-62% win rate with selective picks.',
+    totalFactors: {
+      enabled: ['paceIndex', 'netRating', 'shooting', 'homeAwayDiff', 'restDays', 'injuryImpact'],
+      weights: {
+        paceIndex: 40,
+        netRating: 50,
+        shooting: 30,
+        homeAwayDiff: 30,
+        restDays: 50,
+        injuryImpact: 50
+      }
+    },
+    spreadFactors: {
+      enabled: ['recentForm', 'offDefBalance', 'homeCourtEdge', 'clutchPerformance', 'injuryImpact'],
+      weights: {
+        recentForm: 40,
+        offDefBalance: 60,
+        homeCourtEdge: 40,
+        clutchPerformance: 30,
+        injuryImpact: 40,
+        paceMismatch: 40
+      }
+    }
+  },
+  {
+    id: 'balanced',
+    name: 'The Balanced Sharp',
+    description: 'Well-rounded, data-driven approach. Trust the model, not gut feelings.',
+    icon: Scale,
+    color: 'slate',
+    philosophy: 'Even distribution across all factors. Proven strategy for consistent results. Targets 55-58% win rate.',
+    totalFactors: {
+      enabled: ['paceIndex', 'netRating', 'shooting', 'restDays', 'injuryImpact'],
+      weights: {
+        paceIndex: 45,
+        netRating: 50,
+        shooting: 50,
+        restDays: 50,
+        injuryImpact: 55
+      }
+    },
+    spreadFactors: {
+      enabled: ['recentForm', 'paceMismatch', 'offDefBalance', 'homeCourtEdge', 'injuryImpact'],
+      weights: {
+        recentForm: 50,
+        paceMismatch: 50,
+        offDefBalance: 50,
+        homeCourtEdge: 50,
+        injuryImpact: 50
+      }
+    }
+  },
+  {
+    id: 'pace-demon',
+    name: 'The Pace Demon',
+    description: 'High-scoring, fast-paced games. Overs specialist.',
+    icon: Rocket,
+    color: 'orange',
+    philosophy: 'Emphasizes pace and offensive firepower. Targets high-scoring games. Targets 53-56% win rate with higher variance.',
+    totalFactors: {
+      enabled: ['paceIndex', 'netRating', 'shooting', 'homeAwayDiff', 'restDays', 'injuryImpact'],
+      weights: {
+        paceIndex: 80,
+        netRating: 60,
+        shooting: 40,
+        homeAwayDiff: 10,
+        restDays: 30,
+        injuryImpact: 30
+      }
+    },
+    spreadFactors: {
+      enabled: ['recentForm', 'paceMismatch', 'offDefBalance', 'homeCourtEdge', 'clutchPerformance', 'injuryImpact'],
+      weights: {
+        recentForm: 30,
+        paceMismatch: 60,
+        offDefBalance: 50,
+        homeCourtEdge: 20,
+        clutchPerformance: 10,
+        injuryImpact: 30,
+      }
+    }
+  },
+  {
+    id: 'grind-it-out',
+    name: 'The Grind-It-Out',
+    description: 'Defense wins championships. Unders and home favorites.',
+    icon: Castle,
+    color: 'emerald',
+    philosophy: 'Focuses on defensive efficiency and slow pace. Targets low-scoring games. Targets 56-59% win rate.',
+    totalFactors: {
+      enabled: ['paceIndex', 'netRating', 'shooting', 'homeAwayDiff', 'restDays', 'injuryImpact'],
+      weights: {
+        paceIndex: 20,
+        netRating: 70,
+        shooting: 40,
+        homeAwayDiff: 30,
+        restDays: 60,
+        injuryImpact: 30
+      }
+    },
+    spreadFactors: {
+      enabled: ['recentForm', 'paceMismatch', 'offDefBalance', 'homeCourtEdge', 'clutchPerformance', 'injuryImpact'],
+      weights: {
+        recentForm: 40,
+        paceMismatch: 30,
+        offDefBalance: 70,
+        homeCourtEdge: 50,
+        clutchPerformance: 30,
+        injuryImpact: 30
+      }
+    }
+  },
+  {
+    id: 'contrarian',
+    name: 'The Contrarian',
+    description: 'Fade the public, find value in overreactions.',
+    icon: TrendingDown,
+    color: 'purple',
+    philosophy: 'Weights factors that find value against public perception. Emphasizes rest and injury overreactions. Targets 54-57% win rate.',
+    totalFactors: {
+      enabled: ['paceIndex', 'netRating', 'shooting', 'homeAwayDiff', 'restDays', 'injuryImpact'],
+      weights: {
+        paceIndex: 25,
+        netRating: 30,
+        shooting: 20,
+        homeAwayDiff: 25,
+        restDays: 70,
+        injuryImpact: 80
+      }
+    },
+    spreadFactors: {
+      enabled: ['recentForm', 'paceMismatch', 'offDefBalance', 'homeCourtEdge', 'clutchPerformance', 'injuryImpact'],
+      weights: {
+        recentForm: 20,
+        paceMismatch: 40,
+        offDefBalance: 40,
+        homeCourtEdge: 30,
+        clutchPerformance: 40,
+        injuryImpact: 80
+      }
+    }
+  }
+]
 
 const NBA_TEAMS = [
   'ATL', 'BOS', 'BKN', 'CHA', 'CHI', 'CLE', 'DAL', 'DEN', 'DET', 'GSW',
@@ -147,6 +324,7 @@ export default function CreateCapperPage() {
   const [step, setStep] = useState<Step>(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [selectedPreset, setSelectedPreset] = useState<string | null>(null)
   const pageTopRef = useRef<HTMLDivElement>(null)
 
   const [config, setConfig] = useState<CapperConfig>({
@@ -252,6 +430,24 @@ export default function CreateCapperPage() {
       newFactorConfig[betType].weights[factor] = Math.max(0, maxAllowed)
     } else {
       newFactorConfig[betType].weights[factor] = value
+    }
+
+    updateConfig({ factor_config: newFactorConfig })
+  }
+
+  const handlePresetSelect = (preset: PresetConfig) => {
+    setSelectedPreset(preset.id)
+
+    // Apply preset configuration
+    const newFactorConfig = {
+      TOTAL: {
+        enabled_factors: preset.totalFactors.enabled,
+        weights: preset.totalFactors.weights
+      },
+      SPREAD: {
+        enabled_factors: preset.spreadFactors.enabled,
+        weights: preset.spreadFactors.weights
+      }
     }
 
     updateConfig({ factor_config: newFactorConfig })
@@ -431,29 +627,10 @@ export default function CreateCapperPage() {
                     Auto-Generation Settings
                   </h3>
 
-                  {/* Timing */}
-                  <div className="space-y-2">
-                    <Label htmlFor="hours_before">Generate picks how many hours before game start?</Label>
-                    <Select
-                      value={config.auto_generate_hours_before.toString()}
-                      onValueChange={(value) => updateConfig({ auto_generate_hours_before: parseInt(value) })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="2">2 hours before</SelectItem>
-                        <SelectItem value="3">3 hours before</SelectItem>
-                        <SelectItem value="4">4 hours before (Recommended)</SelectItem>
-                        <SelectItem value="5">5 hours before</SelectItem>
-                        <SelectItem value="6">6 hours before</SelectItem>
-                        <SelectItem value="8">8 hours before</SelectItem>
-                        <SelectItem value="12">12 hours before</SelectItem>
-                        <SelectItem value="24">24 hours before</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">
-                      💡 4-6 hours recommended for best odds availability
+                  {/* Auto-Generation Info */}
+                  <div className="p-3 bg-cyan-500/10 border border-cyan-500/30 rounded-lg">
+                    <p className="text-sm text-cyan-400">
+                      ⚡ Picks are automatically generated throughout the day as games approach. The system checks for new games every few minutes and generates picks when conditions are optimal.
                     </p>
                   </div>
 
@@ -494,6 +671,59 @@ export default function CreateCapperPage() {
           {/* Step 2: Factor Configuration (only shown if auto or hybrid mode) */}
           {step === 2 && (
             <div className="space-y-6">
+              {/* Preset Configuration Selection */}
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-semibold text-lg mb-2">Quick Start Presets</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Choose a recommended configuration or customize your own below
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {PRESET_CONFIGS.map(preset => {
+                    const PresetIcon = preset.icon
+                    const isSelected = selectedPreset === preset.id
+
+                    return (
+                      <button
+                        key={preset.id}
+                        onClick={() => handlePresetSelect(preset)}
+                        className={`p-4 border-2 rounded-lg transition-all text-left ${isSelected
+                          ? `border-${preset.color}-500 bg-${preset.color}-500/10 shadow-lg shadow-${preset.color}-500/20`
+                          : 'border-slate-700 bg-slate-800/50 hover:border-slate-600 hover:bg-slate-800'
+                          }`}
+                      >
+                        <div className="flex items-start gap-3 mb-2">
+                          <div className={`p-2 rounded-lg ${isSelected ? `bg-${preset.color}-500/20` : 'bg-slate-700'}`}>
+                            <PresetIcon className={`w-5 h-5 ${isSelected ? `text-${preset.color}-400` : 'text-slate-400'}`} />
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-sm">{preset.name}</h4>
+                            {isSelected && (
+                              <span className="text-xs text-green-400">✓ Selected</span>
+                            )}
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          {preset.description}
+                        </p>
+                        <p className="text-xs text-slate-400 italic">
+                          {preset.philosophy}
+                        </p>
+                      </button>
+                    )
+                  })}
+                </div>
+
+                <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                  <p className="text-xs text-blue-400">
+                    💡 <strong>Tip:</strong> Presets auto-configure all factors and weights. You can still customize individual factors below after selecting a preset.
+                  </p>
+                </div>
+              </div>
+
+              {/* Factor Configuration by Bet Type */}
               {config.bet_types.map(betType => {
                 const totalWeight = calculateTotalWeight(betType)
                 const remainingWeight = 250 - totalWeight
@@ -648,33 +878,22 @@ export default function CreateCapperPage() {
                 </div>
 
                 {/* Auto/Hybrid Settings */}
-                {(config.pick_mode === 'auto' || config.pick_mode === 'hybrid') && (
+                {(config.pick_mode === 'auto' || config.pick_mode === 'hybrid') && config.excluded_teams.length > 0 && (
                   <div className="mt-4 pt-4 border-t border-slate-700">
-                    <Label className="text-muted-foreground text-xs">Auto-Generation Settings</Label>
-                    <div className="flex items-center gap-4 mt-2">
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-cyan-500" />
-                        <span className="text-sm">{config.auto_generate_hours_before} hours before game</span>
-                      </div>
-                      {config.excluded_teams.length > 0 && (
-                        <div className="flex items-center gap-2">
-                          <Ban className="w-4 h-4 text-red-500" />
-                          <span className="text-sm">{config.excluded_teams.length} team(s) excluded</span>
-                        </div>
-                      )}
+                    <Label className="text-muted-foreground text-xs">Excluded Teams</Label>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Ban className="w-4 h-4 text-red-500" />
+                      <span className="text-sm">{config.excluded_teams.length} team(s) excluded from auto-generation</span>
                     </div>
-                    {config.excluded_teams.length > 0 && (
-                      <div className="mt-2">
-                        <p className="text-xs text-muted-foreground mb-1">Excluded Teams:</p>
-                        <div className="flex flex-wrap gap-1">
-                          {config.excluded_teams.map(team => (
-                            <span key={team} className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded">
-                              {team}
-                            </span>
-                          ))}
-                        </div>
+                    <div className="mt-2">
+                      <div className="flex flex-wrap gap-1">
+                        {config.excluded_teams.map(team => (
+                          <span key={team} className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded">
+                            {team}
+                          </span>
+                        ))}
                       </div>
-                    )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -713,7 +932,7 @@ export default function CreateCapperPage() {
                 <p className="text-sm mt-2 text-slate-300">
                   {config.pick_mode === 'manual'
                     ? 'Your capper will be created. You can start making manual picks immediately from the dashboard.'
-                    : `Your capper will be created and start auto-generating picks ${config.auto_generate_hours_before} hours before each game. Picks will appear on your dashboard within 15 minutes.`
+                    : 'Your capper will be created and start auto-generating picks throughout the day as games approach. Picks will appear on your dashboard within 15 minutes.'
                   }
                 </p>
               </div>

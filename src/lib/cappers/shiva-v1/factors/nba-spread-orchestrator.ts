@@ -21,6 +21,7 @@ import { computeTurnoverDifferential } from './s2-turnover-differential'
 import { computeShootingEfficiencyMomentum } from './s3-shooting-efficiency-momentum'
 import { computePaceMismatch } from './s4-pace-mismatch'
 import { computeFourFactorsDifferential } from './s5-four-factors-differential'
+import { computeInjuryAvailabilitySpread } from './s6-injury-availability'
 
 /**
  * Main entry point: compute only enabled NBA spread factors
@@ -155,6 +156,49 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
   if (enabledFactorKeys.includes('fourFactorsDiff')) {
     console.log('[SPREAD:S5] Computing Four Factors Differential...')
     factors.push(computeFourFactorsDifferential(bundle!, ctx))
+  }
+
+  // S6: Injury Availability (deterministic)
+  if (enabledFactorKeys.includes('injuryImpact')) {
+    console.log('[SPREAD:S6] Computing Key Injuries & Availability...')
+    try {
+      const injuryFactor = await computeInjuryAvailabilitySpread(bundle, ctx)
+      factors.push(injuryFactor)
+      console.log('[SPREAD:INJURY_SUCCESS]', {
+        signal: injuryFactor.normalized_value,
+        awayImpact: injuryFactor.raw_values_json.awayImpact,
+        homeImpact: injuryFactor.raw_values_json.homeImpact,
+        netDifferential: injuryFactor.raw_values_json.netDifferential
+      })
+    } catch (error) {
+      console.error('[SPREAD:INJURY_ERROR]', error)
+      // Add error factor
+      factors.push({
+        factor_no: 6,
+        key: 'injuryImpact',
+        name: 'Key Injuries & Availability - Spread',
+        normalized_value: 0,
+        raw_values_json: {
+          awayImpact: 0,
+          homeImpact: 0,
+          netDifferential: 0,
+          awayInjuries: [],
+          homeInjuries: [],
+          error: error instanceof Error ? error.message : 'Unknown error'
+        },
+        parsed_values_json: {
+          awayScore: 0,
+          homeScore: 0,
+          signal: 0,
+          awayImpact: 0,
+          homeImpact: 0,
+          netDifferential: 0
+        },
+        caps_applied: false,
+        cap_reason: 'Injury analysis error',
+        notes: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      })
+    }
   }
 
   console.log('[SPREAD:FACTORS_COMPUTED]', { totalFactors: factors.length, factorKeys: factors.map(f => f.key) })

@@ -12,7 +12,7 @@ import { computeOffensiveForm } from './f2-offensive-form'
 import { computeDefensiveErosion } from './f3-defensive-erosion'
 import { computeThreePointEnv } from './f4-three-point-env'
 import { computeWhistleEnv } from './f5-free-throw-env'
-import { computeInjuryAvailabilityAsync } from './f6-injury-availability'
+import { computeInjuryAvailability } from './f6-injury-availability-deterministic'
 
 /**
  * Main entry point: compute only enabled NBA totals factors
@@ -216,47 +216,44 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
     factors.push(computeWhistleEnv(bundle!, ctx))
   }
 
-  // Handle AI-powered injury factor (async)
-  if (enabledFactorKeys.includes('injuryAvailability')) {
-    console.log('[TOTALS:COMPUTING_INJURY_AI]', 'Key Injuries & Availability enabled, running AI analysis...')
+  // Handle deterministic injury factor (async)
+  if (enabledFactorKeys.includes('injuryImpact')) {
+    console.log('[TOTALS:COMPUTING_INJURY]', 'Key Injuries & Availability enabled, running deterministic analysis...')
     try {
-      // Use today's date as default (injury data is current)
-      // TODO: Extract game date from game_id or pass it in RunCtx
-      const gameDate = new Date().toISOString().split('T')[0]
-
-      const injuryFactor = await computeInjuryAvailabilityAsync(ctx, 'perplexity', gameDate)
+      const injuryFactor = await computeInjuryAvailability(bundle, ctx)
       factors.push(injuryFactor)
-      console.log('[TOTALS:INJURY_AI_SUCCESS]', {
+      console.log('[TOTALS:INJURY_SUCCESS]', {
         signal: injuryFactor.normalized_value,
-        keyInjuries: injuryFactor.parsed_values_json.keyInjuries?.length || 0,
-        dataSourcesUsed: injuryFactor.raw_values_json.dataSourcesUsed || []
+        awayImpact: injuryFactor.raw_values_json.awayImpact,
+        homeImpact: injuryFactor.raw_values_json.homeImpact,
+        totalImpact: injuryFactor.raw_values_json.totalImpact
       })
     } catch (error) {
-      console.error('[TOTALS:INJURY_AI_ERROR]', error)
+      console.error('[TOTALS:INJURY_ERROR]', error)
       // Add error factor
       factors.push({
-        key: 'injuryAvailability',
+        factor_no: 6,
+        key: 'injuryImpact',
         name: 'Key Injuries & Availability - Totals',
         normalized_value: 0,
         raw_values_json: {
           awayImpact: 0,
           homeImpact: 0,
           totalImpact: 0,
-          keyInjuries: [],
-          reasoning: 'AI analysis failed',
-          dataSourcesUsed: [],
+          awayInjuries: [],
+          homeInjuries: [],
           error: error instanceof Error ? error.message : 'Unknown error'
         },
         parsed_values_json: {
           overScore: 0,
           underScore: 0,
           signal: 0,
-          awayContribution: 0,
-          homeContribution: 0,
-          reasoning: 'AI analysis failed'
+          awayImpact: 0,
+          homeImpact: 0,
+          totalImpact: 0
         },
         caps_applied: false,
-        cap_reason: 'AI analysis error',
+        cap_reason: 'Injury analysis error',
         notes: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
       })
     }
