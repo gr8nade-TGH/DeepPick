@@ -28,9 +28,9 @@ export async function GET() {
     const startTime = Date.now()
     const supabase = getSupabaseAdmin()
 
-    // Fetch scores for today + past 2 days (to catch late-finishing games)
+    // Fetch scores for today + past 7 days (to catch late-finishing games and missed updates)
     const datesToCheck: string[] = []
-    for (let i = 0; i <= 2; i++) {
+    for (let i = 0; i <= 7; i++) {
       const date = new Date()
       date.setDate(date.getDate() - i)
       datesToCheck.push(formatDateForAPI(date))
