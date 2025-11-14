@@ -68,14 +68,14 @@ function tanh(x: number): number {
  */
 function getStatusMultiplier(status: string | undefined): number {
   if (!status) return 0
-  
+
   const statusUpper = status.toUpperCase()
-  
+
   if (statusUpper === 'OUT') return 1.0 // 100%
   if (statusUpper === 'DOUBTFUL') return 0.75 // 75%
   if (statusUpper === 'QUESTIONABLE') return 0.5 // 50%
   if (statusUpper === 'PROBABLE') return 0.25 // 25%
-  
+
   return 0 // Unknown status = no impact
 }
 
@@ -90,7 +90,7 @@ function calculateDefensiveImpact(
   steals: number
 ): number {
   const posUpper = position.toUpperCase()
-  
+
   // Base defensive value by position
   let baseDefense = 0
   if (posUpper.includes('C')) {
@@ -100,14 +100,14 @@ function calculateDefensiveImpact(
   } else if (posUpper.includes('SG') || posUpper.includes('G')) {
     baseDefense = 1.0 // Guards (perimeter defense)
   }
-  
+
   // Adjust for minutes played (starters have more impact)
   const minutesFactor = Math.min(mpg / 36, 1.0) // Cap at 36 MPG
-  
+
   // Adjust for defensive stats (blocks + steals)
   const defensiveStats = (blocks + steals) / 2
   const statsFactor = Math.min(defensiveStats / 1.5, 1.5) // Cap at 1.5x
-  
+
   return baseDefense * minutesFactor * statsFactor
 }
 
@@ -121,43 +121,43 @@ function calculateTeamInjuryImpact(injuries: PlayerInjuryData[]): {
   const injuryDetails: InjuryDetail[] = []
   let totalOffensiveImpact = 0
   let totalDefensiveImpact = 0
-  
+
   // Filter to only injured players (OUT, DOUBTFUL, QUESTIONABLE, PROBABLE)
   const injuredPlayers = injuries.filter(p => {
     const status = p.player.currentInjury?.playingProbability
     return status && ['OUT', 'DOUBTFUL', 'QUESTIONABLE', 'PROBABLE'].includes(status.toUpperCase())
   })
-  
+
   for (const player of injuredPlayers) {
     const ppg = player.averages.avgPoints
     const mpg = player.averages.avgMinutes
     const blocks = player.averages.avgBlocks
     const steals = player.averages.avgSteals
     const status = player.player.currentInjury?.playingProbability || 'UNKNOWN'
-    const position = player.player.position || 'UNKNOWN'
-    
+    const position = player.player.primaryPosition || 'UNKNOWN'
+
     // Only consider players with significant minutes (15+ MPG)
     if (mpg < 15) continue
-    
+
     // Calculate offensive impact (PPG-based)
     const offensiveImpact = ppg / 10
-    
+
     // Calculate defensive impact (position + stats based)
     const defensiveImpact = calculateDefensiveImpact(position, mpg, blocks, steals)
-    
+
     // Apply status multiplier
     const statusMultiplier = getStatusMultiplier(status)
     const adjustedOffensive = offensiveImpact * statusMultiplier
     const adjustedDefensive = defensiveImpact * statusMultiplier
-    
+
     // Total impact for this player
     // Offensive injuries = negative (fewer points)
     // Defensive injuries = positive (easier to score)
     const playerTotalImpact = -adjustedOffensive + adjustedDefensive
-    
+
     totalOffensiveImpact += adjustedOffensive
     totalDefensiveImpact += adjustedDefensive
-    
+
     injuryDetails.push({
       playerName: player.player.firstName + ' ' + player.player.lastName,
       position,
@@ -169,17 +169,17 @@ function calculateTeamInjuryImpact(injuries: PlayerInjuryData[]): {
       totalImpact: playerTotalImpact
     })
   }
-  
+
   // Net impact: defensive injuries increase scoring, offensive injuries decrease it
   let netImpact = totalDefensiveImpact - totalOffensiveImpact
-  
+
   // Apply multiple injuries multiplier
   if (injuredPlayers.length >= 3) {
     netImpact *= 1.5
   } else if (injuredPlayers.length >= 2) {
     netImpact *= 1.3
   }
-  
+
   return {
     totalImpact: netImpact,
     injuryDetails
@@ -195,29 +195,29 @@ export async function calculateInjuryAvailabilityPoints(
   const { awayTeam, homeTeam } = input
   const MAX_POINTS = 5.0
   const SCALE = 8.0 // Scaling factor for tanh
-  
+
   try {
     // Fetch injury data for both teams
     const [awayPlayers, homePlayers] = await Promise.all([
       fetchTeamPlayerStats(awayTeam),
       fetchTeamPlayerStats(homeTeam)
     ])
-    
+
     // Calculate impact for each team
     const awayResult = calculateTeamInjuryImpact(awayPlayers)
     const homeResult = calculateTeamInjuryImpact(homePlayers)
-    
+
     // Total impact (positive = more scoring, negative = less scoring)
     const totalImpact = awayResult.totalImpact + homeResult.totalImpact
-    
+
     // Calculate signal using tanh for smooth saturation
     const rawSignal = tanh(totalImpact / SCALE)
     const signal = clamp(rawSignal, -1, 1)
-    
+
     // Convert to scores
     let overScore = 0
     let underScore = 0
-    
+
     if (signal > 0) {
       // Positive signal → OVER (defensive injuries increase scoring)
       overScore = Math.abs(signal) * MAX_POINTS
@@ -225,12 +225,12 @@ export async function calculateInjuryAvailabilityPoints(
       // Negative signal → UNDER (offensive injuries decrease scoring)
       underScore = Math.abs(signal) * MAX_POINTS
     }
-    
+
     // Build reasoning
     const awayInjuryCount = awayResult.injuryDetails.length
     const homeInjuryCount = homeResult.injuryDetails.length
     const totalInjuryCount = awayInjuryCount + homeInjuryCount
-    
+
     let reasoning = ''
     if (totalInjuryCount === 0) {
       reasoning = 'No significant injuries for either team'
@@ -244,7 +244,7 @@ export async function calculateInjuryAvailabilityPoints(
       }
       reasoning = parts.join(', ')
     }
-    
+
     return {
       overScore,
       underScore,
@@ -258,10 +258,10 @@ export async function calculateInjuryAvailabilityPoints(
         reasoning
       }
     }
-    
+
   } catch (error) {
     console.error('[F6 Injury Availability] Error:', error)
-    
+
     // Return neutral on error
     return {
       overScore: 0,
@@ -300,11 +300,11 @@ export async function computeInjuryAvailability(bundle: any, ctx: any): Promise<
       notes: 'Factor disabled - no data bundle'
     }
   }
-  
+
   // Extract team names from context
   const awayTeam = ctx.away
   const homeTeam = ctx.home
-  
+
   if (!awayTeam || !homeTeam) {
     return {
       factor_no: 6,
@@ -321,13 +321,13 @@ export async function computeInjuryAvailability(bundle: any, ctx: any): Promise<
       notes: 'Missing team names in context'
     }
   }
-  
+
   // Calculate injury impact
   const result = await calculateInjuryAvailabilityPoints({ awayTeam, homeTeam })
-  
+
   // Build notes string
   const notes = result.meta.reasoning
-  
+
   return {
     factor_no: 6,
     key: 'injuryAvailability',
