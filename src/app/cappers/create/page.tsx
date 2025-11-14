@@ -436,6 +436,12 @@ export default function CreateCapperPage() {
   }
 
   const handlePresetSelect = (preset: PresetConfig) => {
+    // If clicking the same preset, deselect it
+    if (selectedPreset === preset.id) {
+      setSelectedPreset(null)
+      return
+    }
+
     setSelectedPreset(preset.id)
 
     // Apply preset configuration
@@ -674,9 +680,9 @@ export default function CreateCapperPage() {
               {/* Preset Configuration Selection */}
               <div className="space-y-4">
                 <div>
-                  <h3 className="font-semibold text-lg mb-2">Quick Start Presets</h3>
+                  <h3 className="font-semibold text-lg mb-2">Quick Start Presets (Optional)</h3>
                   <p className="text-sm text-muted-foreground">
-                    Choose a recommended configuration or customize your own below
+                    Choose a recommended configuration or customize your own below. Click a preset again to deselect it.
                   </p>
                 </div>
 
