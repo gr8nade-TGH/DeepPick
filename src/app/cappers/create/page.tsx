@@ -42,7 +42,6 @@ interface CapperConfig {
   sport: string
   bet_types: string[]
   pick_mode: PickMode
-  auto_generate_hours_before: number
   excluded_teams: string[]
   factor_config: {
     [betType: string]: {
@@ -328,7 +327,6 @@ export default function CreateCapperPage() {
     sport: 'NBA',
     bet_types: ['TOTAL', 'SPREAD'], // Pre-selected, can't be changed
     pick_mode: 'auto',
-    auto_generate_hours_before: 4,
     excluded_teams: [],
     factor_config: {
       // Initialize with default weights for both bet types (50% each = 250% total)
@@ -900,7 +898,14 @@ export default function CreateCapperPage() {
               {/* Factor Configuration (only if auto/hybrid) */}
               {config.pick_mode !== 'manual' && (
                 <div>
-                  <Label className="text-base font-semibold mb-3 block">Factor Configuration</Label>
+                  <div className="flex items-center justify-between mb-3">
+                    <Label className="text-base font-semibold">Factor Configuration</Label>
+                    {selectedPreset && (
+                      <span className="text-sm text-muted-foreground">
+                        Using preset: <span className="text-primary font-semibold">{PRESET_CONFIGS.find(p => p.id === selectedPreset)?.name}</span>
+                      </span>
+                    )}
+                  </div>
                   {config.bet_types.map(betType => (
                     <div key={betType} className="mb-4 bg-slate-800/50 border border-slate-700 rounded-lg p-4">
                       <p className="font-semibold mb-3 text-primary">{betType} Factors:</p>

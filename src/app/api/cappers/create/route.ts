@@ -15,7 +15,6 @@ interface CreateCapperRequest {
   sport: string
   bet_types: string[]
   pick_mode: 'manual' | 'auto' | 'hybrid'
-  auto_generate_hours_before?: number
   excluded_teams?: string[]
   factor_config: {
     [betType: string]: {
@@ -98,13 +97,6 @@ export async function POST(request: Request) {
       errors.push('pick_mode must be one of: manual, auto, hybrid')
     }
 
-    // For auto/hybrid modes, validate auto-generation settings
-    if (body.pick_mode === 'auto' || body.pick_mode === 'hybrid') {
-      if (!body.auto_generate_hours_before || body.auto_generate_hours_before < 1 || body.auto_generate_hours_before > 48) {
-        errors.push('auto_generate_hours_before must be between 1 and 48 for auto/hybrid modes')
-      }
-    }
-
     // For manual mode, factor_config is optional
     if (body.pick_mode !== 'manual') {
       if (!body.factor_config || Object.keys(body.factor_config).length === 0) {
@@ -156,7 +148,6 @@ export async function POST(request: Request) {
         sport: body.sport,
         bet_types: body.bet_types,
         pick_mode: body.pick_mode,
-        auto_generate_hours_before: body.auto_generate_hours_before || null,
         excluded_teams: body.excluded_teams || [],
         factor_config: body.factor_config || {},
         execution_interval_minutes: body.execution_interval_minutes,
