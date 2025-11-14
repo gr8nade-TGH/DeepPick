@@ -256,6 +256,8 @@ Return ONLY valid JSON in this exact format:
 
       aiPrompt = `You are an elite NBA analyst with a proven track record of accurate player performance predictions. Your reputation depends on ACCURACY, not volume.
 
+⚠️ CRITICAL: You MUST use ONLY the current-season player stats provided below. DO NOT use outdated training data or make assumptions about players who may have changed teams, retired, or are injured.
+
 GAME CONTEXT:
 - Matchup: ${input.game.away_team} @ ${input.game.home_team}
 - Game Date: ${input.game.game_date}
@@ -266,21 +268,31 @@ GAME CONTEXT:
 - Confidence: ${input.confidence.toFixed(1)}/10.0
 - Edge: ${edge.toFixed(1)} points
 
+CURRENT-SEASON PLAYER STATS (${input.game.away_team}):
+${awayStatsContext}
+
+CURRENT-SEASON PLAYER STATS (${input.game.home_team}):
+${homeStatsContext}
+
 KEY FACTORS ANALYSIS:
 ${factorsSummary}
 
-INJURY REPORT:
+INJURY REPORT (VERIFIED CURRENT):
 ${injuryContext}
 
 TASK:
 Generate 2-3 HIGH-PROBABILITY player predictions that STRONGLY SUPPORT our ${input.selection} pick.
 
 ⚠️ CRITICAL ACCURACY GUIDELINES:
-1. QUALITY OVER QUANTITY - Only make predictions you're highly confident in
-2. Each prediction MUST be backed by CONCRETE DATA from the factors/injuries above
-3. Predictions MUST align with ${favoredTeam} covering the spread
-4. Use CONSERVATIVE estimates - Better to under-promise and over-deliver
-5. Only assign HIGH confidence if you have STRONG statistical backing
+1. ONLY use players from the CURRENT-SEASON PLAYER STATS provided above
+2. DO NOT reference players who are not listed in the stats (they may be injured, traded, or retired)
+3. DO NOT use outdated season-long averages - only use the current-season PPG/RPG/APG provided
+4. VERIFY each player is active and not on the injury report before making predictions
+5. QUALITY OVER QUANTITY - Only make predictions you're highly confident in
+6. Each prediction MUST be backed by CONCRETE DATA from the current-season stats above
+7. Predictions MUST align with ${favoredTeam} covering the spread
+8. Use CONSERVATIVE estimates - Better to under-promise and over-deliver
+9. Only assign HIGH confidence if you have STRONG statistical backing from current-season data
 
 PREDICTION CRITERIA FOR SPREAD PICKS:
 - Focus on KEY PLAYERS from ${favoredTeam} who will drive the margin
