@@ -168,27 +168,25 @@ const PRESET_CONFIGS: PresetConfig[] = [
     description: 'Low-risk, high-confidence plays. Focus on proven, stable factors.',
     icon: Anchor,
     color: 'blue',
-    philosophy: 'Risk-averse strategy emphasizing efficiency, rest, and injury impact. Targets 58-62% win rate with selective picks.',
+    philosophy: 'Risk-averse strategy emphasizing stable fundamentals. Avoids volatile factors like shooting streaks. Targets 58-62% win rate with selective picks.',
     totalFactors: {
-      enabled: ['paceIndex', 'netRating', 'shooting', 'homeAwayDiff', 'restDays', 'injuryImpact'],
+      enabled: ['netRating', 'restDays', 'injuryImpact', 'homeAwayDiff', 'paceIndex'],
       weights: {
-        paceIndex: 40,
-        netRating: 50,
-        shooting: 30,
-        homeAwayDiff: 30,
-        restDays: 50,
-        injuryImpact: 50
+        netRating: 70,
+        restDays: 60,
+        injuryImpact: 60,
+        homeAwayDiff: 40,
+        paceIndex: 20
       }
     },
     spreadFactors: {
-      enabled: ['recentForm', 'offDefBalance', 'homeCourtEdge', 'clutchPerformance', 'injuryImpact'],
+      enabled: ['offDefBalance', 'homeCourtEdge', 'injuryImpact', 'clutchPerformance', 'recentForm'],
       weights: {
-        recentForm: 40,
-        offDefBalance: 60,
-        homeCourtEdge: 40,
-        clutchPerformance: 30,
-        injuryImpact: 40,
-        paceMismatch: 40
+        offDefBalance: 70,
+        homeCourtEdge: 60,
+        injuryImpact: 50,
+        clutchPerformance: 40,
+        recentForm: 30
       }
     }
   },
@@ -226,27 +224,24 @@ const PRESET_CONFIGS: PresetConfig[] = [
     description: 'High-scoring, fast-paced games. Overs specialist.',
     icon: Rocket,
     color: 'orange',
-    philosophy: 'Emphasizes pace and offensive firepower. Targets high-scoring games. Targets 53-56% win rate with higher variance.',
+    philosophy: 'All-in on pace and offensive firepower. Maximizes pace factors to find high-scoring games. Targets 53-56% win rate with higher variance.',
     totalFactors: {
-      enabled: ['paceIndex', 'netRating', 'shooting', 'homeAwayDiff', 'restDays', 'injuryImpact'],
+      enabled: ['paceIndex', 'shooting', 'netRating', 'homeAwayDiff'],
       weights: {
-        paceIndex: 80,
-        netRating: 60,
-        shooting: 40,
-        homeAwayDiff: 10,
-        restDays: 30,
-        injuryImpact: 30
+        paceIndex: 100,
+        shooting: 70,
+        netRating: 50,
+        homeAwayDiff: 30
       }
     },
     spreadFactors: {
-      enabled: ['recentForm', 'paceMismatch', 'offDefBalance', 'homeCourtEdge', 'clutchPerformance', 'injuryImpact'],
+      enabled: ['paceMismatch', 'offDefBalance', 'recentForm', 'homeCourtEdge', 'clutchPerformance'],
       weights: {
-        recentForm: 30,
-        paceMismatch: 60,
-        offDefBalance: 50,
-        homeCourtEdge: 20,
-        clutchPerformance: 10,
-        injuryImpact: 30,
+        paceMismatch: 80,
+        offDefBalance: 60,
+        recentForm: 50,
+        homeCourtEdge: 30,
+        clutchPerformance: 30
       }
     }
   },
@@ -256,26 +251,24 @@ const PRESET_CONFIGS: PresetConfig[] = [
     description: 'Defense wins championships. Unders and home favorites.',
     icon: Castle,
     color: 'emerald',
-    philosophy: 'Focuses on defensive efficiency and slow pace. Targets low-scoring games. Targets 56-59% win rate.',
+    philosophy: 'Emphasizes defensive efficiency, slow pace, and home court advantage. Targets low-scoring games and home favorites. Targets 56-59% win rate.',
     totalFactors: {
-      enabled: ['paceIndex', 'netRating', 'shooting', 'homeAwayDiff', 'restDays', 'injuryImpact'],
+      enabled: ['netRating', 'restDays', 'homeAwayDiff', 'injuryImpact', 'paceIndex'],
       weights: {
-        paceIndex: 20,
-        netRating: 70,
-        shooting: 40,
-        homeAwayDiff: 30,
-        restDays: 60,
-        injuryImpact: 30
+        netRating: 80,
+        restDays: 70,
+        homeAwayDiff: 50,
+        injuryImpact: 35,
+        paceIndex: 15
       }
     },
     spreadFactors: {
-      enabled: ['recentForm', 'paceMismatch', 'offDefBalance', 'homeCourtEdge', 'clutchPerformance', 'injuryImpact'],
+      enabled: ['offDefBalance', 'homeCourtEdge', 'clutchPerformance', 'recentForm', 'injuryImpact'],
       weights: {
-        recentForm: 40,
-        paceMismatch: 30,
-        offDefBalance: 70,
-        homeCourtEdge: 50,
-        clutchPerformance: 30,
+        offDefBalance: 80,
+        homeCourtEdge: 70,
+        clutchPerformance: 40,
+        recentForm: 30,
         injuryImpact: 30
       }
     }
