@@ -11,7 +11,9 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
-import { ArrowLeft, ArrowRight, CheckCircle, Sparkles, Zap, Hand, GitMerge, Clock, Ban, Gauge, TrendingUp, Target, Home, Battery, Wind, BarChart3, Shield, Trophy, Flame, UserX, Anchor, Scale, Rocket, Castle, TrendingDown } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CheckCircle, Sparkles, Zap, Hand, GitMerge, Clock, Ban, Gauge, TrendingUp, Target, Home, Battery, Wind, BarChart3, Shield, Trophy, Flame, UserX, Anchor, Scale, Rocket, Castle, TrendingDown, ExternalLink, Eye } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
+import Link from 'next/link'
 
 type Step = 1 | 2 | 3
 
@@ -313,6 +315,7 @@ const NBA_TEAMS = [
 export default function CreateCapperPage() {
   const router = useRouter()
   const { profile, loading: authLoading } = useAuth()
+  const { toast } = useToast()
   const [step, setStep] = useState<Step>(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -488,11 +491,26 @@ export default function CreateCapperPage() {
         throw new Error(data.error || data.errors?.join(', ') || 'Failed to create capper')
       }
 
-      // Success! Redirect to capper dashboard
-      router.push('/dashboard/capper')
+      // Success! Show toast and redirect
+      toast({
+        title: '🎉 Capper Created Successfully!',
+        description: `${config.display_name} is now active and ${config.pick_mode === 'manual' ? 'ready for manual picks' : 'generating picks automatically'}.`,
+        variant: 'success',
+      })
+
+      // Small delay to let user see the toast before redirect
+      setTimeout(() => {
+        router.push('/dashboard/capper')
+      }, 1000)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
       setIsSubmitting(false)
+
+      toast({
+        title: 'Error Creating Capper',
+        description: err instanceof Error ? err.message : 'Unknown error occurred',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -547,6 +565,17 @@ export default function CreateCapperPage() {
           {/* Step 1: Pick Strategy */}
           {step === 1 && (
             <>
+              {/* Welcome Banner */}
+              <div className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 border-2 border-blue-500/30 rounded-lg px-6 py-4">
+                <p className="font-bold text-lg flex items-center gap-2 text-blue-400 mb-2">
+                  <Sparkles className="w-5 h-5" />
+                  Welcome to Capper Creation!
+                </p>
+                <p className="text-sm text-slate-300">
+                  You're about to create your own AI-powered sports betting capper. This 3-step wizard will help you configure your pick generation strategy, factor weights, and launch your capper in minutes.
+                </p>
+              </div>
+
               {/* User Info Display */}
               <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
                 <div className="flex items-center justify-between">
@@ -928,17 +957,49 @@ export default function CreateCapperPage() {
               )}
 
               {/* Ready to Launch */}
-              <div className="bg-gradient-to-r from-green-900/30 to-blue-900/30 border-2 border-green-500/30 rounded-lg px-6 py-4">
-                <p className="font-bold text-lg flex items-center gap-2 text-green-400">
+              <div className="bg-gradient-to-r from-green-900/30 to-blue-900/30 border-2 border-green-500/30 rounded-lg px-6 py-5">
+                <p className="font-bold text-xl flex items-center gap-2 text-green-400 mb-3">
                   <CheckCircle className="w-6 h-6" />
                   Ready to Launch!
                 </p>
-                <p className="text-sm mt-2 text-slate-300">
-                  {config.pick_mode === 'manual'
-                    ? 'Your capper will be created. You can start making manual picks immediately from the dashboard.'
-                    : 'Your capper will be created and start auto-generating picks throughout the day as games approach. Picks will appear on your dashboard within 15 minutes.'
-                  }
-                </p>
+                <div className="space-y-3">
+                  <p className="text-sm text-slate-300">
+                    {config.pick_mode === 'manual'
+                      ? 'Your capper will be created and ready for manual picks.'
+                      : 'Your capper will be created and start auto-generating picks throughout the day as games approach.'
+                    }
+                  </p>
+
+                  <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 space-y-2">
+                    <p className="text-sm font-semibold text-white flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-yellow-400" />
+                      What happens next:
+                    </p>
+                    <ul className="text-sm text-slate-300 space-y-1.5 ml-6">
+                      <li className="flex items-start gap-2">
+                        <span className="text-green-400 mt-0.5">✓</span>
+                        <span>You'll be redirected to your <strong>Capper Dashboard</strong></span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-green-400 mt-0.5">✓</span>
+                        <span>
+                          {config.pick_mode === 'manual'
+                            ? 'Start making manual picks for upcoming games'
+                            : 'Picks will auto-generate within 15 minutes and appear on your dashboard'
+                          }
+                        </span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-green-400 mt-0.5">✓</span>
+                        <span>View your public profile to see how others see your picks</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-green-400 mt-0.5">✓</span>
+                        <span>Track performance, win rate, and ROI in real-time</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
               </div>
             </div>
           )}
