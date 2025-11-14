@@ -551,19 +551,26 @@ export default function CreateCapperPage() {
         {[1, 2, 3].map((s) => (
           <div key={s} className="flex items-center flex-1">
             <div className="flex flex-col items-center flex-1">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold transition-all ${s === step ? 'bg-primary text-primary-foreground scale-110' :
-                s < step ? 'bg-green-500 text-white' :
-                  'bg-muted text-muted-foreground'
+              <div className={`w-14 h-14 rounded-full flex items-center justify-center font-bold transition-all ${s === step
+                ? 'bg-blue-600 text-white scale-110 ring-4 ring-blue-500/30'
+                : s < step
+                  ? 'bg-green-500 text-white'
+                  : 'bg-slate-700 text-slate-400'
                 }`}>
-                {s < step ? <CheckCircle className="w-6 h-6" /> : s}
+                {s < step ? <CheckCircle className="w-7 h-7" /> : <span className="text-lg">{s}</span>}
               </div>
-              <p className={`text-xs mt-2 font-medium ${s === step ? 'text-primary' : s < step ? 'text-green-500' : 'text-muted-foreground'}`}>
+              <p className={`text-sm mt-2 font-semibold ${s === step
+                ? 'text-blue-400'
+                : s < step
+                  ? 'text-green-400'
+                  : 'text-slate-500'
+                }`}>
                 {s === 1 && 'Pick Strategy'}
                 {s === 2 && (shouldSkipFactorConfig ? 'Skipped' : 'Factors')}
                 {s === 3 && 'Review'}
               </p>
             </div>
-            {s < 3 && <div className={`h-1 w-full mx-4 ${s < step ? 'bg-green-500' : 'bg-muted'}`} />}
+            {s < 3 && <div className={`h-1 w-full mx-4 transition-all ${s < step ? 'bg-green-500' : 'bg-slate-700'}`} />}
           </div>
         ))}
       </div>

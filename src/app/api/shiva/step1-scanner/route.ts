@@ -322,6 +322,17 @@ async function scanForEligibleGames(
     const sportLower = sport.toLowerCase()
     const betTypeLower = betType === 'TOTAL' ? 'total' : 'spread'
 
+    // Step 1: Get excluded teams for this capper
+    console.log(`[SHIVA_SCANNER] Loading excluded teams for capper: ${capper}`)
+    const { data: capperData } = await supabase
+      .from('user_cappers')
+      .select('excluded_teams')
+      .eq('capper_id', capper)
+      .single()
+
+    const excludedTeams = capperData?.excluded_teams || []
+    console.log(`[SHIVA_SCANNER] Excluded teams:`, excludedTeams)
+
     // Get games that are scheduled and in the future (but allow games starting soon)
     const now = new Date()
     const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60 * 1000) // Only 5 minutes buffer
@@ -337,6 +348,7 @@ async function scanForEligibleGames(
     console.log(`  - limit: ${limit * 2}`)
     console.log(`  - Current time: ${now.toISOString()}`)
     console.log(`  - Filtering for games after: ${fiveMinutesFromNow.toISOString()}`)
+    console.log(`  - Excluded teams: ${excludedTeams.length > 0 ? excludedTeams.join(', ') : 'none'}`)
 
     const { data: games, error: gamesError } = await supabase
       .from('games')
@@ -423,8 +435,36 @@ async function scanForEligibleGames(
 
     console.log(`[SHIVA_SCANNER] Processed ${processedGames.length} games with odds`)
 
+    // Step 2: Filter out games with excluded teams
+    const gamesAfterTeamFilter = processedGames.filter((game: any) => {
+      const homeAbbr = game.home_team?.abbreviation || ''
+      const awayAbbr = game.away_team?.abbreviation || ''
+
+      // Exclude if either team is in the excluded list
+      if (excludedTeams.includes(homeAbbr) || excludedTeams.includes(awayAbbr)) {
+        console.log(`[SHIVA_SCANNER] Excluding game: ${awayAbbr} @ ${homeAbbr} (excluded team)`)
+        return false
+      }
+      return true
+    })
+
+    console.log(`[SHIVA_SCANNER] After team filter: ${gamesAfterTeamFilter.length} games (excluded ${processedGames.length - gamesAfterTeamFilter.length} games)`)
+
+    if (gamesAfterTeamFilter.length === 0) {
+      console.log(`[SHIVA_SCANNER] No games available after filtering excluded teams`)
+      return {
+        games: [],
+        debug: {
+          step: 'excluded_teams_filter',
+          gamesFound: processedGames.length,
+          excludedTeams: excludedTeams,
+          availableAfterFilter: 0
+        }
+      }
+    }
+
     // Filter out games that already have picks
-    const gameIds = processedGames.map((game: any) => game.id)
+    const gameIds = gamesAfterTeamFilter.map((game: any) => game.id)
     console.log(`[SHIVA_SCANNER] Checking existing picks for ${gameIds.length} games`)
     console.log(`[SHIVA_SCANNER] Looking for capper: ${capper}, pick_type: ${betTypeLower}`)
 
@@ -443,7 +483,7 @@ async function scanForEligibleGames(
         debug: {
           step: 'existing_picks_check',
           error: picksError.message,
-          gamesFound: processedGames.length
+          gamesFound: gamesAfterTeamFilter.length
         }
       }
     }
@@ -460,7 +500,7 @@ async function scanForEligibleGames(
     }
 
     // Filter out games with existing picks
-    const availableGames = processedGames.filter((game: any) => !gamesWithPicks.has(game.id))
+    const availableGames = gamesAfterTeamFilter.filter((game: any) => !gamesWithPicks.has(game.id))
     console.log(`[SHIVA_SCANNER] After filtering existing picks: ${availableGames.length} games`)
 
     if (availableGames.length === 0) {
@@ -470,7 +510,7 @@ async function scanForEligibleGames(
         games: [],
         debug: {
           step: 'existing_picks_filter',
-          gamesFound: processedGames.length,
+          gamesFound: gamesAfterTeamFilter.length,
           existingPicksCount: existingPicks?.length || 0,
           gamesWithPicks: Array.from(gamesWithPicks),
           availableAfterFilter: 0
@@ -497,7 +537,7 @@ async function scanForEligibleGames(
         debug: {
           step: 'cooldown_check',
           error: cooldownError.message,
-          gamesFound: processedGames.length,
+          gamesFound: gamesAfterTeamFilter.length,
           availableAfterPicksFilter: availableGames.length
         }
       }
@@ -528,7 +568,7 @@ async function scanForEligibleGames(
         games: [],
         debug: {
           step: 'cooldown_filter',
-          gamesFound: processedGames.length,
+          gamesFound: gamesAfterTeamFilter.length,
           availableAfterPicksFilter: availableGames.length,
           cooldownCount: cooldownData?.length || 0,
           gamesInCooldown: Array.from(gamesInCooldown),
@@ -542,6 +582,8 @@ async function scanForEligibleGames(
       debug: {
         step: 'success',
         gamesFound: games.length,
+        excludedTeamsCount: excludedTeams.length,
+        availableAfterTeamFilter: gamesAfterTeamFilter.length,
         availableAfterPicksFilter: availableGames.length,
         cooldownCount: cooldownData?.length || 0,
         finalAvailable: finalGames.length,
