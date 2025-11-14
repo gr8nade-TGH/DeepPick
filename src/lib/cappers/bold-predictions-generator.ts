@@ -8,6 +8,7 @@
  */
 
 import { fetchPlayerInjuriesForTeams } from '@/lib/data-sources/mysportsfeeds-api'
+import { fetchTeamPlayerStats } from '@/lib/data-sources/mysportsfeeds-players'
 import { getTeamAbbrev } from '@/lib/data-sources/team-mappings'
 import { formatDateForAPI } from '@/lib/data-sources/season-utils'
 
@@ -79,6 +80,33 @@ export async function generateBoldPredictions(input: BoldPredictionsInput): Prom
       }
     }
 
+    // Fetch real player stats from MySportsFeeds for both teams
+    let awayPlayerStats: any[] = []
+    let homePlayerStats: any[] = []
+
+    try {
+      console.log('[BoldPredictions] Fetching real player stats from MySportsFeeds...')
+
+      const [awayStats, homeStats] = await Promise.all([
+        fetchTeamPlayerStats(input.game.away_team),
+        fetchTeamPlayerStats(input.game.home_team)
+      ])
+
+      awayPlayerStats = awayStats || []
+      homePlayerStats = homeStats || []
+
+      console.log('[BoldPredictions] Player stats fetched:', {
+        awayPlayers: awayPlayerStats.length,
+        homePlayers: homePlayerStats.length,
+        totalPlayers: awayPlayerStats.length + homePlayerStats.length
+      })
+    } catch (statsError) {
+      console.error('[BoldPredictions] Failed to fetch player stats:', {
+        error: statsError instanceof Error ? statsError.message : String(statsError)
+      })
+      // Continue without player stats - OpenAI will use its training data as fallback
+    }
+
     // Format injury context
     let injuryContext = 'No significant injuries reported.'
     if (injuryData && injuryData.players && injuryData.players.length > 0) {
@@ -100,6 +128,36 @@ export async function generateBoldPredictions(input: BoldPredictionsInput): Prom
       return `${label}: ${impact > 0 ? '+' : ''}${impact.toFixed(1)}`
     }).join(', ')
 
+    // Format real player stats from MySportsFeeds
+    const formatPlayerStats = (players: any[], teamName: string) => {
+      if (!players || players.length === 0) {
+        return `No current-season stats available for ${teamName}`
+      }
+
+      // Get top 5 players by minutes played
+      const topPlayers = players
+        .filter(p => p.averages && p.averages.avgMinutes > 15) // Only players with significant minutes
+        .sort((a, b) => (b.averages?.avgMinutes || 0) - (a.averages?.avgMinutes || 0))
+        .slice(0, 5)
+
+      if (topPlayers.length === 0) {
+        return `No current-season stats available for ${teamName}`
+      }
+
+      return topPlayers.map(p => {
+        const name = `${p.player.firstName} ${p.player.lastName}`
+        const ppg = p.averages.avgPoints?.toFixed(1) || '0.0'
+        const rpg = p.averages.avgRebounds?.toFixed(1) || '0.0'
+        const apg = p.averages.avgAssists?.toFixed(1) || '0.0'
+        const mpg = p.averages.avgMinutes?.toFixed(1) || '0.0'
+        const gp = p.stats.gamesPlayed || 0
+        return `  ${name}: ${ppg} PPG, ${rpg} RPG, ${apg} APG, ${mpg} MPG (${gp} games)`
+      }).join('\n')
+    }
+
+    const awayStatsContext = formatPlayerStats(awayPlayerStats, input.game.away_team)
+    const homeStatsContext = formatPlayerStats(homePlayerStats, input.game.home_team)
+
     // Generate AI prompt based on bet type
     let aiPrompt = ''
 
@@ -108,6 +166,8 @@ export async function generateBoldPredictions(input: BoldPredictionsInput): Prom
       const pickDirection = input.selection.split(' ')[0] // "OVER" or "UNDER"
 
       aiPrompt = `You are an elite NBA analyst with a proven track record of accurate player performance predictions. Your reputation depends on ACCURACY, not volume.
+
+⚠️ CRITICAL: You MUST use ONLY the current-season player stats provided below. DO NOT use outdated training data or make assumptions about players who may have changed teams, retired, or are injured.
 
 GAME CONTEXT:
 - Matchup: ${input.game.away_team} @ ${input.game.home_team}
@@ -118,21 +178,31 @@ GAME CONTEXT:
 - Confidence: ${input.confidence.toFixed(1)}/10.0
 - Edge: ${edge.toFixed(1)} points
 
+CURRENT-SEASON PLAYER STATS (${input.game.away_team}):
+${awayStatsContext}
+
+CURRENT-SEASON PLAYER STATS (${input.game.home_team}):
+${homeStatsContext}
+
 KEY FACTORS ANALYSIS:
 ${factorsSummary}
 
-INJURY REPORT:
+INJURY REPORT (VERIFIED CURRENT):
 ${injuryContext}
 
 TASK:
 Generate 2-3 HIGH-PROBABILITY player predictions that STRONGLY SUPPORT our ${pickDirection} prediction.
 
 ⚠️ CRITICAL ACCURACY GUIDELINES:
-1. QUALITY OVER QUANTITY - Only make predictions you're highly confident in
-2. Each prediction MUST be backed by CONCRETE DATA from the factors/injuries above
-3. Predictions MUST align with the ${pickDirection} pick - NO contradictions
-4. Use CONSERVATIVE estimates - Better to under-promise and over-deliver
-5. Only assign HIGH confidence if you have STRONG statistical backing
+1. ONLY use players from the CURRENT-SEASON PLAYER STATS provided above
+2. DO NOT reference players who are not listed in the stats (they may be injured, traded, or retired)
+3. DO NOT use outdated season-long averages - only use the current-season PPG/RPG/APG provided
+4. VERIFY each player is active and not on the injury report before making predictions
+5. QUALITY OVER QUANTITY - Only make predictions you're highly confident in
+6. Each prediction MUST be backed by CONCRETE DATA from the current-season stats above
+7. Predictions MUST align with the ${pickDirection} pick - NO contradictions
+8. Use CONSERVATIVE estimates - Better to under-promise and over-deliver
+9. Only assign HIGH confidence if you have STRONG statistical backing from current-season data
 
 PREDICTION CRITERIA FOR ${pickDirection}:
 ${pickDirection === 'OVER' ? `
@@ -253,8 +323,8 @@ Return ONLY valid JSON in this exact format:
 }`
     }
 
-    // Call OpenAI API directly
-    console.log('[BoldPredictions] Calling OpenAI API...')
+    // Call OpenAI API directly using GPT-4o (latest production model)
+    console.log('[BoldPredictions] Calling OpenAI GPT-4o API with real MySportsFeeds player stats...')
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -263,11 +333,11 @@ Return ONLY valid JSON in this exact format:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4o',  // Using GPT-4o instead of gpt-4o-mini for better accuracy
         messages: [
           {
             role: 'system',
-            content: 'You are an elite NBA analyst with a proven track record of accurate player performance predictions. Your reputation depends on ACCURACY over volume. You only make predictions backed by concrete statistical evidence and recent performance trends. You provide specific, measurable, conservative predictions that align with the overall game prediction. Always respond with valid JSON.'
+            content: 'You are an elite NBA analyst with a proven track record of accurate player performance predictions. Your reputation depends on ACCURACY over volume. You MUST ONLY use the current-season player stats provided in the prompt - DO NOT use outdated training data or make assumptions about players who may have changed teams, retired, or are injured. You only make predictions backed by concrete statistical evidence from the current season. You provide specific, measurable, conservative predictions that align with the overall game prediction. Always respond with valid JSON.'
           },
           {
             role: 'user',
@@ -275,7 +345,7 @@ Return ONLY valid JSON in this exact format:
           }
         ],
         max_tokens: 1500,
-        temperature: 0.5,  // Lower temperature for more conservative, data-driven predictions
+        temperature: 0.3,  // Lower temperature for more conservative, data-driven predictions (reduced from 0.5)
         response_format: { type: 'json_object' }
       })
     })
