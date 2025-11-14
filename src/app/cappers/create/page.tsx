@@ -314,7 +314,7 @@ const NBA_TEAMS = [
 
 export default function CreateCapperPage() {
   const router = useRouter()
-  const { profile, loading: authLoading } = useAuth()
+  const { profile, loading: authLoading, refreshProfile } = useAuth()
   const { toast } = useToast()
   const [step, setStep] = useState<Step>(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -497,6 +497,9 @@ export default function CreateCapperPage() {
         description: `${config.display_name} is now active and ${config.pick_mode === 'manual' ? 'ready for manual picks' : 'generating picks automatically'}.`,
         variant: 'success',
       })
+
+      // Refresh profile to update role from 'free' to 'capper'
+      await refreshProfile()
 
       // Small delay to let user see the toast before redirect
       setTimeout(() => {
