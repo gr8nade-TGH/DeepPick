@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
-import { ArrowLeft, ArrowRight, CheckCircle, Sparkles, Zap, Hand, GitMerge, Clock, Ban, Gauge, TrendingUp, Target, Home, Battery, Wind, BarChart3, Shield, Trophy, Flame, UserX, Anchor, Scale, Rocket, Castle, TrendingDown, ExternalLink, Eye } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CheckCircle, Sparkles, Zap, Hand, GitMerge, Clock, Ban, Gauge, TrendingUp, Target, Home, Battery, Wind, BarChart3, Shield, Trophy, Flame, UserX, Anchor, Scale, Rocket, Castle, TrendingDown, ExternalLink, Eye, Loader2, AlertCircle } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
 
@@ -501,7 +501,7 @@ export default function CreateCapperPage() {
       // Small delay to let user see the toast before redirect
       setTimeout(() => {
         router.push('/dashboard/capper')
-      }, 1000)
+      }, 1500)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
       setIsSubmitting(false)
@@ -512,6 +512,26 @@ export default function CreateCapperPage() {
         variant: 'destructive',
       })
     }
+  }
+
+  // Show loading state while checking auth
+  if (authLoading) {
+    return (
+      <div className="container mx-auto py-8 px-4 max-w-4xl">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Redirect if not authenticated
+  if (!profile) {
+    router.push('/login')
+    return null
   }
 
   return (
@@ -1005,8 +1025,9 @@ export default function CreateCapperPage() {
           )}
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded">
-              {error}
+            <div className="bg-red-500/10 border-2 border-red-500/50 text-red-400 px-4 py-3 rounded-lg flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <span>{error}</span>
             </div>
           )}
 
@@ -1049,9 +1070,19 @@ export default function CreateCapperPage() {
               <Button
                 onClick={handleSubmit}
                 disabled={!canProceed() || isSubmitting}
+                className="min-w-[200px]"
               >
-                {isSubmitting ? 'Becoming a Capper...' : 'Become a Capper'}
-                <Sparkles className="w-4 h-4 ml-2" />
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Creating Capper...
+                  </>
+                ) : (
+                  <>
+                    Become a Capper
+                    <Sparkles className="w-4 h-4 ml-2" />
+                  </>
+                )}
               </Button>
             )}
           </div>
