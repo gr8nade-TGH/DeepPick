@@ -399,30 +399,7 @@ export default function CreateCapperPage() {
                   </div>
                 </button>
 
-                {/* Auto-Generated Only */}
-                <button
-                  onClick={() => updateConfig({ pick_mode: 'auto' })}
-                  className={`w-full p-6 rounded-lg border-2 transition-all text-left ${config.pick_mode === 'auto'
-                    ? 'border-primary bg-primary/10 scale-[1.02]'
-                    : 'border-muted hover:border-primary/50'
-                    }`}
-                >
-                  <div className="flex items-start gap-4">
-                    <Zap className="w-8 h-8 text-yellow-500 flex-shrink-0 mt-1" />
-                    <div className="flex-1">
-                      <h3 className="font-bold text-lg mb-1">Auto-Generated Only <span className="text-xs text-green-500">(Recommended)</span></h3>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        AI generates picks based on your custom factor weights. Set timing and team exclusions.
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded">Fully Automated</span>
-                        <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">Recommended</span>
-                      </div>
-                    </div>
-                  </div>
-                </button>
-
-                {/* Hybrid */}
+                {/* Sharp Auto-Generated + Manual Picks */}
                 <button
                   onClick={() => updateConfig({ pick_mode: 'hybrid' })}
                   className={`w-full p-6 rounded-lg border-2 transition-all text-left ${config.pick_mode === 'hybrid'
@@ -431,15 +408,15 @@ export default function CreateCapperPage() {
                     }`}
                 >
                   <div className="flex items-start gap-4">
-                    <GitMerge className="w-8 h-8 text-purple-500 flex-shrink-0 mt-1" />
+                    <Zap className="w-8 h-8 text-yellow-500 flex-shrink-0 mt-1" />
                     <div className="flex-1">
-                      <h3 className="font-bold text-lg mb-1">Hybrid (Manual + Auto)</h3>
+                      <h3 className="font-bold text-lg mb-1">Sharp Auto-Generated + Manual Picks <span className="text-xs text-green-500">(Recommended)</span></h3>
                       <p className="text-sm text-muted-foreground mb-2">
-                        AI generates picks, but you can override. Manual picks take priority over auto picks.
+                        AI generates sharp picks automatically based on your custom factor weights, plus you can add manual picks anytime.
                       </p>
                       <div className="flex flex-wrap gap-2">
-                        <span className="text-xs bg-purple-500/20 text-purple-400 px-2 py-1 rounded">Best of Both</span>
-                        <span className="text-xs bg-slate-700 text-slate-300 px-2 py-1 rounded">Advanced</span>
+                        <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded">Automated + Manual</span>
+                        <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">Recommended</span>
                       </div>
                     </div>
                   </div>
@@ -573,8 +550,8 @@ export default function CreateCapperPage() {
                           <div
                             key={factor}
                             className={`relative border-2 rounded-xl p-4 transition-all cursor-pointer ${isEnabled
-                                ? `border-${colorClass}-500 bg-${colorClass}-500/5 shadow-lg shadow-${colorClass}-500/20`
-                                : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
+                              ? `border-${colorClass}-500 bg-${colorClass}-500/5 shadow-lg shadow-${colorClass}-500/20`
+                              : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
                               }`}
                             onClick={() => !isEnabled && handleFactorToggle(betType, factor)}
                           >
