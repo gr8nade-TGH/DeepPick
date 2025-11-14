@@ -286,27 +286,27 @@ const PRESET_CONFIGS: PresetConfig[] = [
     description: 'Fade the public, find value in overreactions.',
     icon: TrendingDown,
     color: 'purple',
-    philosophy: 'Weights factors that find value against public perception. Emphasizes rest and injury overreactions. Targets 54-57% win rate.',
+    philosophy: 'Ignores public-driven factors (recent form, home court, injuries). Emphasizes underlying metrics the public overlooks. Targets 54-57% win rate.',
     totalFactors: {
       enabled: ['paceIndex', 'netRating', 'shooting', 'homeAwayDiff', 'restDays', 'injuryImpact'],
       weights: {
-        paceIndex: 25,
-        netRating: 30,
-        shooting: 20,
-        homeAwayDiff: 25,
-        restDays: 70,
-        injuryImpact: 80
+        paceIndex: 50,
+        netRating: 80,
+        shooting: 60,
+        homeAwayDiff: 20,
+        restDays: 20,
+        injuryImpact: 20
       }
     },
     spreadFactors: {
       enabled: ['recentForm', 'paceMismatch', 'offDefBalance', 'homeCourtEdge', 'clutchPerformance', 'injuryImpact'],
       weights: {
-        recentForm: 20,
-        paceMismatch: 40,
-        offDefBalance: 40,
-        homeCourtEdge: 30,
-        clutchPerformance: 40,
-        injuryImpact: 80
+        recentForm: 10,
+        paceMismatch: 50,
+        offDefBalance: 80,
+        homeCourtEdge: 10,
+        clutchPerformance: 80,
+        injuryImpact: 20
       }
     }
   }
