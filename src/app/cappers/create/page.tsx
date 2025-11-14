@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
 import { Button } from '@/components/ui/button'
@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
-import { ArrowLeft, ArrowRight, CheckCircle, Sparkles, Zap, Hand, GitMerge, Clock, Ban } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CheckCircle, Sparkles, Zap, Hand, GitMerge, Clock, Ban, Gauge, TrendingUp, Target, Home, Battery, Wind, BarChart3, Shield, Trophy, Flame } from 'lucide-react'
 
 type Step = 1 | 2 | 3
 
@@ -40,73 +40,93 @@ interface CapperConfig {
 const FACTOR_DETAILS = {
   paceIndex: {
     name: 'Pace Index',
+    icon: Gauge,
     description: 'Expected game pace based on both teams\' recent pace (last 10 games)',
     importance: 'Fast-paced games produce higher totals; slow-paced games produce lower totals.',
     example: 'High pace game (+12 possessions vs league avg) → Strong Over signal. Slow pace game (-8 possessions) → Strong Under signal.',
-    defaultWeight: 30
+    defaultWeight: 30,
+    color: 'cyan'
   },
   netRating: {
     name: 'Net Rating',
+    icon: TrendingUp,
     description: 'Combined offensive and defensive efficiency differential',
     importance: 'Elite offenses vs weak defenses create higher scoring games.',
     example: 'Strong offense (+8 net rating) vs weak defense (-6 net rating) → Strong Over signal.',
-    defaultWeight: 30
+    defaultWeight: 30,
+    color: 'green'
   },
   shooting: {
     name: 'Shooting Performance',
+    icon: Target,
     description: '3PT% and FG% trends over last 5 games',
     importance: 'Hot shooting teams score more points; cold shooting teams score fewer.',
     example: 'Team shooting 40% from 3PT (vs 35% avg) → +2.5 points per game.',
-    defaultWeight: 25
+    defaultWeight: 25,
+    color: 'orange'
   },
   homeAwayDiff: {
     name: 'Home/Away Split',
+    icon: Home,
     description: 'Home vs away scoring differential',
     importance: 'Home teams typically score 2-4 more points per game than on the road.',
     example: 'Home team averages +3.5 PPG at home → Slight Over lean.',
-    defaultWeight: 20
+    defaultWeight: 20,
+    color: 'blue'
   },
   restDays: {
     name: 'Rest & Fatigue',
+    icon: Battery,
     description: 'Days of rest and back-to-back game impact',
     importance: 'Fatigued teams score fewer points and allow more points on defense.',
     example: 'Team on back-to-back (0 days rest) → -3 to -5 points expected.',
-    defaultWeight: 20
+    defaultWeight: 20,
+    color: 'yellow'
   },
   recentForm: {
     name: 'Recent Form (ATS)',
+    icon: Flame,
     description: 'Against-the-spread performance over last 3 and 10 games',
     importance: 'Teams on hot ATS streaks tend to continue covering spreads.',
     example: 'Team is 8-2 ATS in last 10 games → Strong cover signal.',
-    defaultWeight: 30
+    defaultWeight: 30,
+    color: 'red'
   },
   paceMismatch: {
     name: 'Pace Mismatch',
+    icon: Wind,
     description: 'Fast vs slow tempo differential between teams',
     importance: 'Slower team typically gets ATS edge in pace mismatches.',
     example: 'Fast team (105 pace) vs slow team (95 pace) → Slower team gets +3.8 ATS edge.',
-    defaultWeight: 20
+    defaultWeight: 20,
+    color: 'purple'
   },
   offDefBalance: {
     name: 'Offensive/Defensive Balance',
+    icon: BarChart3,
     description: 'Team efficiency ratings on both ends of the floor',
     importance: 'Elite offenses vs weak defenses create larger point margins.',
     example: 'Elite offense (+8 rating) vs weak defense (-6 rating) → Large spread advantage.',
-    defaultWeight: 25
+    defaultWeight: 25,
+    color: 'indigo'
   },
   homeCourtEdge: {
     name: 'Home Court Advantage',
+    icon: Shield,
     description: 'Home vs away point differential and win rate',
     importance: 'Home teams cover spreads more often than road teams.',
     example: 'Strong home team (+6.5 PPG at home) → Home spread advantage.',
-    defaultWeight: 15
+    defaultWeight: 15,
+    color: 'emerald'
   },
   clutchPerformance: {
     name: 'Clutch Performance',
+    icon: Trophy,
     description: 'Performance in close games (within 5 points in 4th quarter)',
     importance: 'Clutch teams cover spreads in tight games.',
     example: 'Team is 12-3 in clutch situations → Strong spread cover signal.',
-    defaultWeight: 15
+    defaultWeight: 15,
+    color: 'amber'
   }
 }
 
@@ -127,6 +147,7 @@ export default function CreateCapperPage() {
   const [step, setStep] = useState<Step>(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const pageTopRef = useRef<HTMLDivElement>(null)
 
   const [config, setConfig] = useState<CapperConfig>({
     capper_id: '',
@@ -171,6 +192,11 @@ export default function CreateCapperPage() {
     }
   }, [profile])
 
+  // Scroll to top when step changes
+  useEffect(() => {
+    pageTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [step])
+
   const updateConfig = (updates: Partial<CapperConfig>) => {
     setConfig(prev => ({ ...prev, ...updates }))
   }
@@ -214,7 +240,20 @@ export default function CreateCapperPage() {
 
   const handleWeightChange = (betType: string, factor: string, value: number) => {
     const newFactorConfig = { ...config.factor_config }
-    newFactorConfig[betType].weights[factor] = value
+    const currentTotal = calculateTotalWeight(betType)
+    const currentWeight = newFactorConfig[betType].weights[factor] || 0
+    const weightDiff = value - currentWeight
+    const newTotal = currentTotal + weightDiff
+
+    // Prevent going over 250% budget
+    if (newTotal > 250) {
+      // Calculate max allowed value for this factor
+      const maxAllowed = 250 - (currentTotal - currentWeight)
+      newFactorConfig[betType].weights[factor] = Math.max(0, maxAllowed)
+    } else {
+      newFactorConfig[betType].weights[factor] = value
+    }
+
     updateConfig({ factor_config: newFactorConfig })
   }
 
@@ -265,7 +304,7 @@ export default function CreateCapperPage() {
   }
 
   return (
-    <div className="container mx-auto py-8 px-4 max-w-4xl">
+    <div ref={pageTopRef} className="container mx-auto py-8 px-4 max-w-4xl">
       <div className="mb-8">
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <Sparkles className="w-8 h-8 text-yellow-500" />
@@ -522,66 +561,76 @@ export default function CreateCapperPage() {
                       💡 Distribute <strong>250% total weight</strong> across all factors. Higher weights = more influence on predictions.
                     </p>
 
-                    {AVAILABLE_FACTORS[betType as keyof typeof AVAILABLE_FACTORS]?.map(factor => {
-                      const isEnabled = config.factor_config[betType]?.enabled_factors.includes(factor)
-                      const weight = config.factor_config[betType]?.weights[factor] || 50
-                      const details = FACTOR_DETAILS[factor as keyof typeof FACTOR_DETAILS]
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {AVAILABLE_FACTORS[betType as keyof typeof AVAILABLE_FACTORS]?.map(factor => {
+                        const isEnabled = config.factor_config[betType]?.enabled_factors.includes(factor)
+                        const weight = config.factor_config[betType]?.weights[factor] || 50
+                        const details = FACTOR_DETAILS[factor as keyof typeof FACTOR_DETAILS]
+                        const Icon = details?.icon || Target
+                        const colorClass = details?.color || 'blue'
 
-                      return (
-                        <div key={factor} className="border rounded-lg p-4 space-y-3">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-2">
-                              <Checkbox
-                                id={`${betType}-${factor}`}
-                                checked={isEnabled}
-                                onCheckedChange={() => handleFactorToggle(betType, factor)}
-                              />
+                        return (
+                          <div
+                            key={factor}
+                            className={`relative border-2 rounded-xl p-4 transition-all cursor-pointer ${isEnabled
+                                ? `border-${colorClass}-500 bg-${colorClass}-500/5 shadow-lg shadow-${colorClass}-500/20`
+                                : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
+                              }`}
+                            onClick={() => !isEnabled && handleFactorToggle(betType, factor)}
+                          >
+                            {/* Header */}
+                            <div className="flex items-start gap-3 mb-3">
+                              <div className={`p-2 rounded-lg ${isEnabled ? `bg-${colorClass}-500/20` : 'bg-slate-700'}`}>
+                                <Icon className={`w-5 h-5 ${isEnabled ? `text-${colorClass}-400` : 'text-slate-400'}`} />
+                              </div>
                               <div className="flex-1">
-                                <Label htmlFor={`${betType}-${factor}`} className="cursor-pointer font-medium">
-                                  {details?.name}
-                                </Label>
-                                <p className="text-xs text-muted-foreground mt-0.5">
+                                <div className="flex items-center justify-between">
+                                  <Label htmlFor={`${betType}-${factor}`} className="cursor-pointer font-semibold text-sm">
+                                    {details?.name}
+                                  </Label>
+                                  <Checkbox
+                                    id={`${betType}-${factor}`}
+                                    checked={isEnabled}
+                                    onCheckedChange={() => handleFactorToggle(betType, factor)}
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1">
                                   {details?.description}
                                 </p>
                               </div>
                             </div>
-                            <span className="text-sm font-semibold text-primary">
-                              {weight}%
-                            </span>
-                          </div>
 
-                          {isEnabled && (
-                            <>
-                              <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded p-2">
-                                <p className="text-xs text-blue-700 dark:text-blue-300">
-                                  <strong>Why it matters:</strong> {details?.importance}
-                                </p>
-                              </div>
-                              <div className="bg-purple-50 dark:bg-purple-950 border border-purple-200 dark:border-purple-800 rounded p-2">
-                                <p className="text-xs text-purple-700 dark:text-purple-300">
-                                  <strong>Example:</strong> {details?.example}
-                                </p>
-                              </div>
-                              <div className="space-y-2">
+                            {/* Weight Slider (only when enabled) */}
+                            {isEnabled && (
+                              <div className="space-y-2 pt-3 border-t border-slate-700">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-medium text-muted-foreground">Weight</span>
+                                  <span className={`text-lg font-bold text-${colorClass}-400`}>{weight}%</span>
+                                </div>
                                 <input
                                   type="range"
                                   min="0"
                                   max="100"
                                   value={weight}
                                   onChange={e => handleWeightChange(betType, factor, parseInt(e.target.value))}
-                                  className="w-full cursor-pointer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className={`w-full h-2 rounded-lg appearance-none cursor-pointer bg-slate-700 accent-${colorClass}-500`}
+                                  style={{
+                                    background: `linear-gradient(to right, rgb(var(--${colorClass}-500)) 0%, rgb(var(--${colorClass}-500)) ${weight}%, rgb(51 65 85) ${weight}%, rgb(51 65 85) 100%)`
+                                  }}
                                 />
                                 <div className="flex justify-between text-xs text-muted-foreground">
-                                  <span>0% (Disabled)</span>
-                                  <span>50% (Balanced)</span>
-                                  <span>100% (Maximum)</span>
+                                  <span>0%</span>
+                                  <span>50%</span>
+                                  <span>100%</span>
                                 </div>
                               </div>
-                            </>
-                          )}
-                        </div>
-                      )
-                    })}
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
                   </div>
                 )
               })}
