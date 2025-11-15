@@ -31,6 +31,10 @@ export interface WizardOrchestratorInput {
   betType?: 'TOTAL' | 'SPREAD'
   aiProvider?: 'perplexity' | 'openai'
   newsWindowHours?: number
+  factorConfig?: {
+    weights: Record<string, number>
+    enabled_factors: string[]
+  }
 }
 
 export interface WizardOrchestratorResult {
@@ -74,7 +78,7 @@ export interface WizardOrchestratorResult {
  */
 export async function executeWizardPipeline(input: WizardOrchestratorInput): Promise<WizardOrchestratorResult> {
   const startTime = Date.now()
-  const { game, runId, capperId = 'SHIVA', sport = 'NBA', betType = 'TOTAL', aiProvider = 'perplexity', newsWindowHours = 24 } = input
+  const { game, runId, capperId = 'SHIVA', sport = 'NBA', betType = 'TOTAL', aiProvider = 'perplexity', newsWindowHours = 24, factorConfig } = input
 
   const steps: any = {}
 
@@ -104,7 +108,7 @@ export async function executeWizardPipeline(input: WizardOrchestratorInput): Pro
 
     // Step 3: Factor Analysis (F1-F5)
     console.log('[WizardOrchestrator] Step 3: Computing factors...')
-    steps.step3 = await computeFactors(runId, { home: homeTeam, away: awayTeam }, sport, betType, capperId, aiProvider, newsWindowHours)
+    steps.step3 = await computeFactors(runId, { home: homeTeam, away: awayTeam }, sport, betType, capperId, aiProvider, newsWindowHours, factorConfig)
     console.log('[WizardOrchestrator] Step 3: Factors computed:', steps.step3.factors?.length || 0, 'factors')
 
     // Step 4: Score Predictions
@@ -383,39 +387,48 @@ async function computeFactors(
   betType: string,
   capperId: string,
   aiProvider: string,
-  newsWindowHours: number
+  newsWindowHours: number,
+  factorConfig?: { weights: Record<string, number>; enabled_factors: string[] }
 ) {
   const supabase = getSupabaseAdmin()
 
-  // Get factor weights from profile
+  // Get factor weights from profile OR use provided factorConfig
   // NOTE: These are weight PERCENTAGES (0-100), not decimal weights
   // NO FALLBACK WEIGHTS - must be configured in UI (except Edge vs Market which is always 100%)
   let factorWeights: Record<string, number> = {}
 
-  // Query for capper profile (uppercase, removed is_active filter since all profiles are inactive)
-  const { data: profileData, error: profileError } = await supabase
-    .from('capper_profiles')
-    .select('*')
-    .eq('capper_id', capperId.toUpperCase())
-    .eq('sport', sport)
-    .eq('bet_type', betType)
-    .eq('is_default', true)
-    .limit(1)
-    .maybeSingle()
+  if (factorConfig) {
+    // Use provided factor config (from user_cappers table)
+    console.log('[WizardOrchestrator] Using provided factor config:', factorConfig)
+    factorWeights = factorConfig.weights
+  } else {
+    // Query for capper profile (uppercase, removed is_active filter since all profiles are inactive)
+    const { data: profileData, error: profileError } = await supabase
+      .from('capper_profiles')
+      .select('*')
+      .eq('capper_id', capperId.toUpperCase())
+      .eq('sport', sport)
+      .eq('bet_type', betType)
+      .eq('is_default', true)
+      .limit(1)
+      .maybeSingle()
 
-  if (profileError || !profileData?.factors) {
-    throw new Error(
-      `[WizardOrchestrator] Factor weights not configured! Please configure factor weights in the SHIVA Management UI. ` +
-      `Error: ${profileError?.message || 'No factors found in capper_profiles table'}`
-    )
-  }
-
-  // Convert factors array to weights object
-  // factors is an array like: [{ key: 'paceIndex', enabled: true, weight: 50 }, ...]
-  for (const factor of profileData.factors) {
-    if (factor.enabled && factor.key !== 'edgeVsMarket' && factor.key !== 'edgeVsMarketSpread') {
-      factorWeights[factor.key] = factor.weight
+    if (profileError || !profileData?.factors) {
+      throw new Error(
+        `[WizardOrchestrator] Factor weights not configured! Please configure factor weights in the SHIVA Management UI. ` +
+        `Error: ${profileError?.message || 'No factors found in capper_profiles table'}`
+      )
     }
+
+    // Convert factors array to weights object
+    // factors is an array like: [{ key: 'paceIndex', enabled: true, weight: 50 }, ...]
+    for (const factor of profileData.factors) {
+      if (factor.enabled && factor.key !== 'edgeVsMarket' && factor.key !== 'edgeVsMarketSpread') {
+        factorWeights[factor.key] = factor.weight
+      }
+    }
+
+    console.log('[WizardOrchestrator] Loaded factor weights from capper_profiles:', factorWeights)
   }
 
   // Validate that we have weights
@@ -424,8 +437,6 @@ async function computeFactors(
       `[WizardOrchestrator] No enabled factors found in profile! Please configure factor weights in the SHIVA Management UI.`
     )
   }
-
-  console.log('[WizardOrchestrator] Loaded factor weights from capper_profiles:', factorWeights)
 
   // Compute factors based on bet type
   const ctx = {

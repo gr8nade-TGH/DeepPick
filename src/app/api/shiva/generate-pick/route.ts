@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     console.log('🎯 [SHIVA:GeneratePick] Starting unified wizard pipeline...')
 
     const body = await request.json()
-    const { selectedGame, betType = 'TOTAL', capperId = 'shiva' } = body
+    const { selectedGame, betType = 'TOTAL', capperId = 'shiva', factorConfig } = body
 
     if (!selectedGame || !selectedGame.id) {
       return NextResponse.json({
@@ -143,7 +143,8 @@ export async function POST(request: Request) {
       sport: 'NBA',
       betType: betType as 'TOTAL' | 'SPREAD',
       aiProvider: 'perplexity',
-      newsWindowHours: 24
+      newsWindowHours: 24,
+      factorConfig // Pass through the factorConfig if provided
     })
 
     const duration = Date.now() - startTime
