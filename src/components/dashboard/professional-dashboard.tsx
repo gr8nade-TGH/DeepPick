@@ -313,10 +313,22 @@ export function ProfessionalDashboard() {
 
           if (perfData.success && perfData.data) {
             const metrics = perfData.data.metrics
+
+            // Map capper IDs to avatars
+            const avatarMap: Record<string, string> = {
+              'shiva': '🔱',
+              'ifrit': '🔥',
+              'sentinel': '🛡️',
+              'nexus': '🔷',
+              'blitz': '⚡',
+              'titan': '🏔️',
+              'thief': '🎭'
+            }
+
             return {
               id: capper.capper_id,
               name: capper.capper_id.toUpperCase(),
-              avatar: capper.capper_id === 'shiva' ? '🔱' : capper.capper_id === 'ifrit' ? '🔥' : '🎯',
+              avatar: avatarMap[capper.capper_id.toLowerCase()] || '🎯',
               rank: 0, // Will be set after sorting
               roi: metrics.roi || 0,
               win_rate: metrics.win_rate || 0,
@@ -460,6 +472,31 @@ export function ProfessionalDashboard() {
       return {
         gradient: 'bg-gradient-to-r from-orange-900 to-red-900',
         text: 'text-orange-200'
+      }
+    } else if (capperUpper === 'SENTINEL') {
+      return {
+        gradient: 'bg-gradient-to-r from-blue-900 to-indigo-900',
+        text: 'text-blue-200'
+      }
+    } else if (capperUpper === 'NEXUS') {
+      return {
+        gradient: 'bg-gradient-to-r from-purple-900 to-pink-900',
+        text: 'text-purple-200'
+      }
+    } else if (capperUpper === 'BLITZ') {
+      return {
+        gradient: 'bg-gradient-to-r from-yellow-900 to-orange-900',
+        text: 'text-yellow-200'
+      }
+    } else if (capperUpper === 'TITAN') {
+      return {
+        gradient: 'bg-gradient-to-r from-gray-900 to-slate-900',
+        text: 'text-gray-200'
+      }
+    } else if (capperUpper === 'THIEF') {
+      return {
+        gradient: 'bg-gradient-to-r from-violet-900 to-purple-900',
+        text: 'text-violet-200'
       }
     } else {
       // Default for other cappers

@@ -108,7 +108,11 @@ export interface InsightCardProps {
 const KNOWN_CAPPER_BRANDING: Record<string, { icon: string; color: string; gradient: string }> = {
   'SHIVA': { icon: '🔱', color: 'cyan', gradient: 'from-blue-600 to-cyan-700' },
   'IFRIT': { icon: '🔥', color: 'orange', gradient: 'from-orange-600 to-red-700' },
+  'SENTINEL': { icon: '🛡️', color: 'blue', gradient: 'from-blue-600 to-indigo-700' },
   'NEXUS': { icon: '🔷', color: 'purple', gradient: 'from-purple-600 to-pink-700' },
+  'BLITZ': { icon: '⚡', color: 'yellow', gradient: 'from-yellow-600 to-orange-700' },
+  'TITAN': { icon: '🏔️', color: 'gray', gradient: 'from-gray-600 to-slate-700' },
+  'THIEF': { icon: '🎭', color: 'violet', gradient: 'from-violet-600 to-purple-700' },
   'CERBERUS': { icon: '🐺', color: 'red', gradient: 'from-red-600 to-orange-700' },
   'DEEPPICK': { icon: '🎯', color: 'blue', gradient: 'from-blue-600 to-cyan-700' }
 }
