@@ -97,11 +97,18 @@ export async function GET(request: NextRequest) {
       }, { status: 500 })
     }
 
+    // Transform picks: rename 'games' to 'game' for frontend compatibility
+    const transformedPicks = picks?.map(pick => ({
+      ...pick,
+      game: Array.isArray(pick.games) ? pick.games[0] : pick.games,
+      games: undefined // Remove the original 'games' field
+    })) || []
+
     return NextResponse.json({
       success: true,
-      data: picks || [],
-      picks: picks || [],
-      count: picks?.length || 0,
+      data: transformedPicks,
+      picks: transformedPicks,
+      count: transformedPicks.length,
       capper: capper || 'all'
     })
 
