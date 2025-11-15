@@ -646,7 +646,7 @@ export default function CapperPublicProfile() {
                           <Badge className={getStatusColor(pick.result)}>
                             <span className="flex items-center gap-1">
                               {getStatusIcon(pick.result)}
-                              {(pick.result || 'pending').toUpperCase()}
+                              {String(pick.result || 'pending').toUpperCase()}
                             </span>
                           </Badge>
                           {pick.net_units !== null && pick.net_units !== 0 && (
