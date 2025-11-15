@@ -37,13 +37,13 @@ export async function POST(request: Request) {
       const { error: runsError, count: runsCount } = await supabase
         .from('runs')
         .delete({ count: 'exact' })
-        .eq('capper_id', capper.toLowerCase())
+        .eq('capper', capper.toLowerCase())
 
       // Delete cooldowns for this capper
       const { error: cooldownsError, count: cooldownsCount } = await supabase
         .from('pick_generation_cooldowns')
         .delete({ count: 'exact' })
-        .eq('capper_id', capper.toLowerCase())
+        .eq('capper', capper.toLowerCase())
 
       console.log(`[ADMIN] ✅ Cleared ${capper.toUpperCase()} data:`, {
         picks: picksCount || 0,
