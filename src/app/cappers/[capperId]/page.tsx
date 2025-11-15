@@ -377,26 +377,10 @@ export default function CapperPublicProfile() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {topTeams.map((teamData, index) => {
                   // Rank badge styling based on position
-                  let rankBadgeStyle = ''
-                  let rankBadgeText = ''
-                  let rankIcon = null
-
-                  if (index === 0) {
-                    // Gold - 1st place
-                    rankBadgeStyle = 'bg-gradient-to-br from-yellow-400 to-yellow-600'
-                    rankBadgeText = '#1'
-                    rankIcon = <Crown className="w-5 h-5 text-yellow-900" />
-                  } else if (index === 1) {
-                    // Silver - 2nd place
-                    rankBadgeStyle = 'bg-gradient-to-br from-slate-300 to-slate-500'
-                    rankBadgeText = '#2'
-                    rankIcon = <Medal className="w-5 h-5 text-slate-700" />
-                  } else {
-                    // Bronze - 3rd place
-                    rankBadgeStyle = 'bg-gradient-to-br from-amber-600 to-amber-800'
-                    rankBadgeText = '#3'
-                    rankIcon = <Award className="w-5 h-5 text-amber-900" />
-                  }
+                  // All teams shown here are Rank #1 for their respective team
+                  // So they all get gold crowns
+                  const rankBadgeStyle = 'bg-gradient-to-br from-yellow-400 to-yellow-600'
+                  const rankIcon = <Crown className="w-5 h-5 text-yellow-900" />
 
                   const winRate = teamData.totalPicks > 0
                     ? ((teamData.wins / (teamData.wins + teamData.losses)) * 100).toFixed(1)
