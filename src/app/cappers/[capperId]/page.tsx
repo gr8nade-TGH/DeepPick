@@ -50,6 +50,12 @@ interface Pick {
     game_start_timestamp?: string
     status?: string
   } | null
+  game_snapshot?: {
+    home_team?: { name: string, abbreviation: string }
+    away_team?: { name: string, abbreviation: string }
+    game_start_timestamp?: string
+    status?: string
+  } | null
 }
 
 interface TeamDominance {
@@ -433,33 +439,42 @@ export default function CapperPublicProfile() {
               </div>
             ) : (
               <div className="space-y-3">
-                {recentPicks.map((pick) => (
-                  <div key={pick.id} className="p-4 rounded-lg bg-slate-900/50 border border-slate-700 hover:border-slate-600 transition-all">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-white font-semibold">
-                            {pick.game?.away_team?.abbreviation || 'TBD'} @ {pick.game?.home_team?.abbreviation || 'TBD'}
-                          </span>
-                          {getStatusBadge(pick.result, pick.game?.status || 'scheduled')}
+                {recentPicks.map((pick) => {
+                  // Use game data if available, otherwise fall back to game_snapshot
+                  const gameData = pick.game || pick.game_snapshot
+                  const awayTeam = gameData?.away_team?.abbreviation || 'TBD'
+                  const homeTeam = gameData?.home_team?.abbreviation || 'TBD'
+                  const gameStatus = gameData?.status || 'scheduled'
+                  const gameTime = gameData?.game_start_timestamp
+
+                  return (
+                    <div key={pick.id} className="p-4 rounded-lg bg-slate-900/50 border border-slate-700 hover:border-slate-600 transition-all">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-white font-semibold">
+                              {awayTeam} @ {homeTeam}
+                            </span>
+                            {getStatusBadge(pick.result, gameStatus)}
+                          </div>
+                          <div className="flex items-center gap-3 text-sm">
+                            <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30">
+                              {pick.pick_type}
+                            </Badge>
+                            <span className="text-white font-medium">{pick.selection}</span>
+                            <span className="text-slate-400">{pick.units}U @ {pick.odds > 0 ? '+' : ''}{pick.odds}</span>
+                            <span className="text-slate-500">•</span>
+                            <span className="text-slate-400">{pick.confidence.toFixed(0)}% confidence</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-3 text-sm">
-                          <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30">
-                            {pick.pick_type}
-                          </Badge>
-                          <span className="text-white font-medium">{pick.selection}</span>
-                          <span className="text-slate-400">{pick.units}U @ {pick.odds > 0 ? '+' : ''}{pick.odds}</span>
-                          <span className="text-slate-500">•</span>
-                          <span className="text-slate-400">{pick.confidence.toFixed(0)}% confidence</span>
+                        <div className="text-right text-sm text-slate-400 flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {gameTime ? getCountdown(gameTime) : 'TBD'}
                         </div>
-                      </div>
-                      <div className="text-right text-sm text-slate-400 flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {pick.game?.game_start_timestamp ? getCountdown(pick.game.game_start_timestamp) : 'TBD'}
                       </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </CardContent>

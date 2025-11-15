@@ -35,8 +35,10 @@ export async function GET(request: NextRequest) {
     const { data: allPicks, error: allPicksError } = await admin
       .from('picks')
       .select('capper, game_snapshot, status, units, net_units')
-      .eq('pick_type', 'SPREAD')
+      .eq('pick_type', 'spread')
       .in('status', ['won', 'lost', 'push'])
+
+    console.log('[TeamDominance] Fetched picks:', allPicks?.length || 0)
 
     if (allPicksError) {
       console.error('[TeamDominance] Error fetching picks:', allPicksError)
@@ -63,34 +65,34 @@ export async function GET(request: NextRequest) {
 
       if (!homeTeam || !awayTeam) return
 
-      // Process for both teams involved in the game
-      ;[homeTeam, awayTeam].forEach(team => {
-        if (!allNBATeams.includes(team)) return
+        // Process for both teams involved in the game
+        ;[homeTeam, awayTeam].forEach(team => {
+          if (!allNBATeams.includes(team)) return
 
-        const capperMap = teamStats.get(team)!
-        if (!capperMap.has(pick.capper)) {
-          capperMap.set(pick.capper, {
-            wins: 0,
-            losses: 0,
-            pushes: 0,
-            netUnits: 0,
-            totalPicks: 0
-          })
-        }
+          const capperMap = teamStats.get(team)!
+          if (!capperMap.has(pick.capper)) {
+            capperMap.set(pick.capper, {
+              wins: 0,
+              losses: 0,
+              pushes: 0,
+              netUnits: 0,
+              totalPicks: 0
+            })
+          }
 
-        const stats = capperMap.get(pick.capper)!
-        stats.totalPicks++
+          const stats = capperMap.get(pick.capper)!
+          stats.totalPicks++
 
-        if (pick.status === 'won') {
-          stats.wins++
-          stats.netUnits += pick.net_units || 0
-        } else if (pick.status === 'lost') {
-          stats.losses++
-          stats.netUnits += pick.net_units || 0
-        } else if (pick.status === 'push') {
-          stats.pushes++
-        }
-      })
+          if (pick.status === 'won') {
+            stats.wins++
+            stats.netUnits += pick.net_units || 0
+          } else if (pick.status === 'lost') {
+            stats.losses++
+            stats.netUnits += pick.net_units || 0
+          } else if (pick.status === 'push') {
+            stats.pushes++
+          }
+        })
     })
 
     // Build leaderboards for each team and find this capper's stats
@@ -139,6 +141,11 @@ export async function GET(request: NextRequest) {
     const top3Teams = capperTeamData
       .sort((a, b) => b.netUnits - a.netUnits)
       .slice(0, 3)
+
+    console.log('[TeamDominance] Results for', capperId, ':', {
+      totalTeams: capperTeamData.length,
+      top3: top3Teams
+    })
 
     return NextResponse.json({
       success: true,
