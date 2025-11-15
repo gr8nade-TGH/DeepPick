@@ -453,35 +453,58 @@ export async function POST(request: Request) {
       console.log(`[SHIVA:GeneratePick] ✅ PERMANENT cooldown created/updated for PICK_GENERATED (until ${cooldownUntil.toISOString()})`)
     }
 
+    // Determine if this is a system capper or user capper
+    const SYSTEM_CAPPERS = ['shiva', 'ifrit', 'nexus', 'cerberus', 'deeppick']
+    const isSystemCapper = SYSTEM_CAPPERS.includes(capperId.toLowerCase())
+
+    // For user cappers, get the user_id from user_cappers table
+    let userId: string | null = null
+    if (!isSystemCapper) {
+      const { data: capperData } = await supabase
+        .from('user_cappers')
+        .select('user_id')
+        .eq('capper_id', capperId)
+        .single()
+
+      userId = capperData?.user_id || null
+    }
+
     // Save pick to database
+    const pickInsert: any = {
+      game_id: game.id,
+      run_id: runId, // CRITICAL: Link pick to run for insight card
+      capper: capperId,
+      pick_type: pick.pickType.toLowerCase(),
+      selection: pick.selection,
+      odds: pick.lockedOdds?.total?.over_odds || -110,
+      units: pick.units,
+      confidence: pick.confidence,
+      game_snapshot: {
+        sport: game.sport,
+        league: game.league,
+        home_team: game.home_team,
+        away_team: game.away_team,
+        game_date: game.game_date,
+        game_time: game.game_time,
+        game_start_timestamp: game.game_start_timestamp, // CRITICAL: Include full UTC timestamp
+        total_line: game.total_line,
+        spread_line: game.spread_line,
+        odds: game.odds
+      },
+      status: 'pending',
+      is_system_pick: isSystemCapper,
+      reasoning: `${capperId.toUpperCase()} pick generated via wizard pipeline`,
+      algorithm_version: `${capperId}_v1`
+    }
+
+    // Add user_id for user cappers
+    if (userId) {
+      pickInsert.user_id = userId
+    }
+
     const { data: savedPick, error: saveError } = await supabase
       .from('picks')
-      .insert({
-        game_id: game.id,
-        run_id: runId, // CRITICAL: Link pick to run for insight card
-        capper: capperId,
-        pick_type: pick.pickType.toLowerCase(),
-        selection: pick.selection,
-        odds: pick.lockedOdds?.total?.over_odds || -110,
-        units: pick.units,
-        confidence: pick.confidence,
-        game_snapshot: {
-          sport: game.sport,
-          league: game.league,
-          home_team: game.home_team,
-          away_team: game.away_team,
-          game_date: game.game_date,
-          game_time: game.game_time,
-          game_start_timestamp: game.game_start_timestamp, // CRITICAL: Include full UTC timestamp
-          total_line: game.total_line,
-          spread_line: game.spread_line,
-          odds: game.odds
-        },
-        status: 'pending',
-        is_system_pick: true,
-        reasoning: `${capperId.toUpperCase()} pick generated via wizard pipeline`,
-        algorithm_version: `${capperId}_v1`
-      })
+      .insert(pickInsert)
       .select()
       .single()
 
