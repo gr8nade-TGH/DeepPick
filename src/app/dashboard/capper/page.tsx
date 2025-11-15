@@ -203,7 +203,7 @@ export default function CapperDashboardPage() {
             <p className="text-slate-400">Manage your pick generation settings and performance</p>
           </div>
           <div className="flex gap-2">
-            <Link href={`/profile/${user?.id}`}>
+            <Link href={`/cappers/${capperData.capper_id}`}>
               <Button variant="outline" className="border-slate-700 hover:bg-slate-800">
                 <Eye className="w-4 h-4 mr-2" />
                 View Public Profile

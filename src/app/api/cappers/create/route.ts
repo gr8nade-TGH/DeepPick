@@ -16,6 +16,12 @@ interface CreateCapperRequest {
   bet_types: string[]
   pick_mode: 'manual' | 'auto' | 'hybrid'
   excluded_teams?: string[]
+  social_links?: {
+    twitter?: string
+    instagram?: string
+    youtube?: string
+    website?: string
+  }
   factor_config: {
     [betType: string]: {
       enabled_factors: string[]
@@ -149,6 +155,7 @@ export async function POST(request: Request) {
         bet_types: body.bet_types,
         pick_mode: body.pick_mode,
         excluded_teams: body.excluded_teams || [],
+        social_links: body.social_links || {},
         factor_config: body.factor_config || {},
         execution_interval_minutes: body.execution_interval_minutes,
         execution_priority: body.execution_priority,
