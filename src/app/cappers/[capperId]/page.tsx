@@ -77,6 +77,7 @@ export default function CapperPublicProfile() {
   const [profile, setProfile] = useState<CapperProfile | null>(null)
   const [stats, setStats] = useState<CapperStats | null>(null)
   const [recentPicks, setRecentPicks] = useState<Pick[]>([])
+  const [currentPicks, setCurrentPicks] = useState<Pick[]>([])
   const [topTeams, setTopTeams] = useState<TeamDominance[]>([])
 
   const fetchCapperData = async () => {
@@ -109,7 +110,17 @@ export default function CapperPublicProfile() {
         setStats(statsData.data.metrics)
       }
 
-      // Fetch recent picks
+      // Fetch current (pending) picks
+      const currentPicksRes = await fetch(`/api/picks?capper=${capperId}&status=pending&limit=10`)
+      const currentPicksData = await currentPicksRes.json()
+
+      console.log('[CapperProfile] Current picks response:', currentPicksData)
+
+      if (currentPicksData.success) {
+        setCurrentPicks(currentPicksData.picks || [])
+      }
+
+      // Fetch recent picks (all statuses)
       const picksRes = await fetch(`/api/picks?capper=${capperId}&limit=20`)
       const picksData = await picksRes.json()
 
@@ -326,6 +337,88 @@ export default function CapperPublicProfile() {
               </CardContent>
             </Card>
           </div>
+        )}
+
+        {/* Current Picks - Active Bets */}
+        {currentPicks.length > 0 && (
+          <Card className="bg-gradient-to-br from-emerald-900/20 to-slate-900/50 border-emerald-500/30 backdrop-blur">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <div className="relative">
+                      <Target className="w-5 h-5 text-emerald-400" />
+                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
+                    </div>
+                    Current Picks
+                    <Badge variant="outline" className="bg-emerald-500/20 text-emerald-400 border-emerald-500/50 ml-2">
+                      {currentPicks.length} Active
+                    </Badge>
+                  </CardTitle>
+                  <CardDescription>Live bets from {profile?.display_name}</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {currentPicks.map((pick) => {
+                  const gameData = pick.game || pick.game_snapshot
+                  const awayTeam = gameData?.away_team?.abbreviation || 'TBD'
+                  const homeTeam = gameData?.home_team?.abbreviation || 'TBD'
+                  const gameTime = gameData?.game_start_timestamp
+
+                  return (
+                    <div
+                      key={pick.id}
+                      className="relative p-4 rounded-xl bg-gradient-to-br from-slate-900/80 to-slate-800/80 border-2 border-emerald-500/30 hover:border-emerald-500/50 transition-all group"
+                    >
+                      {/* LIVE indicator */}
+                      <div className="absolute -top-2 -right-2 px-2 py-1 bg-emerald-500 text-white text-xs font-bold rounded-full shadow-lg flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
+                        LIVE
+                      </div>
+
+                      {/* Game matchup */}
+                      <div className="mb-3">
+                        <div className="text-lg font-bold text-white mb-1">
+                          {awayTeam} @ {homeTeam}
+                        </div>
+                        <div className="text-xs text-slate-400 flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {gameTime ? getCountdown(gameTime) : 'TBD'}
+                        </div>
+                      </div>
+
+                      {/* Pick details */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30">
+                            {pick.pick_type}
+                          </Badge>
+                          <span className="text-emerald-400 font-bold text-lg">{pick.selection}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-400">Units</span>
+                          <span className="text-white font-semibold">{pick.units}U</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-400">Odds</span>
+                          <span className="text-white font-semibold">{pick.odds > 0 ? '+' : ''}{pick.odds}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-400">Confidence</span>
+                          <span className="text-emerald-400 font-semibold">{pick.confidence.toFixed(0)}%</span>
+                        </div>
+                      </div>
+
+                      {/* Hover glow effect */}
+                      <div className="absolute inset-0 rounded-xl bg-emerald-500/0 group-hover:bg-emerald-500/5 transition-all pointer-events-none" />
+                    </div>
+                  )
+                })}
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Team Dominance - Battle Map Integration */}
