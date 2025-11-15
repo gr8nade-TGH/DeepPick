@@ -11,15 +11,15 @@ import { useRouter } from 'next/navigation'
 interface CapperProfile {
   capper_id: string
   display_name: string
-  description: string
-  color_theme: string
-  created_at: string
+  description?: string | null
+  color_theme?: string | null
+  created_at?: string | null
   social_links?: {
     twitter?: string
     instagram?: string
     youtube?: string
     website?: string
-  }
+  } | null
 }
 
 interface CapperStats {
@@ -63,13 +63,17 @@ export default function CapperPublicProfile({ params }: { params: Promise<{ capp
   const fetchCapperData = async () => {
     try {
       setLoading(true)
+      console.log('[CapperProfile] Fetching data for capperId:', resolvedParams.capperId)
 
       // Fetch capper profile
       const profileRes = await fetch(`/api/cappers/public-profile?capperId=${resolvedParams.capperId}`)
       const profileData = await profileRes.json()
 
+      console.log('[CapperProfile] Profile response:', profileData)
+
       if (!profileData.success) {
-        throw new Error('Capper not found')
+        console.error('[CapperProfile] Profile fetch failed:', profileData.error)
+        throw new Error(profileData.error || 'Capper not found')
       }
 
       setProfile(profileData.capper)
@@ -78,7 +82,9 @@ export default function CapperPublicProfile({ params }: { params: Promise<{ capp
       const statsRes = await fetch(`/api/performance?capper=${resolvedParams.capperId}`)
       const statsData = await statsRes.json()
 
-      if (statsData.success) {
+      console.log('[CapperProfile] Stats response:', statsData)
+
+      if (statsData.success && statsData.data?.metrics) {
         setStats(statsData.data.metrics)
       }
 
@@ -86,11 +92,14 @@ export default function CapperPublicProfile({ params }: { params: Promise<{ capp
       const picksRes = await fetch(`/api/picks?capper=${resolvedParams.capperId}&limit=20`)
       const picksData = await picksRes.json()
 
+      console.log('[CapperProfile] Picks response:', picksData)
+
       if (picksData.success) {
         setRecentPicks(picksData.picks || [])
       }
     } catch (error) {
-      console.error('Failed to fetch capper data:', error)
+      console.error('[CapperProfile] Failed to fetch capper data:', error)
+      // Don't throw - let the component render with error state
     } finally {
       setLoading(false)
     }
@@ -193,10 +202,12 @@ export default function CapperPublicProfile({ params }: { params: Promise<{ capp
                   </div>
                 </div>
                 <p className="text-slate-300 mb-4">{profile.description || 'No description provided.'}</p>
-                <div className="flex items-center gap-2 text-sm text-slate-400">
-                  <Calendar className="w-4 h-4" />
-                  <span>Joined {new Date(profile.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
-                </div>
+                {profile.created_at && (
+                  <div className="flex items-center gap-2 text-sm text-slate-400">
+                    <Calendar className="w-4 h-4" />
+                    <span>Joined {new Date(profile.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
+                  </div>
+                )}
               </div>
 
               {/* Social Links */}
