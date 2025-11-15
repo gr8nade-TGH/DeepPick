@@ -659,20 +659,10 @@ export default function CapperPublicProfile() {
                       <div className="flex items-center justify-between text-xs text-slate-500">
                         <div className="flex items-center gap-1.5">
                           <span>Confidence:</span>
-                          {/* Stars */}
-                          <div className="flex items-center gap-0.5">
-                            {[...Array(5)].map((_, i) => (
-                              <Star
-                                key={i}
-                                className={`w-3 h-3 ${i < starCount
-                                  ? 'fill-yellow-400 text-yellow-400'
-                                  : 'text-slate-700/40'
-                                  }`}
-                              />
-                            ))}
-                          </div>
+                          {/* Star emojis */}
+                          <span>{'⭐'.repeat(starCount)}</span>
                           {/* Confidence score */}
-                          <span className="font-bold text-slate-400">
+                          <span className="font-medium text-slate-400">
                             {pick.confidence.toFixed(1)}
                           </span>
                         </div>
