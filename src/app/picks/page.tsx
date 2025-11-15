@@ -224,10 +224,10 @@ export default function AllPicksPage() {
                     <div
                       key={pick.id}
                       className={`bg-slate-800/50 border rounded-lg p-4 transition-all cursor-pointer relative ${inSlip
-                          ? 'border-emerald-500 shadow-lg shadow-emerald-500/20 bg-emerald-900/10'
-                          : isPending
-                            ? 'border-slate-700 hover:border-cyan-500/40'
-                            : 'border-slate-700/50 opacity-75'
+                        ? 'border-emerald-500 shadow-lg shadow-emerald-500/20 bg-emerald-900/10'
+                        : isPending
+                          ? 'border-slate-700 hover:border-cyan-500/40'
+                          : 'border-slate-700/50 opacity-75'
                         }`}
                       onClick={(e) => {
                         if (isPending) {
@@ -254,12 +254,24 @@ export default function AllPicksPage() {
                             {getStatusBadge(pick.status)}
                           </div>
                           <div className="text-white font-semibold mb-1">{pick.selection}</div>
-                          <div className="text-sm text-slate-400">{matchup}</div>
+                          <div className="text-sm text-slate-400 mb-1">{matchup}</div>
+                          {/* Game Date */}
+                          {pick.game_snapshot?.game_date && (
+                            <div className="text-xs text-slate-500">
+                              Game: {new Date(pick.game_snapshot.game_date).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric'
+                              })}
+                            </div>
+                          )}
                         </div>
 
                         {/* Right: Stats */}
                         <div className="text-right">
-                          <div className="text-sm text-slate-400 mb-1">{formatDate(pick.created_at)}</div>
+                          <div className="text-xs text-slate-500 mb-1">
+                            Pick: {formatDate(pick.created_at)}
+                          </div>
                           <div className="flex items-center gap-3">
                             {pick.confidence && (
                               <div className="text-xs text-slate-500">
