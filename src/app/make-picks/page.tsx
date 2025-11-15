@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { RefreshCw } from 'lucide-react'
+import { RefreshCw, Clock } from 'lucide-react'
 import { useBettingSlip, BetSelection } from '@/contexts/betting-slip-context'
+import { useAuth } from '@/contexts/auth-context'
 
 interface Game {
   id: string
@@ -19,17 +20,72 @@ interface Game {
   }
 }
 
+// Helper function to get countdown to game start
+function getCountdown(gameDate: string | undefined): string {
+  if (!gameDate) return ''
+
+  const now = new Date()
+  const game = new Date(gameDate)
+  const diff = game.getTime() - now.getTime()
+
+  if (diff < 0) return '' // Game has started or passed
+
+  const hours = Math.floor(diff / (1000 * 60 * 60))
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+
+  if (hours > 24) {
+    const days = Math.floor(hours / 24)
+    return `${days}d ${hours % 24}h`
+  } else if (hours > 0) {
+    return `${hours}h ${minutes}m`
+  } else {
+    return `${minutes}m`
+  }
+}
+
 export default function ManualPicksPage() {
   const { addSelection: addToSlip, hasSelection } = useBettingSlip()
+  const { user } = useAuth()
   const [games, setGames] = useState<Game[]>([])
   const [loading, setLoading] = useState(true)
   const [existingPicks, setExistingPicks] = useState<Set<string>>(new Set())
-  const capperId = 'shiva' // TODO: Get from user context
+  const [capperId, setCapperId] = useState<string | null>(null)
+  const [currentTime, setCurrentTime] = useState(new Date())
+
+  // Update countdown every minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date())
+    }, 60000) // Update every minute
+
+    return () => clearInterval(interval)
+  }, [])
+
+  // Fetch user's capper_id from user_cappers table
+  useEffect(() => {
+    const fetchCapperId = async () => {
+      if (!user) return
+
+      try {
+        const response = await fetch(`/api/user-cappers?userId=${user.id}`)
+        const data = await response.json()
+        if (data.success && data.cappers && data.cappers.length > 0) {
+          setCapperId(data.cappers[0].capper_id)
+        }
+      } catch (error) {
+        console.error('Error fetching capper ID:', error)
+      }
+    }
+
+    fetchCapperId()
+  }, [user])
 
   useEffect(() => {
-    fetchGames()
-    fetchExistingPicks()
-  }, [])
+    if (capperId) {
+      fetchGames()
+      fetchExistingPicks()
+    }
+  }, [capperId])
 
   const fetchGames = async () => {
     setLoading(true)
@@ -37,12 +93,18 @@ export default function ManualPicksPage() {
       const response = await fetch('/api/games/today')
       const data = await response.json()
       if (data.success) {
-        // Filter out games that have already started
+        // Filter out games that have already started and sort by start time (soonest first)
         const now = new Date()
-        const upcomingGames = (data.games || []).filter((game: Game) => {
-          const gameStartTime = new Date(game.game_start_timestamp)
-          return gameStartTime > now
-        })
+        const upcomingGames = (data.games || [])
+          .filter((game: Game) => {
+            const gameStartTime = new Date(game.game_start_timestamp)
+            return gameStartTime > now
+          })
+          .sort((a: Game, b: Game) => {
+            const aTime = new Date(a.game_start_timestamp).getTime()
+            const bTime = new Date(b.game_start_timestamp).getTime()
+            return aTime - bTime // Ascending order (soonest first)
+          })
         setGames(upcomingGames)
       }
     } catch (error) {
@@ -189,15 +251,27 @@ export default function ManualPicksPage() {
                   {/* Game Header */}
                   <div className="bg-slate-800 px-4 py-3 border-b border-slate-700">
                     <div className="flex items-center justify-between">
-                      <div>
+                      <div className="flex-1">
                         <div className="text-white font-semibold">
                           {game.away_team.name} <span className="text-slate-500">@</span> {game.home_team.name}
                         </div>
-                        <div className="text-xs text-slate-400 mt-1">
-                          <span className="bg-green-600 text-white px-2 py-0.5 rounded text-xs font-semibold mr-2">
+                        <div className="flex items-center gap-2 text-xs text-slate-400 mt-1">
+                          <span className="bg-green-600 text-white px-2 py-0.5 rounded text-xs font-semibold">
                             SGP
                           </span>
-                          {formatGameDateTime(game.game_start_timestamp)}
+                          <span>{formatGameDateTime(game.game_start_timestamp)}</span>
+                          {(() => {
+                            const countdown = getCountdown(game.game_start_timestamp)
+                            return countdown ? (
+                              <>
+                                <span className="text-slate-600">•</span>
+                                <span className="flex items-center gap-1 text-cyan-400 font-semibold">
+                                  <Clock className="w-3 h-3" />
+                                  {countdown}
+                                </span>
+                              </>
+                            ) : null
+                          })()}
                         </div>
                       </div>
                       {hasPick && (
