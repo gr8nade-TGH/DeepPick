@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Sliders, Save, X, RotateCcw, Gauge, TrendingUp, Target, Home, Battery, UserX } from 'lucide-react'
+import { Sliders, Save, X, RotateCcw, Gauge, TrendingUp, Target, Home, Battery, UserX, Flame, Wind, BarChart3, Shield, Trophy } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
@@ -24,6 +24,7 @@ interface FactorConfigurationProps {
 }
 
 const FACTOR_DETAILS = {
+  // TOTAL factors
   paceIndex: {
     name: 'Pace Index',
     icon: Gauge,
@@ -65,12 +66,48 @@ const FACTOR_DETAILS = {
     description: 'Impact of injured players on game outcome',
     defaultWeight: 50,
     color: 'red'
+  },
+  // SPREAD factors
+  recentForm: {
+    name: 'Recent Form (ATS)',
+    icon: Flame,
+    description: 'Against-the-spread performance over last 3 and 10 games',
+    defaultWeight: 50,
+    color: 'red'
+  },
+  paceMismatch: {
+    name: 'Pace Mismatch',
+    icon: Wind,
+    description: 'Fast vs slow tempo differential between teams',
+    defaultWeight: 50,
+    color: 'purple'
+  },
+  offDefBalance: {
+    name: 'Offensive/Defensive Balance',
+    icon: BarChart3,
+    description: 'Team efficiency ratings on both ends of the floor',
+    defaultWeight: 50,
+    color: 'blue'
+  },
+  homeCourtEdge: {
+    name: 'Home Court Edge',
+    icon: Home,
+    description: 'Home court advantage impact on spread outcomes',
+    defaultWeight: 50,
+    color: 'green'
+  },
+  clutchPerformance: {
+    name: 'Clutch Performance',
+    icon: Trophy,
+    description: 'Performance in close games and 4th quarter situations',
+    defaultWeight: 50,
+    color: 'yellow'
   }
 }
 
 const AVAILABLE_FACTORS = {
   TOTAL: ['paceIndex', 'netRating', 'shooting', 'homeAwayDiff', 'restDays', 'injuryImpact'],
-  SPREAD: ['paceIndex', 'netRating', 'shooting', 'homeAwayDiff', 'restDays', 'injuryImpact']
+  SPREAD: ['recentForm', 'paceMismatch', 'offDefBalance', 'homeCourtEdge', 'clutchPerformance', 'injuryImpact']
 }
 
 export function FactorConfiguration({ capperId, betTypes, factorConfig, onUpdate }: FactorConfigurationProps) {
