@@ -39,9 +39,19 @@ export function GlobalBettingSlip({ capperId, isCapper }: GlobalBettingSlipProps
   const [loading, setLoading] = useState(false)
   const [stakes, setStakes] = useState<{ [id: string]: number }>({})
   const [isPlacing, setIsPlacing] = useState(false)
+  const [prevSelectionCount, setPrevSelectionCount] = useState(0)
 
   // Don't show if not a capper
   if (!isCapper) return null
+
+  // Auto-expand when selections are added
+  useEffect(() => {
+    if (selections.length > prevSelectionCount && selections.length > 0) {
+      setIsExpanded(true)
+      setActiveTab('slip')
+    }
+    setPrevSelectionCount(selections.length)
+  }, [selections.length])
 
   useEffect(() => {
     if (activeTab === 'open') {
@@ -156,9 +166,14 @@ export function GlobalBettingSlip({ capperId, isCapper }: GlobalBettingSlipProps
               setActiveTab('slip')
               setIsExpanded(true)
             }}
-            className="bg-gradient-to-t from-emerald-700 to-emerald-600 border-t border-l border-r border-emerald-500 rounded-t-lg px-4 py-3 text-sm font-bold text-white hover:from-emerald-600 hover:to-emerald-500 transition-all shadow-lg"
+            className="bg-gradient-to-t from-emerald-700 to-emerald-600 border-t border-l border-r border-emerald-500 rounded-t-lg px-4 py-3 text-sm font-bold text-white hover:from-emerald-600 hover:to-emerald-500 transition-all shadow-lg relative"
           >
             BET SLIP
+            {selections.length > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center animate-pulse">
+                {selections.length}
+              </span>
+            )}
           </button>
           <button
             onClick={() => {

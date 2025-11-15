@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, ReactNode } from 'react'
+import { toast } from '@/hooks/use-toast'
 
 export interface BetSelection {
   id: string
@@ -30,26 +31,59 @@ export function BettingSlipProvider({ children }: { children: ReactNode }) {
   const addSelection = (selection: BetSelection) => {
     // Check if already in slip
     if (selections.find(s => s.id === selection.id)) {
-      alert('This selection is already in your bet slip!')
+      toast({
+        title: "Already in Bet Slip",
+        description: "This selection is already in your bet slip!",
+        variant: "warning",
+      })
       return
     }
 
     // Check if conflicting selection exists (same game, different side)
     const conflictingSelection = selections.find(s => s.gameId === selection.gameId)
     if (conflictingSelection) {
-      alert('You already have a selection for this game. Remove it first.')
+      toast({
+        title: "Conflicting Selection",
+        description: "You already have a selection for this game. Remove it first.",
+        variant: "warning",
+      })
       return
     }
 
     setSelections([...selections, selection])
+
+    // Show success toast
+    toast({
+      title: "✅ Added to Bet Slip",
+      description: `${selection.team} ${selection.line}`,
+      variant: "success",
+    })
   }
 
   const removeSelection = (id: string) => {
+    const removed = selections.find(s => s.id === id)
     setSelections(selections.filter(s => s.id !== id))
+
+    if (removed) {
+      toast({
+        title: "Removed from Bet Slip",
+        description: `${removed.team} ${removed.line}`,
+        variant: "info",
+      })
+    }
   }
 
   const clearSelections = () => {
+    const count = selections.length
     setSelections([])
+
+    if (count > 0) {
+      toast({
+        title: "Bet Slip Cleared",
+        description: `Removed ${count} selection${count > 1 ? 's' : ''}`,
+        variant: "info",
+      })
+    }
   }
 
   const hasSelection = (gameId: string) => {
