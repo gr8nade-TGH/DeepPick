@@ -121,8 +121,8 @@ export default function CapperPublicProfile() {
         setCurrentPicks(currentPicksData.picks || [])
       }
 
-      // Fetch recent picks (all statuses) - limit to 10 for Pick History
-      const picksRes = await fetch(`/api/picks?capper=${capperId}&limit=10`)
+      // Fetch recent picks (only graded: won/lost/push) - limit to 10 for Pick History
+      const picksRes = await fetch(`/api/picks?capper=${capperId}&status=completed&limit=10`)
       const picksData = await picksRes.json()
 
       console.log('[CapperProfile] Picks response:', picksData)

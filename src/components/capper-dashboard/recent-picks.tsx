@@ -63,7 +63,8 @@ export function RecentPicks({ capperId, limit = 10 }: RecentPicksProps) {
   const fetchPicks = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`/api/picks?capper=${capperId}&limit=${limit}`)
+      // Only fetch graded picks (won/lost/push) for Pick History
+      const response = await fetch(`/api/picks?capper=${capperId}&status=completed&limit=${limit}`)
       const data = await response.json()
       if (data.success) {
         setPicks(data.data || [])
@@ -160,7 +161,7 @@ export function RecentPicks({ capperId, limit = 10 }: RecentPicksProps) {
           {picks.map((pick) => {
             const game = pick.games || pick.game_snapshot
             const countdown = getCountdown(game?.game_start_timestamp)
-            
+
             return (
               <div
                 key={pick.id}
