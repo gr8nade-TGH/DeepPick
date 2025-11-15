@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Trophy, TrendingUp, Target, Calendar, ExternalLink, Twitter, Instagram, Youtube, Globe, ArrowLeft, Clock, CheckCircle2, XCircle, Minus } from 'lucide-react'
+import { Trophy, TrendingUp, Target, Calendar, ExternalLink, Twitter, Instagram, Youtube, Globe, ArrowLeft, Clock, CheckCircle2, XCircle, Minus, Map, Crown, Medal, Award } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useParams } from 'next/navigation'
 
@@ -52,6 +52,17 @@ interface Pick {
   } | null
 }
 
+interface TeamDominance {
+  team: string
+  netUnits: number
+  wins: number
+  losses: number
+  pushes: number
+  totalPicks: number
+  rank: number
+  totalCappers: number
+}
+
 export default function CapperPublicProfile() {
   const params = useParams()
   const capperId = params?.capperId as string
@@ -60,6 +71,7 @@ export default function CapperPublicProfile() {
   const [profile, setProfile] = useState<CapperProfile | null>(null)
   const [stats, setStats] = useState<CapperStats | null>(null)
   const [recentPicks, setRecentPicks] = useState<Pick[]>([])
+  const [topTeams, setTopTeams] = useState<TeamDominance[]>([])
 
   const fetchCapperData = async () => {
     if (!capperId) return
@@ -99,6 +111,16 @@ export default function CapperPublicProfile() {
 
       if (picksData.success) {
         setRecentPicks(picksData.picks || [])
+      }
+
+      // Fetch team dominance data
+      const dominanceRes = await fetch(`/api/cappers/team-dominance?capperId=${capperId}`)
+      const dominanceData = await dominanceRes.json()
+
+      console.log('[CapperProfile] Team dominance response:', dominanceData)
+
+      if (dominanceData.success) {
+        setTopTeams(dominanceData.topTeams || [])
       }
     } catch (error) {
       console.error('[CapperProfile] Failed to fetch capper data:', error)
@@ -298,6 +320,100 @@ export default function CapperPublicProfile() {
               </CardContent>
             </Card>
           </div>
+        )}
+
+        {/* Team Dominance - Battle Map Integration */}
+        {topTeams.length > 0 && (
+          <Card className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 border-slate-700 backdrop-blur">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <Crown className="w-5 h-5 text-yellow-500" />
+                    Territory Dominance
+                  </CardTitle>
+                  <CardDescription>Top teams based on SPREAD pick performance</CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20"
+                  onClick={() => router.push('/battle-map')}
+                >
+                  <Map className="w-4 h-4 mr-2" />
+                  View Battle Map
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {topTeams.map((teamData, index) => {
+                  const rankIcon = index === 0 ? <Crown className="w-5 h-5 text-yellow-500" /> :
+                    index === 1 ? <Medal className="w-5 h-5 text-slate-400" /> :
+                      <Award className="w-5 h-5 text-amber-700" />
+
+                  const winRate = teamData.totalPicks > 0
+                    ? ((teamData.wins / (teamData.wins + teamData.losses)) * 100).toFixed(1)
+                    : '0.0'
+
+                  return (
+                    <div
+                      key={teamData.team}
+                      className="relative p-5 rounded-xl bg-gradient-to-br from-slate-900/80 to-slate-800/80 border border-slate-700 hover:border-blue-500/50 transition-all cursor-pointer group"
+                      onClick={() => router.push(`/battle-map?team=${teamData.team}`)}
+                    >
+                      {/* Rank Badge */}
+                      <div className="absolute -top-3 -right-3 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center border-2 border-slate-900 shadow-lg">
+                        {rankIcon}
+                      </div>
+
+                      {/* Team Name */}
+                      <div className="mb-3">
+                        <h3 className="text-2xl font-black text-white mb-1">{teamData.team}</h3>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30">
+                            #{teamData.rank} of {teamData.totalCappers}
+                          </Badge>
+                          <span className="text-slate-400">Rank</span>
+                        </div>
+                      </div>
+
+                      {/* Stats */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400 text-sm">Net Units</span>
+                          <span className={`text-lg font-bold ${teamData.netUnits > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {teamData.netUnits > 0 ? '+' : ''}{teamData.netUnits}U
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400 text-sm">Record</span>
+                          <span className="text-white font-semibold">
+                            {teamData.wins}-{teamData.losses}-{teamData.pushes}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400 text-sm">Win Rate</span>
+                          <span className={`font-semibold ${parseFloat(winRate) >= 55 ? 'text-emerald-400' : parseFloat(winRate) >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
+                            {winRate}%
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Hover Effect */}
+                      <div className="absolute inset-0 rounded-xl bg-blue-500/0 group-hover:bg-blue-500/5 transition-all pointer-events-none" />
+
+                      {/* Click to view on map hint */}
+                      <div className="mt-3 pt-3 border-t border-slate-700/50 flex items-center gap-2 text-xs text-slate-500 group-hover:text-blue-400 transition-colors">
+                        <Map className="w-3 h-3" />
+                        <span>Click to view on Battle Map</span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Recent Picks */}
