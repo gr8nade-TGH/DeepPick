@@ -23,6 +23,7 @@ import { RecentPicks } from '@/components/capper-dashboard/recent-picks'
 import { QuickSettings } from '@/components/capper-dashboard/quick-settings'
 import { PerformanceChart } from '@/components/capper-dashboard/performance-chart'
 import { ExecutionSchedule } from '@/components/capper-dashboard/execution-schedule'
+import { FactorConfiguration } from '@/components/capper-dashboard/factor-configuration'
 
 interface CapperData {
   capper_id: string
@@ -88,22 +89,19 @@ export default function CapperDashboardPage() {
     try {
       setLoading(true)
 
-      // Fetch capper data and performance in parallel
-      const [capperResponse, performanceResponse] = await Promise.all([
-        fetch('/api/user-cappers/my-capper'),
-        fetch('/api/performance')
-      ])
-
-      const [capperData, performanceData] = await Promise.all([
-        capperResponse.json(),
-        performanceResponse.json()
-      ])
+      // First fetch capper data to get capper_id
+      const capperResponse = await fetch('/api/user-cappers/my-capper')
+      const capperData = await capperResponse.json()
 
       if (!capperResponse.ok || !capperData.success) {
         throw new Error(capperData.error || 'Failed to load capper data')
       }
 
       setCapperData(capperData.capper)
+
+      // Then fetch performance data filtered by this capper
+      const performanceResponse = await fetch(`/api/performance?capper=${capperData.capper.capper_id}`)
+      const performanceData = await performanceResponse.json()
 
       // Set performance data if available
       if (performanceData.success) {
@@ -265,6 +263,14 @@ export default function CapperDashboardPage() {
 
             {/* Recent Picks */}
             <RecentPicks capperId={capperData.capper_id} limit={10} />
+
+            {/* Factor Configuration */}
+            <FactorConfiguration
+              capperId={capperData.capper_id}
+              betTypes={capperData.bet_types}
+              factorConfig={capperData.factor_config}
+              onUpdate={handleSettingsUpdate}
+            />
           </div>
 
           {/* Right Column - 1/3 width */}

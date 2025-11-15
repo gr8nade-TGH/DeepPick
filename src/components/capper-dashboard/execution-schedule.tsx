@@ -73,18 +73,49 @@ export function ExecutionSchedule({ capperId, intervalMinutes, isActive }: Execu
   const handleManualTrigger = async () => {
     try {
       setTriggering(true)
-      
+
       const response = await fetch(`/api/cappers/generate-pick?capperId=${capperId}&sport=NBA&betType=TOTAL`)
       const data = await response.json()
 
-      if (!response.ok || !data.success) {
+      if (!response.ok) {
         throw new Error(data.error || 'Failed to trigger pick generation')
       }
 
-      toast({
-        title: 'Pick Generation Triggered',
-        description: 'Your capper is now analyzing games and generating picks',
-      })
+      // Check if a pick was actually generated
+      if (data.success && data.result?.decision === 'PICK') {
+        toast({
+          title: '✅ Pick Generated!',
+          description: `${data.result.pick.selection} (${data.result.pick.units}U @ ${data.result.pick.confidence.toFixed(1)}% confidence)`,
+        })
+      } else if (data.success && data.result?.decision === 'PASS') {
+        // Pipeline decided to PASS on the game
+        toast({
+          title: '⚠️ No Pick Generated',
+          description: `Analyzed game but confidence too low (${data.result.confidence?.toFixed(1)}%). Thresholds not met.`,
+          variant: 'default'
+        })
+      } else if (data.success && data.message === 'No eligible games found') {
+        // No games available to analyze
+        toast({
+          title: 'ℹ️ No Games Available',
+          description: 'All upcoming games are either: already picked, in cooldown, excluded teams, or too close to start time.',
+          variant: 'default'
+        })
+      } else if (data.success && data.message === 'Another instance is already running') {
+        // Lock held by another process
+        toast({
+          title: '⏳ Already Running',
+          description: 'Another pick generation is in progress. Please wait a moment and try again.',
+          variant: 'default'
+        })
+      } else {
+        // Generic success but no pick
+        toast({
+          title: 'ℹ️ Analysis Complete',
+          description: data.message || 'No picks generated at this time',
+          variant: 'default'
+        })
+      }
 
       // Refresh runs after a short delay
       setTimeout(() => {
@@ -129,13 +160,13 @@ export function ExecutionSchedule({ capperId, intervalMinutes, isActive }: Execu
 
   const getCountdown = () => {
     if (!nextExecution || !isActive) return null
-    
+
     const diff = nextExecution.getTime() - currentTime.getTime()
     if (diff < 0) return 'Running soon...'
-    
+
     const minutes = Math.floor(diff / (1000 * 60))
     const seconds = Math.floor((diff % (1000 * 60)) / 1000)
-    
+
     if (minutes > 0) {
       return `${minutes}m ${seconds}s`
     }
