@@ -44,12 +44,12 @@ interface Pick {
   odds: number
   result: string | null
   created_at: string
-  game: {
-    home_team: { name: string, abbreviation: string }
-    away_team: { name: string, abbreviation: string }
-    game_start_timestamp: string
-    status: string
-  }
+  game?: {
+    home_team?: { name: string, abbreviation: string }
+    away_team?: { name: string, abbreviation: string }
+    game_start_timestamp?: string
+    status?: string
+  } | null
 }
 
 export default function CapperPublicProfile() {
@@ -323,9 +323,9 @@ export default function CapperPublicProfile() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-white font-semibold">
-                            {pick.game.away_team.abbreviation} @ {pick.game.home_team.abbreviation}
+                            {pick.game?.away_team?.abbreviation || 'TBD'} @ {pick.game?.home_team?.abbreviation || 'TBD'}
                           </span>
-                          {getStatusBadge(pick.result, pick.game.status)}
+                          {getStatusBadge(pick.result, pick.game?.status || 'scheduled')}
                         </div>
                         <div className="flex items-center gap-3 text-sm">
                           <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30">
@@ -339,7 +339,7 @@ export default function CapperPublicProfile() {
                       </div>
                       <div className="text-right text-sm text-slate-400 flex items-center gap-1">
                         <Clock className="w-3 h-3" />
-                        {getCountdown(pick.game.game_start_timestamp)}
+                        {pick.game?.game_start_timestamp ? getCountdown(pick.game.game_start_timestamp) : 'TBD'}
                       </div>
                     </div>
                   </div>
