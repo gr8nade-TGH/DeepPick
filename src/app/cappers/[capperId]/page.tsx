@@ -1,12 +1,12 @@
 'use client'
 
-import { use, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Trophy, TrendingUp, Target, Calendar, ExternalLink, Twitter, Instagram, Youtube, Globe, ArrowLeft, Clock, CheckCircle2, XCircle, Minus } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 
 interface CapperProfile {
   capper_id: string
@@ -52,8 +52,9 @@ interface Pick {
   }
 }
 
-export default function CapperPublicProfile({ params }: { params: Promise<{ capperId: string }> }) {
-  const resolvedParams = use(params)
+export default function CapperPublicProfile() {
+  const params = useParams()
+  const capperId = params?.capperId as string
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [profile, setProfile] = useState<CapperProfile | null>(null)
@@ -61,12 +62,14 @@ export default function CapperPublicProfile({ params }: { params: Promise<{ capp
   const [recentPicks, setRecentPicks] = useState<Pick[]>([])
 
   const fetchCapperData = async () => {
+    if (!capperId) return
+
     try {
       setLoading(true)
-      console.log('[CapperProfile] Fetching data for capperId:', resolvedParams.capperId)
+      console.log('[CapperProfile] Fetching data for capperId:', capperId)
 
       // Fetch capper profile
-      const profileRes = await fetch(`/api/cappers/public-profile?capperId=${resolvedParams.capperId}`)
+      const profileRes = await fetch(`/api/cappers/public-profile?capperId=${capperId}`)
       const profileData = await profileRes.json()
 
       console.log('[CapperProfile] Profile response:', profileData)
@@ -79,7 +82,7 @@ export default function CapperPublicProfile({ params }: { params: Promise<{ capp
       setProfile(profileData.capper)
 
       // Fetch capper stats
-      const statsRes = await fetch(`/api/performance?capper=${resolvedParams.capperId}`)
+      const statsRes = await fetch(`/api/performance?capper=${capperId}`)
       const statsData = await statsRes.json()
 
       console.log('[CapperProfile] Stats response:', statsData)
@@ -89,7 +92,7 @@ export default function CapperPublicProfile({ params }: { params: Promise<{ capp
       }
 
       // Fetch recent picks
-      const picksRes = await fetch(`/api/picks?capper=${resolvedParams.capperId}&limit=20`)
+      const picksRes = await fetch(`/api/picks?capper=${capperId}&limit=20`)
       const picksData = await picksRes.json()
 
       console.log('[CapperProfile] Picks response:', picksData)
@@ -108,7 +111,7 @@ export default function CapperPublicProfile({ params }: { params: Promise<{ capp
   useEffect(() => {
     fetchCapperData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resolvedParams.capperId])
+  }, [capperId])
 
   const getStatusBadge = (result: string | null, status: string) => {
     if (status === 'scheduled') {
