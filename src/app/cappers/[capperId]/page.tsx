@@ -344,7 +344,7 @@ export default function CapperPublicProfile() {
                   variant="outline"
                   size="sm"
                   className="border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20"
-                  onClick={() => router.push('/battle-map')}
+                  onClick={() => router.push('/territory-map')}
                 >
                   <Map className="w-4 h-4 mr-2" />
                   View Battle Map
@@ -366,7 +366,7 @@ export default function CapperPublicProfile() {
                     <div
                       key={teamData.team}
                       className="relative p-5 rounded-xl bg-gradient-to-br from-slate-900/80 to-slate-800/80 border border-slate-700 hover:border-blue-500/50 transition-all cursor-pointer group"
-                      onClick={() => router.push(`/battle-map?team=${teamData.team}`)}
+                      onClick={() => router.push(`/territory-map?team=${teamData.team}`)}
                     >
                       {/* Rank Badge */}
                       <div className="absolute -top-3 -right-3 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center border-2 border-slate-900 shadow-lg">
