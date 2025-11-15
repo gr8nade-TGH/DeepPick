@@ -13,6 +13,7 @@ import type { BetSelection } from '@/contexts/betting-slip-context'
 
 interface Pick {
   id: string
+  game_id?: string
   selection: string
   created_at: string
   units: number
@@ -131,7 +132,7 @@ export default function AllPicksPage() {
 
     return {
       id: pick.id,
-      gameId: pick.game_snapshot?.game_id || pick.id, // Use game_id from snapshot if available
+      gameId: pick.game_id || pick.id, // Use game_id from pick if available
       team,
       betType,
       line,
