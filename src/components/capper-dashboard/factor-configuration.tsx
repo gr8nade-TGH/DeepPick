@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Sliders, Save, X, RotateCcw, Gauge, TrendingUp, Target, Home, Battery, UserX, Flame, Wind, BarChart3, Shield, Trophy } from 'lucide-react'
+import { Sliders, Save, X, RotateCcw, Gauge, TrendingUp, Target, Home, Battery, UserX, Flame, Wind, BarChart3, Shield, Trophy, Anchor, Scale, Rocket, Castle, TrendingDown, Sparkles } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
@@ -110,12 +110,91 @@ const AVAILABLE_FACTORS = {
   SPREAD: ['recentForm', 'paceMismatch', 'offDefBalance', 'homeCourtEdge', 'clutchPerformance', 'injuryImpact']
 }
 
+const PRESET_CONFIGS = [
+  {
+    id: 'conservative',
+    name: 'The Conservative',
+    description: 'Low-risk, high-confidence plays',
+    icon: Anchor,
+    color: 'blue',
+    totalFactors: {
+      enabled: ['netRating', 'restDays', 'injuryImpact', 'homeAwayDiff', 'paceIndex'],
+      weights: { netRating: 70, restDays: 60, injuryImpact: 60, homeAwayDiff: 40, paceIndex: 20 }
+    },
+    spreadFactors: {
+      enabled: ['offDefBalance', 'homeCourtEdge', 'injuryImpact', 'clutchPerformance', 'recentForm'],
+      weights: { offDefBalance: 70, homeCourtEdge: 60, injuryImpact: 50, clutchPerformance: 40, recentForm: 30 }
+    }
+  },
+  {
+    id: 'balanced',
+    name: 'The Balanced Sharp',
+    description: 'Well-rounded, data-driven approach',
+    icon: Scale,
+    color: 'slate',
+    totalFactors: {
+      enabled: ['paceIndex', 'netRating', 'shooting', 'restDays', 'injuryImpact'],
+      weights: { paceIndex: 45, netRating: 50, shooting: 50, restDays: 50, injuryImpact: 55 }
+    },
+    spreadFactors: {
+      enabled: ['recentForm', 'paceMismatch', 'offDefBalance', 'homeCourtEdge', 'injuryImpact'],
+      weights: { recentForm: 50, paceMismatch: 50, offDefBalance: 50, homeCourtEdge: 50, injuryImpact: 50 }
+    }
+  },
+  {
+    id: 'pace-demon',
+    name: 'The Pace Demon',
+    description: 'High-scoring, fast-paced games',
+    icon: Rocket,
+    color: 'orange',
+    totalFactors: {
+      enabled: ['paceIndex', 'shooting', 'netRating', 'homeAwayDiff'],
+      weights: { paceIndex: 100, shooting: 70, netRating: 50, homeAwayDiff: 30 }
+    },
+    spreadFactors: {
+      enabled: ['paceMismatch', 'offDefBalance', 'recentForm', 'homeCourtEdge', 'clutchPerformance'],
+      weights: { paceMismatch: 80, offDefBalance: 60, recentForm: 50, homeCourtEdge: 30, clutchPerformance: 30 }
+    }
+  },
+  {
+    id: 'grind-it-out',
+    name: 'The Grind-It-Out',
+    description: 'Defense wins championships',
+    icon: Castle,
+    color: 'emerald',
+    totalFactors: {
+      enabled: ['netRating', 'restDays', 'homeAwayDiff', 'injuryImpact', 'paceIndex'],
+      weights: { netRating: 80, restDays: 70, homeAwayDiff: 50, injuryImpact: 35, paceIndex: 15 }
+    },
+    spreadFactors: {
+      enabled: ['offDefBalance', 'homeCourtEdge', 'clutchPerformance', 'recentForm', 'injuryImpact'],
+      weights: { offDefBalance: 80, homeCourtEdge: 70, clutchPerformance: 40, recentForm: 30, injuryImpact: 30 }
+    }
+  },
+  {
+    id: 'contrarian',
+    name: 'The Contrarian',
+    description: 'Fade the public, find value',
+    icon: TrendingDown,
+    color: 'purple',
+    totalFactors: {
+      enabled: ['paceIndex', 'netRating', 'shooting', 'homeAwayDiff', 'restDays', 'injuryImpact'],
+      weights: { paceIndex: 50, netRating: 80, shooting: 60, homeAwayDiff: 20, restDays: 20, injuryImpact: 20 }
+    },
+    spreadFactors: {
+      enabled: ['recentForm', 'paceMismatch', 'offDefBalance', 'homeCourtEdge', 'clutchPerformance', 'injuryImpact'],
+      weights: { recentForm: 10, paceMismatch: 50, offDefBalance: 80, homeCourtEdge: 10, clutchPerformance: 80, injuryImpact: 20 }
+    }
+  }
+]
+
 export function FactorConfiguration({ capperId, betTypes, factorConfig, onUpdate }: FactorConfigurationProps) {
   const { toast } = useToast()
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [selectedBetType, setSelectedBetType] = useState(betTypes[0] || 'TOTAL')
   const [localConfig, setLocalConfig] = useState(factorConfig)
+  const [selectedPreset, setSelectedPreset] = useState<string | null>(null)
 
   const calculateTotalWeight = (betType: string): number => {
     const factorCfg = localConfig[betType]
@@ -153,6 +232,39 @@ export function FactorConfiguration({ capperId, betTypes, factorConfig, onUpdate
     setLocalConfig(newFactorConfig)
   }
 
+  const handlePresetSelect = (preset: any) => {
+    const isCurrentlySelected = selectedPreset === preset.id
+
+    if (isCurrentlySelected) {
+      // Deselect preset
+      setSelectedPreset(null)
+    } else {
+      // Apply preset
+      setSelectedPreset(preset.id)
+      const newConfig = { ...localConfig }
+
+      // Apply TOTAL factors
+      newConfig.TOTAL = {
+        enabled_factors: preset.totalFactors.enabled,
+        weights: preset.totalFactors.weights
+      }
+
+      // Apply SPREAD factors
+      newConfig.SPREAD = {
+        enabled_factors: preset.spreadFactors.enabled,
+        weights: preset.spreadFactors.weights
+      }
+
+      setLocalConfig(newConfig)
+
+      toast({
+        title: `${preset.name} Applied`,
+        description: preset.description,
+        variant: 'default'
+      })
+    }
+  }
+
   const handleReset = () => {
     const resetConfig = { ...localConfig }
     betTypes.forEach(betType => {
@@ -166,6 +278,7 @@ export function FactorConfiguration({ capperId, betTypes, factorConfig, onUpdate
       }
     })
     setLocalConfig(resetConfig)
+    setSelectedPreset(null)
   }
 
   const handleSave = async () => {
@@ -213,6 +326,46 @@ export function FactorConfiguration({ capperId, betTypes, factorConfig, onUpdate
         )}
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Preset Configurations */}
+        {editing && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-purple-400" />
+              <h3 className="text-sm font-semibold text-white">Quick Apply Presets</h3>
+            </div>
+            <p className="text-xs text-slate-400">
+              Choose a recommended configuration or customize your own below. Click a preset again to deselect it.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {PRESET_CONFIGS.map(preset => {
+                const PresetIcon = preset.icon
+                const isSelected = selectedPreset === preset.id
+
+                return (
+                  <button
+                    key={preset.id}
+                    onClick={() => handlePresetSelect(preset)}
+                    className={`p-3 border-2 rounded-lg transition-all text-left ${isSelected
+                        ? `border-${preset.color}-500 bg-${preset.color}-500/10 shadow-lg shadow-${preset.color}-500/20`
+                        : 'border-slate-700 bg-slate-800/50 hover:border-slate-600 hover:bg-slate-800'
+                      }`}
+                  >
+                    <div className="flex items-start gap-2 mb-2">
+                      <PresetIcon className={`w-5 h-5 flex-shrink-0 ${isSelected ? `text-${preset.color}-400` : 'text-slate-400'}`} />
+                      <div className="flex-1 min-w-0">
+                        <h4 className={`font-semibold text-sm ${isSelected ? 'text-white' : 'text-slate-200'}`}>
+                          {preset.name}
+                        </h4>
+                        <p className="text-xs text-slate-400 mt-0.5">{preset.description}</p>
+                      </div>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         {betTypes.length > 1 && (
           <Tabs value={selectedBetType} onValueChange={setSelectedBetType}>
             <TabsList className="bg-slate-900 border border-slate-700">
