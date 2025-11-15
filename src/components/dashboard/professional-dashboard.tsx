@@ -827,9 +827,11 @@ export function ProfessionalDashboard() {
                           {/* Capper Info */}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5 mb-0.5">
-                              <span className={`text-xs font-semibold truncate ${isTop3 ? 'text-white' : 'text-slate-200'}`}>
-                                {capper.name}
-                              </span>
+                              <Link href={`/cappers/${capper.id}`} className="hover:underline">
+                                <span className={`text-xs font-semibold truncate ${isTop3 ? 'text-white' : 'text-slate-200'} cursor-pointer hover:text-blue-400 transition-colors`}>
+                                  {capper.name}
+                                </span>
+                              </Link>
                               {capper.streak > 0 && (
                                 <span className="text-[10px] font-medium text-emerald-400 flex items-center gap-0.5">
                                   🔥<span className="font-mono">{capper.streak}W</span>
