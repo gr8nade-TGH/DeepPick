@@ -162,6 +162,26 @@ const AVAILABLE_FACTORS = {
   SPREAD: ['recentForm', 'paceMismatch', 'offDefBalance', 'homeCourtEdge', 'clutchPerformance', 'injuryImpact']
 }
 
+// Map user-friendly factor names to SHIVA v1 factor names used by the wizard
+const FACTOR_NAME_MAPPING = {
+  TOTAL: {
+    'paceIndex': 'paceIndex',        // Same
+    'netRating': 'offForm',          // Maps to offForm
+    'shooting': 'threeEnv',          // Maps to threeEnv
+    'homeAwayDiff': 'defErosion',    // Maps to defErosion
+    'restDays': 'whistleEnv',        // Maps to whistleEnv
+    'injuryImpact': 'injuryAvailability' // Maps to injuryAvailability
+  },
+  SPREAD: {
+    'recentForm': 'shootingMomentum',      // Maps to shootingMomentum
+    'paceMismatch': 'paceMismatch',        // Same
+    'offDefBalance': 'netRatingDiff',      // Maps to netRatingDiff
+    'homeCourtEdge': 'turnoverDiff',       // Maps to turnoverDiff
+    'clutchPerformance': 'fourFactorsDiff', // Maps to fourFactorsDiff
+    'injuryImpact': 'injuryAvailabilitySpread' // Maps to injuryAvailabilitySpread
+  }
+}
+
 const PRESET_CONFIGS: PresetConfig[] = [
   {
     id: 'conservative',
@@ -491,11 +511,37 @@ export default function CreateCapperPage() {
         Object.entries(socialLinks).filter(([_, value]) => value.trim() !== '')
       )
 
+      // Map user-friendly factor names to SHIVA v1 factor names
+      const mappedFactorConfig: typeof config.factor_config = {}
+
+      for (const betType of Object.keys(config.factor_config)) {
+        const mapping = FACTOR_NAME_MAPPING[betType as keyof typeof FACTOR_NAME_MAPPING]
+        const originalConfig = config.factor_config[betType]
+
+        // Map enabled factors
+        const mappedEnabledFactors = originalConfig.enabled_factors.map(
+          factor => mapping[factor as keyof typeof mapping] || factor
+        )
+
+        // Map weights
+        const mappedWeights: { [key: string]: number } = {}
+        for (const [factor, weight] of Object.entries(originalConfig.weights)) {
+          const mappedFactorName = mapping[factor as keyof typeof mapping] || factor
+          mappedWeights[mappedFactorName] = weight
+        }
+
+        mappedFactorConfig[betType] = {
+          enabled_factors: mappedEnabledFactors,
+          weights: mappedWeights
+        }
+      }
+
       const response = await fetch('/api/cappers/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...config,
+          factor_config: mappedFactorConfig, // Use mapped factor config
           social_links: filteredSocialLinks
         })
       })
