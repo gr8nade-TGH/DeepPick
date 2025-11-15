@@ -236,7 +236,7 @@ export function InsightCard(props: InsightCardProps) {
               </div>
               <div>
                 <div className="flex items-center gap-3">
-                  <h1 className={`text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-${branding.color}-400 to-${branding.color === 'cyan' ? 'blue' : branding.color}-400`}>{capperName}'S PICK</h1>
+                  <h1 className="text-3xl font-black text-white">{capperName}'S PICK</h1>
                   <span className={`text-xs font-semibold px-3 py-1 rounded-full ${props.is_system_pick !== false
                     ? 'bg-blue-600 text-white'
                     : 'bg-green-600 text-white'
@@ -244,7 +244,7 @@ export function InsightCard(props: InsightCardProps) {
                     {props.is_system_pick !== false ? 'GENERATED' : 'MANUAL'}
                   </span>
                 </div>
-                <div className={`text-${branding.color}-300 text-sm font-semibold`}>Professional Sports Analytics</div>
+                <div className="text-slate-300 text-sm font-semibold">Professional Sports Analytics</div>
               </div>
             </div>
             <button
@@ -364,13 +364,13 @@ export function InsightCard(props: InsightCardProps) {
               </div>
             )}
 
-            {/* AI BOLD PREDICTIONS - Show if available */}
-            {props.bold_predictions && props.bold_predictions.predictions && props.bold_predictions.predictions.length > 0 ? (
+            {/* BOLD PICKS - Show only if available */}
+            {props.bold_predictions && props.bold_predictions.predictions && props.bold_predictions.predictions.length > 0 && (
               <div className="space-y-4">
                 {/* Section Header */}
                 <div className="flex items-center gap-2 pb-2 border-b border-slate-700">
                   <span className="text-lg">🎯</span>
-                  <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wide">AI Bold Predictions</h3>
+                  <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wide">Bold Picks</h3>
                 </div>
 
                 {/* Summary */}
@@ -409,15 +409,6 @@ export function InsightCard(props: InsightCardProps) {
                       <p className="text-xs text-slate-400 leading-relaxed">{pred.reasoning}</p>
                     </div>
                   ))}
-                </div>
-              </div>
-            ) : (
-              /* Fallback: Show "Coming Soon" only if no bold predictions available */
-              <div className="bg-slate-800/30 border border-slate-700/40 rounded-lg p-4">
-                <div className="text-xs font-semibold text-slate-400 uppercase mb-2">🎯 AI BOLD PREDICTIONS</div>
-                <div className="text-center py-2">
-                  <p className="text-slate-400 text-sm">No bold predictions available for this pick</p>
-                  <p className="text-slate-500 text-xs mt-1">Bold predictions are generated for manual wizard picks only</p>
                 </div>
               </div>
             )}
