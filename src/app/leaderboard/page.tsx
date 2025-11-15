@@ -26,7 +26,11 @@ interface CapperStats {
 const CAPPER_COLORS: Record<string, string> = {
   'shiva': 'from-blue-500 to-cyan-500',
   'ifrit': 'from-orange-500 to-red-500',
+  'sentinel': 'from-blue-600 to-indigo-700',
   'nexus': 'from-purple-500 to-pink-500',
+  'blitz': 'from-yellow-600 to-orange-700',
+  'titan': 'from-gray-600 to-slate-700',
+  'thief': 'from-violet-600 to-purple-700',
   'cerberus': 'from-red-500 to-orange-500',
   'deeppick': 'from-blue-500 to-cyan-500',
 }
@@ -34,7 +38,11 @@ const CAPPER_COLORS: Record<string, string> = {
 const CAPPER_ICONS: Record<string, string> = {
   'shiva': '🔱',
   'ifrit': '🔥',
+  'sentinel': '🛡️',
   'nexus': '🔷',
+  'blitz': '⚡',
+  'titan': '🏔️',
+  'thief': '🎭',
   'cerberus': '🐺',
   'deeppick': '🎯',
 }

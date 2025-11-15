@@ -112,7 +112,11 @@ export async function GET(request: NextRequest) {
     const SYSTEM_CAPPERS = [
       { id: 'shiva', name: 'SHIVA' },
       { id: 'ifrit', name: 'IFRIT' },
+      { id: 'sentinel', name: 'SENTINEL' },
       { id: 'nexus', name: 'NEXUS' },
+      { id: 'blitz', name: 'BLITZ' },
+      { id: 'titan', name: 'TITAN' },
+      { id: 'thief', name: 'THIEF' },
       { id: 'cerberus', name: 'CERBERUS' },
       { id: 'deeppick', name: 'DeepPick' },
     ]

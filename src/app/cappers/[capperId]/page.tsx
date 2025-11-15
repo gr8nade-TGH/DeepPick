@@ -183,15 +183,15 @@ export default function CapperPublicProfile({ params }: { params: Promise<{ capp
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className={`w-16 h-16 rounded-full bg-${profile.color_theme}-500/20 border-2 border-${profile.color_theme}-500 flex items-center justify-center`}>
-                    <Trophy className={`w-8 h-8 text-${profile.color_theme}-400`} />
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 border-2 border-blue-500 flex items-center justify-center">
+                    <Trophy className="w-8 h-8 text-blue-400" />
                   </div>
                   <div>
                     <h1 className="text-3xl font-bold text-white">{profile.display_name}</h1>
                     <p className="text-slate-400">@{profile.capper_id}</p>
                   </div>
                 </div>
-                <p className="text-slate-300 mb-4">{profile.description}</p>
+                <p className="text-slate-300 mb-4">{profile.description || 'No description provided.'}</p>
                 <div className="flex items-center gap-2 text-sm text-slate-400">
                   <Calendar className="w-4 h-4" />
                   <span>Joined {new Date(profile.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
@@ -199,7 +199,7 @@ export default function CapperPublicProfile({ params }: { params: Promise<{ capp
               </div>
 
               {/* Social Links */}
-              {profile.social_links && (
+              {profile.social_links && Object.keys(profile.social_links).length > 0 && (
                 <div className="flex gap-2">
                   {profile.social_links.twitter && (
                     <Button variant="outline" size="icon" className="border-slate-700" asChild>
