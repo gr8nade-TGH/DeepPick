@@ -8,6 +8,8 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ArrowLeft, TrendingUp, TrendingDown, Clock, CheckCircle, XCircle } from 'lucide-react'
 import Link from 'next/link'
 import { PickInsightModal } from '@/components/dashboard/pick-insight-modal'
+import { useBettingSlip } from '@/contexts/betting-slip-context'
+import type { BetSelection } from '@/contexts/betting-slip-context'
 
 interface Pick {
   id: string
@@ -37,6 +39,7 @@ export default function AllPicksPage() {
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('all')
   const [selectedPickId, setSelectedPickId] = useState<string | null>(null)
+  const { addSelection, removeSelection, hasSelection, selections } = useBettingSlip()
 
   useEffect(() => {
     fetchPicks()
@@ -95,6 +98,73 @@ export default function AllPicksPage() {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
   }
 
+  // Convert pick to bet selection format
+  const convertPickToBetSelection = (pick: Pick): BetSelection | null => {
+    const gameSnapshot = pick.game_snapshot
+    if (!gameSnapshot) return null
+
+    const homeTeam = gameSnapshot.home_team?.abbreviation || gameSnapshot.home_team?.name || 'Home'
+    const awayTeam = gameSnapshot.away_team?.abbreviation || gameSnapshot.away_team?.name || 'Away'
+    const gameTime = gameSnapshot.game_time || ''
+
+    // Parse selection to determine bet type and line
+    const selection = pick.selection
+    let betType: 'spread' | 'total' | 'moneyline' = 'total'
+    let team = ''
+    let line = ''
+
+    if (selection.includes('OVER') || selection.includes('UNDER')) {
+      betType = 'total'
+      team = selection.includes('OVER') ? 'OVER' : 'UNDER'
+      line = selection
+    } else if (selection.includes('+') || selection.includes('-')) {
+      betType = 'spread'
+      // Extract team and spread (e.g., "LAL -4.5" or "MEM +4.5")
+      const parts = selection.split(' ')
+      team = parts[0]
+      line = parts.slice(1).join(' ')
+    } else {
+      betType = 'moneyline'
+      team = selection
+      line = 'ML'
+    }
+
+    return {
+      id: pick.id,
+      gameId: pick.game_snapshot?.game_id || pick.id, // Use game_id from snapshot if available
+      team,
+      betType,
+      line,
+      odds: 0, // Picks don't always have odds stored
+      homeTeam,
+      awayTeam,
+      gameTime
+    }
+  }
+
+  // Toggle pick in bet slip
+  const togglePickInSlip = (pick: Pick, event: React.MouseEvent) => {
+    // Prevent opening modal when clicking the card
+    event.stopPropagation()
+
+    // Only allow pending picks to be added to slip
+    if (pick.status !== 'pending') {
+      return
+    }
+
+    const betSelection = convertPickToBetSelection(pick)
+    if (!betSelection) return
+
+    // Check if already in slip
+    const inSlip = selections.some(s => s.id === pick.id)
+
+    if (inSlip) {
+      removeSelection(pick.id)
+    } else {
+      addSelection(betSelection)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-950">
       <div className="px-4 py-6 max-w-7xl mx-auto">
@@ -147,13 +217,33 @@ export default function AllPicksPage() {
                   const homeTeam = pick.game_snapshot?.home_team
                   const awayTeam = pick.game_snapshot?.away_team
                   const matchup = `${awayTeam?.name || 'Away'} @ ${homeTeam?.name || 'Home'}`
+                  const inSlip = selections.some(s => s.id === pick.id)
+                  const isPending = pick.status === 'pending'
 
                   return (
                     <div
                       key={pick.id}
-                      className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 hover:border-cyan-500/40 transition-all cursor-pointer"
-                      onClick={() => setSelectedPickId(pick.id)}
+                      className={`bg-slate-800/50 border rounded-lg p-4 transition-all cursor-pointer relative ${inSlip
+                          ? 'border-emerald-500 shadow-lg shadow-emerald-500/20 bg-emerald-900/10'
+                          : isPending
+                            ? 'border-slate-700 hover:border-cyan-500/40'
+                            : 'border-slate-700/50 opacity-75'
+                        }`}
+                      onClick={(e) => {
+                        if (isPending) {
+                          togglePickInSlip(pick, e)
+                        } else {
+                          setSelectedPickId(pick.id)
+                        }
+                      }}
                     >
+                      {/* Selected indicator */}
+                      {inSlip && (
+                        <div className="absolute top-2 right-2 bg-emerald-500 text-white text-xs font-bold px-2 py-1 rounded">
+                          ✓ IN SLIP
+                        </div>
+                      )}
+
                       <div className="flex items-center justify-between gap-4">
                         {/* Left: Capper + Pick Info */}
                         <div className="flex-1 min-w-0">
