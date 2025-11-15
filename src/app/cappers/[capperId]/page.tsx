@@ -120,8 +120,8 @@ export default function CapperPublicProfile() {
         setCurrentPicks(currentPicksData.picks || [])
       }
 
-      // Fetch recent picks (all statuses)
-      const picksRes = await fetch(`/api/picks?capper=${capperId}&limit=20`)
+      // Fetch recent picks (all statuses) - limit to 10 for Pick History
+      const picksRes = await fetch(`/api/picks?capper=${capperId}&limit=10`)
       const picksData = await picksRes.json()
 
       console.log('[CapperProfile] Picks response:', picksData)
@@ -339,88 +339,6 @@ export default function CapperPublicProfile() {
           </div>
         )}
 
-        {/* Current Picks - Active Bets */}
-        {currentPicks.length > 0 && (
-          <Card className="bg-gradient-to-br from-emerald-900/20 to-slate-900/50 border-emerald-500/30 backdrop-blur">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <div className="relative">
-                      <Target className="w-5 h-5 text-emerald-400" />
-                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
-                    </div>
-                    Current Picks
-                    <Badge variant="outline" className="bg-emerald-500/20 text-emerald-400 border-emerald-500/50 ml-2">
-                      {currentPicks.length} Active
-                    </Badge>
-                  </CardTitle>
-                  <CardDescription>Live bets from {profile?.display_name}</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {currentPicks.map((pick) => {
-                  const gameData = pick.game || pick.game_snapshot
-                  const awayTeam = gameData?.away_team?.abbreviation || 'TBD'
-                  const homeTeam = gameData?.home_team?.abbreviation || 'TBD'
-                  const gameTime = gameData?.game_start_timestamp
-
-                  return (
-                    <div
-                      key={pick.id}
-                      className="relative p-4 rounded-xl bg-gradient-to-br from-slate-900/80 to-slate-800/80 border-2 border-emerald-500/30 hover:border-emerald-500/50 transition-all group"
-                    >
-                      {/* LIVE indicator */}
-                      <div className="absolute -top-2 -right-2 px-2 py-1 bg-emerald-500 text-white text-xs font-bold rounded-full shadow-lg flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
-                        LIVE
-                      </div>
-
-                      {/* Game matchup */}
-                      <div className="mb-3">
-                        <div className="text-lg font-bold text-white mb-1">
-                          {awayTeam} @ {homeTeam}
-                        </div>
-                        <div className="text-xs text-slate-400 flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {gameTime ? getCountdown(gameTime) : 'TBD'}
-                        </div>
-                      </div>
-
-                      {/* Pick details */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30">
-                            {pick.pick_type}
-                          </Badge>
-                          <span className="text-emerald-400 font-bold text-lg">{pick.selection}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-slate-400">Units</span>
-                          <span className="text-white font-semibold">{pick.units}U</span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-slate-400">Odds</span>
-                          <span className="text-white font-semibold">{pick.odds > 0 ? '+' : ''}{pick.odds}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-slate-400">Confidence</span>
-                          <span className="text-emerald-400 font-semibold">{pick.confidence.toFixed(0)}%</span>
-                        </div>
-                      </div>
-
-                      {/* Hover glow effect */}
-                      <div className="absolute inset-0 rounded-xl bg-emerald-500/0 group-hover:bg-emerald-500/5 transition-all pointer-events-none" />
-                    </div>
-                  )
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Team Dominance - Battle Map Integration */}
         {topTeams.length > 0 && (
           <Card className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 border-slate-700 backdrop-blur">
@@ -515,14 +433,100 @@ export default function CapperPublicProfile() {
           </Card>
         )}
 
-        {/* Recent Picks */}
+        {/* Current Picks - Active Bets */}
+        {currentPicks.length > 0 && (
+          <Card className="bg-gradient-to-br from-emerald-900/20 to-slate-900/50 border-emerald-500/30 backdrop-blur">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <div className="relative">
+                      <Target className="w-5 h-5 text-emerald-400" />
+                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
+                    </div>
+                    Current Picks
+                    <Badge variant="outline" className="bg-emerald-500/20 text-emerald-400 border-emerald-500/50 ml-2">
+                      {currentPicks.length} Active
+                    </Badge>
+                  </CardTitle>
+                  <CardDescription>Live bets from {profile?.display_name}</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {currentPicks.map((pick) => {
+                  const gameData = pick.game || pick.game_snapshot
+                  const awayTeam = gameData?.away_team?.abbreviation || 'TBD'
+                  const homeTeam = gameData?.home_team?.abbreviation || 'TBD'
+                  const gameTime = gameData?.game_start_timestamp
+
+                  // Convert confidence to star rating (1-5 stars)
+                  const starRating = Math.round(pick.confidence / 20) // 0-100 -> 0-5 stars
+                  const stars = '⭐'.repeat(Math.max(1, Math.min(5, starRating)))
+
+                  return (
+                    <div
+                      key={pick.id}
+                      className="relative p-4 rounded-xl bg-gradient-to-br from-slate-900/80 to-slate-800/80 border-2 border-emerald-500/30 hover:border-emerald-500/50 transition-all group"
+                    >
+                      {/* LIVE indicator */}
+                      <div className="absolute -top-2 -right-2 px-2 py-1 bg-emerald-500 text-white text-xs font-bold rounded-full shadow-lg flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
+                        LIVE
+                      </div>
+
+                      {/* Game matchup */}
+                      <div className="mb-3">
+                        <div className="text-lg font-bold text-white mb-1">
+                          {awayTeam} @ {homeTeam}
+                        </div>
+                        <div className="text-xs text-slate-400 flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {gameTime ? getCountdown(gameTime) : 'TBD'}
+                        </div>
+                      </div>
+
+                      {/* Pick details */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30">
+                            {pick.pick_type}
+                          </Badge>
+                          <span className="text-emerald-400 font-bold text-lg">{pick.selection}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-400">Units</span>
+                          <span className="text-white font-semibold">{pick.units}U</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-400">Odds</span>
+                          <span className="text-white font-semibold">{pick.odds > 0 ? '+' : ''}{pick.odds}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-400">Confidence</span>
+                          <span className="text-yellow-400 font-semibold text-base">{stars}</span>
+                        </div>
+                      </div>
+
+                      {/* Hover glow effect */}
+                      <div className="absolute inset-0 rounded-xl bg-emerald-500/0 group-hover:bg-emerald-500/5 transition-all pointer-events-none" />
+                    </div>
+                  )
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Pick History */}
         <Card className="bg-slate-800/50 border-slate-700">
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
               <Target className="w-5 h-5 text-blue-500" />
-              Recent Picks
+              Pick History
             </CardTitle>
-            <CardDescription>Latest predictions from {profile.display_name}</CardDescription>
+            <CardDescription>Last 10 predictions from {profile.display_name}</CardDescription>
           </CardHeader>
           <CardContent>
             {recentPicks.length === 0 ? (
@@ -539,6 +543,10 @@ export default function CapperPublicProfile() {
                   const homeTeam = gameData?.home_team?.abbreviation || 'TBD'
                   const gameStatus = gameData?.status || 'scheduled'
                   const gameTime = gameData?.game_start_timestamp
+
+                  // Convert confidence to star rating (1-5 stars)
+                  const starRating = Math.round(pick.confidence / 20) // 0-100 -> 0-5 stars
+                  const stars = '⭐'.repeat(Math.max(1, Math.min(5, starRating)))
 
                   return (
                     <div key={pick.id} className="p-4 rounded-lg bg-slate-900/50 border border-slate-700 hover:border-slate-600 transition-all">
@@ -557,7 +565,7 @@ export default function CapperPublicProfile() {
                             <span className="text-white font-medium">{pick.selection}</span>
                             <span className="text-slate-400">{pick.units}U @ {pick.odds > 0 ? '+' : ''}{pick.odds}</span>
                             <span className="text-slate-500">•</span>
-                            <span className="text-slate-400">{pick.confidence.toFixed(0)}% confidence</span>
+                            <span className="text-yellow-400">{stars}</span>
                           </div>
                         </div>
                         <div className="text-right text-sm text-slate-400 flex items-center gap-1">
