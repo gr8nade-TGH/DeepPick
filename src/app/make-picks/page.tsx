@@ -209,21 +209,37 @@ export default function ManualPicksPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-white mb-2">Manual Picks</h1>
-          <p className="text-slate-400">Select games to add to your bet slip</p>
-        </div>
-
-        {/* Refresh Button */}
-        <div className="mb-4">
-          <button
-            onClick={fetchGames}
-            disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            Refresh Games
-          </button>
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-4xl font-bold text-white mb-2 bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                Make Picks
+              </h1>
+              <p className="text-slate-400">Select games to add to your bet slip</p>
+            </div>
+            {/* Refresh Button */}
+            <button
+              onClick={fetchGames}
+              disabled={loading}
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-lg transition-all shadow-lg hover:shadow-blue-500/50 font-semibold"
+            >
+              <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+              Refresh Games
+            </button>
+          </div>
+          {/* Stats Bar */}
+          <div className="mt-4 flex items-center gap-4 text-sm">
+            <div className="flex items-center gap-2 text-slate-400">
+              <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></div>
+              <span>{games.length} games available</span>
+            </div>
+            {existingPicks.size > 0 && (
+              <div className="flex items-center gap-2 text-emerald-400">
+                <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
+                <span>{existingPicks.size} picks placed</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Games List */}
@@ -245,28 +261,31 @@ export default function ManualPicksPage() {
               return (
                 <div
                   key={game.id}
-                  className={`bg-slate-900 border rounded-lg overflow-hidden ${hasPick ? 'border-green-500/50 opacity-60' : 'border-slate-700'
+                  className={`bg-slate-900/50 backdrop-blur-sm border rounded-xl overflow-hidden transition-all hover:shadow-xl ${hasPick
+                    ? 'border-emerald-500/50 shadow-emerald-500/20'
+                    : 'border-slate-700 hover:border-slate-600 hover:shadow-blue-500/20'
                     }`}
                 >
                   {/* Game Header */}
-                  <div className="bg-slate-800 px-4 py-3 border-b border-slate-700">
+                  <div className="bg-gradient-to-r from-slate-800 to-slate-800/80 px-5 py-4 border-b border-slate-700">
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
-                        <div className="text-white font-semibold">
-                          {game.away_team.name} <span className="text-slate-500">@</span> {game.home_team.name}
+                        <div className="text-white font-bold text-lg mb-1">
+                          <span className="text-blue-400">{game.away_team.abbreviation}</span>
+                          {' '}
+                          <span className="text-slate-500">@</span>
+                          {' '}
+                          <span className="text-cyan-400">{game.home_team.abbreviation}</span>
                         </div>
-                        <div className="flex items-center gap-2 text-xs text-slate-400 mt-1">
-                          <span className="bg-green-600 text-white px-2 py-0.5 rounded text-xs font-semibold">
-                            SGP
-                          </span>
-                          <span>{formatGameDateTime(game.game_start_timestamp)}</span>
+                        <div className="flex items-center gap-3 text-xs text-slate-400">
+                          <span className="font-medium">{formatGameDateTime(game.game_start_timestamp)}</span>
                           {(() => {
                             const countdown = getCountdown(game.game_start_timestamp)
                             return countdown ? (
                               <>
                                 <span className="text-slate-600">•</span>
-                                <span className="flex items-center gap-1 text-cyan-400 font-semibold">
-                                  <Clock className="w-3 h-3" />
+                                <span className="flex items-center gap-1.5 text-cyan-400 font-semibold bg-cyan-500/10 px-2 py-1 rounded">
+                                  <Clock className="w-3.5 h-3.5" />
                                   {countdown}
                                 </span>
                               </>
@@ -275,34 +294,36 @@ export default function ManualPicksPage() {
                         </div>
                       </div>
                       {hasPick && (
-                        <div className="bg-green-600 text-white px-3 py-1 rounded text-xs font-semibold">
-                          PICK PLACED
+                        <div className="bg-gradient-to-r from-emerald-600 to-green-600 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-lg">
+                          ✓ PICK PLACED
                         </div>
                       )}
                     </div>
                   </div>
 
                   {/* Odds Grid */}
-                  <div className="grid grid-cols-2 gap-px bg-slate-700">
+                  <div className="grid grid-cols-2 gap-3 p-5">
                     {/* Spread Column */}
-                    <div className="bg-slate-900 p-4">
-                      <div className="text-xs text-slate-400 font-semibold mb-3 text-center">Spread</div>
+                    <div className="space-y-3">
+                      <div className="text-xs text-slate-400 font-bold mb-2 text-center uppercase tracking-wider">Spread</div>
                       {game.odds.spread ? (
                         <div className="space-y-2">
                           {/* Away Spread */}
                           <button
                             onClick={() => !hasPick && addSelection(game, 'spread', 'away')}
                             disabled={hasPick}
-                            className={`w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded p-3 transition-colors text-left ${hasPick ? 'cursor-not-allowed opacity-50' : ''
+                            className={`w-full bg-gradient-to-br from-slate-800 to-slate-900 hover:from-blue-900/50 hover:to-slate-800 border-2 border-slate-600 hover:border-blue-500 rounded-lg p-3 transition-all text-left group ${hasPick ? 'cursor-not-allowed opacity-40' : 'hover:shadow-lg hover:shadow-blue-500/20'
                               }`}
                           >
                             <div className="flex justify-between items-center">
-                              <span className="text-white font-semibold text-sm">{game.away_team.abbreviation}</span>
+                              <span className="text-white font-bold text-sm group-hover:text-blue-400 transition-colors">
+                                {game.away_team.abbreviation}
+                              </span>
                               <div className="text-right">
-                                <div className="text-white font-bold">
+                                <div className="text-white font-bold text-base">
                                   {game.odds.spread.line > 0 ? '+' : ''}{game.odds.spread.line.toFixed(1)}
                                 </div>
-                                <div className="text-green-400 text-xs">{formatOdds(game.odds.spread.away_odds)}</div>
+                                <div className="text-emerald-400 text-xs font-semibold">{formatOdds(game.odds.spread.away_odds)}</div>
                               </div>
                             </div>
                           </button>
@@ -310,57 +331,67 @@ export default function ManualPicksPage() {
                           <button
                             onClick={() => !hasPick && addSelection(game, 'spread', 'home')}
                             disabled={hasPick}
-                            className={`w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded p-3 transition-colors text-left ${hasPick ? 'cursor-not-allowed opacity-50' : ''
+                            className={`w-full bg-gradient-to-br from-slate-800 to-slate-900 hover:from-cyan-900/50 hover:to-slate-800 border-2 border-slate-600 hover:border-cyan-500 rounded-lg p-3 transition-all text-left group ${hasPick ? 'cursor-not-allowed opacity-40' : 'hover:shadow-lg hover:shadow-cyan-500/20'
                               }`}
                           >
                             <div className="flex justify-between items-center">
-                              <span className="text-white font-semibold text-sm">{game.home_team.abbreviation}</span>
+                              <span className="text-white font-bold text-sm group-hover:text-cyan-400 transition-colors">
+                                {game.home_team.abbreviation}
+                              </span>
                               <div className="text-right">
-                                <div className="text-white font-bold">
+                                <div className="text-white font-bold text-base">
                                   {-game.odds.spread.line > 0 ? '+' : ''}{(-game.odds.spread.line).toFixed(1)}
                                 </div>
-                                <div className="text-green-400 text-xs">{formatOdds(game.odds.spread.home_odds)}</div>
+                                <div className="text-emerald-400 text-xs font-semibold">{formatOdds(game.odds.spread.home_odds)}</div>
                               </div>
                             </div>
                           </button>
                         </div>
                       ) : (
-                        <div className="text-center text-slate-500 text-sm py-4">No spread available</div>
+                        <div className="text-center text-slate-500 text-sm py-6 bg-slate-800/50 rounded-lg border border-slate-700">
+                          No spread available
+                        </div>
                       )}
                     </div>
 
                     {/* Total Column */}
-                    <div className="bg-slate-900 p-4">
-                      <div className="text-xs text-slate-400 font-semibold mb-3 text-center">Total</div>
+                    <div className="space-y-3">
+                      <div className="text-xs text-slate-400 font-bold mb-2 text-center uppercase tracking-wider">Total</div>
                       {game.odds.total ? (
                         <div className="space-y-2">
                           {/* Over */}
                           <button
                             onClick={() => !hasPick && addSelection(game, 'total', 'over')}
                             disabled={hasPick}
-                            className={`w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded p-3 transition-colors text-left ${hasPick ? 'cursor-not-allowed opacity-50' : ''
+                            className={`w-full bg-gradient-to-br from-slate-800 to-slate-900 hover:from-orange-900/50 hover:to-slate-800 border-2 border-slate-600 hover:border-orange-500 rounded-lg p-3 transition-all text-left group ${hasPick ? 'cursor-not-allowed opacity-40' : 'hover:shadow-lg hover:shadow-orange-500/20'
                               }`}
                           >
                             <div className="flex justify-between items-center">
-                              <span className="text-white font-semibold text-sm">O {game.odds.total.line.toFixed(1)}</span>
-                              <div className="text-green-400 text-xs font-bold">{formatOdds(game.odds.total.over_odds)}</div>
+                              <span className="text-white font-bold text-sm group-hover:text-orange-400 transition-colors">
+                                O {game.odds.total.line.toFixed(1)}
+                              </span>
+                              <div className="text-emerald-400 text-xs font-semibold">{formatOdds(game.odds.total.over_odds)}</div>
                             </div>
                           </button>
                           {/* Under */}
                           <button
                             onClick={() => !hasPick && addSelection(game, 'total', 'under')}
                             disabled={hasPick}
-                            className={`w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded p-3 transition-colors text-left ${hasPick ? 'cursor-not-allowed opacity-50' : ''
+                            className={`w-full bg-gradient-to-br from-slate-800 to-slate-900 hover:from-purple-900/50 hover:to-slate-800 border-2 border-slate-600 hover:border-purple-500 rounded-lg p-3 transition-all text-left group ${hasPick ? 'cursor-not-allowed opacity-40' : 'hover:shadow-lg hover:shadow-purple-500/20'
                               }`}
                           >
                             <div className="flex justify-between items-center">
-                              <span className="text-white font-semibold text-sm">U {game.odds.total.line.toFixed(1)}</span>
-                              <div className="text-green-400 text-xs font-bold">{formatOdds(game.odds.total.under_odds)}</div>
+                              <span className="text-white font-bold text-sm group-hover:text-purple-400 transition-colors">
+                                U {game.odds.total.line.toFixed(1)}
+                              </span>
+                              <div className="text-emerald-400 text-xs font-semibold">{formatOdds(game.odds.total.under_odds)}</div>
                             </div>
                           </button>
                         </div>
                       ) : (
-                        <div className="text-center text-slate-500 text-sm py-4">No total available</div>
+                        <div className="text-center text-slate-500 text-sm py-6 bg-slate-800/50 rounded-lg border border-slate-700">
+                          No total available
+                        </div>
                       )}
                     </div>
                   </div>
