@@ -289,7 +289,7 @@ export async function GET(
 
       // Build the insight card data from the locked snapshot
       const lockedInsightCard = {
-        capper: 'SHIVA',
+        capper: (pick.capper || 'SHIVA').toUpperCase(),
         sport: 'NBA',
         gameId: pick.game_id,
         pickId: pick.id,
