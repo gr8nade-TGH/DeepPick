@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Trophy, TrendingUp, Target, Calendar, ExternalLink, Twitter, Instagram, Youtube, Globe, ArrowLeft, Clock, CheckCircle2, XCircle, Minus, Map, Crown, Medal, Award } from 'lucide-react'
+import { Trophy, TrendingUp, Target, Calendar, ExternalLink, Twitter, Instagram, Youtube, Globe, ArrowLeft, Clock, CheckCircle2, XCircle, Minus, Map, Crown, Medal, Award, Star, X } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useParams } from 'next/navigation'
 
@@ -152,20 +152,30 @@ export default function CapperPublicProfile() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [capperId])
 
-  const getStatusBadge = (result: string | null, status: string) => {
-    if (status === 'scheduled') {
-      return <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30">Pending</Badge>
+  const getStatusIcon = (status: string | null) => {
+    switch (status) {
+      case 'won':
+        return <Trophy className="w-4 h-4 text-emerald-400" />
+      case 'lost':
+        return <X className="w-4 h-4 text-red-400" />
+      case 'push':
+        return <Minus className="w-4 h-4 text-slate-400" />
+      default:
+        return <Clock className="w-4 h-4 text-blue-400" />
     }
-    if (result === 'won') {
-      return <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"><CheckCircle2 className="w-3 h-3 mr-1" />Won</Badge>
+  }
+
+  const getStatusColor = (status: string | null) => {
+    switch (status) {
+      case 'won':
+        return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+      case 'lost':
+        return 'bg-red-500/10 text-red-400 border-red-500/30'
+      case 'push':
+        return 'bg-slate-500/10 text-slate-400 border-slate-500/30'
+      default:
+        return 'bg-blue-500/10 text-blue-400 border-blue-500/30'
     }
-    if (result === 'lost') {
-      return <Badge variant="outline" className="bg-red-500/10 text-red-400 border-red-500/30"><XCircle className="w-3 h-3 mr-1" />Lost</Badge>
-    }
-    if (result === 'push') {
-      return <Badge variant="outline" className="bg-slate-500/10 text-slate-400 border-slate-500/30"><Minus className="w-3 h-3 mr-1" />Push</Badge>
-    }
-    return <Badge variant="outline" className="bg-slate-500/10 text-slate-400 border-slate-500/30">TBD</Badge>
   }
 
   const getCountdown = (gameStart: string) => {
@@ -173,7 +183,7 @@ export default function CapperPublicProfile() {
     const start = new Date(gameStart)
     const diff = start.getTime() - now.getTime()
 
-    if (diff < 0) return 'Live/Final'
+    if (diff < 0) return ''
 
     const days = Math.floor(diff / (1000 * 60 * 60 * 24))
     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
@@ -365,9 +375,27 @@ export default function CapperPublicProfile() {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {topTeams.map((teamData, index) => {
-                  const rankIcon = index === 0 ? <Crown className="w-5 h-5 text-yellow-500" /> :
-                    index === 1 ? <Medal className="w-5 h-5 text-slate-400" /> :
-                      <Award className="w-5 h-5 text-amber-700" />
+                  // Rank badge styling based on position
+                  let rankBadgeStyle = ''
+                  let rankBadgeText = ''
+                  let rankIcon = null
+
+                  if (index === 0) {
+                    // Gold - 1st place
+                    rankBadgeStyle = 'bg-gradient-to-br from-yellow-400 to-yellow-600'
+                    rankBadgeText = '#1'
+                    rankIcon = <Crown className="w-5 h-5 text-yellow-900" />
+                  } else if (index === 1) {
+                    // Silver - 2nd place
+                    rankBadgeStyle = 'bg-gradient-to-br from-slate-300 to-slate-500'
+                    rankBadgeText = '#2'
+                    rankIcon = <Medal className="w-5 h-5 text-slate-700" />
+                  } else {
+                    // Bronze - 3rd place
+                    rankBadgeStyle = 'bg-gradient-to-br from-amber-600 to-amber-800'
+                    rankBadgeText = '#3'
+                    rankIcon = <Award className="w-5 h-5 text-amber-900" />
+                  }
 
                   const winRate = teamData.totalPicks > 0
                     ? ((teamData.wins / (teamData.wins + teamData.losses)) * 100).toFixed(1)
@@ -380,18 +408,24 @@ export default function CapperPublicProfile() {
                       onClick={() => router.push(`/territory-map?team=${teamData.team}`)}
                     >
                       {/* Rank Badge */}
-                      <div className="absolute -top-3 -right-3 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center border-2 border-slate-900 shadow-lg">
+                      <div className={`absolute -top-3 -right-3 w-12 h-12 rounded-full ${rankBadgeStyle} flex items-center justify-center border-2 border-slate-900 shadow-lg`}>
                         {rankIcon}
                       </div>
 
                       {/* Team Name */}
                       <div className="mb-3">
-                        <h3 className="text-2xl font-black text-white mb-1">{teamData.team}</h3>
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="text-2xl font-black text-white">{teamData.team}</h3>
+                          {teamData.rank === 1 && (
+                            <Badge className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-yellow-900 border-0 font-bold">
+                              👑 KING
+                            </Badge>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2 text-sm">
-                          <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30">
-                            #{teamData.rank} of {teamData.totalCappers}
+                          <Badge variant="outline" className="bg-slate-700/50 text-slate-300 border-slate-600">
+                            Rank #{teamData.rank} of {teamData.totalCappers}
                           </Badge>
-                          <span className="text-slate-400">Rank</span>
                         </div>
                       </div>
 
@@ -461,9 +495,14 @@ export default function CapperPublicProfile() {
                   const homeTeam = gameData?.home_team?.abbreviation || 'TBD'
                   const gameTime = gameData?.game_start_timestamp
 
-                  // Convert confidence to star rating (1-5 stars)
-                  const starRating = Math.round(pick.confidence / 20) // 0-100 -> 0-5 stars
-                  const stars = '⭐'.repeat(Math.max(1, Math.min(5, starRating)))
+                  // Convert confidence to star rating using same logic as dashboard
+                  let starCount = 0
+                  if (pick.confidence > 9.0) starCount = 5
+                  else if (pick.confidence > 8.0) starCount = 4
+                  else if (pick.confidence > 7.0) starCount = 3
+                  else if (pick.confidence > 6.0) starCount = 2
+                  else if (pick.confidence > 5.0) starCount = 1
+                  else starCount = 0
 
                   return (
                     <div
@@ -505,7 +544,24 @@ export default function CapperPublicProfile() {
                         </div>
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-slate-400">Confidence</span>
-                          <span className="text-yellow-400 font-semibold text-base">{stars}</span>
+                          <div className="flex flex-col items-end gap-1">
+                            {/* Stars */}
+                            <div className="flex items-center gap-0.5">
+                              {[...Array(5)].map((_, i) => (
+                                <Star
+                                  key={i}
+                                  className={`w-4 h-4 ${i < starCount
+                                    ? 'fill-yellow-400 text-yellow-400'
+                                    : 'text-slate-700/40'
+                                    }`}
+                                />
+                              ))}
+                            </div>
+                            {/* Confidence score */}
+                            <div className="text-xs font-bold text-slate-400">
+                              {pick.confidence.toFixed(1)}
+                            </div>
+                          </div>
                         </div>
                       </div>
 
@@ -521,12 +577,20 @@ export default function CapperPublicProfile() {
 
         {/* Pick History */}
         <Card className="bg-slate-800/50 border-slate-700">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <Target className="w-5 h-5 text-blue-500" />
-              Pick History
-            </CardTitle>
-            <CardDescription>Last 10 predictions from {profile.display_name}</CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-white flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-blue-500" />
+                Pick History
+              </CardTitle>
+              <CardDescription>Last 10 predictions from {profile.display_name}</CardDescription>
+            </div>
+            <Link href={`/picks?capper=${capperId}`}>
+              <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white">
+                View All Picks
+                <ExternalLink className="w-3 h-3 ml-1" />
+              </Button>
+            </Link>
           </CardHeader>
           <CardContent>
             {recentPicks.length === 0 ? (
@@ -544,34 +608,74 @@ export default function CapperPublicProfile() {
                   const gameStatus = gameData?.status || 'scheduled'
                   const gameTime = gameData?.game_start_timestamp
 
-                  // Convert confidence to star rating (1-5 stars)
-                  const starRating = Math.round(pick.confidence / 20) // 0-100 -> 0-5 stars
-                  const stars = '⭐'.repeat(Math.max(1, Math.min(5, starRating)))
+                  // Convert confidence to star rating using same logic as dashboard
+                  let starCount = 0
+                  if (pick.confidence > 9.0) starCount = 5
+                  else if (pick.confidence > 8.0) starCount = 4
+                  else if (pick.confidence > 7.0) starCount = 3
+                  else if (pick.confidence > 6.0) starCount = 2
+                  else if (pick.confidence > 5.0) starCount = 1
+                  else starCount = 0
 
                   return (
                     <div key={pick.id} className="p-4 rounded-lg bg-slate-900/50 border border-slate-700 hover:border-slate-600 transition-all">
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="text-white font-semibold">
+                            <span className="text-white font-medium">
                               {awayTeam} @ {homeTeam}
                             </span>
-                            {getStatusBadge(pick.result, gameStatus)}
+                            {gameTime && getCountdown(gameTime) && (
+                              <span className="text-cyan-400 text-xs flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {getCountdown(gameTime)}
+                              </span>
+                            )}
                           </div>
-                          <div className="flex items-center gap-3 text-sm">
-                            <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30">
+                          <div className="flex items-center gap-2 text-sm">
+                            <Badge variant="outline" className="text-xs">
                               {pick.pick_type}
                             </Badge>
-                            <span className="text-white font-medium">{pick.selection}</span>
-                            <span className="text-slate-400">{pick.units}U @ {pick.odds > 0 ? '+' : ''}{pick.odds}</span>
+                            <span className="text-slate-300">{pick.selection}</span>
                             <span className="text-slate-500">•</span>
-                            <span className="text-yellow-400">{stars}</span>
+                            <span className="text-blue-400">{pick.units}U</span>
                           </div>
                         </div>
-                        <div className="text-right text-sm text-slate-400 flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {gameTime ? getCountdown(gameTime) : 'TBD'}
+                        <div className="flex flex-col items-end gap-1">
+                          <Badge className={getStatusColor(pick.result)}>
+                            <span className="flex items-center gap-1">
+                              {getStatusIcon(pick.result)}
+                              {(pick.result || 'pending').toUpperCase()}
+                            </span>
+                          </Badge>
+                          {pick.net_units !== null && pick.net_units !== 0 && (
+                            <span className={`text-sm font-medium ${pick.net_units > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                              {pick.net_units > 0 ? '+' : ''}{pick.net_units.toFixed(2)}U
+                            </span>
+                          )}
                         </div>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-slate-500">
+                        <div className="flex items-center gap-1.5">
+                          <span>Confidence:</span>
+                          {/* Stars */}
+                          <div className="flex items-center gap-0.5">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`w-3 h-3 ${i < starCount
+                                  ? 'fill-yellow-400 text-yellow-400'
+                                  : 'text-slate-700/40'
+                                  }`}
+                              />
+                            ))}
+                          </div>
+                          {/* Confidence score */}
+                          <span className="font-bold text-slate-400">
+                            {pick.confidence.toFixed(1)}
+                          </span>
+                        </div>
+                        <span>{new Date(pick.created_at).toLocaleDateString()}</span>
                       </div>
                     </div>
                   )
