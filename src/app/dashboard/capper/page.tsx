@@ -3,28 +3,26 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/auth-context'
 import { useRouter } from 'next/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
-import { 
-  Settings, 
-  TrendingUp, 
-  History, 
-  Play, 
-  Pause, 
-  Eye, 
+import {
+  Play,
+  Pause,
+  Eye,
   Loader2,
   ArrowLeft,
   Zap,
   Hand,
   GitMerge,
-  Clock,
-  Ban,
-  Sliders,
-  ExternalLink
+  Sliders
 } from 'lucide-react'
 import Link from 'next/link'
+import { PerformanceMetrics } from '@/components/capper-dashboard/performance-metrics'
+import { RecentPicks } from '@/components/capper-dashboard/recent-picks'
+import { QuickSettings } from '@/components/capper-dashboard/quick-settings'
+import { PerformanceChart } from '@/components/capper-dashboard/performance-chart'
+import { ExecutionSchedule } from '@/components/capper-dashboard/execution-schedule'
 
 interface CapperData {
   capper_id: string
@@ -35,6 +33,7 @@ interface CapperData {
   pick_mode: 'manual' | 'auto' | 'hybrid'
   auto_generate_hours_before: number
   excluded_teams: string[]
+  execution_interval_minutes: number
   factor_config: {
     [betType: string]: {
       enabled_factors: string[]
@@ -45,10 +44,31 @@ interface CapperData {
   created_at: string
 }
 
+interface PerformanceMetrics {
+  total_picks: number
+  wins: number
+  losses: number
+  pushes: number
+  win_rate: number
+  net_units: number
+  roi: number
+  units_bet: number
+}
+
+interface ChartDataPoint {
+  date: string
+  cumulative_units: number
+  daily_units: number
+  wins: number
+  losses: number
+}
+
 export default function CapperDashboardPage() {
   const router = useRouter()
   const { user, profile, loading: authLoading } = useAuth()
   const [capperData, setCapperData] = useState<CapperData | null>(null)
+  const [performance, setPerformance] = useState<PerformanceMetrics | null>(null)
+  const [chartData, setChartData] = useState<ChartDataPoint[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -61,20 +81,35 @@ export default function CapperDashboardPage() {
       return
     }
 
-    fetchCapperData()
+    fetchAllData()
   }, [user, profile, authLoading])
 
-  const fetchCapperData = async () => {
+  const fetchAllData = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/user-cappers/my-capper')
-      const data = await response.json()
 
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to load capper data')
+      // Fetch capper data and performance in parallel
+      const [capperResponse, performanceResponse] = await Promise.all([
+        fetch('/api/user-cappers/my-capper'),
+        fetch('/api/performance')
+      ])
+
+      const [capperData, performanceData] = await Promise.all([
+        capperResponse.json(),
+        performanceResponse.json()
+      ])
+
+      if (!capperResponse.ok || !capperData.success) {
+        throw new Error(capperData.error || 'Failed to load capper data')
       }
 
-      setCapperData(data.capper)
+      setCapperData(capperData.capper)
+
+      // Set performance data if available
+      if (performanceData.success) {
+        setPerformance(performanceData.data.metrics)
+        setChartData(performanceData.data.chartData || [])
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
@@ -102,6 +137,10 @@ export default function CapperDashboardPage() {
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to toggle active status')
     }
+  }
+
+  const handleSettingsUpdate = () => {
+    fetchAllData()
   }
 
   if (authLoading || loading) {
@@ -214,74 +253,36 @@ export default function CapperDashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Main Content - Tabs */}
-        <Tabs defaultValue="settings" className="space-y-6">
-          <TabsList className="bg-slate-800 border border-slate-700">
-            <TabsTrigger value="settings" className="data-[state=active]:bg-slate-700">
-              <Settings className="w-4 h-4 mr-2" />
-              Settings
-            </TabsTrigger>
-            <TabsTrigger value="performance" className="data-[state=active]:bg-slate-700">
-              <TrendingUp className="w-4 h-4 mr-2" />
-              Performance
-            </TabsTrigger>
-            <TabsTrigger value="history" className="data-[state=active]:bg-slate-700">
-              <History className="w-4 h-4 mr-2" />
-              Picks History
-            </TabsTrigger>
-          </TabsList>
+        {/* Performance Metrics */}
+        <PerformanceMetrics metrics={performance} loading={loading} />
 
-          {/* Settings Tab */}
-          <TabsContent value="settings" className="space-y-6">
-            <Card className="bg-slate-800/50 border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-white">Quick Settings</CardTitle>
-                <CardDescription className="text-slate-400">
-                  Manage your pick generation configuration
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-slate-300">Settings interface coming soon...</p>
-                <Link href="/dashboard/capper/settings">
-                  <Button className="bg-blue-600 hover:bg-blue-700">
-                    <Settings className="w-4 h-4 mr-2" />
-                    Edit Full Settings
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          </TabsContent>
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - 2/3 width */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Performance Chart */}
+            <PerformanceChart data={chartData} loading={loading} />
 
-          {/* Performance Tab */}
-          <TabsContent value="performance">
-            <Card className="bg-slate-800/50 border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-white">Performance Analytics</CardTitle>
-                <CardDescription className="text-slate-400">
-                  Track your picks performance and factor accuracy
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-slate-300">Performance analytics coming soon...</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
+            {/* Recent Picks */}
+            <RecentPicks capperId={capperData.capper_id} limit={10} />
+          </div>
 
-          {/* History Tab */}
-          <TabsContent value="history">
-            <Card className="bg-slate-800/50 border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-white">Picks History</CardTitle>
-                <CardDescription className="text-slate-400">
-                  View all your generated and manual picks
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-slate-300">Picks history coming soon...</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+          {/* Right Column - 1/3 width */}
+          <div className="space-y-6">
+            {/* Execution Schedule */}
+            <ExecutionSchedule
+              capperId={capperData.capper_id}
+              intervalMinutes={capperData.execution_interval_minutes}
+              isActive={capperData.is_active}
+            />
+
+            {/* Quick Settings */}
+            <QuickSettings
+              capperData={capperData}
+              onUpdate={handleSettingsUpdate}
+            />
+          </div>
+        </div>
       </div>
     </div>
   )
