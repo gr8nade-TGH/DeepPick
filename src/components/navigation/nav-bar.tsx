@@ -99,9 +99,6 @@ export function NavBar() {
               <span className="text-xl font-black tracking-tight bg-gradient-to-r from-orange-400 via-red-400 to-pink-400 bg-clip-text text-transparent">
                 DEEP PICK
               </span>
-              <span className="text-[10px] font-semibold text-slate-500 -mt-1 tracking-wider">
-                AI SPORTS INTEL
-              </span>
             </div>
           </Link>
 
