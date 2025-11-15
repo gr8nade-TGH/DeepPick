@@ -60,10 +60,6 @@ export default function CapperPublicProfile({ params }: { params: Promise<{ capp
   const [stats, setStats] = useState<CapperStats | null>(null)
   const [recentPicks, setRecentPicks] = useState<Pick[]>([])
 
-  useEffect(() => {
-    fetchCapperData()
-  }, [resolvedParams.capperId])
-
   const fetchCapperData = async () => {
     try {
       setLoading(true)
@@ -99,6 +95,11 @@ export default function CapperPublicProfile({ params }: { params: Promise<{ capp
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    fetchCapperData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resolvedParams.capperId])
 
   const getStatusBadge = (result: string | null, status: string) => {
     if (status === 'scheduled') {
