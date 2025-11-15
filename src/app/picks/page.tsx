@@ -36,8 +36,7 @@ export default function AllPicksPage() {
   const [picks, setPicks] = useState<Pick[]>([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('all')
-  const [selectedPick, setSelectedPick] = useState<Pick | null>(null)
-  const [showInsight, setShowInsight] = useState(false)
+  const [selectedPickId, setSelectedPickId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchPicks()
@@ -49,7 +48,7 @@ export default function AllPicksPage() {
       const statusParam = statusFilter === 'all' ? '' : `&status=${statusFilter}`
       const response = await fetch(`/api/picks?limit=100${statusParam}`)
       const data = await response.json()
-      
+
       if (data.success) {
         setPicks(data.data || [])
       }
@@ -62,7 +61,7 @@ export default function AllPicksPage() {
 
   const getCapperBadge = (capper: string) => {
     const capperUpper = capper?.toUpperCase() || 'DEEPPICK'
-    
+
     const capperColors: Record<string, { gradient: string; text: string }> = {
       'SHIVA': { gradient: 'bg-gradient-to-r from-purple-900 to-pink-900', text: 'text-purple-200' },
       'IFRIT': { gradient: 'bg-gradient-to-r from-orange-900 to-red-900', text: 'text-orange-200' },
@@ -153,10 +152,7 @@ export default function AllPicksPage() {
                     <div
                       key={pick.id}
                       className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 hover:border-cyan-500/40 transition-all cursor-pointer"
-                      onClick={() => {
-                        setSelectedPick(pick)
-                        setShowInsight(true)
-                      }}
+                      onClick={() => setSelectedPickId(pick.id)}
                     >
                       <div className="flex items-center justify-between gap-4">
                         {/* Left: Capper + Pick Info */}
@@ -200,14 +196,10 @@ export default function AllPicksPage() {
       </div>
 
       {/* Insight Modal */}
-      {selectedPick && (
+      {selectedPickId && (
         <PickInsightModal
-          pick={selectedPick}
-          isOpen={showInsight}
-          onClose={() => {
-            setShowInsight(false)
-            setSelectedPick(null)
-          }}
+          pickId={selectedPickId}
+          onClose={() => setSelectedPickId(null)}
         />
       )}
     </div>
