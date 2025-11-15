@@ -392,13 +392,43 @@ export function ProfessionalDashboard() {
         return scoreB - scoreA // Descending order (best first)
       })
 
-      console.log('[Dashboard] Sorted picks by quality:', sorted.map(p => ({
+      // Apply diversity: limit to max 2 picks per capper in top 5
+      // This ensures variety and prevents one capper from dominating Elite Picks
+      const diversified: Pick[] = []
+      const capperPickCount = new Map<string, number>()
+      const MAX_PICKS_PER_CAPPER = 2
+
+      for (const pick of sorted) {
+        const capperId = pick.capper?.toLowerCase() || 'deeppick'
+        const currentCount = capperPickCount.get(capperId) || 0
+
+        // If we haven't hit the limit for this capper, add the pick
+        if (currentCount < MAX_PICKS_PER_CAPPER) {
+          diversified.push(pick)
+          capperPickCount.set(capperId, currentCount + 1)
+        }
+
+        // Stop once we have enough picks for Elite Picks display (5)
+        if (diversified.length >= 5) break
+      }
+
+      // If we don't have 5 picks yet (not enough cappers), fill with remaining picks
+      if (diversified.length < 5) {
+        for (const pick of sorted) {
+          if (!diversified.includes(pick)) {
+            diversified.push(pick)
+            if (diversified.length >= 5) break
+          }
+        }
+      }
+
+      console.log('[Dashboard] Sorted picks by quality (with diversity):', diversified.map(p => ({
         capper: p.capper,
         confidence: p.confidence,
         selection: p.selection
       })))
 
-      return sorted
+      return diversified
     })
   }
 
