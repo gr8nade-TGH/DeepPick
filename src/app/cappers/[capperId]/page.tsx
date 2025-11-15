@@ -43,6 +43,7 @@ interface Pick {
   confidence: number
   odds: number
   result: string | null
+  net_units: number | null
   created_at: string
   game?: {
     home_team?: { name: string, abbreviation: string }
