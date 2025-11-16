@@ -8,11 +8,11 @@ import * as PIXI from 'pixi.js'
 import { useMultiGameStore } from '../../store/multiGameStore'
 import { getCanvasWidth, getCanvasHeight } from '../../game/utils/positioning'
 import { drawPremiumGrid } from '../../game/rendering/premiumGrid'
+import { updateBattleStatusOverlay } from '../../game/rendering/battleStatusOverlay'
 import { screenShake } from '../../game/effects/ScreenShake'
 import { detectWebGLSupport } from '../../utils/webglDetection'
 import { castleManager } from '../../game/managers/CastleManager'
 import { gridManager } from '../../game/managers/GridManager'
-import { GameStatusOverlay } from '@/components/battle-bets/GameStatusOverlay'
 import type { Game } from '../../types/game'
 import type { BattleStatus } from '@/lib/battle-bets/BattleTimer'
 
@@ -201,6 +201,47 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
     })
   }, [battleId, getBattle, containerReady])
 
+  // Update battle status overlay (countdown timers) every second
+  useEffect(() => {
+    if (!containerRef.current || !containerReady) return
+
+    const container = containerRef.current
+    const canvasWidth = getCanvasWidth()
+    const canvasHeight = getCanvasHeight()
+
+    // Update overlay immediately
+    updateBattleStatusOverlay(container, {
+      status,
+      gameStartTime,
+      q1EndTime,
+      q2EndTime,
+      halftimeEndTime,
+      q3EndTime,
+      q4EndTime,
+      winner,
+      canvasWidth,
+      canvasHeight
+    })
+
+    // Update every second for countdown timers
+    const interval = setInterval(() => {
+      updateBattleStatusOverlay(container, {
+        status,
+        gameStartTime,
+        q1EndTime,
+        q2EndTime,
+        halftimeEndTime,
+        q3EndTime,
+        q4EndTime,
+        winner,
+        canvasWidth,
+        canvasHeight
+      })
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [status, gameStartTime, q1EndTime, q2EndTime, halftimeEndTime, q3EndTime, q4EndTime, winner, containerReady])
+
   if (webglSupport && !webglSupport.supported) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[300px] bg-slate-950 text-white p-8 rounded-lg">
@@ -213,27 +254,11 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
 
   return (
     <div className="relative w-full h-full">
-      {/* PixiJS Canvas */}
+      {/* PixiJS Canvas with integrated overlays */}
       <div
         ref={canvasRef}
         className="flex justify-center items-center w-full h-full"
       />
-
-      {/* Game Status Overlay (countdown timers, quarter info) */}
-      {status !== 'complete' && (
-        <GameStatusOverlay
-          status={status}
-          gameStartTime={gameStartTime}
-          q1EndTime={q1EndTime}
-          q2EndTime={q2EndTime}
-          halftimeEndTime={halftimeEndTime}
-          q3EndTime={q3EndTime}
-          q4EndTime={q4EndTime}
-          winner={winner}
-          leftCapperName={game.leftCapper.name}
-          rightCapperName={game.rightCapper.name}
-        />
-      )}
     </div>
   )
 }
