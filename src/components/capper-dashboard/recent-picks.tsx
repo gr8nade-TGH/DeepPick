@@ -193,7 +193,7 @@ export function RecentPicks({ capperId, limit = 10 }: RecentPicksProps) {
                     <Badge className={getStatusColor(pick.status)}>
                       <span className="flex items-center gap-1">
                         {getStatusIcon(pick.status)}
-                        {pick.status.toUpperCase()}
+                        {pick.status?.toUpperCase() || 'PENDING'}
                       </span>
                     </Badge>
                     {pick.net_units !== null && pick.net_units !== 0 && (
