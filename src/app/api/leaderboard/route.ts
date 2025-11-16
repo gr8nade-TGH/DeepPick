@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     // Need to fetch game_snapshot to filter by team, and pick_type to filter by bet type
     let picksQuery = admin
       .from('picks')
-      .select('capper, user_id, status, units, net_units, is_system_pick, game_snapshot, pick_type')
+      .select('capper, status, units, net_units, game_snapshot, pick_type')
       .in('status', ['won', 'lost', 'push'])
 
     if (dateFilter) {
@@ -76,22 +76,17 @@ export async function GET(request: NextRequest) {
       console.log(`[Leaderboard] Total picks after bet type filter: ${picks.length}`)
     }
 
-    // Fetch all user profiles (to get roles and filter FREE users)
-    const { data: profiles, error: profilesError } = await admin
-      .from('profiles')
-      .select('id, full_name, username, role, avatar_url')
-      .in('role', ['capper', 'admin']) // Only CAPPER and ADMIN
+    // Fetch all user cappers (from user_cappers table)
+    const { data: userCappers, error: userCappersError } = await admin
+      .from('user_cappers')
+      .select('capper_id, display_name, avatar_url')
 
-    if (profilesError) {
-      console.error('[Leaderboard] Error fetching profiles:', profilesError)
-      return NextResponse.json({
-        success: false,
-        error: 'Failed to fetch profiles'
-      }, { status: 500 })
+    if (userCappersError) {
+      console.error('[Leaderboard] Error fetching user cappers:', userCappersError)
     }
 
-    // Create a map of user_id -> profile
-    const profileMap = new Map(profiles.map(p => [p.id, p]))
+    // Create a map of capper_id -> user capper info
+    const userCapperMap = new Map(userCappers?.map(c => [c.capper_id, c]) || [])
 
     // Group picks by capper/user
     const capperStats = new Map<string, {
@@ -108,10 +103,11 @@ export async function GET(request: NextRequest) {
       unitsBet: number
     }>()
 
-    // System cappers
+    // System cappers (known list)
     const SYSTEM_CAPPERS = [
       { id: 'shiva', name: 'SHIVA' },
       { id: 'ifrit', name: 'IFRIT' },
+      { id: 'oracle', name: 'ORACLE' },
       { id: 'sentinel', name: 'SENTINEL' },
       { id: 'nexus', name: 'NEXUS' },
       { id: 'blitz', name: 'BLITZ' },
@@ -121,42 +117,27 @@ export async function GET(request: NextRequest) {
       { id: 'deeppick', name: 'DeepPick' },
     ]
 
-    // Initialize system cappers
-    SYSTEM_CAPPERS.forEach(capper => {
-      capperStats.set(capper.id, {
-        id: capper.id,
-        name: capper.name,
-        type: 'system',
-        wins: 0,
-        losses: 0,
-        pushes: 0,
-        totalPicks: 0,
-        netUnits: 0,
-        unitsBet: 0
-      })
-    })
+    // Create a map for quick system capper lookup
+    const systemCapperMap = new Map(SYSTEM_CAPPERS.map(c => [c.id, c.name]))
 
-    // Process picks
+    // Process picks - use capper field for ALL picks
     picks.forEach(pick => {
-      let capperId: string
+      const capperId = pick.capper.toLowerCase()
+
+      // Determine if system or user capper
+      const isSystemCapper = systemCapperMap.has(capperId)
+      const capperType: 'system' | 'user' = isSystemCapper ? 'system' : 'user'
+
+      // Get capper name
       let capperName: string
-      let capperType: 'system' | 'user'
-      let profile: any = null
+      let avatarUrl: string | undefined
 
-      if (pick.is_system_pick) {
-        // System pick
-        capperId = pick.capper
-        capperName = SYSTEM_CAPPERS.find(c => c.id === capperId)?.name || capperId.toUpperCase()
-        capperType = 'system'
+      if (isSystemCapper) {
+        capperName = systemCapperMap.get(capperId)!
       } else {
-        // User pick
-        if (!pick.user_id) return // Skip if no user_id
-        profile = profileMap.get(pick.user_id)
-        if (!profile) return // Skip if user not found or is FREE
-
-        capperId = pick.user_id
-        capperName = profile.username || profile.full_name || 'Unknown User'
-        capperType = 'user'
+        const userCapper = userCapperMap.get(capperId)
+        capperName = userCapper?.display_name || capperId.toUpperCase()
+        avatarUrl = userCapper?.avatar_url || undefined
       }
 
       // Get or create stats entry
@@ -165,8 +146,7 @@ export async function GET(request: NextRequest) {
           id: capperId,
           name: capperName,
           type: capperType,
-          role: profile?.role,
-          avatar_url: profile?.avatar_url,
+          avatar_url: avatarUrl,
           wins: 0,
           losses: 0,
           pushes: 0,
@@ -200,7 +180,6 @@ export async function GET(request: NextRequest) {
         id: stats.id,
         name: stats.name,
         type: stats.type,
-        role: stats.role,
         avatar_url: stats.avatar_url,
         wins: stats.wins,
         losses: stats.losses,
