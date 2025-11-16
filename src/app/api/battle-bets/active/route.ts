@@ -203,11 +203,11 @@ async function getCapperPerformance(
     const totalDefenseDots = calculateTotalDefenseDots(netUnits)
     const defenseDotDistribution = distributeDefenseDots(totalDefenseDots)
 
-    // Get overall capper stats (all teams)
+    // Get overall capper stats (all teams) - case-insensitive
     const { data: allCapperPicks } = await supabase
       .from('picks')
       .select('id, status, units, net_units')
-      .eq('capper', capperId)
+      .eq('capper', capperId.toLowerCase())
       .in('status', ['won', 'lost', 'push'])
 
     const overallWins = allCapperPicks?.filter((p: any) => p.status === 'won').length || 0

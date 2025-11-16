@@ -23,11 +23,11 @@ export async function GET(request: NextRequest) {
 
     const supabase = getSupabaseAdmin()
 
-    // Try to fetch from user_cappers first
+    // Try to fetch from user_cappers first (case-insensitive)
     const { data: userCapper, error: userCapperError } = await supabase
       .from('user_cappers')
       .select('capper_id, display_name, description, color_theme, created_at, social_links')
-      .eq('capper_id', capperId)
+      .eq('capper_id', capperId.toLowerCase())
       .single()
 
     if (userCapper) {

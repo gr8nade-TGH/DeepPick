@@ -18,9 +18,9 @@ export async function GET(request: NextRequest) {
       .select('*')
       .order('created_at', { ascending: true })
 
-    // Filter by capper if specified
+    // Filter by capper if specified (case-insensitive)
     if (capper && capper !== 'all') {
-      query = query.eq('capper', capper)
+      query = query.eq('capper', capper.toLowerCase())
     }
 
     const { data: picks, error: picksError } = await query

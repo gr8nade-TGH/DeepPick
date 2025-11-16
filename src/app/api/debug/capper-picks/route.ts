@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
     const supabase = getSupabaseAdmin()
 
-    // Get all picks for this capper
+    // Get all picks for this capper (case-insensitive)
     const { data: picks, error: picksError } = await supabase
       .from('picks')
       .select(`
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
         graded_at,
         game_snapshot
       `)
-      .eq('capper', capperId)
+      .eq('capper', capperId.toLowerCase())
       .order('created_at', { ascending: false })
       .limit(20)
 
@@ -93,8 +93,8 @@ export async function GET(request: NextRequest) {
         note: stats.needsGrading > 0
           ? 'Some picks have finished games but haven\'t been graded yet. Run /api/cron/sync-game-scores to trigger grading.'
           : stats.pending > 0
-          ? 'Pending picks are waiting for games to finish.'
-          : 'All picks are graded!'
+            ? 'Pending picks are waiting for games to finish.'
+            : 'All picks are graded!'
       }
     })
   } catch (error) {
