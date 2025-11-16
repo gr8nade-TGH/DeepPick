@@ -132,23 +132,23 @@ export function createBattleStatusOverlay(config: OverlayConfig): PIXI.Container
       break
 
     case 'q1_complete':
-      message = 'Q1 COMPLETE'
-      showOverlay = true
+      // Disabled - quarter logic needs to be re-implemented
+      showOverlay = false
       break
 
     case 'q2_complete':
-      message = 'Q2 COMPLETE'
-      showOverlay = true
+      // Disabled - quarter logic needs to be re-implemented
+      showOverlay = false
       break
 
     case 'q3_complete':
-      message = 'Q3 COMPLETE'
-      showOverlay = true
+      // Disabled - quarter logic needs to be re-implemented
+      showOverlay = false
       break
 
     case 'q4_complete':
-      message = 'Q4 COMPLETE'
-      showOverlay = true
+      // Disabled - quarter logic needs to be re-implemented
+      showOverlay = false
       break
 
     case 'final':
