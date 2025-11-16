@@ -13,7 +13,8 @@ import type { Game, StatType } from '../types/game';
 import {
   getTotalDefenseDotCount,
   getCapperUnitsForTeam,
-  getDefenseCellId
+  getDefenseCellId,
+  distributeDotsAcrossStats
 } from '../types/game';
 import { getDefenseCellPosition } from '../game/utils/positioning';
 
@@ -65,7 +66,7 @@ export const useMultiGameStore = create<MultiGameState>()(
       // Initialize a single battle
       initializeBattle: (battleId: string, game: Game) => {
         console.log(`[Multi-Game Store] Initializing battle: ${battleId}`);
-        
+
         const battleState: BattleState = {
           game,
           currentQuarter: 0,
@@ -150,29 +151,44 @@ export const useMultiGameStore = create<MultiGameState>()(
 
           console.log(`[Multi-Game Store] ${capper.name} has ${units} units on ${team.abbreviation} = ${totalDots} defense dots`);
 
-          // Create 1 base defense dot per stat row (cell #1)
-          stats.forEach((stat) => {
-            const cellNumber = 1;
+          // Distribute dots across stats
+          const distributionArray = distributeDotsAcrossStats(totalDots);
+          const distribution: Record<StatType, number> = {
+            pts: distributionArray[0],
+            reb: distributionArray[1],
+            ast: distributionArray[2],
+            blk: distributionArray[3],
+            '3pt': distributionArray[4],
+          };
+
+          console.log(`[Multi-Game Store] Distribution for ${side}:`, distribution);
+
+          // Create ALL defense dots based on distribution
+          stats.forEach((stat, statIndex) => {
+            const dotsForStat = distribution[stat];
             const is3ptRow = stat === '3pt';
-            const cellId = getDefenseCellId(stat, side, cellNumber);
-            const id = `${battleId}-${cellId}`;
 
-            const position = getDefenseCellPosition(stat, side, cellNumber);
+            // Create all dots for this stat row
+            for (let cellNumber = 1; cellNumber <= dotsForStat; cellNumber++) {
+              const cellId = getDefenseCellId(stat, side, cellNumber);
+              const id = `${battleId}-${cellId}`;
+              const position = getDefenseCellPosition(stat, side, cellNumber);
 
-            const dot = new DefenseDot({
-              id,
-              gameId: battleId,
-              stat,
-              side,
-              index: cellNumber - 1,
-              cellId,
-              position,
-              team,
-              maxHp: 3,
-              isRegenerated: is3ptRow,
-            });
+              const dot = new DefenseDot({
+                id,
+                gameId: battleId,
+                stat,
+                side,
+                index: cellNumber - 1,
+                cellId,
+                position,
+                team,
+                maxHp: 3,
+                isRegenerated: is3ptRow,
+              });
 
-            defenseDots.set(id, dot);
+              defenseDots.set(id, dot);
+            }
           });
         });
 
@@ -336,7 +352,7 @@ export const useMultiGameStore = create<MultiGameState>()(
       // Reset all battles
       resetAllBattles: () => {
         const battles = get().battles;
-        
+
         // Clean up all battles
         battles.forEach((battle, battleId) => {
           battle.defenseDots.forEach(dot => dot.dispose());

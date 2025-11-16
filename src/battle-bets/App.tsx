@@ -7,7 +7,6 @@ import { useEffect, useState } from 'react';
 import { useMultiGameStore } from './store/multiGameStore';
 import { GameErrorBoundary } from './components/ErrorBoundary';
 import { BattleCanvas } from './components/game/BattleCanvas';
-import { GameInfoBar } from './components/game/GameInfoBar';
 import type { Game } from './types/game';
 import './App.css';
 
@@ -37,23 +36,63 @@ interface ApiBattle {
     game_date?: string;
   };
   left_capper?: {
-    display_name: string;
+    id: string;
+    name: string;
+    displayName: string;
     colorTheme?: string;
     teamPerformance?: {
+      team: string;
       netUnits: number;
       wins: number;
       losses: number;
       pushes: number;
+      totalPicks: number;
+      winRate: number;
+      defenseDots: {
+        pts: number;
+        reb: number;
+        ast: number;
+        blk: number;
+        '3pt': number;
+      };
+    };
+    overallPerformance?: {
+      wins: number;
+      losses: number;
+      pushes: number;
+      totalPicks: number;
+      netUnits: number;
+      winRate: number;
     };
   };
   right_capper?: {
-    display_name: string;
+    id: string;
+    name: string;
+    displayName: string;
     colorTheme?: string;
     teamPerformance?: {
+      team: string;
       netUnits: number;
       wins: number;
       losses: number;
       pushes: number;
+      totalPicks: number;
+      winRate: number;
+      defenseDots: {
+        pts: number;
+        reb: number;
+        ast: number;
+        blk: number;
+        '3pt': number;
+      };
+    };
+    overallPerformance?: {
+      wins: number;
+      losses: number;
+      pushes: number;
+      totalPicks: number;
+      netUnits: number;
+      winRate: number;
     };
   };
 }
@@ -108,7 +147,7 @@ function App() {
         },
         leftCapper: {
           id: battle.left_capper_id,
-          name: battle.left_capper?.display_name || 'Unknown',
+          name: battle.left_capper?.displayName || battle.left_capper?.name || 'Unknown',
           favoriteTeam: {
             id: battle.left_team.toLowerCase(),
             name: battle.game?.away_team?.name || battle.left_team,
@@ -138,7 +177,7 @@ function App() {
         },
         rightCapper: {
           id: battle.right_capper_id,
-          name: battle.right_capper?.display_name || 'Unknown',
+          name: battle.right_capper?.displayName || battle.right_capper?.name || 'Unknown',
           favoriteTeam: {
             id: battle.right_team.toLowerCase(),
             name: battle.game?.home_team?.name || battle.right_team,
@@ -304,8 +343,22 @@ function App() {
                 boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)'
               }}
             >
-              {/* Game Info Bar - Horizontal bar with team info, spread, etc. */}
-              <GameInfoBar game={game} />
+              {/* Battle Info Header */}
+              <div style={{
+                padding: '15px 20px',
+                background: 'rgba(139, 92, 246, 0.1)',
+                borderBottom: '1px solid rgba(139, 92, 246, 0.2)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <div style={{ color: 'white', fontSize: '16px', fontWeight: 'bold' }}>
+                  {game.leftCapper.name} vs {game.rightCapper.name}
+                </div>
+                <div style={{ color: '#94a3b8', fontSize: '14px' }}>
+                  {game.leftTeam.abbreviation} vs {game.rightTeam.abbreviation} • Spread: {game.spread > 0 ? '+' : ''}{game.spread}
+                </div>
+              </div>
 
               {/* Battle Canvas - PixiJS Game with Countdown Timers */}
               <div style={{
