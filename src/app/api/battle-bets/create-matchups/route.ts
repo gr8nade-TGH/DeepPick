@@ -3,20 +3,22 @@ import { getSupabaseAdmin } from '@/lib/supabase/server'
 
 /**
  * POST /api/battle-bets/create-matchups
- * 
+ * GET /api/battle-bets/create-matchups (same as POST for easy browser testing)
+ *
  * Creates battle matchups between cappers with opposing SPREAD picks on the same game.
- * 
+ *
  * Logic:
  * 1. Find all scheduled NBA games with pending SPREAD picks
  * 2. For each game, group picks by team (home vs away)
  * 3. Create matchups: 1 home picker vs 1 away picker
  * 4. Avoid duplicate matchups (same 2 cappers on same game)
- * 
+ *
  * Called by:
  * - Cron job (after picks are generated)
  * - Manual trigger (for testing)
  */
-export async function POST(request: NextRequest) {
+
+async function createMatchups() {
   try {
     console.log('[Battle Matchmaking] Starting matchup creation...')
 
@@ -168,3 +170,12 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// Export POST handler
+export async function POST(request: NextRequest) {
+  return createMatchups()
+}
+
+// Export GET handler (for easy browser testing)
+export async function GET() {
+  return createMatchups()
+}
