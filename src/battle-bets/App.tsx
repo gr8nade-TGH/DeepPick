@@ -323,8 +323,12 @@ function App() {
               {/* Battle Canvas - PixiJS Game with Countdown Timers */}
               <div style={{
                 width: '100%',
-                height: '400px',
-                background: '#0a0e1a'
+                minHeight: '500px',
+                background: '#0a0e1a',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                overflow: 'auto'
               }}>
                 <BattleCanvas
                   battleId={game.id}

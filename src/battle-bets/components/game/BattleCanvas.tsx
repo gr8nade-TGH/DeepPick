@@ -253,11 +253,11 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
   }
 
   return (
-    <div className="relative w-full h-full">
+    <div className="relative">
       {/* PixiJS Canvas with integrated overlays */}
       <div
         ref={canvasRef}
-        className="flex justify-center items-center w-full h-full"
+        className="flex justify-center items-center"
       />
     </div>
   )
