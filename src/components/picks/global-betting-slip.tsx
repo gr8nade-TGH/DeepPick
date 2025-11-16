@@ -351,11 +351,11 @@ export function GlobalBettingSlip({ capperId, isCapper }: GlobalBettingSlipProps
                 {/* Battle Grid Button */}
                 <div className="p-4 border-b border-slate-700">
                   <Button
-                    onClick={() => router.push('/battle-grid')}
+                    onClick={() => router.push(`/battle-grid/${capperId}`)}
                     className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold gap-2"
                   >
                     <Grid3x3 className="w-4 h-4" />
-                    BATTLE GRID
+                    MY BATTLE GRID
                   </Button>
                 </div>
 

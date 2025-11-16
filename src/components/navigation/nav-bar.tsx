@@ -18,6 +18,7 @@ import {
   Activity,
   Shield,
   Users,
+  Swords,
   Flame
 } from 'lucide-react'
 
@@ -265,6 +266,18 @@ export function NavBar() {
               >
                 <Map className="w-5 h-5" />
                 <span>Battle Map</span>
+              </Link>
+
+              {/* Battle Grid */}
+              <Link
+                href="/battle-grid"
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all ${isActive('/battle-grid')
+                  ? 'bg-purple-500/20 text-purple-400'
+                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  }`}
+              >
+                <Swords className="w-5 h-5" />
+                <span>Battle Grid</span>
               </Link>
 
               {/* Make Picks - CAPPER+ only */}
