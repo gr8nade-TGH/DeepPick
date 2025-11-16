@@ -162,6 +162,14 @@ export function RecentPicks({ capperId, limit = 10 }: RecentPicksProps) {
             const game = pick.games || pick.game_snapshot
             const countdown = getCountdown(game?.game_start_timestamp)
 
+            // Extract team names/abbreviations (handle both string and object formats)
+            const awayTeam = typeof game?.away_team === 'string'
+              ? game.away_team
+              : game?.away_team?.abbreviation || game?.away_team?.name || 'TBD'
+            const homeTeam = typeof game?.home_team === 'string'
+              ? game.home_team
+              : game?.home_team?.abbreviation || game?.home_team?.name || 'TBD'
+
             return (
               <div
                 key={pick.id}
@@ -171,7 +179,7 @@ export function RecentPicks({ capperId, limit = 10 }: RecentPicksProps) {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-white font-medium">
-                        {game?.away_team} @ {game?.home_team}
+                        {awayTeam} @ {homeTeam}
                       </span>
                       {countdown && (
                         <span className="text-cyan-400 text-xs flex items-center gap-1">
