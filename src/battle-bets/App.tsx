@@ -65,16 +65,31 @@ function App() {
   const [totalBattles, setTotalBattles] = useState(0);
   const battlesPerPage = 4;
 
+  // Check URL parameters for specific battle ID
+  const urlParams = new URLSearchParams(window.location.search);
+  const battleIdParam = urlParams.get('battleId');
+  const showAllBattles = !battleIdParam; // If no battleId, show all battles
+
   // Fetch battles from API
   const fetchBattles = async () => {
     try {
-      const response = await fetch(`/api/battle-bets?limit=${battlesPerPage}&offset=${(page - 1) * battlesPerPage}&status=active`);
+      // If battleId is specified, fetch only that battle
+      const url = battleIdParam
+        ? `/api/battle-bets/${battleIdParam}`
+        : `/api/battle-bets?limit=${battlesPerPage}&offset=${(page - 1) * battlesPerPage}&status=active`;
+
+      const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch battles');
 
       const data = await response.json();
 
+      // Handle single battle vs multiple battles response
+      const battlesArray = battleIdParam
+        ? (data.battle ? [data.battle] : []) // Single battle endpoint returns { battle: {...} }
+        : (data.battles || []); // Multiple battles endpoint returns { battles: [...] }
+
       // Convert API battles to Game format with full data
-      const games: Game[] = data.battles.map((battle: ApiBattle) => ({
+      const games: Game[] = battlesArray.map((battle: ApiBattle) => ({
         id: battle.id,
         leftTeam: {
           id: battle.left_team.toLowerCase(),
@@ -257,13 +272,21 @@ function App() {
         color: 'white'
       }}>
         <h1 style={{ fontSize: '36px', marginBottom: '10px' }}>⚔️ Battle Arena</h1>
-        <p style={{ fontSize: '14px', color: '#94a3b8' }}>
-          {totalBattles} Active Battle{totalBattles !== 1 ? 's' : ''} • Page {page} of {totalPages}
-        </p>
-        <p style={{ fontSize: '12px', color: '#64748b', marginTop: '5px' }}>
-          Battles update automatically every 30 seconds<br />
-          Quarter stats sync every 10 minutes via MySportsFeeds
-        </p>
+        {showAllBattles ? (
+          <>
+            <p style={{ fontSize: '14px', color: '#94a3b8' }}>
+              {totalBattles} Active Battle{totalBattles !== 1 ? 's' : ''} • Page {page} of {totalPages}
+            </p>
+            <p style={{ fontSize: '12px', color: '#64748b', marginTop: '5px' }}>
+              Battles update automatically every 30 seconds<br />
+              Quarter stats sync every 10 minutes via MySportsFeeds
+            </p>
+          </>
+        ) : (
+          <p style={{ fontSize: '14px', color: '#94a3b8' }}>
+            Live Battle • Updates every 30 seconds
+          </p>
+        )}
       </header>
 
       <main style={{ maxWidth: '1400px', margin: '0 auto' }}>
@@ -320,8 +343,8 @@ function App() {
           ))}
         </div>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
+        {/* Pagination - Only show when viewing all battles */}
+        {showAllBattles && totalPages > 1 && (
           <div style={{
             display: 'flex',
             justifyContent: 'center',
