@@ -15,7 +15,9 @@
     "db:migrate": "supabase db push",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "build:battle-game": "vite build --config vite.battle-bets.config.ts",
+    "dev:battle-game": "vite --config vite.battle-bets.config.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.2",
@@ -70,6 +72,7 @@
     "@types/react-dom": "^18.2.15",
     "@typescript-eslint/eslint-plugin": "^6.10.0",
     "@typescript-eslint/parser": "^6.10.0",
+    "@vitejs/plugin-react": "^5.1.1",
     "autoprefixer": "^10.4.16",
     "eslint": "^8.53.0",
     "eslint-config-next": "^14.2.33",
@@ -81,7 +84,8 @@
     "prettier": "^3.0.3",
     "supabase": "^1.123.4",
     "tailwindcss": "^3.3.5",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "vite": "^7.2.2"
   },
   "engines": {
     "node": ">=18.0.0"

@@ -4,7 +4,7 @@
  */
 
 import * as PIXI from 'pixi.js'
-import type { BattleStatus } from '@/lib/battle-bets/BattleTimer'
+import type { BattleStatus } from '../../lib/BattleTimer'
 
 interface OverlayConfig {
   status: BattleStatus

@@ -14,7 +14,7 @@ import { detectWebGLSupport } from '../../utils/webglDetection'
 import { castleManager } from '../../game/managers/CastleManager'
 import { gridManager } from '../../game/managers/GridManager'
 import type { Game } from '../../types/game'
-import type { BattleStatus } from '@/lib/battle-bets/BattleTimer'
+import type { BattleStatus } from '../../lib/BattleTimer'
 
 interface BattleCanvasProps {
   battleId: string
