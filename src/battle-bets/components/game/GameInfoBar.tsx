@@ -1,5 +1,5 @@
 /**
- * Compact Game Info Bar - Top bar showing game details
+ * Compact Game Info Bar - Bottom bar showing game details
  * Designed for multi-game stacking view
  */
 

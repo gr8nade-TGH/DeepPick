@@ -7,7 +7,6 @@ import { useEffect, useState } from 'react';
 import { useMultiGameStore } from './store/multiGameStore';
 import { GameErrorBoundary } from './components/ErrorBoundary';
 import { BattleCanvas } from './components/game/BattleCanvas';
-import { GameInfoBar } from './components/game/GameInfoBar';
 import type { Game } from './types/game';
 import './App.css';
 
@@ -77,7 +76,7 @@ function App() {
       // If battleId is specified, fetch only that battle
       const url = battleIdParam
         ? `/api/battle-bets/${battleIdParam}`
-        : `/api/battle-bets/active?page=${page}&limit=${battlesPerPage}`;
+        : `/api/battle-bets?limit=${battlesPerPage}&offset=${(page - 1) * battlesPerPage}&status=active`;
 
       const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch battles');
@@ -304,18 +303,28 @@ function App() {
                 boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)'
               }}
             >
-              {/* Game Info Bar - Top bar with capper info, stats, and spread */}
-              <GameInfoBar game={game} />
+              {/* Battle Info Header */}
+              <div style={{
+                padding: '15px 20px',
+                background: 'rgba(139, 92, 246, 0.1)',
+                borderBottom: '1px solid rgba(139, 92, 246, 0.2)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <div style={{ color: 'white', fontSize: '16px', fontWeight: 'bold' }}>
+                  {game.leftCapper.name} vs {game.rightCapper.name}
+                </div>
+                <div style={{ color: '#94a3b8', fontSize: '14px' }}>
+                  {game.leftTeam.abbreviation} vs {game.rightTeam.abbreviation} • Spread: {game.spread > 0 ? '+' : ''}{game.spread}
+                </div>
+              </div>
 
               {/* Battle Canvas - PixiJS Game with Countdown Timers */}
               <div style={{
                 width: '100%',
-                minHeight: '500px',
-                background: '#0a0e1a',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                overflow: 'auto'
+                height: '400px',
+                background: '#0a0e1a'
               }}>
                 <BattleCanvas
                   battleId={game.id}
