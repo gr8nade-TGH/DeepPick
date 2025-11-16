@@ -26,17 +26,15 @@ export function BattleCard({ battle }: BattleCardProps) {
         id: battle.left_team.toLowerCase(),
         name: battle.game?.home_team?.name || battle.left_team,
         abbreviation: battle.left_team,
-        primaryColor: battle.left_capper?.colorTheme || '#3b82f6',
-        secondaryColor: '#1e40af',
-        logo: `/team-logos/${battle.left_team}.png`
+        color: parseInt((battle.left_capper?.colorTheme || '#3b82f6').replace('#', ''), 16),
+        colorHex: battle.left_capper?.colorTheme || '#3b82f6'
       },
       rightTeam: {
         id: battle.right_team.toLowerCase(),
         name: battle.game?.away_team?.name || battle.right_team,
         abbreviation: battle.right_team,
-        primaryColor: battle.right_capper?.colorTheme || '#ef4444',
-        secondaryColor: '#991b1b',
-        logo: `/team-logos/${battle.right_team}.png`
+        color: parseInt((battle.right_capper?.colorTheme || '#ef4444').replace('#', ''), 16),
+        colorHex: battle.right_capper?.colorTheme || '#ef4444'
       },
       leftCapper: {
         id: battle.left_capper_id,
@@ -45,9 +43,8 @@ export function BattleCard({ battle }: BattleCardProps) {
           id: battle.left_team.toLowerCase(),
           name: battle.game?.home_team?.name || battle.left_team,
           abbreviation: battle.left_team,
-          primaryColor: battle.left_capper?.colorTheme || '#3b82f6',
-          secondaryColor: '#1e40af',
-          logo: `/team-logos/${battle.left_team}.png`
+          color: parseInt((battle.left_capper?.colorTheme || '#3b82f6').replace('#', ''), 16),
+          colorHex: battle.left_capper?.colorTheme || '#3b82f6'
         },
         health: battle.left_hp || 100,
         maxHealth: 100,
@@ -76,9 +73,8 @@ export function BattleCard({ battle }: BattleCardProps) {
           id: battle.right_team.toLowerCase(),
           name: battle.game?.away_team?.name || battle.right_team,
           abbreviation: battle.right_team,
-          primaryColor: battle.right_capper?.colorTheme || '#ef4444',
-          secondaryColor: '#991b1b',
-          logo: `/team-logos/${battle.right_team}.png`
+          color: parseInt((battle.right_capper?.colorTheme || '#ef4444').replace('#', ''), 16),
+          colorHex: battle.right_capper?.colorTheme || '#ef4444'
         },
         health: battle.right_hp || 100,
         maxHealth: 100,
