@@ -16,6 +16,8 @@ interface InventoryItem {
   shieldActivationThreshold?: number;
 }
 
+type ItemSlot = 'slot1' | 'slot2' | 'slot3';
+
 interface EquippedItems {
   slot1: InventoryItem | null;
   slot2: InventoryItem | null;
@@ -99,11 +101,15 @@ export class Castle {
   private equippedItems: EquippedItems = { slot1: BLUE_ORB_SHIELD, slot2: FIRE_ORB, slot3: null };
   private shieldState: ShieldState | null = null;
   private shieldVisual: PIXI.Container | null = null;
+  private itemSlot1: PIXI.Container | null = null;
+  private itemSlot2: PIXI.Container | null = null;
+  private itemSlot3: PIXI.Container | null = null;
+  private onItemSlotClick: ((slotNumber: number) => void) | null = null;
 
   // Blood effects
   private bloodOverlay: PIXI.Graphics | null = null;
   private bloodSplatters: PIXI.Graphics[] = [];
-  
+
   // Damage state configuration
   private damageStates: DamageState[] = [
     { hpThreshold: 1.0, opacity: 1.0, tint: 0xFFFFFF, shake: false, particles: false },      // 100% HP - Perfect
@@ -392,7 +398,7 @@ export class Castle {
       if (equippedItem) {
         // Create item visual based on item ID
         if (equippedItem.id === 'blue-orb-shield') {
-          const orbContainer = this.createBlueOrbShield(slotSize);
+          const orbContainer = this.createBlueOrbShieldIcon(slotSize);
           slot.addChild(orbContainer);
         } else if (equippedItem.id === 'fire-orb') {
           const fireOrbContainer = this.createFireOrb(slotSize);
@@ -420,7 +426,7 @@ export class Castle {
    * Create a professional Blue Orb Shield with white shield icon inside
    * Ring design with shield in center - medieval fantasy style
    */
-  private createBlueOrbShield(slotSize: number): PIXI.Container {
+  private createBlueOrbShieldIcon(slotSize: number): PIXI.Container {
     const container = new PIXI.Container();
     container.position.set(slotSize / 2, slotSize / 2);
 
@@ -833,17 +839,17 @@ export class Castle {
    */
   private applyShake(): void {
     if (!this.sprite) return;
-    
+
     const shakeIntensity = 3;
     const shakeDuration = 200;
     const originalX = this.sprite.x;
     const originalY = this.sprite.y;
-    
+
     const startTime = Date.now();
-    
+
     const shake = () => {
       const elapsed = Date.now() - startTime;
-      
+
       if (elapsed < shakeDuration && this.sprite) {
         this.sprite.x = originalX + (Math.random() - 0.5) * shakeIntensity;
         this.sprite.y = originalY + (Math.random() - 0.5) * shakeIntensity;
@@ -853,7 +859,7 @@ export class Castle {
         this.sprite.y = originalY;
       }
     };
-    
+
     shake();
   }
 
@@ -862,7 +868,7 @@ export class Castle {
    */
   private destroy(): void {
     this.isDestroyed = true;
-    
+
     if (this.sprite) {
       // Fade out animation
       const fadeOut = () => {
@@ -873,7 +879,7 @@ export class Castle {
       };
       fadeOut();
     }
-    
+
     console.log(`💥 Castle ${this.id} destroyed!`);
   }
 
@@ -885,7 +891,7 @@ export class Castle {
       this.sprite.destroy();
       this.sprite = null;
     }
-    
+
     if (this.container) {
       this.container.destroy({ children: true });
     }
@@ -894,7 +900,7 @@ export class Castle {
   /**
    * Get castle bounds for collision detection
    */
-  public getBounds(): PIXI.Rectangle | null {
+  public getBounds(): PIXI.Bounds | null {
     return this.sprite?.getBounds() || null;
   }
 

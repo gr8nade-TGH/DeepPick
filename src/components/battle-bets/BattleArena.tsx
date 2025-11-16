@@ -157,8 +157,8 @@ export function BattleArena({ initialPage = 1 }: BattleArenaProps) {
         </div>
       </div>
 
-      {/* Battle Grid (2x2) */}
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Battle Grid (Vertical Stack - 4 battles) */}
+      <div className="max-w-7xl mx-auto flex flex-col gap-6">
         {battles.map((battle) => (
           <BattleCard key={battle.id} battle={battle} />
         ))}
