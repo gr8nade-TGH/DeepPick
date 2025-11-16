@@ -12,14 +12,36 @@ import { screenShake } from '../../game/effects/ScreenShake'
 import { detectWebGLSupport } from '../../utils/webglDetection'
 import { castleManager } from '../../game/managers/CastleManager'
 import { gridManager } from '../../game/managers/GridManager'
+import { GameStatusOverlay } from '@/components/battle-bets/GameStatusOverlay'
 import type { Game } from '../../types/game'
+import type { BattleStatus } from '@/lib/battle-bets/BattleTimer'
 
 interface BattleCanvasProps {
   battleId: string
   game: Game
+  // Battle timing data
+  status?: BattleStatus
+  gameStartTime?: string
+  q1EndTime?: string
+  q2EndTime?: string
+  halftimeEndTime?: string
+  q3EndTime?: string
+  q4EndTime?: string
+  winner?: 'left' | 'right' | null
 }
 
-export const BattleCanvas: React.FC<BattleCanvasProps> = ({ battleId, game }) => {
+export const BattleCanvas: React.FC<BattleCanvasProps> = ({
+  battleId,
+  game,
+  status = 'scheduled',
+  gameStartTime,
+  q1EndTime,
+  q2EndTime,
+  halftimeEndTime,
+  q3EndTime,
+  q4EndTime,
+  winner = null
+}) => {
   const canvasRef = useRef<HTMLDivElement>(null)
   const appRef = useRef<PIXI.Application | null>(null)
   const containerRef = useRef<PIXI.Container | null>(null)
@@ -190,10 +212,29 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({ battleId, game }) =>
   }
 
   return (
-    <div
-      ref={canvasRef}
-      className="flex justify-center items-center w-full h-full"
-    />
+    <div className="relative w-full h-full">
+      {/* PixiJS Canvas */}
+      <div
+        ref={canvasRef}
+        className="flex justify-center items-center w-full h-full"
+      />
+
+      {/* Game Status Overlay (countdown timers, quarter info) */}
+      {status !== 'complete' && (
+        <GameStatusOverlay
+          status={status}
+          gameStartTime={gameStartTime}
+          q1EndTime={q1EndTime}
+          q2EndTime={q2EndTime}
+          halftimeEndTime={halftimeEndTime}
+          q3EndTime={q3EndTime}
+          q4EndTime={q4EndTime}
+          winner={winner}
+          leftCapperName={game.leftCapper.name}
+          rightCapperName={game.rightCapper.name}
+        />
+      )}
+    </div>
   )
 }
 

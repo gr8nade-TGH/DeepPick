@@ -98,7 +98,18 @@ export function BattleCard({ battle }: BattleCardProps) {
     <div className="bg-slate-900/90 border-2 border-purple-500/30 rounded-lg overflow-hidden">
       {/* Game Canvas */}
       <div className="w-full h-[300px]">
-        <BattleCanvas battleId={battle.id} game={game} />
+        <BattleCanvas
+          battleId={battle.id}
+          game={game}
+          status={battle.status}
+          gameStartTime={battle.game_start_time}
+          q1EndTime={battle.q1_end_time}
+          q2EndTime={battle.q2_end_time}
+          halftimeEndTime={battle.halftime_end_time}
+          q3EndTime={battle.q3_end_time}
+          q4EndTime={battle.q4_end_time}
+          winner={battle.winner}
+        />
       </div>
     </div>
   )
