@@ -291,72 +291,53 @@ export function ProfessionalDashboard() {
 
   const fetchTopCappers = async () => {
     try {
-      // Fetch all cappers from user_cappers table
-      const cappersResponse = await fetch('/api/user-cappers')
-      const cappersData = await cappersResponse.json()
+      // Use the leaderboard API which includes ALL cappers (system + user)
+      const leaderboardResponse = await fetch('/api/leaderboard?period=all')
+      const leaderboardData = await leaderboardResponse.json()
 
-      console.log('[Dashboard] Fetched cappers:', cappersData)
+      console.log('[Dashboard] Fetched cappers from leaderboard:', leaderboardData)
 
-      if (!cappersData.success || !cappersData.cappers || cappersData.cappers.length === 0) {
+      if (!leaderboardData.success || !leaderboardData.data || leaderboardData.data.length === 0) {
         console.error('[Dashboard] Failed to fetch cappers or no cappers found')
         setTopCappers([]) // Clear any existing data
         return
       }
 
-      // Fetch performance for each capper
-      const capperPerformance = await Promise.all(
-        cappersData.cappers.map(async (capper: any) => {
-          const perfResponse = await fetch(`/api/performance?period=all_time&capper=${capper.capper_id}`)
-          const perfData = await perfResponse.json()
+      // Map capper IDs to avatars
+      const avatarMap: Record<string, string> = {
+        'shiva': '🔱',
+        'ifrit': '🔥',
+        'oracle': '🔮',
+        'sentinel': '🛡️',
+        'nexus': '🔷',
+        'blitz': '⚡',
+        'titan': '🏔️',
+        'thief': '🎭',
+        'cerberus': '🐺',
+        'deeppick': '🎯',
+        'gr8nade': '💎'
+      }
 
-          console.log(`[Dashboard] Performance for ${capper.capper_id}:`, perfData)
+      // Convert leaderboard data to Capper format
+      const cappers: Capper[] = leaderboardData.data.map((entry: any) => ({
+        id: entry.id,
+        name: entry.name,
+        avatar: avatarMap[entry.id.toLowerCase()] || (entry.type === 'user' ? '👤' : '🤖'),
+        rank: entry.rank,
+        roi: entry.roi || 0,
+        win_rate: entry.winRate || 0,
+        total_units: entry.netUnits || 0,
+        streak: 0, // TODO: Calculate streak
+        total_picks: entry.totalPicks || 0,
+        badge: entry.roi > 20 ? 'diamond' : entry.roi > 10 ? 'platinum' : entry.roi > 5 ? 'gold' : entry.roi > 0 ? 'silver' : 'bronze',
+        is_hot: entry.roi > 0
+      }))
 
-          if (perfData.success && perfData.data) {
-            const metrics = perfData.data.metrics
-
-            // Map capper IDs to avatars
-            const avatarMap: Record<string, string> = {
-              'shiva': '🔱',
-              'ifrit': '🔥',
-              'sentinel': '🛡️',
-              'nexus': '🔷',
-              'blitz': '⚡',
-              'titan': '🏔️',
-              'thief': '🎭'
-            }
-
-            return {
-              id: capper.capper_id,
-              name: capper.capper_id.toUpperCase(),
-              avatar: avatarMap[capper.capper_id.toLowerCase()] || '🎯',
-              rank: 0, // Will be set after sorting
-              roi: metrics.roi || 0,
-              win_rate: metrics.win_rate || 0,
-              total_units: metrics.net_units || 0,
-              streak: 0, // TODO: Calculate streak
-              total_picks: metrics.total_picks || 0,
-              badge: metrics.roi > 20 ? 'diamond' : metrics.roi > 10 ? 'platinum' : 'gold',
-              is_hot: metrics.roi > 0
-            }
-          }
-          return null
-        })
-      )
-
-      // Filter out nulls and sort by ROI
-      const validCappers = capperPerformance.filter(c => c !== null) as Capper[]
-      validCappers.sort((a, b) => b.roi - a.roi)
-
-      // Assign ranks
-      validCappers.forEach((capper, index) => {
-        capper.rank = index + 1
-      })
-
-      console.log('[Dashboard] Final top cappers:', validCappers)
-      setTopCappers(validCappers)
+      console.log('[Dashboard] Final top cappers:', cappers)
+      setTopCappers(cappers)
 
       // Sort picks by capper performance + confidence
-      sortPicksByQuality(validCappers)
+      sortPicksByQuality(cappers)
     } catch (error) {
       console.error('[Dashboard] Error fetching top cappers:', error)
       setTopCappers([]) // Clear on error
