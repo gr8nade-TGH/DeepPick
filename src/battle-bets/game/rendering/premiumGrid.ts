@@ -215,14 +215,14 @@ function drawPremiumBattlefield(
 
   // Center line with glow effect
   const centerX = x + (width / 2);
-  
+
   // Glow layer (wider, more transparent)
   const centerGlow = new PIXI.Graphics();
   centerGlow.moveTo(centerX, y);
   centerGlow.lineTo(centerX, y + height);
   centerGlow.stroke({ width: 8, color: 0x30363d, alpha: 0.4 });
   container.addChild(centerGlow);
-  
+
   // Main line (sharp and crisp)
   const centerLine = new PIXI.Graphics();
   centerLine.moveTo(centerX, y);
@@ -443,7 +443,7 @@ function createFireRing(container: PIXI.Container): void {
  */
 function drawPremiumStatLabels(
   container: PIXI.Container,
-  stat: { name: string; value: number; color: number; glowColor: number },
+  stat: { name: string; id: string; value: number; color: number; glowColor: number },
   y: number,
   leftStatLabelStart: number,
   statLabelWidth: number,
