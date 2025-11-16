@@ -76,7 +76,7 @@ function App() {
       // If battleId is specified, fetch only that battle
       const url = battleIdParam
         ? `/api/battle-bets/${battleIdParam}`
-        : `/api/battle-bets?limit=${battlesPerPage}&offset=${(page - 1) * battlesPerPage}&status=active`;
+        : `/api/battle-bets/active?page=${page}&limit=${battlesPerPage}`;
 
       const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch battles');
