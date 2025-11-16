@@ -162,8 +162,7 @@ export class Castle {
       this.createLevelBadge();
 
       // 4. Create equipped item indicator (Blue Orb Shield)
-      // DISABLED: Item slots are now rendered by premiumGrid.ts to avoid duplication
-      // this.createEquippedItemIndicator();
+      this.createEquippedItemIndicator();
 
       // Apply initial damage state
       this.updateDamageState();
