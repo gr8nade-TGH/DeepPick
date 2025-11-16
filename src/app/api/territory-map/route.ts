@@ -46,26 +46,32 @@ export async function GET() {
 
 
 
-    // Fetch user profiles for user cappers
-    const { data: profiles, error: profilesError } = await admin
-      .from('profiles')
-      .select('id, full_name, username, role, avatar_url')
-      .in('role', ['capper', 'admin'])
+    // Fetch user cappers from user_cappers table
+    const { data: userCappers, error: userCappersError } = await admin
+      .from('user_cappers')
+      .select('capper_id, display_name, avatar_url')
 
-    if (profilesError) {
-      console.error('[Territory Map] Error fetching profiles:', profilesError)
+    if (userCappersError) {
+      console.error('[Territory Map] Error fetching user cappers:', userCappersError)
     }
 
-    const profileMap = new Map(profiles?.map(p => [p.id, p]) || [])
+    const userCapperMap = new Map(userCappers?.map(c => [c.capper_id.toLowerCase(), c]) || [])
 
-    // System cappers
+    // System cappers (complete list)
     const SYSTEM_CAPPERS = [
       { id: 'shiva', name: 'SHIVA' },
       { id: 'ifrit', name: 'IFRIT' },
+      { id: 'oracle', name: 'ORACLE' },
+      { id: 'sentinel', name: 'SENTINEL' },
       { id: 'nexus', name: 'NEXUS' },
+      { id: 'blitz', name: 'BLITZ' },
+      { id: 'titan', name: 'TITAN' },
+      { id: 'thief', name: 'THIEF' },
       { id: 'cerberus', name: 'CERBERUS' },
       { id: 'deeppick', name: 'DeepPick' },
     ]
+
+    const systemCapperMap = new Map(SYSTEM_CAPPERS.map(c => [c.id, c.name]))
 
     // For each team, calculate leaderboard and find the king
     const territories: TerritoryData[] = []
@@ -139,23 +145,19 @@ export async function GET() {
 
       // Process picks for this team
       teamPicks.forEach(pick => {
-        let capperId: string
+        const capperId = pick.capper.toLowerCase()
+
+        // Determine if system or user capper
+        const isSystemCapper = systemCapperMap.has(capperId)
+        const capperType: 'system' | 'user' = isSystemCapper ? 'system' : 'user'
+
+        // Get capper name
         let capperName: string
-        let capperType: 'system' | 'user'
-        let profile: any = null
-
-        if (pick.is_system_pick) {
-          capperId = pick.capper
-          capperName = SYSTEM_CAPPERS.find(c => c.id === capperId)?.name || capperId.toUpperCase()
-          capperType = 'system'
+        if (isSystemCapper) {
+          capperName = systemCapperMap.get(capperId)!
         } else {
-          if (!pick.user_id) return
-          profile = profileMap.get(pick.user_id)
-          if (!profile) return
-
-          capperId = pick.user_id
-          capperName = profile.username || profile.full_name || 'Unknown User'
-          capperType = 'user'
+          const userCapper = userCapperMap.get(capperId)
+          capperName = userCapper?.display_name || capperId.toUpperCase()
         }
 
         if (!capperStats.has(capperId)) {
