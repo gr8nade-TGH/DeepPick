@@ -128,22 +128,7 @@ export async function GET() {
         unitsBet: number
       }>()
 
-      // Initialize system cappers
-      SYSTEM_CAPPERS.forEach(capper => {
-        capperStats.set(capper.id, {
-          id: capper.id,
-          name: capper.name,
-          type: 'system',
-          wins: 0,
-          losses: 0,
-          pushes: 0,
-          totalPicks: 0,
-          netUnits: 0,
-          unitsBet: 0
-        })
-      })
-
-      // Process picks for this team
+      // Process picks for this team (no pre-initialization - only add cappers with actual picks)
       teamPicks.forEach(pick => {
         const capperId = pick.capper.toLowerCase()
 
@@ -238,8 +223,8 @@ export async function GET() {
           const isForThisTeam = homeTeam === teamAbbr || awayTeam === teamAbbr
           if (!isForThisTeam) return
 
-          // Store pick info by capper ID
-          const capperId = pick.is_system_pick ? pick.capper : pick.user_id
+          // Store pick info by capper ID (use pick.capper field)
+          const capperId = pick.capper.toLowerCase()
           if (capperId) {
             cappersWithPicks.set(capperId, {
               pickId: pick.id,
