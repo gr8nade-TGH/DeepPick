@@ -21,12 +21,12 @@ interface BattleCanvasProps {
   game: Game
   // Battle timing data
   status?: BattleStatus
-  gameStartTime?: string
-  q1EndTime?: string
-  q2EndTime?: string
-  halftimeEndTime?: string
-  q3EndTime?: string
-  q4EndTime?: string
+  gameStartTime?: string | null
+  q1EndTime?: string | null
+  q2EndTime?: string | null
+  halftimeEndTime?: string | null
+  q3EndTime?: string | null
+  q4EndTime?: string | null
   winner?: 'left' | 'right' | null
 }
 
@@ -212,12 +212,12 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
     // Update overlay immediately
     updateBattleStatusOverlay(container, {
       status,
-      gameStartTime,
-      q1EndTime,
-      q2EndTime,
-      halftimeEndTime,
-      q3EndTime,
-      q4EndTime,
+      gameStartTime: gameStartTime ?? null,
+      q1EndTime: q1EndTime ?? null,
+      q2EndTime: q2EndTime ?? null,
+      halftimeEndTime: halftimeEndTime ?? null,
+      q3EndTime: q3EndTime ?? null,
+      q4EndTime: q4EndTime ?? null,
       winner,
       canvasWidth,
       canvasHeight
@@ -227,12 +227,12 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
     const interval = setInterval(() => {
       updateBattleStatusOverlay(container, {
         status,
-        gameStartTime,
-        q1EndTime,
-        q2EndTime,
-        halftimeEndTime,
-        q3EndTime,
-        q4EndTime,
+        gameStartTime: gameStartTime ?? null,
+        q1EndTime: q1EndTime ?? null,
+        q2EndTime: q2EndTime ?? null,
+        halftimeEndTime: halftimeEndTime ?? null,
+        q3EndTime: q3EndTime ?? null,
+        q4EndTime: q4EndTime ?? null,
         winner,
         canvasWidth,
         canvasHeight
