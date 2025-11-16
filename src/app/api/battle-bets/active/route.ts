@@ -4,11 +4,12 @@ import { calculateTotalDefenseDots, distributeDefenseDots } from '@/lib/battle-b
 
 /**
  * Get active battle matchups with pagination
- * 
+ *
  * Query params:
  * - page: Page number (default: 1)
  * - limit: Items per page (default: 4, max: 10)
- * 
+ * - capperId: Filter battles for a specific capper (optional)
+ *
  * Returns:
  * - battles: Array of battle matchups with enriched capper data
  * - pagination: { page, limit, total, totalPages }
@@ -18,17 +19,25 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
     const limit = Math.min(parseInt(searchParams.get('limit') || '4'), 10)
+    const capperId = searchParams.get('capperId') // Optional filter
     const offset = (page - 1) * limit
 
-    console.log(`[Active Battles] Fetching page ${page} (limit: ${limit}, offset: ${offset})`)
+    console.log(`[Active Battles] Fetching page ${page} (limit: ${limit}, offset: ${offset}, capperId: ${capperId || 'all'})`)
 
     const supabase = getSupabaseAdmin()
 
-    // Get total count of active battles
-    const { count, error: countError } = await supabase
+    // Build query for counting battles
+    let countQuery = supabase
       .from('battle_matchups')
       .select('*', { count: 'exact', head: true })
       .neq('status', 'complete')
+
+    // Filter by capper if provided
+    if (capperId) {
+      countQuery = countQuery.or(`left_capper_id.eq.${capperId},right_capper_id.eq.${capperId}`)
+    }
+
+    const { count, error: countError } = await countQuery
 
     if (countError) {
       console.error('[Active Battles] Error counting battles:', countError)
@@ -43,13 +52,20 @@ export async function GET(request: NextRequest) {
 
     console.log(`[Active Battles] Total battles: ${totalBattles}, Total pages: ${totalPages}`)
 
-    // Get paginated battles
-    const { data: battles, error: battlesError } = await supabase
+    // Build query for fetching battles
+    let battlesQuery = supabase
       .from('battle_matchups')
       .select('*')
       .neq('status', 'complete')
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
+
+    // Filter by capper if provided
+    if (capperId) {
+      battlesQuery = battlesQuery.or(`left_capper_id.eq.${capperId},right_capper_id.eq.${capperId}`)
+    }
+
+    const { data: battles, error: battlesError } = await battlesQuery
 
     if (battlesError) {
       console.error('[Active Battles] Error fetching battles:', battlesError)
@@ -205,7 +221,7 @@ async function getCapperPerformance(
       name: capperId.toUpperCase(),
       displayName: profile?.display_name || capperId.toUpperCase(),
       colorTheme: profile?.color_theme || '#3b82f6',
-      
+
       // Team-specific performance
       teamPerformance: {
         team: teamAbbr,
@@ -230,7 +246,7 @@ async function getCapperPerformance(
     }
   } catch (error) {
     console.error(`[Active Battles] Error getting capper performance for ${capperId}:`, error)
-    
+
     // Return default data if error
     return {
       id: capperId,

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useAuth } from '@/contexts/auth-context'
 import { BattleCard } from './BattleCard'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
@@ -28,6 +29,7 @@ interface BattleArenaProps {
 }
 
 export function BattleArena({ initialPage = 1 }: BattleArenaProps) {
+  const { user } = useAuth()
   const [battles, setBattles] = useState<Battle[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -35,14 +37,21 @@ export function BattleArena({ initialPage = 1 }: BattleArenaProps) {
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
 
-  // Fetch active battles
+  // Fetch active battles for the current user
   useEffect(() => {
     async function fetchBattles() {
+      // Wait for user to be loaded
+      if (!user) {
+        setLoading(false)
+        return
+      }
+
       try {
         setLoading(true)
         setError(null)
 
-        const response = await fetch(`/api/battle-bets/active?page=${page}&limit=4`)
+        // Fetch battles where the user is a participant
+        const response = await fetch(`/api/battle-bets/active?page=${page}&limit=4&capperId=${user.id}`)
         const data = await response.json()
 
         if (!data.success) {
@@ -61,13 +70,15 @@ export function BattleArena({ initialPage = 1 }: BattleArenaProps) {
     }
 
     fetchBattles()
-  }, [page])
+  }, [page, user])
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
+    if (!user) return
+
     const interval = setInterval(() => {
       // Silently refresh without showing loading state
-      fetch(`/api/battle-bets/active?page=${page}&limit=4`)
+      fetch(`/api/battle-bets/active?page=${page}&limit=4&capperId=${user.id}`)
         .then(res => res.json())
         .then(data => {
           if (data.success) {
@@ -80,7 +91,7 @@ export function BattleArena({ initialPage = 1 }: BattleArenaProps) {
     }, 30000) // 30 seconds
 
     return () => clearInterval(interval)
-  }, [page])
+  }, [page, user])
 
   if (loading) {
     return (
@@ -126,9 +137,10 @@ export function BattleArena({ initialPage = 1 }: BattleArenaProps) {
       <div className="max-w-7xl mx-auto mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-bold text-white mb-2">⚔️ Battle Arena</h1>
+            <h1 className="text-4xl font-bold text-white mb-2">⚔️ My Battle Arena</h1>
             <p className="text-gray-300">
-              {total} Active {total === 1 ? 'Battle' : 'Battles'} • Page {page} of {totalPages}
+              {total === 0 ? 'No active battles' : `${total} Active ${total === 1 ? 'Battle' : 'Battles'}`}
+              {totalPages > 1 && ` • Page ${page} of ${totalPages}`}
             </p>
           </div>
 
