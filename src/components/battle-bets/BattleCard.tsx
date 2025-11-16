@@ -96,8 +96,8 @@ export function BattleCard({ battle }: BattleCardProps) {
 
   return (
     <div className="bg-slate-900/90 border-2 border-purple-500/30 rounded-lg overflow-hidden">
-      {/* Game Canvas */}
-      <div className="w-full h-[300px]">
+      {/* Game Canvas with integrated header (matches standalone game design) */}
+      <div className="w-full h-[400px]">
         <BattleCanvas
           battleId={battle.id}
           game={game}

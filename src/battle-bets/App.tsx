@@ -6,6 +6,7 @@
 import { useEffect, useState } from 'react';
 import { useMultiGameStore } from './store/multiGameStore';
 import { GameErrorBoundary } from './components/ErrorBoundary';
+import { BattleCanvas } from './components/game/BattleCanvas';
 import type { Game } from './types/game';
 import './App.css';
 
@@ -17,9 +18,18 @@ interface ApiBattle {
   right_capper_id: string;
   left_team: string;
   right_team: string;
+  left_hp?: number;
+  right_hp?: number;
   spread: number;
   status: string;
   created_at: string;
+  game_start_time?: string;
+  q1_end_time?: string;
+  q2_end_time?: string;
+  halftime_end_time?: string;
+  q3_end_time?: string;
+  q4_end_time?: string;
+  winner?: 'left' | 'right' | null;
   game?: {
     home_team?: { name: string; abbreviation: string };
     away_team?: { name: string; abbreviation: string };
@@ -28,10 +38,22 @@ interface ApiBattle {
   left_capper?: {
     display_name: string;
     colorTheme?: string;
+    teamPerformance?: {
+      netUnits: number;
+      wins: number;
+      losses: number;
+      pushes: number;
+    };
   };
   right_capper?: {
     display_name: string;
     colorTheme?: string;
+    teamPerformance?: {
+      netUnits: number;
+      wins: number;
+      losses: number;
+      pushes: number;
+    };
   };
 }
 
@@ -51,7 +73,7 @@ function App() {
 
       const data = await response.json();
 
-      // Convert API battles to Game format
+      // Convert API battles to Game format with full data
       const games: Game[] = data.battles.map((battle: ApiBattle) => ({
         id: battle.id,
         leftTeam: {
@@ -71,19 +93,81 @@ function App() {
         leftCapper: {
           id: battle.left_capper_id,
           name: battle.left_capper?.display_name || 'Unknown',
-          rank: 'KNIGHT',
-          level: 1
+          favoriteTeam: {
+            id: battle.left_team.toLowerCase(),
+            name: battle.game?.away_team?.name || battle.left_team,
+            abbreviation: battle.left_team,
+            color: parseInt((battle.left_capper?.colorTheme || '#3b82f6').replace('#', ''), 16),
+            colorHex: battle.left_capper?.colorTheme || '#3b82f6'
+          },
+          health: battle.left_hp || 100,
+          maxHealth: 100,
+          level: 1,
+          experience: 0,
+          leaderboardRank: 1,
+          teamRecords: [
+            {
+              teamId: battle.left_team.toLowerCase(),
+              units: battle.left_capper?.teamPerformance?.netUnits || 0,
+              wins: battle.left_capper?.teamPerformance?.wins || 0,
+              losses: battle.left_capper?.teamPerformance?.losses || 0,
+              pushes: battle.left_capper?.teamPerformance?.pushes || 0
+            }
+          ],
+          equippedItems: {
+            slot1: null,
+            slot2: null,
+            slot3: null
+          }
         },
         rightCapper: {
           id: battle.right_capper_id,
           name: battle.right_capper?.display_name || 'Unknown',
-          rank: 'KNIGHT',
-          level: 1
+          favoriteTeam: {
+            id: battle.right_team.toLowerCase(),
+            name: battle.game?.home_team?.name || battle.right_team,
+            abbreviation: battle.right_team,
+            color: parseInt((battle.right_capper?.colorTheme || '#ef4444').replace('#', ''), 16),
+            colorHex: battle.right_capper?.colorTheme || '#ef4444'
+          },
+          health: battle.right_hp || 100,
+          maxHealth: 100,
+          level: 1,
+          experience: 0,
+          leaderboardRank: 2,
+          teamRecords: [
+            {
+              teamId: battle.right_team.toLowerCase(),
+              units: battle.right_capper?.teamPerformance?.netUnits || 0,
+              wins: battle.right_capper?.teamPerformance?.wins || 0,
+              losses: battle.right_capper?.teamPerformance?.losses || 0,
+              pushes: battle.right_capper?.teamPerformance?.pushes || 0
+            }
+          ],
+          equippedItems: {
+            slot1: null,
+            slot2: null,
+            slot3: null
+          }
         },
+        currentQuarter: 0,
         spread: battle.spread,
-        status: battle.status as any,
+        gameDate: battle.game?.game_date || '',
+        gameTime: '',
         leftScore: 0,
-        rightScore: 0
+        rightScore: 0,
+        status: 'SCHEDULED',
+        // Store battle timing data for overlay
+        _battleData: {
+          status: battle.status,
+          gameStartTime: battle.game_start_time,
+          q1EndTime: battle.q1_end_time,
+          q2EndTime: battle.q2_end_time,
+          halftimeEndTime: battle.halftime_end_time,
+          q3EndTime: battle.q3_end_time,
+          q4EndTime: battle.q4_end_time,
+          winner: battle.winner
+        }
       }));
 
       setBattles(games);
@@ -213,18 +297,24 @@ function App() {
                 </div>
               </div>
 
-              {/* Battle Canvas - This will be the PixiJS game */}
+              {/* Battle Canvas - PixiJS Game with Countdown Timers */}
               <div style={{
                 width: '100%',
                 height: '400px',
-                background: '#0a0e1a',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                color: 'white',
-                fontSize: '18px'
+                background: '#0a0e1a'
               }}>
-                Battle Canvas for {game.id} - Coming Next
+                <BattleCanvas
+                  battleId={game.id}
+                  game={game}
+                  status={(game as any)._battleData?.status}
+                  gameStartTime={(game as any)._battleData?.gameStartTime}
+                  q1EndTime={(game as any)._battleData?.q1EndTime}
+                  q2EndTime={(game as any)._battleData?.q2EndTime}
+                  halftimeEndTime={(game as any)._battleData?.halftimeEndTime}
+                  q3EndTime={(game as any)._battleData?.q3EndTime}
+                  q4EndTime={(game as any)._battleData?.q4EndTime}
+                  winner={(game as any)._battleData?.winner}
+                />
               </div>
             </div>
           ))}
