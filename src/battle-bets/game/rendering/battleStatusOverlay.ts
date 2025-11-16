@@ -161,11 +161,8 @@ export function createBattleStatusOverlay(config: OverlayConfig): PIXI.Container
       showOverlay = true
       break
 
-    // Don't show overlay during active quarters
-    case 'q1_active':
-    case 'q2_active':
-    case 'q3_active':
-    case 'q4_active':
+    default:
+      // Don't show overlay for any other status
       showOverlay = false
       break
   }
