@@ -37,21 +37,15 @@ export function BattleArena({ initialPage = 1 }: BattleArenaProps) {
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
 
-  // Fetch active battles for the current user
+  // Fetch ALL active battles (not filtered by user)
   useEffect(() => {
     async function fetchBattles() {
-      // Wait for user to be loaded
-      if (!user) {
-        setLoading(false)
-        return
-      }
-
       try {
         setLoading(true)
         setError(null)
 
-        // Fetch battles where the user is a participant
-        const response = await fetch(`/api/battle-bets/active?page=${page}&limit=4&capperId=${user.id}`)
+        // Fetch ALL active battles (no capperId filter)
+        const response = await fetch(`/api/battle-bets/active?page=${page}&limit=4`)
         const data = await response.json()
 
         if (!data.success) {
@@ -70,15 +64,13 @@ export function BattleArena({ initialPage = 1 }: BattleArenaProps) {
     }
 
     fetchBattles()
-  }, [page, user])
+  }, [page])
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
-    if (!user) return
-
     const interval = setInterval(() => {
       // Silently refresh without showing loading state
-      fetch(`/api/battle-bets/active?page=${page}&limit=4&capperId=${user.id}`)
+      fetch(`/api/battle-bets/active?page=${page}&limit=4`)
         .then(res => res.json())
         .then(data => {
           if (data.success) {
@@ -91,7 +83,7 @@ export function BattleArena({ initialPage = 1 }: BattleArenaProps) {
     }, 30000) // 30 seconds
 
     return () => clearInterval(interval)
-  }, [page, user])
+  }, [page])
 
   if (loading) {
     return (
