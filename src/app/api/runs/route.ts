@@ -25,12 +25,12 @@ export async function GET(request: NextRequest) {
     const supabase = await getSupabase()
 
     // Fetch runs for the capper
+    // Note: runs table has 'capper' field in metadata JSONB, not a direct capper_id column
     const { data: runs, error } = await supabase
       .from('runs')
       .select('*')
-      .eq('capper_id', capperId)
       .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1)
+      .limit(limit * 2) // Fetch more to filter by metadata
 
     if (error) {
       console.error('[RunsAPI] Database error:', error)
@@ -40,10 +40,15 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Filter runs by capper (stored in metadata.capper)
+    const filteredRuns = (runs || [])
+      .filter((run: any) => run.metadata?.capper === capperId)
+      .slice(offset, offset + limit)
+
     return NextResponse.json({
       success: true,
-      runs: runs || [],
-      count: runs?.length || 0
+      runs: filteredRuns,
+      count: filteredRuns.length
     })
   } catch (error) {
     console.error('[RunsAPI] Error:', error)
