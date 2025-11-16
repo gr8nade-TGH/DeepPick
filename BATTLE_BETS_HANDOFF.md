@@ -8,18 +8,108 @@ The game is currently broken and missing critical visual elements and logic. We 
 
 ---
 
+## 📱 ABOUT DEEPPICK APP
+
+**DeepPick** is an AI-powered NBA sports betting platform that helps users make informed betting decisions using advanced AI models called "cappers."
+
+### What DeepPick Does:
+1. **Generates AI-Powered NBA Picks**: Uses MySportsFeeds API + OpenAI to analyze games and generate spread/total picks
+2. **Tracks Capper Performance**: Leaderboard system showing units won/lost, win-loss records
+3. **Visualizes Capper Competition**: Battle-bets game (what we're fixing) shows cappers competing in real-time
+4. **Provides Detailed Analysis**: Each pick includes AI-generated insights, factor breakdowns, confidence scores
+
+### The Three AI Cappers:
+- **SHIVA** (Rank #1): Primary AI capper, uses OpenAI for bold player predictions
+- **ORACLE** (Rank #2): Secondary capper with different analysis approach
+- **IFRIT** (Rank #3): Third capper for additional perspectives
+
+### How Picks Work:
+1. System fetches NBA games from MySportsFeeds API
+2. Gets sportsbook odds (spread, moneyline, totals)
+3. Calculates 5 base factors (F1-F5) + Edge vs Market factor
+4. Generates AI analysis using OpenAI
+5. Calculates Sharp Score (confidence metric)
+6. Stores pick in Supabase database
+7. If multiple cappers pick same game → creates battle matchup
+
+### Battle Matchups:
+When 2+ cappers pick the same game with opposing spreads, a "battle" is created. The battle-bets game visualizes this competition as a castle defense game where:
+- Each capper has a castle defending their pick
+- Defense strength based on capper's historical units for that team
+- Game syncs with live NBA stats during quarters
+- Winner determined by actual game outcome
+
+---
+
 ## 📁 PROJECT STRUCTURE
 
 ### Main Repository (WHERE YOU'LL BE WORKING)
 - **Path**: `C:\Users\Tucke\OneDrive\Desktop\DeepPick App`
 - **GitHub**: https://github.com/gr8nade-TGH/DeepPick.git
 - **Branch**: `main`
+- **Git User**: gr8nade-TGH (tucker.harris@gmail.com)
 - **Battle-Bets Code**: `src/battle-bets/` directory
 
 ### Original Working Source (REFERENCE ONLY - DO NOT EDIT)
 - **Path**: `C:\Users\Tucke\Documents\augment-projects\Optimize Projects\battle-bets-v3`
 - **Purpose**: This is the WORKING version - use it as the source of truth
 - **Important**: Copy files FROM here TO the DeepPick App, never the other way around
+
+### DeepPick App Architecture:
+```
+DeepPick App/
+├── src/
+│   ├── app/                          # Next.js 14 App Router
+│   │   ├── api/                      # Backend API routes
+│   │   │   ├── battle-bets/          # Battle game endpoints
+│   │   │   │   └── active/           # GET active battles
+│   │   │   ├── picks/                # Pick CRUD operations
+│   │   │   ├── games/                # NBA game data
+│   │   │   └── cappers/              # Capper management
+│   │   ├── picks/                    # Picks page (view all picks)
+│   │   ├── leaderboard/              # Capper leaderboard
+│   │   ├── battle-arena/             # Battle game page
+│   │   └── page.tsx                  # Home page
+│   ├── battle-bets/                  # ⚠️ BATTLE GAME (WHAT WE'RE FIXING)
+│   │   ├── App.tsx                   # Game entry point
+│   │   ├── main.tsx                  # Vite entry
+│   │   ├── components/               # React components
+│   │   │   ├── game/
+│   │   │   │   ├── BattleCanvas.tsx  # PixiJS wrapper
+│   │   │   │   ├── GameInfoBar.tsx   # Top info bar
+│   │   │   │   └── InventoryBar.tsx  # Side item slots
+│   │   ├── game/                     # PixiJS game engine
+│   │   │   ├── entities/             # Game objects (Castle, DefenseDot, Projectile)
+│   │   │   ├── rendering/            # Visual rendering (grid, overlays)
+│   │   │   ├── managers/             # System managers (Grid, Castle, Collision)
+│   │   │   ├── simulation/           # Game logic (quarters, battles)
+│   │   │   └── utils/                # Helper functions
+│   │   ├── store/                    # Zustand state management
+│   │   │   └── multiGameStore.ts     # Multi-battle state
+│   │   └── types/                    # TypeScript interfaces
+│   │       └── game.ts               # Game, Capper, Team types
+│   ├── components/                   # Shared React components
+│   ├── lib/                          # Utilities
+│   │   ├── supabase/                 # Supabase client
+│   │   └── mysportsfeeds/            # MySportsFeeds API client
+│   └── types/                        # Shared TypeScript types
+├── public/
+│   ├── battle-bets-game/             # Built battle game (Vite output)
+│   │   ├── index.html
+│   │   └── assets/                   # Bundled JS/CSS
+│   └── assets/
+│       └── castles/                  # Castle sprite images
+├── vite.battle-bets.config.ts        # Vite config for battle game
+├── next.config.js                    # Next.js config
+└── package.json
+```
+
+### Key Supabase Tables:
+- `cappers` - AI capper profiles (id, name, display_name, leaderboard_rank)
+- `picks` - All generated picks (capper_id, game_id, pick_type, spread, confidence, outcome)
+- `games` - NBA game data (teams, scores, status, game_date)
+- `battle_matchups` - Battle instances (left_capper_id, right_capper_id, game_id, status)
+- `factors` - Configurable factors for pick generation (name, data_source, weight)
 
 ---
 
