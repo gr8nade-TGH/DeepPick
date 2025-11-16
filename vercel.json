@@ -27,6 +27,14 @@
     {
       "path": "/api/cron/generate-results-analysis",
       "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/battle-bets/create-matchups",
+      "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/battle-bets/sync-quarter-stats",
+      "schedule": "*/10 * * * *"
     }
   ]
 }
