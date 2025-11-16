@@ -14,7 +14,7 @@ import { detectWebGLSupport } from '../../utils/webglDetection'
 import { castleManager } from '../../game/managers/CastleManager'
 import { gridManager } from '../../game/managers/GridManager'
 import type { Game } from '../../types/game'
-import type { BattleStatus } from '../../lib/BattleTimer'
+import type { BattleStatus } from '@/lib/battle-bets/BattleTimer'
 
 interface BattleCanvasProps {
   battleId: string
@@ -253,11 +253,11 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
   }
 
   return (
-    <div className="relative">
+    <div className="relative w-full h-full">
       {/* PixiJS Canvas with integrated overlays */}
       <div
         ref={canvasRef}
-        className="flex justify-center items-center"
+        className="flex justify-center items-center w-full h-full"
       />
     </div>
   )
