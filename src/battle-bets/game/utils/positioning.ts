@@ -19,7 +19,7 @@ export function getStatRowY(statIndex: number): number {
  * Get stat index from stat type
  */
 export function getStatIndex(stat: StatType): number {
-  const statOrder: StatType[] = ['points', 'reb', 'ast', 'fire', 'shield'];
+  const statOrder: StatType[] = ['pts', 'reb', 'ast', 'blk', '3pt'];
   return statOrder.indexOf(stat);
 }
 
@@ -42,10 +42,10 @@ export function getDefenseDotPosition(
   } else {
     // Right defense dots: after battlefield and attack dots, before right stat label
     const battlefieldStart = config.statLabelWidth +
-                            (config.defenseCellsPerSide * config.cellWidth) +
-                            (config.attackCellsPerSide * config.cellWidth) +
-                            config.battlefieldWidth +
-                            (config.attackCellsPerSide * config.cellWidth);
+      (config.defenseCellsPerSide * config.cellWidth) +
+      (config.attackCellsPerSide * config.cellWidth) +
+      config.battlefieldWidth +
+      (config.attackCellsPerSide * config.cellWidth);
     const x = battlefieldStart + (index * config.cellWidth) + (config.cellWidth / 2);
     return { x, y };
   }
@@ -90,10 +90,10 @@ export function getAttackDotPosition(
   } else {
     // Right attack dots: after battlefield, before defense dots
     const attackStart = config.statLabelWidth +
-                       config.weaponSlotWidth +
-                       (config.defenseCellsPerSide * config.cellWidth) +
-                       (config.attackCellsPerSide * config.cellWidth) +
-                       config.battlefieldWidth;
+      config.weaponSlotWidth +
+      (config.defenseCellsPerSide * config.cellWidth) +
+      (config.attackCellsPerSide * config.cellWidth) +
+      config.battlefieldWidth;
     const x = attackStart + ((quarter - 1) * config.cellWidth) + (config.cellWidth / 2);
     return { x, y };
   }
@@ -119,9 +119,9 @@ export function getBattlefieldCenter(stat: StatType): Position {
   const y = getStatRowY(statIndex);
 
   const battlefieldStart = config.statLabelWidth +
-                          config.weaponSlotWidth +
-                          (config.defenseCellsPerSide * config.cellWidth) +
-                          (config.attackCellsPerSide * config.cellWidth);
+    config.weaponSlotWidth +
+    (config.defenseCellsPerSide * config.cellWidth) +
+    (config.attackCellsPerSide * config.cellWidth);
   const x = battlefieldStart + (config.battlefieldWidth / 2);
 
   return { x, y };
