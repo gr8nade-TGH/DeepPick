@@ -361,13 +361,13 @@ class GridManagerClass {
   }
 
   /**
-   * Get castle box position (centered in the empty space between canvas edge and grid)
+   * Get castle box position.
+   *
+   * We want each castle to sit in the side lane between the canvas edge and the grid,
+   * but slightly biased toward the grid so there isn't a big gap between the castle
+   * and the stat labels (as in the reference design).
    */
   getCastleBoxPosition(side: 'left' | 'right'): { x: number; y: number } {
-    // The grid is centered on the canvas, so the empty space on the left and right
-    // of the grid (where the castles live) is the same width. We want each castle
-    // centered within that empty space so there is no large blank gap on one side.
-
     // Distance from left canvas edge to start of the grid
     const leftRegionWidth = this.layout.leftStatLabelStart;
 
@@ -378,9 +378,12 @@ class GridManagerClass {
     // `leftRegionWidth`, so total canvas width can be reconstructed.
     const canvasWidth = gridEndX + leftRegionWidth;
 
+    // Bias castles ~20px toward the grid from the exact center of the side lane
+    const bias = 20;
+
     const x = side === 'left'
-      ? leftRegionWidth / 2 // Center of left empty region
-      : canvasWidth - leftRegionWidth / 2; // Center of right empty region
+      ? (leftRegionWidth / 2) + bias
+      : (canvasWidth - (leftRegionWidth / 2) - bias);
 
     const y = (5 * this.layout.cellHeight) / 2; // Center of 5 rows
 
