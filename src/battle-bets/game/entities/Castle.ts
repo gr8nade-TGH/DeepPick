@@ -158,8 +158,8 @@ export class Castle {
       // 2. Create HP bar below castle
       this.createHPBar();
 
-      // 3. Create level badge next to castle
-      this.createLevelBadge();
+      // 3. Level badge disabled to match original battle-bets-v3 layout
+      // this.createLevelBadge();
 
       // 4. Create equipped item indicator (Blue Orb Shield)
       this.createEquippedItemIndicator();
