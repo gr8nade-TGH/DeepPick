@@ -27,7 +27,6 @@ export async function GET(request: NextRequest) {
       `[Active Battles] Fetching page ${page} (limit: ${limit}, offset: ${offset}, capperId: ${capperId || 'all'}, debug=${debugMode})`
     )
 
-    const supabase = getSupabaseAdmin()
 
     if (debugMode) {
       const now = Date.now()
@@ -430,146 +429,149 @@ async function getCapperPerformance(
     }
   }
 
-  /**
-   * Build "single-capper" battles for games where a capper has a SPREAD pick
-   * but no battle_matchups row exists yet.
-   *
-   * These are used to show the "FINDING OPPONENT..." state in the arena.
-   */
-  async function getPendingSingleCapperBattles(
-    supabase: any,
-    options: {
-      maxCount: number
-      capperId?: string
-      excludeGameIds?: string[]
-    }
-  ) {
-    const { maxCount, capperId, excludeGameIds = [] } = options
+}
 
-    if (maxCount <= 0) {
-      return []
-    }
 
-    const excludeSet = new Set(excludeGameIds)
-    const nowIso = new Date().toISOString()
+/**
+ * Build "single-capper" battles for games where a capper has a SPREAD pick
+ * but no battle_matchups row exists yet.
+ *
+ * These are used to show the "FINDING OPPONENT..." state in the arena.
+ */
+async function getPendingSingleCapperBattles(
+  supabase: any,
+  options: {
+    maxCount: number
+    capperId?: string
+    excludeGameIds?: string[]
+  }
+) {
+  const { maxCount, capperId, excludeGameIds = [] } = options
 
-    // Look for upcoming scheduled NBA games
-    const { data: games, error: gamesError } = await supabase
-      .from('games')
-      .select('id, home_team, away_team, spread_line, game_start_timestamp, status, sport')
-      .eq('sport', 'nba')
-      .eq('status', 'scheduled')
-      .gte('game_start_timestamp', nowIso)
-      .order('game_start_timestamp', { ascending: true })
-      .limit(20)
-
-    if (gamesError) {
-      console.error('[Active Battles] Error fetching games for pending battles:', gamesError)
-      return []
-    }
-
-    if (!games || games.length === 0) {
-      return []
-    }
-
-    const pendingBattles: any[] = []
-
-    for (const game of games) {
-      if (pendingBattles.length >= maxCount) break
-      if (excludeSet.has(game.id)) continue
-
-      let picksQuery = supabase
-        .from('picks')
-        .select('id, capper, selection, pick_type, units, status')
-        .eq('game_id', game.id)
-        .eq('pick_type', 'spread')
-        .eq('status', 'pending')
-
-      if (capperId) {
-        picksQuery = picksQuery.eq('capper', capperId)
-      }
-
-      const { data: picks, error: picksError } = await picksQuery
-
-      if (picksError) {
-        console.error(`[Active Battles] Error fetching picks for pending game ${game.id}:`, picksError)
-        continue
-      }
-
-      if (!picks || picks.length === 0) {
-        continue
-      }
-
-      // Take the first pending pick for this game to represent the single capper
-      const primaryPick = picks[0]
-
-      const homeAbbr = (game.home_team as any)?.abbreviation || 'HOME'
-      const awayAbbr = (game.away_team as any)?.abbreviation || 'AWAY'
-
-      const spreadValue = game.spread_line ? Number(game.spread_line) : 0
-
-      const leftCapperData = await getCapperPerformance(
-        supabase,
-        primaryPick.capper,
-        homeAbbr
-      )
-
-      pendingBattles.push({
-        id: `pending-${game.id}-${primaryPick.capper}`,
-        game_id: game.id,
-        left_capper_id: primaryPick.capper,
-        right_capper_id: 'opponent',
-        left_team: homeAbbr,
-        right_team: awayAbbr,
-        spread: spreadValue,
-        status: 'scheduled',
-        game_start_time: null,
-        game,
-        left_capper: leftCapperData,
-        right_capper: null
-      })
-    }
-
-    return pendingBattles
+  if (maxCount <= 0) {
+    return []
   }
 
-  function createDebugCapper(
-    id: string,
-    displayName: string,
-    colorTheme: string,
-    teamAbbr: string,
-    netUnits: number,
-    wins: number,
-    losses: number,
-    pushes: number
-  ) {
-    const totalPicks = wins + losses + pushes
-    const winRate = (wins + losses) > 0 ? (wins / (wins + losses)) * 100 : 0
-    const defenseDots = distributeDefenseDots(calculateTotalDefenseDots(netUnits))
+  const excludeSet = new Set(excludeGameIds)
+  const nowIso = new Date().toISOString()
 
-    return {
-      id,
-      name: id.toUpperCase(),
-      displayName,
-      colorTheme,
-      teamPerformance: {
-        team: teamAbbr,
-        wins,
-        losses,
-        pushes,
-        totalPicks,
-        netUnits,
-        winRate,
-        defenseDots
-      },
-      overallPerformance: {
-        wins,
-        losses,
-        pushes,
-        totalPicks,
-        netUnits,
-        winRate
-      }
+  // Look for upcoming scheduled NBA games
+  const { data: games, error: gamesError } = await supabase
+    .from('games')
+    .select('id, home_team, away_team, spread_line, game_start_timestamp, status, sport')
+    .eq('sport', 'nba')
+    .eq('status', 'scheduled')
+    .gte('game_start_timestamp', nowIso)
+    .order('game_start_timestamp', { ascending: true })
+    .limit(20)
+
+  if (gamesError) {
+    console.error('[Active Battles] Error fetching games for pending battles:', gamesError)
+    return []
+  }
+
+  if (!games || games.length === 0) {
+    return []
+  }
+
+  const pendingBattles: any[] = []
+
+  for (const game of games) {
+    if (pendingBattles.length >= maxCount) break
+    if (excludeSet.has(game.id)) continue
+
+    let picksQuery = supabase
+      .from('picks')
+      .select('id, capper, selection, pick_type, units, status')
+      .eq('game_id', game.id)
+      .eq('pick_type', 'spread')
+      .eq('status', 'pending')
+
+    if (capperId) {
+      picksQuery = picksQuery.eq('capper', capperId)
+    }
+
+    const { data: picks, error: picksError } = await picksQuery
+
+    if (picksError) {
+      console.error(`[Active Battles] Error fetching picks for pending game ${game.id}:`, picksError)
+      continue
+    }
+
+    if (!picks || picks.length === 0) {
+      continue
+    }
+
+    // Take the first pending pick for this game to represent the single capper
+    const primaryPick = picks[0]
+
+    const homeAbbr = (game.home_team as any)?.abbreviation || 'HOME'
+    const awayAbbr = (game.away_team as any)?.abbreviation || 'AWAY'
+
+    const spreadValue = game.spread_line ? Number(game.spread_line) : 0
+
+    const leftCapperData = await getCapperPerformance(
+      supabase,
+      primaryPick.capper,
+      homeAbbr
+    )
+
+    pendingBattles.push({
+      id: `pending-${game.id}-${primaryPick.capper}`,
+      game_id: game.id,
+      left_capper_id: primaryPick.capper,
+      right_capper_id: 'opponent',
+      left_team: homeAbbr,
+      right_team: awayAbbr,
+      spread: spreadValue,
+      status: 'scheduled',
+      game_start_time: null,
+      game,
+      left_capper: leftCapperData,
+      right_capper: null
+    })
+  }
+
+  return pendingBattles
+}
+
+function createDebugCapper(
+  id: string,
+  displayName: string,
+  colorTheme: string,
+  teamAbbr: string,
+  netUnits: number,
+  wins: number,
+  losses: number,
+  pushes: number
+) {
+  const totalPicks = wins + losses + pushes
+  const winRate = (wins + losses) > 0 ? (wins / (wins + losses)) * 100 : 0
+  const defenseDots = distributeDefenseDots(calculateTotalDefenseDots(netUnits))
+
+  return {
+    id,
+    name: id.toUpperCase(),
+    displayName,
+    colorTheme,
+    teamPerformance: {
+      team: teamAbbr,
+      wins,
+      losses,
+      pushes,
+      totalPicks,
+      netUnits,
+      winRate,
+      defenseDots
+    },
+    overallPerformance: {
+      wins,
+      losses,
+      pushes,
+      totalPicks,
+      netUnits,
+      winRate
     }
   }
+}
 
