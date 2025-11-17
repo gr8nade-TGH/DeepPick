@@ -307,29 +307,6 @@ function App() {
 
   return (
     <div className="app" style={{ background: '#0a0e1a', minHeight: '100vh', padding: '20px' }}>
-      <header style={{
-        textAlign: 'center',
-        marginBottom: '30px',
-        color: 'white'
-      }}>
-        <h1 style={{ fontSize: '36px', marginBottom: '10px' }}>⚔️ Battle Arena</h1>
-        {showAllBattles ? (
-          <>
-            <p style={{ fontSize: '14px', color: '#94a3b8' }}>
-              {totalBattles} Active Battle{totalBattles !== 1 ? 's' : ''} • Page {page} of {totalPages}
-            </p>
-            <p style={{ fontSize: '12px', color: '#64748b', marginTop: '5px' }}>
-              Battles update automatically every 30 seconds<br />
-              Quarter stats sync every 10 minutes via MySportsFeeds
-            </p>
-          </>
-        ) : (
-          <p style={{ fontSize: '14px', color: '#94a3b8' }}>
-            Live Battle • Updates every 30 seconds
-          </p>
-        )}
-      </header>
-
       <main style={{ maxWidth: '1400px', margin: '0 auto' }}>
         {/* Battles Grid - Vertical Stack */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
@@ -344,6 +321,23 @@ function App() {
                 boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)'
               }}
             >
+              {/* Battle Info Header */}
+              <div style={{
+                padding: '15px 20px',
+                background: 'rgba(139, 92, 246, 0.1)',
+                borderBottom: '1px solid rgba(139, 92, 246, 0.2)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <div style={{ color: 'white', fontSize: '16px', fontWeight: 'bold' }}>
+                  {game.leftCapper.name} vs {game.rightCapper.name}
+                </div>
+                <div style={{ color: '#94a3b8', fontSize: '14px' }}>
+                  {game.leftTeam.abbreviation} vs {game.rightTeam.abbreviation} • Spread: {game.spread > 0 ? '+' : ''}{game.spread}
+                </div>
+              </div>
+
               {/* Game Info Bar - Horizontal bar with capper info, team names, spread, score */}
               <GameInfoBar game={game} />
 

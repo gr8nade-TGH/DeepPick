@@ -114,7 +114,7 @@ export const GameInfoBar: React.FC<GameInfoBarProps> = ({ game }) => {
           onMouseEnter={() => setLeftRecordHover(true)}
           onMouseLeave={() => setLeftRecordHover(false)}
         >
-          <span className="units-value">{leftUnits > 0 ? '+' : ''}{leftUnits}U</span>
+          <span className="units-value">{leftUnits > 0 ? '+' : ''}{Math.round(leftUnits * 10) / 10}U</span>
           <span className="units-arrow">{leftUnits > 0 ? '↑' : '↓'}</span>
           {leftRecordHover && (
             <div className="units-tooltip">
@@ -181,7 +181,7 @@ export const GameInfoBar: React.FC<GameInfoBarProps> = ({ game }) => {
           onMouseLeave={() => setRightRecordHover(false)}
         >
           <span className="units-arrow">{rightUnits > 0 ? '↑' : '↓'}</span>
-          <span className="units-value">{rightUnits > 0 ? '+' : ''}{rightUnits}U</span>
+          <span className="units-value">{rightUnits > 0 ? '+' : ''}{Math.round(rightUnits * 10) / 10}U</span>
           {rightRecordHover && (
             <div className="units-tooltip">
               <div><strong>{game.rightCapper.name}'s {game.rightTeam.abbreviation} Spread Record</strong></div>
