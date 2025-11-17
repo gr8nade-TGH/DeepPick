@@ -351,10 +351,7 @@ function App() {
               <div style={{
                 width: '100%',
                 height: '400px',
-                background: '#0a0e1a',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center'
+                background: '#0a0e1a'
               }}>
                 <BattleCanvas
                   battleId={game.id}
