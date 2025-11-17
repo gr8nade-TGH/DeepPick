@@ -8,6 +8,7 @@ import { useMultiGameStore } from './store/multiGameStore';
 import { GameErrorBoundary } from './components/ErrorBoundary';
 import { BattleCanvas } from './components/game/BattleCanvas';
 import { GameInfoBar } from './components/game/GameInfoBar';
+import { InventoryBar } from './components/game/InventoryBar';
 import type { Game } from './types/game';
 import './App.css';
 
@@ -339,26 +340,65 @@ function App() {
               </div>
 
               {/* Game Info Bar - Horizontal bar with capper info, team names, spread, score */}
-              <GameInfoBar game={game} />
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  background: '#020617'
+                }}
+              >
+                <GameInfoBar game={game} />
+              </div>
 
-              {/* Battle Canvas - PixiJS Game with Countdown Timers */}
-              <div style={{
-                width: '100%',
-                height: '400px',
-                background: '#0a0e1a'
-              }}>
-                <BattleCanvas
-                  battleId={game.id}
-                  game={game}
-                  status={(game as any)._battleData?.status}
-                  gameStartTime={(game as any)._battleData?.gameStartTime}
-                  q1EndTime={(game as any)._battleData?.q1EndTime}
-                  q2EndTime={(game as any)._battleData?.q2EndTime}
-                  halftimeEndTime={(game as any)._battleData?.halftimeEndTime}
-                  q3EndTime={(game as any)._battleData?.q3EndTime}
-                  q4EndTime={(game as any)._battleData?.q4EndTime}
-                  winner={(game as any)._battleData?.winner}
-                />
+              {/* Battle Game Layout - Inventory bars + PixiJS canvas, centered under info bar */}
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  padding: '10px 0 20px',
+                  background: '#020617'
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    width: '1300px',
+                    maxWidth: '100%'
+                  }}
+                >
+                  {/* Left Inventory Bar */}
+                  <InventoryBar battleId={game.id} side="left" />
+
+                  {/* Battle Canvas - PixiJS Game with Countdown Timers */}
+                  <div
+                    style={{
+                      width: '1170px',
+                      height: '200px',
+                      background: '#0a0e1a',
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <BattleCanvas
+                      battleId={game.id}
+                      game={game}
+                      status={(game as any)._battleData?.status}
+                      gameStartTime={(game as any)._battleData?.gameStartTime}
+                      q1EndTime={(game as any)._battleData?.q1EndTime}
+                      q2EndTime={(game as any)._battleData?.q2EndTime}
+                      halftimeEndTime={(game as any)._battleData?.halftimeEndTime}
+                      q3EndTime={(game as any)._battleData?.q3EndTime}
+                      q4EndTime={(game as any)._battleData?.q4EndTime}
+                      winner={(game as any)._battleData?.winner}
+                    />
+                  </div>
+
+                  {/* Right Inventory Bar */}
+                  <InventoryBar battleId={game.id} side="right" />
+                </div>
               </div>
             </div>
           ))}

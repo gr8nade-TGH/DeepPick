@@ -8,18 +8,26 @@ import './InventoryBar.css';
 import { castleManager } from '../../game/managers/CastleManager';
 
 interface InventoryBarProps {
+  battleId: string;
   side: 'left' | 'right';
 }
 
-export const InventoryBar: React.FC<InventoryBarProps> = ({ side }) => {
+export const InventoryBar: React.FC<InventoryBarProps> = ({ battleId, side }) => {
   const [equippedItems, setEquippedItems] = useState<any>({ slot1: null, slot2: null, slot3: null });
   const [isFireOrbPulsing, setIsFireOrbPulsing] = useState(false);
 
   // Update equipped items when castle loads
   useEffect(() => {
     const updateItems = () => {
-      const castleId = `castle-${side}`;
-      const castle = castleManager.getCastle(castleId);
+      // In multi-battle mode, castles are keyed by `${battleId}-${side}`
+      const castleId = `${battleId}-${side}`;
+      let castle = castleManager.getCastle(castleId);
+
+      // Fallback to legacy single-battle IDs if needed
+      if (!castle) {
+        castle = castleManager.getCastle(`castle-${side}`);
+      }
+
       if (castle) {
         const items = castle.getEquippedItems();
         setEquippedItems(items);
@@ -32,7 +40,7 @@ export const InventoryBar: React.FC<InventoryBarProps> = ({ side }) => {
     // Update periodically (in case items change)
     const interval = setInterval(updateItems, 1000);
     return () => clearInterval(interval);
-  }, [side]);
+  }, [battleId, side]);
 
   // Listen for Fire Orb activation events
   useEffect(() => {
@@ -132,8 +140,8 @@ export const InventoryBar: React.FC<InventoryBarProps> = ({ side }) => {
             ) : (
               <div className={`slot-icon-equipped ${shouldPulse ? 'fire-orb-pulsing' : ''}`}>
                 {equippedItem.id === 'blue-orb-shield' ? renderBlueShieldRing() :
-                 equippedItem.id === 'fire-orb' ? renderFireRing() :
-                 equippedItem.icon}
+                  equippedItem.id === 'fire-orb' ? renderFireRing() :
+                    equippedItem.icon}
               </div>
             )}
           </div>
