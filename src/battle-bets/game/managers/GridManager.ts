@@ -16,7 +16,7 @@ import type { StatType } from '../../types/game';
 /**
  * Grid cell types
  */
-export type CellType = 
+export type CellType =
   | 'castle-box'
   | 'stat-label'
   | 'weapon-slot'
@@ -86,7 +86,7 @@ interface GridLayout {
   rightWeaponSlotStart: number;
   rightStatLabelStart: number;
   rightCastleBoxStart: number;
-  
+
   // Dimensions
   castleBoxWidth: number;
   cellWidth: number;
@@ -144,8 +144,9 @@ class GridManagerClass {
     const rightDefenseStart = rightAttackStart + (config.attackCellsPerSide * config.cellWidth);
     const rightWeaponSlotStart = rightDefenseStart + (config.defenseCellsPerSide * config.cellWidth);
     const rightStatLabelStart = rightWeaponSlotStart + config.weaponSlotWidth;
-    const leftCastleBoxStart = 0; // Not used anymore
-    const rightCastleBoxStart = 0; // Not used anymore
+    // Castle boxes: left anchored to left canvas edge, right anchored to right edge
+    const leftCastleBoxStart = 0;
+    const rightCastleBoxStart = canvasWidth - castleBoxWidth;
 
     return {
       leftCastleBoxStart,
@@ -178,34 +179,34 @@ class GridManagerClass {
     // Create cells for each stat row (0-4)
     for (let row = 0; row < 5; row++) {
       const stat = this.stats[row];
-      
+
       // Left weapon slot
       this.createWeaponSlotCell(row, stat, 'left');
-      
+
       // Left defense cells
       for (let col = 0; col < this.layout.defenseCells; col++) {
         this.createDefenseCell(row, col, stat, 'left');
       }
-      
+
       // Left attack cells
       for (let col = 0; col < this.layout.attackCells; col++) {
         this.createAttackCell(row, col, stat, 'left');
       }
-      
+
       // Right attack cells
       for (let col = 0; col < this.layout.attackCells; col++) {
         this.createAttackCell(row, col, stat, 'right');
       }
-      
+
       // Right defense cells
       for (let col = 0; col < this.layout.defenseCells; col++) {
         this.createDefenseCell(row, col, stat, 'right');
       }
-      
+
       // Right weapon slot
       this.createWeaponSlotCell(row, stat, 'right');
     }
-    
+
     console.log(`✅ GridManager initialized with ${this.cellCache.size} cells`);
   }
 
@@ -214,10 +215,10 @@ class GridManagerClass {
    */
   private createWeaponSlotCell(row: number, stat: StatType, side: 'left' | 'right'): void {
     const y = row * this.layout.cellHeight;
-    const x = side === 'left' 
+    const x = side === 'left'
       ? this.layout.leftWeaponSlotStart
       : this.layout.rightWeaponSlotStart;
-    
+
     const cell: GridCell = {
       id: `weapon-${stat}-${side}`,
       type: 'weapon-slot',
@@ -236,7 +237,7 @@ class GridManagerClass {
       stat,
       side,
     };
-    
+
     this.cellCache.set(cell.id, cell);
   }
 
@@ -290,7 +291,7 @@ class GridManagerClass {
     const x = side === 'left'
       ? this.layout.leftAttackStart + (col * this.layout.cellWidth)
       : this.layout.rightAttackStart + (col * this.layout.cellWidth);
-    
+
     const cell: GridCell = {
       id: `attack-${stat}-${side}-${col}`,
       type: 'attack',
@@ -310,7 +311,7 @@ class GridManagerClass {
       side,
       index: col,
     };
-    
+
     this.cellCache.set(cell.id, cell);
   }
 
@@ -366,9 +367,9 @@ class GridManagerClass {
     const x = side === 'left'
       ? this.layout.leftCastleBoxStart + this.layout.castleBoxWidth / 2
       : this.layout.rightCastleBoxStart + this.layout.castleBoxWidth / 2;
-    
+
     const y = (5 * this.layout.cellHeight) / 2; // Center of 5 rows
-    
+
     return { x, y };
   }
 
