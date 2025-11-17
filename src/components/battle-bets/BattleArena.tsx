@@ -36,6 +36,14 @@ export function BattleArena({ initialPage = 1 }: BattleArenaProps) {
   const [page, setPage] = useState(initialPage)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
+  const [debugMode, setDebugMode] = useState(false)
+
+  // Detect debug mode from URL (?debug=1)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    setDebugMode(params.get('debug') === '1')
+  }, [])
 
   // Fetch ALL active battles (not filtered by user)
   useEffect(() => {
@@ -44,8 +52,12 @@ export function BattleArena({ initialPage = 1 }: BattleArenaProps) {
         setLoading(true)
         setError(null)
 
-        // Fetch ALL active battles (no capperId filter)
-        const response = await fetch(`/api/battle-bets/active?page=${page}&limit=4`)
+        const baseUrl = '/api/battle-bets/active'
+        const url = debugMode
+          ? `${baseUrl}?debug=1&page=${page}&limit=4`
+          : `${baseUrl}?page=${page}&limit=4`
+
+        const response = await fetch(url)
         const data = await response.json()
 
         if (!data.success) {
@@ -64,13 +76,18 @@ export function BattleArena({ initialPage = 1 }: BattleArenaProps) {
     }
 
     fetchBattles()
-  }, [page])
+  }, [page, debugMode])
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
     const interval = setInterval(() => {
+      const baseUrl = '/api/battle-bets/active'
+      const url = debugMode
+        ? `${baseUrl}?debug=1&page=${page}&limit=4`
+        : `${baseUrl}?page=${page}&limit=4`
+
       // Silently refresh without showing loading state
-      fetch(`/api/battle-bets/active?page=${page}&limit=4`)
+      fetch(url)
         .then(res => res.json())
         .then(data => {
           if (data.success) {
@@ -83,7 +100,7 @@ export function BattleArena({ initialPage = 1 }: BattleArenaProps) {
     }, 30000) // 30 seconds
 
     return () => clearInterval(interval)
-  }, [page])
+  }, [page, debugMode])
 
   if (loading) {
     return (
@@ -134,6 +151,11 @@ export function BattleArena({ initialPage = 1 }: BattleArenaProps) {
               {total === 0 ? 'No active battles' : `${total} Active ${total === 1 ? 'Battle' : 'Battles'}`}
               {totalPages > 1 && ` • Page ${page} of ${totalPages}`}
             </p>
+            {debugMode && (
+              <p className="mt-1 text-xs uppercase tracking-wide text-amber-300">
+                DEBUG MODE • Showing 4 test battles
+              </p>
+            )}
           </div>
 
           {/* Pagination Controls */}
