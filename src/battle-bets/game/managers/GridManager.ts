@@ -361,12 +361,26 @@ class GridManagerClass {
   }
 
   /**
-   * Get castle box position (center)
+   * Get castle box position (centered in the empty space between canvas edge and grid)
    */
   getCastleBoxPosition(side: 'left' | 'right'): { x: number; y: number } {
+    // The grid is centered on the canvas, so the empty space on the left and right
+    // of the grid (where the castles live) is the same width. We want each castle
+    // centered within that empty space so there is no large blank gap on one side.
+
+    // Distance from left canvas edge to start of the grid
+    const leftRegionWidth = this.layout.leftStatLabelStart;
+
+    // X coordinate where the grid ends on the right
+    const gridEndX = this.layout.rightStatLabelStart + this.layout.statLabelWidth;
+
+    // Because the grid is centered, the space to the right of the grid is also
+    // `leftRegionWidth`, so total canvas width can be reconstructed.
+    const canvasWidth = gridEndX + leftRegionWidth;
+
     const x = side === 'left'
-      ? this.layout.leftCastleBoxStart + this.layout.castleBoxWidth / 2
-      : this.layout.rightCastleBoxStart + this.layout.castleBoxWidth / 2;
+      ? leftRegionWidth / 2 // Center of left empty region
+      : canvasWidth - leftRegionWidth / 2; // Center of right empty region
 
     const y = (5 * this.layout.cellHeight) / 2; // Center of 5 rows
 
