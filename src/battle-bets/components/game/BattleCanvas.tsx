@@ -62,9 +62,19 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
   }, [])
 
   // Initialize PixiJS application
+  // NOTE: We intentionally *do not* re-run this effect on every data refresh.
+  // The Pixi canvas is created once per battleId and then kept stable so that
+  // React auto-refreshes (new Game props) don't destroy/rebuild the grid,
+  // which can cause subtle alignment glitches between the canvas and UI.
   useEffect(() => {
     if (!webglSupport?.supported) return
     if (!canvasRef.current) return
+
+    // If we've already created an app for this battle, don't re-initialize.
+    // This keeps the canvas layout perfectly stable across API refreshes.
+    if (appRef.current) {
+      return
+    }
 
     let app: PIXI.Application | null = null
     let mounted = true
@@ -105,7 +115,7 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
           // Set container for castle manager
           castleManager.setContainer(container)
 
-          // Initialize battle in store
+          // Initialize battle in store (HP + defense dots)
           initializeBattle(battleId, game)
 
           setContainerReady(true)
@@ -163,7 +173,7 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
       appRef.current = null
       containerRef.current = null
     }
-  }, [webglSupport, battleId, game, initializeBattle])
+  }, [webglSupport, battleId, initializeBattle])
 
   // Render defense dots and projectiles
   useEffect(() => {

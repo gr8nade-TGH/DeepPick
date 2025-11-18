@@ -60,6 +60,10 @@ export function createBattleStatusOverlay(config: OverlayConfig): PIXI.Container
   let message = ''
   let countdown = ''
   let showOverlay = false
+  let isFindingOpponent = false
+  let loadingPhase = 0
+
+  const now = Date.now()
 
   switch (status) {
     case 'scheduled':
@@ -71,7 +75,16 @@ export function createBattleStatusOverlay(config: OverlayConfig): PIXI.Container
           showOverlay = true
         }
       } else {
-        message = 'FINDING OPPONENT...'
+        // Premium "searching for rival" experience while we wait for an opponent
+        isFindingOpponent = true
+        const phases = [
+          'FINDING OPPONENT',
+          'FINDING OPPONENT.',
+          'FINDING OPPONENT..',
+          'FINDING OPPONENT...',
+        ]
+        loadingPhase = Math.floor(now / 500) % phases.length
+        message = phases[loadingPhase]
         showOverlay = true
       }
       break
@@ -181,34 +194,85 @@ export function createBattleStatusOverlay(config: OverlayConfig): PIXI.Container
   background.fill({ color: 0x000000, alpha: 0.7 })
   container.addChild(background)
 
-  // White box for message
-  const boxWidth = 600
-  const boxHeight = countdown ? 180 : 120
+  // Premium status box
+  const boxWidth = isFindingOpponent ? 700 : 600
+  const boxHeight = isFindingOpponent ? 170 : countdown ? 180 : 120
   const boxX = (canvasWidth - boxWidth) / 2
   const boxY = (canvasHeight - boxHeight) / 2
 
   const messageBox = new PIXI.Graphics()
-  messageBox.rect(boxX, boxY, boxWidth, boxHeight)
-  messageBox.fill({ color: 0xffffff })
+  messageBox.roundRect(boxX, boxY, boxWidth, boxHeight, 16)
+
+  if (isFindingOpponent) {
+    // Dark navy panel with orange edge for the "searching" state
+    messageBox.fill({ color: 0x020617, alpha: 0.96 })
+    messageBox.stroke({ width: 4, color: 0xf97316, alpha: 0.9 })
+  } else {
+    messageBox.fill({ color: 0xffffff })
+  }
+
   container.addChild(messageBox)
 
-  // Message text (black, bold, large)
+  // Message text (large, bold)
   const messageText = new PIXI.Text({
     text: message,
     style: {
       fontFamily: 'Arial Black, Arial',
-      fontSize: 48,
+      fontSize: isFindingOpponent ? 40 : 48,
       fontWeight: '900',
-      fill: 0x000000,
-      align: 'center'
-    }
+      fill: isFindingOpponent ? 0xfacc15 : 0x000000,
+      align: 'center',
+      letterSpacing: isFindingOpponent ? 2 : 0,
+    },
   })
   messageText.anchor.set(0.5)
   messageText.x = canvasWidth / 2
-  messageText.y = countdown ? boxY + 50 : canvasHeight / 2
+  messageText.y = isFindingOpponent ? boxY + 50 : countdown ? boxY + 50 : canvasHeight / 2
   container.addChild(messageText)
 
-  // Countdown text (black, bold, huge)
+  if (isFindingOpponent) {
+    // Subtitle explaining what's happening
+    const subtitle = new PIXI.Text({
+      text: 'Scanning for rival cappers and matching live NBA SPREAD battles...',
+      style: {
+        fontFamily: 'Arial',
+        fontSize: 18,
+        fontWeight: '500',
+        fill: 0xe5e7eb,
+        align: 'center',
+      },
+    })
+    subtitle.anchor.set(0.5)
+    subtitle.x = canvasWidth / 2
+    subtitle.y = messageText.y + 36
+    container.addChild(subtitle)
+
+    // Animated loading dots (phase based on time so they pulse while overlay is visible)
+    const dotCount = 4
+    const dotRadius = 6
+    const dotSpacing = 24
+    const totalWidth = (dotCount - 1) * dotSpacing
+    const startX = canvasWidth / 2 - totalWidth / 2
+    const dotsY = boxY + boxHeight - 40
+
+    for (let i = 0; i < dotCount; i++) {
+      const dot = new PIXI.Graphics()
+      const active = i <= loadingPhase
+
+      dot.circle(0, 0, dotRadius)
+      dot.fill({
+        color: active ? 0xf97316 : 0x4b5563,
+        alpha: active ? 1 : 0.6,
+      })
+
+      dot.x = startX + i * dotSpacing
+      dot.y = dotsY
+
+      container.addChild(dot)
+    }
+  }
+
+  // Countdown text for timed battle phases
   if (countdown) {
     const countdownText = new PIXI.Text({
       text: countdown,
@@ -217,12 +281,12 @@ export function createBattleStatusOverlay(config: OverlayConfig): PIXI.Container
         fontSize: 64,
         fontWeight: '900',
         fill: 0x000000,
-        align: 'center'
-      }
+        align: 'center',
+      },
     })
     countdownText.anchor.set(0.5)
     countdownText.x = canvasWidth / 2
-    countdownText.y = boxY + 120
+    countdownText.y = boxY + (isFindingOpponent ? 100 : 120)
     container.addChild(countdownText)
   }
 
