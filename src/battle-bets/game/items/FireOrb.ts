@@ -170,7 +170,7 @@ async function fireFireProjectile(stat: StatType, side: 'left' | 'right'): Promi
 
   // Register projectile
   collisionManager.registerProjectile(projectile);
-  store.addProjectile(projectile);
+  store.addProjectile(projectile, targetSide);
 
   // Add sprite to PixiJS container
   pixiManager.addSprite(projectile.sprite, 'projectile');

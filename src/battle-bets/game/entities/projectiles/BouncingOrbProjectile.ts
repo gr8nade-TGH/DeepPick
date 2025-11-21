@@ -7,6 +7,8 @@ import * as PIXI from 'pixi.js';
 import gsap from 'gsap';
 import { BaseProjectile, type BaseProjectileConfig } from './BaseProjectile';
 
+import { gridManager } from '../../managers/GridManager';
+
 export class BouncingOrbProjectile extends BaseProjectile {
   private bounceCount: number = 0;
   private maxBounces: number;
@@ -87,10 +89,18 @@ export class BouncingOrbProjectile extends BaseProjectile {
    */
   public async animateToTarget(): Promise<void> {
     return new Promise((resolve) => {
-      const duration = this.typeConfig.speed;
+      // Calculate distance to target
+      const dx = this.targetPosition.x - this.position.x;
+      const dy = this.targetPosition.y - this.position.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      // Calculate duration based on grid-based speed system
+      const cellWidth = gridManager.getCellWidth();
+      const duration = this.calculateFlightDuration(distance, cellWidth);
 
       // Straight line animation (stays in lane)
-      this.animation = gsap.timeline()
+      this.animation = gsap
+        .timeline()
         .to(this.sprite, {
           x: this.targetPosition.x,
           y: this.targetPosition.y,
@@ -115,7 +125,7 @@ export class BouncingOrbProjectile extends BaseProjectile {
    */
   protected createImpactEffect(): void {
     const impact = new PIXI.Graphics();
-    
+
     // Ripple rings
     for (let i = 0; i < 3; i++) {
       const ring = new PIXI.Graphics();
@@ -123,19 +133,19 @@ export class BouncingOrbProjectile extends BaseProjectile {
       ring.stroke({ width: 2, color: this.typeConfig.color, alpha: 0.8 - (i * 0.2) });
       impact.addChild(ring);
     }
-    
+
     // Center burst
     impact.circle(0, 0, 8);
     impact.fill({ color: this.typeConfig.glowColor, alpha: 0.9 });
-    
+
     impact.x = this.sprite.x;
     impact.y = this.sprite.y;
-    
+
     // Add to parent
     if (this.sprite.parent) {
       this.sprite.parent.addChild(impact);
     }
-    
+
     // Animate ripple expansion
     gsap.timeline()
       .to(impact.scale, {
@@ -166,8 +176,13 @@ export class BouncingOrbProjectile extends BaseProjectile {
     this.targetPosition.x = adjacentPosition.x;
     this.targetPosition.y = adjacentPosition.y;
 
-    // Smaller, faster bounce
-    const duration = this.typeConfig.speed * 0.6; // Faster bounce
+    // Smaller, faster bounce (60% of normal flight duration)
+    const dx = adjacentPosition.x - this.position.x;
+    const dy = adjacentPosition.y - this.position.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    const cellWidth = gridManager.getCellWidth();
+    const baseDuration = this.calculateFlightDuration(distance, cellWidth);
+    const duration = baseDuration * 0.6;
 
     return new Promise((resolve) => {
       const startX = this.sprite.x;
@@ -179,7 +194,8 @@ export class BouncingOrbProjectile extends BaseProjectile {
       const midX = (startX + endX) / 2;
       const midY = Math.min(startY, endY) - 25; // Smaller arc
 
-      this.animation = gsap.timeline()
+      this.animation = gsap
+        .timeline()
         .to(this.sprite, {
           motionPath: {
             path: [

@@ -19,16 +19,40 @@ class CollisionManager {
   // Active projectiles being tracked
   private activeProjectiles: Map<string, BaseProjectile> = new Map();
 
-  // Callbacks to interact with game store (single source of truth)
+  // Legacy single-store callbacks (kept for backwards compatibility)
   public onDefenseDotHit?: (dotId: string, damage: number) => void;
   public getDefenseDotsFromStore?: () => Map<string, DefenseDot>;
+
+  // Per-battle callbacks keyed by gameId/battleId
+  private battleDefenseHitHandlers: Map<string, (dotId: string, damage: number) => void> = new Map();
+  private battleDefenseDotSources: Map<string, () => Map<string, DefenseDot>> = new Map();
+
+  /**
+   * Register per-battle collision callbacks
+   */
+  public registerBattle(
+    gameId: string,
+    getDefenseDots: () => Map<string, DefenseDot>,
+    onDefenseDotHit: (dotId: string, damage: number) => void
+  ): void {
+    this.battleDefenseDotSources.set(gameId, getDefenseDots);
+    this.battleDefenseHitHandlers.set(gameId, onDefenseDotHit);
+  }
+
+  /**
+   * Unregister per-battle collision callbacks
+   */
+  public unregisterBattle(gameId: string): void {
+    this.battleDefenseDotSources.delete(gameId);
+    this.battleDefenseHitHandlers.delete(gameId);
+  }
 
   /**
    * Register a projectile for collision tracking
    */
   public registerProjectile(projectile: BaseProjectile): void {
     this.activeProjectiles.set(projectile.id, projectile);
-    
+
     // Set the collision check callback
     projectile.onCollisionCheck = (proj) => this.checkCollisions(proj);
   }
@@ -81,10 +105,13 @@ class CollisionManager {
         const hpAfter = Math.max(0, hpBefore - projectile.typeConfig.damage);
 
         // IMMEDIATELY apply damage to the store (single source of truth)
-        if (this.onDefenseDotHit) {
-          this.onDefenseDotHit(targetDot.id, projectile.typeConfig.damage);
+        const hitHandler =
+          this.battleDefenseHitHandlers.get(projectile.gameId) ?? this.onDefenseDotHit;
+
+        if (hitHandler) {
+          hitHandler(targetDot.id, projectile.typeConfig.damage);
         } else {
-          console.error(`❌ [COLLISION] onDefenseDotHit callback NOT SET!`);
+          console.error(`❌ [COLLISION] onDefenseDotHit callback NOT SET for gameId=${projectile.gameId}!`);
         }
 
         // Log collision with HP change
@@ -103,20 +130,20 @@ class CollisionManager {
    */
   private findOpposingProjectile(projectile: BaseProjectile): BaseProjectile | null {
     const opposingSide = projectile.side === 'left' ? 'right' : 'left';
-    
+
     for (const [id, other] of this.activeProjectiles) {
       // Skip self
       if (id === projectile.id) continue;
-      
+
       // Skip if already collided
       if (other.collided) continue;
-      
+
       // Must be same stat row and opposite side
       if (other.stat === projectile.stat && other.side === opposingSide) {
         return other;
       }
     }
-    
+
     return null;
   }
 
@@ -135,12 +162,17 @@ class CollisionManager {
    */
   private findNearestDefenseDot(projectile: BaseProjectile): DefenseDot | null {
     // Get FRESH defense dots from store (not cached copy)
-    if (!this.getDefenseDotsFromStore) {
-      console.warn('⚠️ getDefenseDotsFromStore callback not set! Cannot check defense dot collisions.');
+    const getDotsForGame =
+      this.battleDefenseDotSources.get(projectile.gameId) ?? this.getDefenseDotsFromStore;
+
+    if (!getDotsForGame) {
+      console.warn(
+        `⚠️ getDefenseDotsFromStore callback not set for gameId=${projectile.gameId}! Cannot check defense dot collisions.`,
+      );
       return null;
     }
 
-    const freshDots = this.getDefenseDotsFromStore();
+    const freshDots = getDotsForGame();
     const targetSide = projectile.side === 'left' ? 'right' : 'left';
     let targetDot: DefenseDot | null = null;
     let targetX = projectile.side === 'left' ? Infinity : -Infinity;
@@ -221,6 +253,8 @@ class CollisionManager {
    */
   public clear(): void {
     this.activeProjectiles.clear();
+    this.battleDefenseDotSources.clear();
+    this.battleDefenseHitHandlers.clear();
   }
 
   /**
@@ -230,10 +264,19 @@ class CollisionManager {
     projectileCount: number;
     defenseDotCount: number;
   } {
-    const defenseDots = this.getDefenseDotsFromStore ? this.getDefenseDotsFromStore() : new Map();
+    let defenseDotCount = 0;
+
+    if (this.getDefenseDotsFromStore) {
+      defenseDotCount = this.getDefenseDotsFromStore().size;
+    } else {
+      for (const getDots of this.battleDefenseDotSources.values()) {
+        defenseDotCount += getDots().size;
+      }
+    }
+
     return {
       projectileCount: this.activeProjectiles.size,
-      defenseDotCount: defenseDots.size,
+      defenseDotCount,
     };
   }
 }

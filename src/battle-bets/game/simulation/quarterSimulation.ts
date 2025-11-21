@@ -16,6 +16,7 @@ import * as PIXI from 'pixi.js';
 import gsap from 'gsap';
 import { projectilePool } from '../entities/projectiles/ProjectilePool';
 import { useGameStore } from '../../store/gameStore';
+import { useMultiGameStore } from '../../store/multiGameStore';
 import type { StatType } from '../../types/game';
 import { getBattlefieldCenter } from '../utils/positioning';
 import { pixiManager } from '../managers/PixiManager';
@@ -547,9 +548,9 @@ function findNextAliveDefenseDot(
   const aliveDots: Array<{ id: string; dot: any }> = [];
   store.defenseDots.forEach((dot, dotId) => {
     if (dot.gameId === gameId &&
-        dot.stat === stat &&
-        dot.side === side &&
-        dot.alive) {
+      dot.stat === stat &&
+      dot.side === side &&
+      dot.alive) {
       aliveDots.push({ id: dotId, dot });
     }
   });
@@ -686,4 +687,314 @@ function createCollisionEffect(x: number, y: number, color: number): void {
       collision.destroy();
     });
 }
+/**
+ * DEBUG: Run a single-quarter random battle for a multi-game store battle.
+ * This is used by /battle-arena?debug=1 so each Pixi canvas can actually fire projectiles.
+ */
+export async function runDebugBattleForMultiStore(battleId: string): Promise<void> {
+  const multiStore = useMultiGameStore.getState();
+  const battle = multiStore.getBattle(battleId);
+
+  if (!battle) {
+    console.warn(`[MultiBattleDebug] Battle not found for id=${battleId}`);
+    return;
+  }
+
+  const gameId = battleId; // multi-store uses battleId as gameId on DefenseDots / projectiles
+  console.log(`\n🎮 [MultiBattleDebug] Starting debug simulation for battle ${battleId}`);
+
+  // Wire collision manager to use multi-game store for this battle (per-battle callbacks)
+  collisionManager.registerBattle(
+    gameId,
+    () => {
+      const state = useMultiGameStore.getState();
+      const currentBattle = state.getBattle(battleId);
+      return currentBattle?.defenseDots ?? new Map();
+    },
+    (dotId: string, damage: number) => {
+      const state = useMultiGameStore.getState();
+      state.applyDamage(battleId, dotId, damage);
+    },
+  );
+
+  // For now, run a single random quarter worth of action
+  const quarterNumber = 1;
+  const quarterData = getQuarterData(quarterNumber);
+
+  console.log('[MultiBattleDebug] Quarter stats:', {
+    left: quarterData.left,
+    right: quarterData.right,
+  });
+
+  const statsOrder: StatType[] = ['pts', 'reb', 'ast', 'blk', '3pt'];
+
+  for (const stat of statsOrder) {
+    const leftCount = getCountForStatFromQuarter(stat, quarterData.left);
+    const rightCount = getCountForStatFromQuarter(stat, quarterData.right);
+
+    if (leftCount === 0 && rightCount === 0) {
+      continue;
+    }
+
+    const shouldContinue = await fireStatRowForMultiBattle(
+      battleId,
+      gameId,
+      stat,
+      leftCount,
+      rightCount
+    );
+
+    if (!shouldContinue) {
+      console.log(
+        `🏁 [MultiBattleDebug] Battle ended during ${stat.toUpperCase()} row for ${battleId}`
+      );
+      break;
+    }
+
+    // Small pause between stat rows so the action is readable
+    await sleep(500);
+  }
+
+  console.log(`✅ [MultiBattleDebug] Debug simulation complete for battle ${battleId}`);
+
+  // Cleanup collision callbacks for this battle
+  collisionManager.unregisterBattle(gameId);
+}
+
+/**
+ * Map StatType to the quarter stat counts
+ */
+function getCountForStatFromQuarter(stat: StatType, stats: QuarterStats): number {
+  switch (stat) {
+    case 'pts':
+      return stats.points;
+    case 'reb':
+      return stats.rebounds;
+    case 'ast':
+      return stats.assists;
+    case 'blk':
+      return stats.blocks;
+    case '3pt':
+      return stats.threePointers;
+    default:
+      return 0;
+  }
+}
+
+/**
+ * Fire one stat row worth of projectiles for a multi-game battle.
+ * Returns false if the battle should end, true to continue.
+ */
+async function fireStatRowForMultiBattle(
+  battleId: string,
+  gameId: string,
+  stat: StatType,
+  leftCount: number,
+  rightCount: number
+): Promise<boolean> {
+  const statName = stat.toUpperCase();
+  console.log(`⚔️ [MultiBattleDebug] ${statName}: L${leftCount} vs R${rightCount}`);
+
+  const container = pixiManager.getContainer(battleId);
+  if (!container) {
+    console.warn(`[MultiBattleDebug] No container registered for battle ${battleId}`);
+    return true;
+  }
+
+  // PHASE 1: Simple stat counter animations above each weapon
+  try {
+    const counterPromises: Promise<void>[] = [];
+
+    if (leftCount > 0) {
+      const pos = getStatLabelPosition(stat, 'left');
+      counterPromises.push(animateStatCounter(container, pos, leftCount, 'left'));
+    }
+
+    if (rightCount > 0) {
+      const pos = getStatLabelPosition(stat, 'right');
+      counterPromises.push(animateStatCounter(container, pos, rightCount, 'right'));
+    }
+
+    await Promise.all(counterPromises);
+  } catch (error: any) {
+    console.error('❌ [MultiBattleDebug] Error during stat counter animation:', error?.message || error);
+  }
+
+  // PHASE 2: Weapon activation glow
+  try {
+    const leftBall = getWeaponBall(container, stat, 'left');
+    const rightBall = getWeaponBall(container, stat, 'right');
+
+    const activationPromises: Promise<void>[] = [];
+    if (leftCount > 0 && leftBall) activationPromises.push(animateWeaponActivation(leftBall));
+    if (rightCount > 0 && rightBall) activationPromises.push(animateWeaponActivation(rightBall));
+
+    await Promise.all(activationPromises);
+  } catch (error: any) {
+    console.error('❌ [MultiBattleDebug] Error during weapon activation:', error?.message || error);
+  }
+
+  // PHASE 3: Fire projectiles from both sides with staggered timing
+  const maxCount = Math.max(leftCount, rightCount);
+  const projectilePromises: Promise<void>[] = [];
+  const STAGGER_DELAY = 220;
+
+  for (let i = 0; i < maxCount; i++) {
+    const delay = i * STAGGER_DELAY;
+
+    if (i < leftCount) {
+      projectilePromises.push(
+        (async () => {
+          await sleep(delay);
+          await fireSingleProjectileForMultiBattle(battleId, gameId, stat, 'left', i);
+        })()
+      );
+    }
+
+    if (i < rightCount) {
+      projectilePromises.push(
+        (async () => {
+          await sleep(delay);
+          await fireSingleProjectileForMultiBattle(battleId, gameId, stat, 'right', i);
+        })()
+      );
+    }
+  }
+
+  await Promise.all(projectilePromises);
+
+  // After the row resolves, check HP for this battle
+  const state = useMultiGameStore.getState();
+  const battle = state.getBattle(battleId);
+  if (!battle) return true;
+
+  const leftHP = battle.capperHP.get('left')?.currentHP ?? 0;
+  const rightHP = battle.capperHP.get('right')?.currentHP ?? 0;
+  const shouldContinue = leftHP > 0 && rightHP > 0;
+
+  if (!shouldContinue) {
+    console.log(
+      `💥 [MultiBattleDebug] Castle destroyed after ${statName} row (LHP=${leftHP}, RHP=${rightHP})`
+    );
+  }
+
+  return shouldContinue;
+}
+
+/**
+ * Fire a single projectile for one side in a multi-game battle.
+ */
+async function fireSingleProjectileForMultiBattle(
+  battleId: string,
+  gameId: string,
+  stat: StatType,
+  side: 'left' | 'right',
+  projectileIndex: number
+): Promise<void> {
+  const startPosition = getWeaponSlotPosition(stat, side);
+  const targetSide = side === 'left' ? 'right' : 'left';
+  const targetPosition = getWeaponSlotPosition(stat, targetSide);
+
+  const projectileId = `multi-${battleId}-${stat}-${side}-${projectileIndex}-${Date.now()}`;
+
+  const config = {
+    id: projectileId,
+    gameId,
+    stat,
+    side,
+    startPosition,
+    targetPosition,
+    typeConfig: getProjectileTypeConfig(stat),
+  };
+
+  const projectile = projectilePool.acquire(config);
+
+  // Route collision checks through the shared collision manager
+  projectile.onCollisionCheck = (proj) => collisionManager.checkCollisions(proj);
+
+  // Register with collision manager and store
+  collisionManager.registerProjectile(projectile);
+  useMultiGameStore.getState().addProjectile(battleId, projectile);
+
+  // Add sprite to this battle's Pixi container
+  pixiManager.addSprite(projectile.sprite, 'projectile', battleId);
+
+  // Animate towards target; collisions are checked during flight
+  await projectile.animateToTarget();
+
+  // Hide projectile sprite immediately after impact
+  projectile.sprite.visible = false;
+
+  // If it reached target without hitting a defense dot, damage the opposing capper HP
+  if (!projectile.collidedWith) {
+    useMultiGameStore.getState().applyDamageToCapperHP(battleId, targetSide, 1);
+    screenShake.shake('large');
+  } else if (projectile.collidedWith === 'defense') {
+    screenShake.shake('medium');
+  }
+
+  // Impact effect at final position
+  createCollisionEffectForBattle(battleId, projectile.sprite.x, projectile.sprite.y, projectile.typeConfig.color);
+
+  await sleep(150);
+
+  // Cleanup: remove from container & store, unregister, and return to pool
+  pixiManager.removeSprite(projectile.sprite, battleId);
+  useMultiGameStore.getState().removeProjectile(battleId, projectile.id);
+  collisionManager.unregisterProjectile(projectile.id);
+  projectilePool.release(projectile);
+}
+
+/**
+ * Create a collision effect scoped to a specific battle's Pixi container.
+ */
+function createCollisionEffectForBattle(
+  battleId: string,
+  x: number,
+  y: number,
+  color: number
+): void {
+  const container = pixiManager.getContainer(battleId);
+  if (!container) return;
+
+  const collision = new PIXI.Graphics();
+
+  const size = 20;
+
+  collision.moveTo(-size, -size);
+  collision.lineTo(size, size);
+
+  collision.moveTo(size, -size);
+  collision.lineTo(-size, size);
+
+  collision.stroke({ width: 4, color: 0xffffff, alpha: 0.9 });
+  collision.circle(0, 0, size);
+  collision.fill({ color, alpha: 0.3 });
+
+  collision.x = x;
+  collision.y = y;
+
+  container.addChild(collision);
+
+  gsap
+    .timeline()
+    .to(collision.scale, {
+      x: 1.5,
+      y: 1.5,
+      duration: 0.2,
+      ease: 'power2.out',
+    })
+    .to(
+      collision,
+      {
+        alpha: 0,
+        duration: 0.3,
+      },
+      '-=0.1'
+    )
+    .call(() => {
+      collision.destroy();
+    });
+}
+
 

@@ -13,6 +13,8 @@ import { screenShake } from '../../game/effects/ScreenShake'
 import { detectWebGLSupport } from '../../utils/webglDetection'
 import { castleManager } from '../../game/managers/CastleManager'
 import { gridManager } from '../../game/managers/GridManager'
+import { pixiManager } from '../../game/managers/PixiManager'
+import { runDebugBattleForMultiStore } from '../../game/simulation/quarterSimulation'
 import type { Game } from '../../types/game'
 import type { BattleStatus } from '@/lib/battle-bets/BattleTimer'
 
@@ -45,8 +47,10 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
   const canvasRef = useRef<HTMLDivElement>(null)
   const appRef = useRef<PIXI.Application | null>(null)
   const containerRef = useRef<PIXI.Container | null>(null)
+  const hasStartedSimulationRef = useRef(false)
   const [webglSupport, setWebglSupport] = useState<ReturnType<typeof detectWebGLSupport> | null>(null)
   const [containerReady, setContainerReady] = useState(false)
+  const [debugMode, setDebugMode] = useState(false)
 
   const initializeBattle = useMultiGameStore(state => state.initializeBattle)
   const getBattle = useMultiGameStore(state => state.getBattle)
@@ -60,6 +64,19 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
       console.error('❌ WebGL not supported:', support.error)
     }
   }, [])
+
+  // Detect debug mode from URL query string (?debug=1)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    try {
+      const params = new URLSearchParams(window.location.search)
+      setDebugMode(params.get('debug') === '1')
+    } catch (error) {
+      console.warn('[BattleCanvas] Failed to read debug query param', error)
+    }
+  }, [])
+
 
   // Initialize PixiJS application
   // NOTE: We intentionally *do not* re-run this effect on every data refresh.
@@ -106,6 +123,10 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
           const container = new PIXI.Container()
           app.stage.addChild(container)
           containerRef.current = container
+
+          // Register this battle's app + container with PixiManager
+          pixiManager.setApp(app, battleId)
+          pixiManager.setContainer(container, battleId)
 
           screenShake.setContainer(container)
 
@@ -163,6 +184,9 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
 
       castleManager.clear()
 
+      // Clear PixiManager references for this battle (actual app destroy happens here)
+      pixiManager.clearBattle(battleId)
+
       if (app) {
         try {
           app.destroy(true)
@@ -210,6 +234,20 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
       }
     })
   }, [battleId, getBattle, containerReady])
+
+  // Auto-start debug simulation for this battle when ?debug=1 is present
+  useEffect(() => {
+    if (!debugMode) return
+    if (!containerReady) return
+    if (hasStartedSimulationRef.current) return
+
+    hasStartedSimulationRef.current = true
+
+    runDebugBattleForMultiStore(battleId).catch(error => {
+      console.error(`[BattleCanvas] Debug battle simulation failed for ${battleId}:`, error)
+    })
+  }, [battleId, debugMode, containerReady])
+
 
   // Update battle status overlay (countdown timers) every second
   useEffect(() => {

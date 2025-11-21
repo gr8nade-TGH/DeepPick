@@ -7,6 +7,8 @@ import * as PIXI from 'pixi.js';
 import gsap from 'gsap';
 import { BaseProjectile, type BaseProjectileConfig } from './BaseProjectile';
 
+import { gridManager } from '../../managers/GridManager';
+
 export class ExplosiveFireballProjectile extends BaseProjectile {
   constructor(config: BaseProjectileConfig) {
     super(config);
@@ -85,24 +87,24 @@ export class ExplosiveFireballProjectile extends BaseProjectile {
    */
   private createFireParticles(container: PIXI.Container, radius: number): void {
     const particleCount = 5;
-    
+
     for (let i = 0; i < particleCount; i++) {
       const particle = new PIXI.Graphics();
       const particleSize = 3 - (i * 0.4);
-      
+
       particle.circle(0, 0, particleSize);
-      
+
       // Gradient from yellow to red to black
       const colors = [0xFFFF00, 0xFF8800, 0xFF3838, 0x880000, 0x000000];
       const colorIndex = Math.min(i, colors.length - 1);
       particle.fill({ color: colors[colorIndex], alpha: 0.8 - (i * 0.15) });
-      
+
       // Position behind fireball
       particle.x = -radius - 5 - (i * 4);
       particle.y = (Math.random() - 0.5) * 6; // Random vertical offset
-      
+
       container.addChild(particle);
-      
+
       // Animate particle (fade and drift)
       gsap.to(particle, {
         x: particle.x - 8,
@@ -121,10 +123,19 @@ export class ExplosiveFireballProjectile extends BaseProjectile {
    */
   public async animateToTarget(): Promise<void> {
     return new Promise((resolve) => {
-      const duration = this.typeConfig.speed; // 1.2s - SLOWEST
+      // Calculate distance to target
+      const dx = this.targetPosition.x - this.position.x;
+      const dy = this.targetPosition.y - this.position.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      // Calculate duration based on grid-based speed system
+      const cellWidth = gridManager.getCellWidth();
+      const baseDuration = this.calculateFlightDuration(distance, cellWidth);
+      const duration = baseDuration * 1.4; // Slightly slower & heavier than standard
 
       // Straight line animation (slow and menacing)
-      this.animation = gsap.timeline()
+      this.animation = gsap
+        .timeline()
         .to(this.sprite, {
           x: this.targetPosition.x,
           y: this.targetPosition.y,
@@ -151,7 +162,7 @@ export class ExplosiveFireballProjectile extends BaseProjectile {
     const explosion = new PIXI.Container();
     explosion.x = this.sprite.x;
     explosion.y = this.sprite.y;
-    
+
     // Add to parent
     if (this.sprite.parent) {
       this.sprite.parent.addChild(explosion);
@@ -162,15 +173,15 @@ export class ExplosiveFireballProjectile extends BaseProjectile {
     for (let i = 0; i < ringCount; i++) {
       const ring = new PIXI.Graphics();
       const baseRadius = 15 + (i * 8);
-      
+
       ring.circle(0, 0, baseRadius);
-      
+
       // Color gradient from white to yellow to red
       const colors = [0xFFFFFF, 0xFFFF00, 0xFF8800, 0xFF3838];
       ring.fill({ color: colors[i], alpha: 0.8 - (i * 0.15) });
-      
+
       explosion.addChild(ring);
-      
+
       // Animate ring expansion
       gsap.timeline()
         .to(ring.scale, {
@@ -190,7 +201,7 @@ export class ExplosiveFireballProjectile extends BaseProjectile {
     flash.circle(0, 0, 20);
     flash.fill({ color: 0xFFFFFF, alpha: 1.0 });
     explosion.addChild(flash);
-    
+
     gsap.to(flash, {
       alpha: 0,
       duration: 0.2,
@@ -215,21 +226,21 @@ export class ExplosiveFireballProjectile extends BaseProjectile {
    */
   private createExplosionParticles(container: PIXI.Container): void {
     const particleCount = 12;
-    
+
     for (let i = 0; i < particleCount; i++) {
       const particle = new PIXI.Graphics();
       const angle = (i / particleCount) * Math.PI * 2;
       const distance = 30 + Math.random() * 20;
-      
+
       particle.circle(0, 0, 3 + Math.random() * 2);
-      
+
       // Random fire colors
       const colors = [0xFFFF00, 0xFF8800, 0xFF3838];
       const color = colors[Math.floor(Math.random() * colors.length)];
       particle.fill({ color, alpha: 0.9 });
-      
+
       container.addChild(particle);
-      
+
       // Animate particle outward
       gsap.timeline()
         .to(particle, {
