@@ -70,8 +70,15 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
     if (typeof window === 'undefined') return
 
     try {
-      const params = new URLSearchParams(window.location.search)
-      setDebugMode(params.get('debug') === '1')
+      const search = window.location.search
+      console.log('[BattleCanvas] window.location.search =', search)
+
+      const params = new URLSearchParams(search)
+      const debugParam = params.get('debug')
+      const isDebug = debugParam === '1' || debugParam === 'true'
+
+      console.log('[BattleCanvas] Parsed debug param =', debugParam, '=> debugMode =', isDebug)
+      setDebugMode(isDebug)
     } catch (error) {
       console.warn('[BattleCanvas] Failed to read debug query param', error)
     }
