@@ -777,8 +777,8 @@ async function fireStatRowForMultiBattle(
     const rightBall = getWeaponBall(container, stat, 'right');
 
     const activationPromises: Promise<void>[] = [];
-    if (leftCount > 0 && leftBall) activationPromises.push(animateWeaponActivation(leftBall));
-    if (rightCount > 0 && rightBall) activationPromises.push(animateWeaponActivation(rightBall));
+    if (leftCount > 0 && leftBall) activationPromises.push(animateWeaponActivation(leftBall, stat));
+    if (rightCount > 0 && rightBall) activationPromises.push(animateWeaponActivation(rightBall, stat));
 
     await Promise.all(activationPromises);
   } catch (error: any) {

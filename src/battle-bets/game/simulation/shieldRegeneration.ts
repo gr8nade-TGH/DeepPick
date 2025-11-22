@@ -25,7 +25,7 @@ export async function regenerateDefenseDots(gameId: string): Promise<void> {
   console.log('\n🛡️ SHIELD REGENERATION ACTIVATING...');
 
   const sides: ('left' | 'right')[] = ['left', 'right'];
-  const statsToRegenerate: StatType[] = ['points', 'reb', 'ast'];
+  const statsToRegenerate: StatType[] = ['pts', 'reb', 'ast'];
 
   for (const side of sides) {
     const team = side === 'left' ? game.leftTeam : game.rightTeam;
