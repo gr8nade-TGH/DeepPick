@@ -6,30 +6,44 @@ import * as PIXI from 'pixi.js';
 import { Castle } from '../entities/Castle';
 import type { CastleData } from '../../types/game';
 
+interface BattleCastleMap {
+  [castleId: string]: Castle;
+}
+
 export class CastleManager {
-  private castles: Map<string, Castle> = new Map();
-  private container: PIXI.Container | null = null;
+  // Per-battle castle collections so multiple battles can render at once
+  private battles: Map<string, BattleCastleMap> = new Map();
+  // Per-battle Pixi containers (similar pattern to PixiManager)
+  private containers: Map<string, PIXI.Container> = new Map();
 
   /**
-   * Set the PixiJS container for rendering castles
+   * Register the PixiJS container for a specific battle
    */
-  public setContainer(container: PIXI.Container): void {
-    this.container = container;
+  public setContainer(container: PIXI.Container, battleId: string): void {
+    this.containers.set(battleId, container);
   }
 
   /**
-   * Create and add a castle to the scene
+   * Create and add a castle to the scene for a specific battle
    */
-  public async addCastle(config: CastleData): Promise<Castle | null> {
-    if (!this.container) {
-      console.error('❌ CastleManager: Container not set');
+  public async addCastle(battleId: string, config: CastleData): Promise<Castle | null> {
+    const container = this.containers.get(battleId);
+    if (!container) {
+      console.error(`❌ CastleManager: Container not set for battle ${battleId}`);
       return null;
     }
 
+    // Ensure battle map exists
+    let battleCastles = this.battles.get(battleId);
+    if (!battleCastles) {
+      battleCastles = {};
+      this.battles.set(battleId, battleCastles);
+    }
+
     // Check if castle already exists
-    if (this.castles.has(config.id)) {
-      console.warn(`⚠️ Castle ${config.id} already exists`);
-      return this.castles.get(config.id) || null;
+    if (battleCastles[config.id]) {
+      console.warn(`⚠️ Castle ${config.id} already exists in battle ${battleId}`);
+      return battleCastles[config.id];
     }
 
     // Create castle instance
@@ -50,83 +64,99 @@ export class CastleManager {
     // Load castle sprite
     await castle.load();
 
-    // Add castle container to scene
-    this.container.addChild(castle.container);
+    // Add castle container to the correct battle container
+    container.addChild(castle.container);
 
     // Store castle reference
-    this.castles.set(config.id, castle);
+    battleCastles[config.id] = castle;
 
-    console.log(`✅ Castle ${config.id} added to scene`);
+    console.log(`✅ Castle ${config.id} added to scene for battle ${battleId}`);
     return castle;
   }
 
   /**
-   * Get castle by ID
+   * Get a castle by ID for a given battle
    */
-  public getCastle(id: string): Castle | undefined {
-    return this.castles.get(id);
+  public getCastle(battleId: string, id: string): Castle | undefined {
+    const battleCastles = this.battles.get(battleId);
+    return battleCastles ? battleCastles[id] : undefined;
   }
 
   /**
-   * Get castle by capper ID
+   * Update castle HP for a given battle
    */
-  public getCastleByCapperId(capperId: string): Castle | undefined {
-    for (const castle of this.castles.values()) {
-      if (castle.capperId === capperId) {
-        return castle;
-      }
-    }
-    return undefined;
-  }
-
-  /**
-   * Update castle HP
-   */
-  public damageCastle(castleId: string, damage: number): void {
-    const castle = this.castles.get(castleId);
+  public damageCastle(battleId: string, castleId: string, damage: number): void {
+    const castle = this.getCastle(battleId, castleId);
     if (castle) {
       castle.takeDamage(damage);
     }
   }
 
   /**
-   * Heal castle
+   * Heal castle for a given battle
    */
-  public healCastle(castleId: string, amount: number): void {
-    const castle = this.castles.get(castleId);
+  public healCastle(battleId: string, castleId: string, amount: number): void {
+    const castle = this.getCastle(battleId, castleId);
     if (castle) {
       castle.heal(amount);
     }
   }
 
   /**
-   * Remove castle from scene
+   * Remove a single castle from a specific battle
    */
-  public removeCastle(id: string): void {
-    const castle = this.castles.get(id);
+  public removeCastle(battleId: string, id: string): void {
+    const battleCastles = this.battles.get(battleId);
+    if (!battleCastles) return;
+
+    const castle = battleCastles[id];
     if (castle) {
       castle.cleanup();
-      this.castles.delete(id);
-      console.log(`🗑️ Castle ${id} removed`);
+      delete battleCastles[id];
+      console.log(`🗑️ Castle ${id} removed from battle ${battleId}`);
     }
   }
 
   /**
-   * Remove all castles
+   * Remove all castles for a specific battle
+   */
+  public clearBattle(battleId: string): void {
+    const battleCastles = this.battles.get(battleId);
+    if (battleCastles) {
+      Object.values(battleCastles).forEach(castle => castle.cleanup());
+      this.battles.delete(battleId);
+    }
+
+    const container = this.containers.get(battleId);
+    if (container) {
+      container.children
+        .filter(child => child.name === 'castle')
+        .forEach(child => container.removeChild(child));
+      this.containers.delete(battleId);
+    }
+
+    console.log(`🗑️ All castles cleared for battle ${battleId}`);
+  }
+
+  /**
+   * Remove all castles for all battles (used on global cleanup)
    */
   public clear(): void {
-    for (const castle of this.castles.values()) {
-      castle.cleanup();
-    }
-    this.castles.clear();
+    this.battles.forEach((battleCastles, battleId) => {
+      Object.values(battleCastles).forEach(castle => castle.cleanup());
+      console.log(`🗑️ Cleared castles for battle ${battleId}`);
+    });
+    this.battles.clear();
+    this.containers.clear();
     console.log('🗑️ All castles cleared');
   }
 
   /**
-   * Get all castles
+   * Get all castles for a given battle
    */
-  public getAllCastles(): Castle[] {
-    return Array.from(this.castles.values());
+  public getAllCastles(battleId: string): Castle[] {
+    const battleCastles = this.battles.get(battleId);
+    return battleCastles ? Object.values(battleCastles) : [];
   }
 }
 

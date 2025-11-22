@@ -17,6 +17,8 @@ interface OverlayConfig {
   winner?: 'left' | 'right' | null
   canvasWidth: number
   canvasHeight: number
+  // Optional: whether both cappers/opponents are present for this battle
+  hasOpponent?: boolean
 }
 
 /**
@@ -75,17 +77,23 @@ export function createBattleStatusOverlay(config: OverlayConfig): PIXI.Container
           showOverlay = true
         }
       } else {
-        // Premium "searching for rival" experience while we wait for an opponent
-        isFindingOpponent = true
-        const phases = [
-          'FINDING OPPONENT',
-          'FINDING OPPONENT.',
-          'FINDING OPPONENT..',
-          'FINDING OPPONENT...',
-        ]
-        loadingPhase = Math.floor(now / 500) % phases.length
-        message = phases[loadingPhase]
-        showOverlay = true
+        // Only show the premium "FINDING OPPONENT" overlay when this battle truly
+        // does not yet have an opponent. If both cappers are present, we skip the
+        // overlay entirely so the live battle action is always visible.
+        if (config.hasOpponent === false) {
+          isFindingOpponent = true
+          const phases = [
+            'FINDING OPPONENT',
+            'FINDING OPPONENT.',
+            'FINDING OPPONENT..',
+            'FINDING OPPONENT...',
+          ]
+          loadingPhase = Math.floor(now / 500) % phases.length
+          message = phases[loadingPhase]
+          showOverlay = true
+        } else {
+          showOverlay = false
+        }
       }
       break
 

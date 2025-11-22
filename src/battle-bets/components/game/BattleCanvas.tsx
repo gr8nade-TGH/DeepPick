@@ -140,16 +140,16 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
           // Draw grid
           drawPremiumGrid(container)
 
-          // Set container for castle manager
-          castleManager.setContainer(container)
+          // Set container for castle manager for this specific battle
+          castleManager.setContainer(container, battleId)
 
           // Initialize battle in store (HP + defense dots)
           initializeBattle(battleId, game)
 
           setContainerReady(true)
 
-          // Add castles
-          await castleManager.addCastle({
+          // Add castles for this battle
+          await castleManager.addCastle(battleId, {
             id: `${battleId}-left`,
             capperId: game.leftCapper.id,
             capperName: game.leftCapper.name,
@@ -163,7 +163,7 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
             side: 'left',
           })
 
-          await castleManager.addCastle({
+          await castleManager.addCastle(battleId, {
             id: `${battleId}-right`,
             capperId: game.rightCapper.id,
             capperName: game.rightCapper.name,
@@ -189,7 +189,8 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
       mounted = false
       console.log(`[BattleCanvas] Cleaning up battle: ${battleId}`)
 
-      castleManager.clear()
+      // Clear castles only for this battle
+      castleManager.clearBattle(battleId)
 
       // Clear PixiManager references for this battle (actual app destroy happens here)
       pixiManager.clearBattle(battleId)
@@ -264,6 +265,8 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
     const canvasWidth = getCanvasWidth()
     const canvasHeight = getCanvasHeight()
 
+    const hasOpponent = Boolean(game.rightCapper && game.rightCapper.id)
+
     // Update overlay immediately
     updateBattleStatusOverlay(container, {
       status,
@@ -275,7 +278,8 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
       q4EndTime: q4EndTime ?? null,
       winner,
       canvasWidth,
-      canvasHeight
+      canvasHeight,
+      hasOpponent,
     })
 
     // Update every second for countdown timers
@@ -290,12 +294,13 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
         q4EndTime: q4EndTime ?? null,
         winner,
         canvasWidth,
-        canvasHeight
+        canvasHeight,
+        hasOpponent,
       })
     }, 1000)
 
     return () => clearInterval(interval)
-  }, [status, gameStartTime, q1EndTime, q2EndTime, halftimeEndTime, q3EndTime, q4EndTime, winner, containerReady])
+  }, [status, gameStartTime, q1EndTime, q2EndTime, halftimeEndTime, q3EndTime, q4EndTime, winner, containerReady, game.rightCapper])
 
   if (webglSupport && !webglSupport.supported) {
     return (

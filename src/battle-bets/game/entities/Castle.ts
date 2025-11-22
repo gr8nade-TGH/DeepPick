@@ -153,6 +153,7 @@ export class Castle {
       this.sprite.anchor.set(0.5, 0.5); // Anchor at center
       this.sprite.scale.set(this.scale);
       this.sprite.position.set(0, -20); // Centered in 200px box with room for HP bar below
+      this.sprite.name = 'castle';
       this.container.addChild(this.sprite);
 
       // 2. Create HP bar below castle
