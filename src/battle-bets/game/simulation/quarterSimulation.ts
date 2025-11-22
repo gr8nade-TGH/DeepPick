@@ -15,7 +15,6 @@
 import * as PIXI from 'pixi.js';
 import gsap from 'gsap';
 import { projectilePool } from '../entities/projectiles/ProjectilePool';
-import { useGameStore } from '../../store/gameStore';
 import { useMultiGameStore } from '../../store/multiGameStore';
 import type { StatType } from '../../types/game';
 import { getBattlefieldCenter } from '../utils/positioning';
@@ -48,13 +47,16 @@ interface QuarterStats {
 /**
  * Check if a capper has the Fire Orb equipped and calculate bonus FIRE projectiles
  * Fire Orb: For every 5 POINTS projectiles, fire 1 bonus FIRE projectile
+ *
+ * NOTE: This function now reads from the multi-battle store. The `gameId` here is
+ * the same as the `battleId` used in useMultiGameStore.
  */
 function calculateFireOrbBonus(gameId: string, side: 'left' | 'right', pointsCount: number): number {
-  const store = useGameStore.getState();
-  const game = store.games.find(g => g.id === gameId);
-  if (!game) return 0;
+  const multiStore = useMultiGameStore.getState();
+  const battle = multiStore.getBattle(gameId);
+  if (!battle) return 0;
 
-  const capper = side === 'left' ? game.leftCapper : game.rightCapper;
+  const capper = side === 'left' ? battle.game.leftCapper : battle.game.rightCapper;
   if (!capper.equippedItems) return 0;
 
   // Check all 3 item slots for Fire Orb
@@ -83,94 +85,85 @@ function calculateFireOrbBonus(gameId: string, side: 'left' | 'right', pointsCou
  * Simulate a quarter of the battle
  * Returns the quarter stats for score tracking
  */
-export async function simulateQuarter(quarterNumber: number): Promise<{
+export async function simulateQuarter(
+  battleId: string,
+  quarterNumber: number
+): Promise<{
   left: QuarterStats;
   right: QuarterStats;
 }> {
-  console.log(`\n🎮 Q${quarterNumber} START`);
+  console.log(`\n🎮 Q${quarterNumber} START (battleId=${battleId})`);
 
-  const store = useGameStore.getState();
+  const multiStore = useMultiGameStore.getState();
+  const battle = multiStore.getBattle(battleId);
 
-  // Set up collision manager callbacks
-  // 1. Apply damage IMMEDIATELY when defense dot is hit
-  collisionManager.onDefenseDotHit = (dotId: string, damage: number) => {
-    store.applyDamage(dotId, damage);
-  };
+  if (!battle) {
+    console.error(`[simulateQuarter] No battle found for id=${battleId}`);
+    return getQuarterData(quarterNumber);
+  }
 
-  // 2. Get FRESH defense dots from store (so we always see latest HP values)
-  collisionManager.getDefenseDotsFromStore = () => {
-    const dots = useGameStore.getState().defenseDots;
-    // Log every 20th call to avoid spam
-    if (Math.random() < 0.05) {
-      console.log(`📦 [CALLBACK] getDefenseDotsFromStore called: ${dots.size} dots in store`);
-    }
-    return dots;
-  };
+  const gameId = battleId; // In multi-store, we use battleId as gameId for dots/projectiles
 
-  console.log(`✅ Collision manager callbacks configured`);
-  console.log(`   - onDefenseDotHit: ${collisionManager.onDefenseDotHit ? 'SET' : 'NOT SET'}`);
-  console.log(`   - getDefenseDotsFromStore: ${collisionManager.getDefenseDotsFromStore ? 'SET' : 'NOT SET'}`);
+  // Wire collision manager for this battle
+  collisionManager.registerBattle(
+    gameId,
+    () => {
+      const state = useMultiGameStore.getState();
+      const currentBattle = state.getBattle(battleId);
+      return currentBattle?.defenseDots ?? new Map();
+    },
+    (dotId: string, damage: number) => {
+      const state = useMultiGameStore.getState();
+      state.applyDamage(battleId, dotId, damage);
+    },
+  );
 
-  // Reduced logging for cleaner output
-  // console.log(`📦 Store state:`, {
-  //   gamesCount: store.games.length,
-  //   defenseDotsCount: store.defenseDots.size,
-  //   projectilesCount: store.projectiles.length,
-  // });
-
-  const game = store.games[0];
+  console.log(`✅ Collision manager callbacks configured for battle ${battleId}`);
 
   // Get quarter stats for both teams
   const quarterData = getQuarterData(quarterNumber);
 
-  if (!game) {
-    console.error('❌ No game found in store!');
-    return quarterData; // Return empty stats if no game
-  }
-
-  console.log(`📊 ${game.leftTeam.abbreviation}: PTS=${quarterData.left.points} REB=${quarterData.left.rebounds} AST=${quarterData.left.assists} BLK=${quarterData.left.blocks} 3PM=${quarterData.left.threePointers}`);
-  console.log(`📊 ${game.rightTeam.abbreviation}: PTS=${quarterData.right.points} REB=${quarterData.right.rebounds} AST=${quarterData.right.assists} BLK=${quarterData.right.blocks} 3PM=${quarterData.right.threePointers}`);
+  console.log(
+    `📊 ${battle.game.leftTeam.abbreviation}: PTS=${quarterData.left.points} REB=${quarterData.left.rebounds} AST=${quarterData.left.assists} BLK=${quarterData.left.blocks} 3PM=${quarterData.left.threePointers}`
+  );
+  console.log(
+    `📊 ${battle.game.rightTeam.abbreviation}: PTS=${quarterData.right.points} REB=${quarterData.right.rebounds} AST=${quarterData.right.assists} BLK=${quarterData.right.blocks} 3PM=${quarterData.right.threePointers}`
+  );
 
   // Fire ALL stat rows SIMULTANEOUSLY (not sequentially)
-  // All stats fill at the same time, all projectiles fire at the same time
   try {
-    // Fire all stat rows in parallel
     const statRowPromises = [
-      fireStatRow('pts', quarterData.left.points, quarterData.right.points, game.id),
-      fireStatRow('reb', quarterData.left.rebounds, quarterData.right.rebounds, game.id),
-      fireStatRow('ast', quarterData.left.assists, quarterData.right.assists, game.id),
-      fireStatRow('blk', quarterData.left.blocks, quarterData.right.blocks, game.id),
-      fireStatRow('3pt', quarterData.left.threePointers, quarterData.right.threePointers, game.id),
+      fireStatRow('pts', quarterData.left.points, quarterData.right.points, gameId),
+      fireStatRow('reb', quarterData.left.rebounds, quarterData.right.rebounds, gameId),
+      fireStatRow('ast', quarterData.left.assists, quarterData.right.assists, gameId),
+      fireStatRow('blk', quarterData.left.blocks, quarterData.right.blocks, gameId),
+      fireStatRow('3pt', quarterData.left.threePointers, quarterData.right.threePointers, gameId),
     ];
 
-    // Wait for all stat rows to complete
     const results = await Promise.all(statRowPromises);
 
-    // Check if any stat row returned false (battle ended)
     if (results.some(result => !result)) {
       console.log('⚠️ Battle ended during stat row firing');
       return quarterData;
     }
-
-    // NOTE: Fire Orb logic moved to defense dot destruction event (see CollisionManager)
-    // Fire Orb now triggers when a team loses their last defense dot for a stat row
   } catch (error: any) {
     console.error('❌ Error during stat row firing:', error?.message || error);
   }
 
   // SHIELD REGENERATION: Activate at end of quarter
   try {
-    await regenerateDefenseDots(game.id);
+    await regenerateDefenseDots(battleId);
   } catch (error: any) {
     console.error('❌ Regen error:', error?.message || error);
   }
 
-  // Print debug summary
   projectileDebugger.printSummary();
 
-  console.log(`✅ Q${quarterNumber} COMPLETE\n`);
+  console.log(`✅ Q${quarterNumber} COMPLETE (battleId=${battleId})\n`);
 
-  // Return quarter stats for score tracking
+  // Cleanup collision callbacks for this battle
+  collisionManager.unregisterBattle(gameId);
+
   return quarterData;
 }
 
@@ -191,16 +184,14 @@ export async function fireStatRow(
   rightCount: number,
   gameId: string
 ): Promise<boolean> {
-  const store = useGameStore.getState();
   const statName = stat.toUpperCase();
-  console.log(`⚔️ ${statName}: L${leftCount} vs R${rightCount}`);
+  console.log(`⚔️ ${statName}: L${leftCount} vs R${rightCount} (gameId=${gameId})`);
 
   // PHASE 1: Animate stat counters for both sides
   const container = pixiManager.getContainer();
   if (container) {
     const counterPromises: Promise<void>[] = [];
 
-    // Left counter
     if (leftCount > 0) {
       const leftLabelPos = getStatLabelPosition(stat, 'left');
       counterPromises.push(
@@ -214,7 +205,6 @@ export async function fireStatRow(
       );
     }
 
-    // Right counter
     if (rightCount > 0) {
       const rightLabelPos = getStatLabelPosition(stat, 'right');
       counterPromises.push(
@@ -228,7 +218,6 @@ export async function fireStatRow(
       );
     }
 
-    // Wait for counters to complete
     await Promise.all(counterPromises);
   }
 
@@ -236,7 +225,6 @@ export async function fireStatRow(
   if (container) {
     const activationPromises: Promise<void>[] = [];
 
-    // Left weapon activation
     if (leftCount > 0) {
       const leftWeaponBall = getWeaponBall(container, stat, 'left');
       if (leftWeaponBall) {
@@ -244,7 +232,6 @@ export async function fireStatRow(
       }
     }
 
-    // Right weapon activation
     if (rightCount > 0) {
       const rightWeaponBall = getWeaponBall(container, stat, 'right');
       if (rightWeaponBall) {
@@ -252,42 +239,27 @@ export async function fireStatRow(
       }
     }
 
-    // Wait for weapon activations to complete
     await Promise.all(activationPromises);
   }
 
   // PHASE 3: PROJECTILES FIRE WITH STAGGER DELAY (creates spacing between projectiles)
   const maxCount = Math.max(leftCount, rightCount);
+  const STAGGER_DELAY = 400; // ms
 
-  // Stagger delay creates visual spacing between projectiles in the same lane
-  // At 3 cells/sec speed, 400ms delay creates ~3 projectile-widths of spacing
-  const STAGGER_DELAY = 400; // 400ms delay between each projectile (creates ~3 projectile-widths spacing)
-
-  // Launch projectiles with stagger delay
   const projectilePromises: Promise<void>[] = [];
 
   for (let i = 0; i < maxCount; i++) {
     const hasLeftProjectile = i < leftCount;
     const hasRightProjectile = i < rightCount;
 
-    // Create a promise for this projectile pair with stagger delay
     const projectilePromise = (async () => {
-      // Add stagger delay before firing (creates spacing)
       await sleep(i * STAGGER_DELAY);
 
-      // NOTE: We don't need to refresh collision manager here anymore!
-      // The collision manager now queries fresh defense dots from store on EVERY collision check
-      // This ensures we always see the latest HP values, even during flight
-
-      // SIMULTANEOUS FIRING: Both sides fire at the same time
       if (hasLeftProjectile && hasRightProjectile) {
-        // Both sides have projectiles - they collide mid-battlefield
         await fireSimultaneousProjectiles(gameId, stat, i);
       } else if (hasLeftProjectile) {
-        // Only left has projectile - hits right defense
         await fireProjectileAtHPBar(gameId, stat, 'left', i);
       } else if (hasRightProjectile) {
-        // Only right has projectile - hits left defense
         await fireProjectileAtHPBar(gameId, stat, 'right', i);
       }
     })();
@@ -295,16 +267,14 @@ export async function fireStatRow(
     projectilePromises.push(projectilePromise);
   }
 
-  // Wait for ALL projectiles to complete
   await Promise.all(projectilePromises);
 
-  // Check if battle should end after all projectiles
   if (checkBattleEnd(gameId)) {
     console.log('⚠️ Battle ended!');
     return false;
   }
 
-  return true; // Battle continues
+  return true;
 }
 
 /**
@@ -317,9 +287,8 @@ async function fireSimultaneousProjectiles(
   stat: StatType,
   projectileIndex: number
 ): Promise<void> {
-  const store = useGameStore.getState();
-
-  // NOTE: No need to update collision manager - it queries fresh data from store on every check
+  // NOTE: No need to update store here - CollisionManager and multiGameStore
+  // handle defense dot and HP updates based on projectile collisions.
 
   // Get weapon slot positions for both sides
   const leftWeaponPos = getWeaponSlotPosition(stat, 'left');
@@ -368,16 +337,12 @@ async function fireSimultaneousProjectiles(
   const rightProjectile = projectilePool.acquire(rightConfig);
 
   // Set collision check callback on each projectile
-  leftProjectile.onCollisionCheck = (projectile) => collisionManager.checkCollisions(projectile);
-  rightProjectile.onCollisionCheck = (projectile) => collisionManager.checkCollisions(projectile);
+  leftProjectile.onCollisionCheck = projectile => collisionManager.checkCollisions(projectile);
+  rightProjectile.onCollisionCheck = projectile => collisionManager.checkCollisions(projectile);
 
   // Register projectiles with collision manager
   collisionManager.registerProjectile(leftProjectile);
   collisionManager.registerProjectile(rightProjectile);
-
-  // Add both to store
-  store.addProjectile(leftProjectile);
-  store.addProjectile(rightProjectile);
 
   // Add sprites to PixiJS container
   pixiManager.addSprite(leftProjectile.sprite, 'projectile');
@@ -386,7 +351,7 @@ async function fireSimultaneousProjectiles(
   // Animate both projectiles simultaneously
   await Promise.all([
     leftProjectile.animateToTarget(),
-    rightProjectile.animateToTarget()
+    rightProjectile.animateToTarget(),
   ]);
 
   // Handle collision results
@@ -417,8 +382,6 @@ async function fireSimultaneousProjectiles(
   // Clean up both projectiles
   pixiManager.removeSprite(leftProjectile.sprite);
   pixiManager.removeSprite(rightProjectile.sprite);
-  store.removeProjectile(leftProjectile.id);
-  store.removeProjectile(rightProjectile.id);
   collisionManager.unregisterProjectile(leftProjectile.id);
   collisionManager.unregisterProjectile(rightProjectile.id);
   projectilePool.release(leftProjectile);
@@ -445,20 +408,12 @@ export async function fireProjectileAtHPBar(
   side: 'left' | 'right',
   projectileIndex: number
 ): Promise<void> {
-  const store = useGameStore.getState();
-
   // Get weapon slot position (center of weapon slot cell)
   const startPosition = getWeaponSlotPosition(stat, side);
 
-  // Target is the opposing side
   const targetSide = side === 'left' ? 'right' : 'left';
-
-  // CRITICAL FIX: Target the opposing weapon slot (far side of defense grid)
-  // The collision manager will intercept with defense dots during flight
-  // This ensures projectiles always target the CURRENT nearest alive dot, not a stale target
   const targetPosition = getWeaponSlotPosition(stat, targetSide);
 
-  // Create projectile based on stat type (using object pool)
   const projectileId = `projectile-${stat}-${side}-${projectileIndex}-${Date.now()}`;
 
   const config = {
@@ -473,47 +428,30 @@ export async function fireProjectileAtHPBar(
 
   const projectile = projectilePool.acquire(config);
 
-  // Set collision check callback on the projectile
-  projectile.onCollisionCheck = (proj) => collisionManager.checkCollisions(proj);
+  projectile.onCollisionCheck = proj => collisionManager.checkCollisions(proj);
 
-  // NOTE: No need to update collision manager - it queries fresh data from store on every check
-
-  // Register projectile with collision manager
   collisionManager.registerProjectile(projectile);
 
-  // Add to store
-  store.addProjectile(projectile);
-
-  // CRITICAL: Add sprite to PixiJS container IMMEDIATELY before animation
   pixiManager.addSprite(projectile.sprite, 'projectile');
 
-  // Animate projectile to target (collision detection happens during flight)
   await projectile.animateToTarget();
 
-  // IMMEDIATELY hide the projectile sprite (impact effect is separate)
   projectile.sprite.visible = false;
 
-  // Handle impact based on what it collided with
   if (projectile.collidedWith === 'defense') {
-    // Hit defense dot - damage was already applied by collision manager
     screenShake.shake('medium');
   } else if (!projectile.collidedWith) {
     // Reached target without collision - hit weapon slot and deduct capper HP
-    store.applyDamageToCapperHP(gameId, targetSide, 1);
+    useMultiGameStore.getState().applyDamageToCapperHP(gameId, targetSide, 1);
     screenShake.shake('large');
   }
 
-  // Create impact effect at final position
   createCollisionEffect(projectile.sprite.x, projectile.sprite.y, projectile.typeConfig.color);
 
-  // Keep impact effect visible briefly
   await sleep(150);
 
-  // Remove sprite from PixiJS container
   pixiManager.removeSprite(projectile.sprite);
 
-  // Remove from store and return to pool
-  store.removeProjectile(projectile.id);
   collisionManager.unregisterProjectile(projectile.id);
   projectilePool.release(projectile);
 }
@@ -543,14 +481,17 @@ function findNextAliveDefenseDot(
   stat: StatType,
   side: 'left' | 'right'
 ): { id: string; dot: any } | null {
-  const store = useGameStore.getState();
+  const multiStore = useMultiGameStore.getState();
+  const battle = multiStore.getBattle(gameId);
+  if (!battle) return null;
 
   const aliveDots: Array<{ id: string; dot: any }> = [];
-  store.defenseDots.forEach((dot, dotId) => {
-    if (dot.gameId === gameId &&
+  battle.defenseDots.forEach((dot, dotId) => {
+    if (
       dot.stat === stat &&
       dot.side === side &&
-      dot.alive) {
+      dot.alive
+    ) {
       aliveDots.push({ id: dotId, dot });
     }
   });
@@ -625,16 +566,12 @@ function sleep(ms: number): Promise<void> {
  * Returns true if battle should end, false if it should continue
  */
 function checkBattleEnd(gameId: string): boolean {
-  const store = useGameStore.getState();
-  const game = store.games.find(g => g.id === gameId);
+  const multiStore = useMultiGameStore.getState();
+  const battle = multiStore.getBattle(gameId);
+  if (!battle) return false;
 
-  if (!game) return false;
-
-  const leftKey = `${gameId}-left`;
-  const rightKey = `${gameId}-right`;
-
-  const leftHP = store.capperHP.get(leftKey)?.currentHP || 0;
-  const rightHP = store.capperHP.get(rightKey)?.currentHP || 0;
+  const leftHP = battle.capperHP.get('left')?.currentHP ?? 0;
+  const rightHP = battle.capperHP.get('right')?.currentHP ?? 0;
 
   // Battle ends if either castle is destroyed
   return leftHP <= 0 || rightHP <= 0;
@@ -806,13 +743,27 @@ async function fireStatRowForMultiBattle(
     const counterPromises: Promise<void>[] = [];
 
     if (leftCount > 0) {
-      const pos = getStatLabelPosition(stat, 'left');
-      counterPromises.push(animateStatCounter(container, pos, leftCount, 'left'));
+      counterPromises.push(
+        animateStatCounter(container, {
+          stat,
+          side: 'left',
+          value: leftCount,
+          rowY: getStatLabelPosition(stat, 'left').y,
+          labelX: getStatLabelPosition(stat, 'left').x,
+        })
+      );
     }
 
     if (rightCount > 0) {
-      const pos = getStatLabelPosition(stat, 'right');
-      counterPromises.push(animateStatCounter(container, pos, rightCount, 'right'));
+      counterPromises.push(
+        animateStatCounter(container, {
+          stat,
+          side: 'right',
+          value: rightCount,
+          rowY: getStatLabelPosition(stat, 'right').y,
+          labelX: getStatLabelPosition(stat, 'right').x,
+        })
+      );
     }
 
     await Promise.all(counterPromises);

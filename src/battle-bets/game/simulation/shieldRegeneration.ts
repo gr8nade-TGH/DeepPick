@@ -3,7 +3,7 @@
  * Activates at the end of each quarter to regenerate defense dots
  */
 
-import { useGameStore } from '../../store/gameStore';
+import { useMultiGameStore } from '../../store/multiGameStore';
 import { DefenseDot } from '../entities/DefenseDot';
 import { getDefenseCellPosition } from '../utils/positioning';
 import { getDefenseCellId } from '../../types/game';
@@ -16,9 +16,11 @@ import { pixiManager } from '../managers/PixiManager';
  * SHIELD row distributes 1 gold dot to POINTS, REB, and AST rows
  */
 export async function regenerateDefenseDots(gameId: string): Promise<void> {
-  const store = useGameStore.getState();
-  const game = store.games.find(g => g.id === gameId);
-  if (!game) return;
+  const multiStore = useMultiGameStore.getState();
+  const battle = multiStore.getBattle(gameId);
+  if (!battle) return;
+
+  const game = battle.game;
 
   console.log('\n🛡️ SHIELD REGENERATION ACTIVATING...');
 
@@ -30,8 +32,8 @@ export async function regenerateDefenseDots(gameId: string): Promise<void> {
     const capper = side === 'left' ? game.leftCapper : game.rightCapper;
 
     // Check if this side has any SHIELD dots
-    const shieldDots = Array.from(store.defenseDots.values()).filter(
-      d => d.gameId === gameId && d.side === side && d.stat === 'shield' && d.alive
+    const shieldDots = Array.from(battle.defenseDots.values()).filter(
+      d => d.side === side && d.stat === 'shield' && d.alive
     );
 
     if (shieldDots.length === 0) {
@@ -59,11 +61,13 @@ async function regenerateStatRow(
   side: 'left' | 'right',
   team: any
 ): Promise<void> {
-  const store = useGameStore.getState();
+  const multiStore = useMultiGameStore.getState();
+  const battle = multiStore.getBattle(gameId);
+  if (!battle) return;
 
   // Find all alive defense dots for this stat/side
-  const aliveDots = Array.from(store.defenseDots.values())
-    .filter(d => d.gameId === gameId && d.side === side && d.stat === stat && d.alive)
+  const aliveDots = Array.from(battle.defenseDots.values())
+    .filter(d => d.side === side && d.stat === stat && d.alive)
     .sort((a, b) => a.index - b.index); // Sort by index
 
   // Determine next cell number
@@ -105,14 +109,19 @@ async function regenerateStatRow(
     isRegenerated: true, // Mark as regenerated for gold color
   });
 
-  // Add to store
-  store.defenseDots.set(id, goldDot);
-
-  // Trigger re-render
-  useGameStore.setState(
-    state => ({
-      defenseDots: new Map(state.defenseDots),
-    }),
+  // Add to store and trigger re-render via multiGameStore
+  useMultiGameStore.setState(
+    state => {
+      const battle = state.getBattle(gameId);
+      if (!battle) {
+        return state;
+      }
+      const newBattles = new Map(state.battles);
+      const updatedDefenseDots = new Map(battle.defenseDots);
+      updatedDefenseDots.set(id, goldDot);
+      newBattles.set(gameId, { ...battle, defenseDots: updatedDefenseDots });
+      return { battles: newBattles };
+    },
     false,
     'regenerateDefenseDot'
   );

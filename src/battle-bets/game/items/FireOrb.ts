@@ -10,7 +10,7 @@ import { pixiManager } from '../managers/PixiManager';
 import { gridManager } from '../managers/GridManager';
 import { projectilePool } from '../entities/projectiles/ProjectilePool';
 import { collisionManager } from '../managers/CollisionManager';
-import { useGameStore } from '../../store/gameStore';
+import { useMultiGameStore } from '../../store/multiGameStore';
 import { getProjectileType } from '../../types/projectileTypes';
 import * as PIXI from 'pixi.js';
 
@@ -122,8 +122,15 @@ async function glowFireOrbInInventory(side: 'left' | 'right'): Promise<void> {
 async function fireFireProjectile(stat: StatType, side: 'left' | 'right'): Promise<void> {
   console.log(` [${FIRE_ORB_VERSION}] fireFireProjectile called with stat='${stat}', side='${side}'`);
 
-  const store = useGameStore.getState();
-  const gameId = 'game1'; // TODO: Get from context
+  const multiStore = useMultiGameStore.getState();
+  // For now, Fire Orb uses the first available battle as its context.
+  const [battleId] = Array.from(multiStore.battles.keys());
+  if (!battleId) {
+    console.warn(`[${FIRE_ORB_VERSION}] No active battles found; skipping Fire Orb projectile.`);
+    return;
+  }
+
+  const gameId = battleId;
 
   // Get weapon slot positions
   console.log(` [${FIRE_ORB_VERSION}] Getting weapon slot position for stat='${stat}', side='${side}'`);
@@ -170,7 +177,7 @@ async function fireFireProjectile(stat: StatType, side: 'left' | 'right'): Promi
 
   // Register projectile
   collisionManager.registerProjectile(projectile);
-  store.addProjectile(projectile, targetSide);
+  multiStore.addProjectile(gameId, projectile);
 
   // Add sprite to PixiJS container
   pixiManager.addSprite(projectile.sprite, 'projectile');
@@ -189,7 +196,7 @@ async function fireFireProjectile(stat: StatType, side: 'left' | 'right'): Promi
     console.log(` Fire projectile hit defense dot`);
   } else if (!projectile.collidedWith) {
     // Hit weapon slot - damage capper HP
-    store.applyDamageToCapperHP(gameId, targetSide, 2); // Fire Orb deals 2 damage to HP
+    multiStore.applyDamageToCapperHP(gameId, targetSide, 2); // Fire Orb deals 2 damage to HP
     console.log(` Fire projectile hit weapon slot - 2 HP damage`);
   }
 
@@ -201,7 +208,7 @@ async function fireFireProjectile(stat: StatType, side: 'left' | 'right'): Promi
 
   // Cleanup
   pixiManager.removeSprite(projectile.sprite);
-  store.removeProjectile(projectile.id);
+  multiStore.removeProjectile(gameId, projectile.id);
   collisionManager.unregisterProjectile(projectile.id);
   projectilePool.release(projectile);
 }

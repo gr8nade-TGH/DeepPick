@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useGameStore } from '../../store/gameStore';
+import { useMultiGameStore } from '../../store/multiGameStore';
 import { projectilePool } from '../../game/entities/projectiles/ProjectilePool';
 import { pixiManager } from '../../game/managers/PixiManager';
 import { projectileDebugger } from '../../game/debug/ProjectileDebugger';
@@ -14,9 +14,11 @@ export const PerformanceMonitor: React.FC = () => {
   const [poolStats, setPoolStats] = useState({ pooled: 0, active: 0 });
   const [copied, setCopied] = useState(false);
 
-  const projectiles = useGameStore(state => state.projectiles);
-  const defenseDots = useGameStore(state => state.defenseDots);
-  const games = useGameStore(state => state.games);
+  const store = useMultiGameStore();
+
+  const projectiles = Array.from(store.battles.values()).reduce((sum, battle) => sum + battle.projectiles.length, 0);
+  const defenseDots = Array.from(store.battles.values()).reduce((sum, battle) => sum + battle.defenseDots.size, 0);
+  const games = store.battles.size;
 
   useEffect(() => {
     let lastTime = performance.now();
@@ -178,7 +180,7 @@ ${criticalLogs.length > 0 ? combinedLogs.join('\n') : '⚠️ NO CRITICAL LOGS F
           {copied ? '✓ Copied!' : '📋 Copy Debug'}
         </button>
       </div>
-      
+
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
         <span>FPS:</span>
         <span style={{ color: getFpsColor(), fontWeight: 'bold' }}>{fps}</span>
@@ -195,7 +197,7 @@ ${criticalLogs.length > 0 ? combinedLogs.join('\n') : '⚠️ NO CRITICAL LOGS F
         <div style={{ marginBottom: '4px', fontSize: '11px', color: '#4ECDC4' }}>
           Entities
         </div>
-        
+
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
           <span>Projectiles:</span>
           <span style={{ color: '#FF6B35' }}>{projectiles.length}</span>
@@ -210,7 +212,7 @@ ${criticalLogs.length > 0 ? combinedLogs.join('\n') : '⚠️ NO CRITICAL LOGS F
           <div style={{ marginBottom: '4px', fontSize: '11px', color: '#F7B731' }}>
             Object Pool
           </div>
-          
+
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
             <span>Active:</span>
             <span style={{ color: '#FF6B35' }}>{poolStats.active}</span>
