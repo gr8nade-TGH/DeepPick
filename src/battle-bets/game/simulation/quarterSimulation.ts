@@ -654,45 +654,53 @@ export async function runDebugBattleForMultiStore(battleId: string): Promise<voi
     },
   );
 
-  // For now, run a single random quarter worth of action
-  const quarterNumber = 1;
-  const quarterData = getQuarterData(quarterNumber);
-
-  console.log('[MultiBattleDebug] Quarter stats:', {
-    left: quarterData.left,
-    right: quarterData.right,
-  });
-
   const statsOrder: StatType[] = ['pts', 'reb', 'ast', 'blk', '3pt'];
 
-  for (const stat of statsOrder) {
-    const leftCount = getCountForStatFromQuarter(stat, quarterData.left);
-    const rightCount = getCountForStatFromQuarter(stat, quarterData.right);
+  // Run all 4 quarters sequentially so battles progress like a real game
+  for (let quarterNumber = 1; quarterNumber <= 4; quarterNumber++) {
+    const quarterData = getQuarterData(quarterNumber);
 
-    if (leftCount === 0 && rightCount === 0) {
-      continue;
-    }
+    console.log(`[MultiBattleDebug] Q${quarterNumber} stats for ${battleId}:`, {
+      left: quarterData.left,
+      right: quarterData.right,
+    });
 
-    const shouldContinue = await fireStatRowForMultiBattle(
-      battleId,
-      gameId,
-      stat,
-      leftCount,
-      rightCount
-    );
+    for (const stat of statsOrder) {
+      const leftCount = getCountForStatFromQuarter(stat, quarterData.left);
+      const rightCount = getCountForStatFromQuarter(stat, quarterData.right);
 
-    if (!shouldContinue) {
-      console.log(
-        `🏁 [MultiBattleDebug] Battle ended during ${stat.toUpperCase()} row for ${battleId}`
+      if (leftCount === 0 && rightCount === 0) {
+        continue;
+      }
+
+      const shouldContinue = await fireStatRowForMultiBattle(
+        battleId,
+        gameId,
+        stat,
+        leftCount,
+        rightCount
       );
-      break;
+
+      if (!shouldContinue) {
+        console.log(
+          `🏁 [MultiBattleDebug] Battle ended during Q${quarterNumber} ${stat.toUpperCase()} row for ${battleId}`
+        );
+        collisionManager.unregisterBattle(gameId);
+        return;
+      }
+
+      // Small pause between stat rows so the action is readable
+      await sleep(500);
     }
 
-    // Small pause between stat rows so the action is readable
-    await sleep(500);
+    // Slightly longer pause between quarters so you can visually see transitions
+    if (quarterNumber < 4) {
+      console.log(`⏸ [MultiBattleDebug] Pause between Q${quarterNumber} and Q${quarterNumber + 1} for ${battleId}`);
+      await sleep(1500);
+    }
   }
 
-  console.log(`✅ [MultiBattleDebug] Debug simulation complete for battle ${battleId}`);
+  console.log(`✅ [MultiBattleDebug] Full 4-quarter debug simulation complete for battle ${battleId}`);
 
   // Cleanup collision callbacks for this battle
   collisionManager.unregisterBattle(gameId);
