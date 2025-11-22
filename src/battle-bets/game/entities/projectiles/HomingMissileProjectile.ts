@@ -169,11 +169,29 @@ export class HomingMissileProjectile extends BaseProjectile {
             // Update position for collision detection
             this.position.x = this.sprite.x;
             this.position.y = this.sprite.y;
+
+            // Check for collisions during flight
+            if (!this.collided && this.onCollisionCheck) {
+              const collisionType = this.onCollisionCheck(this);
+
+              if (collisionType) {
+                this.collided = true;
+                this.collidedWith = collisionType;
+
+                if (this.animation) {
+                  this.animation.kill();
+                }
+
+                this.createImpactEffect();
+                resolve();
+              }
+            }
           },
         })
         .call(() => {
-          // Impact effect
-          this.createImpactEffect();
+          if (!this.collided) {
+            this.createImpactEffect();
+          }
           resolve();
         });
     });

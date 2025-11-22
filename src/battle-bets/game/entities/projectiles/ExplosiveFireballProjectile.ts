@@ -145,11 +145,29 @@ export class ExplosiveFireballProjectile extends BaseProjectile {
             // Update position for collision detection
             this.position.x = this.sprite.x;
             this.position.y = this.sprite.y;
+
+            // Check for collisions during flight
+            if (!this.collided && this.onCollisionCheck) {
+              const collisionType = this.onCollisionCheck(this);
+
+              if (collisionType) {
+                this.collided = true;
+                this.collidedWith = collisionType;
+
+                if (this.animation) {
+                  this.animation.kill();
+                }
+
+                this.createExplosionEffect();
+                resolve();
+              }
+            }
           },
         })
         .call(() => {
-          // Massive explosion effect
-          this.createExplosionEffect();
+          if (!this.collided) {
+            this.createExplosionEffect();
+          }
           resolve();
         });
     });

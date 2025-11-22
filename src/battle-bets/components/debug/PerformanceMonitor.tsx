@@ -53,8 +53,23 @@ export const PerformanceMonitor: React.FC = () => {
     return () => cancelAnimationFrame(rafId);
   }, []);
 
-  // Only show in development
-  if (!import.meta.env.DEV) {
+  // Show when running in development OR when ?debug=1 is present in the URL
+  const [forceVisible, setForceVisible] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const debugParam = params.get('debug');
+      const isDebug = debugParam === '1' || debugParam === 'true';
+      setForceVisible(isDebug);
+    } catch (error) {
+      // If URL parsing fails for any reason, just fall back to default behavior
+      console.warn('[PerformanceMonitor] Failed to parse debug query param', error);
+    }
+  }, []);
+
+  if (!import.meta.env.DEV && !forceVisible) {
     return null;
   }
 
