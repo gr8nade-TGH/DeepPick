@@ -42,7 +42,8 @@ interface Pick {
   units: number
   confidence: number
   odds: number
-  result: string | null
+  status: string // 'pending' | 'won' | 'lost' | 'push'
+  result: any // JSONB object with detailed result data
   net_units: number | null
   created_at: string
   game?: {
@@ -80,6 +81,7 @@ export default function CapperPublicProfile() {
   const [recentPicks, setRecentPicks] = useState<Pick[]>([])
   const [currentPicks, setCurrentPicks] = useState<Pick[]>([])
   const [topTeams, setTopTeams] = useState<TeamDominance[]>([])
+  const [pickHistoryFilter, setPickHistoryFilter] = useState<'7d' | '30d' | 'all'>('all')
 
   const fetchCapperData = async () => {
     if (!capperId) return
@@ -153,7 +155,7 @@ export default function CapperPublicProfile() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [capperId])
 
-  const getStatusIcon = (status: string | null) => {
+  const getStatusIcon = (status: string) => {
     switch (status) {
       case 'won':
         return <Trophy className="w-4 h-4 text-emerald-400" />
@@ -161,12 +163,14 @@ export default function CapperPublicProfile() {
         return <X className="w-4 h-4 text-red-400" />
       case 'push':
         return <Minus className="w-4 h-4 text-slate-400" />
-      default:
+      case 'pending':
         return <Clock className="w-4 h-4 text-blue-400" />
+      default:
+        return <Clock className="w-4 h-4 text-slate-400" />
     }
   }
 
-  const getStatusColor = (status: string | null) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'won':
         return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
@@ -174,8 +178,10 @@ export default function CapperPublicProfile() {
         return 'bg-red-500/10 text-red-400 border-red-500/30'
       case 'push':
         return 'bg-slate-500/10 text-slate-400 border-slate-500/30'
-      default:
+      case 'pending':
         return 'bg-blue-500/10 text-blue-400 border-blue-500/30'
+      default:
+        return 'bg-slate-500/10 text-slate-400 border-slate-500/30'
     }
   }
 
@@ -562,20 +568,55 @@ export default function CapperPublicProfile() {
 
         {/* Pick History */}
         <Card className="bg-slate-800/50 border-slate-700">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle className="text-white flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-blue-500" />
-                Pick History
-              </CardTitle>
-              <CardDescription>Last 10 predictions from {profile.display_name}</CardDescription>
+          <CardHeader>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-blue-500" />
+                  Pick History
+                </CardTitle>
+                <CardDescription>
+                  {pickHistoryFilter === '7d' && 'Last 7 days of predictions'}
+                  {pickHistoryFilter === '30d' && 'Last 30 days of predictions'}
+                  {pickHistoryFilter === 'all' && `Last 10 predictions from ${profile.display_name}`}
+                </CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                {/* Time Period Filters */}
+                <div className="flex items-center gap-1 bg-slate-900/50 p-1 rounded-lg border border-slate-700">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPickHistoryFilter('7d')}
+                    className={`h-7 px-3 text-xs ${pickHistoryFilter === '7d' ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+                  >
+                    7D
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPickHistoryFilter('30d')}
+                    className={`h-7 px-3 text-xs ${pickHistoryFilter === '30d' ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+                  >
+                    30D
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPickHistoryFilter('all')}
+                    className={`h-7 px-3 text-xs ${pickHistoryFilter === 'all' ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+                  >
+                    All
+                  </Button>
+                </div>
+                <Link href={`/picks?capper=${capperId}`}>
+                  <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white h-7">
+                    View All
+                    <ExternalLink className="w-3 h-3 ml-1" />
+                  </Button>
+                </Link>
+              </div>
             </div>
-            <Link href={`/picks?capper=${capperId}`}>
-              <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white">
-                View All Picks
-                <ExternalLink className="w-3 h-3 ml-1" />
-              </Button>
-            </Link>
           </CardHeader>
           <CardContent>
             {recentPicks.length === 0 ? (
@@ -585,76 +626,97 @@ export default function CapperPublicProfile() {
               </div>
             ) : (
               <div className="space-y-3">
-                {recentPicks.map((pick) => {
-                  // Use game data if available, otherwise fall back to game_snapshot
-                  const gameData = pick.game || pick.game_snapshot
-                  const awayTeam = gameData?.away_team?.abbreviation || 'TBD'
-                  const homeTeam = gameData?.home_team?.abbreviation || 'TBD'
-                  const gameStatus = gameData?.status || 'scheduled'
-                  const gameTime = gameData?.game_start_timestamp
+                {recentPicks
+                  .filter(pick => {
+                    // Filter by time period based on game date
+                    if (pickHistoryFilter === 'all') return true
 
-                  // Convert confidence to star rating using same logic as dashboard
-                  let starCount = 0
-                  if (pick.confidence > 9.0) starCount = 5
-                  else if (pick.confidence > 8.0) starCount = 4
-                  else if (pick.confidence > 7.0) starCount = 3
-                  else if (pick.confidence > 6.0) starCount = 2
-                  else if (pick.confidence > 5.0) starCount = 1
-                  else starCount = 0
+                    const gameData = pick.game || pick.game_snapshot
+                    const gameTime = gameData?.game_start_timestamp
+                    if (!gameTime) return true // Include picks without game time
 
-                  return (
-                    <div key={pick.id} className="p-4 rounded-lg bg-slate-900/50 border border-slate-700 hover:border-slate-600 transition-all">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-white font-medium">
-                              {awayTeam} @ {homeTeam}
-                            </span>
-                            {gameTime && getCountdown(gameTime) && (
-                              <span className="text-cyan-400 text-xs flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                {getCountdown(gameTime)}
+                    const gameDate = new Date(gameTime)
+                    const now = new Date()
+                    const daysDiff = Math.floor((now.getTime() - gameDate.getTime()) / (1000 * 60 * 60 * 24))
+
+                    if (pickHistoryFilter === '7d') return daysDiff <= 7
+                    if (pickHistoryFilter === '30d') return daysDiff <= 30
+                    return true
+                  })
+                  .map((pick) => {
+                    // Use game data if available, otherwise fall back to game_snapshot
+                    const gameData = pick.game || pick.game_snapshot
+                    const awayTeam = gameData?.away_team?.abbreviation || 'TBD'
+                    const homeTeam = gameData?.home_team?.abbreviation || 'TBD'
+                    const gameStatus = gameData?.status || 'scheduled'
+                    const gameTime = gameData?.game_start_timestamp
+
+                    // Convert confidence to star rating using same logic as dashboard
+                    let starCount = 0
+                    if (pick.confidence > 9.0) starCount = 5
+                    else if (pick.confidence > 8.0) starCount = 4
+                    else if (pick.confidence > 7.0) starCount = 3
+                    else if (pick.confidence > 6.0) starCount = 2
+                    else if (pick.confidence > 5.0) starCount = 1
+                    else starCount = 0
+
+                    return (
+                      <div key={pick.id} className="p-4 rounded-lg bg-slate-900/50 border border-slate-700 hover:border-slate-600 transition-all">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-white font-medium">
+                                {awayTeam} @ {homeTeam}
+                              </span>
+                              {gameTime && getCountdown(gameTime) && (
+                                <span className="text-cyan-400 text-xs flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  {getCountdown(gameTime)}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <Badge variant="outline" className="text-xs">
+                                {pick.pick_type}
+                              </Badge>
+                              <span className="text-slate-300">{pick.selection}</span>
+                              <span className="text-slate-500">•</span>
+                              <span className="text-blue-400">{pick.units}U</span>
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end gap-1">
+                            <Badge className={getStatusColor(pick.status)}>
+                              <span className="flex items-center gap-1">
+                                {getStatusIcon(pick.status)}
+                                {pick.status.toUpperCase()}
+                              </span>
+                            </Badge>
+                            {pick.net_units !== null && pick.net_units !== 0 && (
+                              <span className={`text-sm font-medium ${pick.net_units > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                {pick.net_units > 0 ? '+' : ''}{pick.net_units.toFixed(2)}U
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-2 text-sm">
-                            <Badge variant="outline" className="text-xs">
-                              {pick.pick_type}
-                            </Badge>
-                            <span className="text-slate-300">{pick.selection}</span>
-                            <span className="text-slate-500">•</span>
-                            <span className="text-blue-400">{pick.units}U</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-slate-500">
+                          <div className="flex items-center gap-1.5">
+                            <span>Confidence:</span>
+                            {/* Star emojis */}
+                            <span>{'⭐'.repeat(starCount)}</span>
+                            {/* Confidence score */}
+                            <span className="font-medium text-slate-400">
+                              {pick.confidence.toFixed(1)}
+                            </span>
                           </div>
-                        </div>
-                        <div className="flex flex-col items-end gap-1">
-                          <Badge className={getStatusColor(pick.result)}>
-                            <span className="flex items-center gap-1">
-                              {getStatusIcon(pick.result)}
-                              {String(pick.result || 'pending').toUpperCase()}
-                            </span>
-                          </Badge>
-                          {pick.net_units !== null && pick.net_units !== 0 && (
-                            <span className={`text-sm font-medium ${pick.net_units > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                              {pick.net_units > 0 ? '+' : ''}{pick.net_units.toFixed(2)}U
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between text-xs text-slate-500">
-                        <div className="flex items-center gap-1.5">
-                          <span>Confidence:</span>
-                          {/* Star emojis */}
-                          <span>{'⭐'.repeat(starCount)}</span>
-                          {/* Confidence score */}
-                          <span className="font-medium text-slate-400">
-                            {pick.confidence.toFixed(1)}
+                          {/* Show game date instead of pick created date */}
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {gameTime ? new Date(gameTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : new Date(pick.created_at).toLocaleDateString()}
                           </span>
                         </div>
-                        <span>{new Date(pick.created_at).toLocaleDateString()}</span>
                       </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
               </div>
             )}
           </CardContent>
