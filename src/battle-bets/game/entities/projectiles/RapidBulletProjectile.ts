@@ -24,40 +24,40 @@ export class RapidBulletProjectile extends BaseProjectile {
 
     // Outer glow (elongated for speed effect)
     const outerGlow = new PIXI.Graphics();
-    outerGlow.roundRect(-width/2 - 3, -height/2 - 2, width + 6, height + 4, 3);
+    outerGlow.roundRect(-width / 2 - 3, -height / 2 - 2, width + 6, height + 4, 3);
     outerGlow.fill({ color: glowColor, alpha: 0.25 });
     container.addChild(outerGlow);
 
     // Middle glow
     const middleGlow = new PIXI.Graphics();
-    middleGlow.roundRect(-width/2 - 1, -height/2 - 1, width + 2, height + 2, 2);
+    middleGlow.roundRect(-width / 2 - 1, -height / 2 - 1, width + 2, height + 2, 2);
     middleGlow.fill({ color: glowColor, alpha: 0.4 });
     container.addChild(middleGlow);
 
     // Main bullet body (sharp, pointed)
     const body = new PIXI.Graphics();
-    
+
     // Draw pointed bullet shape
-    body.moveTo(width/2, 0); // Point
-    body.lineTo(-width/2, -height/2); // Top back
-    body.lineTo(-width/2, height/2); // Bottom back
-    body.lineTo(width/2, 0); // Back to point
+    body.moveTo(width / 2, 0); // Point
+    body.lineTo(-width / 2, -height / 2); // Top back
+    body.lineTo(-width / 2, height / 2); // Bottom back
+    body.lineTo(width / 2, 0); // Back to point
     body.fill({ color, alpha: 1.0 });
     body.stroke({ width: 1.5, color: 0xFFFFFF, alpha: 0.7 });
     container.addChild(body);
 
     // Inner highlight (sharp line)
     const highlight = new PIXI.Graphics();
-    highlight.moveTo(width/2 - 2, 0);
-    highlight.lineTo(-width/2 + 2, -height/4);
-    highlight.lineTo(-width/2 + 2, height/4);
-    highlight.lineTo(width/2 - 2, 0);
+    highlight.moveTo(width / 2 - 2, 0);
+    highlight.lineTo(-width / 2 + 2, -height / 4);
+    highlight.lineTo(-width / 2 + 2, height / 4);
+    highlight.lineTo(width / 2 - 2, 0);
     highlight.fill({ color: 0xFFFFFF, alpha: 0.5 });
     container.addChild(highlight);
 
     // Speed trail (elongated glow behind)
     const trail = new PIXI.Graphics();
-    trail.roundRect(-width/2 - 8, -height/2, 8, height, 2);
+    trail.roundRect(-width / 2 - 8, -height / 2, 8, height, 2);
     trail.fill({ color: this.typeConfig.trailColor, alpha: 0.3 });
     container.addChild(trail);
 
@@ -92,6 +92,7 @@ export class RapidBulletProjectile extends BaseProjectile {
 
       // Register with debugger
       projectileDebugger.registerProjectile(
+        this.gameId,
         this.id,
         this.side,
         this.position.x,
@@ -120,7 +121,7 @@ export class RapidBulletProjectile extends BaseProjectile {
             this.position.y = this.sprite.y;
 
             // Update debugger
-            projectileDebugger.updateProjectile(this.id, this.sprite.x, this.sprite.y);
+            projectileDebugger.updateProjectile(this.gameId, this.id, this.sprite.x, this.sprite.y);
 
             // Debug: Log collision check attempt (sample 1% to avoid spam)
             if (Math.random() < 0.01) {
@@ -138,6 +139,7 @@ export class RapidBulletProjectile extends BaseProjectile {
 
                 // Mark collision in debugger
                 projectileDebugger.markCollision(
+                  this.gameId,
                   this.id,
                   this.sprite.x,
                   this.sprite.y,
@@ -159,7 +161,7 @@ export class RapidBulletProjectile extends BaseProjectile {
         .call(() => {
           // Only create impact if we haven't collided yet (reached target)
           if (!this.collided) {
-            projectileDebugger.markCollision(this.id, this.sprite.x, this.sprite.y, 'TARGET');
+            projectileDebugger.markCollision(this.gameId, this.id, this.sprite.x, this.sprite.y, 'TARGET');
             this.createImpactEffect();
           }
           resolve();

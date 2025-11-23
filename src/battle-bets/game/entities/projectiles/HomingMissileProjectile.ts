@@ -152,6 +152,7 @@ export class HomingMissileProjectile extends BaseProjectile {
 
       // Register with debugger
       projectileDebugger.registerProjectile(
+        this.gameId,
         this.id,
         this.side,
         this.position.x,
@@ -183,7 +184,7 @@ export class HomingMissileProjectile extends BaseProjectile {
             this.position.y = this.sprite.y;
 
             // Update debugger
-            projectileDebugger.updateProjectile(this.id, this.sprite.x, this.sprite.y);
+            projectileDebugger.updateProjectile(this.gameId, this.id, this.sprite.x, this.sprite.y);
 
             // Check for collisions during flight
             if (!this.collided && this.onCollisionCheck) {
@@ -199,6 +200,7 @@ export class HomingMissileProjectile extends BaseProjectile {
 
                 // Mark collision in debugger
                 projectileDebugger.markCollision(
+                  this.gameId,
                   this.id,
                   this.sprite.x,
                   this.sprite.y,

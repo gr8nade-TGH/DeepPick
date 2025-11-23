@@ -643,7 +643,7 @@ export async function runDebugBattleForMultiStore(battleId: string): Promise<voi
   // Enable projectile debugger overlay & tracking during debug runs
   const container = pixiManager.getContainer(gameId);
   if (container) {
-    projectileDebugger.initialize(container);
+    projectileDebugger.initialize(battleId, container);
     projectileDebugger.setEnabled(true);
   }
 

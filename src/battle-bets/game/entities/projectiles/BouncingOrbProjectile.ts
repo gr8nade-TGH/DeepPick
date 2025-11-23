@@ -140,6 +140,7 @@ export class BouncingOrbProjectile extends BaseProjectile {
 
                 // Mark collision in debugger
                 projectileDebugger.markCollision(
+                  this.gameId,
                   this.id,
                   this.sprite.x,
                   this.sprite.y,
@@ -155,7 +156,7 @@ export class BouncingOrbProjectile extends BaseProjectile {
         .call(() => {
           if (!this.collided) {
             // Mark reaching target as collision with castle
-            projectileDebugger.markCollision(this.id, this.sprite.x, this.sprite.y, 'TARGET');
+            projectileDebugger.markCollision(this.gameId, this.id, this.sprite.x, this.sprite.y, 'TARGET');
             this.createImpactEffect();
           }
           resolve();

@@ -168,6 +168,7 @@ export class PiercingSpearProjectile extends BaseProjectile {
 
       // Register with debugger
       projectileDebugger.registerProjectile(
+        this.gameId,
         this.id,
         this.side,
         this.position.x,
@@ -214,6 +215,7 @@ export class PiercingSpearProjectile extends BaseProjectile {
 
                 // Mark collision in debugger
                 projectileDebugger.markCollision(
+                  this.gameId,
                   this.id,
                   this.sprite.x,
                   this.sprite.y,
@@ -228,7 +230,7 @@ export class PiercingSpearProjectile extends BaseProjectile {
         })
         .call(() => {
           if (!this.collided) {
-            projectileDebugger.markCollision(this.id, this.sprite.x, this.sprite.y, 'TARGET');
+            projectileDebugger.markCollision(this.gameId, this.id, this.sprite.x, this.sprite.y, 'TARGET');
             this.createPiercingImpact();
           }
           resolve();

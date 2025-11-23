@@ -136,6 +136,7 @@ export class ExplosiveFireballProjectile extends BaseProjectile {
 
       // Register with debugger
       projectileDebugger.registerProjectile(
+        this.gameId,
         this.id,
         this.side,
         this.position.x,
@@ -159,7 +160,7 @@ export class ExplosiveFireballProjectile extends BaseProjectile {
             this.position.y = this.sprite.y;
 
             // Update debugger
-            projectileDebugger.updateProjectile(this.id, this.sprite.x, this.sprite.y);
+            projectileDebugger.updateProjectile(this.gameId, this.id, this.sprite.x, this.sprite.y);
 
             // Check for collisions during flight
             if (!this.collided && this.onCollisionCheck) {
@@ -175,6 +176,7 @@ export class ExplosiveFireballProjectile extends BaseProjectile {
 
                 // Mark collision in debugger
                 projectileDebugger.markCollision(
+                  this.gameId,
                   this.id,
                   this.sprite.x,
                   this.sprite.y,
@@ -189,7 +191,7 @@ export class ExplosiveFireballProjectile extends BaseProjectile {
         })
         .call(() => {
           if (!this.collided) {
-            projectileDebugger.markCollision(this.id, this.sprite.x, this.sprite.y, 'TARGET');
+            projectileDebugger.markCollision(this.gameId, this.id, this.sprite.x, this.sprite.y, 'TARGET');
             this.createExplosionEffect();
           }
           resolve();
