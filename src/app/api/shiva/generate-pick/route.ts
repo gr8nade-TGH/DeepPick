@@ -304,6 +304,59 @@ export async function POST(request: Request) {
       }
     }
 
+    // ========================================
+    // TOTAL EDGE DETECTION (for SPREAD picks)
+    // ========================================
+    // For SPREAD picks, calculate predicted total and flag large discrepancies with market total
+    if (result.pick && result.pick.selection !== 'PASS' && betType === 'SPREAD') {
+      try {
+        const predictedHomeScore = result.log?.finalPrediction?.home || 0
+        const predictedAwayScore = result.log?.finalPrediction?.away || 0
+        const predictedTotal = predictedHomeScore + predictedAwayScore
+        const marketTotal = result.steps?.step2?.snapshot?.total?.line || 0
+
+        if (predictedTotal > 0 && marketTotal > 0) {
+          const totalEdge = predictedTotal - marketTotal
+          const totalEdgeAbs = Math.abs(totalEdge)
+
+          // Flag large total discrepancies (>10 points)
+          if (totalEdgeAbs > 10) {
+            console.warn('[SHIVA:GeneratePick] ⚠️ LARGE TOTAL EDGE DETECTED:', {
+              predictedTotal: predictedTotal.toFixed(1),
+              marketTotal: marketTotal.toFixed(1),
+              totalEdge: totalEdge.toFixed(1),
+              implication: totalEdge > 0 ? 'Strong OVER lean' : 'Strong UNDER lean'
+            })
+
+            // Add total edge to metadata for visibility
+            metadata.total_edge_warning = {
+              predicted_total: predictedTotal,
+              market_total: marketTotal,
+              total_edge: totalEdge,
+              total_edge_abs: totalEdgeAbs,
+              implication: totalEdge > 0 ? 'OVER' : 'UNDER',
+              severity: totalEdgeAbs > 15 ? 'EXTREME' : 'HIGH'
+            }
+          }
+
+          // Always store total edge for analysis
+          metadata.total_edge_analysis = {
+            predicted_total: predictedTotal,
+            market_total: marketTotal,
+            total_edge: totalEdge
+          }
+
+          console.log('[SHIVA:GeneratePick] Total edge analysis:', {
+            predictedTotal: predictedTotal.toFixed(1),
+            marketTotal: marketTotal.toFixed(1),
+            totalEdge: totalEdge.toFixed(1)
+          })
+        }
+      } catch (totalEdgeError) {
+        console.error('[SHIVA:GeneratePick] Error calculating total edge:', totalEdgeError)
+      }
+    }
+
     // Generate Bold Player Predictions and Professional Analysis (if pick was generated)
     let boldPredictions: any = null
     let professionalAnalysis: string = ''
@@ -377,6 +430,17 @@ export async function POST(request: Request) {
           })
         }
 
+        // Extract total edge data for SPREAD picks (if available)
+        let totalEdge: any = undefined
+        if (betType === 'SPREAD' && metadata.total_edge_analysis) {
+          totalEdge = {
+            predicted_total: metadata.total_edge_analysis.predicted_total,
+            market_total: metadata.total_edge_analysis.market_total,
+            total_edge: metadata.total_edge_analysis.total_edge,
+            implication: metadata.total_edge_analysis.total_edge > 0 ? 'OVER' : 'UNDER'
+          }
+        }
+
         // Generate Professional Analysis
         professionalAnalysis = await generateProfessionalAnalysis({
           game: {
@@ -392,7 +456,8 @@ export async function POST(request: Request) {
           betType,
           selection: result.pick.selection,
           injuryData: injurySummary,
-          teamStats // NEW: Pass actual team stats to prevent AI hallucination
+          teamStats, // Pass actual team stats to prevent AI hallucination
+          totalEdge   // Pass total edge analysis for SPREAD picks
         })
         console.log('[SHIVA:GeneratePick] Professional analysis generated successfully')
       } catch (analysisError) {

@@ -38,6 +38,12 @@ export interface AnalysisInput {
     away: TeamStats
     home: TeamStats
   }
+  totalEdge?: {           // NEW: Total edge analysis for SPREAD picks
+    predicted_total: number
+    market_total: number
+    total_edge: number
+    implication: 'OVER' | 'UNDER'
+  }
 }
 
 /**
@@ -172,6 +178,20 @@ Return ONLY the bullet-point analysis (no JSON, no extra formatting).`
       const edge = Math.abs(input.predictedValue)
       const favoredTeam = input.selection.includes(input.game.home_team) ? input.game.home_team : input.game.away_team
 
+      // Format total edge section (if available)
+      let totalEdgeSection = ''
+      if (input.totalEdge && Math.abs(input.totalEdge.total_edge) > 5) {
+        totalEdgeSection = `
+TOTAL EDGE ANALYSIS:
+- Our Predicted Total: ${input.totalEdge.predicted_total.toFixed(1)} points
+- Market Total Line: ${input.totalEdge.market_total.toFixed(1)} points
+- Total Edge: ${input.totalEdge.total_edge.toFixed(1)} points (${input.totalEdge.implication} lean)
+${Math.abs(input.totalEdge.total_edge) > 10 ? '- ⚠️ LARGE DISCREPANCY: This suggests a strong secondary angle on the total' : ''}
+
+NOTE: While this is a SPREAD pick, the large total discrepancy may indicate game script implications (pace, blowout risk, etc.)
+`
+      }
+
       // Format team stats section (if available)
       let teamStatsSection = ''
       if (input.teamStats) {
@@ -209,6 +229,7 @@ GAME CONTEXT:
 - Pick: ${input.selection}
 - Confidence: ${input.confidence.toFixed(1)}/10.0
 - Units: ${input.units}
+${totalEdgeSection}
 ${teamStatsSection}
 FACTOR ANALYSIS (Our Proprietary Model):
 ${factorBreakdown}
