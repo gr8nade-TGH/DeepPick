@@ -87,67 +87,40 @@ export const PerformanceMonitor: React.FC = () => {
     return '#44ff44';
   };
 
-  // Copy SMART debug info - only critical information
+  // Copy CONCISE debug info - only the essentials
   const copyDebugInfo = async () => {
     const consoleBuffer = (window as any).__debugConsoleBuffer || [];
 
-    // Filter for ONLY critical logs
-    const criticalLogs = consoleBuffer.filter((log: string) =>
-      log.includes('🎯 [CALLBACK]') ||
-      log.includes('📦 [CALLBACK]') ||
-      log.includes('🛡️ [DEFENSE') ||
-      log.includes('💀 [DEFENSE DOT DESTROYED]') ||
-      log.includes('📊 [STORE]') ||
-      log.includes('🔍 [FIND DOT]') ||
-      log.includes('🚫 [SKIP DEAD DOT]') ||
-      log.includes('✅ Collision manager') ||
-      log.includes('🎯 [SIMULTANEOUS]') ||
-      log.includes('   Left weapon:') ||
-      log.includes('   Right weapon:') ||
-      log.includes('🚀 [PROJECTILE START]') ||
-      log.includes('🎯 [CHECK DEFENSE]') ||
-      log.includes('📏 [DISTANCE CHECK]') ||
-      log.includes('🔄 [ON UPDATE]') ||
-      log.includes('   Dot pos:') || // Defense dot position
+    // Count projectiles by status using live debugger data
+    const { leftTotal, rightTotal, leftCollided, leftInFlight, rightCollided, rightInFlight } = projectileDebugger.getSummaryCounts();
+
+    // Filter for ONLY collision-related logs
+    const collisionLogs = consoleBuffer.filter((log: string) =>
+      log.includes('💥 [DEBUG] Collision') ||
+      log.includes('🎯 [DEBUG] Registered') ||
       log.includes('[ERROR]') ||
       log.includes('[WARN]')
     );
 
-    // Get projectile summary stats only
-    const debugInfo = projectileDebugger.getDebugReport();
-    const lines = debugInfo.split('\n');
+    // Get last 10 collision events
+    const recentCollisions = collisionLogs.slice(-10);
 
-    // Extract only the statistics section
-    const statsStartIndex = lines.findIndex(l => l.includes('📈 STATISTICS'));
-    const statsSection = statsStartIndex >= 0 ? lines.slice(statsStartIndex).join('\n') : '';
-
-    // Count projectiles by status using live debugger data (avoid parsing text)
-    const { leftCollided, leftInFlight, rightCollided, rightInFlight } = projectileDebugger.getSummaryCounts();
-
-    // Get first 50 and last 20 logs (prioritize seeing projectile start positions)
-    const firstLogs = criticalLogs.slice(0, 50);
-    const lastLogs = criticalLogs.slice(-20);
-    const combinedLogs = [...firstLogs, '...', '(middle logs omitted)', '...', ...lastLogs];
-
-    const smartDebug = `🔍 SMART DEBUG REPORT - ${new Date().toLocaleTimeString()}
+    const conciseDebug = `🔍 DEBUG REPORT - ${new Date().toLocaleTimeString()}
 ════════════════════════════════════════════════════════════════
 
-📊 QUICK STATS:
-FPS: ${fps} | Memory: ${memory}MB | Defense Dots: ${defenseDots}
+📊 PERFORMANCE:
+FPS: ${fps} | Memory: ${memory}MB | Defense Dots: ${defenseDots} | Games: ${games}
 
-🎯 PROJECTILE SUMMARY:
-Left: ${leftCollided} collided, ${leftInFlight} in-flight
-Right: ${rightCollided} collided, ${rightInFlight} in-flight
+🎯 PROJECTILE STATUS:
+LEFT:  ${leftCollided}/${leftTotal} collided (${leftInFlight} in-flight)
+RIGHT: ${rightCollided}/${rightTotal} collided (${rightInFlight} in-flight)
 
-${statsSection}
-
-🔍 CRITICAL LOGS (${criticalLogs.length} events):
-════════════════════════════════════════════════════════════════
-${criticalLogs.length > 0 ? combinedLogs.join('\n') : '⚠️ NO CRITICAL LOGS FOUND - Callbacks may not be firing!'}
+💥 RECENT COLLISIONS (Last 10):
+${recentCollisions.length > 0 ? recentCollisions.join('\n') : '⚠️ NO COLLISIONS DETECTED'}
 
 ════════════════════════════════════════════════════════════════`;
 
-    await navigator.clipboard.writeText(smartDebug);
+    await navigator.clipboard.writeText(conciseDebug);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
     console.log('📋 Smart debug report copied! (Only critical info)');

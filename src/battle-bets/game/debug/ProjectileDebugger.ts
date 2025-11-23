@@ -5,7 +5,6 @@
 
 import * as PIXI from 'pixi.js';
 import { gridManager } from '../managers/GridManager';
-import { DEFAULT_GRID_CONFIG } from '../../types/game';
 
 interface ProjectileDebugInfo {
   id: string;
@@ -53,47 +52,33 @@ class ProjectileDebugger {
     const cellWidth = gridManager.getCellWidth();
     const cellHeight = gridManager.getCellHeight();
 
-    // Use DEFAULT_GRID_CONFIG directly instead of gridManager.getConfig()
-    const config = DEFAULT_GRID_CONFIG;
-
-    const itemSlotsWidth = 40;
-    const castleBoxWidth = 200;
-    const statLabelWidth = config.statLabelWidth;
-    const weaponSlotWidth = config.weaponSlotWidth;
-    const defenseCells = config.defenseCellsPerSide;
-    const attackCells = config.attackCellsPerSide;
-    const battlefieldWidth = config.battlefieldWidth;
-
-    const leftDefenseStart = itemSlotsWidth + castleBoxWidth + statLabelWidth + weaponSlotWidth;
-    const leftAttackStart = leftDefenseStart + (defenseCells * cellWidth);
-    const battlefieldStart = leftAttackStart + (attackCells * cellWidth);
-    const battlefieldEnd = battlefieldStart + battlefieldWidth;
-    const rightAttackStart = battlefieldEnd;
-    const rightDefenseStart = rightAttackStart + (attackCells * cellWidth);
+    // CRITICAL: Use GridManager layout instead of hardcoded values
+    // This ensures debug overlay matches actual grid positions
+    const layout = gridManager.getLayout();
 
     const gridHeight = 5 * cellHeight;
 
     // Left defense cells
-    for (let i = 0; i < defenseCells; i++) {
-      const x = leftDefenseStart + (i * cellWidth);
-      this.drawGridCell(this.gridOverlay, x, 0, cellWidth, gridHeight, `L-D${i}`, 0x00ff00, 0.1);
+    for (let i = 0; i < layout.defenseCells; i++) {
+      const x = layout.leftDefenseStart + (i * cellWidth);
+      this.drawGridCell(this.gridOverlay, x, 0, cellWidth, gridHeight, `L-D${i}`, 0x00ff00);
     }
 
     // Battlefield cells
-    const battlefieldCells = Math.floor(battlefieldWidth / cellWidth);
+    const battlefieldCells = Math.floor(layout.battlefieldWidth / cellWidth);
     for (let i = 0; i < battlefieldCells; i++) {
-      const x = battlefieldStart + (i * cellWidth);
-      this.drawGridCell(this.gridOverlay, x, 0, cellWidth, gridHeight, `BF${i}`, 0xff0000, 0.15);
+      const x = layout.battlefieldStart + (i * cellWidth);
+      this.drawGridCell(this.gridOverlay, x, 0, cellWidth, gridHeight, `BF${i}`, 0xff0000);
     }
 
     // Right defense cells
-    for (let i = 0; i < defenseCells; i++) {
-      const x = rightDefenseStart + (i * cellWidth);
-      this.drawGridCell(this.gridOverlay, x, 0, cellWidth, gridHeight, `R-D${i}`, 0x00ff00, 0.1);
+    for (let i = 0; i < layout.defenseCells; i++) {
+      const x = layout.rightDefenseStart + (i * cellWidth);
+      this.drawGridCell(this.gridOverlay, x, 0, cellWidth, gridHeight, `R-D${i}`, 0x00ff00);
     }
 
     // Center line
-    const centerX = battlefieldStart + (battlefieldWidth / 2);
+    const centerX = layout.battlefieldStart + (layout.battlefieldWidth / 2);
     this.gridOverlay.moveTo(centerX, 0);
     this.gridOverlay.lineTo(centerX, gridHeight);
     this.gridOverlay.stroke({ width: 3, color: 0xff00ff, alpha: 0.8 });
@@ -116,8 +101,7 @@ class ProjectileDebugger {
     width: number,
     height: number,
     label: string,
-    color: number,
-    alpha: number
+    color: number
   ): void {
     // Only draw border, no fill (so it doesn't cover castles)
     graphics.rect(x, y, width, height);
