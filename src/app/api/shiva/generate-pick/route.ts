@@ -429,18 +429,36 @@ export async function POST(request: Request) {
         }
 
         // PENALTY 4: Missing injury data
-        const injuryData = result.steps?.step3?.totals_debug?.console_logs?.injuries
-        if (!injuryData || (Array.isArray(injuryData) && injuryData.length === 0)) {
+        // For TOTALS: injury data is in totals_debug.injury_impact
+        // For SPREAD: injury data is in spread_debug.injury_data (if exists)
+        let injuryData: any = null
+        if (betType === 'TOTAL') {
+          injuryData = result.steps?.step3?.totals_debug?.injury_impact
+        } else if (betType === 'SPREAD') {
+          // SPREAD picks may have injury data in different location
+          injuryData = result.steps?.step3?.spread_debug?.injury_data ||
+            result.steps?.step3?.totals_debug?.injury_impact
+        }
+
+        // Check if injury data is missing or empty
+        const hasInjuryData = injuryData && (
+          (injuryData.summary && injuryData.summary !== 'Not needed') ||
+          (Array.isArray(injuryData) && injuryData.length > 0) ||
+          (injuryData.awayInjuries && injuryData.homeInjuries)
+        )
+
+        if (!hasInjuryData) {
           const missingInjuryPenalty = 0.5
           recalibratedConfidence -= missingInjuryPenalty
           confidencePenalties.push({
             type: 'missing_injury_data',
             penalty: missingInjuryPenalty.toFixed(2),
-            reason: 'Injury data not available - S6 factor may be inaccurate'
+            reason: 'Injury data not available - injury factors may be inaccurate'
           })
 
           console.warn('[SHIVA:GeneratePick] ⚠️ Confidence penalty for missing injury data:', {
-            penalty: missingInjuryPenalty.toFixed(2)
+            penalty: missingInjuryPenalty.toFixed(2),
+            betType
           })
         }
 
