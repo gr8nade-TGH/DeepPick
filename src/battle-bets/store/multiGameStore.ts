@@ -147,32 +147,38 @@ export const useMultiGameStore = create<MultiGameState>()(
           // Get capper's TOTAL unit record for this team
           const units = getCapperUnitsForTeam(capper, team.id);
           const totalDots = getTotalDefenseDotCount(units);
+          const distribution = distributeDotsAcrossStats(totalDots);
 
           console.log(`[Multi-Game Store] ${capper.name} has ${units} units on ${team.abbreviation} = ${totalDots} defense dots`);
+          console.log(`[Multi-Game Store] Distribution:`, distribution);
 
-          // Create 1 base defense dot per stat row (cell #1)
+          // Create ALL defense dots across all cells (no animation for now)
           stats.forEach((stat) => {
-            const cellNumber = 1;
-            const is3ptRow = stat === '3pt';
-            const cellId = getDefenseCellId(stat, side, cellNumber);
-            const id = `${battleId}-${cellId}`;
+            const dotsForStat = distribution[stat];
 
-            const position = getDefenseCellPosition(stat, side, cellNumber);
+            // Create dots from cell #1 to cell #dotsForStat
+            for (let cellNumber = 1; cellNumber <= dotsForStat; cellNumber++) {
+              const is3ptRow = stat === '3pt';
+              const cellId = getDefenseCellId(stat, side, cellNumber);
+              const id = `${battleId}-${cellId}`;
 
-            const dot = new DefenseDot({
-              id,
-              gameId: battleId,
-              stat,
-              side,
-              index: cellNumber - 1,
-              cellId,
-              position,
-              team,
-              maxHp: 3,
-              isRegenerated: is3ptRow,
-            });
+              const position = getDefenseCellPosition(stat, side, cellNumber);
 
-            defenseDots.set(id, dot);
+              const dot = new DefenseDot({
+                id,
+                gameId: battleId,
+                stat,
+                side,
+                index: cellNumber - 1,
+                cellId,
+                position,
+                team,
+                maxHp: 3,
+                isRegenerated: is3ptRow,
+              });
+
+              defenseDots.set(id, dot);
+            }
           });
         });
 
