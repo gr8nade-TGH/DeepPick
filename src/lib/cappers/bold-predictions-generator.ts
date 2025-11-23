@@ -131,7 +131,7 @@ export async function generateBoldPredictions(input: BoldPredictionsInput): Prom
     // Format real player stats from MySportsFeeds
     const formatPlayerStats = (players: any[], teamName: string) => {
       if (!players || players.length === 0) {
-        return `No current-season stats available for ${teamName}`
+        return `No current-season PLAYER stats available for ${teamName} (team-level stats are available in professional analysis)`
       }
 
       // Get top 5 players by minutes played
@@ -141,7 +141,7 @@ export async function generateBoldPredictions(input: BoldPredictionsInput): Prom
         .slice(0, 5)
 
       if (topPlayers.length === 0) {
-        return `No current-season stats available for ${teamName}`
+        return `No current-season PLAYER stats available for ${teamName} (team-level stats are available in professional analysis)`
       }
 
       return topPlayers.map(p => {
@@ -157,6 +157,22 @@ export async function generateBoldPredictions(input: BoldPredictionsInput): Prom
 
     const awayStatsContext = formatPlayerStats(awayPlayerStats, input.game.away_team)
     const homeStatsContext = formatPlayerStats(homePlayerStats, input.game.home_team)
+
+    // Check if we have player stats for at least one team
+    const hasAwayStats = awayPlayerStats && awayPlayerStats.length > 0
+    const hasHomeStats = homePlayerStats && homePlayerStats.length > 0
+
+    // If no player stats available for either team, return early with helpful message
+    if (!hasAwayStats && !hasHomeStats) {
+      console.warn('[BoldPredictions] No player stats available for either team - skipping bold predictions')
+      return {
+        bold_predictions: {
+          predictions: [],
+          summary: `Player-level predictions are not available due to missing current-season player statistics. The professional analysis above uses team-level statistics (offensive/defensive ratings, pace, efficiency metrics) which are available and accurate.`
+        },
+        injury_summary: injuryData
+      }
+    }
 
     // Generate AI prompt based on bet type
     let aiPrompt = ''
