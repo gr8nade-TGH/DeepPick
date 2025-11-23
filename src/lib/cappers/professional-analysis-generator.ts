@@ -146,11 +146,18 @@ REQUIRED FORMAT (Use bullet points throughout):
 • Consider both direct impact (missing scorer) and indirect (defensive adjustments, usage changes)
 
 **🔍 CONTEXTUAL FACTORS**
-• Recent form and momentum (last 5-10 games)
-• Schedule spot (rest days, travel, back-to-back)
+• Recent form and momentum (focus on team performance trends)
+• Schedule spot and rest factors (if known)
 • Home/away splits and venue factors
-• Head-to-head history and stylistic matchups
-• Motivation factors (playoff race, rivalry, revenge game)
+• Stylistic matchups and pace dynamics
+• Motivation factors (playoff race, rivalry)
+
+⚠️ CRITICAL RESTRICTIONS - DO NOT CITE UNLESS PROVIDED:
+• DO NOT cite specific ATS records (e.g., "7-3 ATS last 10") unless provided in data above
+• DO NOT cite specific head-to-head records (e.g., "won 7 of last 10 meetings") unless provided
+• DO NOT cite specific travel narratives (e.g., "coming off 3-game road trip") unless provided
+• DO NOT cite specific rest advantages (e.g., "3 days rest vs 1 day") unless provided
+• If you don't have the data, focus on the factors we DO have (team stats, injuries, efficiency metrics)
 
 **⚖️ RISK ASSESSMENT**
 • What could go wrong with this pick?
@@ -164,12 +171,13 @@ REQUIRED FORMAT (Use bullet points throughout):
 
 CRITICAL REQUIREMENTS:
 - Use bullet points for ALL sections (no paragraphs)
-- Be specific with numbers, percentages, and data points
+- Be specific with numbers, percentages, and data points from the ACTUAL TEAM STATISTICS provided
 - Show creative analytical thinking (connect dots others miss)
 - Quality over speed - take time to think deeply
 - Avoid generic statements - every point should be specific to THIS game
 - No clichés or hype language
 - This will be reviewed against actual results, so be precise
+- DO NOT hallucinate ATS records, H2H records, travel data, or rest advantages
 
 LENGTH: 400-600 words (prioritize quality over brevity)
 
@@ -263,11 +271,18 @@ REQUIRED FORMAT (Use bullet points throughout):
 • Which team is more affected by injury situations?
 
 **🔍 CONTEXTUAL FACTORS**
-• Recent form and momentum (last 5-10 games ATS)
-• Schedule spot (rest advantage, travel fatigue, back-to-back)
+• Recent form and momentum (focus on team performance trends)
+• Schedule spot and rest factors (if known)
 • Home/away performance and venue factors
-• Head-to-head history and stylistic matchups
-• Motivation factors (playoff implications, rivalry intensity, revenge narrative)
+• Stylistic matchups and coaching adjustments
+• Motivation factors (playoff implications, rivalry intensity)
+
+⚠️ CRITICAL RESTRICTIONS - DO NOT CITE UNLESS PROVIDED:
+• DO NOT cite specific ATS records (e.g., "7-3 ATS last 10") unless provided in data above
+• DO NOT cite specific head-to-head records (e.g., "won 7 of last 10 meetings") unless provided
+• DO NOT cite specific travel narratives (e.g., "coming off 3-game road trip") unless provided
+• DO NOT cite specific rest advantages (e.g., "3 days rest vs 1 day") unless provided
+• If you don't have the data, focus on the factors we DO have (team stats, injuries, efficiency metrics)
 
 **⚖️ RISK ASSESSMENT**
 • What could prevent ${favoredTeam} from covering?
