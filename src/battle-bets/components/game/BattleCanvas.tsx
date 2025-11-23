@@ -51,7 +51,6 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
   const [webglSupport, setWebglSupport] = useState<ReturnType<typeof detectWebGLSupport> | null>(null)
   const [containerReady, setContainerReady] = useState(false)
   const [debugMode, setDebugMode] = useState(false)
-  const [showDefenseDebug, setShowDefenseDebug] = useState(false)
 
   const initializeBattle = useMultiGameStore(state => state.initializeBattle)
   const getBattle = useMultiGameStore(state => state.getBattle)
@@ -146,9 +145,6 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
 
           // Initialize battle in store (HP + defense dots)
           initializeBattle(battleId, game)
-
-          // Initialize defense orb debugger
-          defenseOrbDebugger.initialize(container)
 
           setContainerReady(true)
 
