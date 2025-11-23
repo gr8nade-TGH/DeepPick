@@ -34,6 +34,7 @@ import { getItemById } from '../../types/inventory';
 import { projectileDebugger } from '../debug/ProjectileDebugger';
 import { battleEventBus } from '../events/EventBus';
 import type { QuarterStartPayload, QuarterEndPayload, ProjectileFiredPayload } from '../events/types';
+import { debugGridPositions } from '../debug/positionDebug';
 
 /**
  * Quarter stats for both teams
@@ -95,6 +96,11 @@ export async function simulateQuarter(
   right: QuarterStats;
 }> {
   console.log(`\n🎮 Q${quarterNumber} START (battleId=${battleId})`);
+
+  // Debug grid positions on first quarter
+  if (quarterNumber === 1) {
+    debugGridPositions();
+  }
 
   const multiStore = useMultiGameStore.getState();
   const battle = multiStore.getBattle(battleId);
@@ -928,9 +934,19 @@ async function fireSingleProjectileForMultiBattle(
   const startPosition = getWeaponSlotPosition(stat, side);
   const targetSide = side === 'left' ? 'right' : 'left';
 
-  // Projectiles ALWAYS target the weapon slot on the opposite side
+  // Projectiles target the battlefield edge on the opposite side
+  // Since attackCellsPerSide = 0, projectiles fly from weapon slot → battlefield edge
   // Collision detection will handle hitting defense dots or projectiles that are "in the way"
-  const targetPosition = getWeaponSlotPosition(stat, targetSide);
+  const layout = gridManager.getLayout();
+  const statIndex = getStatIndex(stat);
+  const y = statIndex * 40 + 20; // cellHeight=40, center=20
+
+  // Left projectiles target RIGHT edge of battlefield (battlefieldEnd)
+  // Right projectiles target LEFT edge of battlefield (battlefieldStart)
+  const targetPosition = {
+    x: side === 'left' ? layout.battlefieldEnd : layout.battlefieldStart,
+    y
+  };
 
   const projectileId = `multi-${battleId}-${stat}-${side}-${projectileIndex}-${Date.now()}`;
 
