@@ -123,12 +123,11 @@ class CollisionManager {
 
     if (targetDot) {
       const distance = this.getDistance(projectile.position, targetDot.position);
-      // Use a MASSIVE collision radius to account for:
-      // 1. Fast-moving projectiles that might "jump over" defense dots between frames
-      // 2. Large distance between projectile path and defense dots (up to 500px)
-      // 3. Defense dots positioned near castles (not in projectile's direct path)
-      // Base: 8 (projectile) + 8 (dot) + 500 (massive fudge factor for off-path detection) = 516px
-      const collisionRadius = projectile.typeConfig.collisionRadius + targetDot.radius + 500;
+      // Use a reasonable collision radius:
+      // - Base: 8 (projectile) + 8 (dot) = 16px
+      // - Add small buffer for fast-moving projectiles: +20px
+      // - Total: 36px (enough to catch collisions without false positives)
+      const collisionRadius = projectile.typeConfig.collisionRadius + targetDot.radius + 20;
 
       // DEBUG: Log distance calculation details
       const dx = Math.abs(projectile.position.x - targetDot.position.x);
@@ -305,7 +304,7 @@ class CollisionManager {
       console.warn(`⚠️ [FIND DOT] ${projectile.id} (${projectile.side}, X=${projectile.position.x.toFixed(1)}) | ${aliveDots} alive dots but NONE in path! | Eligible: [${eligibleDots.join(', ')}] | Behind: ${behindProjectile}`);
     } else if (targetDot) {
       const distance = Math.abs(projectile.position.x - targetDot.position.x);
-      if (distance > 100) {
+      if (distance > 50) {
         console.warn(`⚠️ [FIND DOT] ${projectile.id} (${projectile.side}, X=${projectile.position.x.toFixed(1)}) | Found ${targetDot.id} but it's ${distance.toFixed(1)}px away! | Eligible: [${eligibleDots.join(', ')}]`);
       }
     }
