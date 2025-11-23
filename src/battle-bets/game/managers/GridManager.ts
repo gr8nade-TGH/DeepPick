@@ -244,7 +244,10 @@ class GridManagerClass {
   /**
    * Create defense cell
    * LEFT SIDE: Fills left to right (col 0 = leftmost)
-   * RIGHT SIDE: Fills RIGHT to LEFT (col 0 = rightmost, col 9 = leftmost)
+   * RIGHT SIDE: Fills LEFT to RIGHT (col 0 = leftmost) - CHANGED to match projectile flow!
+   *
+   * CRITICAL FIX: Right side dots now fill from LEFT to RIGHT within the defense zone
+   * so projectiles hit them as they enter the zone (not at the far right edge)
    */
   private createDefenseCell(row: number, col: number, stat: StatType, side: 'left' | 'right'): void {
     const y = row * this.layout.cellHeight;
@@ -254,10 +257,9 @@ class GridManagerClass {
       // Left side: col 0 = leftmost, col 9 = rightmost
       x = this.layout.leftDefenseStart + (col * this.layout.cellWidth);
     } else {
-      // Right side: col 0 = rightmost, col 9 = leftmost
-      // Reverse the column index so dots fill from right to left
-      const reversedCol = (this.layout.defenseCells - 1) - col;
-      x = this.layout.rightDefenseStart + (reversedCol * this.layout.cellWidth);
+      // Right side: col 0 = leftmost (closest to battlefield), col 9 = rightmost
+      // This ensures projectiles hit dots as they ENTER the defense zone
+      x = this.layout.rightDefenseStart + (col * this.layout.cellWidth);
     }
 
     const cell: GridCell = {
