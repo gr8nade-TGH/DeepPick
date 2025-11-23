@@ -1,5 +1,6 @@
 "use client"
 import { useState } from 'react'
+import { ChevronDown, ChevronUp } from 'lucide-react'
 import { getFactorMeta } from '@/lib/cappers/shiva-v1/factor-registry'
 
 export interface InsightCardProps {
@@ -147,6 +148,7 @@ function getCapperBranding(capperName: string): { icon: string; color: string; g
 
 export function InsightCard(props: InsightCardProps) {
   const [hoveredFactor, setHoveredFactor] = useState<string | null>(null)
+  const [showAdvancedDetails, setShowAdvancedDetails] = useState(false)
 
   // Early return if no data
   if (!props || !props.factors) {
@@ -227,81 +229,86 @@ export function InsightCard(props: InsightCardProps) {
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className={`bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl shadow-2xl border-2 border-${branding.color}-500/30 max-w-4xl w-full max-h-[90vh] overflow-y-auto`}>
-        {/* Professional Header with Dynamic Capper Branding */}
-        <div className={`bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 p-6 rounded-t-2xl border-b-2 border-${branding.color}-500/40`}>
+
+        {/* ===== COMPACT HEADER ===== */}
+        <div className={`bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 p-4 rounded-t-2xl border-b-2 border-${branding.color}-500/40`}>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className={`w-14 h-14 bg-gradient-to-br ${branding.gradient} rounded-full flex items-center justify-center border-2 border-${branding.color}-400 shadow-lg`}>
-                <span className="text-3xl">{branding.icon}</span>
+            <div className="flex items-center gap-3">
+              <div className={`w-12 h-12 bg-gradient-to-br ${branding.gradient} rounded-full flex items-center justify-center border-2 border-${branding.color}-400 shadow-lg`}>
+                <span className="text-2xl">{branding.icon}</span>
               </div>
               <div>
-                <div className="flex items-center gap-3">
-                  <h1 className="text-3xl font-black text-white">{capperName}'S PICK</h1>
-                  <span className={`text-xs font-semibold px-3 py-1 rounded-full ${props.is_system_pick !== false
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-black text-white">{capperName}'S PICK</h1>
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${props.is_system_pick !== false
                     ? 'bg-blue-600 text-white'
                     : 'bg-green-600 text-white'
                     }`}>
                     {props.is_system_pick !== false ? 'GENERATED' : 'MANUAL'}
                   </span>
                 </div>
-                <div className="text-slate-300 text-sm font-semibold">Professional Sports Analytics</div>
+                <div className="text-slate-400 text-xs font-medium">Professional Sports Analytics</div>
               </div>
             </div>
             <button
               onClick={props.onClose}
-              className={`text-slate-400 hover:text-${branding.color}-400 text-3xl font-bold transition-colors`}
+              className={`text-slate-400 hover:text-${branding.color}-400 text-2xl font-bold transition-colors`}
             >
               ×
             </button>
           </div>
         </div>
 
-        {/* Matchup Line */}
-        <div className="p-5 bg-gradient-to-r from-slate-800 to-slate-700 border-b border-cyan-500/20">
-          <div className="text-center">
-            <div className="text-xl font-bold text-white mb-2">
-              {props.matchup?.spreadText || 'AWAY +spread @ HOME -spread'}
-            </div>
-            <div className="text-cyan-300 font-medium">
-              {props.matchup?.totalText || 'O/U {total_line}'}
-            </div>
-          </div>
-        </div>
-
-        {/* Bet Banner - Professional & Clean */}
-        <div className="p-8 bg-gradient-to-r from-cyan-900 via-blue-900 to-cyan-900 border-y-2 border-cyan-400/50 shadow-xl relative overflow-hidden">
-          {/* Subtle animated background */}
+        {/* ===== THE PICK - HERO SECTION ===== */}
+        <div className="p-6 bg-gradient-to-r from-cyan-900 via-blue-900 to-cyan-900 border-b-2 border-cyan-400/50 shadow-xl relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-400/5 to-transparent animate-pulse"></div>
 
           <div className="text-center relative z-10">
-            <div className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-blue-300 mb-3 drop-shadow-lg tracking-tight">
+            {/* THE PICK */}
+            <div className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-blue-300 mb-2 drop-shadow-lg tracking-tight">
               {safePick.units} {safePick.units === 1 ? 'UNIT' : 'UNITS'} on {safePick.selection}
             </div>
+
+            {/* Matchup */}
+            <div className="text-lg font-bold text-white mb-1">
+              {props.matchup?.spreadText || 'AWAY +spread @ HOME -spread'}
+            </div>
+            <div className="text-cyan-300 font-medium text-sm mb-3">
+              {props.matchup?.totalText || 'O/U {total_line}'}
+            </div>
+
+            {/* Game Date & Time */}
+            <div className="flex items-center justify-center gap-3 text-cyan-200 text-sm font-semibold">
+              <span>🗓️ {formatLocalDate(props.matchup?.gameDateLocal || props.generatedAt)}</span>
+              <span>•</span>
+              <span>🕐 {formatLocalTime(props.matchup?.gameDateLocal || props.generatedAt)}</span>
+            </div>
+
             {/* Show locked line based on pick type */}
             {safePick.type === 'TOTAL' && (safePick as any).locked_odds?.total_line && (
-              <div className="text-cyan-200 text-lg font-semibold flex items-center justify-center gap-2">
-                <span className="text-2xl">🔒</span>
+              <div className="text-cyan-200 text-sm font-semibold flex items-center justify-center gap-2 mt-2">
+                <span className="text-lg">🔒</span>
                 <span>Locked O/U {(safePick as any).locked_odds.total_line}</span>
               </div>
             )}
             {safePick.type === 'SPREAD' && (safePick as any).locked_odds?.spread_line && (
-              <div className="text-cyan-200 text-lg font-semibold flex items-center justify-center gap-2">
-                <span className="text-2xl">🔒</span>
+              <div className="text-cyan-200 text-sm font-semibold flex items-center justify-center gap-2 mt-2">
+                <span className="text-lg">🔒</span>
                 <span>Locked ATS {(safePick as any).locked_odds.spread_line > 0 ? '+' : ''}{(safePick as any).locked_odds.spread_line}</span>
               </div>
             )}
           </div>
         </div>
 
-        {/* Confidence Score Bar - Professional Design */}
-        <div className="p-6 bg-gradient-to-r from-slate-800 to-slate-700 border-b border-cyan-500/20">
+        {/* ===== EDGE SCORE - COMPACT ===== */}
+        <div className="p-4 bg-gradient-to-r from-slate-800 to-slate-700 border-b border-cyan-500/20">
           <div className="text-center">
-            <div className="text-sm text-cyan-300 font-semibold mb-3">Edge Score: {Math.min(safeMarket.confFinal, 10).toFixed(1)} / 10.0</div>
+            <div className="text-xs text-cyan-300 font-semibold mb-2">Edge Score: {Math.min(safeMarket.confFinal, 10).toFixed(1)} / 10.0</div>
 
             {/* Edge Score Bar with Unit Markers */}
-            <div className="relative mx-auto max-w-lg">
+            <div className="relative mx-auto max-w-md">
               {/* Background bar */}
-              <div className="relative h-5 bg-slate-900/50 rounded-full overflow-hidden border border-cyan-500/30">
+              <div className="relative h-4 bg-slate-900/50 rounded-full overflow-hidden border border-cyan-500/30">
                 <div
                   className="h-full bg-gradient-to-r from-red-500 via-yellow-400 to-cyan-400 transition-all duration-500 shadow-lg"
                   style={{ width: `${Math.min((safeMarket.confFinal / 10) * 100, 100)}%` }}
@@ -309,7 +316,7 @@ export function InsightCard(props: InsightCardProps) {
               </div>
 
               {/* Unit markers */}
-              <div className="relative h-7 mt-2">
+              <div className="relative h-5 mt-1">
                 {[5, 6, 7, 8, 9].map((threshold) => {
                   const position = (threshold / 10) * 100
                   const units = threshold < 6 ? 1 : threshold < 7 ? 2 : threshold < 8 ? 3 : threshold < 9 ? 4 : 5
@@ -321,7 +328,7 @@ export function InsightCard(props: InsightCardProps) {
                       className="absolute transform -translate-x-1/2"
                       style={{ left: `${position}%` }}
                     >
-                      <div className={`text-xs font-bold ${isActive ? 'text-cyan-400' : 'text-slate-600'}`}>
+                      <div className={`text-[10px] font-bold ${isActive ? 'text-cyan-400' : 'text-slate-600'}`}>
                         {units}U
                       </div>
                     </div>
@@ -330,7 +337,7 @@ export function InsightCard(props: InsightCardProps) {
               </div>
             </div>
 
-            <div className="text-sm text-cyan-200 mt-3 font-medium">
+            <div className="text-xs text-cyan-200 mt-2 font-medium">
               {safeMarket.confFinal >= 9 ? '🔥🔥 MAXIMUM EDGE (5 Units)' :
                 safeMarket.confFinal >= 8 ? '🔥 HIGH EDGE (4 Units)' :
                   safeMarket.confFinal >= 7 ? '⚡ STRONG EDGE (3 Units)' :
@@ -340,141 +347,42 @@ export function InsightCard(props: InsightCardProps) {
           </div>
         </div>
 
-        {/* AI Writeups - Game Prediction and Bold Predictions (Professional Analysis moved below) */}
-        {props.writeups && (
-          <div className="p-6 bg-gradient-to-br from-slate-800 to-slate-700 border-b border-cyan-500/20 space-y-4">
-            {props.writeups.gamePrediction && (
-              <div className="bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-xl p-5 border border-cyan-500/20 shadow-lg">
-                <div className="text-xs font-bold text-cyan-400 uppercase mb-3 flex items-center gap-2">
-                  <span>🎯</span>
-                  <span>{safePick.type === 'SPREAD' ? 'Spread Projection' : 'Score Projection'}</span>
-                </div>
-                <p className="text-cyan-100 text-sm font-medium mb-3">{props.writeups.gamePrediction}</p>
-                {/* ONLY show predicted score for TOTAL picks - SPREAD picks don't need score projection */}
-                {safePick.type === 'TOTAL' && (
-                  <div className="bg-gradient-to-r from-slate-800 to-slate-700 rounded-lg p-4 mt-3 border border-cyan-500/30">
-                    <div className="text-center">
-                      <div className="text-xs text-cyan-300 font-semibold mb-2">PREDICTED FINAL SCORE</div>
-                      <div className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-blue-300">
-                        {props.matchup?.away || 'Away'} {safePredictedScore.away} - {safePredictedScore.home} {props.matchup?.home || 'Home'}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* BOLD PICKS - Show only if available */}
-            {props.bold_predictions && props.bold_predictions.predictions && props.bold_predictions.predictions.length > 0 && (
-              <div className="space-y-4">
-                {/* Section Header */}
-                <div className="flex items-center gap-2 pb-2 border-b border-slate-700">
-                  <span className="text-lg">🎯</span>
-                  <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wide">Bold Picks</h3>
-                </div>
-
-                {/* Summary */}
-                {props.bold_predictions.summary && (
-                  <p className="text-slate-300 text-sm leading-relaxed">{props.bold_predictions.summary}</p>
-                )}
-
-                {/* Individual Predictions - Clean Cards */}
-                <div className="space-y-3">
-                  {props.bold_predictions.predictions.map((pred, index) => (
-                    <div key={index} className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/50 hover:border-slate-600 transition-colors">
-                      {/* Player + Confidence Badge */}
-                      <div className="flex items-start justify-between gap-3 mb-3">
-                        <div>
-                          <div className="text-sm font-bold text-white">
-                            {pred.player}
-                          </div>
-                          <div className="text-xs text-slate-400 font-medium">
-                            {pred.team}
-                          </div>
-                        </div>
-                        <span className={`px-2.5 py-1 rounded-md text-xs font-bold flex-shrink-0 ${pred.confidence === 'HIGH' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
-                          pred.confidence === 'MEDIUM' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
-                            'bg-orange-500/20 text-orange-400 border border-orange-500/30'
-                          }`}>
-                          {pred.confidence}
-                        </span>
-                      </div>
-
-                      {/* The Prediction - HERO */}
-                      <div className="text-base font-bold text-cyan-300 mb-2">
-                        {pred.prediction}
-                      </div>
-
-                      {/* Reasoning */}
-                      <p className="text-xs text-slate-400 leading-relaxed">{pred.reasoning}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Injury Summary - Professional Design */}
-        {props.injury_summary && (
-          <div className="p-6 bg-gradient-to-br from-slate-800 to-slate-700 border-b border-cyan-500/20">
-            <div className="text-sm font-bold text-cyan-300 mb-3 flex items-center gap-2">
-              <span>🏥</span>
-              <span>INJURY SUMMARY</span>
-            </div>
-            <div className="bg-gradient-to-br from-slate-900/60 to-slate-800/60 rounded-lg p-4 border border-cyan-500/20">
-              <p className="text-white text-sm leading-relaxed">{props.injury_summary.summary}</p>
-              {props.injury_summary.findings && props.injury_summary.findings.length > 0 && (
-                <div className="mt-3 space-y-2">
-                  {props.injury_summary.findings.map((finding, index) => (
-                    <div key={index} className="text-xs text-cyan-200 bg-slate-800/50 rounded px-3 py-2">
-                      <span className="font-semibold">{finding.team}:</span> {finding.player} - {finding.status} <span className="text-cyan-400">(Impact: {finding.impact})</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Confidence Factors Table - Professional Design */}
-        <div className="p-6 bg-gradient-to-br from-slate-800 to-slate-700 border-b border-cyan-500/20">
-          <div className="flex items-center justify-between mb-6">
-            <div className="text-base font-bold text-cyan-300 flex items-center gap-2">
-              <span className="text-xl">📈</span>
-              <span>EDGE FACTORS</span>
+        {/* ===== KEY FACTORS - TOP 3 ONLY ===== */}
+        <div className="p-4 bg-gradient-to-br from-slate-800 to-slate-700 border-b border-cyan-500/20">
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-sm font-bold text-cyan-300 flex items-center gap-2">
+              <span className="text-lg">📈</span>
+              <span>KEY FACTORS</span>
             </div>
             {sortedFactors.length > 0 && (
-              <div className="text-xs px-3 py-1.5 bg-cyan-500/10 text-cyan-300 rounded-lg border border-cyan-500/30 font-semibold">
+              <div className="text-[10px] px-2 py-1 bg-cyan-500/10 text-cyan-300 rounded border border-cyan-500/30 font-semibold">
                 🏆 Dominant: {sortedFactors[0].label}
               </div>
             )}
           </div>
 
-          {/* Factor Rows - Clean & Spacious */}
+          {/* Top 3 Factors Only - Compact */}
           <div className="space-y-2">
-            {sortedFactors.map((factor) => {
+            {sortedFactors.slice(0, 3).map((factor) => {
               const factorMeta = getFactorMeta(factor.key)
               const icon = factorMeta?.icon || 'ℹ️'
               const shortName = factorMeta?.shortName || factor.label || factor.key
               const tooltip = factorMeta?.description || factor.rationale || 'Factor'
 
-              // Calculate Over/Under direction from factor scores
               const netContribution = (factor.overScore || 0) - (factor.underScore || 0)
               const isOver = factor.overScore > 0
               const isUnder = factor.underScore > 0
-              const isNeutral = Math.abs(netContribution) < 0.01
 
               return (
                 <div
                   key={factor.key}
-                  className="bg-slate-900/40 rounded-lg p-4 border border-slate-700/50 hover:border-slate-600 transition-all group"
+                  className="bg-slate-900/40 rounded-lg p-3 border border-slate-700/50 hover:border-slate-600 transition-all group"
                   onMouseEnter={() => setHoveredFactor(factor.key)}
                   onMouseLeave={() => setHoveredFactor(null)}
                 >
-                  <div className="flex items-center gap-4">
-                    {/* Icon - Larger */}
-                    <div className="text-2xl flex-shrink-0 relative">
+                  <div className="flex items-center gap-3">
+                    {/* Icon */}
+                    <div className="text-xl flex-shrink-0 relative">
                       <span title={tooltip}>{icon}</span>
                       {hoveredFactor === factor.key && (
                         <div className="absolute left-full ml-3 top-0 z-20 w-64 bg-slate-800 text-white text-xs p-3 rounded-lg shadow-xl border border-slate-600">
@@ -490,28 +398,12 @@ export function InsightCard(props: InsightCardProps) {
                       </div>
                     </div>
 
-                    {/* Direction Label + Bar + Value */}
-                    <div className="flex items-center gap-3 flex-shrink-0">
-                      {/* Direction Label */}
-                      <span className={`text-xs font-bold uppercase w-16 text-right ${isOver ? 'text-green-400' : isUnder ? 'text-red-400' : 'text-slate-500'
-                        }`}>
+                    {/* Direction Label + Value */}
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className={`text-xs font-bold uppercase w-14 text-right ${isOver ? 'text-green-400' : isUnder ? 'text-red-400' : 'text-slate-500'}`}>
                         {isOver ? 'OVER' : isUnder ? 'UNDER' : 'NEUTRAL'}
                       </span>
-
-                      {/* Progress Bar */}
-                      <div className="w-24 h-2 bg-slate-700 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full ${isOver ? 'bg-green-500' : isUnder ? 'bg-red-500' : 'bg-slate-500'}`}
-                          style={{
-                            width: `${Math.min(Math.abs(netContribution) / 2 * 100, 100)}%`,
-                            marginLeft: isOver ? '0%' : isUnder ? `${100 - Math.min(Math.abs(netContribution) / 2 * 100, 100)}%` : '50%'
-                          }}
-                        />
-                      </div>
-
-                      {/* Value */}
-                      <span className={`text-sm font-mono font-bold w-12 ${isOver ? 'text-green-400' : isUnder ? 'text-red-400' : 'text-slate-500'
-                        }`}>
+                      <span className={`text-sm font-mono font-bold w-10 ${isOver ? 'text-green-400' : isUnder ? 'text-red-400' : 'text-slate-500'}`}>
                         {isOver ? `+${factor.overScore.toFixed(1)}` : isUnder ? `+${factor.underScore.toFixed(1)}` : '0.0'}
                       </span>
                     </div>
@@ -522,139 +414,291 @@ export function InsightCard(props: InsightCardProps) {
           </div>
         </div>
 
-        {/* Market Summary Strip - Enhanced */}
-        <div className="p-6 bg-slate-800 border-b border-slate-700">
-          <div className="grid grid-cols-4 gap-3 text-center">
-            <div className="bg-slate-900/60 rounded-lg p-3 border border-slate-700/50">
-              <div className="text-xs text-slate-400 uppercase mb-1.5 font-semibold">CONF7</div>
-              <div className="text-2xl font-mono font-bold text-white">{safeMarket.conf7.toFixed(2)}</div>
-            </div>
-            <div className="bg-slate-900/60 rounded-lg p-3 border border-slate-700/50">
-              <div className="text-xs text-slate-400 uppercase mb-1.5 font-semibold">MARKET ADJ</div>
-              <div className={`text-2xl font-mono font-bold ${safeMarket.confAdj > 0 ? 'text-green-400' : safeMarket.confAdj < 0 ? 'text-red-400' : 'text-slate-400'}`}>
-                {safeMarket.confAdj > 0 ? '+' : ''}{safeMarket.confAdj.toFixed(2)}
+        {/* ===== QUICK SUMMARY - Game Prediction ===== */}
+        {props.writeups && props.writeups.gamePrediction && (
+          <div className="p-4 bg-gradient-to-br from-slate-800 to-slate-700 border-b border-cyan-500/20">
+            <div className="bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-lg p-4 border border-cyan-500/20">
+              <div className="text-[10px] font-bold text-cyan-400 uppercase mb-2 flex items-center gap-2">
+                <span>🎯</span>
+                <span>{safePick.type === 'SPREAD' ? 'Spread Projection' : 'Score Projection'}</span>
               </div>
-            </div>
-            <div className="bg-gradient-to-br from-cyan-900/40 to-blue-900/40 rounded-lg p-3 border-2 border-cyan-500/40">
-              <div className="text-xs text-cyan-300 uppercase mb-1.5 font-bold">CONF FINAL</div>
-              <div className="text-2xl font-mono font-bold text-white">
-                {safeMarket.confFinal.toFixed(2)}
-              </div>
-            </div>
-            <div className="bg-slate-900/60 rounded-lg p-3 border border-slate-700/50">
-              <div className="text-xs text-slate-400 uppercase mb-1.5 font-semibold">DOMINANT EDGE</div>
-              <div className="text-base font-bold text-white">
-                {safePick.type === 'TOTAL' ? (safePick.selection?.includes('OVER') ? 'OVER' : 'UNDER') : safeMarket.dominant.toUpperCase()}
-              </div>
+              <p className="text-cyan-100 text-sm font-medium">{props.writeups.gamePrediction}</p>
+              {/* ONLY show predicted score for TOTAL picks */}
+              {safePick.type === 'TOTAL' && (
+                <div className="bg-gradient-to-r from-slate-800 to-slate-700 rounded-lg p-3 mt-2 border border-cyan-500/30">
+                  <div className="text-center">
+                    <div className="text-[10px] text-cyan-300 font-semibold mb-1">PREDICTED FINAL SCORE</div>
+                    <div className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-blue-300">
+                      {props.matchup?.away || 'Away'} {safePredictedScore.away} - {safePredictedScore.home} {props.matchup?.home || 'Home'}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
+        )}
 
-          {/* CHANGE 2: Market Influence slider removed - data still calculated in backend */}
+        {/* ===== COLLAPSIBLE ADVANCED DETAILS BUTTON ===== */}
+        <div className="p-4 bg-slate-800 border-b border-slate-700">
+          <button
+            onClick={() => setShowAdvancedDetails(!showAdvancedDetails)}
+            className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-lg transition-all duration-200 text-sm"
+          >
+            {showAdvancedDetails ? (
+              <>
+                <ChevronUp className="w-5 h-5" />
+                <span>HIDE ADVANCED DETAILS</span>
+                <ChevronUp className="w-5 h-5" />
+              </>
+            ) : (
+              <>
+                <ChevronDown className="w-5 h-5" />
+                <span>SHOW ADVANCED DETAILS</span>
+                <ChevronDown className="w-5 h-5" />
+              </>
+            )}
+          </button>
         </div>
 
-        {/* Edge Bar */}
-        {props.pick.edgeRaw !== undefined && props.pick.edgePct !== undefined && (
-          <div className="p-4 bg-slate-800 border-b border-slate-700">
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-3 mb-2">
-                <span className="text-sm font-bold text-slate-300">EDGE</span>
-                <span className={`text-lg font-bold ${props.pick.edgePct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {props.pick.edgePct >= 0 ? '+' : ''}{props.pick.edgePct.toFixed(1)}%
-                </span>
-                <div className="relative w-32 h-2 bg-slate-600 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full ${props.pick.edgePct >= 0 ? 'bg-gradient-to-r from-green-500 to-green-400' : 'bg-gradient-to-r from-red-500 to-red-400'}`}
-                    style={{ width: `${Math.min(Math.abs(props.pick.edgePct) * 10, 100)}%` }}
-                  />
+        {/* ===== ADVANCED DETAILS SECTION (COLLAPSIBLE) ===== */}
+        {showAdvancedDetails && (
+          <div className="border-b border-slate-700">
+            {/* AI Writeups - Bold Predictions */}
+            {props.bold_predictions && props.bold_predictions.predictions && props.bold_predictions.predictions.length > 0 && (
+              <div className="p-4 bg-gradient-to-br from-slate-800 to-slate-700 border-b border-cyan-500/20">
+                <div className="space-y-3">
+                  {/* Section Header */}
+                  <div className="flex items-center gap-2 pb-2 border-b border-slate-700">
+                    <span className="text-base">🎯</span>
+                    <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wide">Bold Picks</h3>
+                  </div>
+
+                  {/* Summary */}
+                  {props.bold_predictions.summary && (
+                    <p className="text-slate-300 text-sm leading-relaxed">{props.bold_predictions.summary}</p>
+                  )}
+
+                  {/* Individual Predictions - Clean Cards */}
+                  <div className="space-y-2">
+                    {props.bold_predictions.predictions.map((pred, index) => (
+                      <div key={index} className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50 hover:border-slate-600 transition-colors">
+                        {/* Player + Confidence Badge */}
+                        <div className="flex items-start justify-between gap-3 mb-2">
+                          <div>
+                            <div className="text-sm font-bold text-white">
+                              {pred.player}
+                            </div>
+                            <div className="text-xs text-slate-400 font-medium">
+                              {pred.team}
+                            </div>
+                          </div>
+                          <span className={`px-2 py-0.5 rounded-md text-xs font-bold flex-shrink-0 ${pred.confidence === 'HIGH' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
+                            pred.confidence === 'MEDIUM' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
+                              'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                            }`}>
+                            {pred.confidence}
+                          </span>
+                        </div>
+
+                        {/* The Prediction - HERO */}
+                        <div className="text-sm font-bold text-cyan-300 mb-1">
+                          {pred.prediction}
+                        </div>
+
+                        {/* Reasoning */}
+                        <p className="text-xs text-slate-400 leading-relaxed">{pred.reasoning}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <span className="text-sm text-slate-300">
-                  {props.pick.edgeRaw.toFixed(1)} pts
-                </span>
               </div>
-              <div className="text-xs text-slate-400" title="Model edge vs market implied probability">
-                Model edge vs market implied probability
+            )}
+
+
+
+            {/* Injury Summary */}
+            {props.injury_summary && (
+              <div className="p-4 bg-gradient-to-br from-slate-800 to-slate-700 border-b border-cyan-500/20">
+                <div className="text-sm font-bold text-cyan-300 mb-3 flex items-center gap-2">
+                  <span>🏥</span>
+                  <span>INJURY SUMMARY</span>
+                </div>
+                <div className="bg-gradient-to-br from-slate-900/60 to-slate-800/60 rounded-lg p-3 border border-cyan-500/20">
+                  <p className="text-white text-sm leading-relaxed">{props.injury_summary.summary}</p>
+                  {props.injury_summary.findings && props.injury_summary.findings.length > 0 && (
+                    <div className="mt-2 space-y-2">
+                      {props.injury_summary.findings.map((finding, index) => (
+                        <div key={index} className="text-xs text-cyan-200 bg-slate-800/50 rounded px-2 py-1.5">
+                          <span className="font-semibold">{finding.team}:</span> {finding.player} - {finding.status} <span className="text-cyan-400">(Impact: {finding.impact})</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ALL Confidence Factors - Detailed */}
+            <div className="p-4 bg-gradient-to-br from-slate-800 to-slate-700 border-b border-cyan-500/20">
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-sm font-bold text-cyan-300 flex items-center gap-2">
+                  <span className="text-lg">📈</span>
+                  <span>ALL EDGE FACTORS</span>
+                </div>
+                {sortedFactors.length > 0 && (
+                  <div className="text-[10px] px-2 py-1 bg-cyan-500/10 text-cyan-300 rounded border border-cyan-500/30 font-semibold">
+                    🏆 Dominant: {sortedFactors[0].label}
+                  </div>
+                )}
+              </div>
+
+              {/* Factor Rows - Compact */}
+              <div className="space-y-2">
+                {sortedFactors.map((factor) => {
+                  const factorMeta = getFactorMeta(factor.key)
+                  const icon = factorMeta?.icon || 'ℹ️'
+                  const shortName = factorMeta?.shortName || factor.label || factor.key
+                  const tooltip = factorMeta?.description || factor.rationale || 'Factor'
+
+                  const netContribution = (factor.overScore || 0) - (factor.underScore || 0)
+                  const isOver = factor.overScore > 0
+                  const isUnder = factor.underScore > 0
+
+                  return (
+                    <div
+                      key={factor.key}
+                      className="bg-slate-900/40 rounded-lg p-3 border border-slate-700/50 hover:border-slate-600 transition-all group"
+                      onMouseEnter={() => setHoveredFactor(factor.key)}
+                      onMouseLeave={() => setHoveredFactor(null)}
+                    >
+                      <div className="flex items-center gap-3">
+                        {/* Icon */}
+                        <div className="text-xl flex-shrink-0 relative">
+                          <span title={tooltip}>{icon}</span>
+                          {hoveredFactor === factor.key && (
+                            <div className="absolute left-full ml-3 top-0 z-20 w-64 bg-slate-800 text-white text-xs p-3 rounded-lg shadow-xl border border-slate-600">
+                              {tooltip}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Factor Name */}
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-bold text-white">
+                            {shortName}
+                          </div>
+                        </div>
+
+                        {/* Direction Label + Value */}
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className={`text-xs font-bold uppercase w-14 text-right ${isOver ? 'text-green-400' : isUnder ? 'text-red-400' : 'text-slate-500'}`}>
+                            {isOver ? 'OVER' : isUnder ? 'UNDER' : 'NEUTRAL'}
+                          </span>
+                          <span className={`text-sm font-mono font-bold w-10 ${isOver ? 'text-green-400' : isUnder ? 'text-red-400' : 'text-slate-500'}`}>
+                            {isOver ? `+${factor.overScore.toFixed(1)}` : isUnder ? `+${factor.underScore.toFixed(1)}` : '0.0'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
-          </div>
-        )}
 
-        {/* INJURY SUMMARY Section */}
-        {props.injury_summary && props.injury_summary.findings.length > 0 && (
-          <div className="p-4 bg-slate-800 border-b border-slate-700">
-            <div className="text-center">
-              <div className="text-sm font-semibold text-white mb-3">🏥 INJURY REPORT</div>
-              <div className="text-xs text-slate-300 mb-3">
-                {props.injury_summary.summary}
+            {/* Market Summary - Compact */}
+            <div className="p-4 bg-slate-800 border-b border-slate-700">
+              <div className="grid grid-cols-4 gap-2 text-center">
+                <div className="bg-slate-900/60 rounded-lg p-2 border border-slate-700/50">
+                  <div className="text-[10px] text-slate-400 uppercase mb-1 font-semibold">CONF7</div>
+                  <div className="text-lg font-mono font-bold text-white">{safeMarket.conf7.toFixed(2)}</div>
+                </div>
+                <div className="bg-slate-900/60 rounded-lg p-2 border border-slate-700/50">
+                  <div className="text-[10px] text-slate-400 uppercase mb-1 font-semibold">MARKET ADJ</div>
+                  <div className={`text-lg font-mono font-bold ${safeMarket.confAdj > 0 ? 'text-green-400' : safeMarket.confAdj < 0 ? 'text-red-400' : 'text-slate-400'}`}>
+                    {safeMarket.confAdj > 0 ? '+' : ''}{safeMarket.confAdj.toFixed(2)}
+                  </div>
+                </div>
+                <div className="bg-gradient-to-br from-cyan-900/40 to-blue-900/40 rounded-lg p-2 border-2 border-cyan-500/40">
+                  <div className="text-[10px] text-cyan-300 uppercase mb-1 font-bold">CONF FINAL</div>
+                  <div className="text-lg font-mono font-bold text-white">
+                    {safeMarket.confFinal.toFixed(2)}
+                  </div>
+                </div>
+                <div className="bg-slate-900/60 rounded-lg p-2 border border-slate-700/50">
+                  <div className="text-[10px] text-slate-400 uppercase mb-1 font-semibold">DOMINANT</div>
+                  <div className="text-sm font-bold text-white">
+                    {safePick.type === 'TOTAL' ? (safePick.selection?.includes('OVER') ? 'OVER' : 'UNDER') : safeMarket.dominant.toUpperCase()}
+                  </div>
+                </div>
               </div>
-              <div className="space-y-2">
-                {props.injury_summary.findings.map((finding, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 bg-slate-700 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium text-white">{finding.team}</span>
-                      <span className="text-xs text-slate-300">{finding.player}</span>
-                      <span className={`text-xs px-2 py-1 rounded ${finding.status === 'out' ? 'bg-red-600 text-white' :
-                        finding.status === 'doubtful' ? 'bg-orange-600 text-white' :
-                          finding.status === 'questionable' ? 'bg-yellow-600 text-black' :
-                            'bg-green-600 text-white'
-                        }`}>
-                        {finding.status.toUpperCase()}
-                      </span>
+            </div>
+
+            {/* Edge Bar - Compact */}
+            {props.pick.edgeRaw !== undefined && props.pick.edgePct !== undefined && (
+              <div className="p-3 bg-slate-800 border-b border-slate-700">
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-2 mb-1">
+                    <span className="text-xs font-bold text-slate-300">EDGE</span>
+                    <span className={`text-base font-bold ${props.pick.edgePct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {props.pick.edgePct >= 0 ? '+' : ''}{props.pick.edgePct.toFixed(1)}%
+                    </span>
+                    <div className="relative w-24 h-1.5 bg-slate-600 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full ${props.pick.edgePct >= 0 ? 'bg-gradient-to-r from-green-500 to-green-400' : 'bg-gradient-to-r from-red-500 to-red-400'}`}
+                        style={{ width: `${Math.min(Math.abs(props.pick.edgePct) * 10, 100)}%` }}
+                      />
                     </div>
-                    <span className={`text-xs font-bold ${finding.impact > 0 ? 'text-red-400' :
-                      finding.impact < 0 ? 'text-green-400' : 'text-slate-400'
-                      }`}>
-                      {finding.impact > 0 ? '+' : ''}{finding.impact.toFixed(1)}
+                    <span className="text-xs text-slate-300">
+                      {props.pick.edgeRaw.toFixed(1)} pts
                     </span>
                   </div>
-                ))}
+                  <div className="text-[10px] text-slate-400">
+                    Model edge vs market implied probability
+                  </div>
+                </div>
               </div>
-              <div className="mt-3 text-xs text-slate-400">
-                Total Impact: <span className={`font-bold ${props.injury_summary.total_impact > 0 ? 'text-red-400' :
-                  props.injury_summary.total_impact < 0 ? 'text-green-400' : 'text-slate-400'
-                  }`}>
-                  {props.injury_summary.total_impact > 0 ? '+' : ''}{props.injury_summary.total_impact.toFixed(1)} points
-                </span>
+            )}
+
+
+
+            {/* Professional Analysis - Compact */}
+            {props.writeups && props.writeups.prediction && (
+              <div className="p-4 bg-gradient-to-br from-slate-800 to-slate-700 border-b border-cyan-500/20">
+                <div className="bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-lg p-4 border border-cyan-500/20">
+                  <div className="text-[10px] font-bold text-cyan-400 uppercase mb-2 flex items-center gap-2">
+                    <span>📊</span>
+                    <span>Professional Analysis</span>
+                  </div>
+                  <div className="text-white text-sm leading-relaxed font-medium whitespace-pre-wrap">{props.writeups.prediction}</div>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 
-        {/* Professional Analysis - Moved here to be right above RESULTS */}
-        {props.writeups && props.writeups.prediction && (
-          <div className="p-6 bg-gradient-to-br from-slate-800 to-slate-700 border-b border-cyan-500/20">
-            <div className="bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-xl p-5 border border-cyan-500/20 shadow-lg">
-              <div className="text-xs font-bold text-cyan-400 uppercase mb-3 flex items-center gap-2">
-                <span>📊</span>
-                <span>Professional Analysis</span>
-              </div>
-              <div className="text-white text-base leading-relaxed font-medium whitespace-pre-wrap">{props.writeups.prediction}</div>
-            </div>
-          </div>
-        )}
-
-        {/* RESULTS Section - Redesigned */}
-        <div className="p-6 bg-gradient-to-br from-slate-900 to-slate-800 border-t border-cyan-500/20">
+        {/* RESULTS Section - Compact */}
+        <div className="p-4 bg-gradient-to-br from-slate-900 to-slate-800 border-t border-cyan-500/20">
           {props.results && props.results.status !== 'pending' ? (
-            <div className="space-y-6">
-              {/* Result Header */}
+            <div className="space-y-4">
+              {/* Result Header - Compact */}
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`text-3xl font-bold ${props.results.status === 'win' ? 'text-green-400' :
+                <div className="flex items-center gap-2">
+                  <div className={`text-2xl font-bold ${props.results.status === 'win' ? 'text-green-400' :
                     props.results.status === 'loss' ? 'text-red-400' : 'text-yellow-400'
                     }`}>
                     {props.results.status === 'win' ? '✅ WIN' :
                       props.results.status === 'loss' ? '❌ LOSS' : '🤝 PUSH'}
                   </div>
                   {props.results.finalScore && (
-                    <div className="text-lg text-slate-300 font-semibold">
+                    <div className="text-base text-slate-300 font-semibold">
                       {props.results.finalScore.away} - {props.results.finalScore.home}
                     </div>
                   )}
                 </div>
                 {props.results.overallAccuracy !== undefined && (
                   <div className="text-right">
-                    <div className="text-xs text-slate-400 uppercase tracking-wide mb-1">Model Accuracy</div>
-                    <div className={`text-2xl font-bold ${props.results.overallAccuracy >= 0.8 ? 'text-green-400' :
+                    <div className="text-[10px] text-slate-400 uppercase tracking-wide mb-0.5">Model Accuracy</div>
+                    <div className={`text-xl font-bold ${props.results.overallAccuracy >= 0.8 ? 'text-green-400' :
                       props.results.overallAccuracy >= 0.6 ? 'text-yellow-400' : 'text-red-400'
                       }`}>
                       {(props.results.overallAccuracy * 100).toFixed(0)}%
@@ -663,12 +707,12 @@ export function InsightCard(props: InsightCardProps) {
                 )}
               </div>
 
-              {/* AI Post-Mortem Analysis */}
+              {/* AI Post-Mortem Analysis - Compact */}
               {props.results.postMortem && (
-                <div className="bg-slate-800/50 rounded-lg p-5 border border-slate-700/50">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-lg">🧠</span>
-                    <h3 className="text-sm font-bold text-cyan-300 uppercase tracking-wide">AI Post-Mortem Analysis</h3>
+                <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/50">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-base">🧠</span>
+                    <h3 className="text-xs font-bold text-cyan-300 uppercase tracking-wide">AI Post-Mortem Analysis</h3>
                   </div>
                   <div className="text-sm text-slate-200 leading-relaxed whitespace-pre-line">
                     {props.results.postMortem}
@@ -780,28 +824,22 @@ export function InsightCard(props: InsightCardProps) {
           )}
         </div>
 
-        {/* Footer with Metadata */}
-        <div className="p-4 bg-slate-900 border-t border-slate-700">
-          {/* Metadata */}
-          <div className="text-center text-slate-400 text-[10px] space-y-0.5 mb-3">
-            <div>
-              {safePick.type === 'SPREAD'
-                ? '🎯 NBA Spread Model v1 — Advanced Statistical Analysis'
-                : '🎯 NBA Totals Model v1 — Advanced Statistical Analysis'
-              }
-            </div>
-            <div className="flex items-center justify-center gap-3">
-              <span>GAME DATE: {formatLocalDate(props.matchup?.gameDateLocal || props.generatedAt)}</span>
+        {/* Footer - Compact */}
+        <div className="p-3 bg-slate-900 border-t border-slate-700">
+          {/* Metadata - Moved to small footer */}
+          <div className="text-center text-slate-500 text-[9px] mb-2">
+            <div className="flex items-center justify-center gap-2">
+              <span>{safePick.type === 'SPREAD' ? '🎯 NBA Spread Model v1' : '🎯 NBA Totals Model v1'}</span>
               <span>•</span>
-              <span>PICK GENERATED: {formatLocalTime(props.generatedAt)}</span>
+              <span>Pick Generated: {formatLocalTime(props.generatedAt)}</span>
             </div>
           </div>
 
-          {/* Buttons */}
-          <div className="flex justify-center gap-4">
+          {/* Buttons - Compact */}
+          <div className="flex justify-center gap-3">
             <button
               onClick={props.onClose}
-              className="px-6 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors"
+              className="px-5 py-1.5 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 transition-colors"
             >
               Close
             </button>
@@ -823,9 +861,9 @@ export function InsightCard(props: InsightCardProps) {
                 navigator.clipboard.writeText(JSON.stringify(cardData, null, 2))
                 alert('Insight Card JSON copied to clipboard!')
               }}
-              className="px-6 py-2 bg-slate-600 text-white rounded-lg font-semibold hover:bg-slate-700 transition-colors"
+              className="px-5 py-1.5 bg-slate-600 text-white rounded-lg text-sm font-semibold hover:bg-slate-700 transition-colors"
             >
-              📋 Copy Card JSON
+              📋 Copy JSON
             </button>
           </div>
         </div>
