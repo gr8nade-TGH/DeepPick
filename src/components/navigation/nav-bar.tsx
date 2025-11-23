@@ -173,6 +173,13 @@ export function NavBar() {
                       <span>Monitoring</span>
                     </Link>
                     <Link
+                      href="/battle-bets-game?debug=1"
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-slate-700 transition-colors text-slate-300 hover:text-white"
+                    >
+                      <Swords className="w-4 h-4 text-orange-400" />
+                      <span>Game Debug</span>
+                    </Link>
+                    <Link
                       href="/admin/system-health"
                       className="flex items-center gap-3 px-4 py-3 hover:bg-slate-700 transition-colors text-slate-300 hover:text-white"
                     >
@@ -319,6 +326,13 @@ export function NavBar() {
                   >
                     <Activity className="w-5 h-5 text-green-400" />
                     <span>Monitoring</span>
+                  </Link>
+                  <Link
+                    href="/battle-bets-game?debug=1"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-all"
+                  >
+                    <Swords className="w-5 h-5 text-orange-400" />
+                    <span>Game Debug</span>
                   </Link>
                   <Link
                     href="/admin/system-health"
