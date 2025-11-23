@@ -87,23 +87,23 @@ export const PerformanceMonitor: React.FC = () => {
     return '#44ff44';
   };
 
-  // Copy CONCISE debug info - only the essentials
+  // Copy CONCISE debug info - only distance logs and collision events
   const copyDebugInfo = async () => {
     const consoleBuffer = (window as any).__debugConsoleBuffer || [];
 
     // Count projectiles by status using live debugger data
     const { leftTotal, rightTotal, leftCollided, leftInFlight, rightCollided, rightInFlight } = projectileDebugger.getSummaryCounts();
 
-    // Filter for ONLY collision-related logs
-    const collisionLogs = consoleBuffer.filter((log: string) =>
-      log.includes('💥 [DEBUG] Collision') ||
-      log.includes('🎯 [DEBUG] Registered') ||
+    // Filter for ONLY distance logs and collision events
+    const distanceLogs = consoleBuffer.filter((log: string) =>
+      log.includes('📏 [DISTANCE]') ||
+      log.includes('💥 [COLLISION]') ||
       log.includes('[ERROR]') ||
       log.includes('[WARN]')
     );
 
-    // Get last 10 collision events
-    const recentCollisions = collisionLogs.slice(-10);
+    // Get last 20 distance/collision events
+    const recentEvents = distanceLogs.slice(-20);
 
     const conciseDebug = `🔍 DEBUG REPORT - ${new Date().toLocaleTimeString()}
 ════════════════════════════════════════════════════════════════
@@ -115,15 +115,15 @@ FPS: ${fps} | Memory: ${memory}MB | Defense Dots: ${defenseDots} | Games: ${game
 LEFT:  ${leftCollided}/${leftTotal} collided (${leftInFlight} in-flight)
 RIGHT: ${rightCollided}/${rightTotal} collided (${rightInFlight} in-flight)
 
-💥 RECENT COLLISIONS (Last 10):
-${recentCollisions.length > 0 ? recentCollisions.join('\n') : '⚠️ NO COLLISIONS DETECTED'}
+📏 RECENT DISTANCE/COLLISION LOGS (Last 20):
+${recentEvents.length > 0 ? recentEvents.join('\n') : '⚠️ NO DISTANCE LOGS DETECTED'}
 
 ════════════════════════════════════════════════════════════════`;
 
     await navigator.clipboard.writeText(conciseDebug);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-    console.log('📋 Smart debug report copied! (Only critical info)');
+    console.log('📋 Debug report copied!');
   };
 
   return (
@@ -185,7 +185,7 @@ ${recentCollisions.length > 0 ? recentCollisions.join('\n') : '⚠️ NO COLLISI
 
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
           <span>Projectiles:</span>
-          <span style={{ color: '#FF6B35' }}>{projectiles.length}</span>
+          <span style={{ color: '#FF6B35' }}>{projectiles}</span>
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
