@@ -1,6 +1,11 @@
 /**
- * ProjectileDebugger - Visual debugging system for projectile movement
- * Shows grid cells, projectile paths, collision points, and detailed metrics
+ * ProjectileDebugger - Multi-Battle Visual Debugging System
+ *
+ * REDESIGNED FOR MULTI-BATTLE SUPPORT (4 battles on screen):
+ * - Each battle gets its own debugger instance
+ * - Grid overlays are per-battle, not global
+ * - Collision markers are isolated to each battle
+ * - Smart consolidated reporting across all battles
  */
 
 import * as PIXI from 'pixi.js';
@@ -23,13 +28,22 @@ interface ProjectileDebugInfo {
   collisionPoint?: { x: number; y: number };
 }
 
-class ProjectileDebugger {
+/**
+ * Per-Battle Debugger Instance
+ * Create one instance per battle, NOT a singleton
+ */
+export class ProjectileDebugger {
+  private battleId: string;
   private container: PIXI.Container | null = null;
   private gridOverlay: PIXI.Graphics | null = null;
   private projectileTrails: Map<string, PIXI.Graphics> = new Map();
   private projectileLabels: Map<string, PIXI.Text> = new Map();
   private debugInfo: Map<string, ProjectileDebugInfo> = new Map();
-  private isEnabled: boolean = false; // Disabled by default - set to true for debugging
+  private isEnabled: boolean = false;
+
+  constructor(battleId: string) {
+    this.battleId = battleId;
+  }
 
   public initialize(container: PIXI.Container): void {
     this.container = container;
@@ -45,6 +59,10 @@ class ProjectileDebugger {
     this.projectileLabels.forEach(label => label.visible = enabled);
   }
 
+  public getBattleId(): string {
+    return this.battleId;
+  }
+
   private createGridOverlay(): void {
     if (!this.container) return;
 
@@ -52,54 +70,58 @@ class ProjectileDebugger {
 
     const cellWidth = gridManager.getCellWidth();
     const cellHeight = gridManager.getCellHeight();
-
-    // Use DEFAULT_GRID_CONFIG directly instead of gridManager.getConfig()
     const config = DEFAULT_GRID_CONFIG;
 
-    const itemSlotsWidth = 40;
-    const castleBoxWidth = 200;
-    const statLabelWidth = config.statLabelWidth;
-    const weaponSlotWidth = config.weaponSlotWidth;
-    const defenseCells = config.defenseCellsPerSide;
-    const attackCells = config.attackCellsPerSide;
-    const battlefieldWidth = config.battlefieldWidth;
+    // Calculate grid layout (MUST MATCH GridManager.calculateLayout())
+    const gridWidth =
+      (config.statLabelWidth * 2) +
+      (config.weaponSlotWidth * 2) +
+      (config.defenseCellsPerSide * cellWidth * 2) +
+      (config.attackCellsPerSide * cellWidth * 2) +
+      config.battlefieldWidth;
 
-    const leftDefenseStart = itemSlotsWidth + castleBoxWidth + statLabelWidth + weaponSlotWidth;
-    const leftAttackStart = leftDefenseStart + (defenseCells * cellWidth);
-    const battlefieldStart = leftAttackStart + (attackCells * cellWidth);
-    const battlefieldEnd = battlefieldStart + battlefieldWidth;
+    const castleSpace = 240;
+    const canvasWidth = gridWidth + castleSpace;
+    const gridStartX = (canvasWidth - gridWidth) / 2;
+
+    const leftStatLabelStart = gridStartX;
+    const leftWeaponSlotStart = leftStatLabelStart + config.statLabelWidth;
+    const leftDefenseStart = leftWeaponSlotStart + config.weaponSlotWidth;
+    const leftAttackStart = leftDefenseStart + (config.defenseCellsPerSide * cellWidth);
+    const battlefieldStart = leftAttackStart + (config.attackCellsPerSide * cellWidth);
+    const battlefieldEnd = battlefieldStart + config.battlefieldWidth;
     const rightAttackStart = battlefieldEnd;
-    const rightDefenseStart = rightAttackStart + (attackCells * cellWidth);
+    const rightDefenseStart = rightAttackStart + (config.attackCellsPerSide * cellWidth);
 
     const gridHeight = 5 * cellHeight;
 
-    // Left defense cells
-    for (let i = 0; i < defenseCells; i++) {
+    // Left defense cells (green)
+    for (let i = 0; i < config.defenseCellsPerSide; i++) {
       const x = leftDefenseStart + (i * cellWidth);
       this.drawGridCell(this.gridOverlay, x, 0, cellWidth, gridHeight, `L-D${i}`, 0x00ff00, 0.1);
     }
 
-    // Battlefield cells
-    const battlefieldCells = Math.floor(battlefieldWidth / cellWidth);
+    // Battlefield cells (red)
+    const battlefieldCells = Math.floor(config.battlefieldWidth / cellWidth);
     for (let i = 0; i < battlefieldCells; i++) {
       const x = battlefieldStart + (i * cellWidth);
       this.drawGridCell(this.gridOverlay, x, 0, cellWidth, gridHeight, `BF${i}`, 0xff0000, 0.15);
     }
 
-    // Right defense cells
-    for (let i = 0; i < defenseCells; i++) {
+    // Right defense cells (green)
+    for (let i = 0; i < config.defenseCellsPerSide; i++) {
       const x = rightDefenseStart + (i * cellWidth);
       this.drawGridCell(this.gridOverlay, x, 0, cellWidth, gridHeight, `R-D${i}`, 0x00ff00, 0.1);
     }
 
-    // Center line
-    const centerX = battlefieldStart + (battlefieldWidth / 2);
+    // Center line (magenta)
+    const centerX = battlefieldStart + (config.battlefieldWidth / 2);
     this.gridOverlay.moveTo(centerX, 0);
     this.gridOverlay.lineTo(centerX, gridHeight);
     this.gridOverlay.stroke({ width: 3, color: 0xff00ff, alpha: 0.8 });
 
     const centerLabel = new PIXI.Text({
-      text: 'CENTER',
+      text: `CENTER [${this.battleId}]`,
       style: { fontSize: 10, fill: 0xff00ff, fontWeight: 'bold' }
     });
     centerLabel.anchor.set(0.5, 0);
@@ -107,6 +129,7 @@ class ProjectileDebugger {
     this.gridOverlay.addChild(centerLabel);
 
     this.container.addChild(this.gridOverlay);
+    console.log(`🎯 [DEBUG] Grid overlay created for battle: ${this.battleId}`);
   }
 
   private drawGridCell(
@@ -244,6 +267,15 @@ class ProjectileDebugger {
     this.projectileTrails.clear();
     this.projectileLabels.clear();
     this.debugInfo.clear();
+  }
+
+  public destroy(): void {
+    this.clear();
+    if (this.gridOverlay) {
+      this.gridOverlay.destroy();
+      this.gridOverlay = null;
+    }
+    this.container = null;
   }
 
   public printSummary(): void {
@@ -422,5 +454,93 @@ if (typeof window !== 'undefined') {
   };
 }
 
-export const projectileDebugger = new ProjectileDebugger();
+/**
+ * Multi-Battle Debug Manager
+ * Manages debuggers for all battles and generates consolidated reports
+ */
+class DebugManager {
+  private debuggers: Map<string, ProjectileDebugger> = new Map();
+
+  public registerBattle(battleId: string, container: PIXI.Container): ProjectileDebugger {
+    const dbg = new ProjectileDebugger(battleId);
+    dbg.initialize(container);
+    this.debuggers.set(battleId, dbg);
+    console.log(`✅ [DebugManager] Registered debugger for battle: ${battleId}`);
+    return dbg;
+  }
+
+  public unregisterBattle(battleId: string): void {
+    const dbg = this.debuggers.get(battleId);
+    if (dbg) {
+      dbg.destroy();
+      this.debuggers.delete(battleId);
+      console.log(`🗑️ [DebugManager] Unregistered debugger for battle: ${battleId}`);
+    }
+  }
+
+  public getDebugger(battleId: string): ProjectileDebugger | undefined {
+    return this.debuggers.get(battleId);
+  }
+
+  public setAllEnabled(enabled: boolean): void {
+    this.debuggers.forEach(d => d.setEnabled(enabled));
+  }
+
+  /**
+   * SMART CONSOLIDATED REPORT - All battles, compact format
+   * Shows: FPS, Memory, Defense Dots, Projectiles per battle, Critical logs only
+   */
+  public getSmartReport(): string {
+    const lines: string[] = [];
+    const now = new Date();
+
+    lines.push(`🔍 SMART DEBUG REPORT - ${now.toLocaleTimeString()}`);
+    lines.push(`${'='.repeat(80)}`);
+    lines.push(``);
+
+    // Quick stats
+    const fps = (window as any).__lastFPS || 0;
+    const memory = (performance as any).memory
+      ? Math.round((performance as any).memory.usedJSHeapSize / 1048576)
+      : 0;
+
+    lines.push(`📊 QUICK STATS:`);
+    lines.push(`FPS: ${fps} | Memory: ${memory}MB | Battles: ${this.debuggers.size}`);
+    lines.push(``);
+
+    // Per-battle summaries
+    lines.push(`🎯 BATTLE SUMMARIES:`);
+    this.debuggers.forEach((dbg, battleId) => {
+      const counts = dbg.getSummaryCounts();
+      lines.push(`  ${battleId}: L:${counts.leftCollided}/${counts.leftTotal} R:${counts.rightCollided}/${counts.rightTotal}`);
+    });
+    lines.push(``);
+
+    // Aggregate statistics
+    let totalLeftCollided = 0, totalLeftTotal = 0;
+    let totalRightCollided = 0, totalRightTotal = 0;
+    this.debuggers.forEach(d => {
+      const counts = d.getSummaryCounts();
+      totalLeftCollided += counts.leftCollided;
+      totalLeftTotal += counts.leftTotal;
+      totalRightCollided += counts.rightCollided;
+      totalRightTotal += counts.rightTotal;
+    });
+
+    lines.push(`📈 AGGREGATE STATS:`);
+    lines.push(`${'─'.repeat(80)}`);
+    lines.push(`Left: ${totalLeftCollided}/${totalLeftTotal} collided (${totalLeftTotal > 0 ? (totalLeftCollided / totalLeftTotal * 100).toFixed(1) : 0}%)`);
+    lines.push(`Right: ${totalRightCollided}/${totalRightTotal} collided (${totalRightTotal > 0 ? (totalRightCollided / totalRightTotal * 100).toFixed(1) : 0}%)`);
+    lines.push(``);
+    lines.push(`${'='.repeat(80)}`);
+
+    return lines.join('\n');
+  }
+}
+
+// Export the manager singleton (NOT individual debuggers)
+export const debugManager = new DebugManager();
+
+// Keep old export for backwards compatibility (will be removed later)
+export const projectileDebugger = debugManager.getDebugger('default') || new ProjectileDebugger('legacy');
 
