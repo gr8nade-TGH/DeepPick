@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabase } from '@/lib/supabase/server'
+import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { z } from 'zod'
 
 const GetPicksSchema = z.object({
@@ -30,7 +30,8 @@ export async function GET(request: NextRequest) {
     }
 
     const { capper, status, pick_type, limit, offset } = parse.data
-    const supabase = await getSupabase()
+    // FIXED: Use getSupabaseAdmin() to bypass RLS and ensure we get all picks
+    const supabase = getSupabaseAdmin()
 
     // Build query
     // FIXED: Use left join instead of inner join so picks without games (archived) still appear

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabase } from '@/lib/supabase/server'
+import { getSupabaseAdmin } from '@/lib/supabase/server'
 
 // Mark this route as dynamic (uses request parameters)
 export const dynamic = 'force-dynamic'
@@ -12,8 +12,11 @@ export async function GET(request: NextRequest) {
     const userId = searchParams.get('user_id') || '00000000-0000-0000-0000-000000000000' // Mock user for now
     const capper = searchParams.get('capper')
 
+    // FIXED: Use getSupabaseAdmin() to bypass RLS and ensure we get all picks
+    const supabase = getSupabaseAdmin()
+
     // Get all picks to calculate metrics
-    let query = getSupabase()
+    let query = supabase
       .from('picks')
       .select('*')
       .order('created_at', { ascending: true })
