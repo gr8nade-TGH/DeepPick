@@ -100,6 +100,11 @@ class CollisionManager {
       // Add a small visual fudge factor so slight overlaps still count as hits
       const collisionRadius = projectile.typeConfig.collisionRadius + targetDot.radius + 4;
 
+      // DEBUG: Log distance calculation details
+      const dx = Math.abs(projectile.position.x - targetDot.position.x);
+      const dy = Math.abs(projectile.position.y - targetDot.position.y);
+      console.log(`📏 [DISTANCE] ${projectile.id} → ${targetDot.id} | dX=${dx.toFixed(1)}, dY=${dy.toFixed(1)}, total=${distance.toFixed(1)}, threshold=${collisionRadius} | ${distance <= collisionRadius ? '✅ HIT!' : '❌ MISS'}`);
+
       if (distance <= collisionRadius) {
         // Get HP BEFORE damage for accurate logging
         const hpBefore = targetDot.hp;
