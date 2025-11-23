@@ -226,7 +226,7 @@ export async function POST(request: Request) {
       baselineAvg = 0
     }
 
-    const metadata = {
+    const metadata: any = {
       capper: capperId,
       sport: 'NBA',
       bet_type: betType,
