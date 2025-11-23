@@ -243,23 +243,23 @@ class GridManagerClass {
 
   /**
    * Create defense cell
-   * LEFT SIDE: Fills left to right (col 0 = leftmost)
-   * RIGHT SIDE: Fills LEFT to RIGHT (col 0 = leftmost) - CHANGED to match projectile flow!
+   * LEFT SIDE: Fills left to right (col 0 = leftmost, closest to castle)
+   * RIGHT SIDE: Fills right to left (col 0 = rightmost, closest to castle)
    *
-   * CRITICAL FIX: Right side dots now fill from LEFT to RIGHT within the defense zone
-   * so projectiles hit them as they enter the zone (not at the far right edge)
+   * Defense orbs should be positioned closest to their own castle for protection
    */
   private createDefenseCell(row: number, col: number, stat: StatType, side: 'left' | 'right'): void {
     const y = row * this.layout.cellHeight;
 
     let x: number;
     if (side === 'left') {
-      // Left side: col 0 = leftmost, col 9 = rightmost
+      // Left side: col 0 = leftmost (closest to left castle), col 9 = rightmost
       x = this.layout.leftDefenseStart + (col * this.layout.cellWidth);
     } else {
-      // Right side: col 0 = leftmost (closest to battlefield), col 9 = rightmost
-      // This ensures projectiles hit dots as they ENTER the defense zone
-      x = this.layout.rightDefenseStart + (col * this.layout.cellWidth);
+      // Right side: col 0 = rightmost (closest to right castle), col 9 = leftmost
+      // Reverse the column index so dots fill from right to left
+      const reversedCol = (this.layout.defenseCells - 1) - col;
+      x = this.layout.rightDefenseStart + (reversedCol * this.layout.cellWidth);
     }
 
     const cell: GridCell = {
