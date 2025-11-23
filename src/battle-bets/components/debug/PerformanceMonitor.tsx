@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useMultiGameStore } from '../../store/multiGameStore';
 import { projectilePool } from '../../game/entities/projectiles/ProjectilePool';
 import { pixiManager } from '../../game/managers/PixiManager';
-import { projectileDebugger } from '../../game/debug/ProjectileDebugger';
 
 /**
  * Real-time performance monitor for development
@@ -87,23 +86,21 @@ export const PerformanceMonitor: React.FC = () => {
     return '#44ff44';
   };
 
-  // Copy CONCISE debug info - only distance logs and collision events
+  // Copy CONCISE debug info - only collision logs
   const copyDebugInfo = async () => {
     const consoleBuffer = (window as any).__debugConsoleBuffer || [];
 
-    // Count projectiles by status using live debugger data
-    const { leftTotal, rightTotal, leftCollided, leftInFlight, rightCollided, rightInFlight } = projectileDebugger.getSummaryCounts();
-
-    // Filter for ONLY distance logs and collision events
-    const distanceLogs = consoleBuffer.filter((log: string) =>
-      log.includes('📏 [DISTANCE]') ||
+    // Filter for collision and grid check logs
+    const collisionLogs = consoleBuffer.filter((log: string) =>
+      log.includes('🎯 [GRID CHECK]') ||
       log.includes('💥 [COLLISION]') ||
+      log.includes('🛡️ [DEFENSE HIT]') ||
       log.includes('[ERROR]') ||
       log.includes('[WARN]')
     );
 
-    // Get last 20 distance/collision events
-    const recentEvents = distanceLogs.slice(-20);
+    // Get last 20 collision events
+    const recentEvents = collisionLogs.slice(-20);
 
     const conciseDebug = `🔍 DEBUG REPORT - ${new Date().toLocaleTimeString()}
 ════════════════════════════════════════════════════════════════
@@ -111,12 +108,8 @@ export const PerformanceMonitor: React.FC = () => {
 📊 PERFORMANCE:
 FPS: ${fps} | Memory: ${memory}MB | Defense Dots: ${defenseDots} | Games: ${games}
 
-🎯 PROJECTILE STATUS:
-LEFT:  ${leftCollided}/${leftTotal} collided (${leftInFlight} in-flight)
-RIGHT: ${rightCollided}/${rightTotal} collided (${rightInFlight} in-flight)
-
-📏 RECENT DISTANCE/COLLISION LOGS (Last 20):
-${recentEvents.length > 0 ? recentEvents.join('\n') : '⚠️ NO DISTANCE LOGS DETECTED'}
+📏 RECENT COLLISION LOGS (Last 20):
+${recentEvents.length > 0 ? recentEvents.join('\n') : '⚠️ NO COLLISION LOGS DETECTED'}
 
 ════════════════════════════════════════════════════════════════`;
 

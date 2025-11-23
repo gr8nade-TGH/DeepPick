@@ -7,7 +7,6 @@ import * as PIXI from 'pixi.js';
 import gsap from 'gsap';
 import { BaseProjectile, type BaseProjectileConfig } from './BaseProjectile';
 import { gridManager } from '../../managers/GridManager';
-import { projectileDebugger } from '../../debug/ProjectileDebugger';
 
 export class RapidBulletProjectile extends BaseProjectile {
   constructor(config: BaseProjectileConfig) {

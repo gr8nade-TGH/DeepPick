@@ -15,7 +15,6 @@ import { castleManager } from '../../game/managers/CastleManager'
 import { gridManager } from '../../game/managers/GridManager'
 import { pixiManager } from '../../game/managers/PixiManager'
 import { runDebugBattleForMultiStore } from '../../game/simulation/quarterSimulation'
-import { defenseOrbDebugger } from '../../game/debug/DefenseOrbDebugger'
 import type { Game } from '../../types/game'
 import type { BattleStatus } from '@/lib/battle-bets/BattleTimer'
 
@@ -325,18 +324,7 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
         className="flex justify-center items-center w-full h-full"
       />
 
-      {/* Debug Defense Orbs Button */}
-      {debugMode && (
-        <button
-          onClick={() => {
-            setShowDefenseDebug(!showDefenseDebug)
-            defenseOrbDebugger.toggle()
-          }}
-          className="absolute top-4 right-4 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold text-sm shadow-lg transition-all hover:scale-105"
-        >
-          {showDefenseDebug ? '🔍 Hide Defense Grid' : '🔍 Debug Defense Grid'}
-        </button>
-      )}
+
     </div>
   )
 }

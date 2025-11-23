@@ -6,7 +6,6 @@ import * as PIXI from 'pixi.js';
 import gsap from 'gsap';
 import type { Position, StatType } from '../../../types/game';
 import type { ProjectileTypeConfig } from '../../../types/projectileTypes';
-import { projectileDebugger } from '../../debug/ProjectileDebugger';
 
 export interface BaseProjectileConfig {
   id: string;
@@ -177,23 +176,23 @@ export abstract class BaseProjectile {
    */
   protected createImpactEffect(): void {
     const impact = new PIXI.Graphics();
-    
+
     // Outer explosion ring
     impact.circle(0, 0, 15);
     impact.fill({ color: this.typeConfig.color, alpha: 0.6 });
-    
+
     // Inner explosion
     impact.circle(0, 0, 8);
     impact.fill({ color: this.typeConfig.glowColor, alpha: 0.8 });
-    
+
     impact.x = this.sprite.x;
     impact.y = this.sprite.y;
-    
+
     // Add to parent container
     if (this.sprite.parent) {
       this.sprite.parent.addChild(impact);
     }
-    
+
     // Animate explosion
     gsap.timeline()
       .to(impact.scale, {
@@ -219,14 +218,14 @@ export abstract class BaseProjectile {
       this.animation.kill();
       this.animation = null;
     }
-    
+
     gsap.killTweensOf(this.sprite);
     gsap.killTweensOf(this.sprite.scale);
-    
+
     if (this.sprite.parent) {
       this.sprite.parent.removeChild(this.sprite);
     }
-    
+
     this.sprite.destroy({ children: true });
     this.active = false;
   }
@@ -237,29 +236,29 @@ export abstract class BaseProjectile {
   protected createBasicShape(container: PIXI.Container): void {
     const { width, height } = this.typeConfig.size;
     const { color, glowColor } = this.typeConfig;
-    
+
     // Outer glow
     const outerGlow = new PIXI.Graphics();
-    outerGlow.roundRect(-width/2 - 2, -height/2 - 2, width + 4, height + 4, 3);
+    outerGlow.roundRect(-width / 2 - 2, -height / 2 - 2, width + 4, height + 4, 3);
     outerGlow.fill({ color: glowColor, alpha: 0.3 });
     container.addChild(outerGlow);
-    
+
     // Middle glow
     const middleGlow = new PIXI.Graphics();
-    middleGlow.roundRect(-width/2 - 1, -height/2 - 1, width + 2, height + 2, 2);
+    middleGlow.roundRect(-width / 2 - 1, -height / 2 - 1, width + 2, height + 2, 2);
     middleGlow.fill({ color: glowColor, alpha: 0.5 });
     container.addChild(middleGlow);
-    
+
     // Main body
     const body = new PIXI.Graphics();
-    body.roundRect(-width/2, -height/2, width, height, 2);
+    body.roundRect(-width / 2, -height / 2, width, height, 2);
     body.fill({ color, alpha: 1.0 });
     body.stroke({ width: 1.5, color: 0xFFFFFF, alpha: 0.6 });
     container.addChild(body);
-    
+
     // Inner highlight
     const highlight = new PIXI.Graphics();
-    highlight.roundRect(-width/2 + 2, -height/2 + 1, width - 4, height/2, 1);
+    highlight.roundRect(-width / 2 + 2, -height / 2 + 1, width - 4, height / 2, 1);
     highlight.fill({ color: 0xFFFFFF, alpha: 0.4 });
     container.addChild(highlight);
   }

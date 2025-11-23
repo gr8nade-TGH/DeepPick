@@ -130,7 +130,7 @@ class CollisionManager {
     );
 
     if (cell) {
-      console.log(`🎯 [GRID CHECK] Projectile ${projectile.id} is in cell ${cell.id} at X=${projectile.position.x.toFixed(1)}`);
+      console.log(`🎯 [GRID-BASED COLLISION] Projectile ${projectile.id} is in cell ${cell.id} at X=${projectile.position.x.toFixed(1)}`);
 
       // Check if this cell has a defense orb
       const targetDot = this.findDefenseDotInCell(projectile.gameId, cell.id);
@@ -240,117 +240,7 @@ class CollisionManager {
     return null;
   }
 
-  /**
-   * Find the FIRST alive defense dot IN THE PROJECTILE'S PATH
-   *
-   * CRITICAL: Always gets FRESH data from store to ensure we see latest HP values
-   * This is the key to making defense dots work correctly:
-   * - Store is the single source of truth for HP and alive status
-   * - We query the store on EVERY collision check (not cached)
-   * - This ensures we see HP changes from other projectiles immediately
-   *
-   * LOGIC:
-   * - Left projectiles travel RIGHT (increasing X), so find the dot with smallest X that's ahead
-   * - Right projectiles travel LEFT (decreasing X), so find the dot with largest X that's ahead
-   */
-  private findNearestDefenseDot(projectile: BaseProjectile): DefenseDot | null {
-    // Get FRESH defense dots from store (not cached copy)
-    const getDotsForGame =
-      this.battleDefenseDotSources.get(projectile.gameId) ?? this.getDefenseDotsFromStore;
 
-    if (!getDotsForGame) {
-      console.warn(
-        `⚠️ getDefenseDotsFromStore callback not set for gameId=${projectile.gameId}! Cannot check defense dot collisions.`,
-      );
-      return null;
-    }
-
-    const freshDots = getDotsForGame();
-    const targetSide = projectile.side === 'left' ? 'right' : 'left';
-    let targetDot: DefenseDot | null = null;
-    let targetX = projectile.side === 'left' ? Infinity : -Infinity;
-
-    let totalChecked = 0;
-    let aliveDots = 0;
-    let deadDots = 0;
-    let wrongSide = 0;
-    let wrongStat = 0;
-    let behindProjectile = 0;
-
-    // DEBUG: Log ALL alive dots for this stat/side to see their X positions
-    const eligibleDots: string[] = [];
-
-    // 🔍 DEBUG: Log projectile position and all defense orbs
-    console.log(`🎯 [FIND DOT] Projectile ${projectile.id} at X=${projectile.position.x.toFixed(1)}, Y=${projectile.position.y.toFixed(1)} | Side=${projectile.side}, Stat=${projectile.stat}`);
-
-    for (const [id, dot] of freshDots) {
-      totalChecked++;
-
-      // Must be on the target side and same stat row
-      if (dot.side !== targetSide) {
-        wrongSide++;
-        continue;
-      }
-      if (dot.stat !== projectile.stat) {
-        wrongStat++;
-        continue;
-      }
-
-      // CRITICAL: Must be alive AND have HP > 0
-      // This check uses the FRESH data from store, so we see HP changes immediately
-      if (!dot.alive || dot.hp <= 0) {
-        deadDots++;
-        continue;
-      }
-
-      aliveDots++;
-      eligibleDots.push(`${dot.id}(X:${dot.position.x.toFixed(0)})`);
-
-      // Find the FIRST dot in the projectile's path
-      if (projectile.side === 'left') {
-        // Left projectile travels RIGHT (increasing X) → find dot with SMALLEST X that's ahead
-        if (dot.position.x > projectile.position.x) {
-          if (dot.position.x < targetX) {
-            targetX = dot.position.x;
-            targetDot = dot;
-          }
-        } else {
-          behindProjectile++;
-        }
-      } else {
-        // Right projectile travels LEFT (decreasing X) → find dot with LARGEST X that's ahead
-        if (dot.position.x < projectile.position.x) {
-          if (dot.position.x > targetX) {
-            targetX = dot.position.x;
-            targetDot = dot;
-          }
-        } else {
-          behindProjectile++;
-        }
-      }
-    }
-
-    // Only log if we have issues finding dots
-    if (!targetDot && aliveDots > 0) {
-      console.warn(`⚠️ [FIND DOT] ${projectile.id} (${projectile.side}, X=${projectile.position.x.toFixed(1)}) | ${aliveDots} alive dots but NONE in path! | Eligible: [${eligibleDots.join(', ')}] | Behind: ${behindProjectile}`);
-    } else if (targetDot) {
-      const distance = Math.abs(projectile.position.x - targetDot.position.x);
-      if (distance > 50) {
-        console.warn(`⚠️ [FIND DOT] ${projectile.id} (${projectile.side}, X=${projectile.position.x.toFixed(1)}) | Found ${targetDot.id} but it's ${distance.toFixed(1)}px away! | Eligible: [${eligibleDots.join(', ')}]`);
-      }
-    }
-
-    return targetDot;
-  }
-
-  /**
-   * Calculate distance between two positions
-   */
-  private getDistance(pos1: Position, pos2: Position): number {
-    const dx = pos1.x - pos2.x;
-    const dy = pos1.y - pos2.y;
-    return Math.sqrt(dx * dx + dy * dy);
-  }
 
   /**
    * Clear all tracked entities (for reset)
