@@ -357,6 +357,164 @@ export async function POST(request: Request) {
       }
     }
 
+    // ========================================
+    // CONFIDENCE RECALIBRATION
+    // ========================================
+    // Apply confidence penalties for data quality issues and large market disagreements
+    let recalibratedConfidence = confFinal
+    const confidencePenalties: any[] = []
+
+    if (result.pick && result.pick.selection !== 'PASS') {
+      try {
+        // PENALTY 1: Large market disagreement (edge > 5 points for SPREAD, > 10 points for TOTAL)
+        const edgeThreshold = betType === 'SPREAD' ? 5.0 : 10.0
+        const actualEdge = Math.abs(predictedValue - marketLine)
+
+        if (actualEdge > edgeThreshold) {
+          const edgePenalty = betType === 'SPREAD'
+            ? Math.min(actualEdge * 0.15, 2.0)  // SPREAD: 0.15 per point, max 2.0
+            : Math.min((actualEdge - 10) * 0.10, 1.5)  // TOTAL: 0.10 per point over 10, max 1.5
+
+          recalibratedConfidence -= edgePenalty
+          confidencePenalties.push({
+            type: 'large_market_disagreement',
+            edge: actualEdge.toFixed(1),
+            threshold: edgeThreshold,
+            penalty: edgePenalty.toFixed(2),
+            reason: `Edge of ${actualEdge.toFixed(1)} points exceeds ${edgeThreshold} threshold`
+          })
+
+          console.warn('[SHIVA:GeneratePick] ⚠️ Confidence penalty for large market disagreement:', {
+            edge: actualEdge.toFixed(1),
+            penalty: edgePenalty.toFixed(2)
+          })
+        }
+
+        // PENALTY 2: Large total discrepancy for SPREAD picks (>10 points)
+        if (betType === 'SPREAD' && metadata.total_edge_warning) {
+          const totalEdgeAbs = metadata.total_edge_warning.total_edge_abs
+          const totalPenalty = totalEdgeAbs > 15
+            ? 1.5  // EXTREME discrepancy (>15pts)
+            : 0.75 // HIGH discrepancy (10-15pts)
+
+          recalibratedConfidence -= totalPenalty
+          confidencePenalties.push({
+            type: 'total_edge_discrepancy',
+            total_edge: totalEdgeAbs.toFixed(1),
+            severity: metadata.total_edge_warning.severity,
+            penalty: totalPenalty.toFixed(2),
+            reason: `Predicted total differs from market by ${totalEdgeAbs.toFixed(1)} points`
+          })
+
+          console.warn('[SHIVA:GeneratePick] ⚠️ Confidence penalty for total edge discrepancy:', {
+            totalEdge: totalEdgeAbs.toFixed(1),
+            penalty: totalPenalty.toFixed(2)
+          })
+        }
+
+        // PENALTY 3: Missing team stats (AI will hallucinate)
+        const statsBundle = result.steps?.step3?.totals_debug?.console_logs?.bundle
+        if (!statsBundle) {
+          const missingStatsPenalty = 1.0
+          recalibratedConfidence -= missingStatsPenalty
+          confidencePenalties.push({
+            type: 'missing_team_stats',
+            penalty: missingStatsPenalty.toFixed(2),
+            reason: 'Team stats bundle not available - AI may hallucinate'
+          })
+
+          console.warn('[SHIVA:GeneratePick] ⚠️ Confidence penalty for missing team stats:', {
+            penalty: missingStatsPenalty.toFixed(2)
+          })
+        }
+
+        // PENALTY 4: Missing injury data
+        const injuryData = result.steps?.step3?.totals_debug?.console_logs?.injuries
+        if (!injuryData || (Array.isArray(injuryData) && injuryData.length === 0)) {
+          const missingInjuryPenalty = 0.5
+          recalibratedConfidence -= missingInjuryPenalty
+          confidencePenalties.push({
+            type: 'missing_injury_data',
+            penalty: missingInjuryPenalty.toFixed(2),
+            reason: 'Injury data not available - S6 factor may be inaccurate'
+          })
+
+          console.warn('[SHIVA:GeneratePick] ⚠️ Confidence penalty for missing injury data:', {
+            penalty: missingInjuryPenalty.toFixed(2)
+          })
+        }
+
+        // Ensure confidence stays within bounds [0, 10]
+        recalibratedConfidence = Math.max(0, Math.min(10, recalibratedConfidence))
+
+        // Log recalibration summary
+        if (confidencePenalties.length > 0) {
+          const totalPenalty = confidencePenalties.reduce((sum, p) => sum + parseFloat(p.penalty), 0)
+          console.log('[SHIVA:GeneratePick] 📊 Confidence recalibration summary:', {
+            original: confFinal.toFixed(2),
+            recalibrated: recalibratedConfidence.toFixed(2),
+            totalPenalty: totalPenalty.toFixed(2),
+            penaltyCount: confidencePenalties.length
+          })
+
+          // Add to metadata
+          metadata.confidence_recalibration = {
+            original_confidence: confFinal,
+            recalibrated_confidence: recalibratedConfidence,
+            total_penalty: totalPenalty,
+            penalties: confidencePenalties
+          }
+
+          // Update confidence in result
+          confidence = recalibratedConfidence
+
+          // Recalculate units based on recalibrated confidence
+          // Units thresholds (same as wizard):
+          // 8.5+ = 5 units, 8.0-8.49 = 4 units, 7.5-7.99 = 3 units, 7.0-7.49 = 2 units, 6.5-6.99 = 1 unit, <6.5 = PASS
+          let recalibratedUnits = 0
+          if (recalibratedConfidence >= 8.5) {
+            recalibratedUnits = 5
+          } else if (recalibratedConfidence >= 8.0) {
+            recalibratedUnits = 4
+          } else if (recalibratedConfidence >= 7.5) {
+            recalibratedUnits = 3
+          } else if (recalibratedConfidence >= 7.0) {
+            recalibratedUnits = 2
+          } else if (recalibratedConfidence >= 6.5) {
+            recalibratedUnits = 1
+          } else {
+            // Confidence too low after recalibration - convert to PASS
+            recalibratedUnits = 0
+            result.pick.selection = 'PASS'
+            result.pick.pickType = 'PASS'
+            console.warn('[SHIVA:GeneratePick] ⚠️ Pick converted to PASS due to low recalibrated confidence:', {
+              recalibratedConfidence: recalibratedConfidence.toFixed(2)
+            })
+          }
+
+          // Update units in result
+          const originalUnits = result.pick.units
+          result.pick.units = recalibratedUnits
+          result.pick.confidence = recalibratedConfidence
+
+          if (originalUnits !== recalibratedUnits) {
+            console.log('[SHIVA:GeneratePick] 📊 Units adjusted due to confidence recalibration:', {
+              originalUnits,
+              recalibratedUnits,
+              originalConfidence: confFinal.toFixed(2),
+              recalibratedConfidence: recalibratedConfidence.toFixed(2)
+            })
+
+            metadata.confidence_recalibration.original_units = originalUnits
+            metadata.confidence_recalibration.recalibrated_units = recalibratedUnits
+          }
+        }
+
+      } catch (recalibrationError) {
+        console.error('[SHIVA:GeneratePick] Error during confidence recalibration:', recalibrationError)
+      }
+    }
+
     // Generate Bold Player Predictions and Professional Analysis (if pick was generated)
     let boldPredictions: any = null
     let professionalAnalysis: string = ''
