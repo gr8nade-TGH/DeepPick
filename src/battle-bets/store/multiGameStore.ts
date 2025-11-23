@@ -148,14 +148,23 @@ export const useMultiGameStore = create<MultiGameState>()(
           // Get capper's TOTAL unit record for this team
           const units = getCapperUnitsForTeam(capper, team.id);
           const totalDots = getTotalDefenseDotCount(units);
-          const distribution = distributeDotsAcrossStats(totalDots);
+          const distributionArray = distributeDotsAcrossStats(totalDots);
+
+          // Convert array to Record for easier access
+          const distribution: Record<StatType, number> = {
+            pts: distributionArray[0],
+            reb: distributionArray[1],
+            ast: distributionArray[2],
+            blk: distributionArray[3],
+            '3pt': distributionArray[4],
+          };
 
           console.log(`[Multi-Game Store] ${capper.name} has ${units} units on ${team.abbreviation} = ${totalDots} defense dots`);
           console.log(`[Multi-Game Store] Distribution:`, distribution);
 
           // Create ALL defense dots across all cells (no animation for now)
           stats.forEach((stat) => {
-            const dotsForStat: number = distribution[stat as keyof typeof distribution];
+            const dotsForStat = distribution[stat];
 
             // Create dots from cell #1 to cell #dotsForStat
             for (let cellNumber = 1; cellNumber <= dotsForStat; cellNumber++) {
