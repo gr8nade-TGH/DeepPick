@@ -97,8 +97,10 @@ class CollisionManager {
 
     if (targetDot) {
       const distance = this.getDistance(projectile.position, targetDot.position);
-      // Add a small visual fudge factor so slight overlaps still count as hits
-      const collisionRadius = projectile.typeConfig.collisionRadius + targetDot.radius + 4;
+      // Use a LARGE collision radius to account for fast-moving projectiles
+      // that might "jump over" defense dots between frames
+      // Base: 8 (projectile) + 8 (dot) + 30 (generous fudge factor for frame skipping)
+      const collisionRadius = projectile.typeConfig.collisionRadius + targetDot.radius + 30;
 
       // DEBUG: Log distance calculation details
       const dx = Math.abs(projectile.position.x - targetDot.position.x);

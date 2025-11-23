@@ -860,12 +860,9 @@ async function fireSingleProjectileForMultiBattle(
   const startPosition = getWeaponSlotPosition(stat, side);
   const targetSide = side === 'left' ? 'right' : 'left';
 
-  // Target the CLOSEST defense cell to the projectile
-  // LEFT side: cell #1 (index 0) is leftmost, closest to left projectiles
-  // RIGHT side: cell #10 (index 9) is leftmost, closest to left projectiles
-  // If projectile doesn't collide with defense dots, it will continue to weapon slot
-  const closestCellNumber = targetSide === 'left' ? 1 : 10;
-  const targetPosition = getDefenseCellPosition(stat, targetSide, closestCellNumber);
+  // Projectiles ALWAYS target the weapon slot on the opposite side
+  // Collision detection will handle hitting defense dots or projectiles that are "in the way"
+  const targetPosition = getWeaponSlotPosition(stat, targetSide);
 
   const projectileId = `multi-${battleId}-${stat}-${side}-${projectileIndex}-${Date.now()}`;
 
