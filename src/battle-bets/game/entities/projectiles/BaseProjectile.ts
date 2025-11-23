@@ -6,7 +6,7 @@ import * as PIXI from 'pixi.js';
 import gsap from 'gsap';
 import type { Position, StatType } from '../../../types/game';
 import type { ProjectileTypeConfig } from '../../../types/projectileTypes';
-import { projectileDebugger } from '../../debug/ProjectileDebugger';
+import { debugManager } from '../../debug/ProjectileDebugger';
 
 export interface BaseProjectileConfig {
   id: string;

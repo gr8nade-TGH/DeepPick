@@ -7,7 +7,7 @@ import * as PIXI from 'pixi.js';
 import gsap from 'gsap';
 import { BaseProjectile, type BaseProjectileConfig } from './BaseProjectile';
 import { gridManager } from '../../managers/GridManager';
-import { projectileDebugger } from '../../debug/ProjectileDebugger';
+import { debugManager } from '../../debug/ProjectileDebugger';
 
 export class RapidBulletProjectile extends BaseProjectile {
   constructor(config: BaseProjectileConfig) {
@@ -90,16 +90,19 @@ export class RapidBulletProjectile extends BaseProjectile {
       const cellWidth = gridManager.getCellWidth();
       const duration = this.calculateFlightDuration(distance, cellWidth);
 
-      // Register with debugger
-      projectileDebugger.registerProjectile(
-        this.id,
-        this.side,
-        this.position.x,
-        this.position.y,
-        this.targetPosition.x,
-        this.targetPosition.y,
-        this.getEffectiveSpeed()
-      );
+      // Register with debugger (if enabled for this battle)
+      const dbg = debugManager.getDebugger(this.gameId);
+      if (dbg) {
+        dbg.registerProjectile(
+          this.id,
+          this.side,
+          this.position.x,
+          this.position.y,
+          this.targetPosition.x,
+          this.targetPosition.y,
+          this.getEffectiveSpeed()
+        );
+      }
 
       // Muzzle flash effect at start
       this.createMuzzleFlash();
@@ -120,7 +123,10 @@ export class RapidBulletProjectile extends BaseProjectile {
             this.position.y = this.sprite.y;
 
             // Update debugger
-            projectileDebugger.updateProjectile(this.id, this.sprite.x, this.sprite.y);
+            const dbg = debugManager.getDebugger(this.gameId);
+            if (dbg) {
+              dbg.updateProjectile(this.id, this.sprite.x, this.sprite.y);
+            }
 
             // Debug: Log collision check attempt (sample 1% to avoid spam)
             if (Math.random() < 0.01) {
@@ -137,12 +143,15 @@ export class RapidBulletProjectile extends BaseProjectile {
                 this.collidedWith = collisionType;
 
                 // Mark collision in debugger
-                projectileDebugger.markCollision(
-                  this.id,
-                  this.sprite.x,
-                  this.sprite.y,
-                  collisionType === 'projectile' ? 'PROJ' : 'DEF'
-                );
+                const dbg = debugManager.getDebugger(this.gameId);
+                if (dbg) {
+                  dbg.markCollision(
+                    this.id,
+                    this.sprite.x,
+                    this.sprite.y,
+                    collisionType === 'projectile' ? 'PROJ' : 'DEF'
+                  );
+                }
 
                 // Kill the animation immediately
                 if (this.animation) {
@@ -159,7 +168,10 @@ export class RapidBulletProjectile extends BaseProjectile {
         .call(() => {
           // Only create impact if we haven't collided yet (reached target)
           if (!this.collided) {
-            projectileDebugger.markCollision(this.id, this.sprite.x, this.sprite.y, 'TARGET');
+            const dbg = debugManager.getDebugger(this.gameId);
+            if (dbg) {
+              dbg.markCollision(this.id, this.sprite.x, this.sprite.y, 'TARGET');
+            }
             this.createImpactEffect();
           }
           resolve();

@@ -15,6 +15,7 @@ import { castleManager } from '../../game/managers/CastleManager'
 import { gridManager } from '../../game/managers/GridManager'
 import { pixiManager } from '../../game/managers/PixiManager'
 import { runDebugBattleForMultiStore } from '../../game/simulation/quarterSimulation'
+import { debugManager } from '../../game/debug/ProjectileDebugger'
 import type { Game } from '../../types/game'
 import type { BattleStatus } from '@/lib/battle-bets/BattleTimer'
 
@@ -146,6 +147,12 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
           // Initialize battle in store (HP + defense dots)
           initializeBattle(battleId, game)
 
+          // Register debugger for this battle
+          const battleDebugger = debugManager.registerBattle(battleId, container)
+          if (debugMode) {
+            battleDebugger.setEnabled(true)
+          }
+
           setContainerReady(true)
 
           // Add castles for this battle
@@ -194,6 +201,9 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
 
       // Clear PixiManager references for this battle (actual app destroy happens here)
       pixiManager.clearBattle(battleId)
+
+      // Unregister debugger for this battle
+      debugManager.unregisterBattle(battleId)
 
       if (app) {
         try {
