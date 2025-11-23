@@ -578,7 +578,7 @@ export default function CapperPublicProfile() {
                 <CardDescription>
                   {pickHistoryFilter === '7d' && 'Last 7 days of predictions'}
                   {pickHistoryFilter === '30d' && 'Last 30 days of predictions'}
-                  {pickHistoryFilter === 'all' && `Last 10 predictions from ${profile.display_name}`}
+                  {pickHistoryFilter === 'all' && `Recent predictions from ${profile.display_name}`}
                 </CardDescription>
               </div>
               <div className="flex items-center gap-2">
