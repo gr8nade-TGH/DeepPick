@@ -10,9 +10,10 @@
 
 import type { BaseProjectile } from '../entities/projectiles/BaseProjectile';
 import type { DefenseDot } from '../entities/DefenseDot';
-import type { Position } from '../../types/game';
+import type { Position, StatType } from '../../types/game';
 import { battleEventBus } from '../events/EventBus';
 import type { DefenseOrbDestroyedPayload, OpponentOrbDestroyedPayload, ProjectileCollisionPayload } from '../events/types';
+import { gridManager } from './GridManager';
 
 /**
  * Collision detection manager
@@ -118,23 +119,25 @@ class CollisionManager {
       }
     }
 
-    // Priority 2: Check for defense dot collision
-    const targetDot = this.findNearestDefenseDot(projectile);
+    // Priority 2: GRID-BASED defense orb collision
+    // Get which defense cell the projectile is currently in
+    const targetSide = projectile.side === 'left' ? 'right' : 'left'; // Projectile hits OPPONENT's defense
+    const cell = gridManager.getDefenseCellAtPosition(
+      projectile.position.x,
+      projectile.position.y,
+      projectile.stat as StatType,
+      targetSide
+    );
 
-    if (targetDot) {
-      const distance = this.getDistance(projectile.position, targetDot.position);
-      // Use a reasonable collision radius:
-      // - Base: 8 (projectile) + 8 (dot) = 16px
-      // - Add small buffer for fast-moving projectiles: +20px
-      // - Total: 36px (enough to catch collisions without false positives)
-      const collisionRadius = projectile.typeConfig.collisionRadius + targetDot.radius + 20;
+    if (cell) {
+      console.log(`🎯 [GRID CHECK] Projectile ${projectile.id} is in cell ${cell.id} at X=${projectile.position.x.toFixed(1)}`);
 
-      // DEBUG: Log distance calculation details
-      const dx = Math.abs(projectile.position.x - targetDot.position.x);
-      const dy = Math.abs(projectile.position.y - targetDot.position.y);
-      console.log(`📏 [DISTANCE] ${projectile.id} → ${targetDot.id} | dX=${dx.toFixed(1)}, dY=${dy.toFixed(1)}, total=${distance.toFixed(1)}, threshold=${collisionRadius} | ${distance <= collisionRadius ? '✅ HIT!' : '❌ MISS'}`);
+      // Check if this cell has a defense orb
+      const targetDot = this.findDefenseDotInCell(projectile.gameId, cell.id);
 
-      if (distance <= collisionRadius) {
+      if (targetDot && targetDot.alive) {
+        console.log(`💥 [COLLISION!] Projectile ${projectile.id} hit defense orb ${targetDot.id} in cell ${cell.id}`);
+
         // Get HP BEFORE damage for accurate logging
         const hpBefore = targetDot.hp;
         const hpAfter = Math.max(0, hpBefore - projectile.typeConfig.damage);
@@ -188,6 +191,31 @@ class CollisionManager {
     }
 
     return null; // No collision
+  }
+
+  /**
+   * Find a defense dot in a specific grid cell
+   * Much simpler than distance-based collision!
+   */
+  private findDefenseDotInCell(gameId: string, cellId: string): DefenseDot | null {
+    const getDotsForGame =
+      this.battleDefenseDotSources.get(gameId) ?? this.getDefenseDotsFromStore;
+
+    if (!getDotsForGame) {
+      console.warn(`⚠️ getDefenseDotsFromStore callback not set for gameId=${gameId}!`);
+      return null;
+    }
+
+    const freshDots = getDotsForGame();
+
+    // Find a dot with matching cellId
+    for (const [dotId, dot] of freshDots.entries()) {
+      if (dot.cellId === cellId && dot.alive) {
+        return dot;
+      }
+    }
+
+    return null;
   }
 
   /**
@@ -251,6 +279,9 @@ class CollisionManager {
 
     // DEBUG: Log ALL alive dots for this stat/side to see their X positions
     const eligibleDots: string[] = [];
+
+    // 🔍 DEBUG: Log projectile position and all defense orbs
+    console.log(`🎯 [FIND DOT] Projectile ${projectile.id} at X=${projectile.position.x.toFixed(1)}, Y=${projectile.position.y.toFixed(1)} | Side=${projectile.side}, Stat=${projectile.stat}`);
 
     for (const [id, dot] of freshDots) {
       totalChecked++;

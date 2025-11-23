@@ -406,6 +406,29 @@ class GridManagerClass {
   }
 
   /**
+   * Get which defense cell a position is in (if any)
+   * Returns the cell if the position is within its bounds
+   */
+  getDefenseCellAtPosition(x: number, y: number, stat: StatType, side: 'left' | 'right'): GridCell | null {
+    for (let i = 0; i < this.layout.defenseCells; i++) {
+      const cellId = `defense-${stat}-${side}-${i}`;
+      const cell = this.cellCache.get(cellId);
+      if (!cell) continue;
+
+      // Check if position is within cell bounds
+      if (
+        x >= cell.bounds.x &&
+        x <= cell.bounds.x + cell.bounds.width &&
+        y >= cell.bounds.y &&
+        y <= cell.bounds.y + cell.bounds.height
+      ) {
+        return cell;
+      }
+    }
+    return null;
+  }
+
+  /**
    * Get grid layout info
    */
   getLayout(): Readonly<GridLayout> {
