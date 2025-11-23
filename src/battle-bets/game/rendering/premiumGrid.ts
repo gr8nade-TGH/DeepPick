@@ -86,8 +86,10 @@ export function drawPremiumGrid(container: PIXI.Container): void {
     }
 
     // Right defense cells
+    // IMPORTANT: Must mirror GridManager.createDefenseCell - right side fills RIGHT to LEFT
     for (let col = 0; col < defenseCells; col++) {
-      const x = rightDefenseStart + (col * cellWidth);
+      const reversedCol = (defenseCells - 1) - col;
+      const x = rightDefenseStart + (reversedCol * cellWidth);
       drawPremiumCell(container, x, y, cellWidth, cellHeight, 'defense', stat.color);
     }
 
