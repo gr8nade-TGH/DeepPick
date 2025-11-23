@@ -123,10 +123,11 @@ class CollisionManager {
 
     if (targetDot) {
       const distance = this.getDistance(projectile.position, targetDot.position);
-      // Use a LARGE collision radius to account for fast-moving projectiles
-      // that might "jump over" defense dots between frames
-      // Base: 8 (projectile) + 8 (dot) + 30 (generous fudge factor for frame skipping)
-      const collisionRadius = projectile.typeConfig.collisionRadius + targetDot.radius + 30;
+      // Use a LARGE collision radius to account for:
+      // 1. Fast-moving projectiles that might "jump over" defense dots between frames
+      // 2. Projectile spacing (projectiles fire in rapid succession with slight delays)
+      // Base: 8 (projectile) + 8 (dot) + 70 (generous fudge factor) = 86px
+      const collisionRadius = projectile.typeConfig.collisionRadius + targetDot.radius + 70;
 
       // DEBUG: Log distance calculation details
       const dx = Math.abs(projectile.position.x - targetDot.position.x);
