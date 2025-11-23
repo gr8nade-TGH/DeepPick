@@ -21,6 +21,18 @@ export async function GET(request: NextRequest) {
 
     const admin = getSupabaseAdmin()
 
+    // DEBUG: Test query for Sentinel specifically
+    const { data: sentinelTest, error: sentinelTestError } = await admin
+      .from('picks')
+      .select('*')
+      .eq('capper', 'sentinel')
+      .in('status', ['won', 'lost', 'push'])
+
+    console.log(`[Leaderboard DEBUG] Direct Sentinel query result: ${sentinelTest?.length || 0} picks`)
+    if (sentinelTestError) {
+      console.error('[Leaderboard DEBUG] Sentinel query error:', sentinelTestError)
+    }
+
     // Calculate date filter based on period
     let dateFilter: Date | null = null
     if (period === '7d') {
@@ -62,6 +74,18 @@ export async function GET(request: NextRequest) {
       picksPerCapper.set(capperId, (picksPerCapper.get(capperId) || 0) + 1)
     })
     console.log('[Leaderboard] Picks per capper:', Object.fromEntries(picksPerCapper))
+
+    // Debug: Show sample Sentinel picks
+    const sentinelPicks = allPicks?.filter(p => p.capper.toLowerCase() === 'sentinel') || []
+    console.log(`[Leaderboard] Sentinel picks found: ${sentinelPicks.length}`)
+    if (sentinelPicks.length > 0) {
+      console.log('[Leaderboard] Sample Sentinel pick:', {
+        capper: sentinelPicks[0].capper,
+        status: sentinelPicks[0].status,
+        units: sentinelPicks[0].units,
+        net_units: sentinelPicks[0].net_units
+      })
+    }
 
     // Filter picks by team if team filter is provided
     let picks = allPicks

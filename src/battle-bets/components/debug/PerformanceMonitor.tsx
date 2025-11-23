@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useMultiGameStore } from '../../store/multiGameStore';
 import { projectilePool } from '../../game/entities/projectiles/ProjectilePool';
 import { pixiManager } from '../../game/managers/PixiManager';
-import { projectileDebugger } from '../../game/debug/ProjectileDebugger';
+import { debugManager } from '../../game/debug/ProjectileDebugger';
 
 /**
  * Real-time performance monitor for development
@@ -113,41 +113,10 @@ export const PerformanceMonitor: React.FC = () => {
       log.includes('[WARN]')
     );
 
-    // Get projectile summary stats only
-    const debugInfo = projectileDebugger.getDebugReport();
-    const lines = debugInfo.split('\n');
+    // Get SMART consolidated report from debugManager (all battles)
+    const smartReport = debugManager.getSmartReport();
 
-    // Extract only the statistics section
-    const statsStartIndex = lines.findIndex(l => l.includes('📈 STATISTICS'));
-    const statsSection = statsStartIndex >= 0 ? lines.slice(statsStartIndex).join('\n') : '';
-
-    // Count projectiles by status using live debugger data (avoid parsing text)
-    const { leftCollided, leftInFlight, rightCollided, rightInFlight } = projectileDebugger.getSummaryCounts();
-
-    // Get first 50 and last 20 logs (prioritize seeing projectile start positions)
-    const firstLogs = criticalLogs.slice(0, 50);
-    const lastLogs = criticalLogs.slice(-20);
-    const combinedLogs = [...firstLogs, '...', '(middle logs omitted)', '...', ...lastLogs];
-
-    const smartDebug = `🔍 SMART DEBUG REPORT - ${new Date().toLocaleTimeString()}
-════════════════════════════════════════════════════════════════
-
-📊 QUICK STATS:
-FPS: ${fps} | Memory: ${memory}MB | Defense Dots: ${defenseDots}
-
-🎯 PROJECTILE SUMMARY:
-Left: ${leftCollided} collided, ${leftInFlight} in-flight
-Right: ${rightCollided} collided, ${rightInFlight} in-flight
-
-${statsSection}
-
-🔍 CRITICAL LOGS (${criticalLogs.length} events):
-════════════════════════════════════════════════════════════════
-${criticalLogs.length > 0 ? combinedLogs.join('\n') : '⚠️ NO CRITICAL LOGS FOUND - Callbacks may not be firing!'}
-
-════════════════════════════════════════════════════════════════`;
-
-    await navigator.clipboard.writeText(smartDebug);
+    await navigator.clipboard.writeText(smartReport);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
     console.log('📋 Smart debug report copied! (Only critical info)');
