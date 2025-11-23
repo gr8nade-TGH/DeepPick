@@ -31,7 +31,6 @@ import {
 import { PROJECTILE_TYPES } from '../../types/projectileTypes';
 import { regenerateDefenseDots } from './shieldRegeneration';
 import { getItemById } from '../../types/inventory';
-import { projectileDebugger } from '../debug/ProjectileDebugger';
 import { battleEventBus } from '../events/EventBus';
 import type { QuarterStartPayload, QuarterEndPayload, ProjectileFiredPayload } from '../events/types';
 import { debugGridPositions } from '../debug/positionDebug';
@@ -192,8 +191,6 @@ export async function simulateQuarter(
   } catch (error: any) {
     console.error('❌ Regen error:', error?.message || error);
   }
-
-  projectileDebugger.printSummary();
 
   console.log(`✅ Q${quarterNumber} COMPLETE (battleId=${battleId})\n`);
 
@@ -713,13 +710,6 @@ export async function runDebugBattleForMultiStore(battleId: string): Promise<voi
 
   const gameId = battleId; // multi-store uses battleId as gameId on DefenseDots / projectiles
   console.log(`\n🎮 [MultiBattleDebug] Starting debug simulation for battle ${battleId}`);
-
-  // Enable projectile debugger overlay & tracking during debug runs
-  const container = pixiManager.getContainer(gameId);
-  if (container) {
-    projectileDebugger.initialize(battleId, container);
-    projectileDebugger.setEnabled(true);
-  }
 
   // Wire collision manager to use multi-game store for this battle (per-battle callbacks)
   collisionManager.registerBattle(
