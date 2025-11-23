@@ -8,6 +8,7 @@ import gsap from 'gsap';
 import { BaseProjectile, type BaseProjectileConfig } from './BaseProjectile';
 
 import { gridManager } from '../../managers/GridManager';
+import { projectileDebugger } from '../../debug/ProjectileDebugger';
 
 export class BouncingOrbProjectile extends BaseProjectile {
   private bounceCount: number = 0;
@@ -98,6 +99,17 @@ export class BouncingOrbProjectile extends BaseProjectile {
       const cellWidth = gridManager.getCellWidth();
       const duration = this.calculateFlightDuration(distance, cellWidth);
 
+      // Register with debugger
+      projectileDebugger.registerProjectile(
+        this.id,
+        this.side,
+        this.position.x,
+        this.position.y,
+        this.targetPosition.x,
+        this.targetPosition.y,
+        this.getEffectiveSpeed()
+      );
+
       // Straight line animation (stays in lane)
       this.animation = gsap
         .timeline()
@@ -111,6 +123,9 @@ export class BouncingOrbProjectile extends BaseProjectile {
             this.position.x = this.sprite.x;
             this.position.y = this.sprite.y;
 
+            // Update debugger
+            projectileDebugger.updateProjectile(this.id, this.sprite.x, this.sprite.y);
+
             // Check for collisions during flight
             if (!this.collided && this.onCollisionCheck) {
               const collisionType = this.onCollisionCheck(this);
@@ -123,6 +138,14 @@ export class BouncingOrbProjectile extends BaseProjectile {
                   this.animation.kill();
                 }
 
+                // Mark collision in debugger
+                projectileDebugger.markCollision(
+                  this.id,
+                  this.sprite.x,
+                  this.sprite.y,
+                  collisionType === 'projectile' ? 'PROJ' : 'DEF'
+                );
+
                 this.createImpactEffect();
                 resolve();
               }
@@ -131,6 +154,8 @@ export class BouncingOrbProjectile extends BaseProjectile {
         })
         .call(() => {
           if (!this.collided) {
+            // Mark reaching target as collision with castle
+            projectileDebugger.markCollision(this.id, this.sprite.x, this.sprite.y, 'TARGET');
             this.createImpactEffect();
           }
           resolve();

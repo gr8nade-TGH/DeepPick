@@ -258,66 +258,73 @@ class ProjectileDebugger {
 
   /**
    * Get comprehensive debug report as a string (for copying to clipboard)
+   * Safe on "no projectiles" and never throws.
    */
   public getDebugReport(): string {
     const lines: string[] = [];
 
-    lines.push('📊 ===== PROJECTILE DEBUG REPORT =====');
-    lines.push(`Generated: ${new Date().toLocaleString()}`);
-    lines.push(`Total projectiles tracked: ${this.debugInfo.size}`);
-    lines.push('');
-
-    const leftProjectiles = Array.from(this.debugInfo.values()).filter(p => p.side === 'left');
-    const rightProjectiles = Array.from(this.debugInfo.values()).filter(p => p.side === 'right');
-
-    lines.push(`🟢 LEFT PROJECTILES (${leftProjectiles.length}):`);
-    lines.push('─'.repeat(80));
-    leftProjectiles.forEach(p => {
-      const status = p.isActive ? '✈️ IN FLIGHT' : '💥 COLLIDED';
-      lines.push(`ID: ${p.id}`);
-      lines.push(`  Status: ${status}`);
-      lines.push(`  Side: ${p.side}`);
-      lines.push(`  Grid Cells Traveled: ${p.gridCellsTraveled.toFixed(2)}`);
-      lines.push(`  Pixels Traveled: ${p.distanceTraveled.toFixed(1)}px`);
+    try {
+      lines.push('📊 ===== PROJECTILE DEBUG REPORT =====');
+      lines.push(`Generated: ${new Date().toLocaleString()}`);
+      lines.push(`Total projectiles tracked: ${this.debugInfo.size}`);
       lines.push('');
-    });
 
-    lines.push('');
-    lines.push(`🟠 RIGHT PROJECTILES (${rightProjectiles.length}):`);
-    lines.push('─'.repeat(80));
-    rightProjectiles.forEach(p => {
-      const status = p.isActive ? '✈️ IN FLIGHT' : '💥 COLLIDED';
-      lines.push(`ID: ${p.id}`);
-      lines.push(`  Status: ${status}`);
-      lines.push(`  Side: ${p.side}`);
-      lines.push(`  Grid Cells Traveled: ${p.gridCellsTraveled.toFixed(2)}`);
-      lines.push(`  Pixels Traveled: ${p.distanceTraveled.toFixed(1)}px`);
+      const allProjectiles = Array.from(this.debugInfo.values());
+      const leftProjectiles = allProjectiles.filter(p => p.side === 'left');
+      const rightProjectiles = allProjectiles.filter(p => p.side === 'right');
+
+      lines.push(`🟢 LEFT PROJECTILES (${leftProjectiles.length}):`);
+      lines.push('─'.repeat(80));
+      leftProjectiles.forEach(p => {
+        const status = p.isActive ? '✈️ IN FLIGHT' : '💥 COLLIDED';
+        lines.push(`ID: ${p.id}`);
+        lines.push(`  Status: ${status}`);
+        lines.push(`  Side: ${p.side}`);
+        lines.push(`  Grid Cells Traveled: ${p.gridCellsTraveled.toFixed(2)}`);
+        lines.push(`  Pixels Traveled: ${p.distanceTraveled.toFixed(1)}px`);
+        lines.push('');
+      });
+
       lines.push('');
-    });
+      lines.push(`🟠 RIGHT PROJECTILES (${rightProjectiles.length}):`);
+      lines.push('─'.repeat(80));
+      rightProjectiles.forEach(p => {
+        const status = p.isActive ? '✈️ IN FLIGHT' : '💥 COLLIDED';
+        lines.push(`ID: ${p.id}`);
+        lines.push(`  Status: ${status}`);
+        lines.push(`  Side: ${p.side}`);
+        lines.push(`  Grid Cells Traveled: ${p.gridCellsTraveled.toFixed(2)}`);
+        lines.push(`  Pixels Traveled: ${p.distanceTraveled.toFixed(1)}px`);
+        lines.push('');
+      });
 
-    lines.push('');
-    lines.push('📈 STATISTICS:');
-    lines.push('─'.repeat(80));
+      lines.push('');
+      lines.push('📈 STATISTICS:');
+      lines.push('─'.repeat(80));
 
-    const avgLeftCells = leftProjectiles.length > 0
-      ? leftProjectiles.reduce((sum, p) => sum + p.gridCellsTraveled, 0) / leftProjectiles.length
-      : 0;
-    const avgRightCells = rightProjectiles.length > 0
-      ? rightProjectiles.reduce((sum, p) => sum + p.gridCellsTraveled, 0) / rightProjectiles.length
-      : 0;
+      const avgLeftCells = leftProjectiles.length > 0
+        ? leftProjectiles.reduce((sum, p) => sum + p.gridCellsTraveled, 0) / leftProjectiles.length
+        : 0;
+      const avgRightCells = rightProjectiles.length > 0
+        ? rightProjectiles.reduce((sum, p) => sum + p.gridCellsTraveled, 0) / rightProjectiles.length
+        : 0;
 
-    lines.push(`Average Grid Cells Traveled (Left): ${avgLeftCells.toFixed(2)}`);
-    lines.push(`Average Grid Cells Traveled (Right): ${avgRightCells.toFixed(2)}`);
-    lines.push(`Difference: ${Math.abs(avgLeftCells - avgRightCells).toFixed(2)} cells`);
+      lines.push(`Average Grid Cells Traveled (Left): ${avgLeftCells.toFixed(2)}`);
+      lines.push(`Average Grid Cells Traveled (Right): ${avgRightCells.toFixed(2)}`);
+      lines.push(`Difference: ${Math.abs(avgLeftCells - avgRightCells).toFixed(2)} cells`);
 
-    const leftCollided = leftProjectiles.filter(p => !p.isActive).length;
-    const rightCollided = rightProjectiles.filter(p => !p.isActive).length;
+      const leftCollided = leftProjectiles.filter(p => !p.isActive).length;
+      const rightCollided = rightProjectiles.filter(p => !p.isActive).length;
 
-    lines.push(`Left Projectiles Collided: ${leftCollided}/${leftProjectiles.length}`);
-    lines.push(`Right Projectiles Collided: ${rightCollided}/${rightProjectiles.length}`);
+      lines.push(`Left Projectiles Collided: ${leftCollided}/${leftProjectiles.length}`);
+      lines.push(`Right Projectiles Collided: ${rightCollided}/${rightProjectiles.length}`);
 
-    lines.push('');
-    lines.push('======================================');
+      lines.push('');
+      lines.push('======================================');
+    } catch (error) {
+      lines.push('⚠️ Projectile debug report failed to generate.');
+      lines.push(String(error));
+    }
 
     return lines.join('\n');
   }

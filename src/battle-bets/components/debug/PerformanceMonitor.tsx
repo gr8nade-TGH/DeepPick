@@ -136,7 +136,7 @@ export const PerformanceMonitor: React.FC = () => {
 ════════════════════════════════════════════════════════════════
 
 📊 QUICK STATS:
-FPS: ${fps} | Memory: ${memory}MB | Defense Dots: ${defenseDots.size}
+FPS: ${fps} | Memory: ${memory}MB | Defense Dots: ${defenseDots}
 
 🎯 PROJECTILE SUMMARY:
 Left: ${leftCollided} collided, ${leftInFlight} in-flight
@@ -220,7 +220,7 @@ ${criticalLogs.length > 0 ? combinedLogs.join('\n') : '⚠️ NO CRITICAL LOGS F
 
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
           <span>Defense Dots:</span>
-          <span style={{ color: '#4ECDC4' }}>{defenseDots.size}</span>
+          <span style={{ color: '#4ECDC4' }}>{defenseDots}</span>
         </div>
 
         <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)', marginTop: '6px', paddingTop: '6px' }}>

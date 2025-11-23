@@ -640,6 +640,13 @@ export async function runDebugBattleForMultiStore(battleId: string): Promise<voi
   const gameId = battleId; // multi-store uses battleId as gameId on DefenseDots / projectiles
   console.log(`\n🎮 [MultiBattleDebug] Starting debug simulation for battle ${battleId}`);
 
+  // Enable projectile debugger overlay & tracking during debug runs
+  const container = pixiManager.getContainer(gameId);
+  if (container) {
+    projectileDebugger.initialize(container);
+    projectileDebugger.setEnabled(true);
+  }
+
   // Wire collision manager to use multi-game store for this battle (per-battle callbacks)
   collisionManager.registerBattle(
     gameId,

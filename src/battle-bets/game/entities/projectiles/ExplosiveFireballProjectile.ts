@@ -8,6 +8,7 @@ import gsap from 'gsap';
 import { BaseProjectile, type BaseProjectileConfig } from './BaseProjectile';
 
 import { gridManager } from '../../managers/GridManager';
+import { projectileDebugger } from '../../debug/ProjectileDebugger';
 
 export class ExplosiveFireballProjectile extends BaseProjectile {
   constructor(config: BaseProjectileConfig) {
@@ -133,6 +134,17 @@ export class ExplosiveFireballProjectile extends BaseProjectile {
       const baseDuration = this.calculateFlightDuration(distance, cellWidth);
       const duration = baseDuration * 1.4; // Slightly slower & heavier than standard
 
+      // Register with debugger
+      projectileDebugger.registerProjectile(
+        this.id,
+        this.side,
+        this.position.x,
+        this.position.y,
+        this.targetPosition.x,
+        this.targetPosition.y,
+        this.getEffectiveSpeed()
+      );
+
       // Straight line animation (slow and menacing)
       this.animation = gsap
         .timeline()
@@ -146,6 +158,9 @@ export class ExplosiveFireballProjectile extends BaseProjectile {
             this.position.x = this.sprite.x;
             this.position.y = this.sprite.y;
 
+            // Update debugger
+            projectileDebugger.updateProjectile(this.id, this.sprite.x, this.sprite.y);
+
             // Check for collisions during flight
             if (!this.collided && this.onCollisionCheck) {
               const collisionType = this.onCollisionCheck(this);
@@ -158,6 +173,14 @@ export class ExplosiveFireballProjectile extends BaseProjectile {
                   this.animation.kill();
                 }
 
+                // Mark collision in debugger
+                projectileDebugger.markCollision(
+                  this.id,
+                  this.sprite.x,
+                  this.sprite.y,
+                  collisionType === 'projectile' ? 'PROJ' : 'DEF'
+                );
+
                 this.createExplosionEffect();
                 resolve();
               }
@@ -166,6 +189,7 @@ export class ExplosiveFireballProjectile extends BaseProjectile {
         })
         .call(() => {
           if (!this.collided) {
+            projectileDebugger.markCollision(this.id, this.sprite.x, this.sprite.y, 'TARGET');
             this.createExplosionEffect();
           }
           resolve();
