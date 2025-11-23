@@ -31,18 +31,21 @@ export async function GET(request: NextRequest) {
       dateFilter.setDate(dateFilter.getDate() - 30)
     }
 
-    // Fetch all graded picks (with optional date filter)
-    // Need to fetch game_snapshot to filter by team, and pick_type to filter by bet type
+    // Fetch all picks (with optional date filter)
+    // CRITICAL: Use .select('*') like /api/performance does, then filter in JavaScript
+    // This ensures we don't miss any picks due to column selection issues
     let picksQuery = admin
       .from('picks')
-      .select('capper, status, units, net_units, game_snapshot, pick_type')
-      .in('status', ['won', 'lost', 'push'])
+      .select('*')
 
     if (dateFilter) {
       picksQuery = picksQuery.gte('created_at', dateFilter.toISOString())
     }
 
-    const { data: allPicks, error: picksError } = await picksQuery
+    const { data: allPicksRaw, error: picksError } = await picksQuery
+
+    // Filter to graded picks in JavaScript (like /api/performance does)
+    const allPicks = allPicksRaw?.filter(p => p.status === 'won' || p.status === 'lost' || p.status === 'push') || []
 
     if (picksError) {
       console.error('[Leaderboard] Error fetching picks:', picksError)
@@ -58,10 +61,22 @@ export async function GET(request: NextRequest) {
     // Debug: Count picks per capper
     const picksPerCapper = new Map<string, number>()
     allPicks?.forEach(pick => {
-      const capperId = pick.capper.toLowerCase()
+      const capperId = pick.capper?.toLowerCase() || 'unknown'
       picksPerCapper.set(capperId, (picksPerCapper.get(capperId) || 0) + 1)
     })
     console.log('[Leaderboard] Picks per capper:', Object.fromEntries(picksPerCapper))
+
+    // Debug: Check if Sentinel picks exist and show sample
+    const sentinelSample = allPicks?.find(p => p.capper?.toLowerCase() === 'sentinel')
+    if (sentinelSample) {
+      console.log('[Leaderboard] Sample Sentinel pick:', {
+        capper: sentinelSample.capper,
+        status: sentinelSample.status,
+        pick_type: sentinelSample.pick_type
+      })
+    } else {
+      console.log('[Leaderboard] NO Sentinel picks found in query result!')
+    }
 
     // Filter picks by team if team filter is provided
     let picks = allPicks
