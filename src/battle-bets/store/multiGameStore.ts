@@ -13,7 +13,8 @@ import type { Game, StatType } from '../types/game';
 import {
   getTotalDefenseDotCount,
   getCapperUnitsForTeam,
-  getDefenseCellId
+  getDefenseCellId,
+  distributeDotsAcrossStats
 } from '../types/game';
 import { getDefenseCellPosition } from '../game/utils/positioning';
 
