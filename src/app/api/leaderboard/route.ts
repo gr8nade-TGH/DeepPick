@@ -52,6 +52,17 @@ export async function GET(request: NextRequest) {
       }, { status: 500 })
     }
 
+    console.log(`[Leaderboard] Total graded picks fetched: ${allPicks?.length || 0}`)
+    console.log(`[Leaderboard] Period filter: ${period}, Date filter: ${dateFilter?.toISOString() || 'none'}`)
+
+    // Debug: Count picks per capper
+    const picksPerCapper = new Map<string, number>()
+    allPicks?.forEach(pick => {
+      const capperId = pick.capper.toLowerCase()
+      picksPerCapper.set(capperId, (picksPerCapper.get(capperId) || 0) + 1)
+    })
+    console.log('[Leaderboard] Picks per capper:', Object.fromEntries(picksPerCapper))
+
     // Filter picks by team if team filter is provided
     let picks = allPicks
     if (teamFilter) {
