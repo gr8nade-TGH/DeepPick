@@ -166,6 +166,8 @@ export const useMultiGameStore = create<MultiGameState>()(
           stats.forEach((stat) => {
             const dotsForStat = distribution[stat];
 
+            console.log(`[Multi-Game Store] Creating ${dotsForStat} dots for ${stat} on ${side} side`);
+
             // Create dots from cell #1 to cell #dotsForStat
             for (let cellNumber = 1; cellNumber <= dotsForStat; cellNumber++) {
               const is3ptRow = stat === '3pt';
@@ -173,6 +175,8 @@ export const useMultiGameStore = create<MultiGameState>()(
               const id = `${battleId}-${cellId}`;
 
               const position = getDefenseCellPosition(stat, side, cellNumber);
+
+              console.log(`[Multi-Game Store]   Cell #${cellNumber}: ID=${cellId}, X=${position.x.toFixed(1)}, Y=${position.y.toFixed(1)}`);
 
               const dot = new DefenseDot({
                 id,
