@@ -121,11 +121,8 @@ export const PerformanceMonitor: React.FC = () => {
     const statsStartIndex = lines.findIndex(l => l.includes('📈 STATISTICS'));
     const statsSection = statsStartIndex >= 0 ? lines.slice(statsStartIndex).join('\n') : '';
 
-    // Count projectiles by status
-    const leftCollided = lines.filter(l => l.includes('Side: left') && lines[lines.indexOf(l) - 1]?.includes('💥 COLLIDED')).length;
-    const leftInFlight = lines.filter(l => l.includes('Side: left') && lines[lines.indexOf(l) - 1]?.includes('✈️ IN FLIGHT')).length;
-    const rightCollided = lines.filter(l => l.includes('Side: right') && lines[lines.indexOf(l) - 1]?.includes('💥 COLLIDED')).length;
-    const rightInFlight = lines.filter(l => l.includes('Side: right') && lines[lines.indexOf(l) - 1]?.includes('✈️ IN FLIGHT')).length;
+    // Count projectiles by status using live debugger data (avoid parsing text)
+    const { leftCollided, leftInFlight, rightCollided, rightInFlight } = projectileDebugger.getSummaryCounts();
 
     // Get first 50 and last 20 logs (prioritize seeing projectile start positions)
     const firstLogs = criticalLogs.slice(0, 50);

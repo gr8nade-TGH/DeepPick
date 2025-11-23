@@ -97,7 +97,8 @@ class CollisionManager {
 
     if (targetDot) {
       const distance = this.getDistance(projectile.position, targetDot.position);
-      const collisionRadius = projectile.typeConfig.collisionRadius + targetDot.radius;
+      // Add a small visual fudge factor so slight overlaps still count as hits
+      const collisionRadius = projectile.typeConfig.collisionRadius + targetDot.radius + 4;
 
       if (distance <= collisionRadius) {
         // Get HP BEFORE damage for accurate logging

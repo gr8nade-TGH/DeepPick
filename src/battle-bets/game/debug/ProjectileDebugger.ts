@@ -256,6 +256,32 @@ class ProjectileDebugger {
     });
   }
 
+  public getSummaryCounts(): {
+    leftTotal: number;
+    rightTotal: number;
+    leftCollided: number;
+    leftInFlight: number;
+    rightCollided: number;
+    rightInFlight: number;
+  } {
+    const allProjectiles = Array.from(this.debugInfo.values());
+    const leftProjectiles = allProjectiles.filter(p => p.side === 'left');
+    const rightProjectiles = allProjectiles.filter(p => p.side === 'right');
+
+    const leftCollided = leftProjectiles.filter(p => !p.isActive).length;
+    const rightCollided = rightProjectiles.filter(p => !p.isActive).length;
+
+    return {
+      leftTotal: leftProjectiles.length,
+      rightTotal: rightProjectiles.length,
+      leftCollided,
+      leftInFlight: leftProjectiles.length - leftCollided,
+      rightCollided,
+      rightInFlight: rightProjectiles.length - rightCollided,
+    };
+  }
+
+
   /**
    * Get comprehensive debug report as a string (for copying to clipboard)
    * Safe on "no projectiles" and never throws.
@@ -370,15 +396,11 @@ if (typeof window !== 'undefined') {
       typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
     ).join(' ');
 
-    // Filter out spam - only show Fire Orb related messages
-    const isFireOrbMessage = message.includes('🔥') || message.includes('FIRE ORB');
-    const isImportantMessage = message.includes('❌') || message.includes('✅');
+    // Capture all logs but keep buffer bounded; filtering for "critical" happens in PerformanceMonitor
+    buffer.push(`[LOG] ${new Date().toLocaleTimeString()}: ${message}`);
+    if (buffer.length > MAX_LOGS) buffer.shift();
 
-    if (isFireOrbMessage || isImportantMessage) {
-      buffer.push(`[LOG] ${new Date().toLocaleTimeString()}: ${message}`);
-      if (buffer.length > MAX_LOGS) buffer.shift();
-      originalLog(...args);
-    }
+    originalLog(...args);
   };
 
   console.warn = (...args: any[]) => {
