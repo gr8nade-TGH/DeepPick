@@ -3,6 +3,8 @@ import { executeWizardPipeline } from '@/lib/cappers/shiva-wizard-orchestrator'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { generateProfessionalAnalysis } from '@/lib/cappers/professional-analysis-generator'
 import { generateBoldPredictions } from '@/lib/cappers/bold-predictions-generator'
+import { checkInjuryGate, validateSpreadDirection } from '@/lib/cappers/pick-validation'
+import { fetchTeamPlayerStats } from '@/lib/data-sources/mysportsfeeds-players'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -251,12 +253,91 @@ export async function POST(request: Request) {
     const confMarketAdj = result.steps?.step5?.conf_market_adj || 0
     const confFinal = result.steps?.step5?.conf_final || confidence
 
+    // ========================================
+    // CRITICAL VALIDATION: Injury Gating & Spread Direction
+    // ========================================
+    if (result.pick && result.pick.selection !== 'PASS') {
+      console.log('[SHIVA:GeneratePick] Running critical validations...')
+
+      try {
+        // Fetch injury data for validation
+        const awayTeamName = typeof game.away_team === 'string' ? game.away_team : game.away_team?.name
+        const homeTeamName = typeof game.home_team === 'string' ? game.home_team : game.home_team?.name
+
+        const [awayInjuries, homeInjuries] = await Promise.all([
+          fetchTeamPlayerStats(awayTeamName),
+          fetchTeamPlayerStats(homeTeamName)
+        ])
+
+        // 1. INJURY GATING: Block picks when star players are OUT
+        const injuryGate = checkInjuryGate(awayInjuries, homeInjuries, awayTeamName, homeTeamName)
+        if (injuryGate.shouldBlock) {
+          console.warn('[SHIVA:GeneratePick] ⚠️ INJURY GATE TRIGGERED:', injuryGate.reason)
+
+          // Override pick to PASS
+          result.pick.selection = 'PASS'
+          result.pick.units = 0
+          result.pick.pickType = 'PASS'
+
+          // Add injury gate reason to metadata
+          metadata.injury_gate = {
+            blocked: true,
+            reason: injuryGate.reason,
+            star_player_out: injuryGate.starPlayerOut
+          }
+
+          console.log('[SHIVA:GeneratePick] Pick blocked due to star player injury')
+        }
+
+        // 2. SPREAD DIRECTION VALIDATION: Ensure favorite/dog direction matches prediction
+        if (betType === 'SPREAD' && result.pick.selection !== 'PASS') {
+          const spreadValidation = validateSpreadDirection(
+            predictedValue, // predicted margin
+            marketLine,     // market spread
+            result.pick.selection,
+            awayTeamName,
+            homeTeamName
+          )
+
+          if (!spreadValidation.isValid) {
+            console.error('[SHIVA:GeneratePick] ❌ SPREAD VALIDATION FAILED:', spreadValidation.reason)
+
+            // Override pick to PASS
+            result.pick.selection = 'PASS'
+            result.pick.units = 0
+            result.pick.pickType = 'PASS'
+
+            // Add validation failure to metadata
+            metadata.spread_validation = {
+              failed: true,
+              reason: spreadValidation.reason,
+              predicted_margin: spreadValidation.predictedMargin,
+              market_spread: spreadValidation.marketSpread,
+              favorite_team: spreadValidation.favoriteTeam
+            }
+
+            console.log('[SHIVA:GeneratePick] Pick blocked due to spread direction mismatch')
+          } else {
+            console.log('[SHIVA:GeneratePick] ✅ Spread validation passed')
+            metadata.spread_validation = {
+              passed: true,
+              favorite_team: spreadValidation.favoriteTeam
+            }
+          }
+        }
+
+      } catch (validationError) {
+        console.error('[SHIVA:GeneratePick] Error during validation:', validationError)
+        // Don't block pick on validation errors - log and continue
+      }
+    }
+
     // Generate Bold Player Predictions and Professional Analysis (if pick was generated)
     let boldPredictions: any = null
     let professionalAnalysis: string = ''
     let injurySummary: any = null
 
-    if (result.pick) {
+    if (result.pick && result.pick.selection !== 'PASS') {
       console.log('[SHIVA:GeneratePick] Generating bold predictions and professional analysis...')
 
       try {
