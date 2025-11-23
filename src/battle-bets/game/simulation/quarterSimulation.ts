@@ -17,7 +17,7 @@ import gsap from 'gsap';
 import { projectilePool } from '../entities/projectiles/ProjectilePool';
 import { useMultiGameStore } from '../../store/multiGameStore';
 import type { StatType } from '../../types/game';
-import { getBattlefieldCenter } from '../utils/positioning';
+import { getBattlefieldCenter, getDefenseCellPosition } from '../utils/positioning';
 import { pixiManager } from '../managers/PixiManager';
 import { gridManager } from '../managers/GridManager';
 import { collisionManager } from '../managers/CollisionManager';
