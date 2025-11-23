@@ -859,7 +859,10 @@ async function fireSingleProjectileForMultiBattle(
 ): Promise<void> {
   const startPosition = getWeaponSlotPosition(stat, side);
   const targetSide = side === 'left' ? 'right' : 'left';
-  const targetPosition = getWeaponSlotPosition(stat, targetSide);
+
+  // Target the first defense dot (cell #1) on the opposite side
+  // If projectile doesn't collide with defense dots, it will continue to weapon slot
+  const targetPosition = getDefenseCellPosition(stat, targetSide, 1);
 
   const projectileId = `multi-${battleId}-${stat}-${side}-${projectileIndex}-${Date.now()}`;
 
