@@ -2,9 +2,13 @@
  * Castle - PixiJS sprite entity representing a capper's fortress
  * Displays damage states based on HP percentage
  * Supports inventory items and shield mechanics
+ *
+ * NOTE: HP and shield state are now managed by CastleHealthSystem.
+ * This class focuses on visual representation and UI.
  */
 
 import * as PIXI from 'pixi.js';
+import { castleHealthSystem } from '../systems/CastleHealthSystem';
 
 // Simplified inventory types (inline to avoid import issues)
 interface InventoryItem {
@@ -134,6 +138,9 @@ export class Castle {
     // Create container for castle and effects
     this.container = new PIXI.Container();
     this.container.position.set(this.position.x, this.position.y);
+
+    // Initialize health tracking in CastleHealthSystem
+    castleHealthSystem.initializeCastle(this.id, this.maxHP, this.currentHP);
   }
 
   /**
@@ -678,48 +685,37 @@ export class Castle {
 
   /**
    * Update castle HP and visual state
-   * Handles shield mechanics and auto-activation
+   * Delegates to CastleHealthSystem for HP/shield logic
    */
   public takeDamage(damage: number): void {
     if (this.isDestroyed) return;
 
-    console.log(`🛡️ takeDamage called: damage=${damage}, currentHP=${this.currentHP}, shieldState=${this.shieldState ? 'active' : 'null'}`);
+    console.log(`🛡️ takeDamage called: damage=${damage}, currentHP=${this.currentHP}`);
 
-    // Check if shield should activate (before taking damage)
-    // Activate if HP is already < 3 OR if this damage will bring HP below 3
-    const hpAfterDamage = this.currentHP - damage;
-    console.log(`🛡️ HP after damage would be: ${hpAfterDamage}`);
+    // Check if shield should activate BEFORE taking damage
+    // This handles Blue Orb Shield auto-activation at HP < 3
+    const currentHP = castleHealthSystem.getCurrentHP(this.id);
+    const hpAfterDamage = currentHP - damage;
 
-    if (!this.shieldState && (this.currentHP < 3 || hpAfterDamage < 3)) {
+    if (!castleHealthSystem.hasActiveShield(this.id) && (currentHP < 3 || hpAfterDamage < 3)) {
       console.log(`🛡️ Shield activation condition met! Checking for shield items...`);
       this.checkAndActivateShield();
     }
 
-    // If shield is active, damage the shield first
-    if (this.shieldState && this.shieldState.isActive) {
-      const shieldDamage = Math.min(damage, this.shieldState.currentHP);
-      this.shieldState.currentHP -= shieldDamage;
-      damage -= shieldDamage;
+    // Apply damage through health system
+    const result = castleHealthSystem.takeDamage(this.id, damage);
 
-      console.log(`🛡️ Shield absorbed ${shieldDamage} damage! Shield HP: ${this.shieldState.currentHP}/${this.shieldState.maxHP}`);
+    console.log(`💔 Damage result:`, result);
 
-      // Update shield visual
+    // Sync local HP state with health system
+    this.currentHP = result.finalHP;
+
+    // Update shield visual if shield state changed
+    if (result.shieldBroken) {
+      this.deactivateShield();
+    } else if (castleHealthSystem.hasActiveShield(this.id)) {
       this.updateShieldVisual();
-
-      // If shield is depleted, deactivate it
-      if (this.shieldState.currentHP <= 0) {
-        this.deactivateShield();
-      }
-
-      // If all damage was absorbed by shield, return early
-      if (damage <= 0) {
-        this.flashDamage();
-        return;
-      }
     }
-
-    // Apply remaining damage to castle HP
-    this.currentHP = Math.max(0, this.currentHP - damage);
 
     // Add blood splatter effect
     this.addBloodSplatter();
@@ -732,7 +728,7 @@ export class Castle {
     this.updateHPBar();
 
     // Check if destroyed
-    if (this.currentHP <= 0) {
+    if (result.castleDestroyed) {
       this.destroy();
     }
   }
@@ -769,7 +765,13 @@ export class Castle {
   public heal(amount: number): void {
     if (this.isDestroyed) return;
 
-    this.currentHP = Math.min(this.maxHP, this.currentHP + amount);
+    // Heal through health system
+    castleHealthSystem.heal(this.id, amount);
+
+    // Sync local HP state
+    this.currentHP = castleHealthSystem.getCurrentHP(this.id);
+
+    // Update visuals
     this.updateDamageState();
     this.updateHPBar();
   }
@@ -984,11 +986,20 @@ export class Castle {
   private activateShield(item: InventoryItem): void {
     console.log(`🛡️ activateShield called with item:`, item);
 
-    if (!item.shieldHP) {
-      console.log(`🛡️ Item has no shieldHP property!`);
+    if (!item.shieldHP || !item.shieldActivationThreshold) {
+      console.log(`🛡️ Item missing shield properties!`);
       return;
     }
 
+    // Activate shield in health system
+    castleHealthSystem.activateShield(
+      this.id,
+      item.shieldHP,
+      item.shieldActivationThreshold,
+      item.id
+    );
+
+    // Update local shield state for visual rendering
     this.shieldState = {
       isActive: true,
       currentHP: item.shieldHP,
@@ -1012,6 +1023,11 @@ export class Castle {
     if (!this.shieldState) return;
 
     console.log(`💥 Shield deactivated!`);
+
+    // Deactivate in health system
+    castleHealthSystem.deactivateShield(this.id);
+
+    // Clear local shield state
     this.shieldState = null;
 
     // Remove shield visual
