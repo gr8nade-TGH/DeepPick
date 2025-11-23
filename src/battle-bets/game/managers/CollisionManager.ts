@@ -298,7 +298,15 @@ class CollisionManager {
       }
     }
 
-    console.log(`🔍 [FIND DOT] ${projectile.id} (${projectile.side}, X=${projectile.position.x.toFixed(1)}) | Eligible dots: [${eligibleDots.join(', ')}] | Found: ${targetDot ? `${targetDot.id} (HP: ${targetDot.hp}, X: ${targetDot.position.x.toFixed(1)})` : 'NONE'}`);
+    // Only log if we have issues finding dots
+    if (!targetDot && aliveDots > 0) {
+      console.warn(`⚠️ [FIND DOT] ${projectile.id} (${projectile.side}, X=${projectile.position.x.toFixed(1)}) | ${aliveDots} alive dots but NONE in path! | Eligible: [${eligibleDots.join(', ')}] | Behind: ${behindProjectile}`);
+    } else if (targetDot) {
+      const distance = Math.abs(projectile.position.x - targetDot.position.x);
+      if (distance > 100) {
+        console.warn(`⚠️ [FIND DOT] ${projectile.id} (${projectile.side}, X=${projectile.position.x.toFixed(1)}) | Found ${targetDot.id} but it's ${distance.toFixed(1)}px away! | Eligible: [${eligibleDots.join(', ')}]`);
+      }
+    }
 
     return targetDot;
   }

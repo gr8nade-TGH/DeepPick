@@ -934,19 +934,10 @@ async function fireSingleProjectileForMultiBattle(
   const startPosition = getWeaponSlotPosition(stat, side);
   const targetSide = side === 'left' ? 'right' : 'left';
 
-  // Projectiles target the battlefield edge on the opposite side
-  // Since attackCellsPerSide = 0, projectiles fly from weapon slot → battlefield edge
-  // Collision detection will handle hitting defense dots or projectiles that are "in the way"
-  const layout = gridManager.getLayout();
-  const statIndex = getStatIndex(stat);
-  const y = statIndex * 40 + 20; // cellHeight=40, center=20
-
-  // Left projectiles target RIGHT edge of battlefield (battlefieldEnd)
-  // Right projectiles target LEFT edge of battlefield (battlefieldStart)
-  const targetPosition = {
-    x: side === 'left' ? layout.battlefieldEnd : layout.battlefieldStart,
-    y
-  };
+  // Projectiles MUST fly all the way across to the opposite weapon slot
+  // This ensures they travel THROUGH the defense zone where collision detection can catch them
+  // Collision detection will stop the projectile when it hits a defense dot
+  const targetPosition = getWeaponSlotPosition(stat, targetSide);
 
   const projectileId = `multi-${battleId}-${stat}-${side}-${projectileIndex}-${Date.now()}`;
 
