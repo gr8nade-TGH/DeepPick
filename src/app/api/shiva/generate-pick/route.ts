@@ -192,7 +192,7 @@ export async function POST(request: Request) {
       }, { status: 500 })
     }
 
-    const confidence = result.log?.confidenceBreakdown?.finalConfidence || 0
+    let confidence = result.log?.confidenceBreakdown?.finalConfidence || 0
 
     // CRITICAL: Save run to database (for run log table)
     console.log('[SHIVA:GeneratePick] Saving run to database...')
