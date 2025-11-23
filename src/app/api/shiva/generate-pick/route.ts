@@ -291,6 +291,39 @@ export async function POST(request: Request) {
       }
 
       try {
+        // Extract team stats from run metadata (if available)
+        let teamStats: any = undefined
+        const statsBundle = result.steps?.step3?.totals_debug?.console_logs?.bundle
+        if (statsBundle) {
+          // Convert NBAStatsBundle to TeamStats format for professional analysis
+          teamStats = {
+            away: {
+              pace: statsBundle.awayPaceLast10 || statsBundle.awayPaceSeason || 100.1,
+              offensiveRating: statsBundle.awayORtgLast10 || 110.0,
+              defensiveRating: statsBundle.awayDRtgSeason || 110.0,
+              netRating: (statsBundle.awayORtgLast10 || 110.0) - (statsBundle.awayDRtgSeason || 110.0),
+              threePointPct: statsBundle.away3PctLast10 || statsBundle.away3Pct || 0.35,
+              threePointPctDefense: statsBundle.awayOpp3PAR ? (1 - statsBundle.awayOpp3PAR) : undefined,
+              turnovers: statsBundle.awayTOVLast10 || 14.0,
+              turnoversForced: undefined // Not available in current bundle
+            },
+            home: {
+              pace: statsBundle.homePaceLast10 || statsBundle.homePaceSeason || 100.1,
+              offensiveRating: statsBundle.homeORtgLast10 || 110.0,
+              defensiveRating: statsBundle.homeDRtgSeason || 110.0,
+              netRating: (statsBundle.homeORtgLast10 || 110.0) - (statsBundle.homeDRtgSeason || 110.0),
+              threePointPct: statsBundle.home3PctLast10 || statsBundle.home3Pct || 0.35,
+              threePointPctDefense: statsBundle.homeOpp3PAR ? (1 - statsBundle.homeOpp3PAR) : undefined,
+              turnovers: statsBundle.homeTOVLast10 || 14.0,
+              turnoversForced: undefined // Not available in current bundle
+            }
+          }
+          console.log('[SHIVA:GeneratePick] Team stats extracted from bundle:', {
+            awayNetRtg: teamStats.away.netRating.toFixed(1),
+            homeNetRtg: teamStats.home.netRating.toFixed(1)
+          })
+        }
+
         // Generate Professional Analysis
         professionalAnalysis = await generateProfessionalAnalysis({
           game: {
@@ -305,7 +338,8 @@ export async function POST(request: Request) {
           factors: result.log?.factors || [],
           betType,
           selection: result.pick.selection,
-          injuryData: injurySummary
+          injuryData: injurySummary,
+          teamStats // NEW: Pass actual team stats to prevent AI hallucination
         })
         console.log('[SHIVA:GeneratePick] Professional analysis generated successfully')
       } catch (analysisError) {

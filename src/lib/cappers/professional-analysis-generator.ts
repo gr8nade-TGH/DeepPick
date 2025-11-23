@@ -9,6 +9,17 @@ import { fetchPlayerInjuriesForTeams } from '@/lib/data-sources/mysportsfeeds-ap
 import { getTeamAbbrev } from '@/lib/data-sources/team-mappings'
 import { formatDateForAPI } from '@/lib/data-sources/season-utils'
 
+export interface TeamStats {
+  pace: number
+  offensiveRating: number
+  defensiveRating: number
+  netRating: number
+  threePointPct: number
+  threePointPctDefense?: number  // Opponent 3P% allowed
+  turnovers: number
+  turnoversForced?: number
+}
+
 export interface AnalysisInput {
   game: {
     away_team: string
@@ -23,6 +34,10 @@ export interface AnalysisInput {
   betType: 'TOTAL' | 'SPREAD'
   selection: string       // "OVER 223.5" or "Lakers -2.5"
   injuryData?: any        // Optional pre-fetched injury data
+  teamStats?: {           // NEW: Actual team stats to prevent AI hallucination
+    away: TeamStats
+    home: TeamStats
+  }
 }
 
 /**
@@ -157,6 +172,32 @@ Return ONLY the bullet-point analysis (no JSON, no extra formatting).`
       const edge = Math.abs(input.predictedValue)
       const favoredTeam = input.selection.includes(input.game.home_team) ? input.game.home_team : input.game.away_team
 
+      // Format team stats section (if available)
+      let teamStatsSection = ''
+      if (input.teamStats) {
+        const { away, home } = input.teamStats
+        teamStatsSection = `
+ACTUAL TEAM STATISTICS (Last 10 Games):
+${input.game.away_team}:
+- Offensive Rating: ${away.offensiveRating.toFixed(1)} (points per 100 possessions)
+- Defensive Rating: ${away.defensiveRating.toFixed(1)} (points allowed per 100 possessions)
+- Net Rating: ${away.netRating.toFixed(1)} (ORtg - DRtg)
+- Pace: ${away.pace.toFixed(1)} possessions per game
+- 3-Point Shooting: ${(away.threePointPct * 100).toFixed(1)}%${away.threePointPctDefense ? ` | Defense allows ${(away.threePointPctDefense * 100).toFixed(1)}%` : ''}
+- Turnovers: ${away.turnovers.toFixed(1)} per game${away.turnoversForced ? ` | Forces ${away.turnoversForced.toFixed(1)} per game` : ''}
+
+${input.game.home_team}:
+- Offensive Rating: ${home.offensiveRating.toFixed(1)} (points per 100 possessions)
+- Defensive Rating: ${home.defensiveRating.toFixed(1)} (points allowed per 100 possessions)
+- Net Rating: ${home.netRating.toFixed(1)} (ORtg - DRtg)
+- Pace: ${home.pace.toFixed(1)} possessions per game
+- 3-Point Shooting: ${(home.threePointPct * 100).toFixed(1)}%${home.threePointPctDefense ? ` | Defense allows ${(home.threePointPctDefense * 100).toFixed(1)}%` : ''}
+- Turnovers: ${home.turnovers.toFixed(1)} per game${home.turnoversForced ? ` | Forces ${home.turnoversForced.toFixed(1)} per game` : ''}
+
+CRITICAL: Use ONLY the statistics provided above. Do NOT cite any other numbers or rankings.
+`
+      }
+
       aiPrompt = `You are an elite sports betting analyst writing a comprehensive game breakdown for a premium analytics service. Your analysis will be reviewed post-game against actual results, so accuracy and depth matter more than speed.
 
 GAME CONTEXT:
@@ -168,7 +209,7 @@ GAME CONTEXT:
 - Pick: ${input.selection}
 - Confidence: ${input.confidence.toFixed(1)}/10.0
 - Units: ${input.units}
-
+${teamStatsSection}
 FACTOR ANALYSIS (Our Proprietary Model):
 ${factorBreakdown}
 
@@ -220,8 +261,11 @@ REQUIRED FORMAT (Use bullet points throughout):
 
 CRITICAL REQUIREMENTS:
 - Use bullet points for ALL sections (no paragraphs)
-- Be specific with numbers, percentages, and efficiency metrics
-- Show creative analytical thinking (identify matchup advantages others miss)
+- **ONLY use statistics provided in the ACTUAL TEAM STATISTICS section above**
+- **DO NOT cite any rankings, ATS records, head-to-head records, or travel schedules unless explicitly provided**
+- **DO NOT hallucinate or invent any numbers - use ONLY the data given**
+- Be specific with the numbers provided (ORtg, DRtg, NetRtg, Pace, 3P%, Turnovers)
+- Show creative analytical thinking by connecting the provided stats to matchup advantages
 - Quality over speed - take time to think deeply
 - Avoid generic statements - every point should be specific to THIS game
 - No clichés or hype language
