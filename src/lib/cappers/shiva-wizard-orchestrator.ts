@@ -322,12 +322,36 @@ async function captureOddsSnapshot(runId: string, game: any, sport: string) {
     throw new Error(`No valid total line data available from sportsbooks. Cannot generate pick without accurate market odds. Game: ${homeTeam} vs ${awayTeam}`)
   }
 
+  // REQUIRE minimum number of books for consensus
+  if (totalLines.length < 2) {
+    console.warn('[WizardOrchestrator:Step2] ⚠️ Only 1 sportsbook has total line - may be soft/stale line')
+  }
+
   const avgTotalLine = parseFloat((totalLines.reduce((a, b) => a + b, 0) / totalLines.length).toFixed(1))
+
+  // Calculate line variance to detect disagreement between books
+  const minTotalLine = Math.min(...totalLines)
+  const maxTotalLine = Math.max(...totalLines)
+  const totalLineVariance = maxTotalLine - minTotalLine
+
+  // Flag suspicious variance (books disagree by >2 points)
+  if (totalLineVariance > 2.0) {
+    console.warn('[WizardOrchestrator:Step2] ⚠️ High total line variance detected:', {
+      minLine: minTotalLine,
+      maxLine: maxTotalLine,
+      variance: totalLineVariance,
+      avgLine: avgTotalLine,
+      warning: 'Books disagree significantly - possible line movement or stale data'
+    })
+  }
 
   console.log('[WizardOrchestrator:Step2] Total line calculation:', {
     sportsbooks: sportsbooks.length,
     totalLines,
     avgTotalLine,
+    minLine: minTotalLine,
+    maxLine: maxTotalLine,
+    variance: totalLineVariance,
     booksConsidered: totalLines.length
   })
 
@@ -341,7 +365,28 @@ async function captureOddsSnapshot(runId: string, game: any, sport: string) {
     throw new Error(`No valid spread line data available from sportsbooks. Cannot generate SPREAD pick without accurate market odds. Game: ${homeTeam} vs ${awayTeam}`)
   }
 
+  // REQUIRE minimum number of books for consensus
+  if (spreadLines.length < 2) {
+    console.warn('[WizardOrchestrator:Step2] ⚠️ Only 1 sportsbook has spread line - may be soft/stale line')
+  }
+
   const avgSpreadLine = parseFloat((spreadLines.reduce((a, b) => a + b, 0) / spreadLines.length).toFixed(1))
+
+  // Calculate line variance to detect disagreement between books
+  const minSpreadLine = Math.min(...spreadLines)
+  const maxSpreadLine = Math.max(...spreadLines)
+  const spreadLineVariance = maxSpreadLine - minSpreadLine
+
+  // Flag suspicious variance (books disagree by >1.5 points)
+  if (spreadLineVariance > 1.5) {
+    console.warn('[WizardOrchestrator:Step2] ⚠️ High spread line variance detected:', {
+      minLine: minSpreadLine,
+      maxLine: maxSpreadLine,
+      variance: spreadLineVariance,
+      avgLine: avgSpreadLine,
+      warning: 'Books disagree significantly - possible line movement or stale data'
+    })
+  }
 
   // Determine favored team based on average spread
   // Negative spread = home team favored, positive = away team favored
@@ -351,6 +396,9 @@ async function captureOddsSnapshot(runId: string, game: any, sport: string) {
     sportsbooks: sportsbooks.length,
     spreadLines,
     avgSpreadLine,
+    minLine: minSpreadLine,
+    maxLine: maxSpreadLine,
+    variance: spreadLineVariance,
     favTeam,
     booksConsidered: spreadLines.length
   })
