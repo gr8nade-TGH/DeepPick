@@ -15,7 +15,6 @@ import { castleManager } from '../../game/managers/CastleManager'
 import { gridManager } from '../../game/managers/GridManager'
 import { pixiManager } from '../../game/managers/PixiManager'
 import { runDebugBattleForMultiStore } from '../../game/simulation/quarterSimulation'
-import { debugManager } from '../../game/debug/ProjectileDebugger'
 import type { Game } from '../../types/game'
 import type { BattleStatus } from '@/lib/battle-bets/BattleTimer'
 
