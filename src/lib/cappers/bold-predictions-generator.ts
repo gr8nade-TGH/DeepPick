@@ -212,13 +212,14 @@ Generate 2-3 HIGH-PROBABILITY player predictions that STRONGLY SUPPORT our ${pic
 ⚠️ CRITICAL ACCURACY GUIDELINES:
 1. ONLY use players from the CURRENT-SEASON PLAYER STATS provided above
 2. DO NOT reference players who are not listed in the stats (they may be injured, traded, or retired)
-3. DO NOT use outdated season-long averages - only use the current-season PPG/RPG/APG provided
-4. VERIFY each player is active and not on the injury report before making predictions
-5. QUALITY OVER QUANTITY - Only make predictions you're highly confident in
-6. Each prediction MUST be backed by CONCRETE DATA from the current-season stats above
-7. Predictions MUST align with the ${pickDirection} pick - NO contradictions
-8. Use CONSERVATIVE estimates - Better to under-promise and over-deliver
-9. Only assign HIGH confidence if you have STRONG statistical backing from current-season data
+3. ROSTER VALIDATION: If a player is not in the stats list above, they are NOT on the team - DO NOT mention them
+4. DO NOT use outdated season-long averages - only use the current-season PPG/RPG/APG provided
+5. VERIFY each player is active and not on the injury report before making predictions
+6. QUALITY OVER QUANTITY - Only make predictions you're highly confident in
+7. Each prediction MUST be backed by CONCRETE DATA from the current-season stats above
+8. Predictions MUST align with the ${pickDirection} pick - NO contradictions
+9. Use CONSERVATIVE estimates - Better to under-promise and over-deliver
+10. Only assign HIGH confidence if you have STRONG statistical backing from current-season data
 
 PREDICTION CRITERIA FOR ${pickDirection}:
 ${pickDirection === 'OVER' ? `
@@ -302,13 +303,14 @@ Generate 2-3 HIGH-PROBABILITY player predictions that STRONGLY SUPPORT our ${inp
 ⚠️ CRITICAL ACCURACY GUIDELINES:
 1. ONLY use players from the CURRENT-SEASON PLAYER STATS provided above
 2. DO NOT reference players who are not listed in the stats (they may be injured, traded, or retired)
-3. DO NOT use outdated season-long averages - only use the current-season PPG/RPG/APG provided
-4. VERIFY each player is active and not on the injury report before making predictions
-5. QUALITY OVER QUANTITY - Only make predictions you're highly confident in
-6. Each prediction MUST be backed by CONCRETE DATA from the current-season stats above
-7. Predictions MUST align with ${favoredTeam} covering the spread
-8. Use CONSERVATIVE estimates - Better to under-promise and over-deliver
-9. Only assign HIGH confidence if you have STRONG statistical backing from current-season data
+3. ROSTER VALIDATION: If a player is not in the stats list above, they are NOT on the team - DO NOT mention them
+4. DO NOT use outdated season-long averages - only use the current-season PPG/RPG/APG provided
+5. VERIFY each player is active and not on the injury report before making predictions
+6. QUALITY OVER QUANTITY - Only make predictions you're highly confident in
+7. Each prediction MUST be backed by CONCRETE DATA from the current-season stats above
+8. Predictions MUST align with ${favoredTeam} covering the spread
+9. Use CONSERVATIVE estimates - Better to under-promise and over-deliver
+10. Only assign HIGH confidence if you have STRONG statistical backing from current-season data
 
 PREDICTION CRITERIA FOR SPREAD PICKS:
 - Focus on KEY PLAYERS from ${favoredTeam} who will drive the margin
