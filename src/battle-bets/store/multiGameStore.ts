@@ -155,7 +155,7 @@ export const useMultiGameStore = create<MultiGameState>()(
 
           // Create ALL defense dots across all cells (no animation for now)
           stats.forEach((stat) => {
-            const dotsForStat = distribution[stat as keyof typeof distribution];
+            const dotsForStat: number = distribution[stat as keyof typeof distribution];
 
             // Create dots from cell #1 to cell #dotsForStat
             for (let cellNumber = 1; cellNumber <= dotsForStat; cellNumber++) {
