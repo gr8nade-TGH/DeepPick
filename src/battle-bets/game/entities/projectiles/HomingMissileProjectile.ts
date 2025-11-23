@@ -215,7 +215,7 @@ export class HomingMissileProjectile extends BaseProjectile {
         })
         .call(() => {
           if (!this.collided) {
-            projectileDebugger.markCollision(this.id, this.sprite.x, this.sprite.y, 'TARGET');
+            projectileDebugger.markCollision(this.gameId, this.id, this.sprite.x, this.sprite.y, 'TARGET');
             this.createImpactEffect();
           }
           resolve();
