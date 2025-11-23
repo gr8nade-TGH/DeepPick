@@ -533,47 +533,47 @@ export function ProfessionalDashboard() {
 
   return (
     <div className="min-h-screen bg-slate-950">
-      <div className="px-4 py-4 max-w-[1800px] mx-auto">
+      <div className="px-2 sm:px-4 py-2 sm:py-4 max-w-[1800px] mx-auto">
 
-        {/* PERFORMANCE STATS BAR - COMPACT */}
+        {/* PERFORMANCE STATS BAR - COMPACT - Responsive Grid */}
         {performance && (
-          <div className="mb-4 grid grid-cols-5 gap-3">
-            <div className="bg-slate-900/50 border border-slate-800 rounded-lg px-4 py-2">
+          <div className="mb-3 sm:mb-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
+            <div className="bg-slate-900/50 border border-slate-800 rounded-lg px-3 sm:px-4 py-2">
               <div className="text-[10px] text-slate-500 mb-1 uppercase tracking-wider font-medium">Total Picks</div>
-              <div className="text-lg font-bold text-white">{performance.total_picks}</div>
+              <div className="text-base sm:text-lg font-bold text-white">{performance.total_picks}</div>
             </div>
-            <div className="bg-slate-900/50 border border-slate-800 rounded-lg px-4 py-2">
+            <div className="bg-slate-900/50 border border-slate-800 rounded-lg px-3 sm:px-4 py-2">
               <div className="text-[10px] text-slate-500 mb-1 uppercase tracking-wider font-medium">Win Rate</div>
-              <div className="text-lg font-bold text-emerald-400">{performance.win_rate.toFixed(1)}%</div>
+              <div className="text-base sm:text-lg font-bold text-emerald-400">{performance.win_rate.toFixed(1)}%</div>
             </div>
-            <div className="bg-slate-900/50 border border-slate-800 rounded-lg px-4 py-2">
+            <div className="bg-slate-900/50 border border-slate-800 rounded-lg px-3 sm:px-4 py-2">
               <div className="text-[10px] text-slate-500 mb-1 uppercase tracking-wider font-medium">W / L</div>
-              <div className="text-lg font-bold text-white">{performance.wins} / {performance.losses}</div>
+              <div className="text-base sm:text-lg font-bold text-white">{performance.wins} / {performance.losses}</div>
             </div>
-            <div className="bg-slate-900/50 border border-slate-800 rounded-lg px-4 py-2">
+            <div className="bg-slate-900/50 border border-slate-800 rounded-lg px-3 sm:px-4 py-2">
               <div className="text-[10px] text-slate-500 mb-1 uppercase tracking-wider font-medium">ROI</div>
-              <div className={`text-lg font-bold ${performance.roi >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              <div className={`text-base sm:text-lg font-bold ${performance.roi >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                 {performance.roi >= 0 ? '+' : ''}{performance.roi?.toFixed(1) || '0.0'}%
               </div>
             </div>
-            <div className="bg-slate-900/50 border border-emerald-900/20 rounded-lg px-4 py-2">
+            <div className="bg-slate-900/50 border border-emerald-900/20 rounded-lg px-3 sm:px-4 py-2 col-span-2 sm:col-span-1">
               <div className="text-[10px] text-slate-500 mb-1 uppercase tracking-wider font-medium">Net Units</div>
-              <div className={`text-lg font-bold ${performance.net_units >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              <div className={`text-base sm:text-lg font-bold ${performance.net_units >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                 {performance.net_units >= 0 ? '+' : ''}{performance.net_units.toFixed(1)}u
               </div>
             </div>
           </div>
         )}
 
-        {/* MAIN CONTENT - FIXED HEIGHT DASHBOARD */}
-        <div className="grid grid-cols-12 gap-3 mb-3">
+        {/* MAIN CONTENT - Responsive Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-3 mb-3">
 
-          {/* LEFT COLUMN - TODAY'S PICKS (60%) */}
-          <div className="col-span-7">
-            {/* Today's Elite Picks - Fixed Height to match right column */}
-            <Card className="bg-slate-900/50 border-slate-800 h-[550px] flex flex-col">
-              <CardHeader className="pb-2 px-3 pt-2.5 border-b border-slate-800 flex-shrink-0">
-                <div className="flex items-center justify-between">
+          {/* LEFT COLUMN - TODAY'S PICKS - Full width on mobile, 60% on desktop */}
+          <div className="lg:col-span-7">
+            {/* Today's Elite Picks - Responsive Height */}
+            <Card className="bg-slate-900/50 border-slate-800 h-auto lg:h-[550px] flex flex-col">
+              <CardHeader className="pb-2 px-2 sm:px-3 pt-2.5 border-b border-slate-800 flex-shrink-0">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <CardTitle className="text-sm font-semibold text-white">Today's Elite Picks</CardTitle>
                   <Tabs value={sportFilter} onValueChange={setSportFilter}>
                     <TabsList className="bg-slate-800/50 border border-slate-700 h-7">
@@ -586,7 +586,7 @@ export function ProfessionalDashboard() {
                 </div>
               </CardHeader>
 
-              <CardContent className="px-3 py-2 space-y-2 flex-1 overflow-y-auto">
+              <CardContent className="px-2 sm:px-3 py-2 space-y-2 flex-1 overflow-y-auto max-h-[600px] lg:max-h-none">
                 {todaysPicks.length === 0 ? (
                   <div className="h-full flex items-center justify-center">
                     <div className="text-center">
@@ -630,9 +630,9 @@ export function ProfessionalDashboard() {
                         </div>
                       )}
 
-                      {/* Main Pick Card - Clickable */}
+                      {/* Main Pick Card - Clickable - Responsive Layout */}
                       <div
-                        className={`cursor-pointer group p-4 ${isLocked ? 'blur-sm' : ''}`}
+                        className={`cursor-pointer group p-2 sm:p-4 ${isLocked ? 'blur-sm' : ''}`}
                         onClick={() => {
                           if (!isLocked) {
                             setSelectedPick(pick)
@@ -640,14 +640,14 @@ export function ProfessionalDashboard() {
                           }
                         }}
                       >
-                        <div className="flex items-center justify-between gap-4">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
                           {/* LEFT SECTION: Capper + Pick Info */}
-                          <div className="flex items-center gap-4 flex-1 min-w-0">
+                          <div className="flex items-start sm:items-center gap-2 sm:gap-4 flex-1 min-w-0 w-full sm:w-auto">
                             {/* Capper Badge - Minimal */}
                             {(() => {
                               const capperBadge = getCapperBadge(pick.capper || 'DeepPick')
                               return (
-                                <div className={`px-2.5 py-1 rounded text-[10px] font-bold ${capperBadge.gradient} ${capperBadge.text} uppercase tracking-wide flex-shrink-0`}>
+                                <div className={`px-2 sm:px-2.5 py-1 rounded text-[9px] sm:text-[10px] font-bold ${capperBadge.gradient} ${capperBadge.text} uppercase tracking-wide flex-shrink-0`}>
                                   {pick.capper || 'DeepPick'}
                                 </div>
                               )
@@ -656,16 +656,16 @@ export function ProfessionalDashboard() {
                             {/* Pick Details */}
                             <div className="flex-1 min-w-0">
                               {/* The Pick - HERO */}
-                              <div className="text-xl font-black text-white group-hover:text-cyan-400 transition-colors truncate mb-1">
+                              <div className="text-base sm:text-xl font-black text-white group-hover:text-cyan-400 transition-colors truncate mb-1">
                                 {pick.selection}
                               </div>
 
-                              {/* Metadata Row - Clean & Minimal */}
-                              <div className="flex items-center gap-2 text-xs text-slate-400">
-                                <span className="font-medium">{matchup}</span>
-                                <span className="text-slate-600">•</span>
+                              {/* Metadata Row - Clean & Minimal - Responsive */}
+                              <div className="flex items-center gap-1 sm:gap-2 text-[10px] sm:text-xs text-slate-400 flex-wrap">
+                                <span className="font-medium truncate max-w-[150px] sm:max-w-none">{matchup}</span>
+                                <span className="text-slate-600 hidden sm:inline">•</span>
                                 <span className="uppercase font-semibold">{pick.pick_type}</span>
-                                <span className="text-slate-600">•</span>
+                                <span className="text-slate-600 hidden sm:inline">•</span>
                                 <span className={`font-semibold ${gameStatus.color.includes('green') ? 'text-green-400' : gameStatus.color.includes('yellow') ? 'text-yellow-400' : 'text-slate-400'}`}>
                                   {gameStatus.text}
                                 </span>
@@ -677,7 +677,7 @@ export function ProfessionalDashboard() {
                                   const countdown = getCountdown(gameTime)
                                   return countdown ? (
                                     <>
-                                      <span className="text-slate-600">•</span>
+                                      <span className="text-slate-600 hidden sm:inline">•</span>
                                       <span className="text-cyan-400 font-semibold">🕐 {countdown}</span>
                                     </>
                                   ) : null
@@ -686,8 +686,8 @@ export function ProfessionalDashboard() {
                             </div>
                           </div>
 
-                          {/* RIGHT SECTION: Stars + Units */}
-                          <div className="flex items-center gap-4 flex-shrink-0">
+                          {/* RIGHT SECTION: Stars + Units - Responsive */}
+                          <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0 self-end sm:self-auto">
                             {/* Stars + Confidence */}
                             <div className="flex flex-col items-end gap-1.5">
                               {renderConfidenceStars(pick.confidence)}
@@ -696,14 +696,14 @@ export function ProfessionalDashboard() {
                               </div>
                             </div>
 
-                            {/* Units - Clean & Bold */}
-                            <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-600 rounded-lg shadow-lg">
-                              <div className="text-xl font-black text-white">
-                                {pick.units}<span className="text-sm">U</span>
+                            {/* Units - Clean & Bold - Responsive */}
+                            <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-emerald-500 to-green-600 rounded-lg shadow-lg">
+                              <div className="text-base sm:text-xl font-black text-white">
+                                {pick.units}<span className="text-xs sm:text-sm">U</span>
                               </div>
                             </div>
 
-                            <ChevronRight className="h-5 w-5 text-slate-600 group-hover:text-cyan-400 transition-colors" />
+                            <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 text-slate-600 group-hover:text-cyan-400 transition-colors" />
                           </div>
                         </div>
                       </div>
@@ -789,12 +789,12 @@ export function ProfessionalDashboard() {
             </Card>
           </div>
 
-          {/* RIGHT COLUMN - LEADERBOARD + PERFORMANCE TREND (40%) */}
-          <div className="col-span-5 space-y-3">
+          {/* RIGHT COLUMN - LEADERBOARD + PERFORMANCE TREND - Full width on mobile, 40% on desktop */}
+          <div className="lg:col-span-5 space-y-2 sm:space-y-3">
 
-            {/* LEADERBOARD - Fixed Height */}
-            <Card className="bg-slate-900/50 border-slate-800 h-[310px] flex flex-col">
-              <CardHeader className="pb-2 px-3 pt-2.5 border-b border-slate-800 flex-shrink-0">
+            {/* LEADERBOARD - Responsive Height */}
+            <Card className="bg-slate-900/50 border-slate-800 h-auto lg:h-[310px] flex flex-col">
+              <CardHeader className="pb-2 px-2 sm:px-3 pt-2.5 border-b border-slate-800 flex-shrink-0">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm font-semibold text-white flex items-center gap-1.5">
                     <Trophy className="h-3.5 w-3.5 text-amber-500" />
@@ -808,7 +808,7 @@ export function ProfessionalDashboard() {
                 </div>
               </CardHeader>
 
-              <CardContent className="px-3 py-2 space-y-1.5 flex-1 overflow-y-auto">
+              <CardContent className="px-2 sm:px-3 py-2 space-y-1.5 flex-1 overflow-y-auto max-h-[400px] lg:max-h-none">
                 {topCappers.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full py-8 text-center">
                     <Trophy className="w-12 h-12 text-slate-700 mb-3" />
@@ -821,18 +821,18 @@ export function ProfessionalDashboard() {
                   </div>
                 ) : (
                   <>
-                    {/* Column Headers */}
-                    <div className="flex items-center gap-2 px-2 pb-1 border-b border-slate-800/50">
-                      <div className="flex-shrink-0 w-6 text-[9px] font-semibold text-slate-500 uppercase tracking-wider">
+                    {/* Column Headers - Responsive */}
+                    <div className="flex items-center gap-1 sm:gap-2 px-1 sm:px-2 pb-1 border-b border-slate-800/50">
+                      <div className="flex-shrink-0 w-5 sm:w-6 text-[9px] font-semibold text-slate-500 uppercase tracking-wider">
                         #
                       </div>
                       <div className="flex-1 text-[9px] font-semibold text-slate-500 uppercase tracking-wider">
                         Capper
                       </div>
-                      <div className="text-right flex-shrink-0 w-16 text-[9px] font-semibold text-slate-500 uppercase tracking-wider">
+                      <div className="text-right flex-shrink-0 w-12 sm:w-16 text-[9px] font-semibold text-slate-500 uppercase tracking-wider">
                         ROI
                       </div>
-                      <div className="text-right flex-shrink-0 w-12 text-[9px] font-semibold text-slate-500 uppercase tracking-wider">
+                      <div className="text-right flex-shrink-0 w-10 sm:w-12 text-[9px] font-semibold text-slate-500 uppercase tracking-wider">
                         Units
                       </div>
                     </div>
@@ -855,7 +855,7 @@ export function ProfessionalDashboard() {
                         <div
                           key={capper.id}
                           className={`
-                        group relative flex items-center gap-2 px-2 py-2 rounded
+                        group relative flex items-center gap-1 sm:gap-2 px-1 sm:px-2 py-1.5 sm:py-2 rounded
                         border transition-all duration-200
                         ${isTop3
                               ? `bg-gradient-to-r ${rankColors[index as 0 | 1 | 2]} hover:border-opacity-60`
@@ -863,57 +863,57 @@ export function ProfessionalDashboard() {
                             }
                       `}
                         >
-                          {/* Rank Badge */}
+                          {/* Rank Badge - Responsive */}
                           <div className={`
-                        flex-shrink-0 w-6 h-6 rounded flex items-center justify-center
-                        text-[10px] font-bold text-white shadow-sm
+                        flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded flex items-center justify-center
+                        text-[9px] sm:text-[10px] font-bold text-white shadow-sm
                         ${isTop3 ? rankBgColors[index as 0 | 1 | 2] : 'bg-slate-700'}
                       `}>
                             {isTop3 ? medalEmojis[index] : `#${capper.rank}`}
                           </div>
 
-                          {/* Capper Info */}
+                          {/* Capper Info - Responsive */}
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5 mb-0.5">
+                            <div className="flex items-center gap-1 sm:gap-1.5 mb-0.5">
                               <Link href={`/cappers/${capper.id}`} className="hover:underline">
-                                <span className={`text-xs font-semibold truncate ${isTop3 ? 'text-white' : 'text-slate-200'} cursor-pointer hover:text-blue-400 transition-colors`}>
+                                <span className={`text-[11px] sm:text-xs font-semibold truncate ${isTop3 ? 'text-white' : 'text-slate-200'} cursor-pointer hover:text-blue-400 transition-colors`}>
                                   {capper.name}
                                 </span>
                               </Link>
                               {capper.streak > 0 && (
-                                <span className="text-[10px] font-medium text-emerald-400 flex items-center gap-0.5">
+                                <span className="text-[9px] sm:text-[10px] font-medium text-emerald-400 flex items-center gap-0.5">
                                   🔥<span className="font-mono">{capper.streak}W</span>
                                 </span>
                               )}
                               {capper.is_hot && (
-                                <span className="text-[9px] px-1 py-0.5 rounded bg-red-500/20 text-red-400 font-semibold border border-red-500/30">
+                                <span className="text-[8px] sm:text-[9px] px-1 py-0.5 rounded bg-red-500/20 text-red-400 font-semibold border border-red-500/30">
                                   HOT
                                 </span>
                               )}
                             </div>
-                            <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                            <div className="flex items-center gap-1 sm:gap-2 text-[9px] sm:text-[10px] text-slate-400">
                               <span className="font-mono font-medium">
                                 {capper.win_rate.toFixed(1)}%
                               </span>
-                              <span className="text-slate-600">•</span>
-                              <span className="text-slate-500">{capper.total_picks} picks</span>
+                              <span className="text-slate-600 hidden sm:inline">•</span>
+                              <span className="text-slate-500 hidden sm:inline">{capper.total_picks} picks</span>
                             </div>
                           </div>
 
-                          {/* ROI */}
-                          <div className="text-right flex-shrink-0 w-16">
+                          {/* ROI - Responsive */}
+                          <div className="text-right flex-shrink-0 w-12 sm:w-16">
                             <div className={`
-                          text-xs font-bold font-mono
+                          text-[10px] sm:text-xs font-bold font-mono
                           ${capper.roi >= 0 ? 'text-emerald-400' : 'text-red-400'}
                         `}>
                               {capper.roi >= 0 ? '+' : ''}{capper.roi.toFixed(1)}%
                             </div>
                           </div>
 
-                          {/* Units */}
-                          <div className="text-right flex-shrink-0 w-12">
+                          {/* Units - Responsive */}
+                          <div className="text-right flex-shrink-0 w-10 sm:w-12">
                             <div className={`
-                          text-[11px] font-semibold font-mono
+                          text-[10px] sm:text-[11px] font-semibold font-mono
                           ${capper.total_units >= 0 ? 'text-emerald-500' : 'text-red-500'}
                         `}>
                               {capper.total_units >= 0 ? '+' : ''}{capper.total_units.toFixed(1)}u
@@ -966,16 +966,16 @@ export function ProfessionalDashboard() {
               </CardContent>
             </Card>
 
-            {/* PERFORMANCE TREND GRAPH - Fixed Height */}
-            <Card className="bg-slate-900/50 border-slate-800 h-[227px] flex flex-col">
-              <CardHeader className="pb-2 px-3 pt-2.5 border-b border-slate-800 flex-shrink-0">
+            {/* PERFORMANCE TREND GRAPH - Responsive Height */}
+            <Card className="bg-slate-900/50 border-slate-800 h-auto lg:h-[227px] flex flex-col">
+              <CardHeader className="pb-2 px-2 sm:px-3 pt-2.5 border-b border-slate-800 flex-shrink-0">
                 <CardTitle className="text-sm font-semibold text-white flex items-center gap-1.5">
                   <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
                   Performance Trend
                 </CardTitle>
               </CardHeader>
 
-              <CardContent className="px-3 py-2 flex-1">
+              <CardContent className="px-2 sm:px-3 py-2 flex-1 min-h-[200px]">
                 {chartData.length === 0 ? (
                   <div className="h-full flex items-center justify-center">
                     <div className="text-center">
