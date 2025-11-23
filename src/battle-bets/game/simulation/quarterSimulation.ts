@@ -32,6 +32,8 @@ import { PROJECTILE_TYPES } from '../../types/projectileTypes';
 import { regenerateDefenseDots } from './shieldRegeneration';
 import { getItemById } from '../../types/inventory';
 import { projectileDebugger } from '../debug/ProjectileDebugger';
+import { battleEventBus } from '../events/EventBus';
+import type { QuarterStartPayload, QuarterEndPayload, ProjectileFiredPayload } from '../events/types';
 
 /**
  * Quarter stats for both teams
@@ -130,6 +132,34 @@ export async function simulateQuarter(
     `📊 ${battle.game.rightTeam.abbreviation}: PTS=${quarterData.right.points} REB=${quarterData.right.rebounds} AST=${quarterData.right.assists} BLK=${quarterData.right.blocks} 3PM=${quarterData.right.threePointers}`
   );
 
+  // Emit QUARTER_START events for both sides
+  const prevQuarterStats = quarterNumber > 1 ? {
+    pts: 0, // TODO: Track actual previous quarter stats
+    reb: 0,
+    ast: 0,
+    blk: 0,
+    stl: 0,
+    threesMade: 0
+  } : null;
+
+  battleEventBus.emit('QUARTER_START', {
+    side: 'left',
+    opponentSide: 'right',
+    quarter: quarterNumber as 1 | 2 | 3 | 4,
+    battleId,
+    gameId,
+    prevQuarterStats
+  } as QuarterStartPayload);
+
+  battleEventBus.emit('QUARTER_START', {
+    side: 'right',
+    opponentSide: 'left',
+    quarter: quarterNumber as 1 | 2 | 3 | 4,
+    battleId,
+    gameId,
+    prevQuarterStats
+  } as QuarterStartPayload);
+
   // Fire ALL stat rows SIMULTANEOUSLY (not sequentially)
   try {
     const statRowPromises = [
@@ -160,6 +190,44 @@ export async function simulateQuarter(
   projectileDebugger.printSummary();
 
   console.log(`✅ Q${quarterNumber} COMPLETE (battleId=${battleId})\n`);
+
+  // Emit QUARTER_END events for both sides
+  const leftScore = battle.capperHP.get('left')?.currentHP ?? 0;
+  const rightScore = battle.capperHP.get('right')?.currentHP ?? 0;
+
+  battleEventBus.emit('QUARTER_END', {
+    side: 'left',
+    opponentSide: 'right',
+    quarter: quarterNumber as 1 | 2 | 3 | 4,
+    battleId,
+    gameId,
+    score: { self: leftScore, opponent: rightScore },
+    quarterStats: {
+      pts: quarterData.left.points,
+      reb: quarterData.left.rebounds,
+      ast: quarterData.left.assists,
+      blk: quarterData.left.blocks,
+      stl: 0, // TODO: Add steals tracking
+      threesMade: quarterData.left.threePointers
+    }
+  } as QuarterEndPayload);
+
+  battleEventBus.emit('QUARTER_END', {
+    side: 'right',
+    opponentSide: 'left',
+    quarter: quarterNumber as 1 | 2 | 3 | 4,
+    battleId,
+    gameId,
+    score: { self: rightScore, opponent: leftScore },
+    quarterStats: {
+      pts: quarterData.right.points,
+      reb: quarterData.right.rebounds,
+      ast: quarterData.right.assists,
+      blk: quarterData.right.blocks,
+      stl: 0, // TODO: Add steals tracking
+      threesMade: quarterData.right.threePointers
+    }
+  } as QuarterEndPayload);
 
   // Cleanup collision callbacks for this battle
   collisionManager.unregisterBattle(gameId);
@@ -887,6 +955,19 @@ async function fireSingleProjectileForMultiBattle(
 
   // Add sprite to this battle's Pixi container
   pixiManager.addSprite(projectile.sprite, 'projectile', battleId);
+
+  // Emit PROJECTILE_FIRED event
+  battleEventBus.emit('PROJECTILE_FIRED', {
+    side,
+    opponentSide: targetSide,
+    quarter: 1, // TODO: Track actual quarter number
+    battleId,
+    gameId,
+    lane: stat,
+    projectileId,
+    source: 'BASE',
+    isExtraFromItem: false
+  } as ProjectileFiredPayload);
 
   // Animate towards target; collisions are checked during flight
   await projectile.animateToTarget();

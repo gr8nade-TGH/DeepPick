@@ -11,6 +11,8 @@
 import type { BaseProjectile } from '../entities/projectiles/BaseProjectile';
 import type { DefenseDot } from '../entities/DefenseDot';
 import type { Position } from '../../types/game';
+import { battleEventBus } from '../events/EventBus';
+import type { DefenseOrbDestroyedPayload, OpponentOrbDestroyedPayload, ProjectileCollisionPayload } from '../events/types';
 
 /**
  * Collision detection manager
@@ -87,6 +89,30 @@ class CollisionManager {
           opposingProjectile.collidedWith = 'projectile';
 
           console.log(`⚔️ [PROJECTILE COLLISION] ${projectile.id} ↔ ${opposingProjectile.id}`);
+
+          // Emit PROJECTILE_COLLISION event for both sides
+          battleEventBus.emit('PROJECTILE_COLLISION', {
+            side: projectile.side,
+            opponentSide: opposingProjectile.side,
+            quarter: 1, // TODO: Track actual quarter
+            battleId: projectile.gameId,
+            gameId: projectile.gameId,
+            projectileId: projectile.id,
+            otherProjectileId: opposingProjectile.id,
+            lane: projectile.stat
+          } as ProjectileCollisionPayload);
+
+          battleEventBus.emit('PROJECTILE_COLLISION', {
+            side: opposingProjectile.side,
+            opponentSide: projectile.side,
+            quarter: 1, // TODO: Track actual quarter
+            battleId: opposingProjectile.gameId,
+            gameId: opposingProjectile.gameId,
+            projectileId: opposingProjectile.id,
+            otherProjectileId: projectile.id,
+            lane: opposingProjectile.stat
+          } as ProjectileCollisionPayload);
+
           return 'projectile';
         }
       }
@@ -125,6 +151,36 @@ class CollisionManager {
         // Log collision with HP change
         const status = hpAfter === 0 ? '💀 DESTROYED' : `${hpAfter}/${targetDot.maxHp} HP remaining`;
         console.log(`🛡️ [DEFENSE HIT] ${projectile.id} → ${targetDot.id} | ${hpBefore} → ${hpAfter} HP | ${status}`);
+
+        // Emit DEFENSE_ORB_DESTROYED event if orb was destroyed
+        if (hpAfter === 0) {
+          const dotSide = targetDot.side;
+          const opponentSide = dotSide === 'left' ? 'right' : 'left';
+
+          // Emit for the side that LOST the orb
+          battleEventBus.emit('DEFENSE_ORB_DESTROYED', {
+            side: dotSide,
+            opponentSide,
+            quarter: 1, // TODO: Track actual quarter
+            battleId: projectile.gameId,
+            gameId: projectile.gameId,
+            lane: projectile.stat,
+            orbId: targetDot.id,
+            destroyedByProjectileId: projectile.id
+          } as DefenseOrbDestroyedPayload);
+
+          // Emit for the side that DESTROYED the orb
+          battleEventBus.emit('OPPONENT_ORB_DESTROYED', {
+            side: opponentSide,
+            opponentSide: dotSide,
+            quarter: 1, // TODO: Track actual quarter
+            battleId: projectile.gameId,
+            gameId: projectile.gameId,
+            lane: projectile.stat,
+            orbId: targetDot.id,
+            destroyedByProjectileId: projectile.id
+          } as OpponentOrbDestroyedPayload);
+        }
 
         return 'defense';
       }
