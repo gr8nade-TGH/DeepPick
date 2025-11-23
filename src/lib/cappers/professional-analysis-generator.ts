@@ -157,6 +157,7 @@ REQUIRED FORMAT (Use bullet points throughout):
 • DO NOT cite specific head-to-head records (e.g., "won 7 of last 10 meetings") unless provided
 • DO NOT cite specific travel narratives (e.g., "coming off 3-game road trip") unless provided
 • DO NOT cite specific rest advantages (e.g., "3 days rest vs 1 day") unless provided
+• DO NOT cite specific recent scoring trends (e.g., "120+ in 3 of last 5 games") unless provided
 • DO NOT reference specific players by name unless they appear in the INJURY REPORT above
 • ROSTER VALIDATION: Only mention players who are confirmed on the current roster via injury data
 • If you don't have the data, focus on the factors we DO have (team stats, injuries, efficiency metrics)
@@ -284,6 +285,7 @@ REQUIRED FORMAT (Use bullet points throughout):
 • DO NOT cite specific head-to-head records (e.g., "won 7 of last 10 meetings") unless provided
 • DO NOT cite specific travel narratives (e.g., "coming off 3-game road trip") unless provided
 • DO NOT cite specific rest advantages (e.g., "3 days rest vs 1 day") unless provided
+• DO NOT cite specific recent scoring trends (e.g., "averaging 118 last 5 games") unless provided
 • DO NOT reference specific players by name unless they appear in the INJURY REPORT above
 • ROSTER VALIDATION: Only mention players who are confirmed on the current roster via injury data
 • If you don't have the data, focus on the factors we DO have (team stats, injuries, efficiency metrics)
