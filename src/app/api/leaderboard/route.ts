@@ -21,6 +21,52 @@ export async function GET(request: NextRequest) {
 
     const admin = getSupabaseAdmin()
 
+    // OPTIMIZATION: Use materialized view for all-time stats with no filters
+    // This is the most common case and provides consistent data across the app
+    if (period === 'all' && !teamFilter && !betTypeFilter) {
+      const { data: capperStats, error: statsError } = await admin
+        .from('capper_stats')
+        .select('*')
+        .order('net_units', { ascending: false })
+
+      if (statsError) {
+        console.error('[Leaderboard] Error fetching capper stats:', statsError)
+        return NextResponse.json({
+          success: false,
+          error: 'Failed to fetch leaderboard'
+        }, { status: 500 })
+      }
+
+      console.log(`[Leaderboard] Using materialized view: ${capperStats?.length || 0} cappers`)
+
+      // Transform to leaderboard format
+      const leaderboard = capperStats?.map((stats, index) => ({
+        id: stats.capper,
+        name: stats.display_name,
+        type: stats.is_system_capper ? 'system' : 'user',
+        avatar_url: stats.avatar_url,
+        wins: stats.wins,
+        losses: stats.losses,
+        pushes: stats.pushes,
+        totalPicks: stats.total_picks,
+        netUnits: parseFloat(stats.net_units),
+        winRate: parseFloat(stats.win_rate),
+        roi: parseFloat(stats.roi),
+        rank: index + 1
+      })) || []
+
+      return NextResponse.json({
+        success: true,
+        data: leaderboard,
+        count: leaderboard.length,
+        period,
+        source: 'materialized_view'
+      })
+    }
+
+    // For filtered queries (period, team, bet_type), calculate from picks
+    console.log(`[Leaderboard] Using picks calculation for filtered query: period=${period}, team=${teamFilter}, bet_type=${betTypeFilter}`)
+
     // Calculate date filter based on period
     let dateFilter: Date | null = null
     if (period === '7d') {
@@ -44,9 +90,6 @@ export async function GET(request: NextRequest) {
 
     const { data: allPicksRaw, error: picksError } = await picksQuery
 
-    // Filter to graded picks in JavaScript (like /api/performance does)
-    const allPicks = allPicksRaw?.filter(p => p.status === 'won' || p.status === 'lost' || p.status === 'push') || []
-
     if (picksError) {
       console.error('[Leaderboard] Error fetching picks:', picksError)
       return NextResponse.json({
@@ -55,28 +98,8 @@ export async function GET(request: NextRequest) {
       }, { status: 500 })
     }
 
-    console.log(`[Leaderboard] Total graded picks fetched: ${allPicks?.length || 0}`)
-    console.log(`[Leaderboard] Period filter: ${period}, Date filter: ${dateFilter?.toISOString() || 'none'}`)
-
-    // Debug: Count picks per capper
-    const picksPerCapper = new Map<string, number>()
-    allPicks?.forEach(pick => {
-      const capperId = pick.capper?.toLowerCase() || 'unknown'
-      picksPerCapper.set(capperId, (picksPerCapper.get(capperId) || 0) + 1)
-    })
-    console.log('[Leaderboard] Picks per capper:', Object.fromEntries(picksPerCapper))
-
-    // Debug: Check if Sentinel picks exist and show sample
-    const sentinelSample = allPicks?.find(p => p.capper?.toLowerCase() === 'sentinel')
-    if (sentinelSample) {
-      console.log('[Leaderboard] Sample Sentinel pick:', {
-        capper: sentinelSample.capper,
-        status: sentinelSample.status,
-        pick_type: sentinelSample.pick_type
-      })
-    } else {
-      console.log('[Leaderboard] NO Sentinel picks found in query result!')
-    }
+    // Filter to graded picks in JavaScript (like /api/performance does)
+    const allPicks = allPicksRaw?.filter(p => p.status === 'won' || p.status === 'lost' || p.status === 'push') || []
 
     // Filter picks by team if team filter is provided
     let picks = allPicks
@@ -229,7 +252,8 @@ export async function GET(request: NextRequest) {
       success: true,
       data: leaderboard,
       count: leaderboard.length,
-      period
+      period,
+      source: 'picks_calculation'
     })
 
   } catch (error) {
