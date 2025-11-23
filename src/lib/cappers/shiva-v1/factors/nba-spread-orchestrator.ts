@@ -1,14 +1,15 @@
 /**
  * NBA Spread Factor Orchestrator
  *
- * Main entry point that coordinates all 5 NBA spread (ATS) factors
+ * Main entry point that coordinates all 6 NBA spread (ATS) factors
  *
- * SPREAD FACTORS (S1-S5):
+ * SPREAD FACTORS (S1-S6):
  * - S1: Net Rating Differential (30% weight)
  * - S2: Turnover Differential (25% weight)
  * - S3: Shooting Efficiency + Momentum (20% weight)
  * - S4: Pace Mismatch (15% weight)
  * - S5: Four Factors Differential (10% weight)
+ * - S6: Key Injuries & Availability (10% weight)
  */
 
 import { FactorComputation } from '@/types/factors'

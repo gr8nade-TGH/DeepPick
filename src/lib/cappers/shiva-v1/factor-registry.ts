@@ -175,6 +175,21 @@ export const NBA_SPREAD_FACTORS: FactorMeta[] = [
     maxPoints: 5.0,
     defaultWeight: 0.10,
     defaultDataSource: 'mysportsfeeds'
+  },
+  {
+    key: 'injuryImpact',
+    name: 'Key Injuries & Availability - Spread',
+    shortName: 'INJ',
+    icon: '🏥',
+    description: 'Impact of injured players on ATS outcome. Calculates injury impact differential (away - home) based on PPG and MPG. Positive signal favors away ATS, negative favors home ATS.',
+    appliesTo: {
+      sports: ['NBA'],
+      betTypes: ['SPREAD'],
+      scope: 'LEAGUE'
+    },
+    maxPoints: 5.0,
+    defaultWeight: 0.10,
+    defaultDataSource: 'mysportsfeeds'
   }
 ];
 
