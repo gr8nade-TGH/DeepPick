@@ -5,7 +5,7 @@
 
 import * as PIXI from 'pixi.js';
 import { gridManager } from '../managers/GridManager';
-import type { StatType } from '../types';
+import type { StatType } from '../../types/game';
 
 interface DefenseOrbDebugInfo {
   stat: StatType;
@@ -57,7 +57,7 @@ class DefenseOrbDebugger {
     const layout = gridManager.getLayout();
 
     // Draw all defense cells with labels
-    const stats: StatType[] = ['PTS', 'AST', 'REB', 'BLK', 'STL'];
+    const stats: StatType[] = ['pts', 'reb', 'ast', 'blk', '3pt'];
 
     stats.forEach((stat, statIndex) => {
       const y = statIndex * cellHeight;
@@ -71,7 +71,7 @@ class DefenseOrbDebugger {
           y,
           cellWidth,
           cellHeight,
-          `L-${stat}-D${cellIndex}`,
+          `L-${stat.toUpperCase()}-D${cellIndex}`,
           0x00ff00,
           cellIndex
         );
@@ -86,7 +86,7 @@ class DefenseOrbDebugger {
           y,
           cellWidth,
           cellHeight,
-          `R-${stat}-D${cellIndex}`,
+          `R-${stat.toUpperCase()}-D${cellIndex}`,
           0xff6600,
           cellIndex
         );
