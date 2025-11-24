@@ -231,13 +231,27 @@ class CollisionManager {
 
     const freshDots = getDotsForGame();
 
+    // DEBUG: Log what we're searching for
+    console.log(`🔍 [CELL SEARCH] Looking for cellId="${cellId}" in ${freshDots.size} dots`);
+
+    // DEBUG: Log first 3 dots to see their cellIds
+    let count = 0;
+    for (const [dotId, dot] of freshDots.entries()) {
+      if (count < 3) {
+        console.log(`  Sample dot: id="${dotId}", cellId="${dot.cellId}", alive=${dot.alive}`);
+        count++;
+      }
+    }
+
     // Find a dot with matching cellId
     for (const [dotId, dot] of freshDots.entries()) {
       if (dot.cellId === cellId && dot.alive) {
+        console.log(`✅ [CELL SEARCH] FOUND! cellId="${cellId}" matches dot="${dotId}"`);
         return dot;
       }
     }
 
+    console.log(`❌ [CELL SEARCH] NOT FOUND! No dot with cellId="${cellId}"`);
     return null;
   }
 
