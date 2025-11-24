@@ -95,28 +95,32 @@ export function CopyDebugButton({ battleId }: CopyDebugButtonProps) {
       onClick={handleCopy}
       style={{
         position: 'fixed',
-        top: '20px',
+        top: '80px', // Moved down to avoid overlapping with DEBUG button
         right: '20px',
-        zIndex: 9999,
+        zIndex: 9998, // Below DEBUG button
         padding: '12px 24px',
         fontSize: '14px',
         fontWeight: 'bold',
         borderRadius: '8px',
-        border: 'none',
+        border: '2px solid #fff',
         cursor: 'pointer',
-        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)',
         transition: 'all 0.2s',
-        backgroundColor: copied ? '#16a34a' : '#2563eb',
+        background: copied
+          ? 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)'
+          : 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
         color: 'white'
       }}
       onMouseEnter={(e) => {
         if (!copied) {
-          e.currentTarget.style.backgroundColor = '#1d4ed8';
+          e.currentTarget.style.transform = 'translateY(-2px)';
+          e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.5)';
         }
       }}
       onMouseLeave={(e) => {
         if (!copied) {
-          e.currentTarget.style.backgroundColor = '#2563eb';
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.4)';
         }
       }}
     >
