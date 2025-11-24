@@ -18,9 +18,9 @@ export interface BaseProjectileConfig {
 }
 
 /**
- * Base Projectile class with common functionality
+ * Base Projectile class - simple straight-line projectile
  */
-export abstract class BaseProjectile {
+export class BaseProjectile {
   // Identity
   public id: string;
   public gameId: string;
@@ -166,10 +166,60 @@ export abstract class BaseProjectile {
   }
 
   /**
-   * Animate projectile to target
-   * Must be implemented by subclasses based on behavior
+   * Animate projectile to target (straight line)
    */
-  public abstract animateToTarget(): Promise<void>;
+  public async animateToTarget(): Promise<void> {
+    return new Promise((resolve) => {
+      // Calculate distance to target
+      const dx = this.targetPosition.x - this.position.x;
+      const dy = this.targetPosition.y - this.position.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      // Calculate duration based on grid-based speed system
+      const cellWidth = 30; // Standard cell width
+      const duration = this.calculateFlightDuration(distance, cellWidth);
+
+      // Straight line animation
+      this.animation = gsap
+        .timeline()
+        .to(this.sprite, {
+          x: this.targetPosition.x,
+          y: this.targetPosition.y,
+          duration,
+          ease: 'none',
+          onUpdate: () => {
+            // Update position for collision detection
+            this.position.x = this.sprite.x;
+            this.position.y = this.sprite.y;
+
+            // Check for collisions during flight
+            if (!this.collided && this.onCollisionCheck) {
+              const collisionType = this.onCollisionCheck(this);
+
+              if (collisionType) {
+                // Collision detected! Stop the animation
+                this.collided = true;
+                this.collidedWith = collisionType;
+
+                if (this.animation) {
+                  this.animation.kill();
+                }
+
+                this.createImpactEffect();
+                resolve();
+              }
+            }
+          },
+        })
+        .call(() => {
+          // Only create impact if we haven't collided yet (reached target)
+          if (!this.collided) {
+            this.createImpactEffect();
+          }
+          resolve();
+        });
+    });
+  }
 
   /**
    * Create impact effect when projectile hits target

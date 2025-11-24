@@ -5,11 +5,6 @@
 import type { Position, StatType } from '../../../types/game';
 import { getProjectileType } from '../../../types/projectileTypes';
 import { BaseProjectile, type BaseProjectileConfig } from './BaseProjectile';
-import { RapidBulletProjectile } from './RapidBulletProjectile';
-import { BouncingOrbProjectile } from './BouncingOrbProjectile';
-import { HomingMissileProjectile } from './HomingMissileProjectile';
-import { ExplosiveFireballProjectile } from './ExplosiveFireballProjectile';
-import { PiercingSpearProjectile } from './PiercingSpearProjectile';
 
 export interface ProjectileFactoryConfig {
   id: string;
@@ -29,38 +24,14 @@ export class ProjectileFactory {
    */
   static create(config: ProjectileFactoryConfig): BaseProjectile {
     const typeConfig = getProjectileType(config.stat);
-    
+
     const baseConfig: BaseProjectileConfig = {
       ...config,
       typeConfig,
     };
 
-    // Create projectile based on behavior type
-    switch (typeConfig.behavior) {
-      case 'straight':
-        // POINTS - Rapid Fire Bullets
-        return new RapidBulletProjectile(baseConfig);
-
-      case 'arc':
-        // REB - Bouncing Orbs
-        return new BouncingOrbProjectile(baseConfig);
-
-      case 'homing':
-        // AST - Homing Missiles
-        return new HomingMissileProjectile(baseConfig);
-
-      case 'explosive':
-        // FIRE - Explosive Fireballs
-        return new ExplosiveFireballProjectile(baseConfig);
-
-      case 'piercing':
-        // SHIELD - Piercing Spears
-        return new PiercingSpearProjectile(baseConfig);
-
-      default:
-        console.error(`❌ Unknown projectile behavior: ${typeConfig.behavior}`);
-        return new RapidBulletProjectile(baseConfig);
-    }
+    // All projectiles use BaseProjectile (simple straight-line movement)
+    return new BaseProjectile(baseConfig);
   }
 
   /**
@@ -68,7 +39,7 @@ export class ProjectileFactory {
    */
   static createRapidFire(config: ProjectileFactoryConfig): BaseProjectile[] {
     const typeConfig = getProjectileType(config.stat);
-    
+
     // Check if this projectile type supports rapid fire
     if (!typeConfig.rapidFire || !typeConfig.rapidFireCount) {
       return [ProjectileFactory.create(config)];
@@ -81,7 +52,7 @@ export class ProjectileFactory {
 
     for (let i = 0; i < count; i++) {
       const offset = (i - (count - 1) / 2) * offsetY;
-      
+
       const projectileConfig: ProjectileFactoryConfig = {
         ...config,
         id: `${config.id}-${i}`,
