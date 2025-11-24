@@ -4,7 +4,7 @@
 
 .quarter-debug-controls {
   position: fixed;
-  bottom: 20px;
+  /* bottom is set dynamically via inline style based on index */
   right: 20px;
   background: linear-gradient(135deg, #1a1d29 0%, #2d3142 100%);
   border: 2px solid #4ecdc4;
