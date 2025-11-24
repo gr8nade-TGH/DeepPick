@@ -64,16 +64,21 @@ export const InventoryBar: React.FC<InventoryBarProps> = ({ battleId, side, onSl
     return () => window.removeEventListener('fire-orb-activated' as any, handleFireOrbActivation as any);
   }, [side]);
 
-  // Slot types: 1 = ATTACK (Fire Orb), 2 = DEFENSE (Blue Shield), 3 = UNIQUE
+  // Slot types: 1 = DEFENSE (top), 2 = ATTACK (middle), 3 = UNIQUE (bottom)
   const slots = [
-    { num: 2, type: 'DEFENSE', icon: '🛡️', slotKey: 'slot1' as const }, // Defense slot (slot 2 in UI, slot1 in data)
-    { num: 1, type: 'ATTACK', icon: '⚔️', slotKey: 'slot2' as const }, // Attack slot (slot 1 in UI, slot2 in data)
-    { num: 3, type: 'UNIQUE', icon: '✨', slotKey: 'slot3' as const }  // Unique slot
+    { num: 1, type: 'DEFENSE', icon: '🛡️', slotKey: 'slot1' as const },
+    { num: 2, type: 'ATTACK', icon: '⚔️', slotKey: 'slot2' as const },
+    { num: 3, type: 'UNIQUE', icon: '✨', slotKey: 'slot3' as const }
   ];
 
   const handleSlotClick = (slotNum: number) => {
+    console.log('🖱️ Slot clicked:', { battleId, side, slotNum, isPreGame, hasCallback: !!onSlotClick });
     if (isPreGame && onSlotClick) {
       onSlotClick(side, slotNum as 1 | 2 | 3);
+    } else if (!isPreGame) {
+      console.log('⚠️ Cannot change items - game already started');
+    } else if (!onSlotClick) {
+      console.log('⚠️ No onSlotClick callback provided');
     }
   };
 

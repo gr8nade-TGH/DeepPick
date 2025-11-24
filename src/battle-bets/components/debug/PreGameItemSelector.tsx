@@ -56,6 +56,19 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
 
     const { side, slot } = selectedSlot;
 
+    // Get item definition to check slot type
+    const item = AVAILABLE_ITEMS.find(i => i.id === itemId);
+    if (!item) return;
+
+    // Validate item type matches slot type
+    // Slot 1 = DEFENSE, Slot 2 = ATTACK, Slot 3 = UNIQUE
+    const slotType = slot === 1 ? 'defense' : slot === 2 ? 'attack' : 'unique';
+    if (item.slot !== slotType) {
+      console.error(`❌ Cannot equip ${item.name} in ${slotType} slot - item is for ${item.slot} slot`);
+      alert(`This item can only be equipped in the ${item.slot.toUpperCase()} slot!`);
+      return;
+    }
+
     if (side === 'left') {
       if (slot === 1) setLeftSlot1(itemId);
       if (slot === 2) setLeftSlot2(itemId);
@@ -147,22 +160,36 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
                 ❌ Clear Slot
               </button>
 
-              {AVAILABLE_ITEMS.map((item) => (
-                <button
-                  key={item.id}
-                  className="item-button"
-                  onClick={() => handleItemSelect(item.id)}
-                >
-                  <div className="item-button-content">
-                    <div className="item-icon-large">🛡️</div>
-                    <div className="item-details">
-                      <div className="item-name">{item.name}</div>
-                      <div className="item-team">{item.teamName}</div>
-                      <div className="item-description">{item.description}</div>
+              {(() => {
+                // Filter items by slot type
+                const slotType = selectedSlot.slot === 1 ? 'defense' : selectedSlot.slot === 2 ? 'attack' : 'unique';
+                const filteredItems = AVAILABLE_ITEMS.filter(item => item.slot === slotType);
+
+                if (filteredItems.length === 0) {
+                  return (
+                    <div style={{ padding: '20px', textAlign: 'center', color: 'rgba(255, 255, 255, 0.5)' }}>
+                      No {slotType} items available yet
                     </div>
-                  </div>
-                </button>
-              ))}
+                  );
+                }
+
+                return filteredItems.map((item) => (
+                  <button
+                    key={item.id}
+                    className="item-button"
+                    onClick={() => handleItemSelect(item.id)}
+                  >
+                    <div className="item-button-content">
+                      <div className="item-icon-large">🛡️</div>
+                      <div className="item-details">
+                        <div className="item-name">{item.name}</div>
+                        <div className="item-team">{item.teamName}</div>
+                        <div className="item-description">{item.description}</div>
+                      </div>
+                    </div>
+                  </button>
+                ));
+              })()}
             </div>
 
             <div className="picker-footer">
