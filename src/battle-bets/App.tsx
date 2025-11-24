@@ -13,8 +13,39 @@ import { CopyDebugButton } from './components/debug/CopyDebugButton';
 import { QuarterDebugControls } from './components/debug/QuarterDebugControls';
 import { PreGameItemSelector } from './components/debug/PreGameItemSelector';
 import { debugLogger } from './game/debug/DebugLogger';
-import type { Game } from './types/game';
+import type { Game, GameStatus } from './types/game';
 import './App.css';
+
+/**
+ * Map battle status from API to GameStatus format
+ * API: 'scheduled', 'q1_pending', 'q1_complete', 'q2_pending', etc.
+ * Game: 'SCHEDULED', '1Q', '2Q', '3Q', '4Q', 'OT', 'FINAL'
+ */
+function mapBattleStatusToGameStatus(status: string): GameStatus {
+  switch (status) {
+    case 'scheduled':
+      return 'SCHEDULED';
+    case 'q1_pending':
+    case 'q1_complete':
+      return '1Q';
+    case 'q2_pending':
+    case 'q2_complete':
+      return '2Q';
+    case 'halftime':
+      return '2Q'; // Halftime is still Q2
+    case 'q3_pending':
+    case 'q3_complete':
+      return '3Q';
+    case 'q4_pending':
+    case 'q4_complete':
+      return '4Q';
+    case 'final':
+    case 'complete':
+      return 'FINAL';
+    default:
+      return 'SCHEDULED';
+  }
+}
 
 // API Battle response type
 interface ApiBattle {
@@ -222,13 +253,13 @@ function App() {
             slot3: null
           }
         },
-        currentQuarter: 0,
+        currentQuarter: battle.current_quarter || 0,
         spread: battle.spread,
         gameDate: battle.game?.game_date || '',
         gameTime: '',
-        leftScore: 0,
-        rightScore: 0,
-        status: 'SCHEDULED',
+        leftScore: battle.left_score || 0,
+        rightScore: battle.right_score || 0,
+        status: mapBattleStatusToGameStatus(battle.status),
         // Store battle timing data for overlay
         _battleData: {
           status: battle.status,
