@@ -119,6 +119,8 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
       return;
     }
 
+    console.log('✅ Item selected:', { itemId, side, slot });
+
     if (side === 'left') {
       if (slot === 1) setLeftSlot1(itemId);
       if (slot === 2) setLeftSlot2(itemId);
@@ -129,9 +131,8 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
       if (slot === 3) setRightSlot3(itemId);
     }
 
+    // Close the slot selector but keep popup open
     setSelectedSlot(null);
-    setTimeout(updateBattleEquippedItems, 0);
-    onClose?.();
   };
 
   const handleClearSlot = () => {
@@ -149,8 +150,20 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
       if (slot === 3) setRightSlot3(null);
     }
 
+    // Close the slot selector but keep popup open
     setSelectedSlot(null);
-    setTimeout(updateBattleEquippedItems, 0);
+  };
+
+  const handleSaveAndClose = () => {
+    console.log('💾 [PreGameItemSelector] Saving items:', {
+      left: { slot1: leftSlot1, slot2: leftSlot2, slot3: leftSlot3 },
+      right: { slot1: rightSlot1, slot2: rightSlot2, slot3: rightSlot3 }
+    });
+
+    // Save to battle state
+    updateBattleEquippedItems();
+
+    // Close popup
     onClose?.();
   };
 
@@ -198,7 +211,7 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
     <>
       {/* Item Picker Popup (shows when slot selected) */}
       {selectedSlot && (
-        <div className="item-picker-overlay" onClick={() => { setSelectedSlot(null); onClose?.(); }}>
+        <div className="item-picker-overlay" onClick={() => setSelectedSlot(null)}>
           <div className="item-picker-popup" onClick={(e) => e.stopPropagation()}>
             <div className="picker-header">
               <h3>🛡️ SELECT ITEM</h3>
@@ -245,8 +258,11 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
             </div>
 
             <div className="picker-footer">
-              <button className="close-button" onClick={() => { setSelectedSlot(null); onClose?.(); }}>
-                Close
+              <button className="close-button" onClick={() => setSelectedSlot(null)}>
+                Back
+              </button>
+              <button className="save-button" onClick={handleSaveAndClose}>
+                💾 Save & Close
               </button>
             </div>
           </div>

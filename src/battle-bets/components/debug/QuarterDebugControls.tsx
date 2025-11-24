@@ -21,7 +21,6 @@ export const QuarterDebugControls: React.FC<QuarterDebugControlsProps> = ({ batt
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastAction, setLastAction] = useState<string>('');
   const [isCollapsed, setIsCollapsed] = useState(true); // Start collapsed
-  const [showItemSelector, setShowItemSelector] = useState(false);
   const [leftItems, setLeftItems] = useState<string[]>([]);
   const [rightItems, setRightItems] = useState<string[]>([]);
 
@@ -213,22 +212,13 @@ export const QuarterDebugControls: React.FC<QuarterDebugControlsProps> = ({ batt
 
       <div className="debug-actions">
         {gameStatus === 'SCHEDULED' && (
-          <>
-            <button
-              className="debug-btn item-btn"
-              onClick={() => setShowItemSelector(!showItemSelector)}
-              disabled={isProcessing}
-            >
-              🛡️ {showItemSelector ? 'Hide Items' : 'Equip Items'}
-            </button>
-            <button
-              className="debug-btn start-btn"
-              onClick={handleStartGame}
-              disabled={isProcessing}
-            >
-              🎬 Start Game (→ Q1)
-            </button>
-          </>
+          <button
+            className="debug-btn start-btn"
+            onClick={handleStartGame}
+            disabled={isProcessing}
+          >
+            🎬 Start Game (→ Q1)
+          </button>
         )}
 
         {gameStatus !== 'SCHEDULED' && gameStatus !== 'FINAL' && (
@@ -254,18 +244,6 @@ export const QuarterDebugControls: React.FC<QuarterDebugControlsProps> = ({ batt
         <div className="debug-feedback">
           {lastAction}
         </div>
-      )}
-
-      {/* Pre-Game Item Selector - Only show when SCHEDULED and selector is open */}
-      {gameStatus === 'SCHEDULED' && showItemSelector && (
-        <PreGameItemSelector
-          battleId={battleId}
-          onItemsChanged={(left, right) => {
-            setLeftItems(left);
-            setRightItems(right);
-            console.log(`🎮 [PreGame] Items updated - Left: ${left.join(', ')}, Right: ${right.join(', ')}`);
-          }}
-        />
       )}
     </div>
   );
