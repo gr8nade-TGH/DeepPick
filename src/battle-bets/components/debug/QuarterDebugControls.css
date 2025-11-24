@@ -106,6 +106,18 @@
   margin-bottom: 12px;
 }
 
+.debug-btn.item-btn {
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+  color: #1a1d29;
+  border: 2px solid rgba(255, 215, 0, 0.5);
+}
+
+.debug-btn.item-btn:hover {
+  background: linear-gradient(135deg, #ffe44d 0%, #fff176 100%);
+  border-color: rgba(255, 215, 0, 0.8);
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+}
+
 .debug-btn {
   padding: 10px 16px;
   border: none;
@@ -168,4 +180,3 @@
   text-align: center;
   border-left: 3px solid #4ecdc4;
 }
-

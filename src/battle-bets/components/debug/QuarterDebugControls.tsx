@@ -9,6 +9,9 @@ import { useMultiGameStore } from '../../store/multiGameStore';
 import { simulateQuarter } from '../../game/simulation/quarterSimulation';
 import type { GameStatus } from '../../types/game';
 import './QuarterDebugControls.css';
+import { PreGameItemSelector } from './PreGameItemSelector';
+import { itemEffectRegistry } from '../../game/items/ItemEffectRegistry';
+import { rollTestItem } from '../../game/items/ItemTestUtils';
 
 interface QuarterDebugControlsProps {
   battleId: string;
@@ -18,6 +21,9 @@ export const QuarterDebugControls: React.FC<QuarterDebugControlsProps> = ({ batt
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastAction, setLastAction] = useState<string>('');
   const [isCollapsed, setIsCollapsed] = useState(true); // Start collapsed
+  const [showItemSelector, setShowItemSelector] = useState(false);
+  const [leftItems, setLeftItems] = useState<string[]>([]);
+  const [rightItems, setRightItems] = useState<string[]>([]);
 
   const battle = useMultiGameStore(state => state.getBattle(battleId));
 
@@ -41,13 +47,36 @@ export const QuarterDebugControls: React.FC<QuarterDebugControlsProps> = ({ batt
     setLastAction('Starting game...');
 
     try {
-      // Update status to Q1
+      // STEP 1: Activate equipped items BEFORE battle starts
+      console.log(`🎮 [PreGame] Activating equipped items for battle ${battleId}`);
+
+      // Activate left side items
+      for (const itemId of leftItems) {
+        const rolled = rollTestItem(itemId);
+        if (rolled) {
+          await itemEffectRegistry.activateItem(battleId, 'left', rolled);
+          console.log(`✅ [PreGame] Activated ${itemId} on LEFT side`);
+        }
+      }
+
+      // Activate right side items
+      for (const itemId of rightItems) {
+        const rolled = rollTestItem(itemId);
+        if (rolled) {
+          await itemEffectRegistry.activateItem(battleId, 'right', rolled);
+          console.log(`✅ [PreGame] Activated ${itemId} on RIGHT side`);
+        }
+      }
+
+      console.log(`✅ [PreGame] All items activated!`);
+
+      // STEP 2: Update status to Q1
       useMultiGameStore.getState().updateGameStatus(battleId, '1Q');
       useMultiGameStore.getState().setCurrentQuarter(battleId, 1);
 
       setLastAction('⏳ Simulating Q1...');
 
-      // Simulate Q1 (this will generate stats and fire projectiles)
+      // STEP 3: Simulate Q1 (this will generate stats and fire projectiles)
       await simulateQuarter(battleId, 1);
 
       // Check if game ended
@@ -184,13 +213,22 @@ export const QuarterDebugControls: React.FC<QuarterDebugControlsProps> = ({ batt
 
       <div className="debug-actions">
         {gameStatus === 'SCHEDULED' && (
-          <button
-            className="debug-btn start-btn"
-            onClick={handleStartGame}
-            disabled={isProcessing}
-          >
-            🎬 Start Game (→ Q1)
-          </button>
+          <>
+            <button
+              className="debug-btn item-btn"
+              onClick={() => setShowItemSelector(!showItemSelector)}
+              disabled={isProcessing}
+            >
+              🛡️ {showItemSelector ? 'Hide Items' : 'Equip Items'}
+            </button>
+            <button
+              className="debug-btn start-btn"
+              onClick={handleStartGame}
+              disabled={isProcessing}
+            >
+              🎬 Start Game (→ Q1)
+            </button>
+          </>
         )}
 
         {gameStatus !== 'SCHEDULED' && gameStatus !== 'FINAL' && (
@@ -216,6 +254,18 @@ export const QuarterDebugControls: React.FC<QuarterDebugControlsProps> = ({ batt
         <div className="debug-feedback">
           {lastAction}
         </div>
+      )}
+
+      {/* Pre-Game Item Selector - Only show when SCHEDULED and selector is open */}
+      {gameStatus === 'SCHEDULED' && showItemSelector && (
+        <PreGameItemSelector
+          battleId={battleId}
+          onItemsChanged={(left, right) => {
+            setLeftItems(left);
+            setRightItems(right);
+            console.log(`🎮 [PreGame] Items updated - Left: ${left.join(', ')}, Right: ${right.join(', ')}`);
+          }}
+        />
       )}
     </div>
   );
