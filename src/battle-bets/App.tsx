@@ -378,7 +378,7 @@ function App() {
                       q3EndTime={(game as any)._battleData?.q3EndTime}
                       q4EndTime={(game as any)._battleData?.q4EndTime}
                       winner={(game as any)._battleData?.winner}
-                      autoStart={index === 0}
+                      autoStart={false}
                     />
                   </div>
 

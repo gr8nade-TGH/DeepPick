@@ -152,6 +152,11 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
 
           setContainerReady(true)
 
+          // Get HP from store (fixed at 20 for both teams)
+          const battle = getBattle(battleId)
+          const leftHP = battle?.capperHP.get('left') || { currentHP: 20, maxHP: 20 }
+          const rightHP = battle?.capperHP.get('right') || { currentHP: 20, maxHP: 20 }
+
           // Add castles for this battle
           await castleManager.addCastle(battleId, {
             id: `${battleId}-left`,
@@ -160,8 +165,8 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
             capperRank: 'KNIGHT',
             capperLevel: game.leftCapper.level,
             position: gridManager.getCastleBoxPosition('left'),
-            maxHP: game.leftCapper.maxHealth,
-            currentHP: game.leftCapper.health,
+            maxHP: leftHP.maxHP,
+            currentHP: leftHP.currentHP,
             scale: 0.25,
             boxWidth: 140,
             side: 'left',
@@ -174,8 +179,8 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
             capperRank: 'KNIGHT',
             capperLevel: game.rightCapper.level,
             position: gridManager.getCastleBoxPosition('right'),
-            maxHP: game.rightCapper.maxHealth,
-            currentHP: game.rightCapper.health,
+            maxHP: rightHP.maxHP,
+            currentHP: rightHP.currentHP,
             scale: 0.25,
             boxWidth: 140,
             side: 'right',
