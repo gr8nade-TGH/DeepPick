@@ -197,13 +197,12 @@ export const QuarterDebugControls: React.FC<QuarterDebugControlsProps> = ({ batt
       style={{
         bottom: 20,
         position: 'fixed',
-        left: isLeft ? 20 : 'auto',
-        right: isLeft ? 'auto' : 20,
+        ...(isLeft ? { left: 20 } : { right: 20 }),
         zIndex: 9999
       }}
     >
       <div className="debug-header">
-        <h3>🎮 Quarter Debug Controls {index + 1}</h3>
+        <h3>🎮 {leftTeam} vs {rightTeam} - Control #{index + 1}</h3>
         <div className="debug-status">
           <span className="status-badge">{gameStatus}</span>
           <span className="quarter-badge">Q{currentQuarter}</span>
