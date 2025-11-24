@@ -89,9 +89,10 @@ export class BaseProjectile {
     this.sprite.y = config.startPosition.y;
     this.sprite.alpha = 1;
     this.sprite.visible = true;
-    // Set scale based on side (flip horizontally for right side)
-    this.sprite.scale.set(config.side === 'left' ? 1 : -1, 1);
-    this.sprite.rotation = 0;
+    // Don't flip scale - it breaks GSAP animation direction
+    // Instead, rotation will handle direction
+    this.sprite.scale.set(1, 1);
+    this.setRotation(); // Set rotation based on side (left=0°, right=180°)
 
     // Kill any existing animations
     if (this.animation) {
