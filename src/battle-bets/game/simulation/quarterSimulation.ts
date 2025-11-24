@@ -47,6 +47,71 @@ interface QuarterStats {
 }
 
 /**
+ * Fetch real quarter stats from MySportsFeeds API
+ * Falls back to random stats if API fails or data is unavailable
+ */
+async function fetchRealQuarterStats(
+  gameId: string,
+  quarter: number,
+  leftTeam: string,
+  rightTeam: string
+): Promise<{ left: QuarterStats; right: QuarterStats } | null> {
+  try {
+    console.log(`[Quarter Stats] Fetching real data for ${gameId} Q${quarter}...`);
+
+    // Call the existing sync-quarter-stats API endpoint
+    const response = await fetch(`/api/battle-bets/sync-quarter-stats?gameId=${gameId}&quarter=${quarter}`);
+
+    if (!response.ok) {
+      console.warn(`[Quarter Stats] API returned ${response.status}, falling back to random stats`);
+      return null;
+    }
+
+    const data = await response.json();
+
+    if (!data.success || !data.quarterStats) {
+      console.warn('[Quarter Stats] No quarter stats in response, falling back to random stats');
+      return null;
+    }
+
+    const stats = data.quarterStats;
+
+    // Convert API response to QuarterStats format
+    // Note: API returns team scores, we need to aggregate player stats
+    const leftStats: QuarterStats = {
+      points: stats.leftScore || 0,
+      rebounds: aggregatePlayerStat(stats.leftPlayers, 'rebounds'),
+      assists: aggregatePlayerStat(stats.leftPlayers, 'assists'),
+      steals: aggregatePlayerStat(stats.leftPlayers, 'steals') || Math.floor(Math.random() * 4), // Fallback if steals not available
+      threePointers: aggregatePlayerStat(stats.leftPlayers, 'threePointers')
+    };
+
+    const rightStats: QuarterStats = {
+      points: stats.rightScore || 0,
+      rebounds: aggregatePlayerStat(stats.rightPlayers, 'rebounds'),
+      assists: aggregatePlayerStat(stats.rightPlayers, 'assists'),
+      steals: aggregatePlayerStat(stats.rightPlayers, 'steals') || Math.floor(Math.random() * 4), // Fallback if steals not available
+      threePointers: aggregatePlayerStat(stats.rightPlayers, 'threePointers')
+    };
+
+    console.log(`[Quarter Stats] Real data fetched: ${leftTeam} ${leftStats.points}-${rightStats.points} ${rightTeam}`);
+
+    return { left: leftStats, right: rightStats };
+  } catch (error) {
+    console.error('[Quarter Stats] Failed to fetch real stats:', error);
+    return null;
+  }
+}
+
+/**
+ * Aggregate a specific stat from player array
+ */
+function aggregatePlayerStat(players: any[], statName: string): number {
+  if (!players || !Array.isArray(players)) return 0;
+  return players.reduce((sum, player) => sum + (player[statName] || 0), 0);
+}
+
+/**
  * Check if a capper has the Fire Orb equipped and calculate bonus FIRE projectiles
  * Fire Orb: For every 5 POINTS projectiles, fire 1 bonus FIRE projectile
  *
@@ -127,8 +192,34 @@ export async function simulateQuarter(
 
   console.log(`✅ Collision manager callbacks configured for battle ${battleId}`);
 
-  // Get quarter stats for both teams
-  const quarterData = getQuarterData(quarterNumber);
+  // Try to get real quarter stats from MySportsFeeds API
+  // Fall back to random stats if API fails or data is unavailable
+  let quarterData: { left: QuarterStats; right: QuarterStats };
+
+  // Check if we have a real game ID (format: YYYYMMDD-AWAY-HOME)
+  const gameIdForAPI = battle.game.id || battle.game.gameId;
+  const hasRealGameId = gameIdForAPI && gameIdForAPI.includes('-');
+
+  if (hasRealGameId) {
+    console.log(`🌐 Attempting to fetch real quarter stats from MySportsFeeds for game ${gameIdForAPI}...`);
+    const realData = await fetchRealQuarterStats(
+      gameIdForAPI,
+      quarterNumber,
+      battle.game.leftTeam.abbreviation,
+      battle.game.rightTeam.abbreviation
+    );
+
+    if (realData) {
+      quarterData = realData;
+      console.log(`✅ Using REAL MySportsFeeds data for Q${quarterNumber}`);
+    } else {
+      quarterData = getQuarterData(quarterNumber);
+      console.log(`⚠️ MySportsFeeds data unavailable, using RANDOM stats for Q${quarterNumber}`);
+    }
+  } else {
+    quarterData = getQuarterData(quarterNumber);
+    console.log(`⚠️ No real game ID found, using RANDOM stats for Q${quarterNumber}`);
+  }
 
   console.log(
     `📊 ${battle.game.leftTeam.abbreviation}: PTS=${quarterData.left.points} REB=${quarterData.left.rebounds} AST=${quarterData.left.assists} STL=${quarterData.left.steals} 3PM=${quarterData.left.threePointers}`

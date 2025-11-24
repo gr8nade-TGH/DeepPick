@@ -82,10 +82,10 @@ async function fetchBoxscore(gameId: string): Promise<any> {
 
 /**
  * Extract quarter stats from boxscore data
- * 
+ *
  * Returns stats for a specific quarter including:
  * - Team scores for the quarter
- * - Player stats (PTS, REB, AST, BLK, 3PT) for the quarter
+ * - Player stats (PTS, REB, AST, STL, 3PT) for the quarter
  */
 function extractQuarterStats(boxscore: any, quarter: number, leftTeam: string, rightTeam: string): any {
   const periodSummary = boxscore.periodSummary
@@ -128,7 +128,7 @@ function extractQuarterStats(boxscore: any, quarter: number, leftTeam: string, r
       points: entry.stats?.fieldGoals?.['2PtMade'] * 2 + entry.stats?.fieldGoals?.['3PtMade'] * 3 + entry.stats?.freeThrows?.ftMade || 0,
       rebounds: entry.stats?.rebounds?.reb || 0,
       assists: entry.stats?.offense?.ast || 0,
-      blocks: entry.stats?.defense?.blk || 0,
+      steals: entry.stats?.defense?.stl || 0, // Changed from blocks to steals
       threePointers: entry.stats?.fieldGoals?.['3PtMade'] || 0
     }))
   }
