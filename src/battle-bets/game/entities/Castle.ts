@@ -657,11 +657,26 @@ export class Castle {
    * Update HP bar visual based on current HP
    */
   private updateHPBar(): void {
-    if (!this.hpBarFill || !this.sprite || !this.hpText) return;
+    console.log(`🎨 [Castle.updateHPBar] Called for castle ${this.id}, currentHP=${this.currentHP}, maxHP=${this.maxHP}`);
+
+    if (!this.hpBarFill) {
+      console.error(`❌ [Castle.updateHPBar] Missing hpBarFill for castle ${this.id}`);
+      return;
+    }
+    if (!this.sprite) {
+      console.error(`❌ [Castle.updateHPBar] Missing sprite for castle ${this.id}`);
+      return;
+    }
+    if (!this.hpText) {
+      console.error(`❌ [Castle.updateHPBar] Missing hpText for castle ${this.id}`);
+      return;
+    }
 
     const hpPercent = this.getHPPercentage();
     const castleWidth = this.sprite.width;
     const barWidth = castleWidth * 0.8;
+
+    console.log(`🎨 [Castle.updateHPBar] hpPercent=${hpPercent.toFixed(2)}, castleWidth=${castleWidth.toFixed(1)}, barWidth=${barWidth.toFixed(1)}`);
 
     // Update fill width
     this.hpBarFill.clear();
@@ -679,8 +694,11 @@ export class Castle {
     this.hpBarFill.fill({ color });
 
     // Update HP text
+    const oldText = this.hpText.text;
     this.hpText.text = `${this.currentHP}/${this.maxHP}`;
     this.hpText.style.fill = color; // Match text color to bar color
+
+    console.log(`✅ [Castle.updateHPBar] HP bar updated! Text: "${oldText}" → "${this.hpText.text}", color=${color.toString(16)}, hpPercent=${hpPercent.toFixed(2)}`);
   }
 
   /**
