@@ -5,10 +5,12 @@
 
 import React, { useEffect, useState } from 'react';
 import './InventoryBar.css';
+import '../debug/ItemTooltip.css';
 import { castleManager } from '../../game/managers/CastleManager';
 import { useMultiGameStore } from '../../store/multiGameStore';
 import { LAL_IRONMAN_ARMOR_DEFINITION } from '../../game/items/effects/LAL_IronmanArmor';
 import type { ItemDefinition } from '../../game/items/ItemRollSystem';
+import { ItemTooltip } from '../debug/ItemTooltip';
 
 // Available items registry
 const ITEM_REGISTRY: Record<string, ItemDefinition> = {
@@ -29,6 +31,11 @@ interface InventoryBarProps {
 
 export const InventoryBar: React.FC<InventoryBarProps> = ({ battleId, side, onSlotClick }) => {
   const [isFireOrbPulsing, setIsFireOrbPulsing] = useState(false);
+  const [tooltipData, setTooltipData] = useState<{
+    item: ItemDefinition;
+    x: number;
+    y: number;
+  } | null>(null);
 
   // Get battle and equipped items from store
   const battle = useMultiGameStore(state => state.getBattle(battleId));
@@ -71,6 +78,19 @@ export const InventoryBar: React.FC<InventoryBarProps> = ({ battleId, side, onSl
     } else if (!onSlotClick) {
       console.log('⚠️ No onSlotClick callback provided');
     }
+  };
+
+  const handleItemHover = (event: React.MouseEvent, item: ItemDefinition) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setTooltipData({
+      item,
+      x: rect.right + 10,
+      y: rect.top,
+    });
+  };
+
+  const handleItemLeave = () => {
+    setTooltipData(null);
   };
 
   // Render Blue Shield Ring SVG
@@ -141,8 +161,13 @@ export const InventoryBar: React.FC<InventoryBarProps> = ({ battleId, side, onSl
           <div
             key={slot.num}
             className={`inventory-slot ${isEmpty ? 'inventory-slot-empty' : 'inventory-slot-equipped'} ${isPreGame ? 'inventory-slot-clickable' : ''}`}
-            title={isEmpty ? `${slot.type} Item Slot (Empty)` : equippedItem.name}
             onClick={() => handleSlotClick(slot.num)}
+            onMouseEnter={(e) => {
+              if (!isEmpty && equippedItem) {
+                handleItemHover(e, equippedItem);
+              }
+            }}
+            onMouseLeave={handleItemLeave}
             style={{ cursor: isPreGame ? 'pointer' : 'default' }}
           >
             {isEmpty ? (
@@ -159,6 +184,21 @@ export const InventoryBar: React.FC<InventoryBarProps> = ({ battleId, side, onSl
           </div>
         );
       })}
+
+      {/* Tooltip */}
+      {tooltipData && (
+        <div
+          style={{
+            position: 'fixed',
+            left: `${tooltipData.x}px`,
+            top: `${tooltipData.y}px`,
+            zIndex: 10001,
+            pointerEvents: 'none',
+          }}
+        >
+          <ItemTooltip item={tooltipData.item} />
+        </div>
+      )}
     </div>
   );
 };
