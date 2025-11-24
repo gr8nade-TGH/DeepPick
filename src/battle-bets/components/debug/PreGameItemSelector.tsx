@@ -142,6 +142,19 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
 
     const { side, slot } = selectedSlot;
 
+    // Get the current item before clearing
+    let currentItem: string | null = null;
+    if (side === 'left') {
+      if (slot === 1) currentItem = leftSlot1;
+      if (slot === 2) currentItem = leftSlot2;
+      if (slot === 3) currentItem = leftSlot3;
+    } else {
+      if (slot === 1) currentItem = rightSlot1;
+      if (slot === 2) currentItem = rightSlot2;
+      if (slot === 3) currentItem = rightSlot3;
+    }
+
+    // Clear the slot
     if (side === 'left') {
       if (slot === 1) setLeftSlot1(null);
       if (slot === 2) setLeftSlot2(null);
@@ -150,6 +163,19 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
       if (slot === 1) setRightSlot1(null);
       if (slot === 2) setRightSlot2(null);
       if (slot === 3) setRightSlot3(null);
+    }
+
+    // If clearing a defense item (slot 1), deactivate shield immediately
+    if (slot === 1 && currentItem === 'LAL_def_ironman_armor') {
+      const castleId = `${battleId}-${side}`;
+      console.log(`🛡️ [PreGameItemSelector] Clearing Ironman Armor from ${side} side, deactivating shield`);
+
+      castleHealthSystem.deactivateShield(castleId);
+      const castle = castleManager.getCastle(battleId, castleId);
+      if (castle) {
+        castle.deactivateShield();
+        console.log(`✅ [PreGameItemSelector] Shield deactivated for ${side.toUpperCase()} castle`);
+      }
     }
 
     // Close the slot selector but keep popup open
