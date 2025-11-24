@@ -16,6 +16,7 @@ import { gridManager } from '../../game/managers/GridManager'
 import { pixiManager } from '../../game/managers/PixiManager'
 import { runDebugBattleForMultiStore } from '../../game/simulation/quarterSimulation'
 import { QuarterDebugControls } from '../debug/QuarterDebugControls'
+import { DebugToggleButton } from '../debug/DebugToggleButton'
 import type { Game } from '../../types/game'
 import type { BattleStatus } from '@/lib/battle-bets/BattleTimer'
 
@@ -350,6 +351,10 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
     )
   }
 
+  // Check if debug mode is enabled via URL parameter
+  const isDebugMode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === '1';
+  const [showDebugControls, setShowDebugControls] = useState(isDebugMode);
+
   return (
     <div className="relative w-full h-full">
       {/* PixiJS Canvas with integrated overlays */}
@@ -358,8 +363,41 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
         className="flex justify-center items-center w-full h-full"
       />
 
-      {/* Quarter Debug Controls - Only show in development */}
-      {process.env.NODE_ENV === 'development' && (
+      {/* Debug Toggle Button - Always visible */}
+      <button
+        onClick={() => setShowDebugControls(!showDebugControls)}
+        style={{
+          position: 'fixed',
+          top: '20px',
+          right: '20px',
+          background: showDebugControls ? 'linear-gradient(135deg, #4ecdc4 0%, #44a8a0 100%)' : 'linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%)',
+          color: '#fff',
+          border: '2px solid #fff',
+          borderRadius: '8px',
+          padding: '10px 20px',
+          fontSize: '14px',
+          fontWeight: '700',
+          cursor: 'pointer',
+          zIndex: 10000,
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)',
+          transition: 'all 0.2s ease',
+          textTransform: 'uppercase',
+          letterSpacing: '1px',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-2px)';
+          e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.5)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.4)';
+        }}
+      >
+        {showDebugControls ? '🐛 DEBUG ON' : '🐛 DEBUG'}
+      </button>
+
+      {/* Quarter Debug Controls - Show when debug is enabled */}
+      {showDebugControls && (
         <QuarterDebugControls battleId={battleId} />
       )}
     </div>

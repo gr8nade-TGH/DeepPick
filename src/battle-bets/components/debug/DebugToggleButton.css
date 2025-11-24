@@ -1,0 +1,33 @@
+/**
+ * Debug Toggle Button Styles
+ */
+
+.debug-toggle-button {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+  color: #fff;
+  border: 2px solid #fff;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  z-index: 10000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.debug-toggle-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+  background: linear-gradient(135deg, #ff7b7b 0%, #fe6a62 100%);
+}
+
+.debug-toggle-button:active {
+  transform: translateY(0);
+}
+
