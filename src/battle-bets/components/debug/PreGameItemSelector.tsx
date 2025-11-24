@@ -209,65 +209,100 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
 
   return (
     <>
-      {/* Item Picker Popup (shows when slot selected) */}
-      {selectedSlot && (
-        <div className="item-picker-overlay" onClick={() => setSelectedSlot(null)}>
-          <div className="item-picker-popup" onClick={(e) => e.stopPropagation()}>
-            <div className="picker-header">
-              <h3>🛡️ SELECT ITEM</h3>
-              <p>
-                {selectedSlot.side.toUpperCase()} CAPPER - Slot {selectedSlot.slot}
-              </p>
-            </div>
+      {/* Main Popup Overlay - Always visible when component is rendered */}
+      <div className="item-picker-overlay" onClick={onClose}>
+        <div className="item-picker-popup" onClick={(e) => e.stopPropagation()}>
+          {selectedSlot ? (
+            <>
+              {/* Item Picker - Shows when a slot is selected */}
+              <div className="picker-header">
+                <h3>🛡️ SELECT ITEM</h3>
+                <p>
+                  {selectedSlot.side.toUpperCase()} CAPPER - Slot {selectedSlot.slot}
+                </p>
+              </div>
 
-            <div className="picker-body">
-              <button className="clear-button" onClick={handleClearSlot}>
-                ❌ Clear Slot
-              </button>
+              <div className="picker-body">
+                <button className="clear-button" onClick={handleClearSlot}>
+                  ❌ Clear Slot
+                </button>
 
-              {(() => {
-                // Filter items by slot type
-                const slotType = selectedSlot.slot === 1 ? 'defense' : selectedSlot.slot === 2 ? 'attack' : 'unique';
-                const filteredItems = AVAILABLE_ITEMS.filter(item => item.slot === slotType);
+                {(() => {
+                  // Filter items by slot type
+                  const slotType = selectedSlot.slot === 1 ? 'defense' : selectedSlot.slot === 2 ? 'attack' : 'unique';
+                  const filteredItems = AVAILABLE_ITEMS.filter(item => item.slot === slotType);
 
-                if (filteredItems.length === 0) {
-                  return (
-                    <div style={{ padding: '20px', textAlign: 'center', color: 'rgba(255, 255, 255, 0.5)' }}>
-                      No {slotType} items available yet
-                    </div>
-                  );
-                }
-
-                return filteredItems.map((item) => (
-                  <button
-                    key={item.id}
-                    className="item-button"
-                    onClick={() => handleItemSelect(item.id)}
-                  >
-                    <div className="item-button-content">
-                      <div className="item-icon-large">🛡️</div>
-                      <div className="item-details">
-                        <div className="item-name">{item.name}</div>
-                        <div className="item-team">{item.teamName}</div>
-                        <div className="item-description">{item.description}</div>
+                  if (filteredItems.length === 0) {
+                    return (
+                      <div style={{ padding: '20px', textAlign: 'center', color: 'rgba(255, 255, 255, 0.5)' }}>
+                        No {slotType} items available yet
                       </div>
-                    </div>
-                  </button>
-                ));
-              })()}
-            </div>
+                    );
+                  }
 
-            <div className="picker-footer">
-              <button className="close-button" onClick={() => setSelectedSlot(null)}>
-                Back
-              </button>
-              <button className="save-button" onClick={handleSaveAndClose}>
-                💾 Save & Close
-              </button>
-            </div>
-          </div>
+                  return filteredItems.map((item) => (
+                    <button
+                      key={item.id}
+                      className="item-button"
+                      onClick={() => handleItemSelect(item.id)}
+                    >
+                      <div className="item-button-content">
+                        <div className="item-icon-large">🛡️</div>
+                        <div className="item-details">
+                          <div className="item-name">{item.name}</div>
+                          <div className="item-team">{item.teamName}</div>
+                          <div className="item-description">{item.description}</div>
+                        </div>
+                      </div>
+                    </button>
+                  ));
+                })()}
+              </div>
+
+              <div className="picker-footer">
+                <button className="close-button" onClick={() => setSelectedSlot(null)}>
+                  Back
+                </button>
+                <button className="save-button" onClick={handleSaveAndClose}>
+                  💾 Save & Close
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Main View - Shows all equipped items */}
+              <div className="picker-header">
+                <h3>⚔️ EQUIPPED ITEMS</h3>
+                <p>Click a slot to change items</p>
+              </div>
+
+              <div className="picker-body">
+                {/* Left Side Slots */}
+                <div style={{ marginBottom: '20px' }}>
+                  <h4 style={{ color: '#ffd700', marginBottom: '12px' }}>LEFT CAPPER</h4>
+                  {renderSlotPreview('left', 1)}
+                  {renderSlotPreview('left', 2)}
+                  {renderSlotPreview('left', 3)}
+                </div>
+
+                {/* Right Side Slots */}
+                <div>
+                  <h4 style={{ color: '#ffd700', marginBottom: '12px' }}>RIGHT CAPPER</h4>
+                  {renderSlotPreview('right', 1)}
+                  {renderSlotPreview('right', 2)}
+                  {renderSlotPreview('right', 3)}
+                </div>
+              </div>
+
+              <div className="picker-footer">
+                <button className="save-button" onClick={handleSaveAndClose}>
+                  💾 Save & Close
+                </button>
+              </div>
+            </>
+          )}
         </div>
-      )}
+      </div>
     </>
   );
 };
