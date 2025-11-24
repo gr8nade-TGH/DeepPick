@@ -27,6 +27,9 @@ export const QuarterDebugControls: React.FC<QuarterDebugControlsProps> = ({ batt
 
   const battle = useMultiGameStore(state => state.getBattle(battleId));
 
+  // DEBUG: Log the index and position
+  console.log(`🎮 QuarterDebugControls rendered: battleId=${battleId}, index=${index}, position=${index === 0 ? 'LEFT' : 'RIGHT'}`);
+
   if (!battle) return null;
 
   const currentQuarter = battle.currentQuarter;
