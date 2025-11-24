@@ -97,18 +97,6 @@ export class BouncingOrbProjectile extends BaseProjectile {
       const cellWidth = gridManager.getCellWidth();
       const duration = this.calculateFlightDuration(distance, cellWidth);
 
-      // Register with debugger
-      projectileDebugger.registerProjectile(
-        this.gameId,
-        this.id,
-        this.side,
-        this.position.x,
-        this.position.y,
-        this.targetPosition.x,
-        this.targetPosition.y,
-        this.getEffectiveSpeed()
-      );
-
       // Straight line animation (stays in lane)
       this.animation = gsap
         .timeline()

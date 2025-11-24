@@ -148,18 +148,6 @@ export class HomingMissileProjectile extends BaseProjectile {
       // Lock-on indicator before firing
       this.createLockOnIndicator();
 
-      // Register with debugger
-      projectileDebugger.registerProjectile(
-        this.gameId,
-        this.id,
-        this.side,
-        this.position.x,
-        this.position.y,
-        this.targetPosition.x,
-        this.targetPosition.y,
-        this.getEffectiveSpeed()
-      );
-
       // Animate with bezier curve
       this.animation = gsap
         .timeline()
@@ -181,9 +169,6 @@ export class HomingMissileProjectile extends BaseProjectile {
             this.position.x = this.sprite.x;
             this.position.y = this.sprite.y;
 
-            // Update debugger
-            projectileDebugger.updateProjectile(this.gameId, this.id, this.sprite.x, this.sprite.y);
-
             // Check for collisions during flight
             if (!this.collided && this.onCollisionCheck) {
               const collisionType = this.onCollisionCheck(this);
@@ -196,15 +181,6 @@ export class HomingMissileProjectile extends BaseProjectile {
                   this.animation.kill();
                 }
 
-                // Mark collision in debugger
-                projectileDebugger.markCollision(
-                  this.gameId,
-                  this.id,
-                  this.sprite.x,
-                  this.sprite.y,
-                  collisionType === 'projectile' ? 'PROJ' : 'DEF'
-                );
-
                 this.createImpactEffect();
                 resolve();
               }
@@ -213,7 +189,6 @@ export class HomingMissileProjectile extends BaseProjectile {
         })
         .call(() => {
           if (!this.collided) {
-            projectileDebugger.markCollision(this.gameId, this.id, this.sprite.x, this.sprite.y, 'TARGET');
             this.createImpactEffect();
           }
           resolve();

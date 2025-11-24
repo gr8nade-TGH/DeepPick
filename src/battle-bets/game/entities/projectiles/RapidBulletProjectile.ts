@@ -89,18 +89,6 @@ export class RapidBulletProjectile extends BaseProjectile {
       const cellWidth = gridManager.getCellWidth();
       const duration = this.calculateFlightDuration(distance, cellWidth);
 
-      // Register with debugger
-      projectileDebugger.registerProjectile(
-        this.gameId,
-        this.id,
-        this.side,
-        this.position.x,
-        this.position.y,
-        this.targetPosition.x,
-        this.targetPosition.y,
-        this.getEffectiveSpeed()
-      );
-
       // Muzzle flash effect at start
       this.createMuzzleFlash();
 
@@ -119,9 +107,6 @@ export class RapidBulletProjectile extends BaseProjectile {
             this.position.x = this.sprite.x;
             this.position.y = this.sprite.y;
 
-            // Update debugger
-            projectileDebugger.updateProjectile(this.gameId, this.id, this.sprite.x, this.sprite.y);
-
             // Debug: Log collision check attempt (sample 1% to avoid spam)
             if (Math.random() < 0.01) {
               console.log(`🔄 [ON UPDATE] ${this.id} | collided: ${this.collided}, hasCallback: ${!!this.onCollisionCheck}`);
@@ -135,15 +120,6 @@ export class RapidBulletProjectile extends BaseProjectile {
                 // Collision detected! Stop the animation
                 this.collided = true;
                 this.collidedWith = collisionType;
-
-                // Mark collision in debugger
-                projectileDebugger.markCollision(
-                  this.gameId,
-                  this.id,
-                  this.sprite.x,
-                  this.sprite.y,
-                  collisionType === 'projectile' ? 'PROJ' : 'DEF'
-                );
 
                 // Kill the animation immediately
                 if (this.animation) {
@@ -160,7 +136,6 @@ export class RapidBulletProjectile extends BaseProjectile {
         .call(() => {
           // Only create impact if we haven't collided yet (reached target)
           if (!this.collided) {
-            projectileDebugger.markCollision(this.gameId, this.id, this.sprite.x, this.sprite.y, 'TARGET');
             this.createImpactEffect();
           }
           resolve();
