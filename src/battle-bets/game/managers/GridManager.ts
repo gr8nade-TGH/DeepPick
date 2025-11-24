@@ -422,10 +422,8 @@ class GridManagerClass {
         continue;
       }
 
-      // DEBUG: Log first 2 cells being checked
-      if (i < 2) {
-        console.log(`  🔍 Checking ${cellId}: X[${cell.bounds.x}-${cell.bounds.x + cell.bounds.width}] Y[${cell.bounds.y}-${cell.bounds.y + cell.bounds.height}]`);
-      }
+      // DEBUG: Log ALL cells being checked
+      console.log(`  🔍 Checking ${cellId}: X[${cell.bounds.x.toFixed(1)}-${(cell.bounds.x + cell.bounds.width).toFixed(1)}] Y[${cell.bounds.y}-${cell.bounds.y + cell.bounds.height}]`);
 
       // Check if position is within cell bounds
       if (
