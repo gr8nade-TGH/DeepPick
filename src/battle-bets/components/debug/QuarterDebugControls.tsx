@@ -17,15 +17,20 @@ interface QuarterDebugControlsProps {
 export const QuarterDebugControls: React.FC<QuarterDebugControlsProps> = ({ battleId }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastAction, setLastAction] = useState<string>('');
+  const [isCollapsed, setIsCollapsed] = useState(true); // Start collapsed
 
   const battle = useMultiGameStore(state => state.getBattle(battleId));
-  
+
   if (!battle) return null;
 
   const currentQuarter = battle.currentQuarter;
   const gameStatus = battle.game.status || 'SCHEDULED';
   const leftHP = battle.capperHP.get('left')?.currentHP ?? 0;
   const rightHP = battle.capperHP.get('right')?.currentHP ?? 0;
+
+  // Get team abbreviations for display
+  const leftTeam = battle.game.awayTeam?.abbreviation || 'L';
+  const rightTeam = battle.game.homeTeam?.abbreviation || 'R';
 
   /**
    * Force start the game (SCHEDULED → Q1)
@@ -39,7 +44,7 @@ export const QuarterDebugControls: React.FC<QuarterDebugControlsProps> = ({ batt
       // Update status to Q1
       useMultiGameStore.getState().updateGameStatus(battleId, '1Q');
       useMultiGameStore.getState().setCurrentQuarter(battleId, 1);
-      
+
       setLastAction('✅ Game started - Q1 ready');
     } catch (error) {
       console.error('Failed to start game:', error);
@@ -58,7 +63,7 @@ export const QuarterDebugControls: React.FC<QuarterDebugControlsProps> = ({ batt
 
     try {
       const nextQuarter = currentQuarter + 1;
-      
+
       // Check if game is over
       if (leftHP <= 0 || rightHP <= 0) {
         setLastAction('❌ Game already over - castle destroyed');
@@ -122,13 +127,13 @@ export const QuarterDebugControls: React.FC<QuarterDebugControlsProps> = ({ batt
       // Reset to initial state
       useMultiGameStore.getState().setCurrentQuarter(battleId, 0);
       useMultiGameStore.getState().updateGameStatus(battleId, 'SCHEDULED');
-      
+
       // Reinitialize HP
       useMultiGameStore.getState().initializeCapperHP(battleId);
-      
+
       // Reinitialize defense dots
       useMultiGameStore.getState().initializeDefenseDots(battleId);
-      
+
       setLastAction('✅ Game reset to SCHEDULED');
     } catch (error) {
       console.error('Failed to reset game:', error);

@@ -137,6 +137,15 @@ export async function simulateQuarter(
     `📊 ${battle.game.rightTeam.abbreviation}: PTS=${quarterData.right.points} REB=${quarterData.right.rebounds} AST=${quarterData.right.assists} STL=${quarterData.right.steals} 3PM=${quarterData.right.threePointers}`
   );
 
+  // Update cumulative scores (add this quarter's points to existing score)
+  const currentLeftScore = battle.game.leftScore || 0;
+  const currentRightScore = battle.game.rightScore || 0;
+  const newLeftScore = currentLeftScore + quarterData.left.points;
+  const newRightScore = currentRightScore + quarterData.right.points;
+
+  multiStore.updateScore(battleId, newLeftScore, newRightScore);
+  console.log(`📊 SCORE UPDATE: ${battle.game.leftTeam.abbreviation} ${newLeftScore} - ${newRightScore} ${battle.game.rightTeam.abbreviation}`);
+
   // Emit QUARTER_START events for both sides
   const prevQuarterStats = quarterNumber > 1 ? {
     pts: 0, // TODO: Track actual previous quarter stats
