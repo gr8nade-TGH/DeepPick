@@ -104,7 +104,7 @@ export interface GridLayout {
 class GridManagerClass {
   private layout: GridLayout;
   private cellCache: Map<string, GridCell> = new Map();
-  private stats: StatType[] = ['pts', 'reb', 'ast', 'blk', '3pt'];
+  private stats: StatType[] = ['pts', 'reb', 'ast', 'stl', '3pt'];
 
   constructor() {
     this.layout = this.calculateLayout();

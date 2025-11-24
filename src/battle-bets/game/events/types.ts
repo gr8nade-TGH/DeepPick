@@ -3,7 +3,7 @@
  * Based on ITEM_ENGINE_SPEC.md Section 3
  */
 
-export type Lane = 'pts' | 'reb' | 'ast' | 'blk' | 'stl';
+export type Lane = 'pts' | 'reb' | 'ast' | 'stl' | '3pt';
 export type Side = 'left' | 'right';
 
 /**
@@ -106,7 +106,6 @@ export interface QuarterStats {
   pts: number;
   reb: number;
   ast: number;
-  blk: number;
   stl: number;
   threesMade: number;
 }
