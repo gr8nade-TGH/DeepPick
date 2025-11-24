@@ -850,7 +850,7 @@ export async function runDebugBattleForMultiStore(battleId: string): Promise<voi
     },
   );
 
-  const statsOrder: StatType[] = ['pts', 'reb', 'ast', 'blk', '3pt'];
+  const statsOrder: StatType[] = ['pts', 'reb', 'ast', 'stl', '3pt'];
 
   // Run all 4 quarters sequentially so battles progress like a real game
   for (let quarterNumber = 1; quarterNumber <= 4; quarterNumber++) {
@@ -913,8 +913,8 @@ function getCountForStatFromQuarter(stat: StatType, stats: QuarterStats): number
       return stats.rebounds;
     case 'ast':
       return stats.assists;
-    case 'blk':
-      return stats.blocks;
+    case 'stl':
+      return stats.steals;
     case '3pt':
       return stats.threePointers;
     default:
