@@ -34,6 +34,7 @@ import { getItemById } from '../../types/inventory';
 import { battleEventBus } from '../events/EventBus';
 import type { QuarterStartPayload, QuarterEndPayload, ProjectileFiredPayload } from '../events/types';
 import { debugGridPositions } from '../debug/positionDebug';
+import { battleEventEmitter } from '../items/EventEmitter';
 
 /**
  * Quarter stats for both teams
@@ -164,6 +165,30 @@ export async function simulateQuarter(
   // Debug grid positions on first quarter
   if (quarterNumber === 1) {
     debugGridPositions();
+
+    // Emit BATTLE_START events for both sides (only on Q1)
+    console.log(`🎬 [EventEmitter] Emitting BATTLE_START events for battle ${battleId}`);
+    await battleEventEmitter.emit({
+      type: 'BATTLE_START',
+      payload: {
+        side: 'left',
+        opponentSide: 'right',
+        quarter: 1,
+        battleId,
+        gameId: battleId,
+      },
+    });
+
+    await battleEventEmitter.emit({
+      type: 'BATTLE_START',
+      payload: {
+        side: 'right',
+        opponentSide: 'left',
+        quarter: 1,
+        battleId,
+        gameId: battleId,
+      },
+    });
   }
 
   const multiStore = useMultiGameStore.getState();
@@ -247,6 +272,7 @@ export async function simulateQuarter(
     threesMade: 0
   } : null;
 
+  // Old event bus (keep for backward compatibility)
   battleEventBus.emit('QUARTER_START', {
     side: 'left',
     opponentSide: 'right',
@@ -264,6 +290,32 @@ export async function simulateQuarter(
     gameId,
     prevQuarterStats
   } as QuarterStartPayload);
+
+  // New event emitter (for item system)
+  console.log(`🎬 [EventEmitter] Emitting QUARTER_START events for Q${quarterNumber}`);
+  await battleEventEmitter.emit({
+    type: 'QUARTER_START',
+    payload: {
+      side: 'left',
+      opponentSide: 'right',
+      quarter: quarterNumber as 1 | 2 | 3 | 4,
+      battleId,
+      gameId,
+      prevQuarterStats,
+    },
+  });
+
+  await battleEventEmitter.emit({
+    type: 'QUARTER_START',
+    payload: {
+      side: 'right',
+      opponentSide: 'left',
+      quarter: quarterNumber as 1 | 2 | 3 | 4,
+      battleId,
+      gameId,
+      prevQuarterStats,
+    },
+  });
 
   // Fire stat rows SEQUENTIALLY (one at a time): PTS → REB → AST → STL → 3PT
   // Use fireStatRowForMultiBattle (the working version from auto-start mode)

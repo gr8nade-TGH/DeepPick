@@ -6,7 +6,35 @@
 // Item types
 export type ItemRarity = 'common' | 'rare' | 'epic' | 'legendary';
 export type ItemType = 'shield' | 'weapon' | 'potion' | 'buff';
-export type ItemSlot = 'slot1' | 'slot2';
+export type ItemSlot = 'slot1' | 'slot2' | 'slot3'; // Updated to support 3 slots
+
+// Quality tiers for rolled items (new item system)
+export type QualityTier = 'Warped' | 'Balanced' | 'Honed' | 'Masterwork';
+
+/**
+ * Rolled item stats (new item system)
+ * Items have randomized stats when won from treasure chests
+ */
+export interface RolledItemStats {
+  itemId: string; // e.g., 'LAL_def_ironman_armor'
+  ownerCapperId: string; // UUID of capper who owns this item
+  rolls: Record<string, number>; // e.g., { startShieldHp: 7, hpPerDestroyedOrb: 2 }
+  qualityTier: QualityTier; // Warped, Balanced, Honed, or Masterwork
+  qualityScore: number; // 0-100, used to determine tier
+  acquiredAt: Date;
+}
+
+/**
+ * Item runtime context (new item system)
+ * Passed to item effect functions when activated in battle
+ */
+export interface ItemRuntimeContext {
+  itemInstanceId: string; // Unique ID for this item instance in this battle
+  gameId: string; // Battle game ID
+  side: 'left' | 'right'; // Which side the item is on
+  rolls: Record<string, number>; // The rolled stats for this item
+  qualityTier: QualityTier; // Quality tier of this item
+}
 
 /**
  * Base item interface
@@ -19,7 +47,7 @@ export interface InventoryItem {
   rarity: ItemRarity;
   icon: string; // Emoji or icon identifier
   isImplemented: boolean; // Whether the item is functional or just a placeholder
-  
+
   // Item effect configuration
   effect?: ItemEffect;
 }
@@ -51,6 +79,7 @@ export interface ItemEffect {
 export interface EquippedItems {
   slot1: InventoryItem | null;
   slot2: InventoryItem | null;
+  slot3: InventoryItem | null; // Added slot3 support
 }
 
 /**
@@ -97,7 +126,7 @@ export const INVENTORY_ITEMS: InventoryItem[] = [
       passive: true,
     }
   },
-  
+
   // Placeholder items
   {
     id: 'fire-sword',
@@ -112,7 +141,7 @@ export const INVENTORY_ITEMS: InventoryItem[] = [
       passive: true,
     }
   },
-  
+
   {
     id: 'healing-potion',
     name: 'Healing Potion',
@@ -126,7 +155,7 @@ export const INVENTORY_ITEMS: InventoryItem[] = [
       passive: false,
     }
   },
-  
+
   {
     id: 'golden-crown',
     name: 'Golden Crown',
@@ -136,7 +165,7 @@ export const INVENTORY_ITEMS: InventoryItem[] = [
     icon: '👑',
     isImplemented: false,
   },
-  
+
   {
     id: 'lightning-bolt',
     name: 'Lightning Bolt',

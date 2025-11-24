@@ -9,7 +9,7 @@ export type Side = 'left' | 'right';
 /**
  * All battle events that can be emitted
  */
-export type BattleEvent =
+export type BattleEventType =
   | 'BATTLE_START'
   | 'QUARTER_START'
   | 'QUARTER_END'
@@ -20,6 +20,7 @@ export type BattleEvent =
   | 'OPPONENT_ORB_DESTROYED'
   | 'CASTLE_SHIELD_HIT'
   | 'CASTLE_PRIMARY_HIT'
+  | 'SHIELD_BROKEN'
   | 'FINAL_BLOW_START'
   | 'TICK';
 
@@ -140,6 +141,14 @@ export interface FinalBlowStartPayload extends BaseEventPayload {
 }
 
 /**
+ * Shield broken event
+ */
+export interface ShieldBrokenPayload extends BaseEventPayload {
+  shieldId: string;
+  finalDamage: number;
+}
+
+/**
  * Tick event (optional, for time-based effects)
  */
 export interface TickPayload extends BaseEventPayload {
@@ -160,6 +169,34 @@ export type BattleEventPayload =
   | OpponentOrbDestroyedPayload
   | CastleShieldHitPayload
   | CastlePrimaryHitPayload
+  | ShieldBrokenPayload
   | FinalBlowStartPayload
   | TickPayload;
+
+/**
+ * Generic event wrapper
+ */
+export interface BattleEvent<T extends BattleEventType = BattleEventType> {
+  type: T;
+  payload: BattleEventPayload<T>;
+}
+
+/**
+ * Type-safe payload lookup
+ */
+export type BattleEventPayload<T extends BattleEventType> =
+  T extends 'BATTLE_START' ? BattleStartPayload :
+  T extends 'QUARTER_START' ? QuarterStartPayload :
+  T extends 'QUARTER_END' ? QuarterEndPayload :
+  T extends 'PROJECTILE_FIRED' ? ProjectileFiredPayload :
+  T extends 'PROJECTILE_COLLISION' ? ProjectileCollisionPayload :
+  T extends 'PROJECTILE_HIT_CASTLE' ? ProjectileHitCastlePayload :
+  T extends 'DEFENSE_ORB_DESTROYED' ? DefenseOrbDestroyedPayload :
+  T extends 'OPPONENT_ORB_DESTROYED' ? OpponentOrbDestroyedPayload :
+  T extends 'CASTLE_SHIELD_HIT' ? CastleShieldHitPayload :
+  T extends 'CASTLE_PRIMARY_HIT' ? CastlePrimaryHitPayload :
+  T extends 'SHIELD_BROKEN' ? ShieldBrokenPayload :
+  T extends 'FINAL_BLOW_START' ? FinalBlowStartPayload :
+  T extends 'TICK' ? TickPayload :
+  never;
 
