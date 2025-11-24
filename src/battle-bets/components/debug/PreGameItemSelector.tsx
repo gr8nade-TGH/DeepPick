@@ -13,6 +13,7 @@ import type { ItemDefinition } from '../../game/items/ItemRollSystem';
 interface PreGameItemSelectorProps {
   battleId: string;
   onItemsChanged: (leftItems: string[], rightItems: string[]) => void;
+  initialSlot?: { side: 'left' | 'right'; slot: 1 | 2 | 3 };
 }
 
 // Available items for testing
@@ -24,19 +25,20 @@ const AVAILABLE_ITEMS: ItemDefinition[] = [
 export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
   battleId,
   onItemsChanged,
+  initialSlot,
 }) => {
   const [leftSlot1, setLeftSlot1] = useState<string | null>(null);
   const [leftSlot2, setLeftSlot2] = useState<string | null>(null);
   const [leftSlot3, setLeftSlot3] = useState<string | null>(null);
-  
+
   const [rightSlot1, setRightSlot1] = useState<string | null>(null);
   const [rightSlot2, setRightSlot2] = useState<string | null>(null);
   const [rightSlot3, setRightSlot3] = useState<string | null>(null);
-  
+
   const [selectedSlot, setSelectedSlot] = useState<{
     side: 'left' | 'right';
     slot: 1 | 2 | 3;
-  } | null>(null);
+  } | null>(initialSlot || null);
 
   // Update parent when items change
   const updateParent = () => {
@@ -128,49 +130,50 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
   };
 
   return (
-    <div className="pre-game-item-selector">
-      <div className="selector-header">
-        <h3>⚙️ PRE-GAME ITEM SETUP</h3>
-        <p>Click a slot to equip/unequip items (only before battle starts)</p>
-      </div>
+    <>
+      {/* Item Picker Popup (shows when slot selected) */}
+      {selectedSlot && (
+        <div className="item-picker-overlay" onClick={() => setSelectedSlot(null)}>
+          <div className="item-picker-popup" onClick={(e) => e.stopPropagation()}>
+            <div className="picker-header">
+              <h3>🛡️ SELECT ITEM</h3>
+              <p>
+                {selectedSlot.side.toUpperCase()} CAPPER - Slot {selectedSlot.slot}
+              </p>
+            </div>
 
-      <div className="selector-body">
-        {/* Left Side */}
-        <div className="side-slots">
-          <h4>LEFT CAPPER</h4>
-          {renderSlot('left', 2, 'DEFENSE')}
-          {renderSlot('left', 1, 'ATTACK')}
-          {renderSlot('left', 3, 'UNIQUE')}
-        </div>
-
-        {/* Item Picker (shows when slot selected) */}
-        {selectedSlot && (
-          <div className="item-picker">
-            <h4>SELECT ITEM</h4>
-            <button className="clear-button" onClick={handleClearSlot}>
-              ❌ Clear Slot
-            </button>
-            {AVAILABLE_ITEMS.map((item) => (
-              <button
-                key={item.id}
-                className="item-button"
-                onClick={() => handleItemSelect(item.id)}
-              >
-                🛡️ {item.name}
+            <div className="picker-body">
+              <button className="clear-button" onClick={handleClearSlot}>
+                ❌ Clear Slot
               </button>
-            ))}
-          </div>
-        )}
 
-        {/* Right Side */}
-        <div className="side-slots">
-          <h4>RIGHT CAPPER</h4>
-          {renderSlot('right', 2, 'DEFENSE')}
-          {renderSlot('right', 1, 'ATTACK')}
-          {renderSlot('right', 3, 'UNIQUE')}
+              {AVAILABLE_ITEMS.map((item) => (
+                <button
+                  key={item.id}
+                  className="item-button"
+                  onClick={() => handleItemSelect(item.id)}
+                >
+                  <div className="item-button-content">
+                    <div className="item-icon-large">🛡️</div>
+                    <div className="item-details">
+                      <div className="item-name">{item.name}</div>
+                      <div className="item-team">{item.teamName}</div>
+                      <div className="item-description">{item.description}</div>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <div className="picker-footer">
+              <button className="close-button" onClick={() => setSelectedSlot(null)}>
+                Close
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      )}
+    </>
   );
 };
 

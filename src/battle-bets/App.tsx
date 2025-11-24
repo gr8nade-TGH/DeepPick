@@ -11,6 +11,7 @@ import { GameInfoBar } from './components/game/GameInfoBar';
 import { InventoryBar } from './components/game/InventoryBar';
 import { CopyDebugButton } from './components/debug/CopyDebugButton';
 import { QuarterDebugControls } from './components/debug/QuarterDebugControls';
+import { PreGameItemSelector } from './components/debug/PreGameItemSelector';
 import { debugLogger } from './game/debug/DebugLogger';
 import type { Game } from './types/game';
 import './App.css';
@@ -109,6 +110,7 @@ function App() {
   const [page, setPage] = useState(1);
   const [totalBattles, setTotalBattles] = useState(0);
   const [showDebugControls, setShowDebugControls] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState<{ battleId: string; side: 'left' | 'right'; slot: 1 | 2 | 3 } | null>(null);
   const battlesPerPage = 4;
 
   // Check URL parameters for specific battle ID and debug mode
@@ -365,7 +367,11 @@ function App() {
                   }}
                 >
                   {/* Left Inventory Bar */}
-                  <InventoryBar battleId={game.id} side="left" />
+                  <InventoryBar
+                    battleId={game.id}
+                    side="left"
+                    onSlotClick={(side, slot) => setSelectedSlot({ battleId: game.id, side, slot })}
+                  />
 
                   {/* Battle Canvas - PixiJS Game with Countdown Timers */}
                   <div
@@ -394,7 +400,11 @@ function App() {
                   </div>
 
                   {/* Right Inventory Bar */}
-                  <InventoryBar battleId={game.id} side="right" />
+                  <InventoryBar
+                    battleId={game.id}
+                    side="right"
+                    onSlotClick={(side, slot) => setSelectedSlot({ battleId: game.id, side, slot })}
+                  />
                 </div>
               </div>
             </div>
@@ -497,6 +507,18 @@ function App() {
       {/* Copy Debug Button - Only show when ?debug=1 */}
       {debugMode && battles.length > 0 && (
         <CopyDebugButton battleId={battles[0].id} />
+      )}
+
+      {/* Pre-Game Item Selector - Show when slot is clicked */}
+      {selectedSlot && (
+        <PreGameItemSelector
+          battleId={selectedSlot.battleId}
+          initialSlot={{ side: selectedSlot.side, slot: selectedSlot.slot }}
+          onItemsChanged={() => {
+            // Close the selector after item is selected
+            setSelectedSlot(null);
+          }}
+        />
       )}
     </div>
   );

@@ -10,10 +10,12 @@
   padding: 10px;
   justify-content: center;
   z-index: 5;
-  height: 200px; /* Match canvas height: 5 rows × 40px */
+  height: 200px;
+  /* Match canvas height: 5 rows × 40px */
   /* Same dark background as castle area */
   background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #16213e 100%);
-  border-radius: 0; /* Remove border radius to connect seamlessly */
+  border-radius: 0;
+  /* Remove border radius to connect seamlessly */
   box-sizing: border-box;
 }
 
@@ -46,6 +48,29 @@
   box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
 }
 
+/* Clickable state (pre-game only) */
+.inventory-slot-clickable {
+  animation: pulse-border 2s ease-in-out infinite;
+}
+
+.inventory-slot-clickable:hover {
+  border-color: rgba(255, 215, 0, 1.0);
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.6);
+}
+
+@keyframes pulse-border {
+
+  0%,
+  100% {
+    border-color: rgba(255, 215, 0, 0.3);
+  }
+
+  50% {
+    border-color: rgba(255, 215, 0, 0.7);
+  }
+}
+
 .slot-icon-empty {
   font-size: 20px;
   opacity: 0.25;
@@ -72,9 +97,12 @@
 }
 
 @keyframes pulse-glow {
-  0%, 100% {
+
+  0%,
+  100% {
     filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
   }
+
   50% {
     filter: drop-shadow(0 0 12px rgba(255, 215, 0, 0.9));
   }
@@ -82,10 +110,13 @@
 
 /* Fire Orb pulse animation - intense red/orange glow */
 @keyframes fire-pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     filter: drop-shadow(0 0 8px rgba(255, 99, 71, 0.6));
     transform: scale(1);
   }
+
   50% {
     filter: drop-shadow(0 0 20px rgba(255, 69, 0, 1.0));
     transform: scale(1.15);
@@ -102,4 +133,3 @@
   border-color: rgba(255, 215, 0, 0.5);
   box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
 }
-

@@ -6,15 +6,22 @@
 import React, { useEffect, useState } from 'react';
 import './InventoryBar.css';
 import { castleManager } from '../../game/managers/CastleManager';
+import { useMultiGameStore } from '../../store/multiGameStore';
 
 interface InventoryBarProps {
   battleId: string;
   side: 'left' | 'right';
+  onSlotClick?: (side: 'left' | 'right', slot: 1 | 2 | 3) => void;
 }
 
-export const InventoryBar: React.FC<InventoryBarProps> = ({ battleId, side }) => {
+export const InventoryBar: React.FC<InventoryBarProps> = ({ battleId, side, onSlotClick }) => {
   const [equippedItems, setEquippedItems] = useState<any>({ slot1: null, slot2: null, slot3: null });
   const [isFireOrbPulsing, setIsFireOrbPulsing] = useState(false);
+
+  // Get game status to determine if slots are clickable
+  const battle = useMultiGameStore(state => state.getBattle(battleId));
+  const gameStatus = battle?.game.status || 'SCHEDULED';
+  const isPreGame = gameStatus === 'SCHEDULED';
 
   // Update equipped items when castle loads
   useEffect(() => {
@@ -59,10 +66,16 @@ export const InventoryBar: React.FC<InventoryBarProps> = ({ battleId, side }) =>
 
   // Slot types: 1 = ATTACK (Fire Orb), 2 = DEFENSE (Blue Shield), 3 = UNIQUE
   const slots = [
-    { num: 1, type: 'ATTACK', icon: '⚔️', slotKey: 'slot2' as const }, // Fire Orb is in slot2
-    { num: 2, type: 'DEFENSE', icon: '🛡️', slotKey: 'slot1' as const }, // Blue Shield is in slot1
-    { num: 3, type: 'UNIQUE', icon: '✨', slotKey: 'slot3' as const }
+    { num: 2, type: 'DEFENSE', icon: '🛡️', slotKey: 'slot1' as const }, // Defense slot (slot 2 in UI, slot1 in data)
+    { num: 1, type: 'ATTACK', icon: '⚔️', slotKey: 'slot2' as const }, // Attack slot (slot 1 in UI, slot2 in data)
+    { num: 3, type: 'UNIQUE', icon: '✨', slotKey: 'slot3' as const }  // Unique slot
   ];
+
+  const handleSlotClick = (slotNum: number) => {
+    if (isPreGame && onSlotClick) {
+      onSlotClick(side, slotNum as 1 | 2 | 3);
+    }
+  };
 
   // Render Blue Shield Ring SVG
   const renderBlueShieldRing = () => (
@@ -130,8 +143,10 @@ export const InventoryBar: React.FC<InventoryBarProps> = ({ battleId, side }) =>
         return (
           <div
             key={slot.num}
-            className={`inventory-slot ${isEmpty ? 'inventory-slot-empty' : 'inventory-slot-equipped'}`}
+            className={`inventory-slot ${isEmpty ? 'inventory-slot-empty' : 'inventory-slot-equipped'} ${isPreGame ? 'inventory-slot-clickable' : ''}`}
             title={isEmpty ? `${slot.type} Item Slot (Empty)` : equippedItem.name}
+            onClick={() => handleSlotClick(slot.num)}
+            style={{ cursor: isPreGame ? 'pointer' : 'default' }}
           >
             {isEmpty ? (
               <div className="slot-icon-empty">
