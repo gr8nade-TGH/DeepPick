@@ -50,6 +50,17 @@ export function createDynamicVSDisplay(config: VSDisplayConfig): PIXI.Container 
   const textColor = getTextColor(status, isBattleInProgress);
   const fontSize = getFontSize(status, isBattleInProgress);
 
+  // Create semi-transparent background panel for better readability
+  const hasSubtitle = !!displayText.subtitle;
+  const panelHeight = hasSubtitle ? 80 : 50;
+  const panelWidth = 200;
+
+  const background = new PIXI.Graphics();
+  background.rect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight);
+  background.fill({ color: 0x000000, alpha: 0.7 });
+  background.stroke({ color: textColor, width: 2, alpha: 0.5 });
+  container.addChild(background);
+
   // Create main text
   const mainText = new PIXI.Text({
     text: displayText.main,
@@ -69,6 +80,7 @@ export function createDynamicVSDisplay(config: VSDisplayConfig): PIXI.Container 
     },
   });
   mainText.anchor.set(0.5);
+  mainText.position.set(0, hasSubtitle ? -15 : 0);
   container.addChild(mainText);
 
   // Add subtitle if exists (e.g., countdown timer)
@@ -77,14 +89,21 @@ export function createDynamicVSDisplay(config: VSDisplayConfig): PIXI.Container 
       text: displayText.subtitle,
       style: {
         fontFamily: 'Arial, sans-serif',
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: '700',
         fill: displayText.subtitleColor || 0xaaaaaa,
         stroke: { color: 0x000000, width: 2 },
+        dropShadow: {
+          color: 0x000000,
+          blur: 4,
+          angle: Math.PI / 4,
+          distance: 2,
+          alpha: 0.6,
+        },
       },
     });
     subtitleText.anchor.set(0.5);
-    subtitleText.position.set(0, 32);
+    subtitleText.position.set(0, 18);
     container.addChild(subtitleText);
   }
 

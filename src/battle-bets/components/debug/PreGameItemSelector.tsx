@@ -346,7 +346,12 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
       <div
         className={`pre-game-slot ${itemId ? 'equipped' : 'empty'} ${isSelected ? 'selected' : ''}`}
         onClick={() => handleSlotClick(side, slot)}
-        title={item ? item.name : `${slotType} Slot (Empty)`}
+        onMouseEnter={(e) => {
+          if (item) {
+            handleItemHover(e, item, testRolls, calculateQuality());
+          }
+        }}
+        onMouseLeave={handleItemLeave}
       >
         {item ? (
           <div className="slot-item">
