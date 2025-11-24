@@ -133,7 +133,7 @@ class CollisionManager {
     );
 
     if (cell) {
-      console.log(`🎯 [GRID-BASED COLLISION] Projectile ${projectile.id} is in cell ${cell.id} at X=${projectile.position.x.toFixed(1)}`);
+      console.log(`🎯 [GRID CHECK] Projectile ${projectile.id} is in cell ${cell.id} at X=${projectile.position.x.toFixed(1)}`);
 
       // Check if this cell has a defense orb
       const targetDot = this.findDefenseDotInCell(projectile.gameId, cell.id);
