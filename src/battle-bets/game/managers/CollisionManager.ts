@@ -14,6 +14,7 @@ import type { Position, StatType } from '../../types/game';
 import { battleEventBus } from '../events/EventBus';
 import type { DefenseOrbDestroyedPayload, OpponentOrbDestroyedPayload, ProjectileCollisionPayload } from '../events/types';
 import { gridManager } from './GridManager';
+import { collisionDebugger } from '../debug/CollisionDebugger';
 
 /**
  * Collision detection manager
@@ -65,6 +66,16 @@ class CollisionManager {
    */
   public unregisterProjectile(projectileId: string): void {
     this.activeProjectiles.delete(projectileId);
+  }
+
+  /**
+   * Get debug snapshot for a specific game
+   */
+  public getDebugSnapshot(gameId: string): string {
+    const getDefenseDots = this.battleDefenseDotSources.get(gameId) ?? this.getDefenseDotsFromStore;
+    const defenseDots = getDefenseDots ? getDefenseDots() : new Map();
+
+    return collisionDebugger.generateSnapshot(gameId, this.activeProjectiles, defenseDots);
   }
 
   /**
@@ -141,6 +152,9 @@ class CollisionManager {
       if (targetDot && targetDot.alive) {
         console.log(`💥 [COLLISION!] Projectile ${projectile.id} hit defense orb ${targetDot.id} in cell ${cell.id}`);
 
+        // Log collision event
+        collisionDebugger.logCollisionCheck(projectile, cell.id, true, true);
+
         // Get HP BEFORE damage for accurate logging
         const hpBefore = targetDot.hp;
         const hpAfter = Math.max(0, hpBefore - projectile.typeConfig.damage);
@@ -190,7 +204,13 @@ class CollisionManager {
         }
 
         return 'defense';
+      } else {
+        // Cell has no orb - log as MISS
+        collisionDebugger.logCollisionCheck(projectile, cell.id, false, false);
       }
+    } else {
+      // Projectile not in any defense cell
+      collisionDebugger.logCollisionCheck(projectile, null, false, false);
     }
 
     return null; // No collision

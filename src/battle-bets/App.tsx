@@ -9,6 +9,7 @@ import { GameErrorBoundary } from './components/ErrorBoundary';
 import { BattleCanvas } from './components/game/BattleCanvas';
 import { GameInfoBar } from './components/game/GameInfoBar';
 import { InventoryBar } from './components/game/InventoryBar';
+import { CopyDebugButton } from './components/debug/CopyDebugButton';
 import type { Game } from './types/game';
 import './App.css';
 
@@ -107,9 +108,10 @@ function App() {
   const [totalBattles, setTotalBattles] = useState(0);
   const battlesPerPage = 4;
 
-  // Check URL parameters for specific battle ID
+  // Check URL parameters for specific battle ID and debug mode
   const urlParams = new URLSearchParams(window.location.search);
   const battleIdParam = urlParams.get('battleId');
+  const debugMode = urlParams.get('debug') === '1';
   const showAllBattles = !battleIdParam; // If no battleId, show all battles
 
   // Fetch battles from API
@@ -441,6 +443,11 @@ function App() {
           </div>
         )}
       </main>
+
+      {/* Debug Button - Only show when ?debug=1 */}
+      {debugMode && battles.length > 0 && (
+        <CopyDebugButton gameId={battles[0].id} />
+      )}
     </div>
   );
 }
