@@ -376,7 +376,14 @@ function App() {
                   background: '#020617'
                 }}
               >
-                <GameInfoBar game={game} />
+                <GameInfoBar
+                  game={game}
+                  gameStartTime={(game as any)._battleData?.gameStartTime}
+                  q1EndTime={(game as any)._battleData?.q1EndTime}
+                  q2EndTime={(game as any)._battleData?.q2EndTime}
+                  q3EndTime={(game as any)._battleData?.q3EndTime}
+                  q4EndTime={(game as any)._battleData?.q4EndTime}
+                />
               </div>
 
               {/* Battle Game Layout - Inventory bars + PixiJS canvas, centered under info bar */}

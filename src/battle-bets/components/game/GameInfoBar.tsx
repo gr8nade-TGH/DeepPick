@@ -3,18 +3,52 @@
  * Designed for multi-game stacking view
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Game } from '../../types/game';
 import { getCapperUnitsForTeam, getTotalDefenseDotCount } from '../../types/game';
+import { useMultiGameStore } from '../../store/multiGameStore';
 import './GameInfoBar.css';
 
 interface GameInfoBarProps {
   game: Game;
+  // Battle timing data for dynamic status display
+  gameStartTime?: string | null;
+  q1EndTime?: string | null;
+  q2EndTime?: string | null;
+  q3EndTime?: string | null;
+  q4EndTime?: string | null;
 }
 
-export const GameInfoBar: React.FC<GameInfoBarProps> = ({ game }) => {
+export const GameInfoBar: React.FC<GameInfoBarProps> = ({
+  game,
+  gameStartTime,
+  q1EndTime,
+  q2EndTime,
+  q3EndTime,
+  q4EndTime
+}) => {
   const [leftRecordHover, setLeftRecordHover] = useState(false);
   const [rightRecordHover, setRightRecordHover] = useState(false);
+  const [dynamicStatus, setDynamicStatus] = useState<{ main: string; subtitle?: string; subtitleColor?: string }>({ main: 'SCHEDULED' });
+
+  // Get battle state from store
+  const getBattle = useMultiGameStore(state => state.getBattle);
+  const battle = getBattle(game.id);
+  const currentQuarter = battle?.currentQuarter ?? 0;
+  const isBattleInProgress = battle?.isBattleInProgress ?? false;
+  const completedQuarters = battle?.completedQuarters ?? [];
+
+  // Determine quarter end time based on current quarter
+  let quarterEndTime: string | null = null;
+  if (currentQuarter === 1 && q1EndTime) {
+    quarterEndTime = q1EndTime;
+  } else if (currentQuarter === 2 && q2EndTime) {
+    quarterEndTime = q2EndTime;
+  } else if (currentQuarter === 3 && q3EndTime) {
+    quarterEndTime = q3EndTime;
+  } else if (currentQuarter === 4 && q4EndTime) {
+    quarterEndTime = q4EndTime;
+  }
 
   // Get team unit records with W-L-P
   const leftRecord = game.leftCapper.teamRecords.find(r => r.teamId === game.leftTeam.id);
@@ -87,6 +121,104 @@ export const GameInfoBar: React.FC<GameInfoBarProps> = ({ game }) => {
     return parts[parts.length - 1].toUpperCase();
   };
 
+  // Calculate dynamic status display (similar to PixiJS dynamicVSDisplay.ts)
+  useEffect(() => {
+    const updateStatus = () => {
+      // If battle is in progress for a specific quarter, show "Q# Battle In-Progress"
+      if (isBattleInProgress && currentQuarter) {
+        setDynamicStatus({
+          main: `Q${currentQuarter}`,
+          subtitle: 'Battle In-Progress',
+          subtitleColor: '#ff9f43', // Orange for active battle
+        });
+        return;
+      }
+
+      const status = game.status || 'SCHEDULED';
+
+      switch (status) {
+        case 'SCHEDULED':
+          // Show countdown timer if game start time is available
+          if (gameStartTime) {
+            const countdown = getCountdownText(gameStartTime);
+            if (countdown) {
+              setDynamicStatus({
+                main: 'VS',
+                subtitle: `Game starts in ${countdown}`,
+                subtitleColor: '#4ecdc4', // Cyan
+              });
+            } else {
+              setDynamicStatus({ main: 'VS' });
+            }
+          } else {
+            setDynamicStatus({ main: 'VS' });
+          }
+          break;
+
+        case '1Q':
+        case '2Q':
+        case '3Q':
+        case '4Q':
+          // Show quarter with countdown if available
+          const quarterNum = parseInt(status[0]);
+          if (quarterEndTime) {
+            const countdown = getCountdownText(quarterEndTime);
+            if (countdown) {
+              setDynamicStatus({
+                main: `Q${quarterNum}`,
+                subtitle: `Ends in ${countdown}`,
+                subtitleColor: '#4ecdc4', // Cyan
+              });
+            } else {
+              setDynamicStatus({ main: `Q${quarterNum}` });
+            }
+          } else {
+            setDynamicStatus({ main: `Q${quarterNum}` });
+          }
+          break;
+
+        case 'OT':
+        case 'OT2':
+        case 'OT3':
+        case 'OT4':
+          setDynamicStatus({ main: status });
+          break;
+
+        case 'FINAL':
+          setDynamicStatus({ main: 'FINAL' });
+          break;
+
+        default:
+          setDynamicStatus({ main: status });
+      }
+    };
+
+    updateStatus();
+    const interval = setInterval(updateStatus, 1000); // Update every second for countdown
+    return () => clearInterval(interval);
+  }, [game.status, gameStartTime, currentQuarter, quarterEndTime, isBattleInProgress, completedQuarters]);
+
+  // Helper function to get countdown text
+  const getCountdownText = (targetTime: string): string | null => {
+    const now = Date.now();
+    const target = new Date(targetTime).getTime();
+    const remaining = target - now;
+
+    if (remaining <= 0) return null;
+
+    const hours = Math.floor(remaining / (1000 * 60 * 60));
+    const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${seconds}s`;
+    } else {
+      return `${seconds}s`;
+    }
+  };
+
   return (
     <div className="game-info-bar">
       {/* Left Capper - All on one horizontal line */}
@@ -150,7 +282,17 @@ export const GameInfoBar: React.FC<GameInfoBarProps> = ({ game }) => {
             <span className="team-abbr">{game.leftTeam.abbreviation}</span>
             <span className="score-value">{leftScore}</span>
           </div>
-          <div className="game-status">{game.status || 'SCHEDULED'}</div>
+          <div className="game-status-dynamic">
+            <div className="status-main">{dynamicStatus.main}</div>
+            {dynamicStatus.subtitle && (
+              <div
+                className="status-subtitle"
+                style={{ color: dynamicStatus.subtitleColor || '#999' }}
+              >
+                {dynamicStatus.subtitle}
+              </div>
+            )}
+          </div>
           <div className="team-score">
             <span className="score-value">{rightScore}</span>
             <span className="team-abbr">{game.rightTeam.abbreviation}</span>
