@@ -18,6 +18,7 @@ import {
 } from '../types/game';
 import { castleManager } from '../game/managers/CastleManager';
 import { getDefenseCellPosition } from '../game/utils/positioning';
+import { debugLogger } from '../game/debug/DebugLogger';
 
 /**
  * State for a single battle
@@ -234,31 +235,43 @@ export const useMultiGameStore = create<MultiGameState>()(
 
       // Apply damage to capper HP
       applyDamageToCapperHP: (battleId: string, side: 'left' | 'right', damage: number) => {
-        console.log(`🏰 [applyDamageToCapperHP] Called with battleId=${battleId}, side=${side}, damage=${damage}`);
+        const logMsg = `Called with battleId=${battleId}, side=${side}, damage=${damage}`;
+        console.log(`🏰 [applyDamageToCapperHP] ${logMsg}`);
+        debugLogger.log('store-hp', `applyDamageToCapperHP: ${logMsg}`);
 
         const battle = get().battles.get(battleId);
         if (!battle) {
-          console.error(`❌ [applyDamageToCapperHP] No battle found for battleId=${battleId}`);
+          const errMsg = `No battle found for battleId=${battleId}`;
+          console.error(`❌ [applyDamageToCapperHP] ${errMsg}`);
+          debugLogger.log('store-hp', `ERROR: ${errMsg}`);
           return;
         }
 
         const hp = battle.capperHP.get(side);
         if (!hp) {
-          console.warn(`⚠️ [applyDamageToCapperHP] No HP tracking found for ${battleId}-${side}`);
+          const warnMsg = `No HP tracking found for ${battleId}-${side}`;
+          console.warn(`⚠️ [applyDamageToCapperHP] ${warnMsg}`);
+          debugLogger.log('store-hp', `WARNING: ${warnMsg}`);
           return;
         }
 
-        console.log(`🏰 [applyDamageToCapperHP] Current HP for ${side}: ${hp.currentHP}/${hp.maxHP}`);
+        const hpMsg = `Current HP for ${side}: ${hp.currentHP}/${hp.maxHP}`;
+        console.log(`🏰 [applyDamageToCapperHP] ${hpMsg}`);
+        debugLogger.log('store-hp', hpMsg);
 
         const newHP = Math.max(0, hp.currentHP - damage);
         const actualDamage = hp.currentHP - newHP;
 
         if (actualDamage > 0) {
           const capperName = side === 'left' ? battle.game.leftCapper.name : battle.game.rightCapper.name;
-          console.log(`💥 [Multi-Game Store] ${capperName} HP: ${hp.currentHP} → ${newHP} (-${actualDamage})`);
+          const damageMsg = `${capperName} HP: ${hp.currentHP} → ${newHP} (-${actualDamage})`;
+          console.log(`💥 [Multi-Game Store] ${damageMsg}`);
+          debugLogger.log('store-hp', damageMsg, { battleId, side, oldHP: hp.currentHP, newHP, actualDamage });
 
           if (newHP === 0) {
-            console.log(`☠️ [Multi-Game Store] ${capperName} HAS BEEN DEFEATED!`);
+            const defeatMsg = `${capperName} HAS BEEN DEFEATED!`;
+            console.log(`☠️ [Multi-Game Store] ${defeatMsg}`);
+            debugLogger.log('store-hp', defeatMsg);
           }
 
           // Update HP in store
@@ -272,7 +285,9 @@ export const useMultiGameStore = create<MultiGameState>()(
                 maxHP: hp.maxHP,
               });
               updatedBattle.capperHP = newCapperHP;
-              console.log(`✅ [applyDamageToCapperHP] HP updated in store for ${side}: ${newHP}/${hp.maxHP}`);
+              const updateMsg = `HP updated in store for ${side}: ${newHP}/${hp.maxHP}`;
+              console.log(`✅ [applyDamageToCapperHP] ${updateMsg}`);
+              debugLogger.log('store-hp', updateMsg);
             }
             return { battles: newBattles };
           });
@@ -280,9 +295,13 @@ export const useMultiGameStore = create<MultiGameState>()(
           // CRITICAL: Also damage the Castle entity to update visual HP bar
           const castleId = `${battleId}-${side}`;
           castleManager.damageCastle(battleId, castleId, actualDamage);
-          console.log(`🏰 [applyDamageToCapperHP] Called castleManager.damageCastle for ${castleId}`);
+          const castleMsg = `Called castleManager.damageCastle(battleId=${battleId}, castleId=${castleId}, damage=${actualDamage})`;
+          console.log(`🏰 [applyDamageToCapperHP] ${castleMsg}`);
+          debugLogger.log('store-hp', castleMsg);
         } else {
-          console.log(`⚠️ [applyDamageToCapperHP] No actual damage applied (already at 0 HP or invalid damage)`);
+          const noOpMsg = 'No actual damage applied (already at 0 HP or invalid damage)';
+          console.log(`⚠️ [applyDamageToCapperHP] ${noOpMsg}`);
+          debugLogger.log('store-hp', noOpMsg);
         }
       },
 

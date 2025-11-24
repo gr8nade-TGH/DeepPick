@@ -5,6 +5,7 @@
 import * as PIXI from 'pixi.js';
 import { Castle } from '../entities/Castle';
 import type { CastleData } from '../../types/game';
+import { debugLogger } from '../debug/DebugLogger';
 
 interface BattleCastleMap {
   [castleId: string]: Castle;
@@ -86,17 +87,30 @@ export class CastleManager {
    * Update castle HP for a given battle
    */
   public damageCastle(battleId: string, castleId: string, damage: number): void {
-    console.log(`🏰 [CastleManager.damageCastle] Called with battleId=${battleId}, castleId=${castleId}, damage=${damage}`);
+    const callMsg = `Called with battleId=${battleId}, castleId=${castleId}, damage=${damage}`;
+    console.log(`🏰 [CastleManager.damageCastle] ${callMsg}`);
+    debugLogger.log('castle-manager', `damageCastle: ${callMsg}`);
+
     const castle = this.getCastle(battleId, castleId);
     if (castle) {
-      console.log(`✅ [CastleManager.damageCastle] Castle found! Calling takeDamage(${damage})`);
+      const foundMsg = `Castle found! Calling takeDamage(${damage})`;
+      console.log(`✅ [CastleManager.damageCastle] ${foundMsg}`);
+      debugLogger.log('castle-manager', foundMsg, { battleId, castleId, damage, castleHP: castle.currentHP });
       castle.takeDamage(damage);
     } else {
-      console.error(`❌ [CastleManager.damageCastle] Castle NOT FOUND for battleId=${battleId}, castleId=${castleId}`);
-      console.error(`   Available battles:`, Array.from(this.battles.keys()));
+      const notFoundMsg = `Castle NOT FOUND for battleId=${battleId}, castleId=${castleId}`;
+      console.error(`❌ [CastleManager.damageCastle] ${notFoundMsg}`);
+      debugLogger.log('castle-manager', `ERROR: ${notFoundMsg}`);
+
+      const availableBattles = Array.from(this.battles.keys());
+      console.error(`   Available battles:`, availableBattles);
+      debugLogger.log('castle-manager', `Available battles: ${JSON.stringify(availableBattles)}`);
+
       const battleCastles = this.battles.get(battleId);
       if (battleCastles) {
-        console.error(`   Available castles in battle ${battleId}:`, Object.keys(battleCastles));
+        const availableCastles = Object.keys(battleCastles);
+        console.error(`   Available castles in battle ${battleId}:`, availableCastles);
+        debugLogger.log('castle-manager', `Available castles in battle ${battleId}: ${JSON.stringify(availableCastles)}`);
       }
     }
   }

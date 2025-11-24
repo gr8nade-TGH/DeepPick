@@ -11,6 +11,7 @@ import { GameInfoBar } from './components/game/GameInfoBar';
 import { InventoryBar } from './components/game/InventoryBar';
 import { CopyDebugButton } from './components/debug/CopyDebugButton';
 import { QuarterDebugControls } from './components/debug/QuarterDebugControls';
+import { debugLogger } from './game/debug/DebugLogger';
 import type { Game } from './types/game';
 import './App.css';
 
@@ -114,6 +115,14 @@ function App() {
   const urlParams = new URLSearchParams(window.location.search);
   const battleIdParam = urlParams.get('battleId');
   const debugMode = urlParams.get('debug') === '1';
+
+  // Enable debug logger when debug mode is on
+  useEffect(() => {
+    if (debugMode) {
+      debugLogger.enable();
+      console.log('🔍 Debug Logger enabled - all logs will be captured');
+    }
+  }, [debugMode]);
   const showAllBattles = !battleIdParam; // If no battleId, show all battles
 
   // Fetch battles from API
@@ -487,7 +496,7 @@ function App() {
 
       {/* Copy Debug Button - Only show when ?debug=1 */}
       {debugMode && battles.length > 0 && (
-        <CopyDebugButton gameId={battles[0].id} />
+        <CopyDebugButton battleId={battles[0].id} />
       )}
     </div>
   );
