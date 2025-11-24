@@ -48,6 +48,9 @@ export class BaseProjectile {
   // Animation - PUBLIC so CollisionManager can stop it when projectiles collide
   public animation: gsap.core.Timeline | null = null;
 
+  // Promise resolver for external collision handling
+  private animationResolver: (() => void) | null = null;
+
   // Collision detection callback (set by simulation system)
   public onCollisionCheck?: (projectile: BaseProjectile) => 'projectile' | 'defense' | null;
 
@@ -204,6 +207,9 @@ export class BaseProjectile {
    */
   public async animateToTarget(): Promise<void> {
     return new Promise((resolve) => {
+      // Store resolver so external collision can resolve the promise
+      this.animationResolver = resolve;
+
       // Calculate distance to target
       const dx = this.targetPosition.x - this.position.x;
       const dy = this.targetPosition.y - this.position.y;
@@ -253,6 +259,25 @@ export class BaseProjectile {
           resolve();
         });
     });
+  }
+
+  /**
+   * Terminate animation externally (called by CollisionManager when other projectile hits this one)
+   * This ensures the promise resolves and cleanup happens properly
+   */
+  public terminateFromCollision(): void {
+    if (this.animation) {
+      this.animation.kill();
+      this.animation = null;
+    }
+
+    this.createImpactEffect();
+
+    // Resolve the promise so cleanup can proceed
+    if (this.animationResolver) {
+      this.animationResolver();
+      this.animationResolver = null;
+    }
   }
 
   /**

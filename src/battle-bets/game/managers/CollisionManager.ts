@@ -122,16 +122,14 @@ class CollisionManager {
         const withinCollisionDistance = distance <= combinedRadius;
 
         if (hasCrossed || withinCollisionDistance) {
-          // CRITICAL FIX: Mark both projectiles as collided AND stop both animations
+          // CRITICAL FIX: Mark both projectiles as collided AND properly terminate both animations
           other.collided = true;
           other.collidedWith = 'projectile';
 
-          // STOP THE OTHER PROJECTILE'S ANIMATION IMMEDIATELY!
-          // This is the critical fix - without this, the other projectile keeps flying
-          if (other.animation) {
-            other.animation.kill();
-            other.animation = null;
-          }
+          // TERMINATE THE OTHER PROJECTILE PROPERLY!
+          // This kills the animation, creates impact effect, and resolves the promise
+          // so cleanup can proceed without leaving ghost sprites
+          other.terminateFromCollision();
 
           console.log(`⚔️ [PROJECTILE COLLISION] ${projectile.id} (X=${projectile.position.x.toFixed(1)}) ↔ ${other.id} (X=${other.position.x.toFixed(1)})`);
 
