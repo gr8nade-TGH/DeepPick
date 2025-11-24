@@ -3,16 +3,13 @@
  */
 
 .quarter-debug-controls {
-  position: fixed;
-  /* bottom is set dynamically via inline style based on index */
-  right: 20px;
+  /* Position, bottom, right, and z-index are set dynamically via inline styles */
   background: linear-gradient(135deg, #1a1d29 0%, #2d3142 100%);
   border: 2px solid #4ecdc4;
   border-radius: 12px;
   padding: 16px;
   min-width: 320px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-  z-index: 9999;
   font-family: 'Arial', sans-serif;
 }
 
