@@ -536,6 +536,9 @@ export function updateDynamicVSDisplay(
     status: GameStatus;
     gameStartTime?: string | null;
     currentQuarter?: number;
+    quarterEndTime?: string | null;
+    isBattleInProgress?: boolean;
+    completedQuarters?: number[];
   }
 ): void {
   const width = getCanvasWidth();
@@ -577,6 +580,9 @@ export function updateDynamicVSDisplay(
     status: config.status,
     gameStartTime: config.gameStartTime,
     currentQuarter: config.currentQuarter,
+    quarterEndTime: config.quarterEndTime,
+    isBattleInProgress: config.isBattleInProgress,
+    completedQuarters: config.completedQuarters,
   });
 
   container.addChild(vsDisplay);

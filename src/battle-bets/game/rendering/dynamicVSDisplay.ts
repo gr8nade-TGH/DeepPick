@@ -1,7 +1,7 @@
 /**
  * Dynamic VS Display System
  * Replaces static "VS" text with dynamic status display
- * Shows: Countdown timer, Quarter status (Q1, Q2, Q3, Q4, OT), FINAL
+ * Shows: Countdown timer, Quarter status (Q1, Q2, Q3, Q4, OT), FINAL, Battle In-Progress
  */
 
 import * as PIXI from 'pixi.js';
@@ -13,6 +13,9 @@ interface VSDisplayConfig {
   status: GameStatus;
   gameStartTime?: string | null;
   currentQuarter?: number;
+  quarterEndTime?: string | null; // When current quarter ends (for countdown)
+  isBattleInProgress?: boolean; // True when battle animation is running
+  completedQuarters?: number[]; // Array of completed quarter numbers [1, 2, 3, 4]
 }
 
 /**
@@ -20,16 +23,32 @@ interface VSDisplayConfig {
  * Returns a container with the status text
  */
 export function createDynamicVSDisplay(config: VSDisplayConfig): PIXI.Container {
-  const { centerX, centerY, status, gameStartTime, currentQuarter } = config;
+  const {
+    centerX,
+    centerY,
+    status,
+    gameStartTime,
+    currentQuarter,
+    quarterEndTime,
+    isBattleInProgress,
+    completedQuarters = []
+  } = config;
 
   const container = new PIXI.Container();
   container.label = 'dynamic-vs-display';
   container.position.set(centerX, centerY);
 
-  // Determine what to display based on status
-  const displayText = getDisplayText(status, gameStartTime, currentQuarter);
-  const textColor = getTextColor(status);
-  const fontSize = getFontSize(status);
+  // Determine what to display based on status and battle state
+  const displayText = getDisplayText(
+    status,
+    gameStartTime,
+    currentQuarter,
+    quarterEndTime,
+    isBattleInProgress,
+    completedQuarters
+  );
+  const textColor = getTextColor(status, isBattleInProgress);
+  const fontSize = getFontSize(status, isBattleInProgress);
 
   // Create main text
   const mainText = new PIXI.Text({
@@ -58,14 +77,14 @@ export function createDynamicVSDisplay(config: VSDisplayConfig): PIXI.Container 
       text: displayText.subtitle,
       style: {
         fontFamily: 'Arial, sans-serif',
-        fontSize: 16,
-        fontWeight: '600',
-        fill: 0xaaaaaa,
+        fontSize: 18,
+        fontWeight: '700',
+        fill: displayText.subtitleColor || 0xaaaaaa,
         stroke: { color: 0x000000, width: 2 },
       },
     });
     subtitleText.anchor.set(0.5);
-    subtitleText.position.set(0, 30);
+    subtitleText.position.set(0, 32);
     container.addChild(subtitleText);
   }
 
@@ -73,13 +92,26 @@ export function createDynamicVSDisplay(config: VSDisplayConfig): PIXI.Container 
 }
 
 /**
- * Get display text based on game status
+ * Get display text based on game status and battle state
  */
 function getDisplayText(
   status: GameStatus,
   gameStartTime?: string | null,
-  currentQuarter?: number
-): { main: string; subtitle?: string } {
+  currentQuarter?: number,
+  quarterEndTime?: string | null,
+  isBattleInProgress?: boolean,
+  completedQuarters: number[] = []
+): { main: string; subtitle?: string; subtitleColor?: number } {
+
+  // If battle is in progress for a specific quarter, show "Q# Battle In-Progress"
+  if (isBattleInProgress && currentQuarter) {
+    return {
+      main: `Q${currentQuarter}`,
+      subtitle: 'Battle In-Progress',
+      subtitleColor: 0xff9f43, // Orange for active battle
+    };
+  }
+
   switch (status) {
     case 'SCHEDULED':
       // Show countdown timer if game start time is available
@@ -87,37 +119,79 @@ function getDisplayText(
         const countdown = getCountdownText(gameStartTime);
         return {
           main: 'VS',
-          subtitle: countdown,
+          subtitle: `Game starts in ${countdown}`,
+          subtitleColor: 0x4ecdc4, // Cyan
         };
       }
       return { main: 'VS' };
 
     case '1Q':
-      return { main: 'Q1' };
-
     case '2Q':
-      return { main: 'Q2' };
-
     case '3Q':
-      return { main: 'Q3' };
+    case '4Q': {
+      const quarter = parseInt(status[0]); // Extract quarter number (1, 2, 3, 4)
 
-    case '4Q':
-      return { main: 'Q4' };
+      // If this quarter is completed, show "Q# Complete"
+      if (completedQuarters.includes(quarter)) {
+        return {
+          main: `Q${quarter}`,
+          subtitle: 'Complete',
+          subtitleColor: 0x10b981, // Green for complete
+        };
+      }
+
+      // If quarter is in progress, show countdown to quarter end
+      if (quarterEndTime) {
+        const countdown = getCountdownText(quarterEndTime);
+        return {
+          main: `Q${quarter}`,
+          subtitle: `In Progress • ${countdown}`,
+          subtitleColor: 0x4ecdc4, // Cyan for active
+        };
+      }
+
+      // Default: just show quarter
+      return {
+        main: `Q${quarter}`,
+        subtitle: 'In Progress',
+        subtitleColor: 0x4ecdc4,
+      };
+    }
 
     case 'OT':
-      return { main: 'OT' };
+      return {
+        main: 'OT',
+        subtitle: quarterEndTime ? `In Progress • ${getCountdownText(quarterEndTime)}` : 'In Progress',
+        subtitleColor: 0xff9f43, // Orange for overtime
+      };
 
     case 'OT2':
-      return { main: 'OT2' };
+      return {
+        main: 'OT2',
+        subtitle: quarterEndTime ? `In Progress • ${getCountdownText(quarterEndTime)}` : 'In Progress',
+        subtitleColor: 0xff9f43,
+      };
 
     case 'OT3':
-      return { main: 'OT3' };
+      return {
+        main: 'OT3',
+        subtitle: quarterEndTime ? `In Progress • ${getCountdownText(quarterEndTime)}` : 'In Progress',
+        subtitleColor: 0xff9f43,
+      };
 
     case 'OT4':
-      return { main: 'OT4' };
+      return {
+        main: 'OT4',
+        subtitle: quarterEndTime ? `In Progress • ${getCountdownText(quarterEndTime)}` : 'In Progress',
+        subtitleColor: 0xff9f43,
+      };
 
     case 'FINAL':
-      return { main: 'FINAL' };
+      return {
+        main: 'FINAL',
+        subtitle: 'Game Complete',
+        subtitleColor: 0xff6b6b, // Red
+      };
 
     default:
       return { main: 'VS' };
@@ -148,9 +222,14 @@ function getCountdownText(gameStartTime: string): string {
 }
 
 /**
- * Get text color based on status
+ * Get text color based on status and battle state
  */
-function getTextColor(status: GameStatus): number {
+function getTextColor(status: GameStatus, isBattleInProgress?: boolean): number {
+  // If battle is in progress, use orange
+  if (isBattleInProgress) {
+    return 0xff9f43; // Orange
+  }
+
   switch (status) {
     case 'SCHEDULED':
       return 0x999999; // Gray
@@ -172,13 +251,19 @@ function getTextColor(status: GameStatus): number {
 }
 
 /**
- * Get font size based on status
+ * Get font size based on status and battle state
  */
-function getFontSize(status: GameStatus): number {
+function getFontSize(status: GameStatus, isBattleInProgress?: boolean): number {
   // Smaller font for overtime labels (OT2, OT3, OT4)
   if (status === 'OT2' || status === 'OT3' || status === 'OT4') {
     return 32;
   }
+
+  // Slightly smaller when battle is in progress (to fit subtitle)
+  if (isBattleInProgress) {
+    return 34;
+  }
+
   return 36;
 }
 

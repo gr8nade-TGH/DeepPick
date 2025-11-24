@@ -300,28 +300,62 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
     // Get current quarter from store
     const battle = useMultiGameStore.getState().getBattle(battleId)
     const currentQuarter = battle?.currentQuarter ?? 0
+    const isBattleInProgress = battle?.isBattleInProgress ?? false
+    const completedQuarters = battle?.completedQuarters ?? []
+
+    // Determine quarter end time based on current quarter
+    let quarterEndTime: string | null = null
+    if (currentQuarter === 1 && q1EndTime) {
+      quarterEndTime = q1EndTime
+    } else if (currentQuarter === 2 && q2EndTime) {
+      quarterEndTime = q2EndTime
+    } else if (currentQuarter === 3 && q3EndTime) {
+      quarterEndTime = q3EndTime
+    } else if (currentQuarter === 4 && q4EndTime) {
+      quarterEndTime = q4EndTime
+    }
 
     // Update VS display immediately
     updateDynamicVSDisplay(container, {
       status: game.status || 'SCHEDULED',
       gameStartTime: gameStartTime ?? null,
       currentQuarter,
+      quarterEndTime,
+      isBattleInProgress,
+      completedQuarters,
     })
 
     // Update every second for countdown timer
     const interval = setInterval(() => {
       const battle = useMultiGameStore.getState().getBattle(battleId)
       const currentQuarter = battle?.currentQuarter ?? 0
+      const isBattleInProgress = battle?.isBattleInProgress ?? false
+      const completedQuarters = battle?.completedQuarters ?? []
+
+      // Recalculate quarter end time
+      let quarterEndTime: string | null = null
+      if (currentQuarter === 1 && q1EndTime) {
+        quarterEndTime = q1EndTime
+      } else if (currentQuarter === 2 && q2EndTime) {
+        quarterEndTime = q2EndTime
+      } else if (currentQuarter === 3 && q3EndTime) {
+        quarterEndTime = q3EndTime
+      } else if (currentQuarter === 4 && q4EndTime) {
+        quarterEndTime = q4EndTime
+      }
 
       updateDynamicVSDisplay(container, {
         status: game.status || 'SCHEDULED',
         gameStartTime: gameStartTime ?? null,
         currentQuarter,
+        quarterEndTime,
+        isBattleInProgress,
+        completedQuarters,
       })
     }, 1000)
 
     return () => clearInterval(interval)
-  }, [battleId, game.status, gameStartTime, containerReady])
+  }, [battleId, game.status, gameStartTime, q1EndTime, q2EndTime, q3EndTime, q4EndTime, containerReady])
 
   if (webglSupport && !webglSupport.supported) {
     return (

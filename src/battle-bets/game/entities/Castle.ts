@@ -1133,35 +1133,36 @@ export class Castle {
 
     // Create a glowing blue orb that covers the castle
     const orbRadius = 70; // Large enough to cover the castle
-    const orbCenterY = -50; // Move up to cover the top of the castle
+    const orbCenterX = -10; // Move left
+    const orbCenterY = -60; // Move up to cover the top of the castle
     const orb = new PIXI.Graphics();
 
     // Draw multiple layers for a glowing effect
     // Outer glow (largest, most transparent)
-    orb.circle(0, orbCenterY, orbRadius + 15);
+    orb.circle(orbCenterX, orbCenterY, orbRadius + 15);
     orb.fill({ color: 0x3b82f6, alpha: 0.1 });
 
     // Middle glow
-    orb.circle(0, orbCenterY, orbRadius + 8);
+    orb.circle(orbCenterX, orbCenterY, orbRadius + 8);
     orb.fill({ color: 0x60a5fa, alpha: 0.15 });
 
     // Inner glow
-    orb.circle(0, orbCenterY, orbRadius);
+    orb.circle(orbCenterX, orbCenterY, orbRadius);
     orb.fill({ color: 0x93c5fd, alpha: 0.2 });
 
     // Core shield (brightest)
-    orb.circle(0, orbCenterY, orbRadius - 5);
+    orb.circle(orbCenterX, orbCenterY, orbRadius - 5);
     orb.stroke({ width: 3, color: 0x3b82f6, alpha: 0.6 });
 
     // Add hexagonal pattern for sci-fi look
     const hexSize = 15;
     for (let row = -3; row <= 3; row++) {
       for (let col = -3; col <= 3; col++) {
-        const x = col * hexSize * 1.5;
+        const x = orbCenterX + col * hexSize * 1.5;
         const y = row * hexSize * Math.sqrt(3) + (col % 2) * hexSize * Math.sqrt(3) / 2 + orbCenterY;
 
         // Only draw hexagons within the orb radius
-        const distance = Math.sqrt(x * x + (y - orbCenterY) * (y - orbCenterY));
+        const distance = Math.sqrt((x - orbCenterX) * (x - orbCenterX) + (y - orbCenterY) * (y - orbCenterY));
         if (distance < orbRadius - 10) {
           this.drawHexagon(orb, x, y, hexSize * 0.4, 0x60a5fa, 0.3);
         }

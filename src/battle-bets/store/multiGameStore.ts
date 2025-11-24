@@ -31,6 +31,8 @@ export interface BattleState {
   capperHP: Map<string, { currentHP: number; maxHP: number }>; // Key: "side" (e.g., "left", "right")
   defenseDots: Map<string, DefenseDot>;
   projectiles: BaseProjectile[];
+  isBattleInProgress: boolean; // True when battle animation is running
+  completedQuarters: number[]; // Array of completed quarter numbers [1, 2, 3, 4]
 }
 
 /**
@@ -52,6 +54,8 @@ interface MultiGameState {
   setCurrentQuarter: (battleId: string, quarter: number) => void;
   updateScore: (battleId: string, leftScore: number, rightScore: number) => void;
   updateGameStatus: (battleId: string, status: Game['status']) => void;
+  setBattleInProgress: (battleId: string, inProgress: boolean) => void;
+  markQuarterComplete: (battleId: string, quarter: number) => void;
   updateBattle: (battleId: string, updater: (battle: BattleState) => BattleState) => void;
   resetBattle: (battleId: string) => void;
   resetAllBattles: () => void;
@@ -77,7 +81,9 @@ export const useMultiGameStore = create<MultiGameState>()(
           currentQuarter: 0,
           capperHP: new Map(),
           defenseDots: new Map(),
-          projectiles: []
+          projectiles: [],
+          isBattleInProgress: false,
+          completedQuarters: []
         };
 
         set(state => {
@@ -368,6 +374,30 @@ export const useMultiGameStore = create<MultiGameState>()(
           const battle = newBattles.get(battleId);
           if (battle) {
             battle.game.status = status;
+          }
+          return { battles: newBattles };
+        });
+      },
+
+      // Set battle in progress state
+      setBattleInProgress: (battleId: string, inProgress: boolean) => {
+        set(state => {
+          const newBattles = new Map(state.battles);
+          const battle = newBattles.get(battleId);
+          if (battle) {
+            battle.isBattleInProgress = inProgress;
+          }
+          return { battles: newBattles };
+        });
+      },
+
+      // Mark a quarter as complete
+      markQuarterComplete: (battleId: string, quarter: number) => {
+        set(state => {
+          const newBattles = new Map(state.battles);
+          const battle = newBattles.get(battleId);
+          if (battle && !battle.completedQuarters.includes(quarter)) {
+            battle.completedQuarters = [...battle.completedQuarters, quarter];
           }
           return { battles: newBattles };
         });
