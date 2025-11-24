@@ -1001,7 +1001,7 @@ export class Castle {
   /**
    * Activate shield from equipped item
    */
-  private activateShield(item: InventoryItem): void {
+  public activateShield(item: InventoryItem): void {
     console.log(`🛡️ activateShield called with item:`, item);
 
     if (!item.shieldHP || !item.shieldActivationThreshold) {
@@ -1206,16 +1206,29 @@ export class Castle {
   }
 
   /**
-   * Update shield HP visual when shield takes damage
+   * Update shield HP visual when shield takes damage or heals
    */
-  private updateShieldVisual(): void {
-    if (!this.shieldVisual || !this.shieldState || !this.sprite) return;
+  public updateShieldVisual(): void {
+    if (!this.shieldVisual || !this.sprite) return;
+
+    // Sync local shield state with CastleHealthSystem
+    const shield = castleHealthSystem.getShield(this.id);
+    if (!shield || !shield.isActive) {
+      console.warn(`⚠️ updateShieldVisual called but no active shield in CastleHealthSystem`);
+      return;
+    }
+
+    // Update local shield state
+    if (this.shieldState) {
+      this.shieldState.currentHP = shield.currentHP;
+      this.shieldState.maxHP = shield.maxHP;
+    }
 
     // Match castle HP bar dimensions
     const castleWidth = this.sprite.width;
     const barWidth = castleWidth * 0.8;
     const barHeight = 10;
-    const shieldPercent = this.shieldState.currentHP / this.shieldState.maxHP;
+    const shieldPercent = shield.currentHP / shield.maxHP;
 
     // Update the fill bar width
     const fill = this.shieldVisual.children.find(child => child.label === 'shield-fill') as PIXI.Graphics;
@@ -1228,7 +1241,7 @@ export class Castle {
     // Update the text
     const shieldText = this.shieldVisual.children.find(child => child.label === 'shield-hp-text') as PIXI.Text;
     if (shieldText) {
-      shieldText.text = `🛡️${this.shieldState.currentHP}`;
+      shieldText.text = `🛡️${shield.currentHP}`;
     }
   }
 

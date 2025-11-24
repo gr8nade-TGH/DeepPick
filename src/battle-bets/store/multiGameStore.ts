@@ -19,6 +19,8 @@ import {
 import { castleManager } from '../game/managers/CastleManager';
 import { getDefenseCellPosition } from '../game/utils/positioning';
 import { debugLogger } from '../game/debug/DebugLogger';
+import { itemEffectRegistry } from '../game/items/ItemEffectRegistry';
+import { rollTestItem } from '../game/items/ItemTestUtils';
 
 /**
  * State for a single battle
@@ -87,6 +89,9 @@ export const useMultiGameStore = create<MultiGameState>()(
         // Initialize HP and defense dots for this battle
         get().initializeCapperHP(battleId);
         get().initializeDefenseDots(battleId);
+
+        // Auto-activate equipped items
+        activateEquippedItems(battleId, game);
       },
 
       // Initialize capper HP for a battle
@@ -417,4 +422,65 @@ export const useMultiGameStore = create<MultiGameState>()(
     { name: 'BattleBets-MultiGameStore' }
   )
 );
+
+/**
+ * Helper function to activate equipped items for a battle
+ */
+async function activateEquippedItems(battleId: string, game: Game): Promise<void> {
+  console.log(`🎮 [Items] Activating equipped items for battle ${battleId}`);
+
+  // Left side items
+  const leftItems = game.leftCapper.equippedItems;
+  if (leftItems) {
+    if (leftItems.slot1) {
+      const rolled = rollTestItem(leftItems.slot1);
+      if (rolled) {
+        await itemEffectRegistry.activateItem(battleId, 'left', rolled);
+        console.log(`✅ [Items] Activated ${leftItems.slot1} on LEFT slot1`);
+      }
+    }
+    if (leftItems.slot2) {
+      const rolled = rollTestItem(leftItems.slot2);
+      if (rolled) {
+        await itemEffectRegistry.activateItem(battleId, 'left', rolled);
+        console.log(`✅ [Items] Activated ${leftItems.slot2} on LEFT slot2`);
+      }
+    }
+    if (leftItems.slot3) {
+      const rolled = rollTestItem(leftItems.slot3);
+      if (rolled) {
+        await itemEffectRegistry.activateItem(battleId, 'left', rolled);
+        console.log(`✅ [Items] Activated ${leftItems.slot3} on LEFT slot3`);
+      }
+    }
+  }
+
+  // Right side items
+  const rightItems = game.rightCapper.equippedItems;
+  if (rightItems) {
+    if (rightItems.slot1) {
+      const rolled = rollTestItem(rightItems.slot1);
+      if (rolled) {
+        await itemEffectRegistry.activateItem(battleId, 'right', rolled);
+        console.log(`✅ [Items] Activated ${rightItems.slot1} on RIGHT slot1`);
+      }
+    }
+    if (rightItems.slot2) {
+      const rolled = rollTestItem(rightItems.slot2);
+      if (rolled) {
+        await itemEffectRegistry.activateItem(battleId, 'right', rolled);
+        console.log(`✅ [Items] Activated ${rightItems.slot2} on RIGHT slot2`);
+      }
+    }
+    if (rightItems.slot3) {
+      const rolled = rollTestItem(rightItems.slot3);
+      if (rolled) {
+        await itemEffectRegistry.activateItem(battleId, 'right', rolled);
+        console.log(`✅ [Items] Activated ${rightItems.slot3} on RIGHT slot3`);
+      }
+    }
+  }
+
+  console.log(`✅ [Items] All equipped items activated for battle ${battleId}`);
+}
 

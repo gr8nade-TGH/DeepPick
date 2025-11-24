@@ -22,6 +22,8 @@ import { battleEventEmitter } from '../EventEmitter';
 import { itemEffectRegistry } from '../ItemEffectRegistry';
 import type { ItemRuntimeContext } from '../ItemEffectRegistry';
 import type { ItemDefinition } from '../ItemRollSystem';
+import { castleHealthSystem } from '../../systems/CastleHealthSystem';
+import { castleManager } from '../../managers/CastleManager';
 
 /**
  * Item definition for LAL Ironman Armor
@@ -63,10 +65,31 @@ export function registerIronmanArmorEffect(context: ItemRuntimeContext): void {
 
       console.log(`🛡️ [IronmanArmor] Creating shield for ${side} with ${startShieldHp} HP`);
 
+      // Get castle ID from gameId and side
+      const castleId = `${gameId}-${side}`;
+
       // Create shield using CastleHealthSystem
-      // TODO: Integrate with CastleHealthSystem.createShield()
-      // For now, just log
-      console.log(`🛡️ [IronmanArmor] Shield created! (Implementation pending)`);
+      castleHealthSystem.activateShield(
+        castleId,
+        startShieldHp,
+        0, // No activation threshold - shield is active immediately
+        'LAL_def_ironman_armor'
+      );
+
+      // Trigger visual update on castle
+      const castle = castleManager.getCastle(castleId);
+      if (castle) {
+        castle.activateShield({
+          id: 'LAL_def_ironman_armor',
+          name: 'AC "Ironman" Armor',
+          description: 'Castle shield',
+          icon: '🛡️',
+          shieldHP: startShieldHp,
+          shieldActivationThreshold: 0,
+        });
+      }
+
+      console.log(`✅ [IronmanArmor] Shield created with ${startShieldHp} HP!`);
 
       // Store shield ID in counter
       itemEffectRegistry.setCounter(itemInstanceId, 'shieldId', 1);
@@ -91,14 +114,21 @@ export function registerIronmanArmorEffect(context: ItemRuntimeContext): void {
 
       console.log(`🛡️ [IronmanArmor] Defense orb destroyed on ${side} ${payload.lane}, adding +${hpPerDestroyedOrb} HP to shield`);
 
-      // Heal shield
-      // TODO: Integrate with CastleHealthSystem.healShield()
-      // For now, just log
-      console.log(`🛡️ [IronmanArmor] Shield healed by +${hpPerDestroyedOrb} HP (Implementation pending)`);
+      // Get castle ID from gameId and side
+      const castleId = `${gameId}-${side}`;
+
+      // Heal shield using CastleHealthSystem
+      castleHealthSystem.healShield(castleId, hpPerDestroyedOrb);
+
+      // Trigger visual update on castle
+      const castle = castleManager.getCastle(castleId);
+      if (castle) {
+        castle.updateShieldVisual();
+      }
 
       // Track total HP gained
       const totalHpGained = itemEffectRegistry.incrementCounter(itemInstanceId, 'totalHpGained', hpPerDestroyedOrb);
-      console.log(`🛡️ [IronmanArmor] Total HP gained from orbs: ${totalHpGained}`);
+      console.log(`✅ [IronmanArmor] Shield healed by +${hpPerDestroyedOrb} HP! Total HP gained: ${totalHpGained}`);
     },
     gameId // Filter by gameId
   );

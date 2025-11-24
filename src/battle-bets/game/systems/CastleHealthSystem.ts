@@ -254,6 +254,28 @@ class CastleHealthSystem {
   }
 
   /**
+   * Heal shield HP (for items like Ironman Armor that gain shield HP)
+   */
+  healShield(castleId: string, amount: number): void {
+    const health = this.health.get(castleId);
+    if (!health) {
+      console.error(`[CastleHealthSystem] Castle ${castleId} not found`);
+      return;
+    }
+
+    if (!health.shield || !health.shield.isActive) {
+      console.warn(`[CastleHealthSystem] No active shield to heal for ${castleId}`);
+      return;
+    }
+
+    const oldShieldHP = health.shield.currentHP;
+    health.shield.currentHP = Math.min(health.shield.currentHP + amount, health.shield.maxHP);
+    const actualHeal = health.shield.currentHP - oldShieldHP;
+
+    console.log(`[CastleHealthSystem] Shield healed for ${castleId}: +${actualHeal} HP (${oldShieldHP} → ${health.shield.currentHP})`);
+  }
+
+  /**
    * Get damage history for a castle
    */
   getDamageHistory(castleId: string): DamageEvent[] {
