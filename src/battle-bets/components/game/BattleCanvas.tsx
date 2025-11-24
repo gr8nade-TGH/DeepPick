@@ -30,6 +30,7 @@ interface BattleCanvasProps {
   q3EndTime?: string | null
   q4EndTime?: string | null
   winner?: 'left' | 'right' | null
+  autoStart?: boolean // Only auto-start simulation if true (prevents multiple battles from running simultaneously)
 }
 
 export const BattleCanvas: React.FC<BattleCanvasProps> = ({
@@ -42,7 +43,8 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
   halftimeEndTime,
   q3EndTime,
   q4EndTime,
-  winner = null
+  winner = null,
+  autoStart = false
 }) => {
   const canvasRef = useRef<HTMLDivElement>(null)
   const appRef = useRef<PIXI.Application | null>(null)
@@ -244,17 +246,20 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
   }, [battleId, getBattle, containerReady])
 
   // Auto-start debug simulation for this battle when ?debug=1 is present
+  // ONLY if autoStart=true (prevents multiple battles from running simultaneously)
   useEffect(() => {
     if (!debugMode) return
+    if (!autoStart) return // NEW: Only auto-start if explicitly enabled
     if (!containerReady) return
     if (hasStartedSimulationRef.current) return
 
     hasStartedSimulationRef.current = true
 
+    console.log(`🎮 [BattleCanvas] Auto-starting simulation for battle ${battleId}`)
     runDebugBattleForMultiStore(battleId).catch(error => {
       console.error(`[BattleCanvas] Debug battle simulation failed for ${battleId}:`, error)
     })
-  }, [battleId, debugMode, containerReady])
+  }, [battleId, debugMode, autoStart, containerReady])
 
 
   // Update battle status overlay (countdown timers) every second

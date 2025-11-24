@@ -313,7 +313,7 @@ function App() {
       <main style={{ maxWidth: '1400px', margin: '0 auto' }}>
         {/* Battles Grid - Vertical Stack */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
-          {battles.map((game) => (
+          {battles.map((game, index) => (
             <div
               key={game.id}
               style={{
@@ -378,6 +378,7 @@ function App() {
                       q3EndTime={(game as any)._battleData?.q3EndTime}
                       q4EndTime={(game as any)._battleData?.q4EndTime}
                       winner={(game as any)._battleData?.winner}
+                      autoStart={index === 0}
                     />
                   </div>
 
