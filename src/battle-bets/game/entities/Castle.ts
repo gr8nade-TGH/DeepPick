@@ -1133,7 +1133,7 @@ export class Castle {
 
     // Create a glowing blue orb that covers the castle
     const orbRadius = 70; // Large enough to cover the castle
-    const orbCenterX = 10; // Move right (was -10)
+    const orbCenterX = 0; // Centered (was 10, too far right)
     const orbCenterY = -60; // Move up to cover the top of the castle
     const orb = new PIXI.Graphics();
 

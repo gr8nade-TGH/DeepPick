@@ -44,7 +44,7 @@ function calculateQuality(item: ItemDefinition, rolls: Record<string, number>): 
   for (const key of rollKeys) {
     const range = item.rollRanges[key];
     const roll = rolls[key];
-    
+
     if (roll !== undefined) {
       const rangeSize = range.max - range.min;
       const rollScore = roll - range.min;
@@ -65,8 +65,10 @@ export const ItemTooltip: React.FC<ItemTooltipProps> = ({ item, rolls, quality }
   const calculatedQuality = quality || (rolls ? calculateQuality(item, rolls) : 'Balanced');
   const qualityColor = getQualityColor(calculatedQuality);
 
+  console.log('🎨 [ItemTooltip] Rendering tooltip:', { item: item.name, quality: calculatedQuality, rolls });
+
   return (
-    <div className="item-tooltip">
+    <div className="item-tooltip" data-quality={calculatedQuality}>
       {/* Item Name */}
       <div className="tooltip-name" style={{ color: qualityColor }}>
         {item.icon} {item.name}
@@ -91,7 +93,7 @@ export const ItemTooltip: React.FC<ItemTooltipProps> = ({ item, rolls, quality }
             const roll = rolls[key];
             const isMax = roll === range.max;
             const isMin = roll === range.min;
-            
+
             // Format stat name (camelCase to Title Case)
             const statName = key
               .replace(/([A-Z])/g, ' $1')

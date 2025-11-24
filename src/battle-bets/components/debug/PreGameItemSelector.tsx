@@ -304,13 +304,15 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
     quality: 'Warped' | 'Balanced' | 'Honed' | 'Masterwork'
   ) => {
     const rect = event.currentTarget.getBoundingClientRect();
-    setTooltipData({
+    const tooltipInfo = {
       item,
       rolls,
       quality,
       x: rect.right + 10,
       y: rect.top,
-    });
+    };
+    console.log('🎯 [PreGameItemSelector] Showing tooltip:', tooltipInfo);
+    setTooltipData(tooltipInfo);
   };
 
   /**
@@ -548,9 +550,9 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
             position: 'fixed',
             left: `${tooltipData.x}px`,
             top: `${tooltipData.y}px`,
-            zIndex: 10000,
+            zIndex: 10001,
+            pointerEvents: 'none',
           }}
-          data-quality={tooltipData.quality}
         >
           <ItemTooltip
             item={tooltipData.item}
