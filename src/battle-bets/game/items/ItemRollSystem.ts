@@ -17,9 +17,10 @@ export interface ItemDefinition {
   id: string;
   team: string;
   teamName: string;
-  slot: 'attack' | 'defense';
+  slot: 'attack' | 'defense' | 'unique';
   name: string;
   description: string;
+  icon?: string; // Optional emoji icon for display
   rollRanges: Record<string, StatRollRange>;
 }
 
@@ -36,11 +37,11 @@ export interface RolledItemStats {
 function rollStat(range: StatRollRange): number {
   const { min, max, step } = range;
   const raw = min + Math.random() * (max - min);
-  
+
   if (step) {
     return Math.round(raw / step) * step;
   }
-  
+
   // Round to 1 decimal place by default
   return Math.round(raw * 10) / 10;
 }
@@ -54,20 +55,20 @@ function calculateQualityScore(
 ): number {
   const statKeys = Object.keys(rolls);
   if (statKeys.length === 0) return 50; // Default to Balanced
-  
+
   let totalScore = 0;
-  
+
   for (const key of statKeys) {
     const value = rolls[key];
     const range = ranges[key];
-    
+
     if (!range) continue;
-    
+
     // Calculate percentage of max (0-100)
     const percentage = ((value - range.min) / (range.max - range.min)) * 100;
     totalScore += percentage;
   }
-  
+
   // Average across all stats
   return totalScore / statKeys.length;
 }
@@ -91,22 +92,22 @@ function determineQualityTier(score: number): QualityTier {
  */
 export function rollItem(definition: ItemDefinition): RolledItemStats {
   const rolls: Record<string, number> = {};
-  
+
   // Roll each stat
   for (const [key, range] of Object.entries(definition.rollRanges)) {
     rolls[key] = rollStat(range);
   }
-  
+
   // Calculate quality
   const qualityScore = calculateQualityScore(rolls, definition.rollRanges);
   const qualityTier = determineQualityTier(qualityScore);
-  
+
   console.log(`🎲 [ItemRollSystem] Rolled ${definition.name}:`, {
     rolls,
     qualityScore: qualityScore.toFixed(1),
     qualityTier,
   });
-  
+
   return {
     itemId: definition.id,
     rolls,
@@ -123,12 +124,12 @@ export function rollItemById(
   itemDefinitions: ItemDefinition[]
 ): RolledItemStats | null {
   const definition = itemDefinitions.find((def) => def.id === itemId);
-  
+
   if (!definition) {
     console.error(`❌ [ItemRollSystem] Item definition not found: ${itemId}`);
     return null;
   }
-  
+
   return rollItem(definition);
 }
 
@@ -140,7 +141,7 @@ export function rollItemWithTier(
   targetTier: QualityTier
 ): RolledItemStats {
   const rolls: Record<string, number> = {};
-  
+
   // Determine target score range for tier
   let targetScore: number;
   switch (targetTier) {
@@ -157,7 +158,7 @@ export function rollItemWithTier(
       targetScore = Math.random() * 25; // 0-25
       break;
   }
-  
+
   // Roll stats biased toward target score
   for (const [key, range] of Object.entries(definition.rollRanges)) {
     const { min, max } = range;
@@ -167,10 +168,10 @@ export function rollItemWithTier(
     const value = targetValue + (Math.random() - 0.5) * variance;
     rolls[key] = Math.max(min, Math.min(max, value));
   }
-  
+
   const qualityScore = calculateQualityScore(rolls, definition.rollRanges);
   const qualityTier = determineQualityTier(qualityScore);
-  
+
   return {
     itemId: definition.id,
     rolls,

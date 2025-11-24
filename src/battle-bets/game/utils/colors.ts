@@ -12,7 +12,7 @@ export function getStatColor(stat: StatType): number {
     pts: 0xFF6B35, // Orange (Points)
     reb: 0x4ECDC4, // Cyan (Rebounds)
     ast: 0xF7B731, // Yellow (Assists)
-    blk: 0xFF3838, // Red (Blocks)
+    stl: 0xFF3838, // Red (Steals)
     '3pt': 0x00D2FF, // Blue (3-Point)
   };
 

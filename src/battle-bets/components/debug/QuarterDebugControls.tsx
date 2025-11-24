@@ -15,9 +15,10 @@ import { rollTestItem } from '../../game/items/ItemTestUtils';
 
 interface QuarterDebugControlsProps {
   battleId: string;
+  index?: number; // Index for positioning when multiple controls are shown
 }
 
-export const QuarterDebugControls: React.FC<QuarterDebugControlsProps> = ({ battleId }) => {
+export const QuarterDebugControls: React.FC<QuarterDebugControlsProps> = ({ battleId, index = 0 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastAction, setLastAction] = useState<string>('');
   const [isCollapsed, setIsCollapsed] = useState(true); // Start collapsed
@@ -187,10 +188,13 @@ export const QuarterDebugControls: React.FC<QuarterDebugControlsProps> = ({ batt
     }
   };
 
+  // Calculate position offset based on index
+  const bottomOffset = 20 + (index * 420); // Stack vertically with 420px spacing
+
   return (
-    <div className="quarter-debug-controls">
+    <div className="quarter-debug-controls" style={{ bottom: `${bottomOffset}px` }}>
       <div className="debug-header">
-        <h3>🎮 Quarter Debug Controls</h3>
+        <h3>🎮 Quarter Debug Controls {index + 1}</h3>
         <div className="debug-status">
           <span className="status-badge">{gameStatus}</span>
           <span className="quarter-badge">Q{currentQuarter}</span>

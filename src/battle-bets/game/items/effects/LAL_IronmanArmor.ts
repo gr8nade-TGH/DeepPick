@@ -33,6 +33,7 @@ export const LAL_IRONMAN_ARMOR_DEFINITION: ItemDefinition = {
   slot: 'defense',
   name: 'AC "Ironman" Armor',
   description: 'Castle shield that starts with 3 to 8 HP and gains +1 to 3 HP every time a defense orb is destroyed, then is gone for the matchup once it breaks.',
+  icon: '🛡️',
   rollRanges: {
     startShieldHp: { min: 3, max: 8, step: 1 },
     hpPerDestroyedOrb: { min: 1, max: 3, step: 1 },

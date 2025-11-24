@@ -138,22 +138,22 @@ export class BaseProjectile {
     // Outer glow layer
     const outerGlow = new PIXI.Graphics();
     outerGlow.roundRect(-width / 2 - 2, -height / 2 - 2, width + 4, height + 4, 3);
-    outerGlow.fill({ color: this.typeConfig.glowColor, alpha: 0.3 });
+    outerGlow.fill({ color: this.typeConfig.glowColor, alpha: 0.5 });
 
     // Middle glow layer
     const middleGlow = new PIXI.Graphics();
     middleGlow.roundRect(-width / 2 - 1, -height / 2 - 1, width + 2, height + 2, 2);
-    middleGlow.fill({ color: this.typeConfig.glowColor, alpha: 0.5 });
+    middleGlow.fill({ color: this.typeConfig.glowColor, alpha: 0.7 });
 
     // Main body
     const body = new PIXI.Graphics();
     body.roundRect(-width / 2, -height / 2, width, height, 2);
-    body.fill({ color: this.typeConfig.color });
+    body.fill({ color: this.typeConfig.color, alpha: 1.0 });
 
     // Highlight
     const highlight = new PIXI.Graphics();
     highlight.roundRect(-width / 2 + 2, -height / 2 + 1, width - 4, height / 2, 1);
-    highlight.fill({ color: 0xffffff, alpha: 0.3 });
+    highlight.fill({ color: 0xffffff, alpha: 0.5 });
 
     container.addChild(outerGlow);
     container.addChild(middleGlow);

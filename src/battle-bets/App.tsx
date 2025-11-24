@@ -505,10 +505,10 @@ function App() {
         {showDebugControls ? '🐛 DEBUG ON' : '🐛 DEBUG'}
       </button>
 
-      {/* Quarter Debug Controls - Show when debug is enabled, control first battle */}
-      {showDebugControls && battles.length > 0 && (
-        <QuarterDebugControls battleId={battles[0].id} />
-      )}
+      {/* Quarter Debug Controls - Show when debug is enabled, one for each battle */}
+      {showDebugControls && battles.map((battle, index) => (
+        <QuarterDebugControls key={battle.id} battleId={battle.id} index={index} />
+      ))}
 
       {/* Copy Debug Button - Only show when ?debug=1 */}
       {debugMode && battles.length > 0 && (
