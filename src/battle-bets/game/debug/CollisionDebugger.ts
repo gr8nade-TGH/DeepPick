@@ -33,7 +33,7 @@ class CollisionDebugger {
     this.collisionEvents.push({
       time: new Date().toLocaleTimeString(),
       type: hit ? 'HIT' : orbFound ? 'MISS' : 'CHECK',
-      projectileId: projectile.id.split('-').slice(-2).join('-'), // Shorten ID
+      projectileId: `${projectile.stat}-${projectile.id.split('-').slice(-2).join('-')}`, // Include stat
       cellId,
       orbFound,
       posX: Math.round(projectile.position.x)
