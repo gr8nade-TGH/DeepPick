@@ -54,7 +54,7 @@ class CollisionDebugger {
     defenseDots: Map<string, DefenseDot>
   ): string {
     const lines: string[] = [];
-    
+
     lines.push('🔍 COLLISION DEBUG SNAPSHOT');
     lines.push(`Game: ${gameId.split('-')[0]} | ${new Date().toLocaleTimeString()}`);
     lines.push('');
@@ -63,11 +63,14 @@ class CollisionDebugger {
     lines.push('🛡️ DEFENSE ORBS:');
     const stats: StatType[] = ['pts', 'reb', 'ast', 'blk', '3pt'];
     const sides: ('left' | 'right')[] = ['left', 'right'];
-    
+
+    // Also show sample cellIds for debugging
+    const sampleCellIds: string[] = [];
+
     sides.forEach(side => {
       const sideLabel = side === 'left' ? 'L' : 'R';
       const orbsByStat: string[] = [];
-      
+
       stats.forEach(stat => {
         const orbs: string[] = [];
         for (let i = 0; i < 10; i++) {
@@ -75,25 +78,34 @@ class CollisionDebugger {
           const orb = Array.from(defenseDots.values()).find(d => d.cellId === cellId);
           if (orb && orb.alive) {
             orbs.push(`${i}:${orb.hp}`);
+            // Collect first few cellIds for debugging
+            if (sampleCellIds.length < 3) {
+              sampleCellIds.push(`${cellId}→${orb.id.split('-').slice(-3).join('-')}`);
+            }
           }
         }
         if (orbs.length > 0) {
           orbsByStat.push(`${stat}[${orbs.join(',')}]`);
         }
       });
-      
+
       if (orbsByStat.length > 0) {
         lines.push(`  ${sideLabel}: ${orbsByStat.join(' | ')}`);
       }
     });
+
+    // Show sample cellId mappings
+    if (sampleCellIds.length > 0) {
+      lines.push(`  Sample IDs: ${sampleCellIds.join(' | ')}`);
+    }
     lines.push('');
 
     // Active Projectiles (concise)
     const leftProj = Array.from(activeProjectiles.values()).filter(p => p.side === 'left' && !p.collided);
     const rightProj = Array.from(activeProjectiles.values()).filter(p => p.side === 'right' && !p.collided);
-    
+
     lines.push(`🚀 PROJECTILES: L→R:${leftProj.length} | R→L:${rightProj.length}`);
-    
+
     // Show sample projectiles (max 3 per side)
     [...leftProj.slice(0, 3), ...rightProj.slice(0, 3)].forEach(p => {
       const cell = gridManager.getDefenseCellAtPosition(
