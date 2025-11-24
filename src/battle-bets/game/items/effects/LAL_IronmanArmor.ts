@@ -18,12 +18,13 @@
  * - Masterwork: Perfect rolls (e.g., 8 HP start, +3 per orb)
  */
 
-import { battleEventEmitter } from '../EventEmitter';
+import { battleEventBus } from '../../events/EventBus';
 import { itemEffectRegistry } from '../ItemEffectRegistry';
 import type { ItemRuntimeContext } from '../ItemEffectRegistry';
 import type { ItemDefinition } from '../ItemRollSystem';
 import { castleHealthSystem } from '../../systems/CastleHealthSystem';
 import { castleManager } from '../../managers/CastleManager';
+import { createShieldHealAnimation } from '../../effects/ShieldHealAnimation';
 
 /**
  * Item definition for LAL Ironman Armor
@@ -57,96 +58,98 @@ export function registerIronmanArmorEffect(context: ItemRuntimeContext): void {
   console.log(`🛡️ [IronmanArmor] Registering effect for ${side} (Start HP: ${startShieldHp}, +${hpPerDestroyedOrb} per orb)`);
 
   // BATTLE_START: Create shield
-  const battleStartSubId = battleEventEmitter.on(
-    'BATTLE_START',
-    (payload) => {
-      if (payload.gameId !== gameId) return;
-      if (payload.side !== side) return;
+  battleEventBus.on('BATTLE_START', (payload) => {
+    if (payload.gameId !== gameId) return;
+    if (payload.side !== side) return;
 
-      console.log(`🛡️ [IronmanArmor] Creating shield for ${side} with ${startShieldHp} HP`);
+    console.log(`🛡️ [IronmanArmor] Creating shield for ${side} with ${startShieldHp} HP`);
 
-      // Get castle ID from gameId and side
-      const castleId = `${gameId}-${side}`;
+    // Get castle ID from gameId and side
+    const castleId = `${gameId}-${side}`;
 
-      // Create shield using CastleHealthSystem
-      castleHealthSystem.activateShield(
-        castleId,
-        startShieldHp,
-        0, // No activation threshold - shield is active immediately
-        'LAL_def_ironman_armor'
-      );
+    // Create shield using CastleHealthSystem
+    castleHealthSystem.activateShield(
+      castleId,
+      startShieldHp,
+      0, // No activation threshold - shield is active immediately
+      'LAL_def_ironman_armor'
+    );
 
-      // Trigger visual update on castle
-      const castle = castleManager.getCastle(castleId);
-      if (castle) {
-        castle.activateShield({
-          id: 'LAL_def_ironman_armor',
-          name: 'AC "Ironman" Armor',
-          description: 'Castle shield',
-          icon: '🛡️',
-          shieldHP: startShieldHp,
-          shieldActivationThreshold: 0,
-        });
-      }
+    // Trigger visual update on castle
+    const castle = castleManager.getCastle(gameId, castleId);
+    if (castle) {
+      castle.activateShield({
+        id: 'LAL_def_ironman_armor',
+        name: 'AC "Ironman" Armor',
+        description: 'Castle shield',
+        icon: '🛡️',
+        shieldHP: startShieldHp,
+        shieldActivationThreshold: 0,
+      });
+    }
 
-      console.log(`✅ [IronmanArmor] Shield created with ${startShieldHp} HP!`);
+    console.log(`✅ [IronmanArmor] Shield created with ${startShieldHp} HP!`);
 
-      // Store shield ID in counter
-      itemEffectRegistry.setCounter(itemInstanceId, 'shieldId', 1);
-      itemEffectRegistry.setCounter(itemInstanceId, 'shieldActive', 1);
-    },
-    gameId // Filter by gameId
-  );
+    // Store shield ID in counter
+    itemEffectRegistry.setCounter(itemInstanceId, 'shieldId', 1);
+    itemEffectRegistry.setCounter(itemInstanceId, 'shieldActive', 1);
+  });
 
   // DEFENSE_ORB_DESTROYED: Add HP to shield
-  const orbDestroyedSubId = battleEventEmitter.on(
-    'DEFENSE_ORB_DESTROYED',
-    (payload) => {
-      if (payload.gameId !== gameId) return;
-      if (payload.side !== side) return;
+  battleEventBus.on('DEFENSE_ORB_DESTROYED', (payload) => {
+    if (payload.gameId !== gameId) return;
+    if (payload.side !== side) return;
 
-      // Check if shield is still active
-      const shieldActive = itemEffectRegistry.getCounter(itemInstanceId, 'shieldActive');
-      if (!shieldActive) {
-        console.log(`🛡️ [IronmanArmor] Shield already broken, ignoring orb destruction`);
-        return;
-      }
+    // Check if shield is still active
+    const shieldActive = itemEffectRegistry.getCounter(itemInstanceId, 'shieldActive');
+    if (!shieldActive) {
+      console.log(`🛡️ [IronmanArmor] Shield already broken, ignoring orb destruction`);
+      return;
+    }
 
-      console.log(`🛡️ [IronmanArmor] Defense orb destroyed on ${side} ${payload.lane}, adding +${hpPerDestroyedOrb} HP to shield`);
+    console.log(`🛡️ [IronmanArmor] Defense orb destroyed on ${side} ${payload.lane}, adding +${hpPerDestroyedOrb} HP to shield`);
 
-      // Get castle ID from gameId and side
-      const castleId = `${gameId}-${side}`;
+    // Get castle ID from gameId and side
+    const castleId = `${gameId}-${side}`;
 
-      // Heal shield using CastleHealthSystem
-      castleHealthSystem.healShield(castleId, hpPerDestroyedOrb);
+    // Get shield state BEFORE healing to check if it needs healing
+    const shield = castleHealthSystem.getShield(castleId);
+    if (!shield || !shield.isActive) {
+      console.log(`🛡️ [IronmanArmor] Shield not active, ignoring orb destruction`);
+      return;
+    }
 
+    // Only heal if shield is not at max HP
+    const needsHealing = shield.currentHP < shield.maxHP;
+
+    // Heal shield using CastleHealthSystem
+    castleHealthSystem.healShield(castleId, hpPerDestroyedOrb);
+
+    // Get castle for animation
+    const castle = castleManager.getCastle(gameId, castleId);
+    if (castle && needsHealing) {
       // Trigger visual update on castle
-      const castle = castleManager.getCastle(castleId);
-      if (castle) {
-        castle.updateShieldVisual();
-      }
+      castle.updateShieldVisual();
 
-      // Track total HP gained
-      const totalHpGained = itemEffectRegistry.incrementCounter(itemInstanceId, 'totalHpGained', hpPerDestroyedOrb);
-      console.log(`✅ [IronmanArmor] Shield healed by +${hpPerDestroyedOrb} HP! Total HP gained: ${totalHpGained}`);
-    },
-    gameId // Filter by gameId
-  );
+      // Create green orb animation from destroyed orb position to shield
+      createShieldHealAnimation(gameId, payload.orbId, castleId, hpPerDestroyedOrb);
+    }
+
+    // Track total HP gained
+    const totalHpGained = itemEffectRegistry.incrementCounter(itemInstanceId, 'totalHpGained', hpPerDestroyedOrb);
+    console.log(`✅ [IronmanArmor] Shield healed by +${hpPerDestroyedOrb} HP! Total HP gained: ${totalHpGained}`);
+  });
 
   // SHIELD_BROKEN: Mark shield as inactive
-  const shieldBrokenSubId = battleEventEmitter.on(
-    'SHIELD_BROKEN',
-    (payload) => {
-      if (payload.gameId !== gameId) return;
-      if (payload.side !== side) return;
+  battleEventBus.on('SHIELD_BROKEN', (payload) => {
+    if (payload.gameId !== gameId) return;
+    if (payload.side !== side) return;
 
-      console.log(`💥 [IronmanArmor] Shield broken on ${side}!`);
+    console.log(`💥 [IronmanArmor] Shield broken on ${side}!`);
 
-      // Mark shield as inactive
-      itemEffectRegistry.setCounter(itemInstanceId, 'shieldActive', 0);
-    },
-    gameId // Filter by gameId
-  );
+    // Mark shield as inactive
+    itemEffectRegistry.setCounter(itemInstanceId, 'shieldActive', 0);
+  });
 
   console.log(`✅ [IronmanArmor] Effect registered for ${side} (${itemInstanceId})`);
 }

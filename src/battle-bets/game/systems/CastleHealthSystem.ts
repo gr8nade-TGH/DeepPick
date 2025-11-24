@@ -255,8 +255,9 @@ class CastleHealthSystem {
 
   /**
    * Heal shield HP (for items like Ironman Armor that gain shield HP)
+   * For Ironman Armor: increases both current HP and max HP (shield grows)
    */
-  healShield(castleId: string, amount: number): void {
+  healShield(castleId: string, amount: number, increaseMax: boolean = true): void {
     const health = this.health.get(castleId);
     if (!health) {
       console.error(`[CastleHealthSystem] Castle ${castleId} not found`);
@@ -269,10 +270,20 @@ class CastleHealthSystem {
     }
 
     const oldShieldHP = health.shield.currentHP;
-    health.shield.currentHP = Math.min(health.shield.currentHP + amount, health.shield.maxHP);
+    const oldMaxHP = health.shield.maxHP;
+
+    // For Ironman Armor: increase max HP as well (shield grows)
+    if (increaseMax) {
+      health.shield.maxHP += amount;
+      health.shield.currentHP += amount;
+    } else {
+      // For other shields: just heal up to max
+      health.shield.currentHP = Math.min(health.shield.currentHP + amount, health.shield.maxHP);
+    }
+
     const actualHeal = health.shield.currentHP - oldShieldHP;
 
-    console.log(`[CastleHealthSystem] Shield healed for ${castleId}: +${actualHeal} HP (${oldShieldHP} → ${health.shield.currentHP})`);
+    console.log(`[CastleHealthSystem] Shield healed for ${castleId}: +${actualHeal} HP (${oldShieldHP}/${oldMaxHP} → ${health.shield.currentHP}/${health.shield.maxHP})`);
   }
 
   /**
