@@ -1098,11 +1098,16 @@ async function fireSingleProjectileForMultiBattle(
   projectile.sprite.visible = false;
 
   // If it reached target without hitting a defense dot, damage the opposing capper HP
+  console.log(`🎯 [Attack Node Check] Projectile ${projectile.id} finished - collidedWith: ${projectile.collidedWith || 'NONE'}`);
   if (!projectile.collidedWith) {
+    console.log(`💥 [CASTLE DAMAGE] Projectile ${projectile.id} hit attack node! Damaging ${targetSide} castle HP by 1`);
     useMultiGameStore.getState().applyDamageToCapperHP(battleId, targetSide, 1);
     screenShake.shake('large');
   } else if (projectile.collidedWith === 'defense') {
+    console.log(`🛡️ [Defense Hit] Projectile ${projectile.id} was blocked by defense orb`);
     screenShake.shake('medium');
+  } else if (projectile.collidedWith === 'projectile') {
+    console.log(`⚔️ [Projectile Collision] Projectile ${projectile.id} collided with another projectile`);
   }
 
   // Impact effect at final position

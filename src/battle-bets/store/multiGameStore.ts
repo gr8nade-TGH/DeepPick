@@ -233,24 +233,31 @@ export const useMultiGameStore = create<MultiGameState>()(
 
       // Apply damage to capper HP
       applyDamageToCapperHP: (battleId: string, side: 'left' | 'right', damage: number) => {
+        console.log(`🏰 [applyDamageToCapperHP] Called with battleId=${battleId}, side=${side}, damage=${damage}`);
+
         const battle = get().battles.get(battleId);
-        if (!battle) return;
+        if (!battle) {
+          console.error(`❌ [applyDamageToCapperHP] No battle found for battleId=${battleId}`);
+          return;
+        }
 
         const hp = battle.capperHP.get(side);
         if (!hp) {
-          console.warn(`[Multi-Game Store] No HP tracking found for ${battleId}-${side}`);
+          console.warn(`⚠️ [applyDamageToCapperHP] No HP tracking found for ${battleId}-${side}`);
           return;
         }
+
+        console.log(`🏰 [applyDamageToCapperHP] Current HP for ${side}: ${hp.currentHP}/${hp.maxHP}`);
 
         const newHP = Math.max(0, hp.currentHP - damage);
         const actualDamage = hp.currentHP - newHP;
 
         if (actualDamage > 0) {
           const capperName = side === 'left' ? battle.game.leftCapper.name : battle.game.rightCapper.name;
-          console.log(`[Multi-Game Store] ${capperName} HP: ${hp.currentHP} → ${newHP} (-${actualDamage})`);
+          console.log(`💥 [Multi-Game Store] ${capperName} HP: ${hp.currentHP} → ${newHP} (-${actualDamage})`);
 
           if (newHP === 0) {
-            console.log(`[Multi-Game Store] ${capperName} HAS BEEN DEFEATED!`);
+            console.log(`☠️ [Multi-Game Store] ${capperName} HAS BEEN DEFEATED!`);
           }
 
           // Update HP
@@ -264,9 +271,12 @@ export const useMultiGameStore = create<MultiGameState>()(
                 maxHP: hp.maxHP,
               });
               updatedBattle.capperHP = newCapperHP;
+              console.log(`✅ [applyDamageToCapperHP] HP updated in store for ${side}: ${newHP}/${hp.maxHP}`);
             }
             return { battles: newBattles };
           });
+        } else {
+          console.log(`⚠️ [applyDamageToCapperHP] No actual damage applied (already at 0 HP or invalid damage)`);
         }
       },
 
