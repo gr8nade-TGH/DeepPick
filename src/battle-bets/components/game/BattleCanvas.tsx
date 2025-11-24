@@ -230,11 +230,10 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
     })
   }, [battleId, getBattle, containerReady])
 
-  // Auto-start debug simulation for this battle when ?debug=1 is present
+  // Auto-start debug simulation for this battle
   // ONLY if autoStart=true (prevents multiple battles from running simultaneously)
   useEffect(() => {
-    if (!debugMode) return
-    if (!autoStart) return // NEW: Only auto-start if explicitly enabled
+    if (!autoStart) return
     if (!containerReady) return
     if (hasStartedSimulationRef.current) return
 
@@ -244,7 +243,7 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
     runDebugBattleForMultiStore(battleId).catch(error => {
       console.error(`[BattleCanvas] Debug battle simulation failed for ${battleId}:`, error)
     })
-  }, [battleId, debugMode, autoStart, containerReady])
+  }, [battleId, autoStart, containerReady])
 
 
   // Update battle status overlay (countdown timers) every second
