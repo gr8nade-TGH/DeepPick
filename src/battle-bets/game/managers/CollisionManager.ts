@@ -83,49 +83,67 @@ class CollisionManager {
    * Returns what it collided with, or null if no collision
    *
    * COLLISION PRIORITY:
-   * 1. Projectile-to-projectile (mid-air collision)
+   * 1. Projectile-to-projectile (mid-air collision when they cross paths)
    * 2. Defense dot collision (blocks projectile)
    * 3. No collision (projectile continues)
    */
   public checkCollisions(projectile: BaseProjectile): 'projectile' | 'defense' | null {
     // Priority 1: Check for projectile-to-projectile collision (if enabled for this projectile type)
     if (projectile.typeConfig.canCollideWithProjectiles) {
-      const opposingProjectile = this.findOpposingProjectile(projectile);
-      if (opposingProjectile) {
-        // Calculate distance between projectiles
-        const dx = projectile.position.x - opposingProjectile.position.x;
-        const dy = projectile.position.y - opposingProjectile.position.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        const combinedRadius = projectile.typeConfig.collisionRadius + opposingProjectile.typeConfig.collisionRadius;
+      // Simple path-crossing logic: projectiles on same row traveling toward each other
+      // Left projectiles travel right (X increasing), right projectiles travel left (X decreasing)
+      // When they cross paths (left.x >= right.x), they collide!
 
-        if (distance <= combinedRadius) {
-          // Mark both projectiles as collided
-          opposingProjectile.collided = true;
-          opposingProjectile.collidedWith = 'projectile';
+      const opposingSide = projectile.side === 'left' ? 'right' : 'left';
 
-          console.log(`⚔️ [PROJECTILE COLLISION] ${projectile.id} ↔ ${opposingProjectile.id}`);
+      for (const [id, other] of this.activeProjectiles) {
+        // Skip self
+        if (id === projectile.id) continue;
+
+        // Skip if already collided
+        if (other.collided) continue;
+
+        // Must be same stat row (same Y position) and opposite side
+        if (other.stat !== projectile.stat || other.side !== opposingSide) continue;
+
+        // Check if they've crossed paths
+        let hasCrossed = false;
+        if (projectile.side === 'left') {
+          // Left projectile traveling right: has it reached or passed the right projectile?
+          hasCrossed = projectile.position.x >= other.position.x;
+        } else {
+          // Right projectile traveling left: has it reached or passed the left projectile?
+          hasCrossed = projectile.position.x <= other.position.x;
+        }
+
+        if (hasCrossed) {
+          // COLLISION! Mark both projectiles as collided
+          other.collided = true;
+          other.collidedWith = 'projectile';
+
+          console.log(`⚔️ [PROJECTILE COLLISION] ${projectile.id} (X=${projectile.position.x.toFixed(1)}) ↔ ${other.id} (X=${other.position.x.toFixed(1)})`);
 
           // Emit PROJECTILE_COLLISION event for both sides
           battleEventBus.emit('PROJECTILE_COLLISION', {
             side: projectile.side,
-            opponentSide: opposingProjectile.side,
+            opponentSide: other.side,
             quarter: 1, // TODO: Track actual quarter
             battleId: projectile.gameId,
             gameId: projectile.gameId,
             projectileId: projectile.id,
-            otherProjectileId: opposingProjectile.id,
+            otherProjectileId: other.id,
             lane: projectile.stat
           } as ProjectileCollisionPayload);
 
           battleEventBus.emit('PROJECTILE_COLLISION', {
-            side: opposingProjectile.side,
+            side: other.side,
             opponentSide: projectile.side,
             quarter: 1, // TODO: Track actual quarter
-            battleId: opposingProjectile.gameId,
-            gameId: opposingProjectile.gameId,
-            projectileId: opposingProjectile.id,
+            battleId: other.gameId,
+            gameId: other.gameId,
+            projectileId: other.id,
             otherProjectileId: projectile.id,
-            lane: opposingProjectile.stat
+            lane: other.stat
           } as ProjectileCollisionPayload);
 
           return 'projectile';
@@ -278,27 +296,7 @@ class CollisionManager {
     return null;
   }
 
-  /**
-   * Find an opposing projectile (same stat, opposite side)
-   */
-  private findOpposingProjectile(projectile: BaseProjectile): BaseProjectile | null {
-    const opposingSide = projectile.side === 'left' ? 'right' : 'left';
 
-    for (const [id, other] of this.activeProjectiles) {
-      // Skip self
-      if (id === projectile.id) continue;
-
-      // Skip if already collided
-      if (other.collided) continue;
-
-      // Must be same stat row and opposite side
-      if (other.stat === projectile.stat && other.side === opposingSide) {
-        return other;
-      }
-    }
-
-    return null;
-  }
 
 
 

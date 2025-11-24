@@ -195,7 +195,7 @@ export const PROJECTILE_TYPES: Record<StatType, ProjectileTypeConfig> = {
     areaOfEffect: 20, // Small explosion radius (future feature)
   },
 
-  // 3PT - Defensive projectiles (don't collide with enemy projectiles)
+  // 3PT - 3-Point projectiles
   '3pt': {
     id: '3pt-bullets',
     name: '3-Point Bullets',
@@ -216,10 +216,10 @@ export const PROJECTILE_TYPES: Record<StatType, ProjectileTypeConfig> = {
     // Collision
     collisionRadius: 8,
 
-    // Special - 3PT projectiles PASS THROUGH enemy projectiles
+    // Special - ALL projectiles must collide with each other
     rapidFire: false,
     rapidFireCount: 1,
-    canCollideWithProjectiles: false, // Unique: doesn't collide with enemy projectiles!
+    canCollideWithProjectiles: true, // MUST collide with enemy projectiles!
   },
 };
 
@@ -247,7 +247,7 @@ export interface ParticleConfig {
  */
 export function getParticleConfig(stat: StatType): ParticleConfig {
   const type = PROJECTILE_TYPES[stat];
-  
+
   return {
     color: type.trailColor,
     alpha: 0.6,
