@@ -370,7 +370,10 @@ function App() {
                   <InventoryBar
                     battleId={game.id}
                     side="left"
-                    onSlotClick={(side, slot) => setSelectedSlot({ battleId: game.id, side, slot })}
+                    onSlotClick={(side, slot) => {
+                      console.log('🎯 [App] Setting selectedSlot:', { battleId: game.id, side, slot });
+                      setSelectedSlot({ battleId: game.id, side, slot });
+                    }}
                   />
 
                   {/* Battle Canvas - PixiJS Game with Countdown Timers */}
@@ -403,7 +406,10 @@ function App() {
                   <InventoryBar
                     battleId={game.id}
                     side="right"
-                    onSlotClick={(side, slot) => setSelectedSlot({ battleId: game.id, side, slot })}
+                    onSlotClick={(side, slot) => {
+                      console.log('🎯 [App] Setting selectedSlot:', { battleId: game.id, side, slot });
+                      setSelectedSlot({ battleId: game.id, side, slot });
+                    }}
                   />
                 </div>
               </div>
@@ -510,18 +516,23 @@ function App() {
       )}
 
       {/* Pre-Game Item Selector - Show when slot is clicked */}
-      {selectedSlot && (
-        <PreGameItemSelector
-          battleId={selectedSlot.battleId}
-          initialSlot={{ side: selectedSlot.side, slot: selectedSlot.slot }}
-          onItemsChanged={() => {
-            // Items changed - keep popup open
-          }}
-          onClose={() => {
-            // Close the selector
-            setSelectedSlot(null);
-          }}
-        />
+      {selectedSlot ? (
+        <>
+          {console.log('🎨 [App] Rendering PreGameItemSelector with selectedSlot:', selectedSlot)}
+          <PreGameItemSelector
+            battleId={selectedSlot.battleId}
+            initialSlot={{ side: selectedSlot.side, slot: selectedSlot.slot }}
+            onItemsChanged={() => {
+              // Items changed - keep popup open
+            }}
+            onClose={() => {
+              console.log('🚪 [App] Closing PreGameItemSelector');
+              setSelectedSlot(null);
+            }}
+          />
+        </>
+      ) : (
+        console.log('❌ [App] selectedSlot is null, not rendering PreGameItemSelector')
       )}
     </div>
   );
