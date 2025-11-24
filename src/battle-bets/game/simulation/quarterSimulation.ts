@@ -162,6 +162,12 @@ export async function simulateQuarter(
 }> {
   console.log(`\n🎮 Q${quarterNumber} START (battleId=${battleId})`);
 
+  const multiStore = useMultiGameStore.getState();
+
+  // Set battle in progress flag
+  multiStore.setBattleInProgress(battleId, true);
+  console.log(`🎬 Battle animation started for Q${quarterNumber}`);
+
   // Debug grid positions on first quarter
   if (quarterNumber === 1) {
     debugGridPositions();
@@ -191,11 +197,11 @@ export async function simulateQuarter(
     });
   }
 
-  const multiStore = useMultiGameStore.getState();
   const battle = multiStore.getBattle(battleId);
 
   if (!battle) {
     console.error(`[simulateQuarter] No battle found for id=${battleId}`);
+    multiStore.setBattleInProgress(battleId, false);
     return getQuarterData(quarterNumber);
   }
 
@@ -412,6 +418,11 @@ export async function simulateQuarter(
 
   // Cleanup collision callbacks for this battle
   collisionManager.unregisterBattle(gameId);
+
+  // Mark battle as complete and quarter as complete
+  multiStore.setBattleInProgress(battleId, false);
+  multiStore.markQuarterComplete(battleId, quarterNumber);
+  console.log(`✅ Battle animation complete for Q${quarterNumber}`);
 
   return quarterData;
 }
