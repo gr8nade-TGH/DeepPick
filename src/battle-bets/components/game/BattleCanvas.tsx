@@ -15,6 +15,7 @@ import { castleManager } from '../../game/managers/CastleManager'
 import { gridManager } from '../../game/managers/GridManager'
 import { pixiManager } from '../../game/managers/PixiManager'
 import { runDebugBattleForMultiStore } from '../../game/simulation/quarterSimulation'
+import { QuarterDebugControls } from '../debug/QuarterDebugControls'
 import type { Game } from '../../types/game'
 import type { BattleStatus } from '@/lib/battle-bets/BattleTimer'
 
@@ -357,7 +358,10 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
         className="flex justify-center items-center w-full h-full"
       />
 
-
+      {/* Quarter Debug Controls - Only show in development */}
+      {process.env.NODE_ENV === 'development' && (
+        <QuarterDebugControls battleId={battleId} />
+      )}
     </div>
   )
 }
