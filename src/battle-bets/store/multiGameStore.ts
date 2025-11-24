@@ -428,8 +428,8 @@ export const useMultiGameStore = create<MultiGameState>()(
  */
 async function activateEquippedItems(battleId: string, game: Game): Promise<void> {
   console.log(`🎮 [Items] Activating equipped items for battle ${battleId}`);
-  console.log(`🔍 [Items] Left capper equipped items:`, game.leftCapper.equippedItems);
-  console.log(`🔍 [Items] Right capper equipped items:`, game.rightCapper.equippedItems);
+  console.log(`🔍 [Items] Left capper equipped items:`, JSON.stringify(game.leftCapper.equippedItems));
+  console.log(`🔍 [Items] Right capper equipped items:`, JSON.stringify(game.rightCapper.equippedItems));
 
   // Left side items
   const leftItems = game.leftCapper.equippedItems;
