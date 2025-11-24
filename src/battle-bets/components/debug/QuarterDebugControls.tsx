@@ -188,17 +188,18 @@ export const QuarterDebugControls: React.FC<QuarterDebugControlsProps> = ({ batt
     }
   };
 
-  // Calculate position offset based on index
-  const bottomOffset = 20 + (index * 450); // Stack vertically with 450px spacing (increased from 420)
+  // Position controls: index 0 on LEFT, index 1 on RIGHT
+  const isLeft = index === 0;
 
   return (
     <div
       className="quarter-debug-controls"
       style={{
-        bottom: bottomOffset,
+        bottom: 20,
         position: 'fixed',
-        right: 20,
-        zIndex: 9999 - index // Higher index = lower z-index so they stack properly
+        left: isLeft ? 20 : 'auto',
+        right: isLeft ? 'auto' : 20,
+        zIndex: 9999
       }}
     >
       <div className="debug-header">
