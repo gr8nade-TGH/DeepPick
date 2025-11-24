@@ -106,7 +106,7 @@ class CollisionManager {
         // Must be same stat row (same Y position) and opposite side
         if (other.stat !== projectile.stat || other.side !== opposingSide) continue;
 
-        // Check if they've crossed paths
+        // Check if they've crossed paths OR are within collision distance
         let hasCrossed = false;
         if (projectile.side === 'left') {
           // Left projectile traveling right: has it reached or passed the right projectile?
@@ -116,7 +116,12 @@ class CollisionManager {
           hasCrossed = projectile.position.x <= other.position.x;
         }
 
-        if (hasCrossed) {
+        // Also check distance to handle fast-moving projectiles that might skip over each other
+        const distance = Math.abs(projectile.position.x - other.position.x);
+        const combinedRadius = projectile.typeConfig.collisionRadius + other.typeConfig.collisionRadius;
+        const withinCollisionDistance = distance <= combinedRadius;
+
+        if (hasCrossed || withinCollisionDistance) {
           // COLLISION! Mark both projectiles as collided
           other.collided = true;
           other.collidedWith = 'projectile';
@@ -175,125 +180,138 @@ class CollisionManager {
       return null;
     }
 
-    // Projectile IS in defense zone - check for defense orb collision
-    const cell = gridManager.getDefenseCellAtPosition(
-      projectile.position.x,
-      projectile.position.y,
-      projectile.stat as StatType,
-      targetSide
-    );
+    // Projectile IS in defense zone - use DIRECT MAP LOOKUP instead of searching!
+    // Calculate which cell index the projectile is in based on X position
+    const cellIndex = this.calculateDefenseCellIndex(projectile.position.x, targetSide);
 
-    if (cell) {
-      console.log(`🎯 [GRID CHECK] Projectile ${projectile.id} is in cell ${cell.id} at X=${projectile.position.x.toFixed(1)}`);
-
-      // Check if this cell has a defense orb
-      const targetDot = this.findDefenseDotInCell(projectile.gameId, cell.id);
-
-      if (targetDot && targetDot.alive) {
-        console.log(`💥 [COLLISION!] Projectile ${projectile.id} hit defense orb ${targetDot.id} in cell ${cell.id}`);
-
-        // Log collision event
-        collisionDebugger.logCollisionCheck(projectile, cell.id, true, true);
-
-        // Get HP BEFORE damage for accurate logging
-        const hpBefore = targetDot.hp;
-        const hpAfter = Math.max(0, hpBefore - projectile.typeConfig.damage);
-
-        // IMMEDIATELY apply damage to the store (single source of truth)
-        const hitHandler =
-          this.battleDefenseHitHandlers.get(projectile.gameId) ?? this.onDefenseDotHit;
-
-        if (hitHandler) {
-          hitHandler(targetDot.id, projectile.typeConfig.damage);
-        } else {
-          console.error(`❌ [COLLISION] onDefenseDotHit callback NOT SET for gameId=${projectile.gameId}!`);
-        }
-
-        // Log collision with HP change
-        const status = hpAfter === 0 ? '💀 DESTROYED' : `${hpAfter}/${targetDot.maxHp} HP remaining`;
-        console.log(`🛡️ [DEFENSE HIT] ${projectile.id} → ${targetDot.id} | ${hpBefore} → ${hpAfter} HP | ${status}`);
-
-        // Emit DEFENSE_ORB_DESTROYED event if orb was destroyed
-        if (hpAfter === 0) {
-          const dotSide = targetDot.side;
-          const opponentSide = dotSide === 'left' ? 'right' : 'left';
-
-          // Emit for the side that LOST the orb
-          battleEventBus.emit('DEFENSE_ORB_DESTROYED', {
-            side: dotSide,
-            opponentSide,
-            quarter: 1, // TODO: Track actual quarter
-            battleId: projectile.gameId,
-            gameId: projectile.gameId,
-            lane: projectile.stat,
-            orbId: targetDot.id,
-            destroyedByProjectileId: projectile.id
-          } as DefenseOrbDestroyedPayload);
-
-          // Emit for the side that DESTROYED the orb
-          battleEventBus.emit('OPPONENT_ORB_DESTROYED', {
-            side: opponentSide,
-            opponentSide: dotSide,
-            quarter: 1, // TODO: Track actual quarter
-            battleId: projectile.gameId,
-            gameId: projectile.gameId,
-            lane: projectile.stat,
-            orbId: targetDot.id,
-            destroyedByProjectileId: projectile.id
-          } as OpponentOrbDestroyedPayload);
-        }
-
-        return 'defense';
-      } else {
-        // Cell has no orb - log as MISS
-        collisionDebugger.logCollisionCheck(projectile, cell.id, false, false);
-      }
-    } else {
+    if (cellIndex === null) {
       // Projectile in defense zone but not in a valid cell (shouldn't happen)
-      console.warn(`⚠️ Projectile ${projectile.id} in defense zone but no cell found at X=${projectile.position.x.toFixed(1)}`);
-      collisionDebugger.logCollisionCheck(projectile, null, false, false);
+      console.warn(`⚠️ Projectile ${projectile.id} in defense zone but no cell index found at X=${projectile.position.x.toFixed(1)}`);
+      return null;
     }
 
-    return null; // No collision
-  }
+    // Construct the Map key directly - NO SEARCHING!
+    // Format: ${battleId}-defense-${stat}-${side}-${index}
+    const dotId = `${projectile.gameId}-defense-${projectile.stat}-${targetSide}-${cellIndex}`;
 
-  /**
-   * Find a defense dot in a specific grid cell
-   * Much simpler than distance-based collision!
-   */
-  private findDefenseDotInCell(gameId: string, cellId: string): DefenseDot | null {
+    // Get defense dots from store
     const getDotsForGame =
-      this.battleDefenseDotSources.get(gameId) ?? this.getDefenseDotsFromStore;
+      this.battleDefenseDotSources.get(projectile.gameId) ?? this.getDefenseDotsFromStore;
 
     if (!getDotsForGame) {
-      console.warn(`⚠️ getDefenseDotsFromStore callback not set for gameId=${gameId}!`);
+      console.warn(`⚠️ getDefenseDotsFromStore callback not set for gameId=${projectile.gameId}!`);
       return null;
     }
 
     const freshDots = getDotsForGame();
 
-    // DEBUG: Log what we're searching for
-    console.log(`🔍 [CELL SEARCH] Looking for cellId="${cellId}" in ${freshDots.size} dots`);
+    // Direct Map lookup - O(1) instead of O(n) search!
+    const targetDot = freshDots.get(dotId);
 
-    // DEBUG: Log first 3 dots to see their cellIds
-    let count = 0;
-    for (const [dotId, dot] of freshDots.entries()) {
-      if (count < 3) {
-        console.log(`  Sample dot: id="${dotId}", cellId="${dot.cellId}", alive=${dot.alive}`);
-        count++;
+    if (targetDot && targetDot.alive) {
+      console.log(`💥 [COLLISION!] Projectile ${projectile.id} hit defense orb ${targetDot.id} at cell index ${cellIndex}`);
+
+      // Log collision event
+      collisionDebugger.logCollisionCheck(projectile, targetDot.cellId, true, true);
+
+      // Get HP BEFORE damage for accurate logging
+      const hpBefore = targetDot.hp;
+      const hpAfter = Math.max(0, hpBefore - projectile.typeConfig.damage);
+
+      // IMMEDIATELY apply damage to the store (single source of truth)
+      const hitHandler =
+        this.battleDefenseHitHandlers.get(projectile.gameId) ?? this.onDefenseDotHit;
+
+      if (hitHandler) {
+        hitHandler(targetDot.id, projectile.typeConfig.damage);
+      } else {
+        console.error(`❌ [COLLISION] onDefenseDotHit callback NOT SET for gameId=${projectile.gameId}!`);
       }
+
+      // Log collision with HP change
+      const status = hpAfter === 0 ? '💀 DESTROYED' : `${hpAfter}/${targetDot.maxHp} HP remaining`;
+      console.log(`🛡️ [DEFENSE HIT] ${projectile.id} → ${targetDot.id} | ${hpBefore} → ${hpAfter} HP | ${status}`);
+
+      // Emit DEFENSE_ORB_DESTROYED event if orb was destroyed
+      if (hpAfter === 0) {
+        const dotSide = targetDot.side;
+        const opponentSide = dotSide === 'left' ? 'right' : 'left';
+
+        // Emit for the side that LOST the orb
+        battleEventBus.emit('DEFENSE_ORB_DESTROYED', {
+          side: dotSide,
+          opponentSide,
+          quarter: 1, // TODO: Track actual quarter
+          battleId: projectile.gameId,
+          gameId: projectile.gameId,
+          lane: projectile.stat,
+          orbId: targetDot.id,
+          destroyedByProjectileId: projectile.id
+        } as DefenseOrbDestroyedPayload);
+
+        // Emit for the side that DESTROYED the orb
+        battleEventBus.emit('OPPONENT_ORB_DESTROYED', {
+          side: opponentSide,
+          opponentSide: dotSide,
+          quarter: 1, // TODO: Track actual quarter
+          battleId: projectile.gameId,
+          gameId: projectile.gameId,
+          lane: projectile.stat,
+          orbId: targetDot.id,
+          destroyedByProjectileId: projectile.id
+        } as OpponentOrbDestroyedPayload);
+      }
+
+      return 'defense';
     }
 
-    // Find a dot with matching cellId
-    for (const [dotId, dot] of freshDots.entries()) {
-      if (dot.cellId === cellId && dot.alive) {
-        console.log(`✅ [CELL SEARCH] FOUND! cellId="${cellId}" matches dot="${dotId}"`);
-        return dot;
-      }
-    }
+    // No defense dot at this position (either doesn't exist or already destroyed)
+    return null; // No collision
+  }
 
-    console.log(`❌ [CELL SEARCH] NOT FOUND! No dot with cellId="${cellId}"`);
-    return null;
+  /**
+   * Calculate which defense cell index (0-9) a projectile is in based on X position
+   * Returns null if not in a valid defense cell
+   *
+   * CRITICAL: Defense cells are at FIXED positions in the grid
+   * - Left defense: X[210-510] (10 cells × 30px)
+   * - Right defense: X[660-960] (10 cells × 30px)
+   * - Cell numbering: 0-9 (0-based index)
+   */
+  private calculateDefenseCellIndex(x: number, side: 'left' | 'right'): number | null {
+    const layout = gridManager.getLayout();
+    const cellWidth = layout.cellWidth;
+
+    if (side === 'left') {
+      // Left defense zone: X[leftDefenseStart, leftDefenseStart + 10*cellWidth]
+      const leftDefenseEnd = layout.leftDefenseStart + (layout.defenseCells * cellWidth);
+
+      if (x < layout.leftDefenseStart || x >= leftDefenseEnd) {
+        return null; // Not in left defense zone
+      }
+
+      // Calculate cell index (0-9)
+      // Left side: cell 0 = leftmost, cell 9 = rightmost
+      const cellIndex = Math.floor((x - layout.leftDefenseStart) / cellWidth);
+      return Math.min(cellIndex, layout.defenseCells - 1); // Clamp to max index
+
+    } else {
+      // Right defense zone: X[rightDefenseStart, rightDefenseStart + 10*cellWidth]
+      const rightDefenseEnd = layout.rightDefenseStart + (layout.defenseCells * cellWidth);
+
+      if (x < layout.rightDefenseStart || x >= rightDefenseEnd) {
+        return null; // Not in right defense zone
+      }
+
+      // Calculate cell index (0-9)
+      // Right side: cell 0 = rightmost (closest to castle), cell 9 = leftmost
+      // So we need to REVERSE the index calculation
+      const offsetFromStart = x - layout.rightDefenseStart;
+      const reversedIndex = Math.floor(offsetFromStart / cellWidth);
+      const cellIndex = (layout.defenseCells - 1) - reversedIndex;
+
+      return Math.max(0, Math.min(cellIndex, layout.defenseCells - 1)); // Clamp to valid range
+    }
   }
 
 
