@@ -82,7 +82,7 @@ async function fetchRealQuarterStats(
       points: stats.leftScore || 0,
       rebounds: aggregatePlayerStat(stats.leftPlayers, 'rebounds'),
       assists: aggregatePlayerStat(stats.leftPlayers, 'assists'),
-      steals: aggregatePlayerStat(stats.leftPlayers, 'steals') || Math.floor(Math.random() * 4), // Fallback if steals not available
+      steals: aggregatePlayerStat(stats.leftPlayers, 'steals') || (Math.floor(Math.random() * 3) + 1), // Fallback: 1-3 steals
       threePointers: aggregatePlayerStat(stats.leftPlayers, 'threePointers')
     };
 
@@ -90,7 +90,7 @@ async function fetchRealQuarterStats(
       points: stats.rightScore || 0,
       rebounds: aggregatePlayerStat(stats.rightPlayers, 'rebounds'),
       assists: aggregatePlayerStat(stats.rightPlayers, 'assists'),
-      steals: aggregatePlayerStat(stats.rightPlayers, 'steals') || Math.floor(Math.random() * 4), // Fallback if steals not available
+      steals: aggregatePlayerStat(stats.rightPlayers, 'steals') || (Math.floor(Math.random() * 3) + 1), // Fallback: 1-3 steals
       threePointers: aggregatePlayerStat(stats.rightPlayers, 'threePointers')
     };
 
@@ -293,6 +293,7 @@ export async function simulateQuarter(
     await sleep(500);
 
     // 4. STEALS
+    console.log(`🔴 [STL DEBUG] About to fire STL row: left=${quarterData.left.steals}, right=${quarterData.right.steals}`);
     shouldContinue = await fireStatRowForMultiBattle(battleId, gameId, 'stl', quarterData.left.steals, quarterData.right.steals);
     if (!shouldContinue) {
       console.log('⚠️ Battle ended during STL');
@@ -720,10 +721,10 @@ function getProjectileTypeConfig(stat: StatType) {
  */
 function generateRandomQuarterStats(quarter: number): QuarterStats {
   const ranges = {
-    1: { pts: [25, 35], reb: [9, 14], ast: [5, 9], stl: [0, 3], tpm: [2, 5] },
-    2: { pts: [23, 33], reb: [8, 13], ast: [4, 8], stl: [0, 3], tpm: [2, 5] },
-    3: { pts: [24, 34], reb: [8, 13], ast: [4, 8], stl: [0, 3], tpm: [2, 6] },
-    4: { pts: [22, 36], reb: [7, 12], ast: [4, 8], stl: [0, 3], tpm: [2, 6] },
+    1: { pts: [25, 35], reb: [9, 14], ast: [5, 9], stl: [1, 4], tpm: [2, 5] }, // Changed STL from [0,3] to [1,4]
+    2: { pts: [23, 33], reb: [8, 13], ast: [4, 8], stl: [1, 4], tpm: [2, 5] }, // Changed STL from [0,3] to [1,4]
+    3: { pts: [24, 34], reb: [8, 13], ast: [4, 8], stl: [1, 4], tpm: [2, 6] }, // Changed STL from [0,3] to [1,4]
+    4: { pts: [22, 36], reb: [7, 12], ast: [4, 8], stl: [1, 4], tpm: [2, 6] }, // Changed STL from [0,3] to [1,4]
   };
 
   const range = ranges[quarter as keyof typeof ranges] || ranges[1];
