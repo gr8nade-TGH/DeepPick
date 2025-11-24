@@ -97,20 +97,18 @@ export const useMultiGameStore = create<MultiGameState>()(
         const { game } = battle;
         const capperHP = new Map<string, { currentHP: number; maxHP: number }>();
 
-        // Left capper - HP based on units
-        const leftUnits = getCapperUnitsForTeam(game.leftCapper, game.leftTeam.id);
-        const leftHP = getTotalDefenseDotCount(leftUnits);
+        // FIXED: Castle HP is always 20 for both teams
+        // Units only determine defense orb count, not castle HP
+        const CASTLE_HP = 20;
+
         capperHP.set('left', {
-          currentHP: leftHP,
-          maxHP: leftHP,
+          currentHP: CASTLE_HP,
+          maxHP: CASTLE_HP,
         });
 
-        // Right capper - HP based on units
-        const rightUnits = getCapperUnitsForTeam(game.rightCapper, game.rightTeam.id);
-        const rightHP = getTotalDefenseDotCount(rightUnits);
         capperHP.set('right', {
-          currentHP: rightHP,
-          maxHP: rightHP,
+          currentHP: CASTLE_HP,
+          maxHP: CASTLE_HP,
         });
 
         // Update battle state
@@ -124,8 +122,8 @@ export const useMultiGameStore = create<MultiGameState>()(
         });
 
         console.log(`[Multi-Game Store] Initialized HP for ${battleId}:`);
-        console.log(`  ${game.leftCapper.name}: ${leftHP} HP (from ${leftUnits} units)`);
-        console.log(`  ${game.rightCapper.name}: ${rightHP} HP (from ${rightUnits} units)`);
+        console.log(`  ${game.leftCapper.name}: ${CASTLE_HP} HP (fixed)`);
+        console.log(`  ${game.rightCapper.name}: ${CASTLE_HP} HP (fixed)`);
       },
 
       // Initialize defense dots for a battle

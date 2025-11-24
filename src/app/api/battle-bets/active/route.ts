@@ -33,9 +33,22 @@ export async function GET(request: NextRequest) {
       const today = new Date(now)
       const gameDate = today.toISOString().slice(0, 10)
 
-      const shiva = createDebugCapper('shiva', 'SHIVA AI', '#f97316', 'LAL', 24, 12, 3, 1)
-      const ifrit = createDebugCapper('ifrit', 'IFRIT AI', '#ef4444', 'PHX', 18, 10, 4, 0)
-      const oracle = createDebugCapper('oracle', 'ORACLE AI', '#22c55e', 'BOS', 20, 11, 4, 0)
+      // Create debug cappers with multiple team records so they have HP on any team
+      const shiva = createDebugCapperWithMultipleTeams('shiva', 'SHIVA AI', '#f97316', [
+        { team: 'LAL', units: 24, wins: 12, losses: 3, pushes: 1 },
+        { team: 'MIA', units: 18, wins: 9, losses: 4, pushes: 0 },
+        { team: 'BOS', units: 15, wins: 8, losses: 3, pushes: 1 }
+      ])
+      const ifrit = createDebugCapperWithMultipleTeams('ifrit', 'IFRIT AI', '#ef4444', [
+        { team: 'PHX', units: 18, wins: 10, losses: 4, pushes: 0 },
+        { team: 'GSW', units: 21, wins: 11, losses: 3, pushes: 1 },
+        { team: 'DEN', units: 16, wins: 9, losses: 4, pushes: 0 }
+      ])
+      const oracle = createDebugCapperWithMultipleTeams('oracle', 'ORACLE AI', '#22c55e', [
+        { team: 'BOS', units: 20, wins: 11, losses: 4, pushes: 0 },
+        { team: 'MIA', units: 17, wins: 9, losses: 3, pushes: 1 },
+        { team: 'DEN', units: 19, wins: 10, losses: 4, pushes: 0 }
+      ])
 
       const battles = [
         {
@@ -535,6 +548,58 @@ async function getPendingSingleCapperBattles(
   return pendingBattles
 }
 
+/**
+ * Create debug capper with multiple team records
+ * This ensures cappers have HP on any team they battle on
+ */
+function createDebugCapperWithMultipleTeams(
+  id: string,
+  displayName: string,
+  colorTheme: string,
+  teams: Array<{ team: string; units: number; wins: number; losses: number; pushes: number }>
+) {
+  // Use first team as primary for teamPerformance display
+  const primaryTeam = teams[0]
+  const totalPicks = primaryTeam.wins + primaryTeam.losses + primaryTeam.pushes
+  const winRate = (primaryTeam.wins + primaryTeam.losses) > 0
+    ? (primaryTeam.wins / (primaryTeam.wins + primaryTeam.losses)) * 100
+    : 0
+  const defenseDots = distributeDefenseDots(calculateTotalDefenseDots(primaryTeam.units))
+
+  return {
+    id,
+    name: id.toUpperCase(),
+    displayName,
+    colorTheme,
+    // Add teamRecords array for ALL teams (enables HP on any team)
+    teamRecords: teams.map(t => ({
+      teamId: t.team,
+      units: t.units,
+      wins: t.wins,
+      losses: t.losses,
+      pushes: t.pushes
+    })),
+    teamPerformance: {
+      team: primaryTeam.team,
+      wins: primaryTeam.wins,
+      losses: primaryTeam.losses,
+      pushes: primaryTeam.pushes,
+      totalPicks,
+      netUnits: primaryTeam.units,
+      winRate,
+      defenseDots
+    },
+    overallPerformance: {
+      wins: primaryTeam.wins,
+      losses: primaryTeam.losses,
+      pushes: primaryTeam.pushes,
+      totalPicks,
+      netUnits: primaryTeam.units,
+      winRate
+    }
+  }
+}
+
 function createDebugCapper(
   id: string,
   displayName: string,
@@ -554,6 +619,16 @@ function createDebugCapper(
     name: id.toUpperCase(),
     displayName,
     colorTheme,
+    // Add teamRecords array for proper HP calculation
+    teamRecords: [
+      {
+        teamId: teamAbbr,
+        units: netUnits,
+        wins,
+        losses,
+        pushes
+      }
+    ],
     teamPerformance: {
       team: teamAbbr,
       wins,

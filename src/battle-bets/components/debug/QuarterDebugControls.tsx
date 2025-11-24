@@ -45,7 +45,23 @@ export const QuarterDebugControls: React.FC<QuarterDebugControlsProps> = ({ batt
       useMultiGameStore.getState().updateGameStatus(battleId, '1Q');
       useMultiGameStore.getState().setCurrentQuarter(battleId, 1);
 
-      setLastAction('✅ Game started - Q1 ready');
+      setLastAction('⏳ Simulating Q1...');
+
+      // Simulate Q1 (this will generate stats and fire projectiles)
+      await simulateQuarter(battleId, 1);
+
+      // Check if game ended
+      const updatedBattle = useMultiGameStore.getState().getBattle(battleId);
+      const updatedLeftHP = updatedBattle?.capperHP.get('left')?.currentHP ?? 0;
+      const updatedRightHP = updatedBattle?.capperHP.get('right')?.currentHP ?? 0;
+
+      if (updatedLeftHP <= 0 || updatedRightHP <= 0) {
+        useMultiGameStore.getState().updateGameStatus(battleId, 'FINAL');
+        const winner = updatedLeftHP > 0 ? 'LEFT' : 'RIGHT';
+        setLastAction(`✅ Q1 complete - ${winner} WINS!`);
+      } else {
+        setLastAction('✅ Q1 complete');
+      }
     } catch (error) {
       console.error('Failed to start game:', error);
       setLastAction('❌ Failed to start game');
