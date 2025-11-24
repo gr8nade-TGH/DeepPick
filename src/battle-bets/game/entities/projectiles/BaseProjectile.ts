@@ -45,8 +45,8 @@ export class BaseProjectile {
   public sprite: PIXI.Container;
   public readonly radius: number = 4;
 
-  // Animation
-  protected animation: gsap.core.Timeline | null = null;
+  // Animation - PUBLIC so CollisionManager can stop it when projectiles collide
+  public animation: gsap.core.Timeline | null = null;
 
   // Collision detection callback (set by simulation system)
   public onCollisionCheck?: (projectile: BaseProjectile) => 'projectile' | 'defense' | null;
