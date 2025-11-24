@@ -188,6 +188,7 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
 
       // Activate shield visual
       const castle = castleManager.getCastle(castleId);
+      console.log(`🔍 [PreGameItemSelector] Looking for castle: ${castleId}, found:`, castle ? 'YES' : 'NO');
       if (castle) {
         castle.activateShield({
           id: 'LAL_def_ironman_armor',
@@ -198,6 +199,8 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
           shieldActivationThreshold: 0,
         });
         console.log(`✅ [PreGameItemSelector] Shield activated for LEFT castle`);
+      } else {
+        console.error(`❌ [PreGameItemSelector] Castle not found: ${castleId}`);
       }
     } else {
       // Deactivate shield if item was unequipped
@@ -225,6 +228,7 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
 
       // Activate shield visual
       const castle = castleManager.getCastle(castleId);
+      console.log(`🔍 [PreGameItemSelector] Looking for castle: ${castleId}, found:`, castle ? 'YES' : 'NO');
       if (castle) {
         castle.activateShield({
           id: 'LAL_def_ironman_armor',
@@ -235,6 +239,8 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
           shieldActivationThreshold: 0,
         });
         console.log(`✅ [PreGameItemSelector] Shield activated for RIGHT castle`);
+      } else {
+        console.error(`❌ [PreGameItemSelector] Castle not found: ${castleId}`);
       }
     } else {
       // Deactivate shield if item was unequipped
