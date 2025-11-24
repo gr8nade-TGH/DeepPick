@@ -763,7 +763,7 @@ export class Castle {
 
     for (const item of items) {
       console.log(`🛡️ Checking item:`, item);
-      if (!item || !item.shieldHP || !item.shieldActivationThreshold) {
+      if (!item || item.shieldHP === undefined || item.shieldActivationThreshold === undefined) {
         console.log(`🛡️ Item is not a shield or missing properties`);
         continue;
       }
@@ -943,7 +943,7 @@ export class Castle {
     this.updateItemSlotVisual(slot, item);
 
     // If it's a shield item, initialize shield state (but don't activate yet)
-    if (item.shieldHP && item.shieldActivationThreshold) {
+    if (item.shieldHP !== undefined && item.shieldActivationThreshold !== undefined) {
       // Shield will activate automatically when HP drops below threshold
       console.log(`🛡️ Shield item equipped: ${item.name} (activates at HP < ${item.shieldActivationThreshold})`);
     }
@@ -1004,7 +1004,7 @@ export class Castle {
   public activateShield(item: InventoryItem): void {
     console.log(`🛡️ activateShield called with item:`, item);
 
-    if (!item.shieldHP || !item.shieldActivationThreshold) {
+    if (item.shieldHP === undefined || item.shieldActivationThreshold === undefined) {
       console.log(`🛡️ Item missing shield properties!`);
       return;
     }
