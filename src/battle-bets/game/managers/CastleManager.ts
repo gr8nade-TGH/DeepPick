@@ -86,9 +86,18 @@ export class CastleManager {
    * Update castle HP for a given battle
    */
   public damageCastle(battleId: string, castleId: string, damage: number): void {
+    console.log(`🏰 [CastleManager.damageCastle] Called with battleId=${battleId}, castleId=${castleId}, damage=${damage}`);
     const castle = this.getCastle(battleId, castleId);
     if (castle) {
+      console.log(`✅ [CastleManager.damageCastle] Castle found! Calling takeDamage(${damage})`);
       castle.takeDamage(damage);
+    } else {
+      console.error(`❌ [CastleManager.damageCastle] Castle NOT FOUND for battleId=${battleId}, castleId=${castleId}`);
+      console.error(`   Available battles:`, Array.from(this.battles.keys()));
+      const battleCastles = this.battles.get(battleId);
+      if (battleCastles) {
+        console.error(`   Available castles in battle ${battleId}:`, Object.keys(battleCastles));
+      }
     }
   }
 
