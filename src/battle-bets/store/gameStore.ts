@@ -191,7 +191,7 @@ export const useGameStore = create<GameState>()(
         if (!game) return;
 
         const defenseDots = new Map<string, DefenseDot>();
-        const stats: StatType[] = ['pts', 'reb', 'ast', 'blk', '3pt'];
+        const stats: StatType[] = ['pts', 'reb', 'ast', 'stl', '3pt'];
         const sides: ('left' | 'right')[] = ['left', 'right'];
 
         sides.forEach(side => {

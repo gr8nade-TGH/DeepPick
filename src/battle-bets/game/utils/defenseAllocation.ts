@@ -12,7 +12,7 @@ export const DEFENSE_DISTRIBUTION = {
   pts: 0.60,  // 60%
   reb: 0.20,  // 20%
   ast: 0.10,  // 10%
-  blk: 0.05,  // 5%
+  stl: 0.05,  // 5%
   '3pt': 0.05, // 5%
 } as const;
 
@@ -50,7 +50,7 @@ export function distributeDefenseDots(totalDots: number): Record<StatType, numbe
       pts: 0,
       reb: 0,
       ast: 0,
-      blk: 0,
+      stl: 0,
       '3pt': 0,
     };
   }
@@ -62,12 +62,12 @@ export function distributeDefenseDots(totalDots: number): Record<StatType, numbe
 
   // If we don't have enough for base allocation, distribute what we have evenly
   if (totalDots < baseDots) {
-    const stats: StatType[] = ['pts', 'reb', 'ast', 'blk', '3pt'];
+    const stats: StatType[] = ['pts', 'reb', 'ast', 'stl', '3pt'];
     const distribution: Record<StatType, number> = {
       pts: 0,
       reb: 0,
       ast: 0,
-      blk: 0,
+      stl: 0,
       '3pt': 0,
     };
     for (let i = 0; i < totalDots; i++) {
@@ -80,7 +80,7 @@ export function distributeDefenseDots(totalDots: number): Record<StatType, numbe
   let ptsTotal = BASE_DOTS_PER_STAT;
   let rebTotal = BASE_DOTS_PER_STAT;
   let astTotal = BASE_DOTS_PER_STAT;
-  let blkTotal = BASE_DOTS_PER_STAT;
+  let stlTotal = BASE_DOTS_PER_STAT;
   let threePtTotal = BASE_DOTS_PER_STAT;
 
   // Calculate remaining dots to distribute
@@ -91,31 +91,31 @@ export function distributeDefenseDots(totalDots: number): Record<StatType, numbe
     const ptsDots = remainingDots * DEFENSE_DISTRIBUTION.pts;
     const rebDots = remainingDots * DEFENSE_DISTRIBUTION.reb;
     const astDots = remainingDots * DEFENSE_DISTRIBUTION.ast;
-    const blkDots = remainingDots * DEFENSE_DISTRIBUTION.blk;
+    const stlDots = remainingDots * DEFENSE_DISTRIBUTION.stl;
     const threePtDots = remainingDots * DEFENSE_DISTRIBUTION['3pt'];
 
     // Round down for each stat
     let ptsRounded = Math.floor(ptsDots);
     let rebRounded = Math.floor(rebDots);
     let astRounded = Math.floor(astDots);
-    let blkRounded = Math.floor(blkDots);
+    let stlRounded = Math.floor(stlDots);
     let threePtRounded = Math.floor(threePtDots);
 
     // Apply MAX cap (10 dots per stat)
     const ptsAvailable = MAX_DOTS_PER_STAT - ptsTotal;
     const rebAvailable = MAX_DOTS_PER_STAT - rebTotal;
     const astAvailable = MAX_DOTS_PER_STAT - astTotal;
-    const blkAvailable = MAX_DOTS_PER_STAT - blkTotal;
+    const stlAvailable = MAX_DOTS_PER_STAT - stlTotal;
     const threePtAvailable = MAX_DOTS_PER_STAT - threePtTotal;
 
     ptsRounded = Math.min(ptsRounded, ptsAvailable);
     rebRounded = Math.min(rebRounded, rebAvailable);
     astRounded = Math.min(astRounded, astAvailable);
-    blkRounded = Math.min(blkRounded, blkAvailable);
+    stlRounded = Math.min(stlRounded, stlAvailable);
     threePtRounded = Math.min(threePtRounded, threePtAvailable);
 
     // Calculate remainder (due to rounding and capping)
-    const allocated = ptsRounded + rebRounded + astRounded + blkRounded + threePtRounded;
+    const allocated = ptsRounded + rebRounded + astRounded + stlRounded + threePtRounded;
     let remainder = remainingDots - allocated;
 
     // Distribute remainder to stats with largest fractional parts (that aren't capped)
@@ -123,7 +123,7 @@ export function distributeDefenseDots(totalDots: number): Record<StatType, numbe
       { stat: 'pts' as StatType, index: 0, fraction: ptsDots - Math.floor(ptsDots), value: ptsRounded, available: ptsAvailable },
       { stat: 'reb' as StatType, index: 1, fraction: rebDots - Math.floor(rebDots), value: rebRounded, available: rebAvailable },
       { stat: 'ast' as StatType, index: 2, fraction: astDots - Math.floor(astDots), value: astRounded, available: astAvailable },
-      { stat: 'blk' as StatType, index: 3, fraction: blkDots - Math.floor(blkDots), value: blkRounded, available: blkAvailable },
+      { stat: 'stl' as StatType, index: 3, fraction: stlDots - Math.floor(stlDots), value: stlRounded, available: stlAvailable },
       { stat: '3pt' as StatType, index: 4, fraction: threePtDots - Math.floor(threePtDots), value: threePtRounded, available: threePtAvailable },
     ];
 
@@ -149,7 +149,7 @@ export function distributeDefenseDots(totalDots: number): Record<StatType, numbe
     ptsTotal += fractionalParts.find(item => item.stat === 'pts')!.value;
     rebTotal += fractionalParts.find(item => item.stat === 'reb')!.value;
     astTotal += fractionalParts.find(item => item.stat === 'ast')!.value;
-    blkTotal += fractionalParts.find(item => item.stat === 'blk')!.value;
+    stlTotal += fractionalParts.find(item => item.stat === 'stl')!.value;
     threePtTotal += fractionalParts.find(item => item.stat === '3pt')!.value;
   }
 
@@ -157,14 +157,14 @@ export function distributeDefenseDots(totalDots: number): Record<StatType, numbe
   ptsTotal = Math.min(ptsTotal, MAX_DOTS_PER_STAT);
   rebTotal = Math.min(rebTotal, MAX_DOTS_PER_STAT);
   astTotal = Math.min(astTotal, MAX_DOTS_PER_STAT);
-  blkTotal = Math.min(blkTotal, MAX_DOTS_PER_STAT);
+  stlTotal = Math.min(stlTotal, MAX_DOTS_PER_STAT);
   threePtTotal = Math.min(threePtTotal, MAX_DOTS_PER_STAT);
 
   return {
     pts: ptsTotal,
     reb: rebTotal,
     ast: astTotal,
-    blk: blkTotal,
+    stl: stlTotal,
     '3pt': threePtTotal,
   };
 }
