@@ -5,10 +5,11 @@
  * Allows clicking item slots to equip/unequip items before battle starts.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './PreGameItemSelector.css';
 import { LAL_IRONMAN_ARMOR_DEFINITION } from '../../game/items/effects/LAL_IronmanArmor';
 import type { ItemDefinition } from '../../game/items/ItemRollSystem';
+import { useMultiGameStore } from '../../store/multiGameStore';
 
 interface PreGameItemSelectorProps {
   battleId: string;
@@ -29,21 +30,68 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
   initialSlot,
   onClose,
 }) => {
-  const [leftSlot1, setLeftSlot1] = useState<string | null>(null);
-  const [leftSlot2, setLeftSlot2] = useState<string | null>(null);
-  const [leftSlot3, setLeftSlot3] = useState<string | null>(null);
+  const battle = useMultiGameStore(state => state.getBattle(battleId));
+  const updateBattle = useMultiGameStore(state => state.updateBattle);
 
-  const [rightSlot1, setRightSlot1] = useState<string | null>(null);
-  const [rightSlot2, setRightSlot2] = useState<string | null>(null);
-  const [rightSlot3, setRightSlot3] = useState<string | null>(null);
+  // Initialize from battle's equipped items
+  const [leftSlot1, setLeftSlot1] = useState<string | null>(
+    battle?.game.leftCapper.equippedItems?.slot1 || null
+  );
+  const [leftSlot2, setLeftSlot2] = useState<string | null>(
+    battle?.game.leftCapper.equippedItems?.slot2 || null
+  );
+  const [leftSlot3, setLeftSlot3] = useState<string | null>(
+    battle?.game.leftCapper.equippedItems?.slot3 || null
+  );
+
+  const [rightSlot1, setRightSlot1] = useState<string | null>(
+    battle?.game.rightCapper.equippedItems?.slot1 || null
+  );
+  const [rightSlot2, setRightSlot2] = useState<string | null>(
+    battle?.game.rightCapper.equippedItems?.slot2 || null
+  );
+  const [rightSlot3, setRightSlot3] = useState<string | null>(
+    battle?.game.rightCapper.equippedItems?.slot3 || null
+  );
 
   const [selectedSlot, setSelectedSlot] = useState<{
     side: 'left' | 'right';
     slot: 1 | 2 | 3;
   } | null>(initialSlot || null);
 
-  // Update parent when items change
-  const updateParent = () => {
+  // Update battle's equipped items in the store
+  const updateBattleEquippedItems = () => {
+    if (!battle) return;
+
+    console.log('💾 Saving equipped items to battle:', {
+      battleId,
+      left: { slot1: leftSlot1, slot2: leftSlot2, slot3: leftSlot3 },
+      right: { slot1: rightSlot1, slot2: rightSlot2, slot3: rightSlot3 }
+    });
+
+    updateBattle(battleId, (b) => ({
+      ...b,
+      game: {
+        ...b.game,
+        leftCapper: {
+          ...b.game.leftCapper,
+          equippedItems: {
+            slot1: leftSlot1,
+            slot2: leftSlot2,
+            slot3: leftSlot3,
+          },
+        },
+        rightCapper: {
+          ...b.game.rightCapper,
+          equippedItems: {
+            slot1: rightSlot1,
+            slot2: rightSlot2,
+            slot3: rightSlot3,
+          },
+        },
+      },
+    }));
+
     const leftItems = [leftSlot1, leftSlot2, leftSlot3].filter(Boolean) as string[];
     const rightItems = [rightSlot1, rightSlot2, rightSlot3].filter(Boolean) as string[];
     onItemsChanged(leftItems, rightItems);
@@ -82,7 +130,7 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
     }
 
     setSelectedSlot(null);
-    setTimeout(updateParent, 0);
+    setTimeout(updateBattleEquippedItems, 0);
     onClose?.();
   };
 
@@ -102,7 +150,7 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
     }
 
     setSelectedSlot(null);
-    setTimeout(updateParent, 0);
+    setTimeout(updateBattleEquippedItems, 0);
     onClose?.();
   };
 

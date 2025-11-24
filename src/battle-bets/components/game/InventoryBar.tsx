@@ -7,6 +7,19 @@ import React, { useEffect, useState } from 'react';
 import './InventoryBar.css';
 import { castleManager } from '../../game/managers/CastleManager';
 import { useMultiGameStore } from '../../store/multiGameStore';
+import { LAL_IRONMAN_ARMOR_DEFINITION } from '../../game/items/effects/LAL_IronmanArmor';
+import type { ItemDefinition } from '../../game/items/ItemRollSystem';
+
+// Available items registry
+const ITEM_REGISTRY: Record<string, ItemDefinition> = {
+  [LAL_IRONMAN_ARMOR_DEFINITION.id]: LAL_IRONMAN_ARMOR_DEFINITION,
+  // Add more items as they're implemented
+};
+
+const getItemDefinition = (itemId: string | null): ItemDefinition | null => {
+  if (!itemId) return null;
+  return ITEM_REGISTRY[itemId] || null;
+};
 
 interface InventoryBarProps {
   battleId: string;
@@ -15,39 +28,17 @@ interface InventoryBarProps {
 }
 
 export const InventoryBar: React.FC<InventoryBarProps> = ({ battleId, side, onSlotClick }) => {
-  const [equippedItems, setEquippedItems] = useState<any>({ slot1: null, slot2: null, slot3: null });
   const [isFireOrbPulsing, setIsFireOrbPulsing] = useState(false);
 
-  // Get game status to determine if slots are clickable
+  // Get battle and equipped items from store
   const battle = useMultiGameStore(state => state.getBattle(battleId));
   const gameStatus = battle?.game.status || 'SCHEDULED';
   const isPreGame = gameStatus === 'SCHEDULED';
 
-  // Update equipped items when castle loads
-  useEffect(() => {
-    const updateItems = () => {
-      // In multi-battle mode, castles are keyed by `${battleId}-${side}`
-      const castleId = `${battleId}-${side}`;
-      let castle = castleManager.getCastle(castleId);
-
-      // Fallback to legacy single-battle IDs if needed
-      if (!castle) {
-        castle = castleManager.getCastle(`castle-${side}`);
-      }
-
-      if (castle) {
-        const items = castle.getEquippedItems();
-        setEquippedItems(items);
-      }
-    };
-
-    // Update immediately
-    updateItems();
-
-    // Update periodically (in case items change)
-    const interval = setInterval(updateItems, 1000);
-    return () => clearInterval(interval);
-  }, [battleId, side]);
+  // Get equipped items from the battle's capper data
+  const equippedItems = side === 'left'
+    ? battle?.game.leftCapper.equippedItems || { slot1: null, slot2: null, slot3: null }
+    : battle?.game.rightCapper.equippedItems || { slot1: null, slot2: null, slot3: null };
 
   // Listen for Fire Orb activation events
   useEffect(() => {
@@ -140,9 +131,10 @@ export const InventoryBar: React.FC<InventoryBarProps> = ({ battleId, side, onSl
   return (
     <div className={`inventory-bar ${side}`}>
       {slots.map((slot) => {
-        const equippedItem = equippedItems[slot.slotKey];
+        const itemId = equippedItems[slot.slotKey];
+        const equippedItem = getItemDefinition(itemId);
         const isEmpty = !equippedItem;
-        const isFireOrb = equippedItem?.id === 'fire-orb';
+        const isFireOrb = itemId === 'fire-orb';
         const shouldPulse = isFireOrb && isFireOrbPulsing;
 
         return (

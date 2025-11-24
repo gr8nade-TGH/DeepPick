@@ -50,6 +50,7 @@ interface MultiGameState {
   setCurrentQuarter: (battleId: string, quarter: number) => void;
   updateScore: (battleId: string, leftScore: number, rightScore: number) => void;
   updateGameStatus: (battleId: string, status: Game['status']) => void;
+  updateBattle: (battleId: string, updater: (battle: BattleState) => BattleState) => void;
   resetBattle: (battleId: string) => void;
   resetAllBattles: () => void;
 }
@@ -362,6 +363,19 @@ export const useMultiGameStore = create<MultiGameState>()(
           const battle = newBattles.get(battleId);
           if (battle) {
             battle.game.status = status;
+          }
+          return { battles: newBattles };
+        });
+      },
+
+      // Update battle with custom updater function
+      updateBattle: (battleId: string, updater: (battle: BattleState) => BattleState) => {
+        set((state) => {
+          const newBattles = new Map(state.battles);
+          const battle = newBattles.get(battleId);
+          if (battle) {
+            const updatedBattle = updater(battle);
+            newBattles.set(battleId, updatedBattle);
           }
           return { battles: newBattles };
         });
