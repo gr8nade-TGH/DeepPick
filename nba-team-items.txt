@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NBA Team Items Catalog</title>
+  <style>
+    body { margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #050814; color: #f5f7ff; }
+    .page { max-width: 1200px; margin: 24px auto 40px; padding: 0 16px; }
+    h1 { margin: 0 0 8px; font-size: 26px; }
+    .subtitle { color: #a4b0d0; font-size: 13px; margin-bottom: 20px; }
+    .controls { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+    .control-group { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #9aa5c5; }
+    select { padding: 6px 8px; border-radius: 6px; border: 1px solid #303857; background: #0b1020; color: #f5f7ff; font-size: 13px; }
+    .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+    .item-card { background: radial-gradient(circle at top, #222b4a 0, #0a0f1f 55%, #040712 100%); border-radius: 10px; padding: 12px 12px 10px; border: 1px solid #262f4a; box-shadow: 0 12px 22px rgba(0,0,0,0.6); display: flex; flex-direction: column; gap: 6px; position: relative; }
+    .item-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .item-main { display: flex; align-items: center; gap: 10px; }
+    .item-icon-circle { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; background: radial-gradient(circle at top, #2b3560 0, #141a33 60%, #060814 100%); border: 1px solid #3a4670; box-shadow: 0 0 10px rgba(45, 212, 191, 0.2); flex-shrink: 0; }
+    .item-name { font-size: 14px; font-weight: 600; letter-spacing: 0.02em; }
+    .team-tag { font-size: 11px; color: #a4b0d0; }
+    .approved-badge { position: absolute; top: 6px; right: 8px; width: 14px; height: 14px; border-radius: 4px; border: 1px solid #16a34a; background: rgba(22, 163, 74, 0.18); display: flex; align-items: center; justify-content: center; font-size: 0; }
+    .approved-badge::before { content: '\2714'; color: #4ade80; font-size: 10px; }
+    .slot-badge { padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; border: 1px solid transparent; }
+    .slot-badge.attack { background: rgba(255,74,74,0.1); border-color: rgba(255,74,74,0.4); color: #ff7b7b; }
+    .slot-badge.defense { background: rgba(74,158,255,0.1); border-color: rgba(74,158,255,0.4); color: #7bb0ff; }
+    .item-body { font-size: 12px; color: #c5cdee; line-height: 1.5; }
+    .function-section { margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(50, 59, 90, 0.8); }
+    .function-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #9aa5c5; margin-bottom: 2px; }
+    .function-body { font-size: 11px; color: #b3bce5; }
+    .fd-row { margin: 1px 0; }
+    .fd-label { font-weight: 600; color: #d1d7f0; margin-right: 4px; }
+        .fd-label-type { color: #f97373; }
+        .fd-label-helps { color: #facc6b; }
+        .fd-label-trigger { color: #4ade80; }
+        .fd-label-duration { color: #38bdf8; }
+        .fd-label-limits { color: #a855f7; }
+        .fd-label-affected-defense { color: #f97316; }
+        .fd-label-affected-lanes { color: #fbbf24; }
+        .fd-label-defense-effect { color: #22c55e; }
+        .fd-label-damage-effect { color: #22c55e; }
+        .fd-label-downside { color: #fb7185; }
+        .fd-label-roll { color: #7dd3fc; }
+
+
+    .pill-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+    .pill { font-size: 10px; padding: 2px 7px; border-radius: 999px; border: 1px solid #323b5a; color: #9aa5c5; text-transform: uppercase; letter-spacing: 0.06em; }
+    .empty-state { font-size: 13px; color: #8b94b8; margin-top: 16px; }
+    @media (max-width: 600px) { h1 { font-size: 22px; } .item-card { padding: 10px; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>NBA Team Items Catalog</h1>
+    <div class="subtitle">Design-spec only · 2 items per team (1 Attack, 1 Defense). Use the filters to inspect fantasy and intended behavior.</div>
+    <div class="controls">
+      <div class="control-group">
+        <label for="teamFilter">Team</label>
+        <select id="teamFilter"></select>
+      </div>
+      <div class="control-group">
+        <label for="slotFilter">Slot</label>
+        <select id="slotFilter">
+          <option value="all">Attack + Defense</option>
+          <option value="attack">Attack Only</option>
+          <option value="defense">Defense Only</option>
+        </select>
+      </div>
+    </div>
+    <div id="itemsContainer" class="items-grid"></div>
+    <div id="emptyState" class="empty-state" style="display:none;">No items match the current filters.</div>
+  </div>
+  <script>
+    const ITEMS = [
+      { id: 'LAL_def_ironman_armor', team: 'LAL', teamName: 'Los Angeles Lakers', slot: 'defense', name: 'AC "Ironman" Armor', description: 'Castle shield that starts with 3 to 8 HP and gains +1 to 3 HP every time a defense orb is destroyed, then is gone for the matchup once it breaks.' },
+      { id: 'LAL_atk_ironman_bands', team: 'LAL', teamName: 'Los Angeles Lakers', slot: 'attack', name: 'Black Mamba Ring', description: 'Black Mamba ring that adds extra PTS and situational 3PT projectiles based on a one-time roll when the item is won from a chest.', },
+      { id: 'LAC_def_greaves', team: 'LAC', teamName: 'Los Angeles Clippers', slot: 'defense', name: "Clippers' Greaves", description: "For every 1 to 3 defense orbs destroyed, randomly redistribute 1 to 4 new defense orbs into other stat rows.", },
+      { id: 'LAC_atk_lob_amulet', team: 'LAC', teamName: 'Los Angeles Clippers', slot: 'attack', name: 'Lob City Amulet', description: 'Amulet that converts assist and rebound volume into extra scoring projectiles via a one-time chest roll.', },
+      { id: 'GSW_def_splash_zone', team: 'GSW', teamName: 'Golden State Warriors', slot: 'defense', name: 'Golden Shield', description: 'Golden shield that refreshes each quarter and gains extra HP from the previous quarter\'s made threes based on a one-time chest roll.', },
+      { id: 'GSW_atk_splash_cannons', team: 'GSW', teamName: 'Golden State Warriors', slot: 'attack', name: 'Curry-fire Gauntlets', description: 'Gauntlets that add extra 3PT projectiles and massively scale them in the 4th quarter based on a one-time chest roll.', },
+      { id: 'PHX_def_valley_ward', team: 'PHX', teamName: 'Phoenix Suns', slot: 'defense', name: 'Steve Nash Tower', description: 'Tower that gives the castle a second HP bar that grows from assists based on a one-time chest roll.', },
+      { id: 'PHX_atk_seven_seconds', team: 'PHX', teamName: 'Phoenix Suns', slot: 'attack', name: 'Sun Ring', description: 'Ring that converts Suns scoring into extra PTS projectiles and powers up the Final Blow when your winning team prediction hits, based on a one-time chest roll.', },
+      { id: 'SAC_def_beam_bulwark', team: 'SAC', teamName: 'Sacramento Kings', slot: 'defense', name: 'Keep of Kings', description: 'Hidden keep that grants a last-stand shield at low castle HP and seeds new defense orbs when it breaks, based on a one-time chest roll.', },
+      { id: 'SAC_atk_beam_lens', team: 'SAC', teamName: 'Sacramento Kings', slot: 'attack', name: "Kings' Greatsword", description: "Greatsword that turns castle damage and destroyed defense orbs into retaliatory PTS and BLK projectiles based on a one-time chest roll.", },
+      { id: 'DEN_def_mile_high', team: 'DEN', teamName: 'Denver Nuggets', slot: 'defense', name: 'Golden Nugget Vault', description: 'Vault that starts the game with a bonus shield and grows its HP whenever you destroy opponent defense orbs, based on a one-time chest roll.', },
+      { id: 'DEN_atk_passing_engine', team: 'DEN', teamName: 'Denver Nuggets', slot: 'attack', name: "The Joker's Axe", description: "Axe that automatically cleaves random opponent defense orbs whenever your team piles up points, based on a one-time chest roll.", },
+      { id: 'MIN_def_timberwall', team: 'MIN', teamName: 'Minnesota Timberwolves', slot: 'defense', name: "Timberwolves' Den", description: 'Den that turns destroyed defense orbs into blockade projectiles from every stat row, based on a one-time chest roll.', },
+      { id: 'MIN_atk_wolf_horn', team: 'MIN', teamName: 'Minnesota Timberwolves', slot: 'attack', name: 'Northern Fury Bow', description: 'Bow that unleashes end-of-quarter barrages from every stat row and chains extra shots off destroyed defense orbs, based on a one-time chest roll.', },
+      { id: 'OKC_def_storm_shelter', team: 'OKC', teamName: 'Oklahoma City Thunder', slot: 'defense', name: 'Thunder Dome', description: 'Dome that starts with a bonus shield and refills it from any destroyed defense orbs, capped to its rolled max HP, based on a one-time chest roll.', },
+      { id: 'OKC_atk_thunder_rod', team: 'OKC', teamName: 'Oklahoma City Thunder', slot: 'attack', name: "Durantula's Spear", description: "Spear that converts scoring volume into bursts of extra 3PT projectiles based on a one-time chest roll.", },
+      { id: 'UTA_def_wasatch', team: 'UTA', teamName: 'Utah Jazz', slot: 'defense', name: "Stockton's Tunic", description: "Tunic that gives a persistent assist-powered shield which regains HP from your predicted team's AST, based on a one-time chest roll.", },
+      { id: 'UTA_atk_tempo_metronome', team: 'UTA', teamName: 'Utah Jazz', slot: 'attack', name: 'Jazz Rally Horn', description: 'Horn that regularly reinforces the weakest stat row with fresh defense orbs at each quarter, based on a one-time chest roll.', },
+      { id: 'POR_def_rip_city', team: 'POR', teamName: 'Portland Trail Blazers', slot: 'defense', name: 'Trailblazer Tower', description: 'Tower that, based on a one-time chest roll, triggers every 1–5 HP of castle damage to raise 1–4 fresh PTS and 3PT defense orbs, helping you survive long, grinding comebacks.', },
+      { id: 'POR_atk_dame_artillery', team: 'POR', teamName: 'Portland Trail Blazers', slot: 'attack', name: 'Rip-City Warbow', description: 'Warbow that, based on a one-time chest roll, fires 1 to 4 extra PTS and 3PT projectiles for every 1 to 5 of your 3PT projectiles fired.', },
+      { id: 'DAL_def_lone_star', team: 'DAL', teamName: 'Dallas Mavericks', slot: 'defense', name: "Mavericks' Moat", description: 'Moat that, based on a one-time chest roll, adds 1 to 4 new defense orbs with 1 to 3 HP each to every stat row at the start of each quarter.' },
+      { id: 'DAL_atk_stepback_reactor', team: 'DAL', teamName: 'Dallas Mavericks', slot: 'attack', name: "Dirk's Dirk", description: "Blade that, based on a one-time chest roll, stores 1 to 4 bonus Final Blow PTS projectiles for every 1 to 5 of the PTS and 3PT projectiles that hit the item wearer's castle, then fires them all in the Final Blow." },
+      { id: 'HOU_def_launchpad', team: 'HOU', teamName: 'Houston Rockets', slot: 'defense', name: 'Launchpad Aegis Plating', description: 'Launchpad castle plating that, based on a one-time chest roll, starts each battle with 3 to 8 bonus shield HP and, at the start of each quarter, bolts on 1 to 4 new defense orbs into the stat row that took the most castle damage last quarter.' },
+      { id: 'HOU_atk_booster_array', team: 'HOU', teamName: 'Houston Rockets', slot: 'attack', name: 'Booster Rack Warheads', description: 'Rack of booster warheads that, based on a one-time chest roll, fires 1 to 4 extra PTS projectiles for every 1 to 5 of your 3PT projectiles fired, turning hot Rockets arcs into boosted barrages.' },
+      { id: 'MEM_def_grindhouse', team: 'MEM', teamName: 'Memphis Grizzlies', slot: 'defense', name: 'Grindhouse Portcullis', description: 'Iron portcullis that, based on a one-time chest roll, raises 1 to 4 fresh defense orbs every time 1 to 5 of your defense orbs are destroyed, rebuilding classic Grit N Grind walls as attackers break through.' },
+      { id: 'MEM_atk_beale_drums', team: 'MEM', teamName: 'Memphis Grizzlies', slot: 'attack', name: 'Beale Street Ambush Drums', description: 'Ambush war drums that, based on a one-time chest roll, add 1 to 3 bonus PTS projectiles for every 2 to 5 BLK projectiles your team generates, turning Grizzlies stops into pounding counterattacks.' },
+      { id: 'NOP_def_bayou_wardstones', team: 'NOP', teamName: 'New Orleans Pelicans', slot: 'defense', name: 'Bayou Wardstone Bastion', description: 'Wardstone bastion that, based on a one-time chest roll, adds 1 to 4 new defense orbs with 1 to 3 HP each to the weakest stat row at the end of every quarter, soaking chaotic Pelicans swings into the bayou walls.' },
+      { id: 'NOP_atk_zion_engine', team: 'NOP', teamName: 'New Orleans Pelicans', slot: 'attack', name: 'Zion Impact Gauntlets', description: 'Crushing gauntlets that, based on a one-time chest roll, convert every 2 to 5 PTS projectiles into 1 to 3 extra REB lane projectiles, simulating Zion paint collisions spilling second-chance damage.' },
+      { id: 'SAS_def_fundamental_fortress', team: 'SAS', teamName: 'San Antonio Spurs', slot: 'defense', name: 'Fundamental Keep Battlements', description: 'Stone battlements that, based on a one-time chest roll, start each battle with 3 to 8 bonus shield HP and, at the start of every quarter, restore 1 to 3 shield HP if your castle avoided heavy HP loss in the previous quarter.' },
+      { id: 'SAS_atk_motion_spurs', team: 'SAS', teamName: 'San Antonio Spurs', slot: 'attack', name: 'Beautiful Game Spur Lances', description: 'Ornate spur-lances that, based on a one-time chest roll, add 1 to 4 bonus PTS projectiles for every 2 to 5 AST projectiles your team fires, rewarding pure Spurs ball movement with piercing strikes.' },
+      { id: 'MIL_def_giannis_wall', team: 'MIL', teamName: 'Milwaukee Bucks', slot: 'defense', name: 'Giannis Wall Tower Shields', description: 'Stacked tower shields that, based on a one-time chest roll, add 1 to 4 new defense orbs with 1 to 3 HP each to the PTS and REB stat rows at the start of every quarter, recreating the Giannis wall in the paint.' },
+      { id: 'MIL_atk_deer_charge', team: 'MIL', teamName: 'Milwaukee Bucks', slot: 'attack', name: 'Deer Charge Warhorn', description: 'Antler-crowned warhorn that, based on a one-time chest roll, adds 1 to 3 bonus PTS projectiles for every 2 to 5 REB projectiles your team generates, turning Bucks boards into downhill charge volleys.' },
+      { id: 'CLE_def_rock_rampart', team: 'CLE', teamName: 'Cleveland Cavaliers', slot: 'defense', name: 'Rock n Roll Rampart Stones', description: 'Carved rampart stones that, based on a one-time chest roll, add 1 to 4 new defense orbs with 1 to 3 HP each whenever your castle loses 3 to 8 HP in a quarter, hardening lakefront walls during scrappy Cavs fights.' },
+      { id: 'CLE_atk_blade_volley', team: 'CLE', teamName: 'Cleveland Cavaliers', slot: 'attack', name: 'Cavalier Volley Sabers', description: 'Twin sabers that, based on a one-time chest roll, add 1 to 4 extra 3PT projectiles for every 2 to 5 PTS projectiles your guards fire, echoing perimeter-heavy Cavaliers scoring nights.' },
+      { id: 'CHI_def_united_barricade', team: 'CHI', teamName: 'Chicago Bulls', slot: 'defense', name: 'United Center Iron Barricade', description: 'Iron barricade that, based on a one-time chest roll, plants 1 to 4 new defense orbs with 1 to 3 HP each into BLK and REB lanes at the start of every quarter, capturing blue-collar Bulls interior toughness.' },
+      { id: 'CHI_atk_windy_runway', team: 'CHI', teamName: 'Chicago Bulls', slot: 'attack', name: 'Windy City Fastbreak Greaves', description: 'Run-and-gun greaves that, based on a one-time chest roll, add 1 to 3 bonus PTS projectiles for every 2 to 5 REB or STEAL-triggered projectiles your team generates, turning Bulls stops into flying runway finishes.' },
+      { id: 'IND_def_hickory_hardhat', team: 'IND', teamName: 'Indiana Pacers', slot: 'defense', name: 'Hickory Hardhat Bulwark', description: 'Hardhat bulwark that, based on a one-time chest roll, starts each battle with 3 to 8 bonus shield HP and converts every 2 to 5 destroyed defense orbs into 1 to 3 HP of shield repair, rewarding steady Pacers defense.' },
+      { id: 'IND_atk_pace_engine', team: 'IND', teamName: 'Indiana Pacers', slot: 'attack', name: 'Naptown Pace Spurs', description: 'Track-spurs that, based on a one-time chest roll, add 1 to 4 extra PTS projectiles for every 3 to 7 total PTS and 3PT projectiles your team fires, thriving in full-throttle Pacers pace.' },
+      { id: 'DET_def_bad_boys', team: 'DET', teamName: 'Detroit Pistons', slot: 'defense', name: 'Bad Boys Iron Plating', description: 'Iron chest plating that, based on a one-time chest roll, adds 1 to 4 new defense orbs with 1 to 3 HP each to BLK and PTS lanes whenever your castle loses 3 to 8 HP in a quarter, mirroring old-school Detroit punishment.' },
+      { id: 'DET_atk_motor_hammer', team: 'DET', teamName: 'Detroit Pistons', slot: 'attack', name: 'Motor City Forge Hammer', description: 'Forge hammer that, based on a one-time chest roll, adds 1 to 3 bonus PTS projectiles for every 2 to 5 PTS projectiles your underdog Pistons side lands while trailing, turning upsets into heavy finishing blows.' },
+      { id: 'BOS_def_parquet_shield', team: 'BOS', teamName: 'Boston Celtics', slot: 'defense', name: 'Parquet Bulwark Crest', description: 'Parquet-etched bulwark that, based on a one-time chest roll, starts home battles with 3 to 8 bonus shield HP and, at the end of each quarter, restores 1 to 3 shield HP if your BLK and REB lanes outperformed your opponent.' },
+      { id: 'BOS_atk_greenlight_grid', team: 'BOS', teamName: 'Boston Celtics', slot: 'attack', name: 'Greenlight Arc Sigils', description: 'Glowing perimeter sigils that, based on a one-time chest roll, fire 1 to 4 extra 3PT projectiles for every 1 to 5 of your 3PT projectiles taken, rewarding true Greenlight Celtics bombing.' },
+      { id: 'PHI_def_process_pillars', team: 'PHI', teamName: 'Philadelphia 76ers', slot: 'defense', name: 'Process Pillar Columns', description: 'Stone columns that, based on a one-time chest roll, add 1 to 4 new defense orbs with 1 to 3 HP each to the same stat row at the start of every quarter, slowly building a load-bearing Sixers lane.' },
+      { id: 'PHI_atk_liberty_shockwave', team: 'PHI', teamName: 'Philadelphia 76ers', slot: 'attack', name: 'Liberty Bell Shock Gauntlet', description: 'Shock-etched gauntlet that, based on a one-time chest roll, adds 1 to 3 bonus PTS projectiles for every 2 to 5 foul-line-driven PTS projectiles your team generates, turning whistle-heavy Sixers games into ringing shockwaves.' },
+      { id: 'BKN_def_bridge_span', team: 'BKN', teamName: 'Brooklyn Nets', slot: 'defense', name: 'Brooklyn Bridge Anchor Towers', description: 'Bridge anchor towers that, based on a one-time chest roll, add 1 to 4 new defense orbs with 1 to 3 HP each split across any two stat rows of your choice at the start of each quarter, sharing defensive load like hanging cables.' },
+      { id: 'BKN_atk_bassline_barrage', team: 'BKN', teamName: 'Brooklyn Nets', slot: 'attack', name: 'Bassline Barrage Cannons', description: 'Court-side cannons that, based on a one-time chest roll, add 1 to 4 extra PTS projectiles for every 1 to 5 isolation-style PTS projectiles your lead scorer fires, celebrating iso-heavy Brooklyn nights.' },
+      { id: 'TOR_def_jurassic_ramparts', team: 'TOR', teamName: 'Toronto Raptors', slot: 'defense', name: 'Jurassic Fang Ramparts', description: 'Spiked ramparts that, based on a one-time chest roll, add 1 to 4 new defense orbs with 1 to 3 HP each to the two weakest stat rows at the end of every quarter, grinding opponents down in the cold.' },
+      { id: 'TOR_atk_claw_traps', team: 'TOR', teamName: 'Toronto Raptors', slot: 'attack', name: 'Raptor Claw Snare Traps', description: 'Steel claw traps that, based on a one-time chest roll, add 1 to 3 bonus PTS projectiles for every 2 to 5 STEAL or deflection-driven projectiles your team creates, turning Raptors pressure into ambush strikes.' },
+      { id: 'NYK_def_garden_grit', team: 'NYK', teamName: 'New York Knicks', slot: 'defense', name: 'Garden Grit Stonewall', description: 'MSG stonewall that, based on a one-time chest roll, adds 1 to 4 new defense orbs with 1 to 3 HP each whenever your castle loses 3 to 8 HP in a quarter, feeding off Garden-style defensive stands.' },
+      { id: 'NYK_atk_broadway_buckets', team: 'NYK', teamName: 'New York Knicks', slot: 'attack', name: 'Broadway Marquee Spotlights', description: 'Blazing spotlights that, based on a one-time chest roll, fire 1 to 4 extra PTS or 3PT projectiles for every 2 to 5 highlight-worthy PTS and 3PT projectiles your Knicks stars launch on big stages.' },
+      { id: 'MIA_def_heat_culture', team: 'MIA', teamName: 'Miami Heat', slot: 'defense', name: 'Heat Culture Breastplate', description: 'Conditioned breastplate that, based on a one-time chest roll, starts each battle with 3 to 8 bonus shield HP and adds 1 to 3 shield HP back at the end of any quarter where your BLK and REB lanes win the hustle stats.' },
+      { id: 'MIA_atk_heat_wave', team: 'MIA', teamName: 'Miami Heat', slot: 'attack', name: 'Heat Wave Flare Batteries', description: 'Tiered flare batteries that, based on a one-time chest roll, add 1 to 4 extra PTS or 3PT projectiles for every 2 to 5 consecutive scoring PTS projectiles your team fires, mimicking sudden playoff Heat waves.' },
+      { id: 'ATL_def_peachtree_palisade', team: 'ATL', teamName: 'Atlanta Hawks', slot: 'defense', name: 'Peachtree Palisade Panels', description: 'Peach-wood panels that, based on a one-time chest roll, plant 1 to 4 new defense orbs with 1 to 3 HP each into PTS and 3PT lanes whenever your castle loses 3 to 8 HP in a high-scoring quarter, cushioning Hawks volatility.' },
+      { id: 'ATL_atk_hawk_talons', team: 'ATL', teamName: 'Atlanta Hawks', slot: 'attack', name: 'Hawk Dive Talon Greaves', description: 'Talon-tipped greaves that, based on a one-time chest roll, add 1 to 4 extra 3PT projectiles for every 1 to 5 long-range 3PT projectiles your team launches, rewarding daring Hawks pull-ups.' },
+      { id: 'ORL_def_warding_circle', team: 'ORL', teamName: 'Orlando Magic', slot: 'defense', name: 'Magic Ward', description: 'Magic Ward that, based on a one-time chest roll, energizes the last defense orb of each stat row at the start of every quarter with an outer glow and +1 HP when that row still has an orb, and also wraps your castle in an energy shield with 3 to 10 starting HP that, whenever it takes a hit, re-energizes 1 to 3 random defense orbs with +1 HP.' },
+      { id: 'ORL_atk_magic_missiles', team: 'ORL', teamName: 'Orlando Magic', slot: 'attack', name: 'Magic Missiles', description: 'Magic Missiles that, based on a one-time chest roll, add 1 to 4 projectiles from each stat row at the start of every quarter, and each of those projectiles has 1 to 3 HP so it can survive 1 to 3 projectile collisions before disappearing.' },
+      { id: 'CHA_def_hornets_nest', team: 'CHA', teamName: 'Charlotte Hornets', slot: 'defense', name: "Hornets' Nest", description: 'Hornets\' Nest that, based on a one-time chest roll, fires 1 to 3 retaliatory projectiles from that stat row whenever one of the item wearer\'s defense orbs is destroyed, and if that destruction removes the last defense orb in that stat row, fires an additional 1 to 5 projectiles on top.' },
+      { id: 'CHA_atk_sting_blade', team: 'CHA', teamName: 'Charlotte Hornets', slot: 'attack', name: 'Sting Blade', description: 'Sting blade that, based on a one-time chest roll, fires 1 to 4 extra projectiles per stat row at the end of each quarter if the item wearer\'s predicted team is losing by more than 3 to 10 points.' },
+      { id: 'WAS_def_wizards_watchtower', team: 'WAS', teamName: 'Washington Wizards', slot: 'defense', name: "Wizards' Watchtower", description: "Watchtower that, based on a one-time chest roll, adds 1 HP (outer glow) to 1 to 5 defense orbs at the start of each quarter, and if the item wearer's predicted team is losing at the end of a quarter, creates a magic shield with 4 to 10 HP that can be remade in a later quarter only if it no longer exists." },
+      { id: 'WAS_atk_wizards_war_staff', team: 'WAS', teamName: 'Washington Wizards', slot: 'attack', name: "Wizards' War Staff", description: 'War staff that, based on a one-time chest roll, energizes 1 stat row at the start of each quarter and fires 1 to 5 extra projectiles for every 1 to 5 projectiles that row fires.' }
+    ];
+
+    const teamFilterEl = document.getElementById('teamFilter');
+    const slotFilterEl = document.getElementById('slotFilter');
+    const itemsContainer = document.getElementById('itemsContainer');
+    const emptyStateEl = document.getElementById('emptyState');
+
+    const uniqueTeams = Array.from(new Map(ITEMS.map(i => [i.team, i.teamName])).entries()).sort((a,b) => a[0].localeCompare(b[0]));
+    teamFilterEl.innerHTML = '<option value="all">All Teams</option>' + uniqueTeams.map(([abbr,name]) => `<option value="${abbr}">${abbr}  ${name}</option>`).join('');
+
+    function renderItems() {
+      const teamValue = teamFilterEl.value;
+      const slotValue = slotFilterEl.value;
+      const filtered = ITEMS.filter(item => (teamValue === 'all' || item.team === teamValue) && (slotValue === 'all' || item.slot === slotValue));
+      itemsContainer.innerHTML = '';
+      if (!filtered.length) {
+        emptyStateEl.style.display = 'block';
+        return;
+      }
+      emptyStateEl.style.display = 'none';
+      filtered.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'item-card';
+        const slotLabel = item.slot === 'attack' ? 'Attack' : 'Defense';
+        const slotClass = item.slot === 'attack' ? 'attack' : 'defense';
+        const iconSymbol = item.slot === 'attack' ? '\u2694\ufe0f' : '\ud83d\udee1\ufe0f';
+        card.innerHTML = `
+          <div class="item-header">
+            <div class="item-main">
+              <div class="item-icon-circle">${iconSymbol}</div>
+              <div>
+                <div class="item-name">${item.name}</div>
+                <div class="team-tag">${item.team}  ${item.teamName}</div>
+              </div>
+            </div>
+            <div class="slot-badge ${slotClass}">${slotLabel}</div>
+          </div>
+          ${
+            [
+              'LAL_def_ironman_armor','LAL_atk_ironman_bands',
+              'LAC_def_greaves','LAC_atk_lob_amulet',
+              'GSW_def_splash_zone','GSW_atk_splash_cannons',
+              'PHX_def_valley_ward','PHX_atk_seven_seconds',
+              'SAC_def_beam_bulwark','SAC_atk_beam_lens',
+              'DEN_def_mile_high','DEN_atk_passing_engine',
+              'MIN_def_timberwall','MIN_atk_wolf_horn',
+              'OKC_def_storm_shelter','OKC_atk_thunder_rod',
+              'UTA_def_wasatch','UTA_atk_tempo_metronome',
+              'POR_def_rip_city','POR_atk_dame_artillery',
+              'DAL_def_lone_star','DAL_atk_stepback_reactor',
+              'CHA_def_hornets_nest','CHA_atk_sting_blade',
+              'WAS_def_wizards_watchtower','WAS_atk_wizards_war_staff'
+            ].includes(item.id)
+              ? '<div class="approved-badge"></div>'
+              : ''
+          }
+          <div class="item-body">${item.description}</div>
+          <div class="function-section">
+            <div class="function-title">Function Details</div>
+            <div class="function-body">
+              ${item.id === 'LAL_def_ironman_armor'
+                ? `<div class="fd-row"><span class="fd-label fd-label-type">Type:</span>DEFENSE</div>
+                   <div class="fd-row"><span class="fd-label fd-label-helps">Helps/Hurts:</span>Owner only</div>
+                   <div class="fd-row"><span class="fd-label fd-label-trigger">Trigger:</span>Starts the battle with a shield active on the castle, before Q1 projectiles fire.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-duration">Duration:</span>Shield persists until its HP is fully depleted; once broken, it is gone for the matchup.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-limits">Limits:</span>Does not stack; only one AC "Ironman" Armor shield can exist at a time.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Roll details:</span>When this item is first won from a treasure chest, its shield stats are rolled: starting HP between 3 and 8, and +1 to 3 HP per destroyed defense orb. These values are permanently fixed for that copy.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Quality tiers:</span>Warped, Balanced, Honed, Masterwork  based on how strong the rolled starting HP and per-orb HP are for that copy.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-defense">Affected defense:</span>Castle HP (via a separate shield HP pool).</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-lanes">Affected lanes:</span>ALL (any lane damage can hit the shield).</div>
+                   <div class="fd-row"><span class="fd-label fd-label-defense-effect">Defense effect:</span>Your castle starts each battle with this item's fixed shield HP and gains its fixed per-orb HP whenever one of your defense orbs is destroyed. All castle damage is applied to the shield first until it breaks.</div>`
+                : item.id === 'LAL_atk_ironman_bands'
+                ? `<div class="fd-row"><span class="fd-label fd-label-type">Type:</span>ATTACK</div>
+                   <div class="fd-row"><span class="fd-label fd-label-helps">Helps/Hurts:</span>Owner only</div>
+                   <div class="fd-row"><span class="fd-label fd-label-trigger">Trigger:</span>At the moment Black Mamba Ring is first won from a treasure chest, its extra projectile stats are rolled and permanently fixed for that copy. In battle, for each qualifying projectile fired, that copy's fixed extra-projectile counts are used.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-duration">Duration:</span>Attack effect persists for the entire battle whenever this item is equipped.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-limits">Limits:</span>Does not stack with itself; only one Black Mamba Ring effect can apply per side.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Roll details:</span>When first won from a treasure chest, roll extra projectiles: +1 to 4 extra projectiles for every PTS projectile, and +1 to 6 extra projectiles for every 3PT projectile. These rolled values are permanently fixed for that copy.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Quality tiers:</span>Warped, Balanced, Honed, Masterwork  based on how strong the rolled PTS and 3PT extra-projectile counts are.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-lanes">Affected lanes:</span>PTS, 3PT</div>
+                   <div class="fd-row"><span class="fd-label fd-label-damage-effect">Damage effect:</span>For every PTS projectile fired, also fire this copy's fixed extra PTS projectiles (+1 to 4). For every 3PT projectile fired, if LAL is losing on the scoreboard at the start of the quarter, also fire this copy's fixed extra 3PT projectiles (+1 to 6); if LAL is leading, 3PT shots fire with no extra projectiles.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-downside">Downside:</span>When LAL is leading at the start of the quarter, Black Mamba Ring provides no extra 3PT projectiles, so its full potential only shows when playing from behind.</div>`
+                : item.id === 'LAC_atk_lob_amulet'
+                ? `<div class="fd-row"><span class="fd-label fd-label-type">Type:</span>ATTACK</div>
+                   <div class="fd-row"><span class="fd-label fd-label-helps">Helps/Hurts:</span>Owner only</div>
+                   <div class="fd-row"><span class="fd-label fd-label-trigger">Trigger:</span>At the moment Lob City Amulet is first won from a treasure chest, its conversion stats for AST→PTS and REB→PTS projectiles are rolled and permanently fixed for that copy. In battle, those fixed thresholds are used to determine when extra PTS projectiles fire.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-duration">Duration:</span>Attack effect persists for the entire battle whenever this item is equipped.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-limits">Limits:</span>Does not stack with itself; only one Lob City Amulet effect can apply per side.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Roll details:</span>When first won from a treasure chest, roll two conversion rates: every 2 to 5 AST projectiles that fire create 1 extra PTS projectile, and every 2 to 5 REB projectiles that fire create 1 extra PTS projectile. The exact AST and REB thresholds (2–3–4–5) are rolled and permanently fixed for that copy.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Quality tiers:</span>Warped, Balanced, Honed, Masterwork — based on how low the rolled AST/REB thresholds are (lower thresholds convert more volume into PTS).</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-lanes">Affected lanes:</span>AST, REB (inputs) and PTS (extra projectiles).</div>
+                   <div class="fd-row"><span class="fd-label fd-label-damage-effect">Damage effect:</span>As AST projectiles are fired, count them for this item; whenever the fixed AST threshold for this copy is reached (e.g., every 2–3–4–5 AST shots based on roll), immediately fire 1 additional PTS projectile. Do the same for REB projectiles using this copy's fixed REB threshold, firing 1 bonus PTS projectile each time the REB counter hits that threshold.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-downside">Downside:</span>If AST or REB volume is low in a quarter, Lob City Amulet produces few or no bonus PTS projectiles, making it much less impactful in slow or grindy games.</div>`
+                : item.id === 'LAC_def_greaves'
+                ? `<div class="fd-row"><span class="fd-label fd-label-type">Type:</span>DEFENSE</div>
+                   <div class="fd-row"><span class="fd-label fd-label-helps">Helps/Hurts:</span>Owner only</div>
+                   <div class="fd-row"><span class="fd-label fd-label-trigger">Trigger:</span>At the moment Clippers' Greaves is first won from a treasure chest, its redistribution stats are rolled and permanently fixed for that copy. In battle, every time enough of your defense orbs are destroyed, it attempts to redistribute fresh orbs into other stat rows.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-duration">Duration:</span>Defense effect persists for the entire battle whenever this item is equipped.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-limits">Limits:</span>Does not stack with itself; only one Clippers' Greaves effect can apply per side.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Roll details:</span>When first won from a treasure chest, roll two values: a destruction threshold between 1 and 3 defense orbs, and a redistribution count between 1 and 4 defense orbs. These values are permanently fixed for that copy.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Quality tiers:</span>Warped, Balanced, Honed, Masterwork — based on how low the destruction threshold is and how high the redistribution count is.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-defense">Affected defense:</span>Defense orbs across all stat rows.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-lanes">Affected lanes:</span>All stat rows are eligible to receive redistributed orbs.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-defense-effect">Defense effect:</span>As your defense orbs are destroyed, track the count for this item; whenever the fixed destruction threshold for this copy is met (1–2–3 destroyed orbs based on roll), randomly spawn the fixed number of fresh defense orbs (1–2–3–4 based on roll) into other stat rows, helping shore up weak lanes.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-downside">Downside:</span>If orbs are destroyed slowly or mostly in already-strong rows, redistribution may feel random and occasionally wasteful, providing less value in tightly controlled matchups.</div>`
+                : item.id === 'GSW_atk_splash_cannons'
+                ? `<div class="fd-row"><span class="fd-label fd-label-type">Type:</span>ATTACK</div>
+                   <div class="fd-row"><span class="fd-label fd-label-helps">Helps/Hurts:</span>Owner only</div>
+                   <div class="fd-row"><span class="fd-label fd-label-trigger">Trigger:</span>At the moment Curry-fire Gauntlets are first won from a treasure chest, their extra 3PT projectile stats and 4th-quarter multiplier are rolled and permanently fixed for that copy. In battle, every 3PT projectile uses those fixed values.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-duration">Duration:</span>Attack effect persists for the entire battle whenever this item is equipped.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-limits">Limits:</span>Does not stack with itself; only one Curry-fire Gauntlets effect can apply per side.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Roll details:</span>When first won from a treasure chest, roll two values: base extra 3PT projectiles between +1 and +3 per 3PT shot, and a 4th-quarter multiplier between 1x and 4x. These values are permanently fixed for that copy.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Quality tiers:</span>Warped, Balanced, Honed, Masterwork  based on how high the base extra 3PT count and 4th-quarter multiplier are.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-lanes">Affected lanes:</span>3PT</div>
+                   <div class="fd-row"><span class="fd-label fd-label-damage-effect">Damage effect:</span>For every 3PT projectile fired in Q1Q3, also fire this copy's fixed number of extra 3PT projectiles (+1 to +3). In Q4, for every 3PT projectile fired, fire this copy's fixed extra-3PT count multiplied by its fixed 4th-quarter multiplier (1x4x), creating a surge of extra 3PT shots late in the game.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-downside">Downside:</span>If 3PT volume is low or the game is largely decided before Q4, the multiplier effect is underused and the item feels much weaker.</div>`
+                : item.id === 'GSW_def_splash_zone'
+                ? `<div class="fd-row"><span class="fd-label fd-label-type">Type:</span>DEFENSE</div>
+                   <div class="fd-row"><span class="fd-label fd-label-helps">Helps/Hurts:</span>Owner only</div>
+                   <div class="fd-row"><span class="fd-label fd-label-trigger">Trigger:</span>At the moment Golden Shield is first won from a treasure chest, its base shield HP and bonus-per-made-3PT values are rolled and permanently fixed for that copy. In battle, a fresh shield is applied to the castle at the start of each quarter using those fixed values and last quarter's made threes.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-duration">Duration:</span>Each quarter's shield lasts until its HP is depleted; it does not stack within a quarter but fully refreshes at the start of the next quarter.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-limits">Limits:</span>Does not stack with itself; only one Golden Shield layer can be active per quarter.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Roll details:</span>When first won from a treasure chest, roll base shield HP between 2 and 6, and a per-made-3PT bonus between +1 and +3 HP. These values are permanently fixed for that copy.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Quality tiers:</span>Warped, Balanced, Honed, Masterwork  based on how high the base HP and per-3PT bonus values are.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-defense">Affected defense:</span>Castle HP via a recurring quarter-based shield layer.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-lanes">Affected lanes:</span>ALL (any lane damage can hit the shield first each quarter).</div>
+                   <div class="fd-row"><span class="fd-label fd-label-defense-effect">Defense effect:</span>At the start of each quarter, apply a shield to the castle equal to this copy's fixed base HP plus its fixed per-made-3PT bonus HP multiplied by the number of 3PT makes from the previous quarter. Any castle damage in that quarter is applied to the shield first until it breaks; at the next quarter start, the shield is reset using the same formula.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-downside">Downside:</span>If few threes were made in the previous quarter or the opponent shifts to non-3PT-heavy play, Golden Shield's scaling feels modest and the shield may break quickly.</div>`
+                : item.id === 'PHX_def_valley_ward'
+                ? `<div class="fd-row"><span class="fd-label fd-label-type">Type:</span>DEFENSE</div>
+                   <div class="fd-row"><span class="fd-label fd-label-helps">Helps/Hurts:</span>Owner only</div>
+                   <div class="fd-row"><span class="fd-label fd-label-trigger">Trigger:</span>At the moment Steve Nash Tower is first won from a treasure chest, its starting shield HP and assist-to-HP conversion are rolled and permanently fixed for that copy. In battle, it applies a second castle HP bar (shield) before Q1 projectiles fire.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-duration">Duration:</span>The shield lasts until its HP is fully depleted; once destroyed, it is gone for the entire matchup.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-limits">Limits:</span>Does not stack; only one Steve Nash Tower shield can exist at a time.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Roll details:</span>When first won from a treasure chest, roll starting shield HP between 3 and 8, and a per-assist threshold between 1 and 5 AST per +1 shield HP. These values are permanently fixed for that copy.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Quality tiers:</span>Warped, Balanced, Honed, Masterwork — based on how high the starting HP is and how low the assist threshold is.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-defense">Affected defense:</span>Castle HP via a separate, front-loaded HP bar.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-lanes">Affected lanes:</span>ALL (any lane damage can hit the Steve Nash Tower shield first).</div>
+                   <div class="fd-row"><span class="fd-label fd-label-defense-effect">Defense effect:</span>At battle start, give the castle a shield with this copy's fixed starting HP (3–8) that sits in front of normal castle HP. As AST projectiles accumulate, every time the fixed assist threshold (1–5 AST) is met, add +1 HP to the shield as long as it is still alive. All damage is applied to the shield first until it is destroyed; once gone, it never returns for that matchup.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-downside">Downside:</span>If assists are low or the shield is broken early by heavy focus fire, Steve Nash Tower loses all value for the rest of the matchup.</div>`
+                : item.id === 'PHX_atk_seven_seconds'
+                ? `<div class="fd-row"><span class="fd-label fd-label-type">Type:</span>ATTACK</div>
+                   <div class="fd-row"><span class="fd-label fd-label-helps">Helps/Hurts:</span>Owner only</div>
+                   <div class="fd-row"><span class="fd-label fd-label-trigger">Trigger:</span>At the moment Sun Ring is first won from a treasure chest, its scoring-to-projectile conversion and Final Blow bonus are rolled and permanently fixed for that copy. In battle, PTS volume and the Final Blow phase use those fixed values.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-duration">Duration:</span>Attack effect persists for the entire battle whenever this item is equipped.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-limits">Limits:</span>Does not stack with itself; only one Sun Ring effect can apply per side.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Roll details:</span>When first won from a treasure chest, roll a PTS conversion rate where every 1 to 8 PTS projectiles fired create 1 burst of extra projectiles, and roll the size of that burst between 1 and 5 extra PTS projectiles. Also roll a Final Blow bonus that, when active, adds exactly 3 extra "sun arrow" projectiles (fixed) if the capper's team prediction wins.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Quality tiers:</span>Warped, Balanced, Honed, Masterwork — based on how low the PTS threshold is and how high the extra-projectile burst size is.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-lanes">Affected lanes:</span>PTS (primary) and Final Blow phase behavior.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-damage-effect">Damage effect:</span>As PTS projectiles are fired, count them for this item; whenever the fixed PTS threshold for this copy is met (between 1 and 8 PTS shots), immediately fire this copy's fixed burst of extra PTS projectiles (1–5). During the Final Blow phase, if your GSW team prediction wins, add 3 additional sun arrow projectiles on top of whatever the normal Final Blow would fire.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-downside">Downside:</span>If scoring volume is low or your GSW prediction loses, Sun Ring produces fewer extra projectiles and the Final Blow bonus never appears.</div>`
+                : item.id === 'SAC_atk_beam_lens'
+                ? `<div class="fd-row"><span class="fd-label fd-label-type">Type:</span>ATTACK</div>
+                   <div class="fd-row"><span class="fd-label fd-label-helps">Helps/Hurts:</span>Owner only</div>
+                   <div class="fd-row"><span class="fd-label fd-label-trigger">Trigger:</span>At the moment Kings' Greatsword is first won from a treasure chest, its retaliatory projectile ranges against castle damage and destroyed defense orbs are rolled and permanently fixed for that copy. In battle, it listens for primary castle HP damage and orb destruction events.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-duration">Duration:</span>Attack effect persists for the entire battle whenever this item is equipped.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-limits">Limits:</span>Does not stack with itself; only one Kings' Greatsword effect can apply per side.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Roll details:</span>When first won from a treasure chest, roll a PTS retaliation range between 3 and 10 PTS projectiles per 1 point of damage dealt directly to castle primary HP (shield damage does not count), and roll a BLK retaliation range between 1 and 3 BLK projectiles per destroyed defense orb. These values are permanently fixed for that copy.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Quality tiers:</span>Warped, Balanced, Honed, Masterwork — based on how high the PTS and BLK retaliation values are.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-lanes">Affected lanes:</span>PTS (retaliation for castle HP hits), BLK (retaliation for destroyed defense orbs).</div>
+                   <div class="fd-row"><span class="fd-label fd-label-damage-effect">Damage effect:</span>Whenever the castle's primary HP (not shield HP) loses 1 point, immediately fire this copy's fixed number of PTS projectiles (3–10) as a counterstrike. Whenever a defense orb is destroyed, also fire this copy's fixed number of BLK projectiles (1–3) as a reactive burst.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-downside">Downside:</span>If the opponent plays around direct castle damage and orb destruction, Kings' Greatsword sees fewer triggers and feels less impactful.</div>`
+                : item.id === 'SAC_def_beam_bulwark'
+                ? `<div class="fd-row"><span class="fd-label fd-label-type">Type:</span>DEFENSE</div>
+                   <div class="fd-row"><span class="fd-label fd-label-helps">Helps/Hurts:</span>Owner only</div>
+                   <div class="fd-row"><span class="fd-label fd-label-trigger">Trigger:</span>At the moment Keep of Kings is first won from a treasure chest, its emergency shield HP is rolled and permanently fixed for that copy. In battle, when castle HP is reduced to 3 HP for the first time, a last-stand shield is applied.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-duration">Duration:</span>The shield lasts until its HP is depleted; once the shield is destroyed, its on-break effect fires and it never returns for that matchup.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-limits">Limits:</span>Does not stack; Keep of Kings can only trigger once per matchup per side.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Roll details:</span>When first won from a treasure chest, roll the shield's HP between 5 and 15. This value is permanently fixed for that copy.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Quality tiers:</span>Warped, Balanced, Honed, Masterwork — based on how high the rolled shield HP is.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-defense">Affected defense:</span>Castle HP via a one-time emergency shield and defense orbs across all stat rows when it breaks.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-lanes">Affected lanes:</span>ALL (damage can hit the shield from any lane; on-break orbs are distributed to every stat row).</div>
+                   <div class="fd-row"><span class="fd-label fd-label-defense-effect">Defense effect:</span>When castle HP first hits 3 HP, immediately apply a shield to the castle equal to this copy's fixed shield HP (5–15). When that shield is destroyed, add 1 fresh defense orb to every stat row, then the item is fully consumed for the rest of the matchup.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-downside">Downside:</span>If the castle never falls to 3 HP or is finished off before the shield can meaningfully absorb damage, Keep of Kings can feel wasted, and its orb spawn only occurs after the shield fully breaks.</div>`
+                : item.id === 'DEN_atk_passing_engine'
+                ? `<div class="fd-row"><span class="fd-label fd-label-type">Type:</span>ATTACK</div>
+                   <div class="fd-row"><span class="fd-label fd-label-helps">Helps/Hurts:</span>Owner only</div>
+                   <div class="fd-row"><span class="fd-label fd-label-trigger">Trigger:</span>At the moment The Joker's Axe is first won from a treasure chest, its scoring threshold and orb-destruction count are rolled and permanently fixed for that copy. In battle, it tracks your team's scoring and periodically destroys opponent defense orbs.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-duration">Duration:</span>Attack effect persists for the entire battle whenever this item is equipped.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-limits">Limits:</span>Does not stack with itself; only one The Joker's Axe effect can apply per side.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Roll details:</span>When first won from a treasure chest, roll a PTS threshold between 10 and 20 PTS, and roll a destruction count between 1 and 3 opponent defense orbs per trigger. These values are permanently fixed for that copy.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Quality tiers:</span>Warped, Balanced, Honed, Masterwork — based on how low the PTS threshold is and how high the orb-destruction count is.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-lanes">Affected lanes:</span>Opponent defense orbs across all stat rows (selection is random).</div>
+                   <div class="fd-row"><span class="fd-label fd-label-damage-effect">Damage effect:</span>As your team scores PTS, count PTS projectiles for this item; each time the fixed PTS threshold (10–20) is reached, automatically and randomly destroy this copy's fixed number of opponent defense orbs (1–3), removing them from play.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-downside">Downside:</span>If your scoring pace is low or the game ends quickly, The Joker's Axe may only trigger a few times, limiting its ability to strip away the opponent's defensive layers.</div>`
+                : item.id === 'DEN_def_mile_high'
+                ? `<div class="fd-row"><span class="fd-label fd-label-type">Type:</span>DEFENSE</div>
+                   <div class="fd-row"><span class="fd-label fd-label-helps">Helps/Hurts:</span>Owner only</div>
+                   <div class="fd-row"><span class="fd-label fd-label-trigger">Trigger:</span>At the moment Golden Nugget Vault is first won from a treasure chest, its starting shield HP and orb-destruction growth rate are rolled and permanently fixed for that copy. In battle, it applies a starting shield before Q1 and then grows it as you destroy opponent defense orbs.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-duration">Duration:</span>The shield remains active until its HP is fully depleted; any gained HP from destroying opponent defense orbs is applied while it is still alive.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-limits">Limits:</span>Does not stack with itself; only one Golden Nugget Vault shield can be active per side.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Roll details:</span>When first won from a treasure chest, roll a starting shield HP between 3 and 10, and roll a growth value between +1 and +4 shield HP for every opponent defense orb you destroy. These values are permanently fixed for that copy.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Quality tiers:</span>Warped, Balanced, Honed, Masterwork — based on how high the starting HP is and how high the per-orb growth is.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-defense">Affected defense:</span>Castle HP via a persistent shield that grows from destroying opponent defense orbs.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-lanes">Affected lanes:</span>ALL (any lane's projectiles can hit the shield; any lane's destroyed opponent orbs can feed its growth).</div>
+                   <div class="fd-row"><span class="fd-label fd-label-defense-effect">Defense effect:</span>At battle start, give the castle a shield with this copy's fixed starting HP (3–10). Each time you destroy an opponent defense orb, add this copy's fixed growth value (+1–4 HP) to the shield while it is still alive, making it thicker over time. All damage is absorbed by the shield until its HP reaches 0, then further damage hits primary castle HP.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-downside">Downside:</span>If you fail to destroy many opponent defense orbs or the shield is quickly burst down, Golden Nugget Vault may not have time to grow into a meaningful extra layer of protection.</div>`
+                : item.id === 'MIN_def_timberwall'
+                ? `<div class="fd-row"><span class="fd-label fd-label-type">Type:</span>DEFENSE</div>
+                   <div class="fd-row"><span class="fd-label fd-label-helps">Helps/Hurts:</span>Owner only</div>
+                   <div class="fd-row"><span class="fd-label fd-label-trigger">Trigger:</span>At the moment Timberwolves' Den is first won from a treasure chest, its orb-destruction threshold and blockade projectile count are rolled and permanently fixed for that copy. In battle, it listens for your defense orbs being destroyed.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-duration">Duration:</span>Effect persists for the entire battle whenever this item is equipped.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-limits">Limits:</span>Does not stack with itself; only one Timberwolves' Den effect can apply per side.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Roll details:</span>When first won from a treasure chest, roll a destruction threshold between 1 and 3 of your defense orbs destroyed per trigger, and roll a blockade projectile count between 1 and 4 projectiles fired from each stat row per trigger. These values are permanently fixed for that copy.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Quality tiers:</span>Warped, Balanced, Honed, Masterwork  based on how low the orb-destruction threshold is and how high the blockade projectile count is.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-defense">Affected defense:</span>Your defense orbs (as the trigger) and blockade-style projectiles fired from every stat row.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-lanes">Affected lanes:</span>ALL (each stat row fires blockade projectiles when the trigger is met).</div>
+                   <div class="fd-row"><span class="fd-label fd-label-defense-effect">Defense effect:</span>As your defense orbs are destroyed, count them for this item; every time the fixed threshold (13 destroyed orbs) is reached, fire this copy's fixed number of blockade projectiles (14) from each stat row at once, creating a full-board counter-barrage.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-downside">Downside:</span>If opponents avoid destroying your orbs or quickly burn through them before many thresholds are reached, Timberwolves' Den may only fire a few blockade barrages.</div>`
+                : item.id === 'MIN_atk_wolf_horn'
+                ? `<div class="fd-row"><span class="fd-label fd-label-type">Type:</span>ATTACK</div>
+                   <div class="fd-row"><span class="fd-label fd-label-helps">Helps/Hurts:</span>Owner only</div>
+                   <div class="fd-row"><span class="fd-label fd-label-trigger">Trigger:</span>At the moment Northern Fury Bow is first won from a treasure chest, its end-of-quarter barrage size and on-hit follow-up count are rolled and permanently fixed for that copy. In battle, it fires at the end of each quarter and reacts when its own projectiles destroy defense orbs.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-duration">Duration:</span>Attack effect persists for the entire battle whenever this item is equipped.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-limits">Limits:</span>Does not stack with itself; only one Northern Fury Bow effect can apply per side.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Roll details:</span>When first won from a treasure chest, roll an end-of-quarter barrage size between 1 and 5 projectiles from each stat row, and roll an on-hit follow-up size between 1 and 3 projectiles from each stat row per destroyed defense orb. These values are permanently fixed for that copy.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Quality tiers:</span>Warped, Balanced, Honed, Masterwork  based on how high both the end-of-quarter barrage size and the on-hit follow-up counts are.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-lanes">Affected lanes:</span>ALL stat rows (PTS, REB, AST, BLK, 3PT) participate in the barrages.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-damage-effect">Damage effect:</span>At the end of each quarter, after all normal stat-row projectiles have fired, Northern Fury Bow launches its fixed barrage of projectiles (15) from each stat row. For every defense orb destroyed by these barrages, immediately fire this copy's fixed number of follow-up projectiles (13) from each stat row again, chaining extra damage off successful orb breaks.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-downside">Downside:</span>If defenses are light and few orbs are destroyed, Northern Fury Bow's follow-up chains won't fully realize their potential, and if games are short, you get fewer end-of-quarter waves.</div>`
+                : item.id === 'OKC_def_storm_shelter'
+                ? `<div class="fd-row"><span class="fd-label fd-label-type">Type:</span>DEFENSE</div>
+                   <div class="fd-row"><span class="fd-label fd-label-helps">Helps/Hurts:</span>Owner only</div>
+                   <div class="fd-row"><span class="fd-label fd-label-trigger">Trigger:</span>At the moment Thunder Dome is first won from a treasure chest, its starting shield HP and per-orb refill value are rolled and permanently fixed for that copy. In battle, it applies a shield at game start and refills from destroyed defense orbs.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-duration">Duration:</span>The shield remains active until its HP reaches 0; once fully depleted, it is gone for the rest of the game and can no longer be refilled.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-limits">Limits:</span>Does not stack with itself; only one Thunder Dome shield can be active per side, and its HP cannot exceed its rolled starting max.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Roll details:</span>When first won from a treasure chest, roll a starting shield HP between 3 and 10, and roll a per-orb refill value between +1 and +4 HP for every destroyed defense orb (yours or the opponent's). These values are permanently fixed for that copy.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Quality tiers:</span>Warped, Balanced, Honed, Masterwork — based on how high the starting HP is and how high the per-orb refill value is.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-defense">Affected defense:</span>Castle HP via a regenerating shield layer that refills from orb destruction on both sides.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-lanes">Affected lanes:</span>ALL (any lane's projectiles can hit the shield; any lane's destroyed orbs contribute to refills).</div>
+                   <div class="fd-row"><span class="fd-label fd-label-defense-effect">Defense effect:</span>At game start, give the castle a shield with this copy's fixed starting HP (3–10). Each time any defense orb is destroyed (yours or the opponent's) while the shield is still alive, add this copy's fixed refill amount (+1–4 HP) back to the shield, but never above the original starting HP. Once the shield's HP reaches 0, it disappears permanently and can no longer be refilled.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-downside">Downside:</span>If opponents burst the shield down in one big push, or orbs stop being destroyed early, Thunder Dome may not get enough refills to justify its value.</div>`
+                : item.id === 'OKC_atk_thunder_rod'
+                ? `<div class="fd-row"><span class="fd-label fd-label-type">Type:</span>ATTACK</div>
+                   <div class="fd-row"><span class="fd-label fd-label-helps">Helps/Hurts:</span>Owner only</div>
+                   <div class="fd-row"><span class="fd-label fd-label-trigger">Trigger:</span>At the moment Durantula's Spear is first won from a treasure chest, its PTS-to-3PT conversion threshold and extra 3PT count are rolled and permanently fixed for that copy. In battle, it monitors PTS projectiles and periodically fires extra 3PT projectiles.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-duration">Duration:</span>Attack effect persists for the entire battle whenever this item is equipped.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-limits">Limits:</span>Does not stack with itself; only one Durantula's Spear effect can apply per side.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Roll details:</span>When first won from a treasure chest, roll a PTS threshold between 3 and 15 PTS projectiles, and roll an extra 3PT count between 1 and 5 3PT projectiles per trigger. These values are permanently fixed for that copy.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Quality tiers:</span>Warped, Balanced, Honed, Masterwork — based on how low the PTS threshold is and how high the extra 3PT count is.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-lanes">Affected lanes:</span>PTS (as the trigger) and 3PT (as the extra projectiles).</div>
+                   <div class="fd-row"><span class="fd-label fd-label-damage-effect">Damage effect:</span>As PTS projectiles are fired, count them for this item; whenever the fixed PTS threshold for this copy is met (3–15 PTS projectiles), immediately fire this copy's fixed number of 3PT projectiles (1–5) as a Durantula's Spear burst.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-downside">Downside:</span>If PTS volume is low or the game ends quickly, Durantula's Spear may only trigger a few times, limiting its ability to flood the lane with extra 3s.</div>`
+                : item.id === 'UTA_def_wasatch'
+                ? `<div class="fd-row"><span class="fd-label fd-label-type">Type:</span>DEFENSE</div>
+                   <div class="fd-row"><span class="fd-label fd-label-helps">Helps/Hurts:</span>Owner only</div>
+                   <div class="fd-row"><span class="fd-label fd-label-trigger">Trigger:</span>At the moment Stockton's Tunic is first won from a treasure chest, its starting shield HP and assist threshold are rolled and permanently fixed for that copy. In battle, it applies a persistent shield that can lose HP but never fully disappears as long as more AST triggers occur.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-duration">Duration:</span>Shield persists for the entire battle; even if HP is reduced to 0 temporarily, Stockton's Tunic can restore HP when new AST triggers happen.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-limits">Limits:</span>Does not stack with itself; only one Stockton's Tunic shield applies per side.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Roll details:</span>When first won from a treasure chest, roll a starting shield HP between 1 and 6, and roll an assist threshold between 1 and 5 AST by the wearer's predicted team. Each time that many AST are recorded, add +1 HP to the shield, up to its starting HP cap. These values are permanently fixed for that copy.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Quality tiers:</span>Warped, Balanced, Honed, Masterwork — based on how high the starting HP is and how low the assist threshold is.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-defense">Affected defense:</span>Castle HP via a persistent shield layer that regains HP from assists rather than disappearing permanently.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-lanes">Affected lanes:</span>ALL (any lane's damage can hit the shield, but only AST from the wearer's predicted team restore it).</div>
+                   <div class="fd-row"><span class="fd-label fd-label-defense-effect">Defense effect:</span>At game start, give the castle a shield with this copy's fixed starting HP (1–6). Track assists by the item wearer's predicted team; every time the fixed AST threshold (1–5) is reached, restore +1 HP to the shield, up to its starting HP cap. The shield can be reduced to 0 during heavy fire, but future AST triggers can bring its HP back up again.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-downside">Downside:</span>If the predicted team racks up few assists or the game is very low-AST, Stockton's Tunic restores very little HP and feels weak.</div>`
+                : item.id === 'UTA_atk_tempo_metronome'
+                ? `<div class="fd-row"><span class="fd-label fd-label-type">Type:</span>DEFENSE</div>
+                   <div class="fd-row"><span class="fd-label fd-label-helps">Helps/Hurts:</span>Owner only</div>
+                   <div class="fd-row"><span class="fd-label fd-label-trigger">Trigger:</span>At the moment Jazz Rally Horn is first won from a treasure chest, its per-quarter orb count and per-orb HP are rolled and permanently fixed for that copy. In battle, it reinforces the weakest stat row at the start of each quarter.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-duration">Duration:</span>Reinforcement occurs at the start of every quarter for the entire battle while this item is equipped.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-limits">Limits:</span>Does not stack with itself; only one Jazz Rally Horn reinforcement pass occurs per quarter per side.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Roll details:</span>When first won from a treasure chest, roll a per-quarter orb count between 1 and 5 defense orbs, and roll a per-orb HP value between 1 and 3 HP. These values are permanently fixed for that copy.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Quality tiers:</span>Warped, Balanced, Honed, Masterwork — based on how high the per-quarter orb count is and how high the per-orb HP is.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-defense">Affected defense:</span>Defense orb count and sturdiness on the wearer's side.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-lanes">Affected lanes:</span>The weakest stat row of the wearer (fewest defense orbs remaining; if tied, pick at random) at the start of each quarter.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-defense-effect">Defense effect:</span>At the start of each quarter, find the wearer's stat row with the fewest remaining defense orbs (breaking ties at random). Add this copy's fixed number of new defense orbs (1–5) to that row, each with this copy's fixed HP value (1–3 HP), shoring up the weakest lane before projectiles start flying.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-downside">Downside:</span>If the game ends quickly or damage is spread evenly across all lanes, Jazz Rally Horn's focused reinforcements to a single weakest row each quarter may not fully pay off.</div>`
+                : item.id === 'POR_def_rip_city'
+                ? `<div class="fd-row"><span class="fd-label fd-label-type">Type:</span>DEFENSE</div>
+                   <div class="fd-row"><span class="fd-label fd-label-helps">Helps/Hurts:</span>Owner only</div>
+                   <div class="fd-row"><span class="fd-label fd-label-trigger">Trigger:</span>At the moment Trailblazer Tower is first won from a treasure chest, its castle HP loss step and reinforcement orb count are rolled and permanently fixed for that copy. In battle, it listens for primary castle HP damage and periodically raises new defense orbs as you lose HP.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-duration">Duration:</span>Effect persists for the entire battle while this item is equipped, or until the castle is destroyed.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-limits">Limits:</span>Does not stack with itself; only one Trailblazer Tower effect can apply per side. Reinforcement waves are modest in size (1–4 orbs) and use a fixed 2 HP per orb.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Roll details:</span>When first won from a treasure chest, roll a castle HP loss step between 1 and 5 primary HP, and roll a reinforcement orb count between 1 and 4 defense orbs per trigger. These values are permanently fixed for that copy.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Quality tiers:</span>Warped, Balanced, Honed, Masterwork — based on how low the castle HP loss step is and how high the reinforcement orb count is.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-defense">Affected defense:</span>Defense orb count on the owner's side, scaled by chunks of castle HP lost (shield damage does not count).</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-lanes">Affected lanes:</span>PTS and 3PT stat rows only; each new orb is placed randomly into either the PTS or 3PT lane.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-defense-effect">Defense effect:</span>Track damage to primary castle HP only. As HP is lost, accumulate the amount of primary HP lost in an internal counter. Each time the counter reaches the rolled HP loss step (1–5), subtract that amount from the counter and create this copy's fixed number of new defense orbs (1–4), each with 2 HP, randomly split between the PTS and 3PT rows. This lets Trailblazer Tower periodically raise fresh perimeter defenses during long, grinding games.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-downside">Downside:</span>If the opponent mostly chews through shields, finishes the castle in one massive burst, or attacks heavily through non-PTS/3PT lanes, Trailblazer Tower's reinforcements will feel limited.</div>`
+                : item.id === 'POR_atk_dame_artillery'
+                ? `<div class="fd-row"><span class="fd-label fd-label-type">Type:</span>ATTACK</div>
+                   <div class="fd-row"><span class="fd-label fd-label-helps">Helps/Hurts:</span>Owner only</div>
+                   <div class="fd-row"><span class="fd-label fd-label-trigger">Trigger:</span>At the moment Rip-City Warbow is first won from a treasure chest, its 3PT trigger count and extra projectile count are rolled and permanently fixed for that copy. In battle, it watches your 3PT projectiles and periodically fires extra PTS and 3PT projectiles.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-duration">Duration:</span>Attack effect persists for the entire battle while this item is equipped.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-limits">Limits:</span>Does not stack with itself; only one Rip-City Warbow effect can apply per side.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Roll details:</span>When first won from a treasure chest, roll a 3PT trigger count between 1 and 5 of your 3PT projectiles fired, and roll an extra projectile count between 1 and 4 additional PTS/3PT projectiles per trigger. These values are permanently fixed for that copy.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Quality tiers:</span>Warped, Balanced, Honed, Masterwork — based on how low the 3PT trigger count is and how high the extra projectile count is.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-lanes">Affected lanes:</span>3PT (as the trigger) and both PTS and 3PT (as the extra projectiles).</div>
+                   <div class="fd-row"><span class="fd-label fd-label-damage-effect">Damage effect:</span>Count your 3PT projectiles as they are fired. Each time the count reaches the rolled 3PT trigger (1–5), reset it by that threshold and fire this copy's fixed number of extra projectiles (1–4 total), distributing them between the PTS and 3PT lanes. This creates periodic Rip-City style barrages fueled directly by your three-point volume.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-downside">Downside:</span>If your side fires few 3PT projectiles (low volume or cold shooting), Rip-City Warbow will rarely trigger and its bonus barrages will feel underwhelming.</div>`
+
+                : item.id === 'DAL_atk_stepback_reactor'
+                ? `<div class="fd-row"><span class="fd-label fd-label-type">Type:</span>ATTACK</div>
+                   <div class="fd-row"><span class="fd-label fd-label-helps">Helps/Hurts:</span>Owner only</div>
+                   <div class="fd-row"><span class="fd-label fd-label-trigger">Trigger:</span>At the moment Dirk's Dirk is first won from a treasure chest, its hit trigger count and stored Final Blow projectile count are rolled and permanently fixed for that copy. In battle, it listens for PTS and 3PT projectiles that hit the item wearer's castle and banks extra Final Blow PTS projectiles.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-duration">Duration:</span>Banking effect persists for the entire battle; stored projectiles are released during the Final Blow phase.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-limits">Limits:</span>Does not stack with itself; only one Dirk's Dirk bank can apply per side.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Roll details:</span>When first won from a treasure chest, roll a hit trigger count between 1 and 5 PTS and 3PT projectiles that hit the item wearer's castle, and roll a stored projectile count between 1 and 4 bonus Final Blow PTS projectiles per trigger. These values are permanently fixed for that copy.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Quality tiers:</span>Warped, Balanced, Honed, Masterwork — based on how low the hit trigger count is and how high the stored projectile count is.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-lanes">Affected lanes:</span>All lanes defensively (any PTS or 3PT projectile that hits the item wearer's castle contributes), and PTS only offensively (all stored projectiles fire as PTS lane Final Blow shots).</div>
+                   <div class="fd-row"><span class="fd-label fd-label-damage-effect">Damage effect:</span>Track PTS and 3PT projectiles that actually hit the item wearer's castle. Maintain a counter of such hits; each time the counter reaches this copy's fixed hit trigger (1-5), subtract that amount from the counter and add this copy's fixed stored projectile count (1-4) to an internal Final Blow PTS projectile bank. During the Final Blow phase, fire all banked PTS projectiles as additional Final Blow shots for the wearer.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-downside">Downside:</span>If the opponent rarely reaches the castle with PTS or 3PT projectiles (because shields absorb most damage or the game ends before sustained pressure builds), or if the match ends before the Final Blow phase, Dirk's Dirk will bank few daggers and its payoff will feel small.</div>`
+
+                : item.id === 'DAL_def_lone_star'
+                ? `<div class="fd-row"><span class="fd-label fd-label-type">Type:</span>DEFENSE</div>
+                   <div class="fd-row"><span class="fd-label fd-label-helps">Helps/Hurts:</span>Owner only</div>
+                   <div class="fd-row"><span class="fd-label fd-label-trigger">Trigger:</span>At the moment Mavericks' Moat is first won from a treasure chest, its per-row orb count and per-orb HP are rolled and permanently fixed for that copy. In battle, it reinforces every stat row at the start of each quarter.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-duration">Duration:</span>Reinforcement occurs at the start of every quarter for the entire battle while this item is equipped.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-limits">Limits:</span>Does not stack with itself; only one Mavericks' Moat reinforcement pass occurs per quarter per side.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Roll details:</span>When first won from a treasure chest, roll a per-row orb count between 1 and 4 defense orbs, and roll a per-orb HP value between 1 and 3 HP. These values are permanently fixed for that copy.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Quality tiers:</span>Warped, Balanced, Honed, Masterwork  based on how high the per-row orb count is and how high the per-orb HP is.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-defense">Affected defense:</span>Defense orb count and sturdiness on the wearer's side across all five stat rows.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-lanes">Affected lanes:</span>ALL stat rows; at each quarter start, every lane receives new orbs according to this copy's rolls.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-defense-effect">Defense effect:</span>At the start of each quarter, for each of the five stat rows (PTS, REB, AST, BLK, 3PT), add this copy's fixed number of new defense orbs (1–4) to that row, each with this copy's fixed HP value (1–3 HP). This steadily refills the moat around your castle, making every lane tougher to punch through as the game goes on.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-downside">Downside:</span>If the game ends quickly, or if the opponent focuses fire on a single lane with overwhelming damage, Mavericks' Moat's steady, even reinforcement across all rows may not be enough to prevent a collapse.</div>`
+
+                : item.id === 'CHA_atk_sting_blade'
+                ? `<div class="fd-row"><span class="fd-label fd-label-type">Type:</span>ATTACK</div>
+                   <div class="fd-row"><span class="fd-label fd-label-helps">Helps/Hurts:</span>Owner only</div>
+                   <div class="fd-row"><span class="fd-label fd-label-trigger">Trigger:</span>At the moment Sting Blade is first won from a treasure chest, its deficit threshold and extra-projectile count are rolled and permanently fixed for that copy. In battle, it checks the scoreboard at the end of each quarter.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-duration">Duration:</span>Attack effect persists for the entire battle whenever this item is equipped.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-limits">Limits:</span>Does not stack with itself; only one Sting Blade effect can apply per side.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Roll details:</span>When first won from a treasure chest, roll a deficit threshold between 3 and 10 points of the item wearer's predicted team trailing on the scoreboard, and roll an extra-projectile count between 1 and 4 projectiles per stat row. These values are permanently fixed for that copy.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Quality tiers:</span>Warped, Balanced, Honed, Masterwork — based on how low the rolled deficit threshold is and how high the extra-projectile count is.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-lanes">Affected lanes:</span>ALL stat rows (PTS, REB, AST, BLK, 3PT) fire extra projectiles when the condition is met.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-damage-effect">Damage effect:</span>At the end of each quarter, check the scoreboard for the item wearer's predicted team. If that team is losing by at least this copy's fixed deficit threshold (3–10 points), fire this copy's fixed number of extra projectiles (1–4) from each stat row once as a late-quarter sting barrage.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-downside">Downside:</span>If the predicted team rarely trails by that much, spends most of the game leading, or the match ends quickly, Sting Blade may trigger only a few times or not at all.</div>`
+
+                : item.id === 'WAS_def_wizards_watchtower'
+                ? `<div class="fd-row"><span class="fd-label fd-label-type">Type:</span>DEFENSE</div>
+                   <div class="fd-row"><span class="fd-label fd-label-helps">Helps/Hurts:</span>Owner only</div>
+                   <div class="fd-row"><span class="fd-label fd-label-trigger">Trigger:</span>At the moment Wizards' Watchtower is first won from a treasure chest, its per-quarter orb-buff count and magic shield HP are rolled and permanently fixed for that copy. In battle, it hooks into the start and end of each quarter.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-duration">Duration:</span>Effects persist for the entire battle while this item is equipped.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-limits">Limits:</span>Does not stack with itself; only one Wizards' Watchtower magic shield can exist at a time, and the shield can only be recreated in a later quarter after it has been fully destroyed.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Roll details:</span>When first won from a treasure chest, roll an orb-buff count between 1 and 5 defense orbs to receive +1 HP (outer glow) at the start of each quarter, and roll a magic shield HP value between 4 and 10 HP. These values are permanently fixed for that copy.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Quality tiers:</span>Warped, Balanced, Honed, Masterwork — based on how many orbs per quarter are buffed and how high the rolled shield HP is.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-defense">Affected defense:</span>Your defense orbs (via +1 HP buffs) and castle HP (via an additional magic shield layer).</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-lanes">Affected lanes:</span>All stat rows are eligible for orb buffs; any lane's damage can hit the magic shield.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-defense-effect">Defense effect:</span>At the start of each quarter, randomly choose up to this copy's fixed number of your remaining defense orbs (1–5 across all rows); each chosen orb gains +1 HP, represented visually as an outer glow. At the end of each quarter, if the item wearer's predicted team is losing on the scoreboard and no Wizards' Watchtower magic shield is currently active, create a shield on the castle with this copy's fixed HP (4–10). That shield soaks castle damage from any lane until its HP reaches 0; if it is destroyed, a new shield with the same fixed HP can be created in a later quarter when the same losing condition is met.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-downside">Downside:</span>If your predicted team rarely trails at quarter breaks or your side has few surviving defense orbs to buff, Wizards' Watchtower's shield and glow effects will trigger less often and feel modest.</div>`
+
+                : item.id === 'WAS_atk_wizards_war_staff'
+                ? `<div class="fd-row"><span class="fd-label fd-label-type">Type:</span>ATTACK</div>
+                   <div class="fd-row"><span class="fd-label fd-label-helps">Helps/Hurts:</span>Owner only</div>
+                   <div class="fd-row"><span class="fd-label fd-label-trigger">Trigger:</span>At the moment Wizards' War Staff is first won from a treasure chest, its energized-row bonus ratio is rolled and permanently fixed for that copy. In battle, it energizes one stat row at the start of each quarter and tracks that row's outgoing projectiles.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-duration">Duration:</span>Attack effect persists for the entire battle whenever this item is equipped.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-limits">Limits:</span>Does not stack with itself; only one Wizards' War Staff effect can apply per side, and only one stat row can be energized per quarter.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Roll details:</span>When first won from a treasure chest, roll an extra-projectile count between 1 and 5 extra projectiles, and roll a trigger size between 1 and 5 base projectiles from the energized row. These values are permanently fixed for that copy.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Quality tiers:</span>Warped, Balanced, Honed, Masterwork — based on how high the extra-projectile count is and how low the trigger size is.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-lanes">Affected lanes:</span>Any one stat row (PTS, REB, AST, BLK, or 3PT) can be selected as the energized row each quarter; only that row gains bonus projectiles during that quarter.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-damage-effect">Damage effect:</span>At the start of each quarter, randomly select one of the five stat rows to become the energized row for that quarter. While energized, count every base projectile that row fires. Each time the energized row fires this copy's fixed number of base projectiles (1–5), immediately fire this copy's fixed number of bonus projectiles (1–5) from the same row toward the enemy castle, then reset the counter and continue for the rest of the quarter.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-downside">Downside:</span>If the energized row doesn't fire many projectiles in a given quarter, or if the rolls result in a high trigger size and a low bonus count, Wizards' War Staff may add only a small number of extra shots.</div>`
+
+
+
+                : item.id === 'CHA_def_hornets_nest'
+                ? `<div class="fd-row"><span class="fd-label fd-label-type">Type:</span>DEFENSE</div>
+                   <div class="fd-row"><span class="fd-label fd-label-helps">Helps/Hurts:</span>Owner only</div>
+                   <div class="fd-row"><span class="fd-label fd-label-trigger">Trigger:</span>At the moment Hornets' Nest is first won from a treasure chest, its per-orb retaliation size and last-orb bonus size are rolled and permanently fixed for that copy. In battle, it reacts every time one of the item wearer's defense orbs is destroyed.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-duration">Duration:</span>Defense effect persists for the entire battle whenever this item is equipped.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-limits">Limits:</span>Does not stack with itself; only one Hornets' Nest effect can apply per side. Retaliation shots are tied to individual orb-destroy events and do not queue up beyond those triggers.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Roll details:</span>When first won from a treasure chest, roll a retaliation size between 1 and 3 projectiles to fire whenever a single defense orb is destroyed, and roll a last-orb bonus size between 1 and 5 additional projectiles to fire when the final defense orb in a stat row is destroyed. These values are permanently fixed for that copy.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Quality tiers:</span>Warped, Balanced, Honed, Masterwork — based on how high both the base retaliation size (1–3) and the last-orb bonus (1–5) are.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-defense">Affected defense:</span>Your defense orbs (as they are destroyed) and the enemy castle HP (via retaliatory projectiles).</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-lanes">Affected lanes:</span>The specific stat row (PTS, REB, AST, BLK, or 3PT) where the orb was destroyed fires the retaliation projectiles.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-defense-effect">Defense effect:</span>Each time one of the item wearer's defense orbs is destroyed in any stat row, immediately fire this copy's fixed number of retaliation projectiles (1–3) from that same row toward the attacker. If that destroyed orb was the last remaining defense orb in that row, also fire this copy's fixed last-orb bonus (1–5) additional projectiles from that row on top of the base retaliation, making the final break in a lane especially punishing.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-downside">Downside:</span>If opponents chip away slowly at your orbs or avoid fully clearing out lanes, Hornets' Nest may only produce small retaliatory bursts and rarely trigger its strongest last-orb punishment.</div>`
+
+                : item.id === 'ORL_atk_magic_missiles'
+                ? `<div class="fd-row"><span class="fd-label fd-label-type">Type:</span>ATTACK</div>
+                   <div class="fd-row"><span class="fd-label fd-label-helps">Helps/Hurts:</span>Owner only</div>
+                   <div class="fd-row"><span class="fd-label fd-label-trigger">Trigger:</span>At the moment Magic Missiles is first won from a treasure chest, its per-row missile count and missile HP are rolled and permanently fixed for that copy. In battle, it hooks into the start of each quarter.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-duration">Duration:</span>Attack effect persists for the entire battle whenever this item is equipped.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-limits">Limits:</span>Does not stack with itself; only one Magic Missiles effect can apply per side, and the bonus missiles are only created at quarter starts (not mid-quarter).</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Roll details:</span>When first won from a treasure chest, roll a per-row missile count between 1 and 4 projectiles to add from each stat row at the start of every quarter, and roll a missile HP value between 1 and 3 HP that each of those projectiles starts with. These values are permanently fixed for that copy.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Quality tiers:</span>Warped, Balanced, Honed, Masterwork — based on how high the per-row missile count (1–4) is and how high the missile HP (1–3) is.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-lanes">Affected lanes:</span>ALL stat rows (PTS, REB, AST, BLK, 3PT) fire additional Magic Missile projectiles at the start of each quarter.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-damage-effect">Damage effect:</span>At the start of each quarter, for each of the five stat rows, create this copy's fixed number of Magic Missile projectiles (1–4) from that row. Each Magic Missile begins with this copy's fixed HP (1–3). Whenever a Magic Missile collides with another projectile, it loses 1 HP instead of being destroyed outright; when its HP is reduced to 0, that missile is removed from play. This lets higher-HP rolls survive more collisions and chew through opposing fire before disappearing.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-downside">Downside:</span>If Magic Missiles rolls a low missile count and low HP, or if battles are decided quickly before repeated quarter starts, its extra multi-hit projectiles will feel modest compared to other high-variance attack items.</div>`
+
+                : item.id === 'ORL_def_warding_circle'
+                ? `<div class="fd-row"><span class="fd-label fd-label-type">Type:</span>DEFENSE</div>
+                   <div class="fd-row"><span class="fd-label fd-label-helps">Helps/Hurts:</span>Owner only</div>
+                   <div class="fd-row"><span class="fd-label fd-label-trigger">Trigger:</span>At the moment Magic Ward is first won from a treasure chest, its castle energy shield HP and per-hit re-energize count are rolled and permanently fixed for that copy. In battle, it hooks into the start of each quarter and every time the castle's energy shield takes a hit.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-duration">Duration:</span>Defense effect persists for the entire battle whenever this item is equipped, as long as the castle's energy shield still has HP.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-limits">Limits:</span>Does not stack with itself; only one Magic Ward energy shield can exist per side, and energizing at quarter start only affects rows that still have at least one defense orb.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Roll details:</span>When first won from a treasure chest, roll a castle energy shield HP value between 3 and 10 HP, and roll a re-energize count between 1 and 3 defense orbs to refresh with +1 HP each time the shield takes a hit. These values are permanently fixed for that copy.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-roll">Quality tiers:</span>Warped, Balanced, Honed, Masterwork — based on how high the rolled shield HP is and how many orbs are re-energized per hit (1–3).</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-defense">Affected defense:</span>Defense orb HP (via +1 HP re-energizes and outer glow) and the castle HP (via an additional energy shield layer that takes hits before primary castle HP).</div>
+                   <div class="fd-row"><span class="fd-label fd-label-affected-lanes">Affected lanes:</span>At quarter start, the last defense orb in each stat row (PTS, REB, AST, BLK, 3PT) that still has at least one orb can be energized; when the shield takes a hit, any surviving defense orbs across all rows are eligible re-energize targets.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-defense-effect">Defense effect:</span>When battle begins, create a castle energy shield with this copy's fixed HP (3–10). At the start of each quarter, for each stat row that still has at least one defense orb, energize the last orb in that row by adding +1 HP and marking it with an outer glow. Whenever the energy shield takes a hit from incoming damage, subtract that damage from the shield HP instead of primary castle HP, and for each such hit, randomly select up to this copy's fixed number of surviving defense orbs (1–3) across all rows and give each of them +1 HP and an outer glow refresh. Once the energy shield HP reaches 0, subsequent hits go directly to castle HP and no further re-energizes occur.</div>
+                   <div class="fd-row"><span class="fd-label fd-label-downside">Downside:</span>If the castle is burst down so quickly that the energy shield is broken in only a few hits, or if you have very few defense orbs alive to benefit from quarter-start energizes and re-energizes, Magic Ward's value drops sharply.</div>`
+
+                : 'TBD — we will define triggers and effects here.'}
+            </div>
+          </div>
+          <div class="pill-row">
+            <div class="pill">${item.team}</div>
+            <div class="pill">${slotLabel}</div>
+          </div>
+        `;
+        itemsContainer.appendChild(card);
+      });
+    }
+
+    teamFilterEl.addEventListener('change', renderItems);
+    slotFilterEl.addEventListener('change', renderItems);
+    renderItems();
+  </script>
+</body>
+</html>
+

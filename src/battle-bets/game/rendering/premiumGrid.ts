@@ -5,7 +5,8 @@
 
 import * as PIXI from 'pixi.js';
 import { getCanvasWidth, getCanvasHeight } from '../utils/positioning';
-import { DEFAULT_GRID_CONFIG } from '../../types/game';
+import { DEFAULT_GRID_CONFIG, type GameStatus } from '../../types/game';
+import { createDynamicVSDisplay } from './dynamicVSDisplay';
 
 // No extra configuration needed - keep it simple from edges
 
@@ -232,28 +233,9 @@ function drawPremiumBattlefield(
   centerLine.stroke({ width: 3, color: 0x50565d, alpha: 1.0 });
   container.addChild(centerLine);
 
-  // VS text with premium styling
-  const vsText = new PIXI.Text({
-    text: 'VS',
-    style: {
-      fontFamily: 'Arial Black, Arial',
-      fontSize: 36,
-      fontWeight: '900',
-      fill: 0x999999,
-      stroke: { color: 0x000000, width: 4 },
-      dropShadow: {
-        color: 0x000000,
-        blur: 6,
-        angle: Math.PI / 4,
-        distance: 3,
-        alpha: 0.8,
-      },
-    },
-  });
-  vsText.anchor.set(0.5);
-  vsText.x = centerX;
-  vsText.y = (y + height) / 2;
-  container.addChild(vsText);
+  // NOTE: VS display is now dynamic and rendered separately
+  // See dynamicVSDisplay.ts and updateDynamicVSDisplay() function
+  // The dynamic VS display is updated based on game status (SCHEDULED, Q1, Q2, Q3, Q4, OT, FINAL)
 }
 
 /**
@@ -542,6 +524,62 @@ function drawPremiumStatLabels(
   rightValue.y = y + 10;
   rightValue.label = `stat-value-${stat.id}-right`; // Label for easy lookup (v8+ uses label instead of name)
   container.addChild(rightValue);
+}
+
+/**
+ * Update dynamic VS display based on game status
+ * Call this whenever game status changes (SCHEDULED → Q1 → Q2 → Q3 → Q4 → OT → FINAL)
+ */
+export function updateDynamicVSDisplay(
+  container: PIXI.Container,
+  config: {
+    status: GameStatus;
+    gameStartTime?: string | null;
+    currentQuarter?: number;
+  }
+): void {
+  const width = getCanvasWidth();
+  const height = getCanvasHeight();
+
+  // Calculate center position (same as static VS text)
+  const cellHeight = DEFAULT_GRID_CONFIG.cellHeight;
+  const statLabelWidth = DEFAULT_GRID_CONFIG.statLabelWidth;
+  const weaponSlotWidth = DEFAULT_GRID_CONFIG.weaponSlotWidth;
+  const defenseCells = DEFAULT_GRID_CONFIG.defenseCellsPerSide;
+  const battlefieldWidth = DEFAULT_GRID_CONFIG.battlefieldWidth;
+
+  const gridWidth =
+    (statLabelWidth * 2) +
+    (weaponSlotWidth * 2) +
+    (defenseCells * DEFAULT_GRID_CONFIG.cellWidth * 2) +
+    battlefieldWidth;
+
+  const gridX = (width - gridWidth) / 2;
+  const leftWeaponEnd = gridX + statLabelWidth + weaponSlotWidth;
+  const leftDefenseEnd = leftWeaponEnd + (defenseCells * DEFAULT_GRID_CONFIG.cellWidth);
+  const rightDefenseStart = leftDefenseEnd + battlefieldWidth;
+  const centerX = (leftDefenseEnd + rightDefenseStart) / 2;
+
+  const y = (height - (cellHeight * 5)) / 2;
+  const centerY = (y + (cellHeight * 5)) / 2;
+
+  // Remove old VS display
+  const oldDisplay = container.children.find(child => child.label === 'dynamic-vs-display');
+  if (oldDisplay) {
+    container.removeChild(oldDisplay);
+    oldDisplay.destroy({ children: true });
+  }
+
+  // Create new dynamic VS display
+  const vsDisplay = createDynamicVSDisplay({
+    centerX,
+    centerY,
+    status: config.status,
+    gameStartTime: config.gameStartTime,
+    currentQuarter: config.currentQuarter,
+  });
+
+  container.addChild(vsDisplay);
 }
 
 // Castle and inventory rendering removed - will be added as separate overlays later

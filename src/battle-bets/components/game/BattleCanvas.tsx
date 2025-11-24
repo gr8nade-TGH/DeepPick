@@ -7,7 +7,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import * as PIXI from 'pixi.js'
 import { useMultiGameStore } from '../../store/multiGameStore'
 import { getCanvasWidth, getCanvasHeight } from '../../game/utils/positioning'
-import { drawPremiumGrid } from '../../game/rendering/premiumGrid'
+import { drawPremiumGrid, updateDynamicVSDisplay } from '../../game/rendering/premiumGrid'
 import { updateBattleStatusOverlay } from '../../game/rendering/battleStatusOverlay'
 import { screenShake } from '../../game/effects/ScreenShake'
 import { detectWebGLSupport } from '../../utils/webglDetection'
@@ -306,6 +306,38 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
 
     return () => clearInterval(interval)
   }, [status, gameStartTime, q1EndTime, q2EndTime, halftimeEndTime, q3EndTime, q4EndTime, winner, containerReady, game.rightCapper])
+
+  // Update dynamic VS display based on game status
+  useEffect(() => {
+    if (!containerRef.current || !containerReady) return
+
+    const container = containerRef.current
+
+    // Get current quarter from store
+    const battle = useMultiGameStore.getState().getBattle(battleId)
+    const currentQuarter = battle?.currentQuarter ?? 0
+
+    // Update VS display immediately
+    updateDynamicVSDisplay(container, {
+      status: game.status || 'SCHEDULED',
+      gameStartTime: gameStartTime ?? null,
+      currentQuarter,
+    })
+
+    // Update every second for countdown timer
+    const interval = setInterval(() => {
+      const battle = useMultiGameStore.getState().getBattle(battleId)
+      const currentQuarter = battle?.currentQuarter ?? 0
+
+      updateDynamicVSDisplay(container, {
+        status: game.status || 'SCHEDULED',
+        gameStartTime: gameStartTime ?? null,
+        currentQuarter,
+      })
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [battleId, game.status, gameStartTime, containerReady])
 
   if (webglSupport && !webglSupport.supported) {
     return (
