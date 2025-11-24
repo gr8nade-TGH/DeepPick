@@ -191,16 +191,18 @@ export const QuarterDebugControls: React.FC<QuarterDebugControlsProps> = ({ batt
     }
   };
 
-  // Position controls: index 0 on LEFT, index 1 on RIGHT
-  const isLeft = index === 0;
+  // Position: index 0 = LEFT side, index 1 = RIGHT side
+  const positionStyle = index === 0
+    ? { left: '20px' }
+    : { right: '20px' };
 
   return (
     <div
       className="quarter-debug-controls"
       style={{
-        bottom: 20,
         position: 'fixed',
-        ...(isLeft ? { left: 20 } : { right: 20 }),
+        bottom: '20px',
+        ...positionStyle,
         zIndex: 9999
       }}
     >
