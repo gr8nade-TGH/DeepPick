@@ -10,6 +10,8 @@ import './PreGameItemSelector.css';
 import { LAL_IRONMAN_ARMOR_DEFINITION } from '../../game/items/effects/LAL_IronmanArmor';
 import type { ItemDefinition } from '../../game/items/ItemRollSystem';
 import { useMultiGameStore } from '../../store/multiGameStore';
+import { castleHealthSystem } from '../../game/systems/CastleHealthSystem';
+import { castleManager } from '../../game/managers/CastleManager';
 
 interface PreGameItemSelectorProps {
   battleId: string;
@@ -163,8 +165,90 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
     // Save to battle state
     updateBattleEquippedItems();
 
+    // Immediately activate/deactivate shields for defense items
+    activateDefenseItems();
+
     // Close popup
     onClose?.();
+  };
+
+  /**
+   * Immediately activate or deactivate shields when defense items are equipped/unequipped
+   */
+  const activateDefenseItems = () => {
+    // Left side - slot 1 (defense)
+    if (leftSlot1 === 'LAL_def_ironman_armor') {
+      const castleId = `${battleId}-left`;
+      const shieldHP = 5; // Default shield HP for testing (will be random 3-8 in real game)
+
+      console.log(`🛡️ [PreGameItemSelector] Activating Ironman Armor shield for LEFT castle`);
+
+      // Activate shield in system
+      castleHealthSystem.activateShield(castleId, shieldHP, 0, 'LAL_def_ironman_armor');
+
+      // Activate shield visual
+      const castle = castleManager.getCastle(castleId);
+      if (castle) {
+        castle.activateShield({
+          id: 'LAL_def_ironman_armor',
+          name: 'AC "Ironman" Armor',
+          description: 'Castle shield',
+          icon: '🛡️',
+          shieldHP: shieldHP,
+          shieldActivationThreshold: 0,
+        });
+        console.log(`✅ [PreGameItemSelector] Shield activated for LEFT castle`);
+      }
+    } else {
+      // Deactivate shield if item was unequipped
+      const castleId = `${battleId}-left`;
+      const shield = castleHealthSystem.getShield(castleId);
+      if (shield && shield.itemId === 'LAL_def_ironman_armor') {
+        console.log(`🛡️ [PreGameItemSelector] Deactivating Ironman Armor shield for LEFT castle`);
+        castleHealthSystem.deactivateShield(castleId);
+        const castle = castleManager.getCastle(castleId);
+        if (castle) {
+          castle.deactivateShield();
+        }
+      }
+    }
+
+    // Right side - slot 1 (defense)
+    if (rightSlot1 === 'LAL_def_ironman_armor') {
+      const castleId = `${battleId}-right`;
+      const shieldHP = 5; // Default shield HP for testing
+
+      console.log(`🛡️ [PreGameItemSelector] Activating Ironman Armor shield for RIGHT castle`);
+
+      // Activate shield in system
+      castleHealthSystem.activateShield(castleId, shieldHP, 0, 'LAL_def_ironman_armor');
+
+      // Activate shield visual
+      const castle = castleManager.getCastle(castleId);
+      if (castle) {
+        castle.activateShield({
+          id: 'LAL_def_ironman_armor',
+          name: 'AC "Ironman" Armor',
+          description: 'Castle shield',
+          icon: '🛡️',
+          shieldHP: shieldHP,
+          shieldActivationThreshold: 0,
+        });
+        console.log(`✅ [PreGameItemSelector] Shield activated for RIGHT castle`);
+      }
+    } else {
+      // Deactivate shield if item was unequipped
+      const castleId = `${battleId}-right`;
+      const shield = castleHealthSystem.getShield(castleId);
+      if (shield && shield.itemId === 'LAL_def_ironman_armor') {
+        console.log(`🛡️ [PreGameItemSelector] Deactivating Ironman Armor shield for RIGHT castle`);
+        castleHealthSystem.deactivateShield(castleId);
+        const castle = castleManager.getCastle(castleId);
+        if (castle) {
+          castle.deactivateShield();
+        }
+      }
+    }
   };
 
   const getSlotItem = (side: 'left' | 'right', slot: 1 | 2 | 3): string | null => {

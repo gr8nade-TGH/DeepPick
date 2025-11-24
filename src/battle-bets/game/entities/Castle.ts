@@ -1037,7 +1037,7 @@ export class Castle {
   /**
    * Deactivate shield
    */
-  private deactivateShield(): void {
+  public deactivateShield(): void {
     if (!this.shieldState) return;
 
     console.log(`💥 Shield deactivated!`);
