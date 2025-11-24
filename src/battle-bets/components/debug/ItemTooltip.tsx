@@ -67,6 +67,31 @@ export const ItemTooltip: React.FC<ItemTooltipProps> = ({ item, rolls, quality }
 
   console.log('🎨 [ItemTooltip] Rendering tooltip:', { item: item.name, quality: calculatedQuality, rolls });
 
+  // Format stat descriptions based on item type
+  const getStatDescription = (key: string, roll: number, range: { min: number; max: number }): { label: string; prefix: string } => {
+    const isMax = roll === range.max;
+
+    switch (key) {
+      case 'startShieldHp':
+        return {
+          label: 'Shield Strength',
+          prefix: isMax ? '⚡ ' : ''
+        };
+      case 'hpPerDestroyedOrb':
+        return {
+          label: 'Shield Regeneration per Orb Destroyed',
+          prefix: '+'
+        };
+      default:
+        // Generic formatting
+        const formatted = key
+          .replace(/([A-Z])/g, ' $1')
+          .replace(/^./, str => str.toUpperCase())
+          .trim();
+        return { label: formatted, prefix: '+' };
+    }
+  };
+
   return (
     <div className="item-tooltip" data-quality={calculatedQuality}>
       {/* Item Name */}
@@ -88,28 +113,23 @@ export const ItemTooltip: React.FC<ItemTooltipProps> = ({ item, rolls, quality }
 
       <div className="tooltip-divider" />
 
-      {/* Roll Stats - Bullet Points */}
+      {/* Roll Stats - Bullet Points with Creative Descriptions */}
       {item.rollRanges && rolls && (
         <div className="tooltip-stats">
           {Object.entries(item.rollRanges).map(([key, range]) => {
             const roll = rolls[key];
             const isMax = roll === range.max;
             const isMin = roll === range.min;
-
-            // Format stat name (camelCase to Title Case)
-            const statName = key
-              .replace(/([A-Z])/g, ' $1')
-              .replace(/^./, str => str.toUpperCase())
-              .trim();
+            const { label, prefix } = getStatDescription(key, roll, range);
 
             return (
               <div key={key} className="tooltip-stat-bullet">
                 <span className="bullet">◆</span>
                 <span className="stat-text">
                   <span className={`stat-value ${isMax ? 'max-roll' : isMin ? 'min-roll' : ''}`}>
-                    {isMax ? '+' : ''}{roll}
+                    {prefix}{roll}
                   </span>
-                  {' '}{statName}
+                  {' '}{label}
                   <span className="stat-range"> ({range.min}-{range.max})</span>
                 </span>
               </div>
@@ -120,10 +140,20 @@ export const ItemTooltip: React.FC<ItemTooltipProps> = ({ item, rolls, quality }
 
       <div className="tooltip-divider" />
 
-      {/* Description */}
-      <div className="tooltip-description">
+      {/* Flavor Text / Lore */}
+      <div className="tooltip-flavor">
         {item.description}
       </div>
+
+      {/* Empty Socket (if applicable) */}
+      {calculatedQuality === 'Masterwork' && (
+        <>
+          <div className="tooltip-divider-thin" />
+          <div className="tooltip-socket">
+            <span className="socket-icon">◇</span> Empty Socket
+          </div>
+        </>
+      )}
 
       <div className="tooltip-divider-thin" />
 

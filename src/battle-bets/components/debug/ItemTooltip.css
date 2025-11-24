@@ -79,57 +79,103 @@
 
 /* Stats Section - Bullet Points */
 .tooltip-stats {
-  margin: 10px 0;
+  margin: 12px 0;
+  padding: 8px 0;
 }
 
 .tooltip-stat-bullet {
   display: flex;
   align-items: flex-start;
-  margin-bottom: 7px;
-  font-size: 13px;
-  line-height: 1.5;
+  margin-bottom: 9px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.tooltip-stat-bullet:last-child {
+  margin-bottom: 0;
 }
 
 .tooltip-stat-bullet .bullet {
-  color: #8b7355;
-  margin-right: 8px;
-  font-size: 10px;
-  margin-top: 3px;
+  color: #c8a060;
+  margin-right: 10px;
+  font-size: 12px;
+  margin-top: 2px;
   flex-shrink: 0;
+  text-shadow: 0 0 4px rgba(200, 160, 96, 0.4);
 }
 
 .tooltip-stat-bullet .stat-text {
   color: #b8a080;
   flex: 1;
+  font-weight: 500;
 }
 
 .stat-value {
   color: #6fa8dc;
   font-weight: bold;
+  font-size: 15px;
+  text-shadow: 0 0 6px rgba(111, 168, 220, 0.5);
 }
 
 .stat-value.max-roll {
   color: #ffd700;
-  text-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+  text-shadow:
+    0 0 10px rgba(255, 215, 0, 0.8),
+    0 0 20px rgba(255, 215, 0, 0.4);
+  animation: goldPulse 2s ease-in-out infinite;
+}
+
+@keyframes goldPulse {
+
+  0%,
+  100% {
+    text-shadow:
+      0 0 10px rgba(255, 215, 0, 0.8),
+      0 0 20px rgba(255, 215, 0, 0.4);
+  }
+
+  50% {
+    text-shadow:
+      0 0 15px rgba(255, 215, 0, 1),
+      0 0 25px rgba(255, 215, 0, 0.6);
+  }
 }
 
 .stat-value.min-roll {
   color: #888;
+  text-shadow: none;
 }
 
 .stat-range {
   color: #6b5d4f;
-  font-size: 11px;
+  font-size: 12px;
+  font-weight: normal;
 }
 
-/* Description */
-.tooltip-description {
-  font-size: 12px;
+/* Flavor Text / Lore */
+.tooltip-flavor {
+  font-size: 13px;
   color: #a89968;
-  line-height: 1.6;
+  line-height: 1.7;
   font-style: italic;
   opacity: 0.95;
-  margin: 10px 0;
+  margin: 12px 0;
+  padding: 4px 0;
+}
+
+/* Socket */
+.tooltip-socket {
+  font-size: 12px;
+  color: #8b7355;
+  margin: 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.socket-icon {
+  color: #6b5d4f;
+  font-size: 14px;
 }
 
 /* Footer */
@@ -137,11 +183,11 @@
   font-size: 10px;
   color: #6b5d4f;
   margin-top: 8px;
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 .tooltip-footer-item {
-  margin-bottom: 2px;
+  margin-bottom: 3px;
 }
 
 /* Hover animation */
