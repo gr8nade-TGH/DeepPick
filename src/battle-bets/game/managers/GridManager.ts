@@ -410,10 +410,22 @@ class GridManagerClass {
    * Returns the cell if the position is within its bounds
    */
   getDefenseCellAtPosition(x: number, y: number, stat: StatType, side: 'left' | 'right'): GridCell | null {
+    // DEBUG: Log the search
+    const searchKey = `${stat}-${side}`;
+    console.log(`🔍 [GRID SEARCH] Looking for cell at X=${x.toFixed(1)} Y=${y.toFixed(1)} stat=${stat} side=${side}`);
+
     for (let i = 0; i < this.layout.defenseCells; i++) {
       const cellId = `defense-${stat}-${side}-${i}`;
       const cell = this.cellCache.get(cellId);
-      if (!cell) continue;
+      if (!cell) {
+        console.log(`  ❌ Cell ${cellId} not found in cache!`);
+        continue;
+      }
+
+      // DEBUG: Log first 2 cells being checked
+      if (i < 2) {
+        console.log(`  🔍 Checking ${cellId}: X[${cell.bounds.x}-${cell.bounds.x + cell.bounds.width}] Y[${cell.bounds.y}-${cell.bounds.y + cell.bounds.height}]`);
+      }
 
       // Check if position is within cell bounds
       if (
@@ -422,9 +434,12 @@ class GridManagerClass {
         y >= cell.bounds.y &&
         y <= cell.bounds.y + cell.bounds.height
       ) {
+        console.log(`  ✅ [GRID SEARCH] FOUND! Position is in cell ${cellId}`);
         return cell;
       }
     }
+
+    console.log(`  ❌ [GRID SEARCH] NOT FOUND! No cell contains X=${x.toFixed(1)} Y=${y.toFixed(1)}`);
     return null;
   }
 
