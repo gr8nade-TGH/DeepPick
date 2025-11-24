@@ -14,6 +14,7 @@ interface PreGameItemSelectorProps {
   battleId: string;
   onItemsChanged: (leftItems: string[], rightItems: string[]) => void;
   initialSlot?: { side: 'left' | 'right'; slot: 1 | 2 | 3 };
+  onClose?: () => void;
 }
 
 // Available items for testing
@@ -26,6 +27,7 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
   battleId,
   onItemsChanged,
   initialSlot,
+  onClose,
 }) => {
   const [leftSlot1, setLeftSlot1] = useState<string | null>(null);
   const [leftSlot2, setLeftSlot2] = useState<string | null>(null);
@@ -81,6 +83,7 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
 
     setSelectedSlot(null);
     setTimeout(updateParent, 0);
+    onClose?.();
   };
 
   const handleClearSlot = () => {
@@ -100,6 +103,7 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
 
     setSelectedSlot(null);
     setTimeout(updateParent, 0);
+    onClose?.();
   };
 
   const getSlotItem = (side: 'left' | 'right', slot: 1 | 2 | 3): string | null => {
@@ -146,7 +150,7 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
     <>
       {/* Item Picker Popup (shows when slot selected) */}
       {selectedSlot && (
-        <div className="item-picker-overlay" onClick={() => setSelectedSlot(null)}>
+        <div className="item-picker-overlay" onClick={() => { setSelectedSlot(null); onClose?.(); }}>
           <div className="item-picker-popup" onClick={(e) => e.stopPropagation()}>
             <div className="picker-header">
               <h3>🛡️ SELECT ITEM</h3>
@@ -193,7 +197,7 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
             </div>
 
             <div className="picker-footer">
-              <button className="close-button" onClick={() => setSelectedSlot(null)}>
+              <button className="close-button" onClick={() => { setSelectedSlot(null); onClose?.(); }}>
                 Close
               </button>
             </div>

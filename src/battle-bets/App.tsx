@@ -515,7 +515,10 @@ function App() {
           battleId={selectedSlot.battleId}
           initialSlot={{ side: selectedSlot.side, slot: selectedSlot.slot }}
           onItemsChanged={() => {
-            // Close the selector after item is selected
+            // Items changed - keep popup open
+          }}
+          onClose={() => {
+            // Close the selector
             setSelectedSlot(null);
           }}
         />
