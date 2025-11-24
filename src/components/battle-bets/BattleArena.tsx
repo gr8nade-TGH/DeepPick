@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/auth-context'
 import { BattleCard } from './BattleCard'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { SimpleDebug } from '@/battle-bets/components/debug/SimpleDebug'
 
 interface Battle {
   id: string
@@ -195,6 +196,9 @@ export function BattleArena({ initialPage = 1 }: BattleArenaProps) {
         <p>Battles update automatically every 30 seconds</p>
         <p className="mt-1">Quarter stats sync every 10 minutes via MySportsFeeds</p>
       </div>
+
+      {/* Debug Component */}
+      {debugMode && <SimpleDebug />}
     </div>
   )
 }
