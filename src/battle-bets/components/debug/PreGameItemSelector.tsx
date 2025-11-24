@@ -207,6 +207,50 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
     );
   };
 
+  const renderSlotPreview = (side: 'left' | 'right', slot: 1 | 2 | 3) => {
+    const slotType = slot === 1 ? 'DEFENSE' : slot === 2 ? 'ATTACK' : 'UNIQUE';
+    const slotIcon = slot === 1 ? '🛡️' : slot === 2 ? '⚔️' : '✨';
+    const itemId = getSlotItem(side, slot);
+    const item = itemId ? getItemDefinition(itemId) : null;
+
+    return (
+      <div
+        key={`${side}-${slot}`}
+        style={{
+          padding: '12px',
+          marginBottom: '8px',
+          background: 'rgba(255, 215, 0, 0.1)',
+          border: '2px solid rgba(255, 215, 0, 0.3)',
+          borderRadius: '8px',
+          cursor: 'pointer',
+          transition: 'all 0.2s ease',
+        }}
+        onClick={() => setSelectedSlot({ side, slot })}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = 'rgba(255, 215, 0, 0.2)';
+          e.currentTarget.style.borderColor = 'rgba(255, 215, 0, 0.5)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = 'rgba(255, 215, 0, 0.1)';
+          e.currentTarget.style.borderColor = 'rgba(255, 215, 0, 0.3)';
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ fontSize: '24px' }}>{slotIcon}</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ color: '#ffd700', fontWeight: 'bold', marginBottom: '4px' }}>
+              Slot {slot}: {slotType}
+            </div>
+            <div style={{ color: item ? '#4ecdc4' : '#888', fontSize: '14px' }}>
+              {item ? item.name : 'Empty'}
+            </div>
+          </div>
+          <div style={{ color: '#ffd700', fontSize: '18px' }}>→</div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
       {/* Main Popup Overlay - Always visible when component is rendered */}
