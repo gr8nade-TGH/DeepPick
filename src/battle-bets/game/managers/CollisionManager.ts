@@ -134,8 +134,30 @@ class CollisionManager {
     }
 
     // Priority 2: GRID-BASED defense orb collision
-    // Get which defense cell the projectile is currently in
+    // ONLY check for defense orbs when projectile is in the OPPONENT's defense zone!
     const targetSide = projectile.side === 'left' ? 'right' : 'left'; // Projectile hits OPPONENT's defense
+
+    // Get defense zone boundaries from GridManager
+    const layout = gridManager.getLayout();
+    const leftDefenseEnd = layout.leftDefenseStart + (layout.defenseCells * layout.cellWidth);
+    const rightDefenseStart = layout.rightDefenseStart;
+
+    // Check if projectile is in the opponent's defense zone
+    let inDefenseZone = false;
+    if (projectile.side === 'left') {
+      // Left projectile traveling right → check if in RIGHT defense zone
+      inDefenseZone = projectile.position.x >= rightDefenseStart;
+    } else {
+      // Right projectile traveling left → check if in LEFT defense zone
+      inDefenseZone = projectile.position.x <= leftDefenseEnd;
+    }
+
+    if (!inDefenseZone) {
+      // Projectile not in defense zone yet - no collision check needed
+      return null;
+    }
+
+    // Projectile IS in defense zone - check for defense orb collision
     const cell = gridManager.getDefenseCellAtPosition(
       projectile.position.x,
       projectile.position.y,
@@ -209,7 +231,8 @@ class CollisionManager {
         collisionDebugger.logCollisionCheck(projectile, cell.id, false, false);
       }
     } else {
-      // Projectile not in any defense cell
+      // Projectile in defense zone but not in a valid cell (shouldn't happen)
+      console.warn(`⚠️ Projectile ${projectile.id} in defense zone but no cell found at X=${projectile.position.x.toFixed(1)}`);
       collisionDebugger.logCollisionCheck(projectile, null, false, false);
     }
 

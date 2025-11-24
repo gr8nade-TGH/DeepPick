@@ -72,7 +72,7 @@ export interface GridCell {
 /**
  * Grid layout configuration
  */
-interface GridLayout {
+export interface GridLayout {
   // Zone boundaries (x positions)
   leftCastleBoxStart: number;
   leftStatLabelStart: number;
