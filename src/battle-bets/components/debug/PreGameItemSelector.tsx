@@ -9,7 +9,8 @@ import React, { useState, useEffect } from 'react';
 import './PreGameItemSelector.css';
 import './ItemTooltip.css';
 import { LAL_IRONMAN_ARMOR_DEFINITION } from '../../game/items/effects/LAL_IronmanArmor';
-import type { ItemDefinition } from '../../game/items/ItemRollSystem';
+import type { ItemDefinition, RolledItemStats } from '../../game/items/ItemRollSystem';
+import { rollItem } from '../../game/items/ItemRollSystem';
 import { useMultiGameStore } from '../../store/multiGameStore';
 import { castleHealthSystem } from '../../game/systems/CastleHealthSystem';
 import { castleManager } from '../../game/managers/CastleManager';
@@ -38,24 +39,36 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
   const updateBattle = useMultiGameStore(state => state.updateBattle);
 
   // Initialize from battle's equipped items
-  const [leftSlot1, setLeftSlot1] = useState<string | null>(
-    battle?.game.leftCapper.equippedItems?.slot1 || null
+  const [leftSlot1, setLeftSlot1] = useState<RolledItemStats | null>(
+    typeof battle?.game.leftCapper.equippedItems?.slot1 === 'object'
+      ? battle.game.leftCapper.equippedItems.slot1
+      : null
   );
-  const [leftSlot2, setLeftSlot2] = useState<string | null>(
-    battle?.game.leftCapper.equippedItems?.slot2 || null
+  const [leftSlot2, setLeftSlot2] = useState<RolledItemStats | null>(
+    typeof battle?.game.leftCapper.equippedItems?.slot2 === 'object'
+      ? battle.game.leftCapper.equippedItems.slot2
+      : null
   );
-  const [leftSlot3, setLeftSlot3] = useState<string | null>(
-    battle?.game.leftCapper.equippedItems?.slot3 || null
+  const [leftSlot3, setLeftSlot3] = useState<RolledItemStats | null>(
+    typeof battle?.game.leftCapper.equippedItems?.slot3 === 'object'
+      ? battle.game.leftCapper.equippedItems.slot3
+      : null
   );
 
-  const [rightSlot1, setRightSlot1] = useState<string | null>(
-    battle?.game.rightCapper.equippedItems?.slot1 || null
+  const [rightSlot1, setRightSlot1] = useState<RolledItemStats | null>(
+    typeof battle?.game.rightCapper.equippedItems?.slot1 === 'object'
+      ? battle.game.rightCapper.equippedItems.slot1
+      : null
   );
-  const [rightSlot2, setRightSlot2] = useState<string | null>(
-    battle?.game.rightCapper.equippedItems?.slot2 || null
+  const [rightSlot2, setRightSlot2] = useState<RolledItemStats | null>(
+    typeof battle?.game.rightCapper.equippedItems?.slot2 === 'object'
+      ? battle.game.rightCapper.equippedItems.slot2
+      : null
   );
-  const [rightSlot3, setRightSlot3] = useState<string | null>(
-    battle?.game.rightCapper.equippedItems?.slot3 || null
+  const [rightSlot3, setRightSlot3] = useState<RolledItemStats | null>(
+    typeof battle?.game.rightCapper.equippedItems?.slot3 === 'object'
+      ? battle.game.rightCapper.equippedItems.slot3
+      : null
   );
 
   const [selectedSlot, setSelectedSlot] = useState<{
@@ -105,8 +118,13 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
       },
     }));
 
-    const leftItems = [leftSlot1, leftSlot2, leftSlot3].filter(Boolean) as string[];
-    const rightItems = [rightSlot1, rightSlot2, rightSlot3].filter(Boolean) as string[];
+    // Notify parent of changes (convert RolledItemStats to item IDs for backward compatibility)
+    const leftItems = [leftSlot1, leftSlot2, leftSlot3]
+      .filter(Boolean)
+      .map(item => item!.itemId);
+    const rightItems = [rightSlot1, rightSlot2, rightSlot3]
+      .filter(Boolean)
+      .map(item => item!.itemId);
     onItemsChanged(leftItems, rightItems);
   };
 
@@ -132,16 +150,18 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
       return;
     }
 
-    console.log('✅ Item selected:', { itemId, side, slot });
+    // Roll the item to get random stats
+    const rolledItem = rollItem(item);
+    console.log('🎲 Item rolled and selected:', { itemId, side, slot, rolls: rolledItem.rolls, quality: rolledItem.qualityTier });
 
     if (side === 'left') {
-      if (slot === 1) setLeftSlot1(itemId);
-      if (slot === 2) setLeftSlot2(itemId);
-      if (slot === 3) setLeftSlot3(itemId);
+      if (slot === 1) setLeftSlot1(rolledItem);
+      if (slot === 2) setLeftSlot2(rolledItem);
+      if (slot === 3) setLeftSlot3(rolledItem);
     } else {
-      if (slot === 1) setRightSlot1(itemId);
-      if (slot === 2) setRightSlot2(itemId);
-      if (slot === 3) setRightSlot3(itemId);
+      if (slot === 1) setRightSlot1(rolledItem);
+      if (slot === 2) setRightSlot2(rolledItem);
+      if (slot === 3) setRightSlot3(rolledItem);
     }
 
     // Close the slot selector but keep popup open
@@ -154,7 +174,7 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
     const { side, slot } = selectedSlot;
 
     // Get the current item before clearing
-    let currentItem: string | null = null;
+    let currentItem: RolledItemStats | null = null;
     if (side === 'left') {
       if (slot === 1) currentItem = leftSlot1;
       if (slot === 2) currentItem = leftSlot2;
@@ -177,7 +197,7 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
     }
 
     // If clearing a defense item (slot 1), deactivate shield immediately
-    if (slot === 1 && currentItem === 'LAL_def_ironman_armor') {
+    if (slot === 1 && currentItem?.itemId === 'LAL_def_ironman_armor') {
       const castleId = `${battleId}-${side}`;
       console.log(`🛡️ [PreGameItemSelector] Clearing Ironman Armor from ${side} side, deactivating shield`);
 
@@ -214,11 +234,11 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
    */
   const activateDefenseItems = () => {
     // Left side - slot 1 (defense)
-    if (leftSlot1 === 'LAL_def_ironman_armor') {
+    if (leftSlot1?.itemId === 'LAL_def_ironman_armor') {
       const castleId = `${battleId}-left`;
-      const shieldHP = 5; // Default shield HP for testing (will be random 3-8 in real game)
+      const shieldHP = leftSlot1.rolls.startShieldHp; // Use the rolled shield HP!
 
-      console.log(`🛡️ [PreGameItemSelector] Activating Ironman Armor shield for LEFT castle`);
+      console.log(`🛡️ [PreGameItemSelector] Activating Ironman Armor shield for LEFT castle with ${shieldHP} HP (rolled)`);
 
       // Activate shield in system
       castleHealthSystem.activateShield(castleId, shieldHP, 0, 'LAL_def_ironman_armor');
@@ -254,11 +274,11 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
     }
 
     // Right side - slot 1 (defense)
-    if (rightSlot1 === 'LAL_def_ironman_armor') {
+    if (rightSlot1?.itemId === 'LAL_def_ironman_armor') {
       const castleId = `${battleId}-right`;
-      const shieldHP = 5; // Default shield HP for testing
+      const shieldHP = rightSlot1.rolls.startShieldHp; // Use the rolled shield HP!
 
-      console.log(`🛡️ [PreGameItemSelector] Activating Ironman Armor shield for RIGHT castle`);
+      console.log(`🛡️ [PreGameItemSelector] Activating Ironman Armor shield for RIGHT castle with ${shieldHP} HP (rolled)`);
 
       // Activate shield in system
       castleHealthSystem.activateShield(castleId, shieldHP, 0, 'LAL_def_ironman_armor');
@@ -322,7 +342,7 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
     setTooltipData(null);
   };
 
-  const getSlotItem = (side: 'left' | 'right', slot: 1 | 2 | 3): string | null => {
+  const getSlotItem = (side: 'left' | 'right', slot: 1 | 2 | 3): RolledItemStats | null => {
     if (side === 'left') {
       if (slot === 1) return leftSlot1;
       if (slot === 2) return leftSlot2;
@@ -340,17 +360,17 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
   };
 
   const renderSlot = (side: 'left' | 'right', slot: 1 | 2 | 3, slotType: string) => {
-    const itemId = getSlotItem(side, slot);
-    const item = itemId ? getItemDefinition(itemId) : null;
+    const rolledItem = getSlotItem(side, slot);
+    const item = rolledItem ? getItemDefinition(rolledItem.itemId) : null;
     const isSelected = selectedSlot?.side === side && selectedSlot?.slot === slot;
 
     return (
       <div
-        className={`pre-game-slot ${itemId ? 'equipped' : 'empty'} ${isSelected ? 'selected' : ''}`}
+        className={`pre-game-slot ${rolledItem ? 'equipped' : 'empty'} ${isSelected ? 'selected' : ''}`}
         onClick={() => handleSlotClick(side, slot)}
         onMouseEnter={(e) => {
-          if (item) {
-            handleItemHover(e, item, testRolls, calculateQuality());
+          if (item && rolledItem) {
+            handleItemHover(e, item, rolledItem.rolls, rolledItem.qualityTier);
           }
         }}
         onMouseLeave={handleItemLeave}
@@ -370,37 +390,8 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
   const renderSlotPreview = (side: 'left' | 'right', slot: 1 | 2 | 3) => {
     const slotType = slot === 1 ? 'DEFENSE' : slot === 2 ? 'ATTACK' : 'UNIQUE';
     const slotIcon = slot === 1 ? '🛡️' : slot === 2 ? '⚔️' : '✨';
-    const itemId = getSlotItem(side, slot);
-    const item = itemId ? getItemDefinition(itemId) : null;
-
-    // Generate test rolls for tooltip (in real game, these come from item instance)
-    const testRolls = item?.rollRanges ? Object.keys(item.rollRanges).reduce((acc, key) => {
-      const range = item.rollRanges![key];
-      // Random roll between min and max
-      acc[key] = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
-      return acc;
-    }, {} as Record<string, number>) : {};
-
-    // Calculate quality based on rolls
-    const calculateQuality = (): 'Warped' | 'Balanced' | 'Honed' | 'Masterwork' => {
-      if (!item?.rollRanges) return 'Balanced';
-      const rollKeys = Object.keys(item.rollRanges);
-      let totalScore = 0;
-      let maxScore = 0;
-      for (const key of rollKeys) {
-        const range = item.rollRanges[key];
-        const roll = testRolls[key];
-        if (roll !== undefined) {
-          totalScore += roll - range.min;
-          maxScore += range.max - range.min;
-        }
-      }
-      const percentage = maxScore > 0 ? (totalScore / maxScore) * 100 : 50;
-      if (percentage >= 90) return 'Masterwork';
-      if (percentage >= 65) return 'Honed';
-      if (percentage >= 35) return 'Balanced';
-      return 'Warped';
-    };
+    const rolledItem = getSlotItem(side, slot);
+    const item = rolledItem ? getItemDefinition(rolledItem.itemId) : null;
 
     return (
       <div
@@ -420,8 +411,8 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
           e.currentTarget.style.background = 'rgba(255, 215, 0, 0.2)';
           e.currentTarget.style.borderColor = 'rgba(255, 215, 0, 0.5)';
           // Show tooltip if item is equipped
-          if (item) {
-            handleItemHover(e, item, testRolls, calculateQuality());
+          if (item && rolledItem) {
+            handleItemHover(e, item, rolledItem.rolls, rolledItem.qualityTier);
           }
         }}
         onMouseLeave={(e) => {

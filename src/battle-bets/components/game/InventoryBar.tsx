@@ -9,7 +9,7 @@ import '../debug/ItemTooltip.css';
 import { castleManager } from '../../game/managers/CastleManager';
 import { useMultiGameStore } from '../../store/multiGameStore';
 import { LAL_IRONMAN_ARMOR_DEFINITION } from '../../game/items/effects/LAL_IronmanArmor';
-import type { ItemDefinition } from '../../game/items/ItemRollSystem';
+import type { ItemDefinition, RolledItemStats } from '../../game/items/ItemRollSystem';
 import { ItemTooltip } from '../debug/ItemTooltip';
 
 // Available items registry
@@ -33,6 +33,8 @@ export const InventoryBar: React.FC<InventoryBarProps> = ({ battleId, side, onSl
   const [isFireOrbPulsing, setIsFireOrbPulsing] = useState(false);
   const [tooltipData, setTooltipData] = useState<{
     item: ItemDefinition;
+    rolls: Record<string, number>;
+    quality: 'Warped' | 'Balanced' | 'Honed' | 'Masterwork';
     x: number;
     y: number;
   } | null>(null);
@@ -80,10 +82,12 @@ export const InventoryBar: React.FC<InventoryBarProps> = ({ battleId, side, onSl
     }
   };
 
-  const handleItemHover = (event: React.MouseEvent, item: ItemDefinition) => {
+  const handleItemHover = (event: React.MouseEvent, item: ItemDefinition, rolledItem: RolledItemStats) => {
     const rect = event.currentTarget.getBoundingClientRect();
     setTooltipData({
       item,
+      rolls: rolledItem.rolls,
+      quality: rolledItem.qualityTier,
       x: rect.right + 10,
       y: rect.top,
     });
@@ -151,8 +155,10 @@ export const InventoryBar: React.FC<InventoryBarProps> = ({ battleId, side, onSl
   return (
     <div className={`inventory-bar ${side}`}>
       {slots.map((slot) => {
-        const itemId = equippedItems[slot.slotKey];
-        const equippedItem = getItemDefinition(itemId);
+        const itemData = equippedItems[slot.slotKey];
+        const rolledItem = typeof itemData === 'object' ? itemData : null;
+        const itemId = typeof itemData === 'string' ? itemData : rolledItem?.itemId || null;
+        const equippedItem = itemId ? getItemDefinition(itemId) : null;
         const isEmpty = !equippedItem;
         const isFireOrb = itemId === 'fire-orb';
         const shouldPulse = isFireOrb && isFireOrbPulsing;
@@ -163,8 +169,8 @@ export const InventoryBar: React.FC<InventoryBarProps> = ({ battleId, side, onSl
             className={`inventory-slot ${isEmpty ? 'inventory-slot-empty' : 'inventory-slot-equipped'} ${isPreGame ? 'inventory-slot-clickable' : ''}`}
             onClick={() => handleSlotClick(slot.num)}
             onMouseEnter={(e) => {
-              if (!isEmpty && equippedItem) {
-                handleItemHover(e, equippedItem);
+              if (!isEmpty && equippedItem && rolledItem) {
+                handleItemHover(e, equippedItem, rolledItem);
               }
             }}
             onMouseLeave={handleItemLeave}
@@ -196,7 +202,11 @@ export const InventoryBar: React.FC<InventoryBarProps> = ({ battleId, side, onSl
             pointerEvents: 'none',
           }}
         >
-          <ItemTooltip item={tooltipData.item} />
+          <ItemTooltip
+            item={tooltipData.item}
+            rolls={tooltipData.rolls}
+            quality={tooltipData.quality}
+          />
         </div>
       )}
     </div>

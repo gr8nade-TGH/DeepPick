@@ -2,6 +2,8 @@
  * Core game types for Battle Bets V3
  */
 
+import type { RolledItemStats } from '../game/items/ItemRollSystem';
+
 export interface Position {
   x: number;
   y: number;
@@ -62,10 +64,11 @@ export interface Capper {
   teamRecords: TeamUnitRecord[];
 
   // Equipped items (3 item slots)
+  // Can store either just item ID (string) or full rolled item data (RolledItemStats)
   equippedItems?: {
-    slot1: string | null; // Item ID
-    slot2: string | null; // Item ID
-    slot3: string | null; // Item ID
+    slot1: string | RolledItemStats | null; // Item ID or rolled item data
+    slot2: string | RolledItemStats | null; // Item ID or rolled item data
+    slot3: string | RolledItemStats | null; // Item ID or rolled item data
   };
 
   // Castle visual representation (optional - for Battle Bets fortress mode)
