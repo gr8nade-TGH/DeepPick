@@ -81,7 +81,10 @@ class CollisionManager {
     if (projectile.typeConfig.canCollideWithProjectiles) {
       const opposingProjectile = this.findOpposingProjectile(projectile);
       if (opposingProjectile) {
-        const distance = this.getDistance(projectile.position, opposingProjectile.position);
+        // Calculate distance between projectiles
+        const dx = projectile.position.x - opposingProjectile.position.x;
+        const dy = projectile.position.y - opposingProjectile.position.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
         const combinedRadius = projectile.typeConfig.collisionRadius + opposingProjectile.typeConfig.collisionRadius;
 
         if (distance <= combinedRadius) {
