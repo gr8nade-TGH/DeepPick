@@ -152,12 +152,8 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
 
           setContainerReady(true)
 
-          // Get HP from store (fixed at 20 for both teams)
-          const battle = getBattle(battleId)
-          const leftHP = battle?.capperHP.get('left') || { currentHP: 20, maxHP: 20 }
-          const rightHP = battle?.capperHP.get('right') || { currentHP: 20, maxHP: 20 }
-
           // Add castles for this battle
+          // Use fixed HP of 20 for both teams (units only determine defense orbs)
           await castleManager.addCastle(battleId, {
             id: `${battleId}-left`,
             capperId: game.leftCapper.id,
@@ -165,8 +161,8 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
             capperRank: 'KNIGHT',
             capperLevel: game.leftCapper.level,
             position: gridManager.getCastleBoxPosition('left'),
-            maxHP: leftHP.maxHP,
-            currentHP: leftHP.currentHP,
+            maxHP: 20,
+            currentHP: 20,
             scale: 0.25,
             boxWidth: 140,
             side: 'left',
@@ -179,8 +175,8 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
             capperRank: 'KNIGHT',
             capperLevel: game.rightCapper.level,
             position: gridManager.getCastleBoxPosition('right'),
-            maxHP: rightHP.maxHP,
-            currentHP: rightHP.currentHP,
+            maxHP: 20,
+            currentHP: 20,
             scale: 0.25,
             boxWidth: 140,
             side: 'right',
