@@ -9,7 +9,6 @@ import { GameErrorBoundary } from './components/ErrorBoundary';
 import { BattleCanvas } from './components/game/BattleCanvas';
 import { GameInfoBar } from './components/game/GameInfoBar';
 import { InventoryBar } from './components/game/InventoryBar';
-import { PerformanceMonitor } from './components/debug/PerformanceMonitor';
 import type { Game } from './types/game';
 import './App.css';
 
@@ -442,9 +441,6 @@ function App() {
           </div>
         )}
       </main>
-
-      {/* Dev-only performance + debug helper */}
-      <PerformanceMonitor />
     </div>
   );
 }
