@@ -106,16 +106,32 @@ class CollisionDebugger {
 
     lines.push(`🚀 PROJECTILES: L→R:${leftProj.length} | R→L:${rightProj.length}`);
 
-    // Show sample projectiles (max 3 per side)
+    // Show sample projectiles (max 3 per side) with X,Y coordinates
     [...leftProj.slice(0, 3), ...rightProj.slice(0, 3)].forEach(p => {
+      const targetSide = p.side === 'left' ? 'right' : 'left';
       const cell = gridManager.getDefenseCellAtPosition(
         p.position.x,
         p.position.y,
         p.stat as StatType,
-        p.side === 'left' ? 'right' : 'left'
+        targetSide
       );
       const shortId = p.id.split('-').slice(-2).join('-');
-      lines.push(`  ${shortId}: X=${Math.round(p.position.x)} ${p.stat} ${cell ? `in[${cell.id.split('-').slice(-2).join('-')}]` : 'no-cell'}`);
+      lines.push(`  ${shortId}: X=${Math.round(p.position.x)} Y=${Math.round(p.position.y)} ${p.stat} ${cell ? `in[${cell.id.split('-').slice(-2).join('-')}]` : 'no-cell'}`);
+    });
+    lines.push('');
+
+    // Sample cell bounds for debugging
+    lines.push('📏 SAMPLE CELLS:');
+    const sampleStats: StatType[] = ['pts', 'reb'];
+    sampleStats.forEach(stat => {
+      const leftCell = gridManager.getDefenseCells(stat, 'left')[0];
+      const rightCell = gridManager.getDefenseCells(stat, 'right')[0];
+      if (leftCell) {
+        lines.push(`  ${stat}-L-0: X[${Math.round(leftCell.bounds.x)}-${Math.round(leftCell.bounds.x + leftCell.bounds.width)}] Y[${Math.round(leftCell.bounds.y)}-${Math.round(leftCell.bounds.y + leftCell.bounds.height)}]`);
+      }
+      if (rightCell) {
+        lines.push(`  ${stat}-R-0: X[${Math.round(rightCell.bounds.x)}-${Math.round(rightCell.bounds.x + rightCell.bounds.width)}] Y[${Math.round(rightCell.bounds.y)}-${Math.round(rightCell.bounds.y + rightCell.bounds.height)}]`);
+      }
     });
     lines.push('');
 
