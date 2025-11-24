@@ -7,7 +7,7 @@ export interface Position {
   y: number;
 }
 
-export type StatType = 'pts' | 'reb' | 'ast' | 'blk' | '3pt';
+export type StatType = 'pts' | 'reb' | 'ast' | 'stl' | '3pt';
 
 export interface Team {
   id: string;
@@ -233,9 +233,9 @@ export const STATS: Record<StatType, StatConfig> = {
     color: 0xF7B731,
     colorHex: '#F7B731',
   },
-  blk: {
-    type: 'blk',
-    label: 'BLK',
+  stl: {
+    type: 'stl',
+    label: 'STL',
     color: 0xFF3838,
     colorHex: '#FF3838',
   },

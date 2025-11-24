@@ -9,7 +9,7 @@ import type { StatType } from '../../types/game';
 export function debugGridPositions() {
   console.log('\n🔍 ===== GRID POSITION DEBUG =====\n');
 
-  const stats: StatType[] = ['pts', 'reb', 'ast', 'blk', '3pt'];
+  const stats: StatType[] = ['pts', 'reb', 'ast', 'stl', '3pt'];
 
   // Log weapon slot positions
   console.log('🎯 WEAPON SLOT POSITIONS:');
@@ -26,7 +26,7 @@ export function debugGridPositions() {
     const leftCell10 = gridManager.getDefenseCellPosition(stat, 'left', 9);
     const rightCell1 = gridManager.getDefenseCellPosition(stat, 'right', 0);
     const rightCell10 = gridManager.getDefenseCellPosition(stat, 'right', 9);
-    
+
     console.log(`  ${stat.toUpperCase()} LEFT:  Cell#1=${leftCell1.x.toFixed(1)}, Cell#10=${leftCell10.x.toFixed(1)}`);
     console.log(`  ${stat.toUpperCase()} RIGHT: Cell#1=${rightCell1.x.toFixed(1)}, Cell#10=${rightCell10.x.toFixed(1)}`);
   });

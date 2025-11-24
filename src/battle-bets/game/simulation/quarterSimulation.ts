@@ -42,7 +42,7 @@ interface QuarterStats {
   points: number;
   rebounds: number;
   assists: number;
-  blocks: number;
+  steals: number;
   threePointers: number;
 }
 
@@ -131,10 +131,10 @@ export async function simulateQuarter(
   const quarterData = getQuarterData(quarterNumber);
 
   console.log(
-    `📊 ${battle.game.leftTeam.abbreviation}: PTS=${quarterData.left.points} REB=${quarterData.left.rebounds} AST=${quarterData.left.assists} BLK=${quarterData.left.blocks} 3PM=${quarterData.left.threePointers}`
+    `📊 ${battle.game.leftTeam.abbreviation}: PTS=${quarterData.left.points} REB=${quarterData.left.rebounds} AST=${quarterData.left.assists} STL=${quarterData.left.steals} 3PM=${quarterData.left.threePointers}`
   );
   console.log(
-    `📊 ${battle.game.rightTeam.abbreviation}: PTS=${quarterData.right.points} REB=${quarterData.right.rebounds} AST=${quarterData.right.assists} BLK=${quarterData.right.blocks} 3PM=${quarterData.right.threePointers}`
+    `📊 ${battle.game.rightTeam.abbreviation}: PTS=${quarterData.right.points} REB=${quarterData.right.rebounds} AST=${quarterData.right.assists} STL=${quarterData.right.steals} 3PM=${quarterData.right.threePointers}`
   );
 
   // Emit QUARTER_START events for both sides
@@ -165,20 +165,40 @@ export async function simulateQuarter(
     prevQuarterStats
   } as QuarterStartPayload);
 
-  // Fire ALL stat rows SIMULTANEOUSLY (not sequentially)
+  // Fire stat rows SEQUENTIALLY (one at a time): PTS → REB → AST → STL → 3PT
   try {
-    const statRowPromises = [
-      fireStatRow('pts', quarterData.left.points, quarterData.right.points, gameId),
-      fireStatRow('reb', quarterData.left.rebounds, quarterData.right.rebounds, gameId),
-      fireStatRow('ast', quarterData.left.assists, quarterData.right.assists, gameId),
-      fireStatRow('blk', quarterData.left.blocks, quarterData.right.blocks, gameId),
-      fireStatRow('3pt', quarterData.left.threePointers, quarterData.right.threePointers, gameId),
-    ];
+    // 1. POINTS
+    let shouldContinue = await fireStatRow('pts', quarterData.left.points, quarterData.right.points, gameId);
+    if (!shouldContinue) {
+      console.log('⚠️ Battle ended during PTS');
+      return quarterData;
+    }
 
-    const results = await Promise.all(statRowPromises);
+    // 2. REBOUNDS
+    shouldContinue = await fireStatRow('reb', quarterData.left.rebounds, quarterData.right.rebounds, gameId);
+    if (!shouldContinue) {
+      console.log('⚠️ Battle ended during REB');
+      return quarterData;
+    }
 
-    if (results.some(result => !result)) {
-      console.log('⚠️ Battle ended during stat row firing');
+    // 3. ASSISTS
+    shouldContinue = await fireStatRow('ast', quarterData.left.assists, quarterData.right.assists, gameId);
+    if (!shouldContinue) {
+      console.log('⚠️ Battle ended during AST');
+      return quarterData;
+    }
+
+    // 4. STEALS
+    shouldContinue = await fireStatRow('stl', quarterData.left.steals, quarterData.right.steals, gameId);
+    if (!shouldContinue) {
+      console.log('⚠️ Battle ended during STL');
+      return quarterData;
+    }
+
+    // 5. THREE POINTERS
+    shouldContinue = await fireStatRow('3pt', quarterData.left.threePointers, quarterData.right.threePointers, gameId);
+    if (!shouldContinue) {
+      console.log('⚠️ Battle ended during 3PT');
       return quarterData;
     }
   } catch (error: any) {
@@ -209,8 +229,8 @@ export async function simulateQuarter(
       pts: quarterData.left.points,
       reb: quarterData.left.rebounds,
       ast: quarterData.left.assists,
-      blk: quarterData.left.blocks,
-      stl: 0, // TODO: Add steals tracking
+      blk: 0, // Deprecated - using STL now
+      stl: quarterData.left.steals,
       threesMade: quarterData.left.threePointers
     }
   } as QuarterEndPayload);
@@ -226,8 +246,8 @@ export async function simulateQuarter(
       pts: quarterData.right.points,
       reb: quarterData.right.rebounds,
       ast: quarterData.right.assists,
-      blk: quarterData.right.blocks,
-      stl: 0, // TODO: Add steals tracking
+      blk: 0, // Deprecated - using STL now
+      stl: quarterData.right.steals,
       threesMade: quarterData.right.threePointers
     }
   } as QuarterEndPayload);
@@ -588,17 +608,17 @@ function getProjectileTypeConfig(stat: StatType) {
 /**
  * Generate random realistic NBA quarter stats based on quarter number
  * Ranges per quarter:
- * Q1: PTS 25-35 | REB 9-14 | AST 5-9 | BLK 0-3 | 3PM 2-5
- * Q2: PTS 23-33 | REB 8-13 | AST 4-8 | BLK 0-3 | 3PM 2-5
- * Q3: PTS 24-34 | REB 8-13 | AST 4-8 | BLK 0-3 | 3PM 2-6
- * Q4: PTS 22-36 | REB 7-12 | AST 4-8 | BLK 0-3 | 3PM 2-6
+ * Q1: PTS 25-35 | REB 9-14 | AST 5-9 | STL 0-3 | 3PM 2-5
+ * Q2: PTS 23-33 | REB 8-13 | AST 4-8 | STL 0-3 | 3PM 2-5
+ * Q3: PTS 24-34 | REB 8-13 | AST 4-8 | STL 0-3 | 3PM 2-6
+ * Q4: PTS 22-36 | REB 7-12 | AST 4-8 | STL 0-3 | 3PM 2-6
  */
 function generateRandomQuarterStats(quarter: number): QuarterStats {
   const ranges = {
-    1: { pts: [25, 35], reb: [9, 14], ast: [5, 9], blk: [0, 3], tpm: [2, 5] },
-    2: { pts: [23, 33], reb: [8, 13], ast: [4, 8], blk: [0, 3], tpm: [2, 5] },
-    3: { pts: [24, 34], reb: [8, 13], ast: [4, 8], blk: [0, 3], tpm: [2, 6] },
-    4: { pts: [22, 36], reb: [7, 12], ast: [4, 8], blk: [0, 3], tpm: [2, 6] },
+    1: { pts: [25, 35], reb: [9, 14], ast: [5, 9], stl: [0, 3], tpm: [2, 5] },
+    2: { pts: [23, 33], reb: [8, 13], ast: [4, 8], stl: [0, 3], tpm: [2, 5] },
+    3: { pts: [24, 34], reb: [8, 13], ast: [4, 8], stl: [0, 3], tpm: [2, 6] },
+    4: { pts: [22, 36], reb: [7, 12], ast: [4, 8], stl: [0, 3], tpm: [2, 6] },
   };
 
   const range = ranges[quarter as keyof typeof ranges] || ranges[1];
@@ -607,7 +627,7 @@ function generateRandomQuarterStats(quarter: number): QuarterStats {
     points: Math.floor(Math.random() * (range.pts[1] - range.pts[0] + 1)) + range.pts[0],
     rebounds: Math.floor(Math.random() * (range.reb[1] - range.reb[0] + 1)) + range.reb[0],
     assists: Math.floor(Math.random() * (range.ast[1] - range.ast[0] + 1)) + range.ast[0],
-    blocks: Math.floor(Math.random() * (range.blk[1] - range.blk[0] + 1)) + range.blk[0],
+    steals: Math.floor(Math.random() * (range.stl[1] - range.stl[0] + 1)) + range.stl[0],
     threePointers: Math.floor(Math.random() * (range.tpm[1] - range.tpm[0] + 1)) + range.tpm[0],
   };
 }

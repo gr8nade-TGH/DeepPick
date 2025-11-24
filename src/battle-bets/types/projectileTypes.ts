@@ -33,7 +33,7 @@
  * - PTS: Fast, standard bullets (20 cells/sec)
  * - REB: Heavy, slower bullets (15 cells/sec, larger collision radius)
  * - AST: Precision, fastest bullets (25 cells/sec, smaller collision radius)
- * - BLK: Medium speed with future explosion potential (18 cells/sec)
+ * - STL: Medium speed steals projectiles (18 cells/sec)
  * - 3PT: Medium speed, passes through enemy projectiles (20 cells/sec, canCollideWithProjectiles = false)
  */
 
@@ -167,11 +167,11 @@ export const PROJECTILE_TYPES: Record<StatType, ProjectileTypeConfig> = {
     canCollideWithProjectiles: true,
   },
 
-  // BLK - Explosive projectiles
-  blk: {
-    id: 'blk-bullets',
-    name: 'Block Bullets',
-    stat: 'blk',
+  // STL - Steals projectiles
+  stl: {
+    id: 'stl-bullets',
+    name: 'Steal Bullets',
+    stat: 'stl',
 
     // Visual (red color, glowing)
     shape: 'bullet',
@@ -192,7 +192,6 @@ export const PROJECTILE_TYPES: Record<StatType, ProjectileTypeConfig> = {
     rapidFire: false,
     rapidFireCount: 1,
     canCollideWithProjectiles: true,
-    areaOfEffect: 20, // Small explosion radius (future feature)
   },
 
   // 3PT - 3-Point projectiles

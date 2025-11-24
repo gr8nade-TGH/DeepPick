@@ -53,7 +53,7 @@ export function drawPremiumGrid(container: PIXI.Container): void {
     { name: 'PTS', id: 'pts', value: 34, color: 0xFF6B35, glowColor: 0xFF8C5A },
     { name: 'REB', id: 'reb', value: 12, color: 0x4ECDC4, glowColor: 0x6EDDD5 },
     { name: 'AST', id: 'ast', value: 6, color: 0xF7B731, glowColor: 0xF9C74F },
-    { name: 'BLK', id: 'blk', value: 8, color: 0xFF3838, glowColor: 0xFF5858 },
+    { name: 'STL', id: 'stl', value: 8, color: 0xFF3838, glowColor: 0xFF5858 },
     { name: '3PT', id: '3pt', value: 4, color: 0x00D2FF, glowColor: 0x33E0FF },
   ];
 
