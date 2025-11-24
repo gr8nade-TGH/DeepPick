@@ -7,11 +7,13 @@
 
 import React, { useState, useEffect } from 'react';
 import './PreGameItemSelector.css';
+import './ItemTooltip.css';
 import { LAL_IRONMAN_ARMOR_DEFINITION } from '../../game/items/effects/LAL_IronmanArmor';
 import type { ItemDefinition } from '../../game/items/ItemRollSystem';
 import { useMultiGameStore } from '../../store/multiGameStore';
 import { castleHealthSystem } from '../../game/systems/CastleHealthSystem';
 import { castleManager } from '../../game/managers/CastleManager';
+import { ItemTooltip } from './ItemTooltip';
 
 interface PreGameItemSelectorProps {
   battleId: string;
@@ -60,6 +62,15 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
     side: 'left' | 'right';
     slot: 1 | 2 | 3;
   } | null>(initialSlot || null);
+
+  // Tooltip state
+  const [tooltipData, setTooltipData] = useState<{
+    item: ItemDefinition;
+    rolls: Record<string, number>;
+    quality: 'Warped' | 'Balanced' | 'Honed' | 'Masterwork';
+    x: number;
+    y: number;
+  } | null>(null);
 
   // Update battle's equipped items in the store
   const updateBattleEquippedItems = () => {
@@ -283,6 +294,32 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
     }
   };
 
+  /**
+   * Show tooltip on hover over equipped item
+   */
+  const handleItemHover = (
+    event: React.MouseEvent,
+    item: ItemDefinition,
+    rolls: Record<string, number>,
+    quality: 'Warped' | 'Balanced' | 'Honed' | 'Masterwork'
+  ) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setTooltipData({
+      item,
+      rolls,
+      quality,
+      x: rect.right + 10,
+      y: rect.top,
+    });
+  };
+
+  /**
+   * Hide tooltip
+   */
+  const handleItemLeave = () => {
+    setTooltipData(null);
+  };
+
   const getSlotItem = (side: 'left' | 'right', slot: 1 | 2 | 3): string | null => {
     if (side === 'left') {
       if (slot === 1) return leftSlot1;
@@ -329,6 +366,35 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
     const itemId = getSlotItem(side, slot);
     const item = itemId ? getItemDefinition(itemId) : null;
 
+    // Generate test rolls for tooltip (in real game, these come from item instance)
+    const testRolls = item?.rollRanges ? Object.keys(item.rollRanges).reduce((acc, key) => {
+      const range = item.rollRanges![key];
+      // Random roll between min and max
+      acc[key] = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
+      return acc;
+    }, {} as Record<string, number>) : {};
+
+    // Calculate quality based on rolls
+    const calculateQuality = (): 'Warped' | 'Balanced' | 'Honed' | 'Masterwork' => {
+      if (!item?.rollRanges) return 'Balanced';
+      const rollKeys = Object.keys(item.rollRanges);
+      let totalScore = 0;
+      let maxScore = 0;
+      for (const key of rollKeys) {
+        const range = item.rollRanges[key];
+        const roll = testRolls[key];
+        if (roll !== undefined) {
+          totalScore += roll - range.min;
+          maxScore += range.max - range.min;
+        }
+      }
+      const percentage = maxScore > 0 ? (totalScore / maxScore) * 100 : 50;
+      if (percentage >= 90) return 'Masterwork';
+      if (percentage >= 65) return 'Honed';
+      if (percentage >= 35) return 'Balanced';
+      return 'Warped';
+    };
+
     return (
       <div
         key={`${side}-${slot}`}
@@ -340,15 +406,21 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
           borderRadius: '8px',
           cursor: 'pointer',
           transition: 'all 0.2s ease',
+          position: 'relative',
         }}
         onClick={() => setSelectedSlot({ side, slot })}
         onMouseEnter={(e) => {
           e.currentTarget.style.background = 'rgba(255, 215, 0, 0.2)';
           e.currentTarget.style.borderColor = 'rgba(255, 215, 0, 0.5)';
+          // Show tooltip if item is equipped
+          if (item) {
+            handleItemHover(e, item, testRolls, calculateQuality());
+          }
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.background = 'rgba(255, 215, 0, 0.1)';
           e.currentTarget.style.borderColor = 'rgba(255, 215, 0, 0.3)';
+          handleItemLeave();
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -463,6 +535,25 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
           )}
         </div>
       </div>
+
+      {/* Tooltip */}
+      {tooltipData && (
+        <div
+          style={{
+            position: 'fixed',
+            left: `${tooltipData.x}px`,
+            top: `${tooltipData.y}px`,
+            zIndex: 10000,
+          }}
+          data-quality={tooltipData.quality}
+        >
+          <ItemTooltip
+            item={tooltipData.item}
+            rolls={tooltipData.rolls}
+            quality={tooltipData.quality}
+          />
+        </div>
+      )}
     </>
   );
 };
