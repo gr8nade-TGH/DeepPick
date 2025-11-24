@@ -78,9 +78,9 @@ class CollisionDebugger {
           const orb = Array.from(defenseDots.values()).find(d => d.cellId === cellId);
           if (orb && orb.alive) {
             orbs.push(`${i}:${orb.hp}`);
-            // Collect first few cellIds for debugging
+            // Collect first few cellIds for debugging - show ACTUAL cellId property
             if (sampleCellIds.length < 3) {
-              sampleCellIds.push(`${cellId}→${orb.id.split('-').slice(-3).join('-')}`);
+              sampleCellIds.push(`grid[${cellId}]→orb[${orb.cellId}]`);
             }
           }
         }
