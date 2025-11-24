@@ -266,37 +266,42 @@ export async function simulateQuarter(
   } as QuarterStartPayload);
 
   // Fire stat rows SEQUENTIALLY (one at a time): PTS → REB → AST → STL → 3PT
+  // Use fireStatRowForMultiBattle (the working version from auto-start mode)
   try {
     // 1. POINTS
-    let shouldContinue = await fireStatRow('pts', quarterData.left.points, quarterData.right.points, gameId);
+    let shouldContinue = await fireStatRowForMultiBattle(battleId, gameId, 'pts', quarterData.left.points, quarterData.right.points);
     if (!shouldContinue) {
       console.log('⚠️ Battle ended during PTS');
       return quarterData;
     }
+    await sleep(500); // Small pause between stat rows (same as auto-start mode)
 
     // 2. REBOUNDS
-    shouldContinue = await fireStatRow('reb', quarterData.left.rebounds, quarterData.right.rebounds, gameId);
+    shouldContinue = await fireStatRowForMultiBattle(battleId, gameId, 'reb', quarterData.left.rebounds, quarterData.right.rebounds);
     if (!shouldContinue) {
       console.log('⚠️ Battle ended during REB');
       return quarterData;
     }
+    await sleep(500);
 
     // 3. ASSISTS
-    shouldContinue = await fireStatRow('ast', quarterData.left.assists, quarterData.right.assists, gameId);
+    shouldContinue = await fireStatRowForMultiBattle(battleId, gameId, 'ast', quarterData.left.assists, quarterData.right.assists);
     if (!shouldContinue) {
       console.log('⚠️ Battle ended during AST');
       return quarterData;
     }
+    await sleep(500);
 
     // 4. STEALS
-    shouldContinue = await fireStatRow('stl', quarterData.left.steals, quarterData.right.steals, gameId);
+    shouldContinue = await fireStatRowForMultiBattle(battleId, gameId, 'stl', quarterData.left.steals, quarterData.right.steals);
     if (!shouldContinue) {
       console.log('⚠️ Battle ended during STL');
       return quarterData;
     }
+    await sleep(500);
 
     // 5. THREE POINTERS
-    shouldContinue = await fireStatRow('3pt', quarterData.left.threePointers, quarterData.right.threePointers, gameId);
+    shouldContinue = await fireStatRowForMultiBattle(battleId, gameId, '3pt', quarterData.left.threePointers, quarterData.right.threePointers);
     if (!shouldContinue) {
       console.log('⚠️ Battle ended during 3PT');
       return quarterData;

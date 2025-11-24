@@ -10,6 +10,7 @@ import { BattleCanvas } from './components/game/BattleCanvas';
 import { GameInfoBar } from './components/game/GameInfoBar';
 import { InventoryBar } from './components/game/InventoryBar';
 import { CopyDebugButton } from './components/debug/CopyDebugButton';
+import { QuarterDebugControls } from './components/debug/QuarterDebugControls';
 import type { Game } from './types/game';
 import './App.css';
 
@@ -106,6 +107,7 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalBattles, setTotalBattles] = useState(0);
+  const [showDebugControls, setShowDebugControls] = useState(false);
   const battlesPerPage = 4;
 
   // Check URL parameters for specific battle ID and debug mode
@@ -378,7 +380,7 @@ function App() {
                       q3EndTime={(game as any)._battleData?.q3EndTime}
                       q4EndTime={(game as any)._battleData?.q4EndTime}
                       winner={(game as any)._battleData?.winner}
-                      autoStart={false}
+                      autoStart={index === 0 && showDebugControls}
                     />
                   </div>
 
@@ -445,7 +447,45 @@ function App() {
         )}
       </main>
 
-      {/* Debug Button - Only show when ?debug=1 */}
+      {/* Debug Toggle Button - Always visible */}
+      <button
+        onClick={() => setShowDebugControls(!showDebugControls)}
+        style={{
+          position: 'fixed',
+          top: '20px',
+          right: '20px',
+          background: showDebugControls ? 'linear-gradient(135deg, #4ecdc4 0%, #44a8a0 100%)' : 'linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%)',
+          color: '#fff',
+          border: '2px solid #fff',
+          borderRadius: '8px',
+          padding: '10px 20px',
+          fontSize: '14px',
+          fontWeight: '700',
+          cursor: 'pointer',
+          zIndex: 10000,
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)',
+          transition: 'all 0.2s ease',
+          textTransform: 'uppercase',
+          letterSpacing: '1px',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-2px)';
+          e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.5)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.4)';
+        }}
+      >
+        {showDebugControls ? '🐛 DEBUG ON' : '🐛 DEBUG'}
+      </button>
+
+      {/* Quarter Debug Controls - Show when debug is enabled, control first battle */}
+      {showDebugControls && battles.length > 0 && (
+        <QuarterDebugControls battleId={battles[0].id} />
+      )}
+
+      {/* Copy Debug Button - Only show when ?debug=1 */}
       {debugMode && battles.length > 0 && (
         <CopyDebugButton gameId={battles[0].id} />
       )}

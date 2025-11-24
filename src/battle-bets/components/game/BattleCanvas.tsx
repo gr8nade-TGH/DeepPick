@@ -54,7 +54,6 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
   const hasStartedSimulationRef = useRef(false)
   const [webglSupport, setWebglSupport] = useState<ReturnType<typeof detectWebGLSupport> | null>(null)
   const [containerReady, setContainerReady] = useState(false)
-  const [debugMode, setDebugMode] = useState(false)
 
   const initializeBattle = useMultiGameStore(state => state.initializeBattle)
   const getBattle = useMultiGameStore(state => state.getBattle)
@@ -69,24 +68,7 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
     }
   }, [])
 
-  // Detect debug mode from URL query string (?debug=1)
-  useEffect(() => {
-    if (typeof window === 'undefined') return
 
-    try {
-      const search = window.location.search
-      console.log('[BattleCanvas] window.location.search =', search)
-
-      const params = new URLSearchParams(search)
-      const debugParam = params.get('debug')
-      const isDebug = debugParam === '1' || debugParam === 'true'
-
-      console.log('[BattleCanvas] Parsed debug param =', debugParam, '=> debugMode =', isDebug)
-      setDebugMode(isDebug)
-    } catch (error) {
-      console.warn('[BattleCanvas] Failed to read debug query param', error)
-    }
-  }, [])
 
 
   // Initialize PixiJS application
