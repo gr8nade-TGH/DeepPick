@@ -187,7 +187,7 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
       castleHealthSystem.activateShield(castleId, shieldHP, 0, 'LAL_def_ironman_armor');
 
       // Activate shield visual
-      const castle = castleManager.getCastle(castleId);
+      const castle = castleManager.getCastle(battleId, castleId);
       console.log(`🔍 [PreGameItemSelector] Looking for castle: ${castleId}, found:`, castle ? 'YES' : 'NO');
       if (castle) {
         castle.activateShield({
@@ -209,7 +209,7 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
       if (shield && shield.itemId === 'LAL_def_ironman_armor') {
         console.log(`🛡️ [PreGameItemSelector] Deactivating Ironman Armor shield for LEFT castle`);
         castleHealthSystem.deactivateShield(castleId);
-        const castle = castleManager.getCastle(castleId);
+        const castle = castleManager.getCastle(battleId, castleId);
         if (castle) {
           castle.deactivateShield();
         }
@@ -227,7 +227,7 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
       castleHealthSystem.activateShield(castleId, shieldHP, 0, 'LAL_def_ironman_armor');
 
       // Activate shield visual
-      const castle = castleManager.getCastle(castleId);
+      const castle = castleManager.getCastle(battleId, castleId);
       console.log(`🔍 [PreGameItemSelector] Looking for castle: ${castleId}, found:`, castle ? 'YES' : 'NO');
       if (castle) {
         castle.activateShield({
@@ -249,7 +249,7 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
       if (shield && shield.itemId === 'LAL_def_ironman_armor') {
         console.log(`🛡️ [PreGameItemSelector] Deactivating Ironman Armor shield for RIGHT castle`);
         castleHealthSystem.deactivateShield(castleId);
-        const castle = castleManager.getCastle(castleId);
+        const castle = castleManager.getCastle(battleId, castleId);
         if (castle) {
           castle.deactivateShield();
         }
