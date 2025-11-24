@@ -71,22 +71,24 @@ export const ItemTooltip: React.FC<ItemTooltipProps> = ({ item, rolls, quality }
     <div className="item-tooltip" data-quality={calculatedQuality}>
       {/* Item Name */}
       <div className="tooltip-name" style={{ color: qualityColor }}>
-        {item.icon} {item.name}
+        {item.name}
       </div>
 
       {/* Quality Tier */}
       <div className="tooltip-quality" style={{ color: qualityColor }}>
-        {calculatedQuality}
-      </div>
-
-      {/* Item Type & Team */}
-      <div className="tooltip-type">
-        {item.slot.toUpperCase()} • {item.teamName}
+        {calculatedQuality} {item.slot.charAt(0).toUpperCase() + item.slot.slice(1)}
       </div>
 
       <div className="tooltip-divider" />
 
-      {/* Roll Stats */}
+      {/* Team Badge */}
+      <div className="tooltip-team">
+        {item.icon} {item.teamName}
+      </div>
+
+      <div className="tooltip-divider" />
+
+      {/* Roll Stats - Bullet Points */}
       {item.rollRanges && rolls && (
         <div className="tooltip-stats">
           {Object.entries(item.rollRanges).map(([key, range]) => {
@@ -101,13 +103,14 @@ export const ItemTooltip: React.FC<ItemTooltipProps> = ({ item, rolls, quality }
               .trim();
 
             return (
-              <div key={key} className="tooltip-stat">
-                <span className="stat-name">{statName}:</span>
-                <span className={`stat-value ${isMax ? 'max-roll' : isMin ? 'min-roll' : ''}`}>
-                  {roll}
-                </span>
-                <span className="stat-range">
-                  ({range.min}-{range.max})
+              <div key={key} className="tooltip-stat-bullet">
+                <span className="bullet">◆</span>
+                <span className="stat-text">
+                  <span className={`stat-value ${isMax ? 'max-roll' : isMin ? 'min-roll' : ''}`}>
+                    {isMax ? '+' : ''}{roll}
+                  </span>
+                  {' '}{statName}
+                  <span className="stat-range"> ({range.min}-{range.max})</span>
                 </span>
               </div>
             );
@@ -115,11 +118,19 @@ export const ItemTooltip: React.FC<ItemTooltipProps> = ({ item, rolls, quality }
         </div>
       )}
 
-      {item.rollRanges && rolls && <div className="tooltip-divider" />}
+      <div className="tooltip-divider" />
 
       {/* Description */}
       <div className="tooltip-description">
         {item.description}
+      </div>
+
+      <div className="tooltip-divider-thin" />
+
+      {/* Footer */}
+      <div className="tooltip-footer">
+        <div className="tooltip-footer-item">Item Level: 1</div>
+        <div className="tooltip-footer-item">Requires Level: 1</div>
       </div>
     </div>
   );

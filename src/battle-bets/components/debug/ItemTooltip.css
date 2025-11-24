@@ -1,51 +1,57 @@
 /**
  * ItemTooltip.css
- * 
+ *
  * Diablo-style tooltip styling with dark background, gold borders, and quality colors
  */
 
 .item-tooltip {
   position: relative;
-  background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
-  border: 2px solid #8B7355;
-  border-radius: 4px;
-  padding: 12px 16px;
-  min-width: 280px;
-  max-width: 350px;
+  background: linear-gradient(180deg, #1a1410 0%, #0f0d0a 100%);
+  border: 2px solid #6b5d4f;
+  border-radius: 2px;
+  padding: 14px 18px;
+  min-width: 300px;
+  max-width: 380px;
   box-shadow:
-    0 0 20px rgba(0, 0, 0, 0.9),
-    inset 0 0 30px rgba(139, 115, 85, 0.1);
-  font-family: 'Courier New', monospace;
+    0 0 30px rgba(0, 0, 0, 0.95),
+    inset 0 0 40px rgba(107, 93, 79, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  font-family: 'Exocet', 'Palatino Linotype', 'Book Antiqua', serif;
   pointer-events: none;
   user-select: none;
+  color: #d0c0a0;
 }
 
 /* Item Name */
 .tooltip-name {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: bold;
-  margin-bottom: 4px;
-  text-shadow: 0 0 8px currentColor;
-  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+  text-shadow:
+    0 0 10px currentColor,
+    2px 2px 4px rgba(0, 0, 0, 0.8);
+  letter-spacing: 0.8px;
+  line-height: 1.3;
 }
 
 /* Quality Tier */
 .tooltip-quality {
-  font-size: 12px;
-  font-weight: bold;
-  margin-bottom: 8px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  opacity: 0.9;
+  font-size: 11px;
+  font-weight: normal;
+  margin-bottom: 10px;
+  letter-spacing: 0.5px;
+  opacity: 0.85;
 }
 
-/* Item Type & Team */
-.tooltip-type {
-  font-size: 11px;
-  color: #AAA;
-  margin-bottom: 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+/* Team Badge */
+.tooltip-team {
+  font-size: 13px;
+  color: #a89968;
+  margin-bottom: 10px;
+  letter-spacing: 0.3px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 /* Divider */
@@ -53,43 +59,58 @@
   height: 1px;
   background: linear-gradient(90deg,
       transparent 0%,
-      #8B7355 20%,
-      #8B7355 80%,
+      #6b5d4f 15%,
+      #6b5d4f 85%,
+      transparent 100%);
+  margin: 10px 0;
+  opacity: 0.6;
+}
+
+.tooltip-divider-thin {
+  height: 1px;
+  background: linear-gradient(90deg,
+      transparent 0%,
+      #4a4035 20%,
+      #4a4035 80%,
       transparent 100%);
   margin: 8px 0;
-  opacity: 0.5;
+  opacity: 0.4;
 }
 
-/* Stats Section */
+/* Stats Section - Bullet Points */
 .tooltip-stats {
-  margin: 8px 0;
+  margin: 10px 0;
 }
 
-.tooltip-stat {
+.tooltip-stat-bullet {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 6px;
+  align-items: flex-start;
+  margin-bottom: 7px;
   font-size: 13px;
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
-.stat-name {
-  color: #CCC;
+.tooltip-stat-bullet .bullet {
+  color: #8b7355;
+  margin-right: 8px;
+  font-size: 10px;
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.tooltip-stat-bullet .stat-text {
+  color: #b8a080;
   flex: 1;
 }
 
 .stat-value {
-  color: #FFF;
+  color: #6fa8dc;
   font-weight: bold;
-  margin: 0 8px;
-  min-width: 30px;
-  text-align: right;
 }
 
 .stat-value.max-roll {
-  color: #FFD700;
-  text-shadow: 0 0 6px #FFD700;
+  color: #ffd700;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
 }
 
 .stat-value.min-roll {
@@ -97,30 +118,41 @@
 }
 
 .stat-range {
-  color: #666;
+  color: #6b5d4f;
   font-size: 11px;
-  min-width: 50px;
-  text-align: right;
 }
 
 /* Description */
 .tooltip-description {
   font-size: 12px;
-  color: #DDD;
-  line-height: 1.5;
+  color: #a89968;
+  line-height: 1.6;
   font-style: italic;
-  opacity: 0.9;
+  opacity: 0.95;
+  margin: 10px 0;
+}
+
+/* Footer */
+.tooltip-footer {
+  font-size: 10px;
+  color: #6b5d4f;
+  margin-top: 8px;
+  line-height: 1.4;
+}
+
+.tooltip-footer-item {
+  margin-bottom: 2px;
 }
 
 /* Hover animation */
 .item-tooltip {
-  animation: tooltipFadeIn 0.15s ease-out;
+  animation: tooltipFadeIn 0.2s ease-out;
 }
 
 @keyframes tooltipFadeIn {
   from {
     opacity: 0;
-    transform: translateY(-5px);
+    transform: translateY(-8px);
   }
 
   to {
@@ -131,32 +163,36 @@
 
 /* Quality-specific border glow */
 .item-tooltip[data-quality="Masterwork"] {
-  border-color: #FFD700;
+  border-color: #c8a060;
   box-shadow:
-    0 0 20px rgba(0, 0, 0, 0.9),
-    0 0 15px rgba(255, 215, 0, 0.3),
-    inset 0 0 30px rgba(255, 215, 0, 0.1);
+    0 0 35px rgba(0, 0, 0, 0.95),
+    0 0 20px rgba(200, 160, 96, 0.4),
+    inset 0 0 50px rgba(200, 160, 96, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .item-tooltip[data-quality="Honed"] {
-  border-color: #9370DB;
+  border-color: #8b6fb0;
   box-shadow:
-    0 0 20px rgba(0, 0, 0, 0.9),
-    0 0 15px rgba(147, 112, 219, 0.3),
-    inset 0 0 30px rgba(147, 112, 219, 0.1);
+    0 0 35px rgba(0, 0, 0, 0.95),
+    0 0 20px rgba(139, 111, 176, 0.35),
+    inset 0 0 50px rgba(139, 111, 176, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .item-tooltip[data-quality="Balanced"] {
-  border-color: #4169E1;
+  border-color: #6b8db0;
   box-shadow:
-    0 0 20px rgba(0, 0, 0, 0.9),
-    0 0 15px rgba(65, 105, 225, 0.3),
-    inset 0 0 30px rgba(65, 105, 225, 0.1);
+    0 0 35px rgba(0, 0, 0, 0.95),
+    0 0 20px rgba(107, 141, 176, 0.3),
+    inset 0 0 50px rgba(107, 141, 176, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .item-tooltip[data-quality="Warped"] {
-  border-color: #808080;
+  border-color: #5a5045;
   box-shadow:
-    0 0 20px rgba(0, 0, 0, 0.9),
-    inset 0 0 30px rgba(128, 128, 128, 0.1);
+    0 0 30px rgba(0, 0, 0, 0.95),
+    inset 0 0 40px rgba(90, 80, 69, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
