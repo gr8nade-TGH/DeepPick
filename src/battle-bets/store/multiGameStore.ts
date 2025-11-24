@@ -16,6 +16,7 @@ import {
   getDefenseCellId,
   distributeDotsAcrossStats
 } from '../types/game';
+import { castleManager } from '../game/managers/CastleManager';
 import { getDefenseCellPosition } from '../game/utils/positioning';
 
 /**
@@ -153,7 +154,7 @@ export const useMultiGameStore = create<MultiGameState>()(
             pts: distributionArray[0],
             reb: distributionArray[1],
             ast: distributionArray[2],
-            blk: distributionArray[3],
+            stl: distributionArray[3],
             '3pt': distributionArray[4],
           };
 
@@ -260,7 +261,7 @@ export const useMultiGameStore = create<MultiGameState>()(
             console.log(`☠️ [Multi-Game Store] ${capperName} HAS BEEN DEFEATED!`);
           }
 
-          // Update HP
+          // Update HP in store
           set(state => {
             const newBattles = new Map(state.battles);
             const updatedBattle = newBattles.get(battleId);
@@ -275,6 +276,11 @@ export const useMultiGameStore = create<MultiGameState>()(
             }
             return { battles: newBattles };
           });
+
+          // CRITICAL: Also damage the Castle entity to update visual HP bar
+          const castleId = `${battleId}-${side}`;
+          castleManager.damageCastle(battleId, castleId, actualDamage);
+          console.log(`🏰 [applyDamageToCapperHP] Called castleManager.damageCastle for ${castleId}`);
         } else {
           console.log(`⚠️ [applyDamageToCapperHP] No actual damage applied (already at 0 HP or invalid damage)`);
         }

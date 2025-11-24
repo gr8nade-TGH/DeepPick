@@ -260,7 +260,7 @@ export function getTotalDefenseDotCount(units: number): number {
 
 /**
  * Distribute total defense dots across 5 stat rows
- * Returns array of 5 numbers representing dots per stat: [PTS, REB, AST, BLK, 3PT]
+ * Returns array of 5 numbers representing dots per stat: [PTS, REB, AST, STL, 3PT]
  *
  * System:
  * 1. Base dots (1 per stat = 5 total) are already on the grid
@@ -271,7 +271,7 @@ export function getTotalDefenseDotCount(units: number): number {
  * - PTS: 60%
  * - REB: 20%
  * - AST: 10%
- * - BLK: 5%
+ * - STL: 5%
  * - 3PT: 5%
  *
  * Example: 11 additional dots (from +32 units)
@@ -291,7 +291,7 @@ export function distributeDotsAcrossStats(totalDots: number): number[] {
   let ptsTotal = BASE_DOTS_PER_STAT;
   let rebTotal = BASE_DOTS_PER_STAT;
   let astTotal = BASE_DOTS_PER_STAT;
-  let blkTotal = BASE_DOTS_PER_STAT;
+  let stlTotal = BASE_DOTS_PER_STAT;
   let threePtTotal = BASE_DOTS_PER_STAT;
 
   // Distribute ALL dots using 60/20/10/5/5 percentages (no subtraction of base)
@@ -302,18 +302,18 @@ export function distributeDotsAcrossStats(totalDots: number): number[] {
     const ptsDots = remainingDots * 0.60;
     const rebDots = remainingDots * 0.20;
     const astDots = remainingDots * 0.10;
-    const blkDots = remainingDots * 0.05;
+    const stlDots = remainingDots * 0.05;
     const threePtDots = remainingDots * 0.05;
 
     // Round down for each stat
     const ptsRounded = Math.floor(ptsDots);
     const rebRounded = Math.floor(rebDots);
     const astRounded = Math.floor(astDots);
-    const blkRounded = Math.floor(blkDots);
+    const stlRounded = Math.floor(stlDots);
     const threePtRounded = Math.floor(threePtDots);
 
     // Calculate remainder (due to rounding)
-    const allocated = ptsRounded + rebRounded + astRounded + blkRounded + threePtRounded;
+    const allocated = ptsRounded + rebRounded + astRounded + stlRounded + threePtRounded;
     const remainder = remainingDots - allocated;
 
     // Distribute remainder to stats with largest fractional parts
@@ -321,7 +321,7 @@ export function distributeDotsAcrossStats(totalDots: number): number[] {
       { index: 0, fraction: ptsDots - ptsRounded, value: ptsRounded },
       { index: 1, fraction: rebDots - rebRounded, value: rebRounded },
       { index: 2, fraction: astDots - astRounded, value: astRounded },
-      { index: 3, fraction: blkDots - blkRounded, value: blkRounded },
+      { index: 3, fraction: stlDots - stlRounded, value: stlRounded },
       { index: 4, fraction: threePtDots - threePtRounded, value: threePtRounded },
     ];
 
@@ -342,7 +342,7 @@ export function distributeDotsAcrossStats(totalDots: number): number[] {
     ptsTotal += fractionalParts.find(item => item.index === 0)!.value;
     rebTotal += fractionalParts.find(item => item.index === 1)!.value;
     astTotal += fractionalParts.find(item => item.index === 2)!.value;
-    blkTotal += fractionalParts.find(item => item.index === 3)!.value;
+    stlTotal += fractionalParts.find(item => item.index === 3)!.value;
     threePtTotal += fractionalParts.find(item => item.index === 4)!.value;
   }
 
@@ -351,10 +351,10 @@ export function distributeDotsAcrossStats(totalDots: number): number[] {
   ptsTotal = Math.min(ptsTotal, MAX_DOTS_PER_STAT);
   rebTotal = Math.min(rebTotal, MAX_DOTS_PER_STAT);
   astTotal = Math.min(astTotal, MAX_DOTS_PER_STAT);
-  blkTotal = Math.min(blkTotal, MAX_DOTS_PER_STAT);
+  stlTotal = Math.min(stlTotal, MAX_DOTS_PER_STAT);
   threePtTotal = Math.min(threePtTotal, MAX_DOTS_PER_STAT);
 
-  return [ptsTotal, rebTotal, astTotal, blkTotal, threePtTotal];
+  return [ptsTotal, rebTotal, astTotal, stlTotal, threePtTotal];
 }
 
 /**

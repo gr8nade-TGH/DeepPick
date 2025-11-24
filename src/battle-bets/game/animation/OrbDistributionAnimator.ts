@@ -93,12 +93,12 @@ class OrbDistributionAnimatorClass {
 
     // Step 2: Calculate distribution
     const distributionArray = distributeDotsAcrossStats(totalDots);
-    const stats: StatType[] = ['pts', 'reb', 'ast', 'blk', '3pt'];
+    const stats: StatType[] = ['pts', 'reb', 'ast', 'stl', '3pt'];
     const distribution: Record<StatType, number> = {
       pts: distributionArray[0],
       reb: distributionArray[1],
       ast: distributionArray[2],
-      blk: distributionArray[3],
+      stl: distributionArray[3],
       '3pt': distributionArray[4],
     };
     console.log(`   Distribution:`, distribution);
@@ -116,7 +116,7 @@ class OrbDistributionAnimatorClass {
   private async highlightUnitRecord(side: 'left' | 'right', teamColor: number): Promise<void> {
     const text = unitRecordDisplay.getText(side);
     const glow = unitRecordDisplay.getGlow(side);
-    
+
     if (!text || !glow) return;
 
     // Draw glow background
