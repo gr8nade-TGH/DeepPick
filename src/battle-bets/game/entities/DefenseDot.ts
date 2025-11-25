@@ -91,7 +91,7 @@ export class DefenseDot {
   }
 
   /**
-   * Draw 3 vertical sections that span the entire shield height
+   * Draw 3 triangular sections radiating from bottom center point (like reference image)
    */
   private drawShieldPieSegments(
     graphics: PIXI.Graphics,
@@ -99,117 +99,144 @@ export class DefenseDot {
     baseColor: number,
     currentHP: number
   ): void {
-    // Draw 3 vertical sections (left, center, right)
-    // Each section is 1/3 of the shield width
+    // Bottom center point where all sections meet
+    const bottomY = size / 2;
+    const centerX = 0;
+    const centerY = bottomY * 0.85; // Slightly above actual bottom for better look
+
+    // Draw 3 triangular sections radiating from bottom center
+    // Section 0: Left triangle
+    // Section 1: Center triangle
+    // Section 2: Right triangle
     for (let sectionIndex = 0; sectionIndex < 3; sectionIndex++) {
       const isFilled = sectionIndex < currentHP;
 
-      // Calculate normalized X boundaries (-1 to 1, where 0 is center)
-      // Section 0 (left):   -1.0 to -0.333
-      // Section 1 (center): -0.333 to 0.333
-      // Section 2 (right):   0.333 to 1.0
-      const leftX = -1.0 + (sectionIndex * 2 / 3);
-      const rightX = -1.0 + ((sectionIndex + 1) * 2 / 3);
+      // Calculate angle range for this section (120 degrees each)
+      // Start from left (-150°) and go clockwise
+      const startAngle = -150 + (sectionIndex * 120); // -150°, -30°, 90°
+      const endAngle = startAngle + 120;
 
-      // Draw section with gradient
+      // Draw triangular section
       if (isFilled) {
         const lightColor = this.lightenColor(baseColor, 1.3);
         const darkColor = this.darkenColor(baseColor, 0.7);
 
-        // Top half (lighter)
-        this.drawShieldSection(graphics, size, leftX, rightX, -1, 0, lightColor);
-
-        // Bottom half (darker)
-        this.drawShieldSection(graphics, size, leftX, rightX, 0, 1, darkColor);
+        // Draw with gradient (lighter at top, darker at bottom)
+        this.drawTriangularSection(graphics, size, centerX, centerY, startAngle, endAngle, lightColor, darkColor);
       } else {
         // Empty section - dark
-        this.drawShieldSection(graphics, size, leftX, rightX, -1, 1, 0x1a1a1a);
+        this.drawTriangularSection(graphics, size, centerX, centerY, startAngle, endAngle, 0x1a1a1a, 0x0a0a0a);
       }
     }
 
-    // Draw vertical divider lines at -0.333 and 0.333
-    this.drawVerticalDivider(graphics, size, -0.333);
-    this.drawVerticalDivider(graphics, size, 0.333);
+    // Draw divider lines from center to top edge
+    this.drawRadialDivider(graphics, size, centerX, centerY, -150 + 120); // -30°
+    this.drawRadialDivider(graphics, size, centerX, centerY, -150 + 240); // 90°
   }
 
   /**
-   * Draw a vertical section of the shield
-   * @param leftX - Left boundary (-1 to 1, where -1 is left edge, 1 is right edge)
-   * @param rightX - Right boundary (-1 to 1)
-   * @param topY - Top boundary (-1 to 1, where -1 is top, 1 is bottom)
-   * @param bottomY - Bottom boundary (-1 to 1)
+   * Draw a triangular section radiating from bottom center point
    */
-  private drawShieldSection(
+  private drawTriangularSection(
     graphics: PIXI.Graphics,
     size: number,
-    leftX: number,
-    rightX: number,
-    topY: number,
-    bottomY: number,
-    color: number
-  ): void {
-    const steps = 15;
-    const yStep = (bottomY - topY) / steps;
-
-    // Build the section polygon
-    const points: { x: number; y: number }[] = [];
-
-    // Left edge (top to bottom)
-    for (let i = 0; i <= steps; i++) {
-      const normalizedY = topY + (yStep * i);
-      const y = normalizedY * (size / 2);
-      const shieldWidth = this.getShieldWidthAtY(y, size);
-      const x = leftX * (shieldWidth / 2);
-      points.push({ x, y });
-    }
-
-    // Right edge (bottom to top)
-    for (let i = steps; i >= 0; i--) {
-      const normalizedY = topY + (yStep * i);
-      const y = normalizedY * (size / 2);
-      const shieldWidth = this.getShieldWidthAtY(y, size);
-      const x = rightX * (shieldWidth / 2);
-      points.push({ x, y });
-    }
-
-    // Draw polygon
-    if (points.length > 0) {
-      graphics.moveTo(points[0].x, points[0].y);
-      for (let i = 1; i < points.length; i++) {
-        graphics.lineTo(points[i].x, points[i].y);
-      }
-      graphics.lineTo(points[0].x, points[0].y);
-      graphics.fill({ color, alpha: 1.0 });
-    }
-  }
-
-  /**
-   * Draw a vertical divider line at normalized X position
-   */
-  private drawVerticalDivider(
-    graphics: PIXI.Graphics,
-    size: number,
-    normalizedX: number
+    centerX: number,
+    centerY: number,
+    startAngleDeg: number,
+    endAngleDeg: number,
+    lightColor: number,
+    darkColor: number
   ): void {
     const steps = 25;
     const points: { x: number; y: number }[] = [];
 
+    // Start at center point
+    points.push({ x: centerX, y: centerY });
+
+    // Trace along shield outline from startAngle to endAngle
     for (let i = 0; i <= steps; i++) {
-      const normalizedY = -1 + (2 * i / steps); // -1 to 1
-      const y = normalizedY * (size / 2);
-      const shieldWidth = this.getShieldWidthAtY(y, size);
-      const xPos = normalizedX * (shieldWidth / 2);
-      points.push({ x: xPos, y });
+      const t = i / steps;
+      const angleDeg = startAngleDeg + (endAngleDeg - startAngleDeg) * t;
+      const angleRad = (angleDeg * Math.PI) / 180;
+
+      // Get point on shield outline at this angle
+      const point = this.getShieldPointAtAngle(angleRad, size);
+      points.push(point);
     }
 
-    // Draw line
+    // Close back to center
+    points.push({ x: centerX, y: centerY });
+
+    // Draw the triangular section with gradient
     if (points.length > 0) {
       graphics.moveTo(points[0].x, points[0].y);
       for (let i = 1; i < points.length; i++) {
         graphics.lineTo(points[i].x, points[i].y);
       }
-      graphics.stroke({ width: 1.2, color: 0x000000, alpha: 0.85 });
+
+      // Use gradient color (interpolate based on position)
+      const midColor = this.interpolateColor(lightColor, darkColor, 0.5);
+      graphics.fill({ color: midColor, alpha: 1.0 });
     }
+  }
+
+  /**
+   * Get point on shield outline at given angle (radiating from center)
+   */
+  private getShieldPointAtAngle(angleRad: number, size: number): { x: number; y: number } {
+    // Calculate point on a circle
+    const circleX = Math.cos(angleRad) * (size / 2);
+    const circleY = Math.sin(angleRad) * (size / 2);
+
+    // Get shield width at this Y position
+    const shieldWidth = this.getShieldWidthAtY(circleY, size);
+
+    // Scale X to match shield width
+    const scale = shieldWidth / size;
+    const x = circleX * scale;
+    const y = circleY;
+
+    return { x, y };
+  }
+
+  /**
+   * Interpolate between two colors
+   */
+  private interpolateColor(color1: number, color2: number, t: number): number {
+    const r1 = (color1 >> 16) & 0xff;
+    const g1 = (color1 >> 8) & 0xff;
+    const b1 = color1 & 0xff;
+
+    const r2 = (color2 >> 16) & 0xff;
+    const g2 = (color2 >> 8) & 0xff;
+    const b2 = color2 & 0xff;
+
+    const r = Math.round(r1 + (r2 - r1) * t);
+    const g = Math.round(g1 + (g2 - g1) * t);
+    const b = Math.round(b1 + (b2 - b1) * t);
+
+    return (r << 16) | (g << 8) | b;
+  }
+
+  /**
+   * Draw a radial divider line from center point to shield edge
+   */
+  private drawRadialDivider(
+    graphics: PIXI.Graphics,
+    size: number,
+    centerX: number,
+    centerY: number,
+    angleDeg: number
+  ): void {
+    const angleRad = (angleDeg * Math.PI) / 180;
+
+    // Get point on shield outline
+    const edgePoint = this.getShieldPointAtAngle(angleRad, size);
+
+    // Draw line from center to edge
+    graphics.moveTo(centerX, centerY);
+    graphics.lineTo(edgePoint.x, edgePoint.y);
+    graphics.stroke({ width: 1.5, color: 0x000000, alpha: 0.9 });
   }
 
   /**
