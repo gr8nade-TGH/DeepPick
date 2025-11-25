@@ -125,8 +125,8 @@ export function registerIronmanArmorEffect(context: ItemRuntimeContext): void {
     // Only heal if shield is not at max HP
     const needsHealing = shield.currentHP < shield.maxHP;
 
-    // Heal shield using CastleHealthSystem
-    castleHealthSystem.healShield(castleId, hpPerDestroyedOrb);
+    // Heal shield using CastleHealthSystem (increaseMax = false to cap at max HP)
+    castleHealthSystem.healShield(castleId, hpPerDestroyedOrb, false);
 
     // Get castle for animation
     const castle = castleManager.getCastle(gameId, castleId);

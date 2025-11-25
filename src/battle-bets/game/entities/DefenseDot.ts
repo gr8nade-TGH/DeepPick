@@ -79,9 +79,9 @@ export class DefenseDot {
     const segmentAngle = (Math.PI * 2) / segmentCount;
     const gapAngle = 0.08; // Small gap between segments
 
-    // Outer glow (MUCH BRIGHTER and more visible)
-    const glowAlpha = 0.5 + (hpPercent * 0.4); // VERY bright glow (0.5 to 0.9)
-    const glowRadius = this.radius + 6; // Bigger glow
+    // Outer glow (brighter and more visible)
+    const glowAlpha = 0.4 + (hpPercent * 0.4); // Brighter glow (0.4 to 0.8)
+    const glowRadius = this.radius + 4; // Keep original glow size
     graphics.circle(0, 0, glowRadius);
     graphics.fill({ color: dotColor, alpha: glowAlpha });
 
