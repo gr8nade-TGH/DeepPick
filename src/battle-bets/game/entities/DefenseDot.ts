@@ -80,21 +80,19 @@ export class DefenseDot {
     const hpPercent = currentHP / this.maxHp;
     const size = this.radius * 2; // 16px
 
-    // Outer glow (team color, intensity based on HP)
-    const glowAlpha = 0.3 + (hpPercent * 0.4);
+    // Outer glow (team color, strong and visible)
+    const glowAlpha = 0.6 + (hpPercent * 0.4); // Much brighter glow
     this.drawShieldOutline(graphics, size + 4, size + 4, shieldColor, glowAlpha);
 
-    // Dark border
-    this.drawShieldOutline(graphics, size + 1, size + 1, 0x1a1a1a, 1.0);
+    // Thick dark border for definition
+    this.drawShieldOutline(graphics, size + 1.5, size + 1.5, 0x000000, 1.0);
 
-    // Main shield fill - brighter at full health
-    const fillColor = currentHP === 3 ? this.lightenColor(shieldColor, 1.3) :
-      currentHP === 2 ? shieldColor :
-        this.darkenColor(shieldColor, 0.7);
+    // Main shield fill - MUCH brighter and more saturated
+    const fillColor = currentHP === 3 ? this.lightenColor(shieldColor, 1.6) :
+      currentHP === 2 ? this.lightenColor(shieldColor, 1.3) :
+        shieldColor; // Even at 1/3 HP, use full team color
 
-    const fillAlpha = 1.0; // Keep solid
-
-    this.drawShieldOutline(graphics, size - 1, size - 1, fillColor, fillAlpha);
+    this.drawShieldOutline(graphics, size - 1, size - 1, fillColor, 1.0); // Always 100% opaque
 
     // Draw cracks based on damage
     if (currentHP === 2) {
