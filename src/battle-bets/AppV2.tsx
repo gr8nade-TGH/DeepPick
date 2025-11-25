@@ -515,7 +515,7 @@ function AppV2() {
                       q3EndTime={(game as any)._battleData?.q3EndTime}
                       q4EndTime={(game as any)._battleData?.q4EndTime}
                       winner={(game as any)._battleData?.winner}
-                      autoStart={index === 0 && showDebugControls}
+                      autoStart={false}
                     />
                   </div>
 
