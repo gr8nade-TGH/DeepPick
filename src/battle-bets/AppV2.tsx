@@ -84,6 +84,138 @@ function getBattleCategory(status: string): TabType {
   return 'LIVE';
 }
 
+// Helper function to generate test battles
+function generateTestBattles(): ApiBattle[] {
+  return [
+    {
+      id: 'test-battle-1',
+      game_id: 'test-game-1',
+      left_capper_id: 'test-capper-1',
+      right_capper_id: 'test-capper-2',
+      left_team: 'LAL',
+      right_team: 'MEM',
+      left_hp: 100,
+      right_hp: 100,
+      spread: -4.5,
+      status: 'q2_pending',
+      created_at: new Date().toISOString(),
+      game_start_time: new Date(Date.now() - 3600000).toISOString(),
+      left_capper: {
+        id: 'test-capper-1',
+        name: 'Test Capper 1',
+        displayName: 'TEST CAPPER 1',
+        colorTheme: '#552583'
+      },
+      right_capper: {
+        id: 'test-capper-2',
+        name: 'Test Capper 2',
+        displayName: 'TEST CAPPER 2',
+        colorTheme: '#5D76A9'
+      }
+    },
+    {
+      id: 'test-battle-2',
+      game_id: 'test-game-2',
+      left_capper_id: 'test-capper-3',
+      right_capper_id: 'test-capper-4',
+      left_team: 'BOS',
+      right_team: 'GSW',
+      left_hp: 100,
+      right_hp: 100,
+      spread: -2.5,
+      status: 'q3_pending',
+      created_at: new Date().toISOString(),
+      game_start_time: new Date(Date.now() - 7200000).toISOString(),
+      left_capper: {
+        id: 'test-capper-3',
+        name: 'Test Capper 3',
+        displayName: 'TEST CAPPER 3',
+        colorTheme: '#007A33'
+      },
+      right_capper: {
+        id: 'test-capper-4',
+        name: 'Test Capper 4',
+        displayName: 'TEST CAPPER 4',
+        colorTheme: '#1D428A'
+      }
+    }
+  ];
+}
+
+// Helper function to transform API battle to Game format
+function transformApiBattleToGame(battle: ApiBattle): Game {
+  return {
+    id: battle.id,
+    leftTeam: {
+      id: battle.left_team.toLowerCase(),
+      name: battle.game?.away_team?.name || battle.left_team,
+      abbreviation: battle.left_team,
+      color: parseInt((battle.left_capper?.colorTheme || '#3b82f6').replace('#', ''), 16),
+      colorHex: battle.left_capper?.colorTheme || '#3b82f6'
+    },
+    rightTeam: {
+      id: battle.right_team.toLowerCase(),
+      name: battle.game?.home_team?.name || battle.right_team,
+      abbreviation: battle.right_team,
+      color: parseInt((battle.right_capper?.colorTheme || '#ef4444').replace('#', ''), 16),
+      colorHex: battle.right_capper?.colorTheme || '#ef4444'
+    },
+    leftCapper: {
+      id: battle.left_capper_id,
+      name: battle.left_capper?.displayName || battle.left_capper?.name || 'Unknown',
+      favoriteTeam: {
+        id: battle.left_team.toLowerCase(),
+        name: battle.game?.away_team?.name || battle.left_team,
+        abbreviation: battle.left_team,
+        color: parseInt((battle.left_capper?.colorTheme || '#3b82f6').replace('#', ''), 16),
+        colorHex: battle.left_capper?.colorTheme || '#3b82f6'
+      },
+      health: battle.left_hp || 100,
+      maxHealth: 100,
+      level: 1,
+      experience: 0,
+      leaderboardRank: 1,
+      teamRecords: [],
+      equippedItems: { slot1: null, slot2: null, slot3: null }
+    },
+    rightCapper: {
+      id: battle.right_capper_id,
+      name: battle.right_capper?.displayName || battle.right_capper?.name || 'Unknown',
+      favoriteTeam: {
+        id: battle.right_team.toLowerCase(),
+        name: battle.game?.home_team?.name || battle.right_team,
+        abbreviation: battle.right_team,
+        color: parseInt((battle.right_capper?.colorTheme || '#ef4444').replace('#', ''), 16),
+        colorHex: battle.right_capper?.colorTheme || '#ef4444'
+      },
+      health: battle.right_hp || 100,
+      maxHealth: 100,
+      level: 1,
+      experience: 0,
+      leaderboardRank: 2,
+      teamRecords: [],
+      equippedItems: { slot1: null, slot2: null, slot3: null }
+    },
+    currentQuarter: 0,
+    spread: battle.spread,
+    gameDate: battle.game?.game_date || '',
+    gameTime: '',
+    leftScore: 0,
+    rightScore: 0,
+    status: mapBattleStatusToGameStatus(battle.status),
+    _battleData: {
+      status: battle.status,
+      gameStartTime: battle.game_start_time,
+      q1EndTime: battle.q1_end_time,
+      q2EndTime: battle.q2_end_time,
+      halftimeEndTime: battle.halftime_end_time,
+      q3EndTime: battle.q3_end_time,
+      q4EndTime: battle.q4_end_time,
+      winner: battle.winner
+    }
+  };
+}
+
 function AppV2() {
   const [battles, setBattles] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
@@ -245,137 +377,6 @@ function AppV2() {
       </div>
     );
   }
-
-  // Helper functions from original App.tsx
-  const generateTestBattles = (): ApiBattle[] => {
-    return [
-      {
-        id: 'test-battle-1',
-        game_id: 'test-game-1',
-        left_capper_id: 'test-capper-1',
-        right_capper_id: 'test-capper-2',
-        left_team: 'LAL',
-        right_team: 'MEM',
-        left_hp: 100,
-        right_hp: 100,
-        spread: -4.5,
-        status: 'q2_pending',
-        created_at: new Date().toISOString(),
-        game_start_time: new Date(Date.now() - 3600000).toISOString(),
-        left_capper: {
-          id: 'test-capper-1',
-          name: 'Test Capper 1',
-          displayName: 'TEST CAPPER 1',
-          colorTheme: '#552583'
-        },
-        right_capper: {
-          id: 'test-capper-2',
-          name: 'Test Capper 2',
-          displayName: 'TEST CAPPER 2',
-          colorTheme: '#5D76A9'
-        }
-      },
-      {
-        id: 'test-battle-2',
-        game_id: 'test-game-2',
-        left_capper_id: 'test-capper-3',
-        right_capper_id: 'test-capper-4',
-        left_team: 'BOS',
-        right_team: 'GSW',
-        left_hp: 100,
-        right_hp: 100,
-        spread: -2.5,
-        status: 'q3_pending',
-        created_at: new Date().toISOString(),
-        game_start_time: new Date(Date.now() - 7200000).toISOString(),
-        left_capper: {
-          id: 'test-capper-3',
-          name: 'Test Capper 3',
-          displayName: 'TEST CAPPER 3',
-          colorTheme: '#007A33'
-        },
-        right_capper: {
-          id: 'test-capper-4',
-          name: 'Test Capper 4',
-          displayName: 'TEST CAPPER 4',
-          colorTheme: '#1D428A'
-        }
-      }
-    ];
-  };
-
-  const transformApiBattleToGame = (battle: ApiBattle): Game => {
-    return {
-      id: battle.id,
-      leftTeam: {
-        id: battle.left_team.toLowerCase(),
-        name: battle.game?.away_team?.name || battle.left_team,
-        abbreviation: battle.left_team,
-        color: parseInt((battle.left_capper?.colorTheme || '#3b82f6').replace('#', ''), 16),
-        colorHex: battle.left_capper?.colorTheme || '#3b82f6'
-      },
-      rightTeam: {
-        id: battle.right_team.toLowerCase(),
-        name: battle.game?.home_team?.name || battle.right_team,
-        abbreviation: battle.right_team,
-        color: parseInt((battle.right_capper?.colorTheme || '#ef4444').replace('#', ''), 16),
-        colorHex: battle.right_capper?.colorTheme || '#ef4444'
-      },
-      leftCapper: {
-        id: battle.left_capper_id,
-        name: battle.left_capper?.displayName || battle.left_capper?.name || 'Unknown',
-        favoriteTeam: {
-          id: battle.left_team.toLowerCase(),
-          name: battle.game?.away_team?.name || battle.left_team,
-          abbreviation: battle.left_team,
-          color: parseInt((battle.left_capper?.colorTheme || '#3b82f6').replace('#', ''), 16),
-          colorHex: battle.left_capper?.colorTheme || '#3b82f6'
-        },
-        health: battle.left_hp || 100,
-        maxHealth: 100,
-        level: 1,
-        experience: 0,
-        leaderboardRank: 1,
-        teamRecords: [],
-        equippedItems: { slot1: null, slot2: null, slot3: null }
-      },
-      rightCapper: {
-        id: battle.right_capper_id,
-        name: battle.right_capper?.displayName || battle.right_capper?.name || 'Unknown',
-        favoriteTeam: {
-          id: battle.right_team.toLowerCase(),
-          name: battle.game?.home_team?.name || battle.right_team,
-          abbreviation: battle.right_team,
-          color: parseInt((battle.right_capper?.colorTheme || '#ef4444').replace('#', ''), 16),
-          colorHex: battle.right_capper?.colorTheme || '#ef4444'
-        },
-        health: battle.right_hp || 100,
-        maxHealth: 100,
-        level: 1,
-        experience: 0,
-        leaderboardRank: 2,
-        teamRecords: [],
-        equippedItems: { slot1: null, slot2: null, slot3: null }
-      },
-      currentQuarter: 0,
-      spread: battle.spread,
-      gameDate: battle.game?.game_date || '',
-      gameTime: '',
-      leftScore: 0,
-      rightScore: 0,
-      status: mapBattleStatusToGameStatus(battle.status),
-      _battleData: {
-        status: battle.status,
-        gameStartTime: battle.game_start_time,
-        q1EndTime: battle.q1_end_time,
-        q2EndTime: battle.q2_end_time,
-        halftimeEndTime: battle.halftime_end_time,
-        q3EndTime: battle.q3_end_time,
-        q4EndTime: battle.q4_end_time,
-        winner: battle.winner
-      }
-    };
-  };
 
   return (
     <div className="app" style={{ background: '#0a0e1a', minHeight: '100vh', padding: '20px' }}>
