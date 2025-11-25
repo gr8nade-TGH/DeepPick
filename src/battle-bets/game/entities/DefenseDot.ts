@@ -69,7 +69,10 @@ export class DefenseDot {
   }
 
   /**
-   * Draw HP segments as a shield (using original pie-chart approach but shield-shaped)
+   * Draw HP segments as a shield with simple vertical fill
+   * - 3/3 HP: Shield 100% filled
+   * - 2/3 HP: Shield 66% filled (bottom 2/3)
+   * - 1/3 HP: Shield 33% filled (bottom 1/3, just a sliver)
    */
   private drawHPSegments(graphics: PIXI.Graphics, shieldColor: number, currentHP: number): void {
     graphics.clear();
@@ -87,117 +90,85 @@ export class DefenseDot {
     // Lighter teal border
     this.drawShieldOutline(graphics, size, size, 0x2a9d8f, 1.0);
 
-    // Draw HP pie segments inside shield shape
-    this.drawShieldPieSegments(graphics, size - 2, shieldColor, currentHP);
+    // Draw vertical fill inside shield shape
+    this.drawShieldVerticalFill(graphics, size - 2, shieldColor, currentHP);
   }
 
   /**
-   * Draw 3 triangular sections radiating from bottom center point (like reference image)
+   * Draw vertical fill inside shield shape
+   * Simple approach: fill from bottom to top based on HP percentage
    */
-  private drawShieldPieSegments(
+  private drawShieldVerticalFill(
     graphics: PIXI.Graphics,
     size: number,
     baseColor: number,
     currentHP: number
   ): void {
-    // Bottom center point where all sections meet
-    const bottomY = size / 2;
-    const centerX = 0;
-    const centerY = bottomY * 0.85; // Slightly above actual bottom for better look
+    const fillPercent = currentHP / this.maxHp; // 1.0, 0.66, or 0.33
+    const halfSize = size / 2;
 
-    // Draw 3 triangular sections radiating from bottom center
-    // Section 0: Left triangle
-    // Section 1: Center triangle
-    // Section 2: Right triangle
-    for (let sectionIndex = 0; sectionIndex < 3; sectionIndex++) {
-      const isFilled = sectionIndex < currentHP;
+    // First, draw the empty (dark) shield background
+    this.drawShieldShape(graphics, size, 0x1a1a1a, 1.0);
 
-      // Calculate angle range for this section (120 degrees each)
-      // Start from left (-150°) and go clockwise
-      const startAngle = -150 + (sectionIndex * 120); // -150°, -30°, 90°
-      const endAngle = startAngle + 120;
+    // Then, draw the filled portion clipped to the bottom X% of the shield
+    // We'll draw horizontal slices from bottom to top
+    const steps = 50; // More steps = smoother fill
+    const lightColor = this.lightenColor(baseColor, 1.2);
+    const darkColor = this.darkenColor(baseColor, 0.8);
 
-      // Draw triangular section
-      if (isFilled) {
-        const lightColor = this.lightenColor(baseColor, 1.3);
-        const darkColor = this.darkenColor(baseColor, 0.7);
+    for (let i = 0; i < steps; i++) {
+      const t = i / steps; // 0.0 to 1.0 (bottom to top)
 
-        // Draw with gradient (lighter at top, darker at bottom)
-        this.drawTriangularSection(graphics, size, centerX, centerY, startAngle, endAngle, lightColor, darkColor);
-      } else {
-        // Empty section - dark
-        this.drawTriangularSection(graphics, size, centerX, centerY, startAngle, endAngle, 0x1a1a1a, 0x0a0a0a);
-      }
+      // Only draw if this slice is within the filled percentage
+      // fillPercent = 1.0 means draw all slices
+      // fillPercent = 0.66 means draw bottom 66% of slices
+      // fillPercent = 0.33 means draw bottom 33% of slices
+      if (t > fillPercent) continue;
+
+      // Y position: -halfSize (top) to +halfSize (bottom)
+      const y = halfSize - (t * size); // Start from bottom, go up
+      const nextY = halfSize - ((i + 1) / steps * size);
+
+      // Get shield width at this Y position
+      const width = this.getShieldWidthAtY(y, size);
+      const nextWidth = this.getShieldWidthAtY(nextY, size);
+
+      // Interpolate color from dark (bottom) to light (top)
+      const color = this.interpolateColor(darkColor, lightColor, t);
+
+      // Draw horizontal slice
+      graphics.moveTo(-width / 2, y);
+      graphics.lineTo(width / 2, y);
+      graphics.lineTo(nextWidth / 2, nextY);
+      graphics.lineTo(-nextWidth / 2, nextY);
+      graphics.lineTo(-width / 2, y);
+      graphics.fill({ color, alpha: 1.0 });
     }
 
-    // Draw divider lines from center to top edge
-    this.drawRadialDivider(graphics, size, centerX, centerY, -150 + 120); // -30°
-    this.drawRadialDivider(graphics, size, centerX, centerY, -150 + 240); // 90°
+    // Draw horizontal divider lines at 33% and 66% to show HP segments
+    this.drawHorizontalDivider(graphics, size, 0.33); // 1/3 mark
+    this.drawHorizontalDivider(graphics, size, 0.66); // 2/3 mark
   }
 
   /**
-   * Draw a triangular section radiating from bottom center point
+   * Draw the full shield shape (used for background)
    */
-  private drawTriangularSection(
-    graphics: PIXI.Graphics,
-    size: number,
-    centerX: number,
-    centerY: number,
-    startAngleDeg: number,
-    endAngleDeg: number,
-    lightColor: number,
-    darkColor: number
-  ): void {
-    const steps = 25;
-    const points: { x: number; y: number }[] = [];
+  private drawShieldShape(graphics: PIXI.Graphics, size: number, color: number, alpha: number): void {
+    const halfSize = size / 2;
+    const steps = 50;
 
-    // Start at center point
-    points.push({ x: centerX, y: centerY });
+    graphics.moveTo(0, -halfSize); // Start at top center
 
-    // Trace along shield outline from startAngle to endAngle
+    // Draw shield outline
     for (let i = 0; i <= steps; i++) {
       const t = i / steps;
-      const angleDeg = startAngleDeg + (endAngleDeg - startAngleDeg) * t;
-      const angleRad = (angleDeg * Math.PI) / 180;
-
-      // Get point on shield outline at this angle
-      const point = this.getShieldPointAtAngle(angleRad, size);
-      points.push(point);
+      const y = -halfSize + (t * size); // -halfSize to +halfSize
+      const width = this.getShieldWidthAtY(y, size);
+      const x = (i < steps / 2) ? -width / 2 : width / 2; // Left side then right side
+      graphics.lineTo(x, y);
     }
 
-    // Close back to center
-    points.push({ x: centerX, y: centerY });
-
-    // Draw the triangular section with gradient
-    if (points.length > 0) {
-      graphics.moveTo(points[0].x, points[0].y);
-      for (let i = 1; i < points.length; i++) {
-        graphics.lineTo(points[i].x, points[i].y);
-      }
-
-      // Use gradient color (interpolate based on position)
-      const midColor = this.interpolateColor(lightColor, darkColor, 0.5);
-      graphics.fill({ color: midColor, alpha: 1.0 });
-    }
-  }
-
-  /**
-   * Get point on shield outline at given angle (radiating from center)
-   */
-  private getShieldPointAtAngle(angleRad: number, size: number): { x: number; y: number } {
-    // Calculate point on a circle
-    const circleX = Math.cos(angleRad) * (size / 2);
-    const circleY = Math.sin(angleRad) * (size / 2);
-
-    // Get shield width at this Y position
-    const shieldWidth = this.getShieldWidthAtY(circleY, size);
-
-    // Scale X to match shield width
-    const scale = shieldWidth / size;
-    const x = circleX * scale;
-    const y = circleY;
-
-    return { x, y };
+    graphics.fill({ color, alpha });
   }
 
   /**
@@ -220,24 +191,23 @@ export class DefenseDot {
   }
 
   /**
-   * Draw a radial divider line from center point to shield edge
+   * Draw a horizontal divider line across the shield at a given fill percentage
    */
-  private drawRadialDivider(
+  private drawHorizontalDivider(
     graphics: PIXI.Graphics,
     size: number,
-    centerX: number,
-    centerY: number,
-    angleDeg: number
+    fillPercent: number
   ): void {
-    const angleRad = (angleDeg * Math.PI) / 180;
+    const halfSize = size / 2;
+    const y = halfSize - (fillPercent * size); // Convert fill percent to Y position
 
-    // Get point on shield outline
-    const edgePoint = this.getShieldPointAtAngle(angleRad, size);
+    // Get shield width at this Y position
+    const width = this.getShieldWidthAtY(y, size);
 
-    // Draw line from center to edge
-    graphics.moveTo(centerX, centerY);
-    graphics.lineTo(edgePoint.x, edgePoint.y);
-    graphics.stroke({ width: 1.5, color: 0x000000, alpha: 0.9 });
+    // Draw horizontal line
+    graphics.moveTo(-width / 2, y);
+    graphics.lineTo(width / 2, y);
+    graphics.stroke({ width: 1.5, color: 0x000000, alpha: 0.6 });
   }
 
   /**
