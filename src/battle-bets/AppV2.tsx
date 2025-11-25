@@ -1,0 +1,565 @@
+/**
+ * Battle Arena V2 - Tabbed Interface Test Page
+ * NEW: Tab filtering (ALL, LIVE, UPCOMING, FINAL)
+ * Reuses all existing battle components without modification
+ */
+
+import { useEffect, useState, useMemo } from 'react';
+import { useMultiGameStore } from './store/multiGameStore';
+import { GameErrorBoundary } from './components/ErrorBoundary';
+import { BattleCanvas } from './components/game/BattleCanvas';
+import { GameInfoBar } from './components/game/GameInfoBar';
+import { InventoryBar } from './components/game/InventoryBar';
+import { CopyDebugButton } from './components/debug/CopyDebugButton';
+import { QuarterDebugControls } from './components/debug/QuarterDebugControls';
+import { PreGameItemSelector } from './components/debug/PreGameItemSelector';
+import { debugLogger } from './game/debug/DebugLogger';
+import type { Game, GameStatus } from './types/game';
+import './App.css';
+
+// Import all the helper functions from original App.tsx
+function mapBattleStatusToGameStatus(status: string): GameStatus {
+  switch (status) {
+    case 'scheduled':
+      return 'SCHEDULED';
+    case 'q1_pending':
+    case 'q1_complete':
+      return '1Q';
+    case 'q2_pending':
+    case 'q2_complete':
+      return '2Q';
+    case 'halftime':
+      return '2Q';
+    case 'q3_pending':
+    case 'q3_complete':
+      return '3Q';
+    case 'q4_pending':
+    case 'q4_complete':
+      return '4Q';
+    case 'final':
+    case 'complete':
+      return 'FINAL';
+    default:
+      return 'SCHEDULED';
+  }
+}
+
+// API Battle response type (same as original)
+interface ApiBattle {
+  id: string;
+  game_id: string;
+  left_capper_id: string;
+  right_capper_id: string;
+  left_team: string;
+  right_team: string;
+  left_hp?: number;
+  right_hp?: number;
+  spread: number;
+  status: string;
+  created_at: string;
+  game_start_time?: string;
+  q1_end_time?: string;
+  q2_end_time?: string;
+  halftime_end_time?: string;
+  q3_end_time?: string;
+  q4_end_time?: string;
+  winner?: 'left' | 'right' | null;
+  game?: {
+    home_team?: { name: string; abbreviation: string };
+    away_team?: { name: string; abbreviation: string };
+    game_date?: string;
+  };
+  left_capper?: any;
+  right_capper?: any;
+}
+
+// Tab types
+type TabType = 'ALL' | 'LIVE' | 'UPCOMING' | 'FINAL';
+
+// Battle status categories
+function getBattleCategory(status: string): TabType {
+  if (status === 'scheduled') return 'UPCOMING';
+  if (status === 'final' || status === 'complete') return 'FINAL';
+  // q1_pending, q1_complete, q2_pending, etc. are LIVE
+  return 'LIVE';
+}
+
+function AppV2() {
+  const [battles, setBattles] = useState<Game[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<{ battleId: string; side: 'left' | 'right'; slot: number } | null>(null);
+  const [showDebugControls, setShowDebugControls] = useState(false);
+
+  // NEW: Tab state
+  const [activeTab, setActiveTab] = useState<TabType>('ALL');
+
+  // Check URL params for debug and testMode
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const debug = params.get('debug') === '1';
+    const testMode = params.get('testMode') === '1';
+
+    setShowDebugControls(debug);
+
+    if (testMode) {
+      console.log('🧪 [AppV2] Test mode enabled - using fake battles');
+      debugLogger.log('Test mode enabled');
+    }
+  }, []);
+
+  // Fetch battles from API
+  const fetchBattles = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const params = new URLSearchParams(window.location.search);
+      const testMode = params.get('testMode') === '1';
+
+      let apiBattles: ApiBattle[] = [];
+
+      if (testMode) {
+        // Use fake test battles
+        apiBattles = generateTestBattles();
+      } else {
+        // Fetch real battles from API
+        const response = await fetch('/api/battle-bets/battles?limit=20');
+        if (!response.ok) {
+          throw new Error(`Failed to fetch battles: ${response.statusText}`);
+        }
+        const data = await response.json();
+        apiBattles = data.battles || [];
+      }
+
+      // Transform API battles to Game format (same as original App.tsx)
+      const transformedBattles: Game[] = apiBattles.map((battle) => transformApiBattleToGame(battle));
+
+      setBattles(transformedBattles);
+      setLoading(false);
+    } catch (err) {
+      console.error('[AppV2] Error fetching battles:', err);
+      setError(err instanceof Error ? err.message : 'Unknown error');
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBattles();
+  }, []);
+
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchBattles();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // NEW: Filter battles by active tab
+  const filteredBattles = useMemo(() => {
+    if (activeTab === 'ALL') return battles;
+
+    return battles.filter(battle => {
+      const battleData = (battle as any)._battleData;
+      const status = battleData?.status || 'scheduled';
+      const category = getBattleCategory(status);
+      return category === activeTab;
+    });
+  }, [battles, activeTab]);
+
+  // NEW: Calculate tab counts
+  const tabCounts = useMemo(() => {
+    const counts = {
+      ALL: battles.length,
+      LIVE: 0,
+      UPCOMING: 0,
+      FINAL: 0
+    };
+
+    battles.forEach(battle => {
+      const battleData = (battle as any)._battleData;
+      const status = battleData?.status || 'scheduled';
+      const category = getBattleCategory(status);
+      counts[category]++;
+    });
+
+    return counts;
+  }, [battles]);
+
+  // NEW: Auto-switch to LIVE tab when battles start
+  useEffect(() => {
+    if (tabCounts.LIVE > 0 && activeTab === 'UPCOMING') {
+      setActiveTab('LIVE');
+      console.log('🔴 [AppV2] Auto-switched to LIVE tab - battle started!');
+    }
+  }, [tabCounts.LIVE]);
+
+  if (loading && battles.length === 0) {
+    return (
+      <div className="app">
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          color: 'white',
+          fontSize: '24px'
+        }}>
+          Loading battles...
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="app">
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          color: 'white',
+          gap: '20px'
+        }}>
+          <div style={{ fontSize: '24px', color: '#ef4444' }}>Error loading battles</div>
+          <div style={{ fontSize: '16px' }}>{error}</div>
+          <button
+            onClick={() => fetchBattles()}
+            style={{
+              padding: '10px 20px',
+              background: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '16px'
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Helper functions from original App.tsx
+  const generateTestBattles = (): ApiBattle[] => {
+    return [
+      {
+        id: 'test-battle-1',
+        game_id: 'test-game-1',
+        left_capper_id: 'test-capper-1',
+        right_capper_id: 'test-capper-2',
+        left_team: 'LAL',
+        right_team: 'MEM',
+        left_hp: 100,
+        right_hp: 100,
+        spread: -4.5,
+        status: 'q2_pending',
+        created_at: new Date().toISOString(),
+        game_start_time: new Date(Date.now() - 3600000).toISOString(),
+        left_capper: {
+          id: 'test-capper-1',
+          name: 'Test Capper 1',
+          displayName: 'TEST CAPPER 1',
+          colorTheme: '#552583'
+        },
+        right_capper: {
+          id: 'test-capper-2',
+          name: 'Test Capper 2',
+          displayName: 'TEST CAPPER 2',
+          colorTheme: '#5D76A9'
+        }
+      },
+      {
+        id: 'test-battle-2',
+        game_id: 'test-game-2',
+        left_capper_id: 'test-capper-3',
+        right_capper_id: 'test-capper-4',
+        left_team: 'BOS',
+        right_team: 'GSW',
+        left_hp: 100,
+        right_hp: 100,
+        spread: -2.5,
+        status: 'q3_pending',
+        created_at: new Date().toISOString(),
+        game_start_time: new Date(Date.now() - 7200000).toISOString(),
+        left_capper: {
+          id: 'test-capper-3',
+          name: 'Test Capper 3',
+          displayName: 'TEST CAPPER 3',
+          colorTheme: '#007A33'
+        },
+        right_capper: {
+          id: 'test-capper-4',
+          name: 'Test Capper 4',
+          displayName: 'TEST CAPPER 4',
+          colorTheme: '#1D428A'
+        }
+      }
+    ];
+  };
+
+  const transformApiBattleToGame = (battle: ApiBattle): Game => {
+    return {
+      id: battle.id,
+      leftTeam: {
+        id: battle.left_team.toLowerCase(),
+        name: battle.game?.away_team?.name || battle.left_team,
+        abbreviation: battle.left_team,
+        color: parseInt((battle.left_capper?.colorTheme || '#3b82f6').replace('#', ''), 16),
+        colorHex: battle.left_capper?.colorTheme || '#3b82f6'
+      },
+      rightTeam: {
+        id: battle.right_team.toLowerCase(),
+        name: battle.game?.home_team?.name || battle.right_team,
+        abbreviation: battle.right_team,
+        color: parseInt((battle.right_capper?.colorTheme || '#ef4444').replace('#', ''), 16),
+        colorHex: battle.right_capper?.colorTheme || '#ef4444'
+      },
+      leftCapper: {
+        id: battle.left_capper_id,
+        name: battle.left_capper?.displayName || battle.left_capper?.name || 'Unknown',
+        favoriteTeam: {
+          id: battle.left_team.toLowerCase(),
+          name: battle.game?.away_team?.name || battle.left_team,
+          abbreviation: battle.left_team,
+          color: parseInt((battle.left_capper?.colorTheme || '#3b82f6').replace('#', ''), 16),
+          colorHex: battle.left_capper?.colorTheme || '#3b82f6'
+        },
+        health: battle.left_hp || 100,
+        maxHealth: 100,
+        level: 1,
+        experience: 0,
+        leaderboardRank: 1,
+        teamRecords: [],
+        equippedItems: { slot1: null, slot2: null, slot3: null }
+      },
+      rightCapper: {
+        id: battle.right_capper_id,
+        name: battle.right_capper?.displayName || battle.right_capper?.name || 'Unknown',
+        favoriteTeam: {
+          id: battle.right_team.toLowerCase(),
+          name: battle.game?.home_team?.name || battle.right_team,
+          abbreviation: battle.right_team,
+          color: parseInt((battle.right_capper?.colorTheme || '#ef4444').replace('#', ''), 16),
+          colorHex: battle.right_capper?.colorTheme || '#ef4444'
+        },
+        health: battle.right_hp || 100,
+        maxHealth: 100,
+        level: 1,
+        experience: 0,
+        leaderboardRank: 2,
+        teamRecords: [],
+        equippedItems: { slot1: null, slot2: null, slot3: null }
+      },
+      currentQuarter: 0,
+      spread: battle.spread,
+      gameDate: battle.game?.game_date || '',
+      gameTime: '',
+      leftScore: 0,
+      rightScore: 0,
+      status: mapBattleStatusToGameStatus(battle.status),
+      _battleData: {
+        status: battle.status,
+        gameStartTime: battle.game_start_time,
+        q1EndTime: battle.q1_end_time,
+        q2EndTime: battle.q2_end_time,
+        halftimeEndTime: battle.halftime_end_time,
+        q3EndTime: battle.q3_end_time,
+        q4EndTime: battle.q4_end_time,
+        winner: battle.winner
+      }
+    };
+  };
+
+  return (
+    <div className="app" style={{ background: '#0a0e1a', minHeight: '100vh', padding: '20px' }}>
+      <main style={{ maxWidth: '1400px', margin: '0 auto' }}>
+        {/* NEW: Tab Navigation */}
+        <div style={{
+          display: 'flex',
+          gap: '10px',
+          marginBottom: '30px',
+          borderBottom: '2px solid rgba(139, 92, 246, 0.2)',
+          paddingBottom: '10px'
+        }}>
+          {(['ALL', 'LIVE', 'UPCOMING', 'FINAL'] as TabType[]).map(tab => {
+            const isActive = activeTab === tab;
+            const count = tabCounts[tab];
+            const isLive = tab === 'LIVE' && count > 0;
+
+            return (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                style={{
+                  padding: '12px 24px',
+                  background: isActive ? 'rgba(139, 92, 246, 0.3)' : 'rgba(15, 23, 42, 0.6)',
+                  border: isActive ? '2px solid rgba(139, 92, 246, 0.8)' : '2px solid rgba(139, 92, 246, 0.2)',
+                  borderRadius: '8px',
+                  color: 'white',
+                  fontSize: '16px',
+                  fontWeight: isActive ? 'bold' : 'normal',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                {/* Live indicator dot */}
+                {isLive && (
+                  <span style={{
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    background: '#ef4444',
+                    animation: 'pulse 2s infinite',
+                    boxShadow: '0 0 8px #ef4444'
+                  }} />
+                )}
+
+                {tab}
+
+                {/* Count badge */}
+                <span style={{
+                  background: isActive ? 'rgba(139, 92, 246, 0.8)' : 'rgba(139, 92, 246, 0.4)',
+                  padding: '2px 8px',
+                  borderRadius: '12px',
+                  fontSize: '14px',
+                  fontWeight: 'bold'
+                }}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Empty state */}
+        {filteredBattles.length === 0 && (
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '60px 20px',
+            color: 'rgba(255, 255, 255, 0.6)',
+            fontSize: '18px'
+          }}>
+            <div style={{ fontSize: '48px', marginBottom: '20px' }}>⚔️</div>
+            <div>No {activeTab.toLowerCase()} battles</div>
+          </div>
+        )}
+
+        {/* Battles Grid - Vertical Stack (same as original) */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+          {filteredBattles.map((game, index) => (
+            <div
+              key={game.id}
+              style={{
+                background: 'rgba(15, 23, 42, 0.9)',
+                border: '2px solid rgba(139, 92, 246, 0.3)',
+                borderRadius: '12px',
+                overflow: 'hidden',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)'
+              }}
+            >
+              {/* Game Info Bar */}
+              <div style={{ display: 'flex', justifyContent: 'center', background: '#020617' }}>
+                <GameInfoBar
+                  game={game}
+                  gameStartTime={(game as any)._battleData?.gameStartTime}
+                  q1EndTime={(game as any)._battleData?.q1EndTime}
+                  q2EndTime={(game as any)._battleData?.q2EndTime}
+                  q3EndTime={(game as any)._battleData?.q3EndTime}
+                  q4EndTime={(game as any)._battleData?.q4EndTime}
+                />
+              </div>
+
+              {/* Battle Game Layout */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                padding: '10px 0 20px',
+                background: '#020617'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', width: '1300px', maxWidth: '100%' }}>
+                  {/* Left Inventory Bar */}
+                  <InventoryBar
+                    battleId={game.id}
+                    side="left"
+                    onSlotClick={(side, slot) => {
+                      setSelectedSlot({ battleId: game.id, side, slot });
+                    }}
+                  />
+
+                  {/* Battle Canvas */}
+                  <div style={{ width: '1170px', height: '200px', background: '#0a0e1a', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                    <BattleCanvas
+                      battleId={game.id}
+                      game={game}
+                      status={(game as any)._battleData?.status}
+                      gameStartTime={(game as any)._battleData?.gameStartTime}
+                      q1EndTime={(game as any)._battleData?.q1EndTime}
+                      q2EndTime={(game as any)._battleData?.q2EndTime}
+                      halftimeEndTime={(game as any)._battleData?.halftimeEndTime}
+                      q3EndTime={(game as any)._battleData?.q3EndTime}
+                      q4EndTime={(game as any)._battleData?.q4EndTime}
+                      winner={(game as any)._battleData?.winner}
+                      autoStart={index === 0 && showDebugControls}
+                    />
+                  </div>
+
+                  {/* Right Inventory Bar */}
+                  <InventoryBar
+                    battleId={game.id}
+                    side="right"
+                    onSlotClick={(side, slot) => {
+                      setSelectedSlot({ battleId: game.id, side, slot });
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Debug Controls (same as original) */}
+        {showDebugControls && (
+          <>
+            <CopyDebugButton />
+            <QuarterDebugControls />
+          </>
+        )}
+
+        {/* Pre-Game Item Selector Modal (same as original) */}
+        {selectedSlot && (
+          <PreGameItemSelector
+            battleId={selectedSlot.battleId}
+            side={selectedSlot.side}
+            slot={selectedSlot.slot}
+            onClose={() => setSelectedSlot(null)}
+          />
+        )}
+      </main>
+
+      {/* Pulse animation for LIVE indicator */}
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+export default AppV2;

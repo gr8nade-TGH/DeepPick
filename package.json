@@ -17,7 +17,9 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "build:battle-game": "vite build --config vite.battle-bets.config.ts",
-    "dev:battle-game": "vite --config vite.battle-bets.config.ts"
+    "dev:battle-game": "vite --config vite.battle-bets.config.ts",
+    "build:battle-game-v2": "vite build --config vite.battle-bets-v2.config.ts",
+    "dev:battle-game-v2": "vite --config vite.battle-bets-v2.config.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.2",
