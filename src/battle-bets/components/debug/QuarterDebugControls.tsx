@@ -50,7 +50,11 @@ export const QuarterDebugControls: React.FC<QuarterDebugControlsProps> = ({ batt
     setLastAction('Starting game...');
 
     try {
-      // STEP 1: Activate equipped items BEFORE battle starts
+      // STEP 1: Deactivate any existing items for this battle (prevent duplicates)
+      console.log(`🧹 [PreGame] Deactivating existing items for battle ${battleId}`);
+      itemEffectRegistry.deactivateGame(battleId);
+
+      // STEP 2: Activate equipped items BEFORE battle starts
       console.log(`🎮🎮🎮 [PreGame] Activating equipped items for battle ${battleId}`);
 
       // Get equipped items from battle state (saved by PreGameItemSelector)
@@ -93,13 +97,13 @@ export const QuarterDebugControls: React.FC<QuarterDebugControlsProps> = ({ batt
 
       console.log(`✅✅✅ [PreGame] All items activated!`);
 
-      // STEP 2: Update status to Q1
+      // STEP 3: Update status to Q1
       useMultiGameStore.getState().updateGameStatus(battleId, '1Q');
       useMultiGameStore.getState().setCurrentQuarter(battleId, 1);
 
       setLastAction('⏳ Simulating Q1...');
 
-      // STEP 3: Simulate Q1 (this will generate stats and fire projectiles)
+      // STEP 4: Simulate Q1 (this will generate stats and fire projectiles)
       await simulateQuarter(battleId, 1);
 
       // Check if game ended

@@ -109,24 +109,18 @@ export function registerIronmanArmorEffect(context: ItemRuntimeContext): void {
       return;
     }
 
-    // Check if shield is still active
-    const shieldActive = itemEffectRegistry.getCounter(itemInstanceId, 'shieldActive');
-    if (!shieldActive) {
-      console.log(`🛡️ [IronmanArmor] Shield already broken, ignoring orb destruction`);
-      return;
-    }
-
-    console.log(`✅✅✅ [IronmanArmor] SHIELD SHOULD HEAL NOW! Defense orb destroyed on ${side} ${payload.lane}, adding +${hpPerDestroyedOrb} HP to shield`);
-
     // Get castle ID from gameId and side
     const castleId = `${gameId}-${side}`;
 
-    // Get shield state BEFORE healing to check if it needs healing
+    // Check if shield is still active using CastleHealthSystem (source of truth)
     const shield = castleHealthSystem.getShield(castleId);
     if (!shield || !shield.isActive) {
-      console.log(`🛡️ [IronmanArmor] Shield not active, ignoring orb destruction`);
+      console.log(`🛡️ [IronmanArmor] Shield not active (broken or doesn't exist), ignoring orb destruction`);
       return;
     }
+
+    console.log(`✅✅✅ [IronmanArmor] SHIELD SHOULD HEAL NOW! Defense orb destroyed on ${side} ${payload.lane}, adding +${hpPerDestroyedOrb} HP to shield (current: ${shield.currentHP}/${shield.maxHP})`);
+
 
     // Only heal if shield is not at max HP
     const needsHealing = shield.currentHP < shield.maxHP;
