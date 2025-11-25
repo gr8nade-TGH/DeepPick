@@ -69,10 +69,9 @@ export class DefenseDot {
   }
 
   /**
-   * Draw HP segments as a shield with simple vertical fill
-   * - 3/3 HP: Shield 100% filled
-   * - 2/3 HP: Shield 66% filled (bottom 2/3)
-   * - 1/3 HP: Shield 33% filled (bottom 1/3, just a sliver)
+   * Draw HP segments as a shield with simple solid fill
+   * - Brightness/opacity changes based on HP
+   * - Clean, simple approach that can't fail
    */
   private drawHPSegments(graphics: PIXI.Graphics, shieldColor: number, currentHP: number): void {
     graphics.clear();
@@ -80,135 +79,26 @@ export class DefenseDot {
     const hpPercent = currentHP / this.maxHp;
     const size = this.radius * 2; // 16px
 
-    // Outer glow (team color)
-    const glowAlpha = 0.25 + (hpPercent * 0.25);
+    // Outer glow (team color, intensity based on HP)
+    const glowAlpha = 0.2 + (hpPercent * 0.3);
     this.drawShieldOutline(graphics, size + 4, size + 4, shieldColor, glowAlpha);
 
-    // Dark blue border
-    this.drawShieldOutline(graphics, size + 1, size + 1, 0x1a5f7a, 1.0);
+    // Dark border
+    this.drawShieldOutline(graphics, size + 1, size + 1, 0x1a1a1a, 1.0);
 
-    // Lighter teal border
-    this.drawShieldOutline(graphics, size, size, 0x2a9d8f, 1.0);
+    // Main shield fill - adjust brightness based on HP
+    const fillColor = currentHP === 3 ? shieldColor :
+      currentHP === 2 ? this.darkenColor(shieldColor, 0.7) :
+        this.darkenColor(shieldColor, 0.4);
 
-    // Draw vertical fill inside shield shape
-    this.drawShieldVerticalFill(graphics, size - 2, shieldColor, currentHP);
+    const fillAlpha = currentHP === 3 ? 1.0 :
+      currentHP === 2 ? 0.8 :
+        0.5;
+
+    this.drawShieldOutline(graphics, size - 1, size - 1, fillColor, fillAlpha);
   }
 
-  /**
-   * Draw vertical fill inside shield shape
-   * Simple approach: fill from bottom to top based on HP percentage
-   */
-  private drawShieldVerticalFill(
-    graphics: PIXI.Graphics,
-    size: number,
-    baseColor: number,
-    currentHP: number
-  ): void {
-    const fillPercent = currentHP / this.maxHp; // 1.0, 0.66, or 0.33
-    const halfSize = size / 2;
 
-    // First, draw the empty (dark) shield background
-    this.drawShieldShape(graphics, size, 0x1a1a1a, 1.0);
-
-    // Then, draw the filled portion clipped to the bottom X% of the shield
-    // We'll draw horizontal slices from bottom to top
-    const steps = 50; // More steps = smoother fill
-    const lightColor = this.lightenColor(baseColor, 1.2);
-    const darkColor = this.darkenColor(baseColor, 0.8);
-
-    for (let i = 0; i < steps; i++) {
-      const t = i / steps; // 0.0 to 1.0 (bottom to top)
-
-      // Only draw if this slice is within the filled percentage
-      // fillPercent = 1.0 means draw all slices
-      // fillPercent = 0.66 means draw bottom 66% of slices
-      // fillPercent = 0.33 means draw bottom 33% of slices
-      if (t > fillPercent) continue;
-
-      // Y position: -halfSize (top) to +halfSize (bottom)
-      const y = halfSize - (t * size); // Start from bottom, go up
-      const nextY = halfSize - ((i + 1) / steps * size);
-
-      // Get shield width at this Y position
-      const width = this.getShieldWidthAtY(y, size);
-      const nextWidth = this.getShieldWidthAtY(nextY, size);
-
-      // Interpolate color from dark (bottom) to light (top)
-      const color = this.interpolateColor(darkColor, lightColor, t);
-
-      // Draw horizontal slice
-      graphics.moveTo(-width / 2, y);
-      graphics.lineTo(width / 2, y);
-      graphics.lineTo(nextWidth / 2, nextY);
-      graphics.lineTo(-nextWidth / 2, nextY);
-      graphics.lineTo(-width / 2, y);
-      graphics.fill({ color, alpha: 1.0 });
-    }
-
-    // Draw horizontal divider lines at 33% and 66% to show HP segments
-    this.drawHorizontalDivider(graphics, size, 0.33); // 1/3 mark
-    this.drawHorizontalDivider(graphics, size, 0.66); // 2/3 mark
-  }
-
-  /**
-   * Draw the full shield shape (used for background)
-   */
-  private drawShieldShape(graphics: PIXI.Graphics, size: number, color: number, alpha: number): void {
-    const halfSize = size / 2;
-    const steps = 50;
-
-    graphics.moveTo(0, -halfSize); // Start at top center
-
-    // Draw shield outline
-    for (let i = 0; i <= steps; i++) {
-      const t = i / steps;
-      const y = -halfSize + (t * size); // -halfSize to +halfSize
-      const width = this.getShieldWidthAtY(y, size);
-      const x = (i < steps / 2) ? -width / 2 : width / 2; // Left side then right side
-      graphics.lineTo(x, y);
-    }
-
-    graphics.fill({ color, alpha });
-  }
-
-  /**
-   * Interpolate between two colors
-   */
-  private interpolateColor(color1: number, color2: number, t: number): number {
-    const r1 = (color1 >> 16) & 0xff;
-    const g1 = (color1 >> 8) & 0xff;
-    const b1 = color1 & 0xff;
-
-    const r2 = (color2 >> 16) & 0xff;
-    const g2 = (color2 >> 8) & 0xff;
-    const b2 = color2 & 0xff;
-
-    const r = Math.round(r1 + (r2 - r1) * t);
-    const g = Math.round(g1 + (g2 - g1) * t);
-    const b = Math.round(b1 + (b2 - b1) * t);
-
-    return (r << 16) | (g << 8) | b;
-  }
-
-  /**
-   * Draw a horizontal divider line across the shield at a given fill percentage
-   */
-  private drawHorizontalDivider(
-    graphics: PIXI.Graphics,
-    size: number,
-    fillPercent: number
-  ): void {
-    const halfSize = size / 2;
-    const y = halfSize - (fillPercent * size); // Convert fill percent to Y position
-
-    // Get shield width at this Y position
-    const width = this.getShieldWidthAtY(y, size);
-
-    // Draw horizontal line
-    graphics.moveTo(-width / 2, y);
-    graphics.lineTo(width / 2, y);
-    graphics.stroke({ width: 1.5, color: 0x000000, alpha: 0.6 });
-  }
 
   /**
    * Get shield width at given Y position
