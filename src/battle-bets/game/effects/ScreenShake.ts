@@ -4,15 +4,15 @@ import * as PIXI from 'pixi.js';
 /**
  * Screen shake effect manager
  * Provides cinematic camera shake for impacts and collisions
+ * Supports multiple battles by tracking containers per battleId
  */
 export class ScreenShake {
   private static instance: ScreenShake;
-  private container: PIXI.Container | null = null;
-  private originalX = 0;
-  private originalY = 0;
-  private isShaking = false;
+  private containers: Map<string, PIXI.Container> = new Map();
+  private originalPositions: Map<string, { x: number; y: number }> = new Map();
+  private shakingBattles: Set<string> = new Set();
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): ScreenShake {
     if (!ScreenShake.instance) {
@@ -22,21 +22,25 @@ export class ScreenShake {
   }
 
   /**
-   * Set the container to shake (usually the main stage)
+   * Set the container to shake for a specific battle
    */
-  setContainer(container: PIXI.Container): void {
-    this.container = container;
-    this.originalX = container.x;
-    this.originalY = container.y;
+  setContainer(container: PIXI.Container, battleId: string): void {
+    this.containers.set(battleId, container);
+    this.originalPositions.set(battleId, { x: container.x, y: container.y });
+    console.log(`✅ ScreenShake: Container set for battle ${battleId}`);
   }
 
   /**
-   * Trigger a screen shake effect
+   * Trigger a screen shake effect for a specific battle
+   * @param battleId - Battle ID to shake
    * @param intensity - 'small' | 'medium' | 'large'
    * @param duration - Optional custom duration in seconds
    */
-  shake(intensity: 'small' | 'medium' | 'large' = 'medium', duration?: number): void {
-    if (!this.container || this.isShaking) return;
+  shake(battleId: string, intensity: 'small' | 'medium' | 'large' = 'medium', duration?: number): void {
+    const container = this.containers.get(battleId);
+    const originalPos = this.originalPositions.get(battleId);
+
+    if (!container || !originalPos || this.shakingBattles.has(battleId)) return;
 
     const magnitudes = {
       small: 3,
@@ -53,57 +57,70 @@ export class ScreenShake {
     const magnitude = magnitudes[intensity];
     const shakeDuration = duration ?? durations[intensity];
 
-    this.isShaking = true;
+    this.shakingBattles.add(battleId);
 
-    console.log(`📳 Screen shake: ${intensity} (magnitude: ${magnitude}, duration: ${shakeDuration}s)`);
+    console.log(`📳 Screen shake for battle ${battleId}: ${intensity} (magnitude: ${magnitude}, duration: ${shakeDuration}s)`);
 
     const timeline = gsap.timeline({
       onComplete: () => {
-        this.isShaking = false;
+        this.shakingBattles.delete(battleId);
       },
     });
 
     // Initial strong shake
-    timeline.to(this.container, {
-      x: this.originalX + gsap.utils.random(-magnitude, magnitude),
-      y: this.originalY + gsap.utils.random(-magnitude, magnitude),
+    timeline.to(container, {
+      x: originalPos.x + gsap.utils.random(-magnitude, magnitude),
+      y: originalPos.y + gsap.utils.random(-magnitude, magnitude),
       duration: 0.05,
       ease: 'power2.out',
     });
 
     // Medium shake
-    timeline.to(this.container, {
-      x: this.originalX + gsap.utils.random(-magnitude, magnitude) * 0.6,
-      y: this.originalY + gsap.utils.random(-magnitude, magnitude) * 0.6,
+    timeline.to(container, {
+      x: originalPos.x + gsap.utils.random(-magnitude, magnitude) * 0.6,
+      y: originalPos.y + gsap.utils.random(-magnitude, magnitude) * 0.6,
       duration: 0.05,
     });
 
     // Small shake
-    timeline.to(this.container, {
-      x: this.originalX + gsap.utils.random(-magnitude, magnitude) * 0.3,
-      y: this.originalY + gsap.utils.random(-magnitude, magnitude) * 0.3,
+    timeline.to(container, {
+      x: originalPos.x + gsap.utils.random(-magnitude, magnitude) * 0.3,
+      y: originalPos.y + gsap.utils.random(-magnitude, magnitude) * 0.3,
       duration: 0.05,
     });
 
     // Return to original position with elastic bounce
-    timeline.to(this.container, {
-      x: this.originalX,
-      y: this.originalY,
+    timeline.to(container, {
+      x: originalPos.x,
+      y: originalPos.y,
       duration: shakeDuration - 0.15,
       ease: 'elastic.out(1, 0.3)',
     });
   }
 
   /**
-   * Reset container to original position (emergency stop)
+   * Reset container to original position for a specific battle (emergency stop)
    */
-  reset(): void {
-    if (!this.container) return;
+  reset(battleId: string): void {
+    const container = this.containers.get(battleId);
+    const originalPos = this.originalPositions.get(battleId);
 
-    gsap.killTweensOf(this.container);
-    this.container.x = this.originalX;
-    this.container.y = this.originalY;
-    this.isShaking = false;
+    if (!container || !originalPos) return;
+
+    gsap.killTweensOf(container);
+    container.x = originalPos.x;
+    container.y = originalPos.y;
+    this.shakingBattles.delete(battleId);
+  }
+
+  /**
+   * Clear all shake references for a battle
+   */
+  clearBattle(battleId: string): void {
+    this.reset(battleId);
+    this.containers.delete(battleId);
+    this.originalPositions.delete(battleId);
+    console.log(`🧹 ScreenShake: Cleared references for battle ${battleId}`);
   }
 }
 

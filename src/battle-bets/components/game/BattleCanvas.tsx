@@ -121,7 +121,7 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
           pixiManager.setApp(app, battleId)
           pixiManager.setContainer(container, battleId)
 
-          screenShake.setContainer(container)
+          screenShake.setContainer(container, battleId)
 
           // Draw grid
           drawPremiumGrid(container)

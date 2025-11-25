@@ -42,15 +42,21 @@ export function createShieldHealAnimation(
     return;
   }
 
-  // Get start position (destroyed orb)
-  const startX = defenseDot.sprite.x;
-  const startY = defenseDot.sprite.y;
+  // CRITICAL FIX: Get GLOBAL position of defense orb sprite
+  // defenseDot.sprite.x/y are LOCAL coordinates, we need GLOBAL screen coordinates
+  const orbGlobalPos = defenseDot.sprite.getGlobalPosition();
+  const startX = orbGlobalPos.x;
+  const startY = orbGlobalPos.y;
 
-  // Get end position (castle shield - slightly above castle)
-  const endX = castle.sprite.x;
-  const endY = castle.sprite.y - 30; // Above castle
+  // Get GLOBAL position of castle sprite
+  const castleGlobalPos = castle.sprite ? castle.sprite.getGlobalPosition() : { x: 0, y: 0 };
+  const endX = castleGlobalPos.x;
+  const endY = castleGlobalPos.y - 30; // Above castle
 
   console.log(`💚 [ShieldHeal] Defense orb side: ${defenseDot.side}, Castle ID: ${castleId}`);
+  console.log(`💚 [ShieldHeal] Orb local pos: (${defenseDot.sprite.x}, ${defenseDot.sprite.y})`);
+  console.log(`💚 [ShieldHeal] Orb GLOBAL pos: (${startX}, ${startY})`);
+  console.log(`💚 [ShieldHeal] Castle GLOBAL pos: (${endX}, ${endY})`);
   console.log(`💚 [ShieldHeal] Animation path: (${startX}, ${startY}) → (${endX}, ${endY})`);
 
   // Create green healing orb - MUCH BIGGER AND BRIGHTER

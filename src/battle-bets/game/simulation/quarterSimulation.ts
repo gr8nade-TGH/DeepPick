@@ -599,15 +599,15 @@ async function fireSimultaneousProjectiles(
     const midX = (leftProjectile.position.x + rightProjectile.position.x) / 2;
     const midY = (leftProjectile.position.y + rightProjectile.position.y) / 2;
     createCollisionEffect(midX, midY, leftProjectile.typeConfig.color);
-    screenShake.shake('medium');
+    screenShake.shake(gameId, 'medium');
   } else {
     // Defense dot damage is now applied IMMEDIATELY in CollisionManager
     // Just trigger screen shake for visual feedback
     if (leftProjectile.collidedWith === 'defense') {
-      screenShake.shake('small');
+      screenShake.shake(gameId, 'small');
     }
     if (rightProjectile.collidedWith === 'defense') {
-      screenShake.shake('small');
+      screenShake.shake(gameId, 'small');
     }
   }
 
@@ -678,11 +678,11 @@ export async function fireProjectileAtHPBar(
   projectile.sprite.visible = false;
 
   if (projectile.collidedWith === 'defense') {
-    screenShake.shake('medium');
+    screenShake.shake(gameId, 'medium');
   } else if (!projectile.collidedWith) {
     // Reached target without collision - hit weapon slot and deduct capper HP
     useMultiGameStore.getState().applyDamageToCapperHP(gameId, targetSide, 1);
-    screenShake.shake('large');
+    screenShake.shake(gameId, 'large');
   }
 
   createCollisionEffect(projectile.sprite.x, projectile.sprite.y, projectile.typeConfig.color);
@@ -1173,10 +1173,10 @@ async function fireSingleProjectileForMultiBattle(
   if (!projectile.collidedWith) {
     console.log(`💥 [CASTLE DAMAGE] Projectile ${projectile.id} hit attack node! Damaging ${targetSide} castle HP by 1`);
     useMultiGameStore.getState().applyDamageToCapperHP(battleId, targetSide, 1);
-    screenShake.shake('large');
+    screenShake.shake(battleId, 'large');
   } else if (projectile.collidedWith === 'defense') {
     console.log(`🛡️ [Defense Hit] Projectile ${projectile.id} was blocked by defense orb`);
-    screenShake.shake('medium');
+    screenShake.shake(battleId, 'medium');
   } else if (projectile.collidedWith === 'projectile') {
     console.log(`⚔️ [Projectile Collision] Projectile ${projectile.id} collided with another projectile`);
   }
