@@ -283,21 +283,34 @@
 }
 
 .status-subtitle {
-  font-size: 9px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  line-height: 1;
-  text-align: center;
-  white-space: nowrap;
-  border: 1px solid rgba(255, 215, 0, 0.4);
+  font-size: 11px;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.8px;
-  min-width: 70px;
-  /* Reduced from 80px */
-  line-height: 1;
-  /* Tighter line height */
+  line-height: 1.2;
   text-align: center;
+  white-space: nowrap;
+  background: rgba(78, 205, 196, 0.15);
+  border: 1px solid rgba(78, 205, 196, 0.5);
+  border-radius: 4px;
+  padding: 4px 10px;
+  min-width: 120px;
+  box-shadow: 0 0 8px rgba(78, 205, 196, 0.3);
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba(78, 205, 196, 0.3);
+    border-color: rgba(78, 205, 196, 0.5);
+  }
+
+  50% {
+    box-shadow: 0 0 16px rgba(78, 205, 196, 0.6);
+    border-color: rgba(78, 205, 196, 0.8);
+  }
 }
 
 /* Responsive adjustments */
