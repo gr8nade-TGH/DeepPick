@@ -242,8 +242,7 @@ class CollisionManager {
         const dotSide = targetDot.side;
         const opponentSide = dotSide === 'left' ? 'right' : 'left';
 
-        // Emit for the side that LOST the orb
-        battleEventBus.emit('DEFENSE_ORB_DESTROYED', {
+        const payload = {
           side: dotSide,
           opponentSide,
           quarter: 1, // TODO: Track actual quarter
@@ -252,7 +251,12 @@ class CollisionManager {
           lane: projectile.stat,
           orbId: targetDot.id,
           destroyedByProjectileId: projectile.id
-        } as DefenseOrbDestroyedPayload);
+        } as DefenseOrbDestroyedPayload;
+
+        console.log(`📢📢📢 [CollisionManager] EMITTING DEFENSE_ORB_DESTROYED for ${dotSide} side:`, payload);
+
+        // Emit for the side that LOST the orb
+        battleEventBus.emit('DEFENSE_ORB_DESTROYED', payload);
 
         // Emit for the side that DESTROYED the orb
         battleEventBus.emit('OPPONENT_ORB_DESTROYED', {

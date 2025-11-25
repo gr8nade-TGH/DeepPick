@@ -55,7 +55,8 @@ export function registerIronmanArmorEffect(context: ItemRuntimeContext): void {
   const { itemInstanceId, gameId, side, rolls } = context;
   const { startShieldHp, hpPerDestroyedOrb } = rolls;
 
-  console.log(`🛡️ [IronmanArmor] Registering effect for ${side} (Start HP: ${startShieldHp}, +${hpPerDestroyedOrb} per orb)`);
+  console.log(`🎯🎯🎯 [IronmanArmor] REGISTERING EFFECT for ${side} side in game ${gameId}`);
+  console.log(`🛡️ [IronmanArmor] Start HP: ${startShieldHp}, +${hpPerDestroyedOrb} per orb destroyed`);
 
   // BATTLE_START: Create shield
   battleEventBus.on('BATTLE_START', (payload) => {
@@ -97,8 +98,16 @@ export function registerIronmanArmorEffect(context: ItemRuntimeContext): void {
 
   // DEFENSE_ORB_DESTROYED: Add HP to shield
   battleEventBus.on('DEFENSE_ORB_DESTROYED', (payload) => {
-    if (payload.gameId !== gameId) return;
-    if (payload.side !== side) return;
+    console.log(`🔔 [IronmanArmor] DEFENSE_ORB_DESTROYED event received!`, payload);
+
+    if (payload.gameId !== gameId) {
+      console.log(`❌ [IronmanArmor] Wrong gameId: ${payload.gameId} !== ${gameId}`);
+      return;
+    }
+    if (payload.side !== side) {
+      console.log(`❌ [IronmanArmor] Wrong side: ${payload.side} !== ${side}`);
+      return;
+    }
 
     // Check if shield is still active
     const shieldActive = itemEffectRegistry.getCounter(itemInstanceId, 'shieldActive');
@@ -107,7 +116,7 @@ export function registerIronmanArmorEffect(context: ItemRuntimeContext): void {
       return;
     }
 
-    console.log(`🛡️ [IronmanArmor] Defense orb destroyed on ${side} ${payload.lane}, adding +${hpPerDestroyedOrb} HP to shield`);
+    console.log(`✅✅✅ [IronmanArmor] SHIELD SHOULD HEAL NOW! Defense orb destroyed on ${side} ${payload.lane}, adding +${hpPerDestroyedOrb} HP to shield`);
 
     // Get castle ID from gameId and side
     const castleId = `${gameId}-${side}`;
