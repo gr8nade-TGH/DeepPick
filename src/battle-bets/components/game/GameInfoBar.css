@@ -36,7 +36,6 @@
 
 .capper-section.right {
   justify-content: flex-end;
-  flex-direction: row-reverse;
 }
 
 /* Rank Badge - Compact rectangle */
@@ -100,6 +99,20 @@
   letter-spacing: 0.3px;
   white-space: nowrap;
   min-width: 50px;
+}
+
+/* Quarter Indicator - Small badge */
+.quarter-indicator {
+  font-size: 10px;
+  font-weight: 700;
+  color: #4ECDC4;
+  background: rgba(78, 205, 196, 0.15);
+  border: 1px solid #4ECDC4;
+  border-radius: 3px;
+  padding: 2px 6px;
+  white-space: nowrap;
+  min-width: 24px;
+  text-align: center;
 }
 
 /* Pick Box - Prominent */

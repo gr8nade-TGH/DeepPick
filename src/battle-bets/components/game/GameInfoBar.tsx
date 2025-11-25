@@ -221,9 +221,9 @@ export const GameInfoBar: React.FC<GameInfoBarProps> = ({
 
   return (
     <div className="game-info-bar">
-      {/* Left Capper - All on one horizontal line */}
+      {/* Left Capper - [Rank] [Name] [Team Spread] [Q#] [Record] */}
       <div className="capper-section left">
-        {/* Capper Icon (circular avatar with leaderboard rank number) */}
+        {/* Rank Badge */}
         <div className="capper-icon">
           <div className="icon-circle">{game.leftCapper.leaderboardRank}</div>
         </div>
@@ -231,44 +231,18 @@ export const GameInfoBar: React.FC<GameInfoBarProps> = ({
         {/* Capper Name */}
         <div className="capper-name">{game.leftCapper.name}</div>
 
-        {/* Separator */}
-        <div className="separator">|</div>
-
-        {/* Team Name (just team name, not city) */}
-        <div className="team-name">{getTeamName(game.leftTeam.name)}</div>
-
-        {/* Separator */}
-        <div className="separator">|</div>
-
-        {/* Units with arrow */}
-        <div
-          className="capper-units"
-          onMouseEnter={() => setLeftRecordHover(true)}
-          onMouseLeave={() => setLeftRecordHover(false)}
-        >
-          <span className="units-value">{leftUnits > 0 ? '+' : ''}{Math.round(leftUnits * 10) / 10}U</span>
-          <span className="units-arrow">{leftUnits > 0 ? '↑' : '↓'}</span>
-          {leftRecordHover && (
-            <div className="units-tooltip">
-              <div><strong>{game.leftCapper.name}'s {game.leftTeam.abbreviation} Spread Record</strong></div>
-              <div>{leftRecord?.wins || 0}W - {leftRecord?.losses || 0}L - {leftRecord?.pushes || 0}P</div>
-              <div>{leftUnits} units ÷ 3 = <strong>{leftOrbs} defense orbs</strong></div>
-            </div>
-          )}
+        {/* Pick Box (Team + Spread) */}
+        <div className="pick-box left-pick">
+          <span className="pick-team">{game.leftTeam.abbreviation}</span>
+          <span className="pick-spread">{leftSpread > 0 ? '+' : ''}{leftSpread}</span>
         </div>
 
-        {/* Separator */}
-        <div className="separator">|</div>
+        {/* Quarter Indicator */}
+        <div className="quarter-indicator">Q{currentQuarter || '#'}</div>
 
         {/* Record */}
         <div className="capper-record">
           {leftRecord ? `${leftRecord.wins}-${leftRecord.losses}-${leftRecord.pushes}` : '0-0-0'}
-        </div>
-
-        {/* Pick Box (LAL -4.5) */}
-        <div className="pick-box left-pick">
-          <span className="pick-team">{game.leftTeam.abbreviation}</span>
-          <span className="pick-spread">{leftSpread > 0 ? '+' : ''}{leftSpread}</span>
         </div>
       </div>
 
@@ -305,52 +279,26 @@ export const GameInfoBar: React.FC<GameInfoBarProps> = ({
         </div>
       </div>
 
-      {/* Right Capper - All on one horizontal line (same order as left, but right-aligned) */}
+      {/* Right Capper - [Record] [Q#] [Team Spread] [Name] [Rank] (mirrored, right-aligned) */}
       <div className="capper-section right">
-        {/* Pick Box (MEM +4.5) */}
-        <div className="pick-box right-pick">
-          <span className="pick-team">{game.rightTeam.abbreviation}</span>
-          <span className="pick-spread">{rightSpread > 0 ? '+' : ''}{rightSpread}</span>
-        </div>
-
         {/* Record */}
         <div className="capper-record">
           {rightRecord ? `${rightRecord.wins}-${rightRecord.losses}-${rightRecord.pushes}` : '0-0-0'}
         </div>
 
-        {/* Separator */}
-        <div className="separator">|</div>
+        {/* Quarter Indicator */}
+        <div className="quarter-indicator">Q{currentQuarter || '#'}</div>
 
-        {/* Units with arrow */}
-        <div
-          className="capper-units"
-          onMouseEnter={() => setRightRecordHover(true)}
-          onMouseLeave={() => setRightRecordHover(false)}
-        >
-          <span className="units-arrow">{rightUnits > 0 ? '↑' : '↓'}</span>
-          <span className="units-value">{rightUnits > 0 ? '+' : ''}{Math.round(rightUnits * 10) / 10}U</span>
-          {rightRecordHover && (
-            <div className="units-tooltip">
-              <div><strong>{game.rightCapper.name}'s {game.rightTeam.abbreviation} Spread Record</strong></div>
-              <div>{rightRecord?.wins || 0}W - {rightRecord?.losses || 0}L - {rightRecord?.pushes || 0}P</div>
-              <div>{rightUnits} units ÷ 3 = <strong>{rightOrbs} defense orbs</strong></div>
-            </div>
-          )}
+        {/* Pick Box (Team + Spread) */}
+        <div className="pick-box right-pick">
+          <span className="pick-team">{game.rightTeam.abbreviation}</span>
+          <span className="pick-spread">{rightSpread > 0 ? '+' : ''}{rightSpread}</span>
         </div>
-
-        {/* Separator */}
-        <div className="separator">|</div>
-
-        {/* Team Name (just team name, not city) */}
-        <div className="team-name">{getTeamName(game.rightTeam.name)}</div>
-
-        {/* Separator */}
-        <div className="separator">|</div>
 
         {/* Capper Name */}
         <div className="capper-name">{game.rightCapper.name}</div>
 
-        {/* Capper Icon (rectangle badge with rank number) */}
+        {/* Rank Badge */}
         <div className="capper-icon">
           <div className="icon-circle">{game.rightCapper.leaderboardRank}</div>
         </div>
