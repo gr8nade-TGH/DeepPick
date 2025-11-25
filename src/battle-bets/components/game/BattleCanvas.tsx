@@ -194,7 +194,7 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
     }
   }, [webglSupport, battleId, initializeBattle])
 
-  // Render defense dots, attack nodes, and projectiles
+  // Render defense dots and projectiles
   useEffect(() => {
     if (!containerRef.current || !containerReady) return
 
@@ -205,36 +205,25 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
 
     // Remove old defense dot sprites
     container.children
-      .filter(child => child.name === 'defense-dot')
+      .filter(child => child.label === 'defense-dot')
       .forEach(child => container.removeChild(child))
 
     // Add current defense dot sprites
     battle.defenseDots.forEach(dot => {
-      dot.sprite.name = 'defense-dot'
+      dot.sprite.label = 'defense-dot'
       if (dot.alive || dot.sprite.visible) {
         container.addChild(dot.sprite)
       }
     })
 
-    // Remove old attack node sprites
-    container.children
-      .filter(child => child.name === 'attack-node')
-      .forEach(child => container.removeChild(child))
-
-    // Add current attack node sprites
-    battle.attackNodes.forEach(node => {
-      node.sprite.name = 'attack-node'
-      container.addChild(node.sprite)
-    })
-
     // Remove old projectile sprites
     container.children
-      .filter(child => child.name === 'projectile')
+      .filter(child => child.label === 'projectile')
       .forEach(child => container.removeChild(child))
 
     // Add current projectile sprites
     battle.projectiles.forEach(projectile => {
-      projectile.sprite.name = 'projectile'
+      projectile.sprite.label = 'projectile'
       if (projectile.active) {
         container.addChild(projectile.sprite)
       }

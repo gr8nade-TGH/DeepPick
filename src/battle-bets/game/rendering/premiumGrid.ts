@@ -240,8 +240,6 @@ function drawPremiumBattlefield(
 
 /**
  * Draw weapon ball inside weapon slot cell
- * NOTE: This creates a placeholder container that will be replaced by AttackNode SVG sprites
- * The container is labeled for easy lookup by getWeaponBall()
  */
 function drawWeaponBall(
   container: PIXI.Container,
@@ -251,14 +249,37 @@ function drawWeaponBall(
   statName: string,
   side: 'left' | 'right'
 ): void {
+  const ballRadius = 10;
+
   // Create a container for the weapon ball so we can reference it later
   const weaponBallContainer = new PIXI.Container();
   weaponBallContainer.label = `weapon-ball-${statName}-${side}`; // Label for easy lookup (v8+ uses label instead of name)
   weaponBallContainer.x = x;
   weaponBallContainer.y = y;
 
-  // NOTE: The actual visual (SVG sprite) will be added by AttackNode entity
-  // This is just a placeholder container for positioning and animation
+  // Outer glow
+  const outerGlow = new PIXI.Graphics();
+  outerGlow.circle(0, 0, ballRadius + 4);
+  outerGlow.fill({ color: color, alpha: 0.3 });
+  weaponBallContainer.addChild(outerGlow);
+
+  // Main ball
+  const ball = new PIXI.Graphics();
+  ball.circle(0, 0, ballRadius);
+  ball.fill({ color: color, alpha: 0.9 });
+  weaponBallContainer.addChild(ball);
+
+  // Inner highlight for 3D effect
+  const highlight = new PIXI.Graphics();
+  highlight.circle(-3, -3, ballRadius / 3);
+  highlight.fill({ color: 0xffffff, alpha: 0.6 });
+  weaponBallContainer.addChild(highlight);
+
+  // Border
+  const border = new PIXI.Graphics();
+  border.circle(0, 0, ballRadius);
+  border.stroke({ width: 2, color: 0xffffff, alpha: 0.4 });
+  weaponBallContainer.addChild(border);
 
   container.addChild(weaponBallContainer);
 }
