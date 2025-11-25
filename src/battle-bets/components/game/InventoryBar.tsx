@@ -9,12 +9,14 @@ import '../debug/ItemTooltip.css';
 import { castleManager } from '../../game/managers/CastleManager';
 import { useMultiGameStore } from '../../store/multiGameStore';
 import { LAL_IRONMAN_ARMOR_DEFINITION } from '../../game/items/effects/LAL_IronmanArmor';
+import { STARTER_SHORTSWORD_DEFINITION } from '../../game/items/effects/STARTER_Shortsword';
 import type { ItemDefinition, RolledItemStats } from '../../game/items/ItemRollSystem';
 import { ItemTooltip } from '../debug/ItemTooltip';
 
 // Available items registry
 const ITEM_REGISTRY: Record<string, ItemDefinition> = {
   [LAL_IRONMAN_ARMOR_DEFINITION.id]: LAL_IRONMAN_ARMOR_DEFINITION,
+  [STARTER_SHORTSWORD_DEFINITION.id]: STARTER_SHORTSWORD_DEFINITION,
   // Add more items as they're implemented
 };
 

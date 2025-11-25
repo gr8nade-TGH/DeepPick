@@ -11,12 +11,14 @@ import type { ItemDefinition, QualityTier, RolledItemStats } from './ItemRollSys
 
 // Import item definitions
 import { LAL_IRONMAN_ARMOR_DEFINITION } from './effects/LAL_IronmanArmor';
+import { STARTER_SHORTSWORD_DEFINITION } from './effects/STARTER_Shortsword';
 
 /**
  * All available item definitions
  */
 export const ALL_ITEM_DEFINITIONS: ItemDefinition[] = [
   LAL_IRONMAN_ARMOR_DEFINITION,
+  STARTER_SHORTSWORD_DEFINITION,
   // Add more as they're implemented
 ];
 
@@ -32,12 +34,12 @@ export function getItemDefinition(itemId: string): ItemDefinition | null {
  */
 export function rollTestItem(itemId: string): RolledItemStats | null {
   const definition = getItemDefinition(itemId);
-  
+
   if (!definition) {
     console.error(`❌ [ItemTestUtils] Item definition not found: ${itemId}`);
     return null;
   }
-  
+
   return rollItem(definition);
 }
 
@@ -49,12 +51,12 @@ export function rollTestItemWithTier(
   tier: QualityTier
 ): RolledItemStats | null {
   const definition = getItemDefinition(itemId);
-  
+
   if (!definition) {
     console.error(`❌ [ItemTestUtils] Item definition not found: ${itemId}`);
     return null;
   }
-  
+
   return rollItemWithTier(definition, tier);
 }
 
@@ -68,21 +70,21 @@ export async function activateTestItem(
   tier?: QualityTier
 ): Promise<string | null> {
   let rolledItem: RolledItemStats | null;
-  
+
   if (tier) {
     rolledItem = rollTestItemWithTier(itemId, tier);
   } else {
     rolledItem = rollTestItem(itemId);
   }
-  
+
   if (!rolledItem) {
     return null;
   }
-  
+
   const instanceId = await itemEffectRegistry.activateItem(gameId, side, rolledItem);
-  
+
   console.log(`✅ [ItemTestUtils] Activated ${itemId} on ${side} (${instanceId})`);
-  
+
   return instanceId;
 }
 
@@ -95,15 +97,15 @@ export async function activateTestItems(
   rightItems: string[]
 ): Promise<void> {
   console.log(`🎮 [ItemTestUtils] Activating test items for game ${gameId}`);
-  
+
   for (const itemId of leftItems) {
     await activateTestItem(gameId, 'left', itemId);
   }
-  
+
   for (const itemId of rightItems) {
     await activateTestItem(gameId, 'right', itemId);
   }
-  
+
   console.log(`✅ [ItemTestUtils] All test items activated`);
 }
 
@@ -135,13 +137,13 @@ export function parseTestItemsFromURL(): {
 } {
   const params = new URLSearchParams(window.location.search);
   const testItemsParam = params.get('testItems');
-  
+
   if (!testItemsParam) {
     return { leftItems: [], rightItems: [] };
   }
-  
+
   const itemIds = testItemsParam.split(',').map((id) => id.trim());
-  
+
   // For now, put all items on left side
   // Later, support syntax like "left:item1,item2;right:item3,item4"
   return {
@@ -155,12 +157,12 @@ export function parseTestItemsFromURL(): {
  */
 export async function autoActivateTestItems(gameId: string): Promise<void> {
   const { leftItems, rightItems } = parseTestItemsFromURL();
-  
+
   if (leftItems.length === 0 && rightItems.length === 0) {
     console.log(`ℹ️ [ItemTestUtils] No test items specified in URL`);
     return;
   }
-  
+
   console.log(`🎮 [ItemTestUtils] Auto-activating test items from URL`);
   await activateTestItems(gameId, leftItems, rightItems);
 }

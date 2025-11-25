@@ -9,6 +9,7 @@ import React, { useState, useEffect } from 'react';
 import './PreGameItemSelector.css';
 import './ItemTooltip.css';
 import { LAL_IRONMAN_ARMOR_DEFINITION } from '../../game/items/effects/LAL_IronmanArmor';
+import { STARTER_SHORTSWORD_DEFINITION } from '../../game/items/effects/STARTER_Shortsword';
 import type { ItemDefinition, RolledItemStats } from '../../game/items/ItemRollSystem';
 import { rollItem } from '../../game/items/ItemRollSystem';
 import { useMultiGameStore } from '../../store/multiGameStore';
@@ -27,6 +28,7 @@ interface PreGameItemSelectorProps {
 // Available items for testing
 const AVAILABLE_ITEMS: ItemDefinition[] = [
   LAL_IRONMAN_ARMOR_DEFINITION,
+  STARTER_SHORTSWORD_DEFINITION,
   // Add more items as they're implemented
 ];
 
