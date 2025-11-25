@@ -17,7 +17,7 @@ export interface ItemDefinition {
   id: string;
   team: string;
   teamName: string;
-  slot: 'attack' | 'defense' | 'unique';
+  slot: 'attack' | 'defense' | 'weapon';
   name: string;
   description: string;
   icon?: string; // Optional emoji icon for display

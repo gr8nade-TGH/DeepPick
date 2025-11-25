@@ -169,8 +169,8 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
     if (!item) return;
 
     // Validate item type matches slot type
-    // Slot 1 = DEFENSE, Slot 2 = ATTACK, Slot 3 = UNIQUE
-    const slotType = slot === 1 ? 'defense' : slot === 2 ? 'attack' : 'unique';
+    // Slot 1 = DEFENSE, Slot 2 = ATTACK, Slot 3 = WEAPON
+    const slotType = slot === 1 ? 'defense' : slot === 2 ? 'attack' : 'weapon';
     if (item.slot !== slotType) {
       console.error(`❌ Cannot equip ${item.name} in ${slotType} slot - item is for ${item.slot} slot`);
       alert(`This item can only be equipped in the ${item.slot.toUpperCase()} slot!`);
@@ -473,15 +473,15 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
             <div className="item-name">{item.name}</div>
           </div>
         ) : (
-          <div className="slot-empty-icon">{slotType === 'DEFENSE' ? '🛡️' : slotType === 'ATTACK' ? '⚔️' : '✨'}</div>
+          <div className="slot-empty-icon">{slotType === 'DEFENSE' ? '🛡️' : slotType === 'ATTACK' ? '⚔️' : '⚔️'}</div>
         )}
       </div>
     );
   };
 
   const renderSlotPreview = (side: 'left' | 'right', slot: 1 | 2 | 3) => {
-    const slotType = slot === 1 ? 'DEFENSE' : slot === 2 ? 'ATTACK' : 'UNIQUE';
-    const slotIcon = slot === 1 ? '🛡️' : slot === 2 ? '⚔️' : '✨';
+    const slotType = slot === 1 ? 'DEFENSE' : slot === 2 ? 'ATTACK' : 'WEAPON';
+    const slotIcon = slot === 1 ? '🛡️' : slot === 2 ? '⚔️' : '⚔️';
     const rolledItem = getSlotItem(side, slot);
     const item = rolledItem ? getItemDefinition(rolledItem.itemId) : null;
 
@@ -551,7 +551,7 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
 
                 {(() => {
                   // Filter items by slot type
-                  const slotType = selectedSlot.slot === 1 ? 'defense' : selectedSlot.slot === 2 ? 'attack' : 'unique';
+                  const slotType = selectedSlot.slot === 1 ? 'defense' : selectedSlot.slot === 2 ? 'attack' : 'weapon';
                   const filteredItems = AVAILABLE_ITEMS.filter(item => item.slot === slotType);
 
                   if (filteredItems.length === 0) {
