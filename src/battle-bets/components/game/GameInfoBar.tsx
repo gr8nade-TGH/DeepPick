@@ -128,7 +128,7 @@ export const GameInfoBar: React.FC<GameInfoBarProps> = ({
       if (isBattleInProgress && currentQuarter) {
         setDynamicStatus({
           main: `Q${currentQuarter}`,
-          subtitle: 'Battle In-Progress',
+          subtitle: 'In Progress',
           subtitleColor: '#ff9f43', // Orange for active battle
         });
         return;
@@ -144,7 +144,7 @@ export const GameInfoBar: React.FC<GameInfoBarProps> = ({
             if (countdown) {
               setDynamicStatus({
                 main: 'VS',
-                subtitle: `Game starts in ${countdown}`,
+                subtitle: countdown, // Just the countdown, no "Game starts in"
                 subtitleColor: '#4ecdc4', // Cyan
               });
             } else {
@@ -166,7 +166,7 @@ export const GameInfoBar: React.FC<GameInfoBarProps> = ({
             if (countdown) {
               setDynamicStatus({
                 main: `Q${quarterNum}`,
-                subtitle: `Ends in ${countdown}`,
+                subtitle: countdown, // Just the countdown
                 subtitleColor: '#4ecdc4', // Cyan
               });
             } else {
