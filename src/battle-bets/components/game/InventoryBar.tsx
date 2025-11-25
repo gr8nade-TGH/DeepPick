@@ -64,10 +64,10 @@ export const InventoryBar: React.FC<InventoryBarProps> = ({ battleId, side, onSl
     return () => window.removeEventListener('fire-orb-activated' as any, handleFireOrbActivation as any);
   }, [side]);
 
-  // Slot types: 1 = DEFENSE (top), 2 = ATTACK (middle), 3 = WEAPON (bottom)
+  // Slot types: 1 = DEFENSE (top), 2 = POWER (middle), 3 = WEAPON (bottom)
   const slots = [
     { num: 1, type: 'DEFENSE', icon: '🛡️', slotKey: 'slot1' as const },
-    { num: 2, type: 'ATTACK', icon: '⚔️', slotKey: 'slot2' as const },
+    { num: 2, type: 'POWER', icon: '⚡', slotKey: 'slot2' as const },
     { num: 3, type: 'WEAPON', icon: '⚔️', slotKey: 'slot3' as const }
   ];
 
