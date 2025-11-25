@@ -51,27 +51,47 @@ export const QuarterDebugControls: React.FC<QuarterDebugControlsProps> = ({ batt
 
     try {
       // STEP 1: Activate equipped items BEFORE battle starts
-      console.log(`🎮 [PreGame] Activating equipped items for battle ${battleId}`);
+      console.log(`🎮🎮🎮 [PreGame] Activating equipped items for battle ${battleId}`);
+
+      // Get equipped items from battle state (saved by PreGameItemSelector)
+      const currentBattle = useMultiGameStore.getState().getBattle(battleId);
+      const leftEquipped = currentBattle?.game?.leftCapper?.equippedItems;
+      const rightEquipped = currentBattle?.game?.rightCapper?.equippedItems;
+
+      console.log(`🔍 [PreGame] Left equipped items:`, leftEquipped);
+      console.log(`🔍 [PreGame] Right equipped items:`, rightEquipped);
 
       // Activate left side items
-      for (const itemId of leftItems) {
-        const rolled = rollTestItem(itemId);
-        if (rolled) {
-          await itemEffectRegistry.activateItem(battleId, 'left', rolled);
-          console.log(`✅ [PreGame] Activated ${itemId} on LEFT side`);
+      if (leftEquipped) {
+        for (const slot of ['slot1', 'slot2', 'slot3'] as const) {
+          const item = leftEquipped[slot];
+          if (item) {
+            // Item can be either a string (item ID) or RolledItemStats object
+            const rolled = typeof item === 'string' ? rollTestItem(item) : item;
+            if (rolled) {
+              await itemEffectRegistry.activateItem(battleId, 'left', rolled);
+              console.log(`✅✅✅ [PreGame] Activated ${rolled.itemId} on LEFT ${slot}`);
+            }
+          }
         }
       }
 
       // Activate right side items
-      for (const itemId of rightItems) {
-        const rolled = rollTestItem(itemId);
-        if (rolled) {
-          await itemEffectRegistry.activateItem(battleId, 'right', rolled);
-          console.log(`✅ [PreGame] Activated ${itemId} on RIGHT side`);
+      if (rightEquipped) {
+        for (const slot of ['slot1', 'slot2', 'slot3'] as const) {
+          const item = rightEquipped[slot];
+          if (item) {
+            // Item can be either a string (item ID) or RolledItemStats object
+            const rolled = typeof item === 'string' ? rollTestItem(item) : item;
+            if (rolled) {
+              await itemEffectRegistry.activateItem(battleId, 'right', rolled);
+              console.log(`✅✅✅ [PreGame] Activated ${rolled.itemId} on RIGHT ${slot}`);
+            }
+          }
         }
       }
 
-      console.log(`✅ [PreGame] All items activated!`);
+      console.log(`✅✅✅ [PreGame] All items activated!`);
 
       // STEP 2: Update status to Q1
       useMultiGameStore.getState().updateGameStatus(battleId, '1Q');

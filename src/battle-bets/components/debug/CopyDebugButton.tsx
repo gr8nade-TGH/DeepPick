@@ -137,15 +137,32 @@ export function CopyDebugButton({ battleId }: CopyDebugButtonProps) {
         lines.push('-'.repeat(80));
         console.log('📋 Getting equipped items from battle state...');
         if (battle) {
+          const leftItems = battle.game?.leftCapper?.equippedItems;
+          const rightItems = battle.game?.rightCapper?.equippedItems;
+
           lines.push(`\nLEFT Side Equipped Items:`);
-          lines.push(`  Slot 1: ${battle.leftCapper.equippedItems.slot1?.itemId || 'empty'}`);
-          lines.push(`  Slot 2: ${battle.leftCapper.equippedItems.slot2?.itemId || 'empty'}`);
-          lines.push(`  Slot 3: ${battle.leftCapper.equippedItems.slot3?.itemId || 'empty'}`);
+          if (leftItems) {
+            const slot1 = typeof leftItems.slot1 === 'object' ? leftItems.slot1?.itemId : leftItems.slot1;
+            const slot2 = typeof leftItems.slot2 === 'object' ? leftItems.slot2?.itemId : leftItems.slot2;
+            const slot3 = typeof leftItems.slot3 === 'object' ? leftItems.slot3?.itemId : leftItems.slot3;
+            lines.push(`  Slot 1: ${slot1 || 'empty'}`);
+            lines.push(`  Slot 2: ${slot2 || 'empty'}`);
+            lines.push(`  Slot 3: ${slot3 || 'empty'}`);
+          } else {
+            lines.push(`  No equipped items (equippedItems property not initialized)`);
+          }
 
           lines.push(`\nRIGHT Side Equipped Items:`);
-          lines.push(`  Slot 1: ${battle.rightCapper.equippedItems.slot1?.itemId || 'empty'}`);
-          lines.push(`  Slot 2: ${battle.rightCapper.equippedItems.slot2?.itemId || 'empty'}`);
-          lines.push(`  Slot 3: ${battle.rightCapper.equippedItems.slot3?.itemId || 'empty'}`);
+          if (rightItems) {
+            const slot1 = typeof rightItems.slot1 === 'object' ? rightItems.slot1?.itemId : rightItems.slot1;
+            const slot2 = typeof rightItems.slot2 === 'object' ? rightItems.slot2?.itemId : rightItems.slot2;
+            const slot3 = typeof rightItems.slot3 === 'object' ? rightItems.slot3?.itemId : rightItems.slot3;
+            lines.push(`  Slot 1: ${slot1 || 'empty'}`);
+            lines.push(`  Slot 2: ${slot2 || 'empty'}`);
+            lines.push(`  Slot 3: ${slot3 || 'empty'}`);
+          } else {
+            lines.push(`  No equipped items (equippedItems property not initialized)`);
+          }
         }
       } catch (error) {
         lines.push(`❌ Error getting equipped items: ${error}`);
