@@ -167,10 +167,10 @@ function showHealText(battleId: string, x: number, y: number, amount: number): v
   // IMPORTANT: addSprite signature is (sprite, name?, battleId?)
   pixiManager.addSprite(healText, 'shield-heal-text', battleId);
 
-  // Float up and fade out
+  // Float up slightly and fade out (stay over castle, don't go too high)
   gsap.timeline()
     .to(healText.position, {
-      y: y - 80, // Float up
+      y: y - 30, // Float up just a bit (stay over castle)
       duration: 1.5,
       ease: 'power2.out'
     })
