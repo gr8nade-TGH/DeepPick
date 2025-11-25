@@ -215,22 +215,30 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
   };
 
   const handleSaveAndClose = async () => {
+    console.log('💾💾💾 [PreGameItemSelector] SAVE AND CLOSE CLICKED!');
     console.log('💾 [PreGameItemSelector] Saving items:', {
       left: { slot1: leftSlot1, slot2: leftSlot2, slot3: leftSlot3 },
       right: { slot1: rightSlot1, slot2: rightSlot2, slot3: rightSlot3 }
     });
 
-    // Save to battle state
-    updateBattleEquippedItems();
+    try {
+      // Save to battle state
+      updateBattleEquippedItems();
 
-    // Immediately activate/deactivate shields for defense items
-    activateDefenseItems();
+      // Immediately activate/deactivate shields for defense items
+      activateDefenseItems();
 
-    // Activate item effects (event listeners for DEFENSE_ORB_DESTROYED, etc.)
-    await activateItemEffects();
+      // Activate item effects (event listeners for DEFENSE_ORB_DESTROYED, etc.)
+      console.log('💾 [PreGameItemSelector] About to call activateItemEffects()...');
+      await activateItemEffects();
+      console.log('💾 [PreGameItemSelector] activateItemEffects() completed!');
 
-    // Close popup
-    onClose?.();
+      // Close popup
+      onClose?.();
+    } catch (error) {
+      console.error('❌ [PreGameItemSelector] Error in handleSaveAndClose:', error);
+      alert(`Error saving items: ${error}`);
+    }
   };
 
   /**
@@ -323,40 +331,53 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
    * This is called when "APPLY ITEMS" is clicked
    */
   const activateItemEffects = async () => {
-    console.log('🎮 [PreGameItemSelector] Activating item effects...');
+    console.log('🎮🎮🎮 [PreGameItemSelector] ACTIVATING ITEM EFFECTS!');
+    console.log('🎮 [PreGameItemSelector] Battle ID:', battleId);
 
-    // Deactivate all existing items for this battle first (cleanup)
-    itemEffectRegistry.deactivateGame(battleId);
+    try {
+      // Deactivate all existing items for this battle first (cleanup)
+      console.log('🎮 [PreGameItemSelector] Deactivating existing items...');
+      itemEffectRegistry.deactivateGame(battleId);
 
-    // Activate left side items
-    if (leftSlot1) {
-      await itemEffectRegistry.activateItem(battleId, 'left', leftSlot1);
-      console.log(`✅ [PreGameItemSelector] Activated ${leftSlot1.itemId} on LEFT side`);
-    }
-    if (leftSlot2) {
-      await itemEffectRegistry.activateItem(battleId, 'left', leftSlot2);
-      console.log(`✅ [PreGameItemSelector] Activated ${leftSlot2.itemId} on LEFT side`);
-    }
-    if (leftSlot3) {
-      await itemEffectRegistry.activateItem(battleId, 'left', leftSlot3);
-      console.log(`✅ [PreGameItemSelector] Activated ${leftSlot3.itemId} on LEFT side`);
-    }
+      // Activate left side items
+      if (leftSlot1) {
+        console.log(`🎮 [PreGameItemSelector] Activating LEFT slot 1: ${leftSlot1.itemId}`);
+        await itemEffectRegistry.activateItem(battleId, 'left', leftSlot1);
+        console.log(`✅ [PreGameItemSelector] Activated ${leftSlot1.itemId} on LEFT side`);
+      }
+      if (leftSlot2) {
+        console.log(`🎮 [PreGameItemSelector] Activating LEFT slot 2: ${leftSlot2.itemId}`);
+        await itemEffectRegistry.activateItem(battleId, 'left', leftSlot2);
+        console.log(`✅ [PreGameItemSelector] Activated ${leftSlot2.itemId} on LEFT side`);
+      }
+      if (leftSlot3) {
+        console.log(`🎮 [PreGameItemSelector] Activating LEFT slot 3: ${leftSlot3.itemId}`);
+        await itemEffectRegistry.activateItem(battleId, 'left', leftSlot3);
+        console.log(`✅ [PreGameItemSelector] Activated ${leftSlot3.itemId} on LEFT side`);
+      }
 
-    // Activate right side items
-    if (rightSlot1) {
-      await itemEffectRegistry.activateItem(battleId, 'right', rightSlot1);
-      console.log(`✅ [PreGameItemSelector] Activated ${rightSlot1.itemId} on RIGHT side`);
-    }
-    if (rightSlot2) {
-      await itemEffectRegistry.activateItem(battleId, 'right', rightSlot2);
-      console.log(`✅ [PreGameItemSelector] Activated ${rightSlot2.itemId} on RIGHT side`);
-    }
-    if (rightSlot3) {
-      await itemEffectRegistry.activateItem(battleId, 'right', rightSlot3);
-      console.log(`✅ [PreGameItemSelector] Activated ${rightSlot3.itemId} on RIGHT side`);
-    }
+      // Activate right side items
+      if (rightSlot1) {
+        console.log(`🎮 [PreGameItemSelector] Activating RIGHT slot 1: ${rightSlot1.itemId}`);
+        await itemEffectRegistry.activateItem(battleId, 'right', rightSlot1);
+        console.log(`✅ [PreGameItemSelector] Activated ${rightSlot1.itemId} on RIGHT side`);
+      }
+      if (rightSlot2) {
+        console.log(`🎮 [PreGameItemSelector] Activating RIGHT slot 2: ${rightSlot2.itemId}`);
+        await itemEffectRegistry.activateItem(battleId, 'right', rightSlot2);
+        console.log(`✅ [PreGameItemSelector] Activated ${rightSlot2.itemId} on RIGHT side`);
+      }
+      if (rightSlot3) {
+        console.log(`🎮 [PreGameItemSelector] Activating RIGHT slot 3: ${rightSlot3.itemId}`);
+        await itemEffectRegistry.activateItem(battleId, 'right', rightSlot3);
+        console.log(`✅ [PreGameItemSelector] Activated ${rightSlot3.itemId} on RIGHT side`);
+      }
 
-    console.log('✅ [PreGameItemSelector] All item effects activated!');
+      console.log('✅✅✅ [PreGameItemSelector] ALL ITEM EFFECTS ACTIVATED!');
+    } catch (error) {
+      console.error('❌ [PreGameItemSelector] Error activating item effects:', error);
+      throw error;
+    }
   };
 
   /**
