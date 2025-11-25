@@ -949,22 +949,33 @@ export async function runDebugBattleForMultiStore(battleId: string): Promise<voi
 
 /**
  * Map StatType to the quarter stat counts
+ * Returns 2x the stat value to create more projectiles for better visual effect
  */
 function getCountForStatFromQuarter(stat: StatType, stats: QuarterStats): number {
+  let baseCount = 0;
+
   switch (stat) {
     case 'pts':
-      return stats.points;
+      baseCount = stats.points;
+      break;
     case 'reb':
-      return stats.rebounds;
+      baseCount = stats.rebounds;
+      break;
     case 'ast':
-      return stats.assists;
+      baseCount = stats.assists;
+      break;
     case 'stl':
-      return stats.steals;
+      baseCount = stats.steals;
+      break;
     case '3pt':
-      return stats.threePointers;
+      baseCount = stats.threePointers;
+      break;
     default:
-      return 0;
+      baseCount = 0;
   }
+
+  // Double the projectile count for better visual effect
+  return baseCount * 2;
 }
 
 /**
