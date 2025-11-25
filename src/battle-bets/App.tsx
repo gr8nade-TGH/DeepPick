@@ -161,6 +161,7 @@ function App() {
 
   // Fetch battles from API
   const fetchBattles = async () => {
+    console.log('🔄🔄🔄 [App] fetchBattles() called at', new Date().toLocaleTimeString());
     try {
       // TEST MODE: Create 2 fake battles for testing
       if (testMode) {
@@ -170,12 +171,20 @@ function App() {
 
         // If battles already exist, don't recreate them (preserves equipped items)
         if (existingBattle1 && existingBattle2) {
-          console.log('🧪 TEST MODE: Test battles already exist, skipping recreation to preserve equipped items');
+          console.log('🧪🧪🧪 TEST MODE: Test battles already exist, skipping recreation to preserve equipped items');
+          console.log('🧪 Battle 1 equipped items:', {
+            left: existingBattle1.game.leftCapper.equippedItems,
+            right: existingBattle1.game.rightCapper.equippedItems
+          });
+          console.log('🧪 Battle 2 equipped items:', {
+            left: existingBattle2.game.leftCapper.equippedItems,
+            right: existingBattle2.game.rightCapper.equippedItems
+          });
           setLoading(false);
           return;
         }
 
-        console.log('🧪 TEST MODE: Creating 2 fake battles for testing');
+        console.log('🧪🧪🧪 TEST MODE: Creating 2 NEW fake battles for testing (battles did not exist)');
 
         const testBattles: Game[] = [
           {

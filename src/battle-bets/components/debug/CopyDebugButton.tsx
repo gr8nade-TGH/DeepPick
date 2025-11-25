@@ -169,6 +169,36 @@ export function CopyDebugButton({ battleId }: CopyDebugButtonProps) {
         console.error('Error getting equipped items:', error);
       }
 
+      // 4.5. Item Save/Activation Flow Tracking
+      try {
+        lines.push('\n' + '-'.repeat(80));
+        lines.push('ITEM SAVE/ACTIVATION FLOW (from console logs)');
+        lines.push('-'.repeat(80));
+        lines.push('');
+        lines.push('This section shows whether items were:');
+        lines.push('  1. Saved to battle state (💾 logs from PreGameItemSelector)');
+        lines.push('  2. Preserved during fetchBattles (🧪 logs from App.tsx)');
+        lines.push('  3. Activated when game started (🎮 logs from QuarterDebugControls)');
+        lines.push('');
+        lines.push('Check your browser console for these emoji markers:');
+        lines.push('  💾💾💾 = Item save attempt');
+        lines.push('  🧪🧪🧪 = fetchBattles called (check if items preserved)');
+        lines.push('  🎮🎮🎮 = Game start (item activation attempt)');
+        lines.push('  ✅✅✅ = Item successfully activated');
+        lines.push('  🔔 = Event received (e.g., DEFENSE_ORB_DESTROYED)');
+        lines.push('  🛡️ = Shield healing attempt');
+        lines.push('');
+        lines.push('If you see:');
+        lines.push('  - 💾 but no items in "EQUIPPED ITEMS" section above = Save failed');
+        lines.push('  - Items in "EQUIPPED ITEMS" but no 🎮 logs = Activation not attempted');
+        lines.push('  - 🎮 logs but "Active items: 0" = Activation failed');
+        lines.push('  - Active items > 0 but no 🔔 logs = Events not firing');
+        lines.push('  - 🔔 logs but no 🛡️ logs = Shield healing logic not running');
+      } catch (error) {
+        lines.push(`❌ Error generating item flow info: ${error}`);
+        console.error('Error generating item flow info:', error);
+      }
+
       // 5. Debug Logger Logs
       lines.push('\n' + '='.repeat(80));
       lines.push('DEBUG LOGGER CAPTURED LOGS');
