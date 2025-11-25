@@ -148,6 +148,7 @@ function App() {
   const urlParams = new URLSearchParams(window.location.search);
   const battleIdParam = urlParams.get('battleId');
   const debugMode = urlParams.get('debug') === '1';
+  const testMode = urlParams.get('testMode') === '1';
 
   // Enable debug logger when debug mode is on
   useEffect(() => {
@@ -161,6 +162,92 @@ function App() {
   // Fetch battles from API
   const fetchBattles = async () => {
     try {
+      // TEST MODE: Create 2 fake battles for testing
+      if (testMode) {
+        console.log('🧪 TEST MODE: Creating 2 fake battles for testing');
+        const testBattles: Game[] = [
+          {
+            id: 'test-battle-1',
+            leftTeam: { id: 'lal', name: 'Los Angeles Lakers', abbreviation: 'LAL', color: 0x552583, colorHex: '#552583' },
+            rightTeam: { id: 'mem', name: 'Memphis Grizzlies', abbreviation: 'MEM', color: 0x5D76A9, colorHex: '#5D76A9' },
+            leftCapper: {
+              id: 'test-capper-1',
+              name: 'Test Capper 1',
+              favoriteTeam: { id: 'lal', name: 'Los Angeles Lakers', abbreviation: 'LAL', color: 0x552583, colorHex: '#552583' },
+              health: 100,
+              maxHealth: 100,
+              level: 1,
+              experience: 0,
+              leaderboardRank: 1,
+              teamRecords: [{ teamId: 'lal', units: 30, wins: 10, losses: 5, pushes: 0 }],
+              equippedItems: { slot1: null, slot2: null, slot3: null }
+            },
+            rightCapper: {
+              id: 'test-capper-2',
+              name: 'Test Capper 2',
+              favoriteTeam: { id: 'mem', name: 'Memphis Grizzlies', abbreviation: 'MEM', color: 0x5D76A9, colorHex: '#5D76A9' },
+              health: 100,
+              maxHealth: 100,
+              level: 1,
+              experience: 0,
+              leaderboardRank: 2,
+              teamRecords: [{ teamId: 'mem', units: 24, wins: 8, losses: 6, pushes: 0 }],
+              equippedItems: { slot1: null, slot2: null, slot3: null }
+            },
+            currentQuarter: 0,
+            spread: -4.5,
+            gameDate: 'Test Game 1',
+            gameTime: '7:00 PM',
+            leftScore: 0,
+            rightScore: 0,
+            status: 'SCHEDULED'
+          },
+          {
+            id: 'test-battle-2',
+            leftTeam: { id: 'bos', name: 'Boston Celtics', abbreviation: 'BOS', color: 0x007A33, colorHex: '#007A33' },
+            rightTeam: { id: 'gsw', name: 'Golden State Warriors', abbreviation: 'GSW', color: 0x1D428A, colorHex: '#1D428A' },
+            leftCapper: {
+              id: 'test-capper-3',
+              name: 'Test Capper 3',
+              favoriteTeam: { id: 'bos', name: 'Boston Celtics', abbreviation: 'BOS', color: 0x007A33, colorHex: '#007A33' },
+              health: 100,
+              maxHealth: 100,
+              level: 1,
+              experience: 0,
+              leaderboardRank: 3,
+              teamRecords: [{ teamId: 'bos', units: 27, wins: 9, losses: 5, pushes: 1 }],
+              equippedItems: { slot1: null, slot2: null, slot3: null }
+            },
+            rightCapper: {
+              id: 'test-capper-4',
+              name: 'Test Capper 4',
+              favoriteTeam: { id: 'gsw', name: 'Golden State Warriors', abbreviation: 'GSW', color: 0x1D428A, colorHex: '#1D428A' },
+              health: 100,
+              maxHealth: 100,
+              level: 1,
+              experience: 0,
+              leaderboardRank: 4,
+              teamRecords: [{ teamId: 'gsw', units: 21, wins: 7, losses: 6, pushes: 1 }],
+              equippedItems: { slot1: null, slot2: null, slot3: null }
+            },
+            currentQuarter: 0,
+            spread: -2.5,
+            gameDate: 'Test Game 2',
+            gameTime: '9:30 PM',
+            leftScore: 0,
+            rightScore: 0,
+            status: 'SCHEDULED'
+          }
+        ];
+
+        setBattles(testBattles);
+        setTotalBattles(2);
+        setError(null);
+        setLoading(false);
+        return;
+      }
+
+      // NORMAL MODE: Fetch from API
       // If battleId is specified, fetch only that battle
       const url = battleIdParam
         ? `/api/battle-bets/${battleIdParam}`
