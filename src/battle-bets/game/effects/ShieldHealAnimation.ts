@@ -46,14 +46,16 @@ export function createShieldHealAnimation(
   const startX = defenseDot.sprite.x;
   const startY = defenseDot.sprite.y;
 
-  // Get LOCAL position of castle sprite (relative to battle container)
-  const endX = castle.sprite.x;
-  const endY = castle.sprite.y - 30; // Above castle
+  // Get LOCAL position of castle CONTAINER (relative to battle container)
+  // Castle.sprite is positioned at (0, -20) relative to castle.container
+  // We want the container position, not the sprite position
+  const endX = castle.container.x;
+  const endY = castle.container.y - 50; // Above castle (container is at center, sprite is at -20)
 
   console.log(`🔵 [ShieldHeal] Defense orb side: ${defenseDot.side}, Castle ID: ${castleId}`);
   console.log(`🔵 [ShieldHeal] Battle ID: ${battleId}`);
   console.log(`🔵 [ShieldHeal] Orb local pos: (${startX}, ${startY})`);
-  console.log(`🔵 [ShieldHeal] Castle local pos: (${endX}, ${endY})`);
+  console.log(`🔵 [ShieldHeal] Castle container pos: (${endX}, ${endY})`);
   console.log(`🔵 [ShieldHeal] Animation path: (${startX}, ${startY}) → (${endX}, ${endY})`);
 
   // Create BLUE healing orb (matching shield color) - smaller and cleaner
