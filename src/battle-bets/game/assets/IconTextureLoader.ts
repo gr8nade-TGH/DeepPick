@@ -16,46 +16,66 @@ const textureCache = new Map<string, PIXI.Texture>();
  */
 export async function loadDefenseOrbTexture(teamColor: string): Promise<PIXI.Texture> {
   const cacheKey = `defense-orb-${teamColor}`;
-  
+
   // Return cached texture if available
   if (textureCache.has(cacheKey)) {
+    console.log(`♻️ [IconTextureLoader] Using cached defense orb texture: ${teamColor}`);
     return textureCache.get(cacheKey)!;
   }
 
   try {
     // Load the base SVG
+    console.log(`🔄 [IconTextureLoader] Fetching defense orb SVG...`);
     const response = await fetch('/icons/defense-orbs/defense-orb.svg');
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
     let svgText = await response.text();
+    console.log(`📄 [IconTextureLoader] SVG loaded, length: ${svgText.length} chars`);
 
     // Replace the fill color with team color
-    svgText = svgText.replace('#FDB927', teamColor);
+    svgText = svgText.replace(/#FDB927/g, teamColor);
+    console.log(`🎨 [IconTextureLoader] Replaced color with: ${teamColor}`);
 
     // Convert SVG to data URL
-    const svgBlob = new Blob([svgText], { type: 'image/svg+xml' });
+    const svgBlob = new Blob([svgText], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(svgBlob);
 
     // Load as PixiJS texture
+    console.log(`⏳ [IconTextureLoader] Loading texture from blob URL...`);
     const texture = await PIXI.Texture.from(url);
-    
+
     // Cache the texture
     textureCache.set(cacheKey, texture);
 
-    // Clean up blob URL
-    URL.revokeObjectURL(url);
+    // Clean up blob URL after a delay to ensure texture is loaded
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
 
     console.log(`✅ [IconTextureLoader] Loaded defense orb texture: ${teamColor}`);
     return texture;
   } catch (error) {
     console.error(`❌ [IconTextureLoader] Failed to load defense orb texture:`, error);
-    
-    // Fallback: return a simple colored circle texture
+    console.error(`❌ [IconTextureLoader] Team color: ${teamColor}`);
+
+    // Fallback: return a simple colored circle texture using Graphics
+    console.log(`🔄 [IconTextureLoader] Creating fallback circle graphic...`);
     const graphics = new PIXI.Graphics();
     graphics.circle(0, 0, 16);
     graphics.fill({ color: parseInt(teamColor.replace('#', '0x')) });
-    
-    const fallbackTexture = PIXI.Texture.from(graphics);
-    textureCache.set(cacheKey, fallbackTexture);
-    return fallbackTexture;
+
+    // Generate texture from graphics using app renderer
+    const app = (globalThis as any).__PIXI_APP__;
+    if (app && app.renderer) {
+      const fallbackTexture = app.renderer.generateTexture(graphics);
+      textureCache.set(cacheKey, fallbackTexture);
+      console.log(`✅ [IconTextureLoader] Created fallback texture`);
+      return fallbackTexture;
+    } else {
+      console.error(`❌ [IconTextureLoader] No renderer available for fallback`);
+      throw error;
+    }
   }
 }
 
@@ -64,7 +84,7 @@ export async function loadDefenseOrbTexture(teamColor: string): Promise<PIXI.Tex
  */
 export async function loadAttackNodeTexture(teamColor: string): Promise<PIXI.Texture> {
   const cacheKey = `attack-node-${teamColor}`;
-  
+
   // Return cached texture if available
   if (textureCache.has(cacheKey)) {
     return textureCache.get(cacheKey)!;
@@ -84,7 +104,7 @@ export async function loadAttackNodeTexture(teamColor: string): Promise<PIXI.Tex
 
     // Load as PixiJS texture
     const texture = await PIXI.Texture.from(url);
-    
+
     // Cache the texture
     textureCache.set(cacheKey, texture);
 
@@ -95,7 +115,7 @@ export async function loadAttackNodeTexture(teamColor: string): Promise<PIXI.Tex
     return texture;
   } catch (error) {
     console.error(`❌ [IconTextureLoader] Failed to load attack node texture:`, error);
-    
+
     // Fallback: return a simple colored hexagon texture
     const graphics = new PIXI.Graphics();
     graphics.poly([
@@ -107,7 +127,7 @@ export async function loadAttackNodeTexture(teamColor: string): Promise<PIXI.Tex
       { x: -14, y: -8 },
     ]);
     graphics.fill({ color: parseInt(teamColor.replace('#', '0x')) });
-    
+
     const fallbackTexture = PIXI.Texture.from(graphics);
     textureCache.set(cacheKey, fallbackTexture);
     return fallbackTexture;
@@ -119,16 +139,16 @@ export async function loadAttackNodeTexture(teamColor: string): Promise<PIXI.Tex
  */
 export async function preloadIconTextures(teamColors: string[]): Promise<void> {
   console.log(`🎨 [IconTextureLoader] Preloading textures for ${teamColors.length} teams...`);
-  
+
   const promises: Promise<PIXI.Texture>[] = [];
-  
+
   for (const color of teamColors) {
     promises.push(loadDefenseOrbTexture(color));
     promises.push(loadAttackNodeTexture(color));
   }
-  
+
   await Promise.all(promises);
-  
+
   console.log(`✅ [IconTextureLoader] Preloaded ${promises.length} textures`);
 }
 

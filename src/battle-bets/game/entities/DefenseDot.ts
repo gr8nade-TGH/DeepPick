@@ -1,12 +1,11 @@
 /**
  * DefenseDot entity - Represents a defense dot in the battle grid
- * Now uses Figma-designed SVG sprites instead of hand-coded Graphics
+ * Uses original Graphics-based HP visualization (3-segment shield)
  */
 
 import * as PIXI from 'pixi.js';
 import gsap from 'gsap';
 import type { DefenseDotConfig, Position, Team } from '../../types/game';
-import { loadDefenseOrbTexture } from '../assets/IconTextureLoader';
 
 export class DefenseDot {
   // Identity
@@ -26,9 +25,8 @@ export class DefenseDot {
   // Visual
   public readonly team: Team;
   public readonly position: Position;
-  public sprite: PIXI.Container; // Container holding the SVG sprite
-  private iconSprite: PIXI.Sprite | null = null; // The actual icon sprite
-  public readonly radius: number = 16; // Icon size (32px / 2)
+  public sprite: PIXI.Graphics; // Back to Graphics for custom shapes
+  public readonly radius: number = 8; // Shield size
 
   constructor(config: DefenseDotConfig) {
     this.id = config.id;
@@ -44,59 +42,300 @@ export class DefenseDot {
     this.alive = true;
     this.isRegenerated = config.isRegenerated ?? false;
 
-    // Create sprite (async loading handled internally)
+    // Create sprite
     this.sprite = this.createSprite();
   }
 
   /**
-   * Create Figma SVG sprite with HP visualization
-   * - Uses loadDefenseOrbTexture to get team-colored icon
-   * - Opacity and scale based on HP
+   * Create pixel-art style shield with HP visualization
+   * - Shield shape with 3 horizontal segments (3 HP)
+   * - Glow intensity based on HP
+   * - Slight size scaling on damage
    */
-  private createSprite(): PIXI.Container {
-    const container = new PIXI.Container();
-    container.x = this.position.x;
-    container.y = this.position.y;
+  private createSprite(): PIXI.Graphics {
+    const graphics = new PIXI.Graphics();
 
-    // Load the icon texture asynchronously
-    this.loadIcon();
+    // All shields use team color
+    const shieldColor = this.team.color;
 
-    return container;
+    // Draw HP segments and glow
+    this.drawHPSegments(graphics, shieldColor, this.hp);
+
+    // Set position
+    graphics.x = this.position.x;
+    graphics.y = this.position.y;
+
+    return graphics;
   }
 
   /**
-   * Load the defense orb icon texture with team color
+   * Draw HP segments as a shield (using original pie-chart approach but shield-shaped)
    */
-  private async loadIcon(): Promise<void> {
-    try {
-      // Convert team color number to hex string
-      const teamColorHex = `#${this.team.color.toString(16).padStart(6, '0')}`;
+  private drawHPSegments(graphics: PIXI.Graphics, shieldColor: number, currentHP: number): void {
+    graphics.clear();
 
-      // Load texture
-      const texture = await loadDefenseOrbTexture(teamColorHex);
+    const hpPercent = currentHP / this.maxHp;
+    const size = this.radius * 2; // 16px
 
-      // Create sprite
-      this.iconSprite = new PIXI.Sprite(texture);
-      this.iconSprite.anchor.set(0.5, 0.5); // Center the sprite
-      this.iconSprite.width = 32; // Match SVG viewBox
-      this.iconSprite.height = 32;
+    // Outer glow (team color)
+    const glowAlpha = 0.25 + (hpPercent * 0.25);
+    this.drawShieldOutline(graphics, size + 4, size + 4, shieldColor, glowAlpha);
 
-      // Add to container
-      this.sprite.addChild(this.iconSprite);
+    // Dark blue border
+    this.drawShieldOutline(graphics, size + 1, size + 1, 0x1a5f7a, 1.0);
 
-      // Update visuals based on current HP
-      this.updateVisuals();
+    // Lighter teal border
+    this.drawShieldOutline(graphics, size, size, 0x2a9d8f, 1.0);
 
-      console.log(`✅ [DefenseDot] Loaded icon for ${this.id}`);
-    } catch (error) {
-      console.error(`❌ [DefenseDot] Failed to load icon for ${this.id}:`, error);
+    // Draw HP pie segments inside shield shape
+    this.drawShieldPieSegments(graphics, size - 2, shieldColor, currentHP);
+  }
 
-      // Fallback: create a simple circle
-      const fallback = new PIXI.Graphics();
-      fallback.circle(0, 0, 16);
-      fallback.fill({ color: this.team.color });
-      this.sprite.addChild(fallback);
+  /**
+   * Draw 3 triangular sections radiating from bottom center point (like reference image)
+   */
+  private drawShieldPieSegments(
+    graphics: PIXI.Graphics,
+    size: number,
+    baseColor: number,
+    currentHP: number
+  ): void {
+    // Bottom center point where all sections meet
+    const bottomY = size / 2;
+    const centerX = 0;
+    const centerY = bottomY * 0.85; // Slightly above actual bottom for better look
+
+    // Draw 3 triangular sections radiating from bottom center
+    // Section 0: Left triangle
+    // Section 1: Center triangle
+    // Section 2: Right triangle
+    for (let sectionIndex = 0; sectionIndex < 3; sectionIndex++) {
+      const isFilled = sectionIndex < currentHP;
+
+      // Calculate angle range for this section (120 degrees each)
+      // Start from left (-150°) and go clockwise
+      const startAngle = -150 + (sectionIndex * 120); // -150°, -30°, 90°
+      const endAngle = startAngle + 120;
+
+      // Draw triangular section
+      if (isFilled) {
+        const lightColor = this.lightenColor(baseColor, 1.3);
+        const darkColor = this.darkenColor(baseColor, 0.7);
+
+        // Draw with gradient (lighter at top, darker at bottom)
+        this.drawTriangularSection(graphics, size, centerX, centerY, startAngle, endAngle, lightColor, darkColor);
+      } else {
+        // Empty section - dark
+        this.drawTriangularSection(graphics, size, centerX, centerY, startAngle, endAngle, 0x1a1a1a, 0x0a0a0a);
+      }
     }
+
+    // Draw divider lines from center to top edge
+    this.drawRadialDivider(graphics, size, centerX, centerY, -150 + 120); // -30°
+    this.drawRadialDivider(graphics, size, centerX, centerY, -150 + 240); // 90°
+  }
+
+  /**
+   * Draw a triangular section radiating from bottom center point
+   */
+  private drawTriangularSection(
+    graphics: PIXI.Graphics,
+    size: number,
+    centerX: number,
+    centerY: number,
+    startAngleDeg: number,
+    endAngleDeg: number,
+    lightColor: number,
+    darkColor: number
+  ): void {
+    const steps = 25;
+    const points: { x: number; y: number }[] = [];
+
+    // Start at center point
+    points.push({ x: centerX, y: centerY });
+
+    // Trace along shield outline from startAngle to endAngle
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      const angleDeg = startAngleDeg + (endAngleDeg - startAngleDeg) * t;
+      const angleRad = (angleDeg * Math.PI) / 180;
+
+      // Get point on shield outline at this angle
+      const point = this.getShieldPointAtAngle(angleRad, size);
+      points.push(point);
+    }
+
+    // Close back to center
+    points.push({ x: centerX, y: centerY });
+
+    // Draw the triangular section with gradient
+    if (points.length > 0) {
+      graphics.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i++) {
+        graphics.lineTo(points[i].x, points[i].y);
+      }
+
+      // Use gradient color (interpolate based on position)
+      const midColor = this.interpolateColor(lightColor, darkColor, 0.5);
+      graphics.fill({ color: midColor, alpha: 1.0 });
+    }
+  }
+
+  /**
+   * Get point on shield outline at given angle (radiating from center)
+   */
+  private getShieldPointAtAngle(angleRad: number, size: number): { x: number; y: number } {
+    // Calculate point on a circle
+    const circleX = Math.cos(angleRad) * (size / 2);
+    const circleY = Math.sin(angleRad) * (size / 2);
+
+    // Get shield width at this Y position
+    const shieldWidth = this.getShieldWidthAtY(circleY, size);
+
+    // Scale X to match shield width
+    const scale = shieldWidth / size;
+    const x = circleX * scale;
+    const y = circleY;
+
+    return { x, y };
+  }
+
+  /**
+   * Interpolate between two colors
+   */
+  private interpolateColor(color1: number, color2: number, t: number): number {
+    const r1 = (color1 >> 16) & 0xff;
+    const g1 = (color1 >> 8) & 0xff;
+    const b1 = color1 & 0xff;
+
+    const r2 = (color2 >> 16) & 0xff;
+    const g2 = (color2 >> 8) & 0xff;
+    const b2 = color2 & 0xff;
+
+    const r = Math.round(r1 + (r2 - r1) * t);
+    const g = Math.round(g1 + (g2 - g1) * t);
+    const b = Math.round(b1 + (b2 - b1) * t);
+
+    return (r << 16) | (g << 8) | b;
+  }
+
+  /**
+   * Draw a radial divider line from center point to shield edge
+   */
+  private drawRadialDivider(
+    graphics: PIXI.Graphics,
+    size: number,
+    centerX: number,
+    centerY: number,
+    angleDeg: number
+  ): void {
+    const angleRad = (angleDeg * Math.PI) / 180;
+
+    // Get point on shield outline
+    const edgePoint = this.getShieldPointAtAngle(angleRad, size);
+
+    // Draw line from center to edge
+    graphics.moveTo(centerX, centerY);
+    graphics.lineTo(edgePoint.x, edgePoint.y);
+    graphics.stroke({ width: 1.5, color: 0x000000, alpha: 0.9 });
+  }
+
+  /**
+   * Get shield width at given Y position
+   */
+  private getShieldWidthAtY(y: number, size: number): number {
+    const halfSize = size / 2;
+    const normalizedY = y / halfSize; // -1 to 1
+
+    // Shield shape: narrower at top and bottom, wider in middle
+    if (normalizedY < 0) {
+      // Top half: 70% to 100%
+      const t = (normalizedY + 1); // 0 to 1
+      return size * (0.7 + (0.3 * t));
+    } else {
+      // Bottom half: 100% to 40%
+      const t = normalizedY; // 0 to 1
+      return size * (1.0 - (0.6 * t));
+    }
+  }
+
+  /**
+   * Draw classic medieval shield outline - wider at top, curves in, pointed bottom
+   */
+  private drawShieldOutline(
+    graphics: PIXI.Graphics,
+    width: number,
+    height: number,
+    color: number,
+    alpha: number
+  ): void {
+    const topY = -height / 2;
+    const midY = 0; // Widest point
+    const bottomY = height / 2;
+
+    const topWidth = width * 0.75; // Narrower at top
+    const midWidth = width; // Widest at middle
+    const bottomWidth = width * 0.4; // Narrow at bottom (converges to point)
+
+    // Start at top-left
+    graphics.moveTo(-topWidth / 2, topY);
+
+    // Top edge (slightly curved)
+    graphics.bezierCurveTo(
+      -topWidth / 2, topY - 0.5,
+      topWidth / 2, topY - 0.5,
+      topWidth / 2, topY
+    );
+
+    // Right side: top to middle (curves outward)
+    graphics.bezierCurveTo(
+      topWidth / 2 + 1, topY + height * 0.15,
+      midWidth / 2, midY - height * 0.1,
+      midWidth / 2, midY
+    );
+
+    // Right side: middle to bottom (curves inward to point)
+    graphics.bezierCurveTo(
+      midWidth / 2, midY + height * 0.15,
+      bottomWidth / 2 + 1, bottomY - height * 0.2,
+      0, bottomY
+    );
+
+    // Left side: bottom to middle (curves inward from point)
+    graphics.bezierCurveTo(
+      -bottomWidth / 2 - 1, bottomY - height * 0.2,
+      -midWidth / 2, midY + height * 0.15,
+      -midWidth / 2, midY
+    );
+
+    // Left side: middle to top (curves outward)
+    graphics.bezierCurveTo(
+      -midWidth / 2, midY - height * 0.1,
+      -topWidth / 2 - 1, topY + height * 0.15,
+      -topWidth / 2, topY
+    );
+
+    graphics.fill({ color, alpha });
+  }
+
+  /**
+   * Lighten a color by a factor
+   */
+  private lightenColor(color: number, factor: number): number {
+    const r = Math.min(255, ((color >> 16) & 0xff) * factor);
+    const g = Math.min(255, ((color >> 8) & 0xff) * factor);
+    const b = Math.min(255, (color & 0xff) * factor);
+    return (r << 16) | (g << 8) | b;
+  }
+
+  /**
+   * Darken a color by a factor
+   */
+  private darkenColor(color: number, factor: number): number {
+    const r = ((color >> 16) & 0xff) * factor;
+    const g = ((color >> 8) & 0xff) * factor;
+    const b = (color & 0xff) * factor;
+    return (r << 16) | (g << 8) | b;
   }
 
 
@@ -129,17 +368,15 @@ export class DefenseDot {
 
   /**
    * Update sprite visuals based on current HP
-   * Adjusts opacity and scale based on HP percentage
+   * Redraws the segmented circle to show HP loss
    */
   private updateVisuals(): void {
-    if (!this.iconSprite) return;
+    const dotColor = this.team.color;
+    this.drawHPSegments(this.sprite, dotColor, this.hp);
 
-    // Opacity based on HP (30% → 100%)
+    // Slight size scaling based on HP (100% → 85% size)
     const hpPercent = this.hp / this.maxHp;
-    this.iconSprite.alpha = 0.3 + (hpPercent * 0.7);
-
-    // Slight size scaling based on HP (85% → 100% size)
-    const sizeScale = 0.85 + (hpPercent * 0.15);
+    const sizeScale = 0.85 + (hpPercent * 0.15); // 85% at 0 HP, 100% at full HP
     this.sprite.scale.set(sizeScale, sizeScale);
   }
 
