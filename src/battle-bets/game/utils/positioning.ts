@@ -9,6 +9,14 @@ import { gridManager } from '../managers/GridManager';
 const config = DEFAULT_GRID_CONFIG;
 
 /**
+ * Get weapon slot position (attack node position)
+ * Wrapper around gridManager.getWeaponSlotPosition
+ */
+export function getWeaponSlotPosition(stat: StatType, side: 'left' | 'right'): Position {
+  return gridManager.getWeaponSlotPosition(stat, side);
+}
+
+/**
  * Calculate the Y position for a stat row
  */
 export function getStatRowY(statIndex: number): number {

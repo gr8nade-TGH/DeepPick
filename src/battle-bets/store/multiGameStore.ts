@@ -8,6 +8,7 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { DefenseDot } from '../game/entities/DefenseDot';
+import { AttackNode } from '../game/entities/AttackNode';
 import { BaseProjectile } from '../game/entities/projectiles/BaseProjectile';
 import type { Game, StatType } from '../types/game';
 import {
@@ -17,7 +18,7 @@ import {
   distributeDotsAcrossStats
 } from '../types/game';
 import { castleManager } from '../game/managers/CastleManager';
-import { getDefenseCellPosition } from '../game/utils/positioning';
+import { getDefenseCellPosition, getWeaponSlotPosition } from '../game/utils/positioning';
 import { debugLogger } from '../game/debug/DebugLogger';
 import { itemEffectRegistry } from '../game/items/ItemEffectRegistry';
 import { rollTestItem } from '../game/items/ItemTestUtils';
@@ -31,6 +32,7 @@ export interface BattleState {
   currentQuarter: number;
   capperHP: Map<string, { currentHP: number; maxHP: number }>; // Key: "side" (e.g., "left", "right")
   defenseDots: Map<string, DefenseDot>;
+  attackNodes: Map<string, AttackNode>; // Attack nodes (weapon balls) with SVG sprites
   projectiles: BaseProjectile[];
   isBattleInProgress: boolean; // True when battle animation is running
   completedQuarters: number[]; // Array of completed quarter numbers [1, 2, 3, 4]
@@ -48,6 +50,7 @@ interface MultiGameState {
   getBattle: (battleId: string) => BattleState | undefined;
   initializeCapperHP: (battleId: string) => void;
   initializeDefenseDots: (battleId: string) => void;
+  initializeAttackNodes: (battleId: string) => void;
   addProjectile: (battleId: string, projectile: BaseProjectile) => void;
   removeProjectile: (battleId: string, id: string) => void;
   applyDamageToCapperHP: (battleId: string, side: 'left' | 'right', damage: number) => void;
@@ -82,6 +85,7 @@ export const useMultiGameStore = create<MultiGameState>()(
           currentQuarter: 0,
           capperHP: new Map(),
           defenseDots: new Map(),
+          attackNodes: new Map(),
           projectiles: [],
           isBattleInProgress: false,
           completedQuarters: []
@@ -93,9 +97,10 @@ export const useMultiGameStore = create<MultiGameState>()(
           return { battles: newBattles };
         });
 
-        // Initialize HP and defense dots for this battle
+        // Initialize HP, defense dots, and attack nodes for this battle
         get().initializeCapperHP(battleId);
         get().initializeDefenseDots(battleId);
+        get().initializeAttackNodes(battleId);
 
         // Auto-activate equipped items
         activateEquippedItems(battleId, game);
@@ -220,6 +225,52 @@ export const useMultiGameStore = create<MultiGameState>()(
         });
 
         console.log(`[Multi-Game Store] Initialized ${defenseDots.size} defense dots for ${battleId}`);
+      },
+
+      // Initialize attack nodes (weapon balls) for a battle
+      initializeAttackNodes: (battleId: string) => {
+        const battle = get().battles.get(battleId);
+        if (!battle) {
+          console.warn(`[Multi-Game Store] Battle not found: ${battleId}`);
+          return;
+        }
+
+        const { game } = battle;
+        const attackNodes = new Map<string, AttackNode>();
+        const stats: StatType[] = ['pts', 'reb', 'ast', 'stl', '3pt'];
+        const sides: ('left' | 'right')[] = ['left', 'right'];
+
+        sides.forEach(side => {
+          const team = side === 'left' ? game.leftTeam : game.rightTeam;
+
+          stats.forEach((stat) => {
+            const id = `${battleId}-attack-${stat}-${side}`;
+            const position = getWeaponSlotPosition(stat, side);
+
+            const attackNode = new AttackNode({
+              id,
+              gameId: battleId,
+              stat,
+              side,
+              position,
+              team,
+            });
+
+            attackNodes.set(id, attackNode);
+          });
+        });
+
+        // Update battle state
+        set(state => {
+          const newBattles = new Map(state.battles);
+          const updatedBattle = newBattles.get(battleId);
+          if (updatedBattle) {
+            updatedBattle.attackNodes = attackNodes;
+          }
+          return { battles: newBattles };
+        });
+
+        console.log(`[Multi-Game Store] Initialized ${attackNodes.size} attack nodes for ${battleId}`);
       },
 
       // Add a projectile to a battle
