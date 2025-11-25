@@ -46,19 +46,19 @@ export class DefenseDot {
   }
 
   /**
-   * Create medieval-style segmented dot with HP visualization
-   * - Segmented circle (3 pie segments for 3 HP)
+   * Create pixel-art style shield with HP visualization
+   * - Shield shape with 3 horizontal segments (3 HP)
    * - Glow intensity based on HP
    * - Slight size scaling on damage
    */
   private createSprite(): PIXI.Graphics {
     const graphics = new PIXI.Graphics();
 
-    // All dots use team color (no special gold color)
-    const dotColor = this.team.color;
+    // All shields use team color
+    const shieldColor = this.team.color;
 
     // Draw HP segments and glow
-    this.drawHPSegments(graphics, dotColor, this.hp);
+    this.drawHPSegments(graphics, shieldColor, this.hp);
 
     // Set position
     graphics.x = this.position.x;
@@ -68,58 +68,72 @@ export class DefenseDot {
   }
 
   /**
-   * Draw HP segments as a segmented circle (pie chart style)
-   * Each segment represents 1 HP (max 3 segments)
+   * Draw HP segments as a pixel-art shield with 3 horizontal bars
+   * Each bar represents 1 HP (max 3 bars)
    */
-  private drawHPSegments(graphics: PIXI.Graphics, dotColor: number, currentHP: number): void {
+  private drawHPSegments(graphics: PIXI.Graphics, shieldColor: number, currentHP: number): void {
     graphics.clear();
 
     const hpPercent = currentHP / this.maxHp;
-    const segmentCount = this.maxHp; // 3 segments for 3 HP
-    const segmentAngle = (Math.PI * 2) / segmentCount;
-    const gapAngle = 0.08; // Small gap between segments
+    const size = this.radius * 2; // 16px base size
 
-    // Outer glow (brighter and more visible)
-    const glowAlpha = 0.25 + (hpPercent * 0.25); // Much brighter glow
-    const glowRadius = this.radius + 4;
-    graphics.circle(0, 0, glowRadius);
-    graphics.fill({ color: dotColor, alpha: glowAlpha });
+    // Outer glow
+    const glowAlpha = 0.25 + (hpPercent * 0.25);
+    const glowSize = size + 6;
+    this.drawShieldOutline(graphics, glowSize, shieldColor, glowAlpha);
 
-    // Draw each HP segment
-    for (let i = 0; i < segmentCount; i++) {
-      const startAngle = (i * segmentAngle) - (Math.PI / 2) + (gapAngle / 2); // Start at top
-      const endAngle = startAngle + segmentAngle - gapAngle;
+    // Shield border (dark outline)
+    this.drawShieldOutline(graphics, size, 0x000000, 1.0);
 
-      // Determine if this segment should be filled (based on current HP)
+    // Shield background (slightly lighter than border)
+    this.drawShieldOutline(graphics, size - 2, 0x222222, 0.9);
+
+    // Draw 3 HP bars (horizontal segments from top to bottom)
+    const barWidth = size - 6;
+    const barHeight = 3;
+    const barSpacing = 1;
+    const totalBarsHeight = (barHeight * 3) + (barSpacing * 2);
+    const startY = -totalBarsHeight / 2;
+
+    for (let i = 0; i < this.maxHp; i++) {
       const isFilled = i < currentHP;
+      const barY = startY + (i * (barHeight + barSpacing));
 
       if (isFilled) {
-        // Filled segment (active HP) - FULLY OPAQUE
-        graphics.moveTo(0, 0);
-        graphics.arc(0, 0, this.radius, startAngle, endAngle);
-        graphics.lineTo(0, 0);
-        graphics.fill({ color: dotColor, alpha: 1.0 });
-
-        // Stronger border for better definition
-        graphics.moveTo(0, 0);
-        graphics.arc(0, 0, this.radius, startAngle, endAngle);
-        graphics.lineTo(0, 0);
-        graphics.stroke({ width: 1.5, color: 0x000000, alpha: 0.6 });
+        // Filled HP bar - team color
+        graphics.rect(-barWidth / 2, barY, barWidth, barHeight);
+        graphics.fill({ color: shieldColor, alpha: 1.0 });
       } else {
-        // Empty segment (lost HP) - darker and more visible
-        graphics.moveTo(0, 0);
-        graphics.arc(0, 0, this.radius, startAngle, endAngle);
-        graphics.lineTo(0, 0);
-        graphics.fill({ color: 0x000000, alpha: 0.5 });
-
-        graphics.moveTo(0, 0);
-        graphics.arc(0, 0, this.radius, startAngle, endAngle);
-        graphics.lineTo(0, 0);
-        graphics.stroke({ width: 1.5, color: 0x000000, alpha: 0.7 });
+        // Empty HP bar - dark
+        graphics.rect(-barWidth / 2, barY, barWidth, barHeight);
+        graphics.fill({ color: 0x000000, alpha: 0.6 });
       }
     }
+  }
 
-    // Inner highlight removed for cleaner look
+  /**
+   * Draw shield outline shape (pixel-art style)
+   */
+  private drawShieldOutline(
+    graphics: PIXI.Graphics,
+    size: number,
+    color: number,
+    alpha: number
+  ): void {
+    const halfSize = size / 2;
+    const topWidth = size * 0.8;
+    const halfTopWidth = topWidth / 2;
+
+    // Shield shape (like the pixel art image)
+    graphics.moveTo(-halfTopWidth, -halfSize); // Top-left
+    graphics.lineTo(halfTopWidth, -halfSize); // Top-right
+    graphics.lineTo(halfSize, -halfSize * 0.3); // Right shoulder
+    graphics.lineTo(halfSize, halfSize * 0.3); // Right side
+    graphics.lineTo(0, halfSize); // Bottom point
+    graphics.lineTo(-halfSize, halfSize * 0.3); // Left side
+    graphics.lineTo(-halfSize, -halfSize * 0.3); // Left shoulder
+    graphics.lineTo(-halfTopWidth, -halfSize); // Back to top-left
+    graphics.fill({ color, alpha });
   }
 
   /**
