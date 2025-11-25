@@ -75,114 +75,179 @@ export class DefenseDot {
     graphics.clear();
 
     const hpPercent = currentHP / this.maxHp;
-    const w = this.radius * 1.8; // 18px wide
-    const h = this.radius * 2.2; // 22px tall (taller than wide)
+    const w = this.radius * 2; // 20px wide
+    const h = this.radius * 2.4; // 24px tall
 
     // Outer glow (team color, soft)
     const glowAlpha = 0.3 + (hpPercent * 0.3);
     this.drawShieldOutline(graphics, w + 6, h + 6, shieldColor, glowAlpha);
 
-    // Dark blue/teal border (outer 3D edge)
-    this.drawShieldOutline(graphics, w, h, 0x1a5f7a, 1.0);
+    // Dark blue border (outer edge - like reference)
+    this.drawShieldOutline(graphics, w + 1, h + 1, 0x1a5f7a, 1.0);
 
-    // Lighter teal border (inner 3D highlight)
-    this.drawShieldOutline(graphics, w - 2, h - 2, 0x2a9d8f, 1.0);
+    // Lighter blue/teal border (3D highlight)
+    this.drawShieldOutline(graphics, w - 0.5, h - 0.5, 0x2a9d8f, 1.0);
 
-    // Black background
-    this.drawShieldOutline(graphics, w - 3.5, h - 3.5, 0x000000, 1.0);
+    // Black inner background
+    this.drawShieldOutline(graphics, w - 2, h - 2, 0x000000, 1.0);
 
-    // Draw 3 VERTICAL curved segments
-    this.drawCurvedSegments(graphics, w - 4, h - 4, shieldColor, currentHP);
+    // Draw 3 curved vertical segments that follow shield shape
+    this.drawCurvedVerticalSegments(graphics, w - 3, h - 3, shieldColor, currentHP);
   }
 
   /**
-   * Draw 3 curved vertical segments that taper with the shield shape
+   * Draw 3 curved vertical segments using bezier curves to match shield contour
    */
-  private drawCurvedSegments(
+  private drawCurvedVerticalSegments(
     graphics: PIXI.Graphics,
     width: number,
     height: number,
     baseColor: number,
     currentHP: number
   ): void {
-    // Each segment is a curved polygon that follows shield contour
     const topY = -height / 2;
     const midY = 0;
     const bottomY = height / 2;
 
-    // Top width (narrower)
-    const topWidth = width * 0.75;
-    const topSegW = topWidth / 3;
+    // Shield width at different heights
+    const topW = width * 0.7;
+    const midW = width;
+    const bottomW = width * 0.35;
 
-    // Middle width (widest)
-    const midWidth = width;
-    const midSegW = midWidth / 3;
+    // Segment positions (left, center, right)
+    const segments = [
+      { // Left segment
+        topL: -topW / 2,
+        topR: -topW / 6,
+        midL: -midW / 2,
+        midR: -midW / 6,
+        bottomL: -bottomW / 2,
+        bottomR: 0,
+      },
+      { // Center segment
+        topL: -topW / 6,
+        topR: topW / 6,
+        midL: -midW / 6,
+        midR: midW / 6,
+        bottomL: 0,
+        bottomR: 0,
+      },
+      { // Right segment
+        topL: topW / 6,
+        topR: topW / 2,
+        midL: midW / 6,
+        midR: midW / 2,
+        bottomL: 0,
+        bottomR: bottomW / 2,
+      }
+    ];
 
-    // Bottom width (narrowest - converges to point)
-    const bottomWidth = width * 0.4;
-    const bottomSegW = bottomWidth / 3;
-
-    // Draw each of the 3 segments
     for (let i = 0; i < 3; i++) {
+      const seg = segments[i];
       const isFilled = i < currentHP;
 
-      // Calculate X positions for this segment at each Y level
-      const topLeft = -topWidth / 2 + (i * topSegW);
-      const topRight = topLeft + topSegW;
-
-      const midLeft = -midWidth / 2 + (i * midSegW);
-      const midRight = midLeft + midSegW;
-
-      const bottomLeft = -bottomWidth / 2 + (i * bottomSegW);
-      const bottomRight = bottomLeft + bottomSegW;
-
       if (isFilled) {
-        // Draw curved segment with gradient
-        const lightColor = this.lightenColor(baseColor, 1.3);
-        const darkColor = this.darkenColor(baseColor, 0.75);
+        const lightColor = this.lightenColor(baseColor, 1.35);
+        const darkColor = this.darkenColor(baseColor, 0.7);
 
-        // Top half (lighter)
-        graphics.moveTo(topLeft, topY);
-        graphics.lineTo(topRight, topY);
-        graphics.lineTo(midRight, midY);
-        graphics.lineTo(midLeft, midY);
-        graphics.lineTo(topLeft, topY);
+        // Top half (lighter) - use bezier curves
+        graphics.moveTo(seg.topL, topY);
+        graphics.bezierCurveTo(
+          seg.topL, topY + height * 0.1,
+          seg.midL, midY - height * 0.1,
+          seg.midL, midY
+        );
+        graphics.lineTo(seg.midR, midY);
+        graphics.bezierCurveTo(
+          seg.midR, midY - height * 0.1,
+          seg.topR, topY + height * 0.1,
+          seg.topR, topY
+        );
+        graphics.lineTo(seg.topL, topY);
         graphics.fill({ color: lightColor, alpha: 1.0 });
 
-        // Bottom half (darker)
-        graphics.moveTo(midLeft, midY);
-        graphics.lineTo(midRight, midY);
-        graphics.lineTo(bottomRight, bottomY);
-        graphics.lineTo(bottomLeft, bottomY);
-        graphics.lineTo(midLeft, midY);
+        // Bottom half (darker) - use bezier curves
+        graphics.moveTo(seg.midL, midY);
+        graphics.bezierCurveTo(
+          seg.midL, midY + height * 0.15,
+          seg.bottomL, bottomY - height * 0.15,
+          seg.bottomL === 0 ? 0 : seg.bottomL, bottomY
+        );
+        if (seg.bottomR === 0 && seg.bottomL === 0) {
+          // Center segment converges to single point
+          graphics.lineTo(0, bottomY);
+        } else {
+          graphics.lineTo(seg.bottomR === 0 ? 0 : seg.bottomR, bottomY);
+        }
+        graphics.bezierCurveTo(
+          seg.bottomR === 0 ? 0 : seg.bottomR, bottomY - height * 0.15,
+          seg.midR, midY + height * 0.15,
+          seg.midR, midY
+        );
+        graphics.lineTo(seg.midL, midY);
         graphics.fill({ color: darkColor, alpha: 1.0 });
 
         // Glossy highlight on left edge
         if (i === 0) {
-          graphics.moveTo(topLeft + 0.5, topY + 1);
-          graphics.lineTo(topLeft + 1.5, topY + 1);
-          graphics.lineTo(midLeft + 1.5, midY);
-          graphics.lineTo(midLeft + 0.5, midY);
-          graphics.fill({ color: 0xffffff, alpha: 0.4 });
+          graphics.moveTo(seg.topL + 1, topY + 2);
+          graphics.bezierCurveTo(
+            seg.topL + 1, topY + height * 0.15,
+            seg.midL + 1, midY - height * 0.1,
+            seg.midL + 1, midY
+          );
+          graphics.lineTo(seg.midL + 0.5, midY);
+          graphics.bezierCurveTo(
+            seg.midL + 0.5, midY - height * 0.1,
+            seg.topL + 0.5, topY + height * 0.15,
+            seg.topL + 0.5, topY + 2
+          );
+          graphics.fill({ color: 0xffffff, alpha: 0.35 });
         }
       } else {
-        // Empty segment - dark
-        graphics.moveTo(topLeft, topY);
-        graphics.lineTo(topRight, topY);
-        graphics.lineTo(midRight, midY);
-        graphics.lineTo(bottomRight, bottomY);
-        graphics.lineTo(bottomLeft, bottomY);
-        graphics.lineTo(midLeft, midY);
-        graphics.lineTo(topLeft, topY);
+        // Empty segment - dark with curves
+        graphics.moveTo(seg.topL, topY);
+        graphics.bezierCurveTo(
+          seg.topL, topY + height * 0.1,
+          seg.midL, midY - height * 0.1,
+          seg.midL, midY
+        );
+        graphics.bezierCurveTo(
+          seg.midL, midY + height * 0.15,
+          seg.bottomL === 0 ? 0 : seg.bottomL, bottomY - height * 0.15,
+          seg.bottomL === 0 ? 0 : seg.bottomL, bottomY
+        );
+        if (seg.bottomR !== 0) {
+          graphics.lineTo(seg.bottomR, bottomY);
+        }
+        graphics.bezierCurveTo(
+          seg.bottomR === 0 ? 0 : seg.bottomR, bottomY - height * 0.15,
+          seg.midR, midY + height * 0.15,
+          seg.midR, midY
+        );
+        graphics.bezierCurveTo(
+          seg.midR, midY - height * 0.1,
+          seg.topR, topY + height * 0.1,
+          seg.topR, topY
+        );
+        graphics.lineTo(seg.topL, topY);
         graphics.fill({ color: 0x0a0a0a, alpha: 0.95 });
       }
 
-      // Black divider line between segments
+      // Black curved divider line between segments
       if (i < 2) {
-        graphics.moveTo(topRight, topY);
-        graphics.lineTo(midRight, midY);
-        graphics.lineTo(bottomRight, bottomY);
-        graphics.stroke({ width: 1.2, color: 0x000000, alpha: 1.0 });
+        const nextSeg = segments[i + 1];
+        graphics.moveTo(seg.topR, topY);
+        graphics.bezierCurveTo(
+          seg.topR, topY + height * 0.1,
+          seg.midR, midY - height * 0.1,
+          seg.midR, midY
+        );
+        graphics.bezierCurveTo(
+          seg.midR, midY + height * 0.15,
+          seg.bottomR === 0 ? 0 : seg.bottomR, bottomY - height * 0.15,
+          seg.bottomR === 0 ? 0 : seg.bottomR, bottomY
+        );
+        graphics.stroke({ width: 1.5, color: 0x000000, alpha: 1.0 });
       }
     }
   }
