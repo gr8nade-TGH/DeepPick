@@ -88,36 +88,62 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
 
   // Update battle's equipped items in the store
   const updateBattleEquippedItems = () => {
-    if (!battle) return;
+    if (!battle) {
+      console.error('❌ [PreGameItemSelector] Cannot save items - battle is null!');
+      return;
+    }
 
-    console.log('💾 Saving equipped items to battle:', {
+    console.log('💾💾💾 [PreGameItemSelector] Saving equipped items to battle:', {
       battleId,
       left: { slot1: leftSlot1, slot2: leftSlot2, slot3: leftSlot3 },
       right: { slot1: rightSlot1, slot2: rightSlot2, slot3: rightSlot3 }
     });
 
-    updateBattle(battleId, (b) => ({
-      ...b,
-      game: {
-        ...b.game,
-        leftCapper: {
-          ...b.game.leftCapper,
-          equippedItems: {
-            slot1: leftSlot1,
-            slot2: leftSlot2,
-            slot3: leftSlot3,
+    console.log('💾 [PreGameItemSelector] Current battle state BEFORE update:', {
+      leftCapper: battle.game.leftCapper.equippedItems,
+      rightCapper: battle.game.rightCapper.equippedItems
+    });
+
+    updateBattle(battleId, (b) => {
+      const updated = {
+        ...b,
+        game: {
+          ...b.game,
+          leftCapper: {
+            ...b.game.leftCapper,
+            equippedItems: {
+              slot1: leftSlot1,
+              slot2: leftSlot2,
+              slot3: leftSlot3,
+            },
+          },
+          rightCapper: {
+            ...b.game.rightCapper,
+            equippedItems: {
+              slot1: rightSlot1,
+              slot2: rightSlot2,
+              slot3: rightSlot3,
+            },
           },
         },
-        rightCapper: {
-          ...b.game.rightCapper,
-          equippedItems: {
-            slot1: rightSlot1,
-            slot2: rightSlot2,
-            slot3: rightSlot3,
-          },
-        },
-      },
-    }));
+      };
+
+      console.log('💾 [PreGameItemSelector] Updated battle state:', {
+        leftCapper: updated.game.leftCapper.equippedItems,
+        rightCapper: updated.game.rightCapper.equippedItems
+      });
+
+      return updated;
+    });
+
+    // Verify the update worked
+    setTimeout(() => {
+      const updatedBattle = useMultiGameStore.getState().getBattle(battleId);
+      console.log('💾 [PreGameItemSelector] Battle state AFTER update (verified):', {
+        leftCapper: updatedBattle?.game.leftCapper.equippedItems,
+        rightCapper: updatedBattle?.game.rightCapper.equippedItems
+      });
+    }, 100);
 
     // Notify parent of changes (convert RolledItemStats to item IDs for backward compatibility)
     const leftItems = [leftSlot1, leftSlot2, leftSlot3]
