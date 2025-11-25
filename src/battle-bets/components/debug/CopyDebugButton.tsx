@@ -30,6 +30,8 @@ export function CopyDebugButton({ battleId }: CopyDebugButtonProps) {
       lines.push('='.repeat(80));
       lines.push('');
 
+      console.log('📋 Starting debug report generation...');
+
       // 1. Battle State from Store
       lines.push('\n' + '='.repeat(80));
       lines.push('BATTLE STATE (from multiGameStore)');
@@ -72,63 +74,82 @@ export function CopyDebugButton({ battleId }: CopyDebugButtonProps) {
       lines.push('ITEM SYSTEM STATE');
       lines.push('='.repeat(80));
 
-      // Active items
-      const activeItems = itemEffectRegistry.getActiveItems();
-      const battleItems = activeItems.filter(item => item.gameId === battleId);
-      lines.push(`Active items for this battle: ${battleItems.length}`);
-      battleItems.forEach(item => {
-        lines.push(`\nItem Instance: ${item.instanceId}`);
-        lines.push(`  Item ID: ${item.itemId}`);
-        lines.push(`  Side: ${item.side}`);
-        lines.push(`  Quality: ${item.qualityTier}`);
-        lines.push(`  Rolls: ${JSON.stringify(item.rolls)}`);
-        lines.push(`  Counters: ${JSON.stringify(Array.from(item.counters.entries()))}`);
-      });
-
-      // Shield states
-      lines.push('\n' + '-'.repeat(80));
-      lines.push('SHIELD STATES (CastleHealthSystem)');
-      lines.push('-'.repeat(80));
-      const leftCastleId = `${battleId}-left`;
-      const rightCastleId = `${battleId}-right`;
-
-      const leftShield = castleHealthSystem.getShield(leftCastleId);
-      const rightShield = castleHealthSystem.getShield(rightCastleId);
-
-      lines.push(`\nLEFT Castle Shield (${leftCastleId}):`);
-      if (leftShield) {
-        lines.push(`  Active: ${leftShield.isActive}`);
-        lines.push(`  HP: ${leftShield.currentHP}/${leftShield.maxHP}`);
-        lines.push(`  Source: ${leftShield.source}`);
-        lines.push(`  Activation Threshold: ${leftShield.activationThreshold}`);
-      } else {
-        lines.push(`  No shield`);
+      try {
+        // Active items
+        console.log('📋 Getting active items...');
+        const activeItems = itemEffectRegistry.getActiveItems();
+        console.log('📋 Active items:', activeItems);
+        const battleItems = activeItems.filter(item => item.gameId === battleId);
+        lines.push(`Active items for this battle: ${battleItems.length}`);
+        battleItems.forEach(item => {
+          lines.push(`\nItem Instance: ${item.instanceId}`);
+          lines.push(`  Item ID: ${item.itemId}`);
+          lines.push(`  Side: ${item.side}`);
+          lines.push(`  Quality: ${item.qualityTier}`);
+          lines.push(`  Rolls: ${JSON.stringify(item.rolls)}`);
+          lines.push(`  Counters: ${JSON.stringify(Array.from(item.counters.entries()))}`);
+        });
+      } catch (error) {
+        lines.push(`❌ Error getting active items: ${error}`);
+        console.error('Error getting active items:', error);
       }
 
-      lines.push(`\nRIGHT Castle Shield (${rightCastleId}):`);
-      if (rightShield) {
-        lines.push(`  Active: ${rightShield.isActive}`);
-        lines.push(`  HP: ${rightShield.currentHP}/${rightShield.maxHP}`);
-        lines.push(`  Source: ${rightShield.source}`);
-        lines.push(`  Activation Threshold: ${rightShield.activationThreshold}`);
-      } else {
-        lines.push(`  No shield`);
+      try {
+        // Shield states
+        lines.push('\n' + '-'.repeat(80));
+        lines.push('SHIELD STATES (CastleHealthSystem)');
+        lines.push('-'.repeat(80));
+        const leftCastleId = `${battleId}-left`;
+        const rightCastleId = `${battleId}-right`;
+
+        console.log('📋 Getting shield states...');
+        const leftShield = castleHealthSystem.getShield(leftCastleId);
+        const rightShield = castleHealthSystem.getShield(rightCastleId);
+
+        lines.push(`\nLEFT Castle Shield (${leftCastleId}):`);
+        if (leftShield) {
+          lines.push(`  Active: ${leftShield.isActive}`);
+          lines.push(`  HP: ${leftShield.currentHP}/${leftShield.maxHP}`);
+          lines.push(`  Source: ${leftShield.source}`);
+          lines.push(`  Activation Threshold: ${leftShield.activationThreshold}`);
+        } else {
+          lines.push(`  No shield`);
+        }
+
+        lines.push(`\nRIGHT Castle Shield (${rightCastleId}):`);
+        if (rightShield) {
+          lines.push(`  Active: ${rightShield.isActive}`);
+          lines.push(`  HP: ${rightShield.currentHP}/${rightShield.maxHP}`);
+          lines.push(`  Source: ${rightShield.source}`);
+          lines.push(`  Activation Threshold: ${rightShield.activationThreshold}`);
+        } else {
+          lines.push(`  No shield`);
+        }
+      } catch (error) {
+        lines.push(`❌ Error getting shield states: ${error}`);
+        console.error('Error getting shield states:', error);
       }
 
-      // Equipped items from battle state
-      lines.push('\n' + '-'.repeat(80));
-      lines.push('EQUIPPED ITEMS (Battle State)');
-      lines.push('-'.repeat(80));
-      if (battle) {
-        lines.push(`\nLEFT Side Equipped Items:`);
-        lines.push(`  Slot 1: ${battle.leftCapper.equippedItems.slot1?.itemId || 'empty'}`);
-        lines.push(`  Slot 2: ${battle.leftCapper.equippedItems.slot2?.itemId || 'empty'}`);
-        lines.push(`  Slot 3: ${battle.leftCapper.equippedItems.slot3?.itemId || 'empty'}`);
+      try {
+        // Equipped items from battle state
+        lines.push('\n' + '-'.repeat(80));
+        lines.push('EQUIPPED ITEMS (Battle State)');
+        lines.push('-'.repeat(80));
+        console.log('📋 Getting equipped items from battle state...');
+        if (battle) {
+          lines.push(`\nLEFT Side Equipped Items:`);
+          lines.push(`  Slot 1: ${battle.leftCapper.equippedItems.slot1?.itemId || 'empty'}`);
+          lines.push(`  Slot 2: ${battle.leftCapper.equippedItems.slot2?.itemId || 'empty'}`);
+          lines.push(`  Slot 3: ${battle.leftCapper.equippedItems.slot3?.itemId || 'empty'}`);
 
-        lines.push(`\nRIGHT Side Equipped Items:`);
-        lines.push(`  Slot 1: ${battle.rightCapper.equippedItems.slot1?.itemId || 'empty'}`);
-        lines.push(`  Slot 2: ${battle.rightCapper.equippedItems.slot2?.itemId || 'empty'}`);
-        lines.push(`  Slot 3: ${battle.rightCapper.equippedItems.slot3?.itemId || 'empty'}`);
+          lines.push(`\nRIGHT Side Equipped Items:`);
+          lines.push(`  Slot 1: ${battle.rightCapper.equippedItems.slot1?.itemId || 'empty'}`);
+          lines.push(`  Slot 2: ${battle.rightCapper.equippedItems.slot2?.itemId || 'empty'}`);
+          lines.push(`  Slot 3: ${battle.rightCapper.equippedItems.slot3?.itemId || 'empty'}`);
+        }
+      } catch (error) {
+        lines.push(`❌ Error getting equipped items: ${error}`);
+        console.error('Error getting equipped items:', error);
       }
 
       // 5. Debug Logger Logs
@@ -143,16 +164,19 @@ export function CopyDebugButton({ battleId }: CopyDebugButtonProps) {
       lines.push('='.repeat(80));
 
       const report = lines.join('\n');
+      console.log('📋 Report generated, copying to clipboard...');
+      console.log('Report length:', report.length, 'characters');
+
       await navigator.clipboard.writeText(report);
 
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
 
-      console.log('📋 Comprehensive debug report copied to clipboard!');
-      console.log('Report length:', report.length, 'characters');
+      console.log('✅ Comprehensive debug report copied to clipboard!');
     } catch (error) {
-      console.error('Failed to copy debug report:', error);
-      alert('Failed to copy. Check console.');
+      console.error('❌ Failed to copy debug report:', error);
+      console.error('Error details:', error);
+      alert(`Failed to copy. Error: ${error}\nCheck console for details.`);
     }
   };
 
