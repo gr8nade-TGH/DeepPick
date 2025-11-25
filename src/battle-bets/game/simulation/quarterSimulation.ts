@@ -325,14 +325,15 @@ export async function simulateQuarter(
 
   // Fire all stat rows SIMULTANEOUSLY (all at once): PTS, REB, AST, STL, 3PT
   // Use fireStatRowForMultiBattle (the working version from auto-start mode)
-  // Double all projectile counts for better visual effect (2x multiplier)
+  // Triple projectile counts for better visual effect (3x multiplier)
+  // BUT display shows actual stat values (not multiplied)
   try {
     const statRowPromises = [
-      fireStatRowForMultiBattle(battleId, gameId, 'pts', quarterData.left.points * 2, quarterData.right.points * 2),
-      fireStatRowForMultiBattle(battleId, gameId, 'reb', quarterData.left.rebounds * 2, quarterData.right.rebounds * 2),
-      fireStatRowForMultiBattle(battleId, gameId, 'ast', quarterData.left.assists * 2, quarterData.right.assists * 2),
-      fireStatRowForMultiBattle(battleId, gameId, 'stl', quarterData.left.steals * 2, quarterData.right.steals * 2),
-      fireStatRowForMultiBattle(battleId, gameId, '3pt', quarterData.left.threePointers * 2, quarterData.right.threePointers * 2),
+      fireStatRowForMultiBattle(battleId, gameId, 'pts', quarterData.left.points, quarterData.right.points, quarterData.left.points * 3, quarterData.right.points * 3),
+      fireStatRowForMultiBattle(battleId, gameId, 'reb', quarterData.left.rebounds, quarterData.right.rebounds, quarterData.left.rebounds * 3, quarterData.right.rebounds * 3),
+      fireStatRowForMultiBattle(battleId, gameId, 'ast', quarterData.left.assists, quarterData.right.assists, quarterData.left.assists * 3, quarterData.right.assists * 3),
+      fireStatRowForMultiBattle(battleId, gameId, 'stl', quarterData.left.steals, quarterData.right.steals, quarterData.left.steals * 3, quarterData.right.steals * 3),
+      fireStatRowForMultiBattle(battleId, gameId, '3pt', quarterData.left.threePointers, quarterData.right.threePointers, quarterData.left.threePointers * 3, quarterData.right.threePointers * 3),
     ];
 
     // Wait for all stat rows to complete
@@ -982,16 +983,28 @@ function getCountForStatFromQuarter(stat: StatType, stats: QuarterStats): number
 /**
  * Fire one stat row worth of projectiles for a multi-game battle.
  * Returns false if the battle should end, true to continue.
+ *
+ * @param leftCount - Display value for left side (shown in UI)
+ * @param rightCount - Display value for right side (shown in UI)
+ * @param leftProjectileCount - Actual number of projectiles to fire (optional, defaults to leftCount)
+ * @param rightProjectileCount - Actual number of projectiles to fire (optional, defaults to rightCount)
  */
 async function fireStatRowForMultiBattle(
   battleId: string,
   gameId: string,
   stat: StatType,
   leftCount: number,
-  rightCount: number
+  rightCount: number,
+  leftProjectileCount?: number,
+  rightProjectileCount?: number
 ): Promise<boolean> {
   const statName = stat.toUpperCase();
-  console.log(`⚔️ [MultiBattleDebug] ${statName}: L${leftCount} vs R${rightCount}`);
+
+  // Use provided projectile counts or fall back to display counts
+  const leftProj = leftProjectileCount ?? leftCount;
+  const rightProj = rightProjectileCount ?? rightCount;
+
+  console.log(`⚔️ [MultiBattleDebug] ${statName}: L${leftCount} vs R${rightCount} (projectiles: L${leftProj} vs R${rightProj})`);
 
   const container = pixiManager.getContainer(battleId);
   if (!container) {
@@ -1047,14 +1060,15 @@ async function fireStatRowForMultiBattle(
   }
 
   // PHASE 3: Fire projectiles from both sides with staggered timing
-  const maxCount = Math.max(leftCount, rightCount);
+  // Use projectile counts (which may be 3x the display count)
+  const maxCount = Math.max(leftProj, rightProj);
   const projectilePromises: Promise<void>[] = [];
-  const STAGGER_DELAY = 1000; // Increased from 600ms to 1000ms for much slower, more spaced out projectiles
+  const STAGGER_DELAY = 400; // Faster projectiles (reduced from 1000ms)
 
   for (let i = 0; i < maxCount; i++) {
     const delay = i * STAGGER_DELAY;
 
-    if (i < leftCount) {
+    if (i < leftProj) {
       projectilePromises.push(
         (async () => {
           await sleep(delay);
@@ -1063,7 +1077,7 @@ async function fireStatRowForMultiBattle(
       );
     }
 
-    if (i < rightCount) {
+    if (i < rightProj) {
       projectilePromises.push(
         (async () => {
           await sleep(delay);
