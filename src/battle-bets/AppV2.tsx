@@ -97,9 +97,9 @@ function generateTestBattles(): ApiBattle[] {
       left_hp: 100,
       right_hp: 100,
       spread: -4.5,
-      status: 'q2_pending',
+      status: 'scheduled', // Start as UPCOMING so items can be equipped
       created_at: new Date().toISOString(),
-      game_start_time: new Date(Date.now() - 3600000).toISOString(),
+      game_start_time: new Date(Date.now() + 3600000).toISOString(), // 1 hour in future
       left_capper: {
         id: 'test-capper-1',
         name: 'Test Capper 1',
@@ -123,9 +123,9 @@ function generateTestBattles(): ApiBattle[] {
       left_hp: 100,
       right_hp: 100,
       spread: -2.5,
-      status: 'q3_pending',
+      status: 'scheduled', // Start as UPCOMING so items can be equipped
       created_at: new Date().toISOString(),
-      game_start_time: new Date(Date.now() - 7200000).toISOString(),
+      game_start_time: new Date(Date.now() + 7200000).toISOString(), // 2 hours in future
       left_capper: {
         id: 'test-capper-3',
         name: 'Test Capper 3',
@@ -285,6 +285,45 @@ function AppV2() {
     const interval = setInterval(() => {
       fetchBattles();
     }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // NEW: Sync battle status from store to battles array
+  // This ensures tab filtering works when Force Q1 updates the store
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setBattles(prevBattles => {
+        return prevBattles.map(battle => {
+          const storeBattle = useMultiGameStore.getState().getBattle(battle.id);
+          if (!storeBattle) return battle;
+
+          // Map store status to API status format
+          const storeStatus = storeBattle.status;
+          let apiStatus = (battle as any)._battleData?.status || 'scheduled';
+
+          if (storeStatus === '1Q') apiStatus = 'q1_pending';
+          else if (storeStatus === '2Q') apiStatus = 'q2_pending';
+          else if (storeStatus === '3Q') apiStatus = 'q3_pending';
+          else if (storeStatus === '4Q') apiStatus = 'q4_pending';
+          else if (storeStatus === 'FINAL') apiStatus = 'final';
+
+          // Update battle data if status changed
+          if (apiStatus !== (battle as any)._battleData?.status) {
+            return {
+              ...battle,
+              status: storeStatus,
+              _battleData: {
+                ...(battle as any)._battleData,
+                status: apiStatus
+              }
+            };
+          }
+
+          return battle;
+        });
+      });
+    }, 500); // Check every 500ms
 
     return () => clearInterval(interval);
   }, []);
