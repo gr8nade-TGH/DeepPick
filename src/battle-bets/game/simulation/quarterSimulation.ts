@@ -1162,7 +1162,7 @@ async function fireSingleProjectileForMultiBattle(
   // Add sprite to this battle's Pixi container
   pixiManager.addSprite(projectile.sprite, 'projectile', battleId);
 
-  // Emit PROJECTILE_FIRED event
+  // Emit PROJECTILE_FIRED event (BEFORE animation so items can modify speed)
   battleEventBus.emit('PROJECTILE_FIRED', {
     side,
     opponentSide: targetSide,
@@ -1174,6 +1174,9 @@ async function fireSingleProjectileForMultiBattle(
     source: 'BASE',
     isExtraFromItem: false
   } as ProjectileFiredPayload);
+
+  // Small delay to allow event handlers to apply speed modifiers
+  await new Promise(resolve => setTimeout(resolve, 10));
 
   // Animate towards target; collisions are checked during flight
   await projectile.animateToTarget();

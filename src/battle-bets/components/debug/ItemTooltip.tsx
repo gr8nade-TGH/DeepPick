@@ -82,6 +82,26 @@ export const ItemTooltip: React.FC<ItemTooltipProps> = ({ item, rolls, quality }
           label: 'Shield Regeneration per Orb Destroyed',
           prefix: '+'
         };
+      case 'ptsThreshold':
+        return {
+          label: 'Pts Threshold',
+          prefix: '+'
+        };
+      case 'bonusProjectiles':
+        return {
+          label: 'Bonus Projectiles',
+          prefix: '+'
+        };
+      case 'ptsSpeedBoost':
+        return {
+          label: 'Pts Speed Boost',
+          prefix: '+'
+        };
+      case 'bonusStatSpeedBoost':
+        return {
+          label: 'Bonus Stat Speed Boost',
+          prefix: '+'
+        };
       default:
         // Generic formatting
         const formatted = key
@@ -122,15 +142,18 @@ export const ItemTooltip: React.FC<ItemTooltipProps> = ({ item, rolls, quality }
             const isMin = roll === range.min;
             const { label, prefix } = getStatDescription(key, roll, range);
 
+            // Add % suffix for speed boost stats
+            const suffix = (key === 'ptsSpeedBoost' || key === 'bonusStatSpeedBoost') ? '%' : '';
+
             return (
               <div key={key} className="tooltip-stat-bullet">
                 <span className="bullet">◆</span>
                 <span className="stat-text">
                   <span className={`stat-value ${isMax ? 'max-roll' : isMin ? 'min-roll' : ''}`}>
-                    {prefix}{roll}
+                    {prefix}{roll}{suffix}
                   </span>
                   {' '}{label}
-                  <span className="stat-range"> ({range.min}-{range.max})</span>
+                  <span className="stat-range"> ({range.min}{suffix}-{range.max}{suffix})</span>
                 </span>
               </div>
             );

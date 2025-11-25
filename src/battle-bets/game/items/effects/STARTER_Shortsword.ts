@@ -8,21 +8,21 @@
  * from the REB, AST, STL, 3PT rows.
  *
  * Projectile Speed Boost:
- * - PTS projectiles: +10% to +25% speed
- * - One random stat (REB, AST, STL, or 3PT): +10% to +25% speed
+ * - PTS projectiles: +10% to +90% speed bonus
+ * - One random stat (REB, AST, STL, or 3PT): +10% to +90% speed bonus
  *
  * Roll Ranges:
  * - ptsThreshold: 3-8 projectiles (how many PTS projectiles before triggering)
  * - bonusProjectiles: 1-3 projectiles (how many bonus projectiles to fire)
- * - ptsSpeedBoost: 10-25% (projectile speed increase for PTS)
- * - bonusStatSpeedBoost: 10-25% (projectile speed increase for random stat)
+ * - ptsSpeedBoost: 10-90% (projectile speed increase for PTS)
+ * - bonusStatSpeedBoost: 10-90% (projectile speed increase for random stat)
  * - bonusStat: Randomly selected from ['reb', 'ast', 'stl', '3pt']
  *
  * Quality Tiers:
  * - Warped: Low rolls (e.g., 7-8 PTS threshold, +1 bonus projectile, +10% speed)
- * - Balanced: Average rolls (e.g., 5-6 PTS threshold, +2 bonus projectiles, +17% speed)
- * - Honed: Good rolls (e.g., 4-5 PTS threshold, +2-3 bonus projectiles, +22% speed)
- * - Masterwork: Perfect rolls (e.g., 3 PTS threshold, +3 bonus projectiles, +25% speed)
+ * - Balanced: Average rolls (e.g., 5-6 PTS threshold, +2 bonus projectiles, +50% speed)
+ * - Honed: Good rolls (e.g., 4-5 PTS threshold, +2-3 bonus projectiles, +70% speed)
+ * - Masterwork: Perfect rolls (e.g., 3 PTS threshold, +3 bonus projectiles, +90% speed)
  */
 
 import { battleEventBus } from '../../events/EventBus';
@@ -48,13 +48,13 @@ export const STARTER_SHORTSWORD_DEFINITION: ItemDefinition = {
   teamName: 'Starter Equipment',
   slot: 'weapon',
   name: 'Shortsword',
-  description: 'Every 3 to 8 projectiles fired from the PTS row, fire 1 to 3 projectiles from the REB, AST, STL, 3PT rows. Increases projectile speed for PTS and one random stat.',
+  description: 'Every 3 to 8 projectiles fired from the PTS row, fire 1 to 3 projectiles from the REB, AST, STL, 3PT rows. +10% to +90% speed bonus to PTS projectiles and one random stat.',
   icon: '⚔️',
   rollRanges: {
     ptsThreshold: { min: 3, max: 8, step: 1 },
     bonusProjectiles: { min: 1, max: 3, step: 1 },
-    ptsSpeedBoost: { min: 10, max: 25, step: 1 }, // 10-25% speed boost for PTS
-    bonusStatSpeedBoost: { min: 10, max: 25, step: 1 }, // 10-25% speed boost for random stat
+    ptsSpeedBoost: { min: 10, max: 90, step: 1 }, // 10-90% speed boost for PTS
+    bonusStatSpeedBoost: { min: 10, max: 90, step: 1 }, // 10-90% speed boost for random stat
   },
 };
 
@@ -199,7 +199,7 @@ async function fireBonusProjectile(
 
   console.log(`⚔️ [Shortsword] Fired bonus projectile from ${lane.toUpperCase()}`);
 
-  // Emit PROJECTILE_FIRED event
+  // Emit PROJECTILE_FIRED event (BEFORE animation so speed boost can be applied)
   battleEventBus.emit('PROJECTILE_FIRED', {
     side,
     opponentSide: targetSide,
@@ -212,6 +212,9 @@ async function fireBonusProjectile(
     isExtraFromItem: true,
     itemId: STARTER_SHORTSWORD_DEFINITION.id,
   } as ProjectileFiredPayload);
+
+  // Small delay to allow event handlers to apply speed modifiers
+  await new Promise(resolve => setTimeout(resolve, 10));
 
   // Animate projectile to target
   await projectile.animateToTarget();

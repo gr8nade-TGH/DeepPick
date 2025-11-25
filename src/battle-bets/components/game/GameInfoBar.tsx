@@ -221,7 +221,7 @@ export const GameInfoBar: React.FC<GameInfoBarProps> = ({
 
   return (
     <div className="game-info-bar">
-      {/* Left Capper - [Rank] [Name] [Combined Pick Box with Team/Spread/Units/Record] [Q#] */}
+      {/* Left Capper - [Rank] [Name] [Team+Spread Box] [Units Box] */}
       <div className="capper-section left">
         {/* Rank Badge */}
         <div className="capper-icon">
@@ -231,20 +231,29 @@ export const GameInfoBar: React.FC<GameInfoBarProps> = ({
         {/* Capper Name */}
         <div className="capper-name">{game.leftCapper.name}</div>
 
-        {/* Combined Pick Box (Team + Spread + Units + Record) */}
+        {/* Pick Box (Team + Spread) */}
         <div
-          className="pick-box-combined left-pick"
+          className="pick-box"
+          style={{
+            borderColor: game.leftTeam.colorHex,
+            boxShadow: `0 0 10px ${game.leftTeam.colorHex}80`,
+          }}
+        >
+          <span className="pick-team">{game.leftTeam.abbreviation}</span>
+          <span className="pick-spread" style={{ color: game.leftTeam.colorHex }}>{leftSpread > 0 ? '+' : ''}{leftSpread}</span>
+        </div>
+
+        {/* Units Box */}
+        <div
+          className="units-box"
+          style={{
+            borderColor: game.leftTeam.colorHex,
+            boxShadow: `0 0 10px ${game.leftTeam.colorHex}80`,
+          }}
           onMouseEnter={() => setLeftRecordHover(true)}
           onMouseLeave={() => setLeftRecordHover(false)}
         >
-          <div className="pick-info">
-            <span className="pick-team">{game.leftTeam.abbreviation}</span>
-            <span className="pick-spread">{leftSpread > 0 ? '+' : ''}{leftSpread}</span>
-          </div>
-          <div className="pick-stats">
-            <span className="pick-units">{leftUnits > 0 ? '+' : ''}{Math.round(leftUnits * 10) / 10}U</span>
-            <span className="pick-record">{leftRecord ? `${leftRecord.wins}-${leftRecord.losses}-${leftRecord.pushes}` : '0-0-0'}</span>
-          </div>
+          <span className="units-value" style={{ color: game.leftTeam.colorHex }}>{leftUnits > 0 ? '+' : ''}{leftUnits.toFixed(1)}</span>
           {leftRecordHover && (
             <div className="units-tooltip">
               <div><strong>{game.leftCapper.name}'s {game.leftTeam.abbreviation} Spread Record</strong></div>
@@ -253,9 +262,6 @@ export const GameInfoBar: React.FC<GameInfoBarProps> = ({
             </div>
           )}
         </div>
-
-        {/* Quarter Indicator */}
-        <div className="quarter-indicator">Q{currentQuarter || '#'}</div>
       </div>
 
       {/* Center Score - Single line layout */}
@@ -291,25 +297,19 @@ export const GameInfoBar: React.FC<GameInfoBarProps> = ({
         </div>
       </div>
 
-      {/* Right Capper - [Q#] [Combined Pick Box with Team/Spread/Units/Record] [Name] [Rank] (mirrored, right-aligned) */}
+      {/* Right Capper - [Units Box] [Team+Spread Box] [Name] [Rank] (mirrored, right-aligned) */}
       <div className="capper-section right">
-        {/* Quarter Indicator */}
-        <div className="quarter-indicator">Q{currentQuarter || '#'}</div>
-
-        {/* Combined Pick Box (Team + Spread + Units + Record) */}
+        {/* Units Box */}
         <div
-          className="pick-box-combined right-pick"
+          className="units-box"
+          style={{
+            borderColor: game.rightTeam.colorHex,
+            boxShadow: `0 0 10px ${game.rightTeam.colorHex}80`,
+          }}
           onMouseEnter={() => setRightRecordHover(true)}
           onMouseLeave={() => setRightRecordHover(false)}
         >
-          <div className="pick-info">
-            <span className="pick-team">{game.rightTeam.abbreviation}</span>
-            <span className="pick-spread">{rightSpread > 0 ? '+' : ''}{rightSpread}</span>
-          </div>
-          <div className="pick-stats">
-            <span className="pick-units">{rightUnits > 0 ? '+' : ''}{Math.round(rightUnits * 10) / 10}U</span>
-            <span className="pick-record">{rightRecord ? `${rightRecord.wins}-${rightRecord.losses}-${rightRecord.pushes}` : '0-0-0'}</span>
-          </div>
+          <span className="units-value" style={{ color: game.rightTeam.colorHex }}>{rightUnits > 0 ? '+' : ''}{rightUnits.toFixed(1)}</span>
           {rightRecordHover && (
             <div className="units-tooltip">
               <div><strong>{game.rightCapper.name}'s {game.rightTeam.abbreviation} Spread Record</strong></div>
@@ -317,6 +317,18 @@ export const GameInfoBar: React.FC<GameInfoBarProps> = ({
               <div>{rightUnits} units ÷ 3 = <strong>{rightOrbs} defense orbs</strong></div>
             </div>
           )}
+        </div>
+
+        {/* Pick Box (Team + Spread) */}
+        <div
+          className="pick-box"
+          style={{
+            borderColor: game.rightTeam.colorHex,
+            boxShadow: `0 0 10px ${game.rightTeam.colorHex}80`,
+          }}
+        >
+          <span className="pick-team">{game.rightTeam.abbreviation}</span>
+          <span className="pick-spread" style={{ color: game.rightTeam.colorHex }}>{rightSpread > 0 ? '+' : ''}{rightSpread}</span>
         </div>
 
         {/* Capper Name */}
