@@ -91,7 +91,7 @@ export class DefenseDot {
   }
 
   /**
-   * Draw pie segments inside shield shape (like original orb design but shield-shaped)
+   * Draw 3 vertical sections that span the entire shield height
    */
   private drawShieldPieSegments(
     graphics: PIXI.Graphics,
@@ -99,85 +99,118 @@ export class DefenseDot {
     baseColor: number,
     currentHP: number
   ): void {
-    const centerX = 0;
-    const centerY = 0;
+    const halfSize = size / 2;
+    const steps = 20; // Smoothness of curves
 
-    // Draw 3 pie segments (120 degrees each)
-    const segmentAngle = (Math.PI * 2) / 3; // 120 degrees in radians
-    const startAngle = -Math.PI / 2; // Start at top
+    // Draw 3 vertical sections (left, center, right)
+    for (let sectionIndex = 0; sectionIndex < 3; sectionIndex++) {
+      const isFilled = sectionIndex < currentHP;
 
-    for (let i = 0; i < this.maxHp; i++) {
-      const isFilled = i < currentHP;
-      const angle1 = startAngle + (i * segmentAngle);
-      const angle2 = angle1 + segmentAngle;
+      // Calculate X boundaries for this section
+      const leftX = -1 / 3 + (sectionIndex / 3); // -1/3, 0, 1/3
+      const rightX = leftX + 1 / 3; // 0, 1/3, 2/3
 
+      // Draw section with gradient
       if (isFilled) {
-        // Filled segment - team color with gradient
-        const lightColor = this.lightenColor(baseColor, 1.2);
-        const darkColor = this.darkenColor(baseColor, 0.8);
+        const lightColor = this.lightenColor(baseColor, 1.25);
+        const darkColor = this.darkenColor(baseColor, 0.75);
 
-        // Draw pie segment clipped to shield shape
-        this.drawShieldPieSegment(graphics, size, angle1, angle2, lightColor, darkColor);
+        // Top half (lighter)
+        this.drawShieldSection(graphics, size, leftX, rightX, -1, 0, lightColor);
+
+        // Bottom half (darker)
+        this.drawShieldSection(graphics, size, leftX, rightX, 0, 1, darkColor);
       } else {
-        // Empty segment - dark
-        this.drawShieldPieSegment(graphics, size, angle1, angle2, 0x1a1a1a, 0x0a0a0a);
+        // Empty section - dark
+        this.drawShieldSection(graphics, size, leftX, rightX, -1, 1, 0x0a0a0a);
       }
     }
+
+    // Draw vertical divider lines
+    this.drawVerticalDivider(graphics, size, -1 / 3, 1 / 3);
+    this.drawVerticalDivider(graphics, size, 1 / 3, 2 / 3);
   }
 
   /**
-   * Draw a single pie segment clipped to shield shape
+   * Draw a vertical section of the shield
+   * @param leftX - Left boundary (-1 to 1, where -1 is left edge, 1 is right edge)
+   * @param rightX - Right boundary (-1 to 1)
+   * @param topY - Top boundary (-1 to 1, where -1 is top, 1 is bottom)
+   * @param bottomY - Bottom boundary (-1 to 1)
    */
-  private drawShieldPieSegment(
+  private drawShieldSection(
     graphics: PIXI.Graphics,
     size: number,
-    startAngle: number,
-    endAngle: number,
-    color1: number,
-    color2: number
+    leftX: number,
+    rightX: number,
+    topY: number,
+    bottomY: number,
+    color: number
   ): void {
-    const steps = 20;
-    const angleStep = (endAngle - startAngle) / steps;
+    const steps = 15;
+    const yStep = (bottomY - topY) / steps;
 
-    // Create shield-shaped pie segment
-    graphics.moveTo(0, 0); // Center
+    // Build the section polygon
+    const points: { x: number; y: number }[] = [];
 
+    // Left edge (top to bottom)
     for (let i = 0; i <= steps; i++) {
-      const angle = startAngle + (i * angleStep);
-      const point = this.getShieldPointAtAngle(angle, size);
-      graphics.lineTo(point.x, point.y);
+      const normalizedY = topY + (yStep * i);
+      const y = normalizedY * (size / 2);
+      const shieldWidth = this.getShieldWidthAtY(y, size);
+      const x = leftX * (shieldWidth / 2);
+      points.push({ x, y });
     }
 
-    graphics.lineTo(0, 0); // Back to center
+    // Right edge (bottom to top)
+    for (let i = steps; i >= 0; i--) {
+      const normalizedY = topY + (yStep * i);
+      const y = normalizedY * (size / 2);
+      const shieldWidth = this.getShieldWidthAtY(y, size);
+      const x = rightX * (shieldWidth / 2);
+      points.push({ x, y });
+    }
 
-    // Use gradient color (interpolate between color1 and color2)
-    const midColor = this.interpolateColor(color1, color2, 0.5);
-    graphics.fill({ color: midColor, alpha: 1.0 });
-
-    // Draw black border between segments
-    graphics.moveTo(0, 0);
-    const endPoint = this.getShieldPointAtAngle(endAngle, size);
-    graphics.lineTo(endPoint.x, endPoint.y);
-    graphics.stroke({ width: 1, color: 0x000000, alpha: 0.8 });
+    // Draw polygon
+    if (points.length > 0) {
+      graphics.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i++) {
+        graphics.lineTo(points[i].x, points[i].y);
+      }
+      graphics.lineTo(points[0].x, points[0].y);
+      graphics.fill({ color, alpha: 1.0 });
+    }
   }
 
   /**
-   * Get point on shield outline at given angle
+   * Draw a vertical divider line between sections
    */
-  private getShieldPointAtAngle(angle: number, size: number): { x: number; y: number } {
-    // Convert angle to Y position
-    const circleY = Math.sin(angle) * (size / 2);
-    const circleX = Math.cos(angle) * (size / 2);
+  private drawVerticalDivider(
+    graphics: PIXI.Graphics,
+    size: number,
+    leftBoundary: number,
+    rightBoundary: number
+  ): void {
+    const x = (leftBoundary + rightBoundary) / 2; // Midpoint
+    const steps = 20;
+    const points: { x: number; y: number }[] = [];
 
-    // Get shield width at this Y position
-    const shieldWidth = this.getShieldWidthAtY(circleY, size);
+    for (let i = 0; i <= steps; i++) {
+      const normalizedY = -1 + (2 * i / steps); // -1 to 1
+      const y = normalizedY * (size / 2);
+      const shieldWidth = this.getShieldWidthAtY(y, size);
+      const xPos = x * (shieldWidth / 2);
+      points.push({ x: xPos, y });
+    }
 
-    // Scale X based on shield width vs circle width
-    const scale = shieldWidth / size;
-    const x = circleX * scale;
-    const y = circleY;
-
-    return { x, y };
+    // Draw line
+    if (points.length > 0) {
+      graphics.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i++) {
+        graphics.lineTo(points[i].x, points[i].y);
+      }
+      graphics.stroke({ width: 1.5, color: 0x000000, alpha: 0.9 });
+    }
   }
 
   /**
@@ -197,25 +230,6 @@ export class DefenseDot {
       const t = normalizedY; // 0 to 1
       return size * (1.0 - (0.6 * t));
     }
-  }
-
-  /**
-   * Interpolate between two colors
-   */
-  private interpolateColor(color1: number, color2: number, t: number): number {
-    const r1 = (color1 >> 16) & 0xff;
-    const g1 = (color1 >> 8) & 0xff;
-    const b1 = color1 & 0xff;
-
-    const r2 = (color2 >> 16) & 0xff;
-    const g2 = (color2 >> 8) & 0xff;
-    const b2 = color2 & 0xff;
-
-    const r = Math.round(r1 + (r2 - r1) * t);
-    const g = Math.round(g1 + (g2 - g1) * t);
-    const b = Math.round(b1 + (b2 - b1) * t);
-
-    return (r << 16) | (g << 8) | b;
   }
 
   /**
