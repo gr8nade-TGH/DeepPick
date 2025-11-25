@@ -194,17 +194,15 @@
   font-weight: 700;
 }
 
-/* Score Section - Fixed width and centered to align with battle grid */
+/* Score Section - Compact single-line design */
 .score-section {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 3px;
-  width: 240px;
-  /* Fixed width to center properly */
+  gap: 12px;
   flex-shrink: 0;
   background: rgba(255, 255, 255, 0.05);
-  padding: 4px 20px;
+  padding: 6px 16px;
   border-radius: 6px;
   border: 2px solid rgba(255, 255, 255, 0.1);
   position: absolute;
@@ -214,15 +212,22 @@
 }
 
 .game-info {
-  font-size: 8px;
-  /* Reduced from 9px */
+  font-size: 9px;
   font-weight: 600;
-  color: #a0a0a0;
+  color: #4ecdc4;
+  /* Cyan color for countdown */
   text-transform: uppercase;
   letter-spacing: 0.5px;
   white-space: nowrap;
   line-height: 1;
-  /* Tighter line height */
+  position: absolute;
+  top: -18px;
+  /* Position above the score section */
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.6);
+  padding: 2px 8px;
+  border-radius: 4px;
 }
 
 .score-display {
@@ -271,17 +276,16 @@
   border-radius: 4px;
 }
 
-/* Dynamic Status Display (replaces static game-status) */
+/* Dynamic Status Display - Compact single-line */
 .game-status-dynamic {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 2px;
-  min-width: 120px;
+  gap: 8px;
 }
 
 .status-main {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 900;
   color: #FFD700;
   background: rgba(255, 215, 0, 0.15);
@@ -291,23 +295,19 @@
   letter-spacing: 1px;
   line-height: 1;
   text-align: center;
+  min-width: 50px;
 }
 
 .status-subtitle {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.8px;
-  line-height: 1.2;
+  letter-spacing: 0.5px;
+  line-height: 1;
   text-align: center;
   white-space: nowrap;
-  background: rgba(78, 205, 196, 0.15);
-  border: 1px solid rgba(78, 205, 196, 0.5);
-  border-radius: 4px;
-  padding: 4px 10px;
-  min-width: 120px;
-  box-shadow: 0 0 8px rgba(78, 205, 196, 0.3);
-  animation: pulse-glow 2s ease-in-out infinite;
+  color: #4ecdc4;
+  /* Cyan for countdown */
 }
 
 @keyframes pulse-glow {

@@ -272,35 +272,40 @@ export const GameInfoBar: React.FC<GameInfoBarProps> = ({
         </div>
       </div>
 
-      {/* Center Score */}
+      {/* Center Score - Single line layout */}
       <div className="score-section">
+        {/* Game date/time above the score section */}
         <div className="game-info">
           {game.gameDate || 'TBD'} | {game.gameTime || ''}
         </div>
-        <div className="score-display">
-          <div className="team-score">
-            <span className="team-abbr">{game.leftTeam.abbreviation}</span>
-            <span className="score-value">{leftScore}</span>
-          </div>
-          <div className="game-status-dynamic">
-            <div className="status-main">{dynamicStatus.main}</div>
-            {dynamicStatus.subtitle && (
-              <div
-                className="status-subtitle"
-                style={{ color: dynamicStatus.subtitleColor || '#999' }}
-              >
-                {dynamicStatus.subtitle}
-              </div>
-            )}
-          </div>
-          <div className="team-score">
-            <span className="score-value">{rightScore}</span>
-            <span className="team-abbr">{game.rightTeam.abbreviation}</span>
-          </div>
+
+        {/* Left team score */}
+        <div className="team-score">
+          <span className="team-abbr">{game.leftTeam.abbreviation}</span>
+          <span className="score-value">{leftScore}</span>
+        </div>
+
+        {/* VS / Status in center */}
+        <div className="game-status-dynamic">
+          <div className="status-main">{dynamicStatus.main}</div>
+          {dynamicStatus.subtitle && (
+            <div
+              className="status-subtitle"
+              style={{ color: dynamicStatus.subtitleColor || '#4ecdc4' }}
+            >
+              {dynamicStatus.subtitle}
+            </div>
+          )}
+        </div>
+
+        {/* Right team score */}
+        <div className="team-score">
+          <span className="score-value">{rightScore}</span>
+          <span className="team-abbr">{game.rightTeam.abbreviation}</span>
         </div>
       </div>
 
-      {/* Right Capper - All on one horizontal line (mirrored) */}
+      {/* Right Capper - All on one horizontal line (same order as left, but right-aligned) */}
       <div className="capper-section right">
         {/* Pick Box (MEM +4.5) */}
         <div className="pick-box right-pick">
@@ -345,7 +350,7 @@ export const GameInfoBar: React.FC<GameInfoBarProps> = ({
         {/* Capper Name */}
         <div className="capper-name">{game.rightCapper.name}</div>
 
-        {/* Capper Icon (circular avatar with leaderboard rank number) */}
+        {/* Capper Icon (rectangle badge with rank number) */}
         <div className="capper-icon">
           <div className="icon-circle">{game.rightCapper.leaderboardRank}</div>
         </div>
