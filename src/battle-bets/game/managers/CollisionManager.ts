@@ -221,7 +221,6 @@ class CollisionManager {
 
       // Get HP BEFORE damage for accurate logging
       const hpBefore = targetDot.hp;
-      const hpAfter = Math.max(0, hpBefore - projectile.typeConfig.damage);
 
       // IMMEDIATELY apply damage to the store (single source of truth)
       const hitHandler =
@@ -232,6 +231,9 @@ class CollisionManager {
       } else {
         console.error(`❌ [COLLISION] onDefenseDotHit callback NOT SET for gameId=${projectile.gameId}!`);
       }
+
+      // Get ACTUAL HP after damage (from the dot itself, not calculated)
+      const hpAfter = targetDot.hp;
 
       // Log collision with HP change
       const status = hpAfter === 0 ? '💀 DESTROYED' : `${hpAfter}/${targetDot.maxHp} HP remaining`;
