@@ -1,21 +1,21 @@
 /**
  * LAL_IronmanArmor.ts
- * 
+ *
  * AC "Ironman" Armor - Los Angeles Lakers Defense Item
- * 
+ *
  * Description:
- * Castle shield that starts with 3 to 8 HP and gains +1 to 3 HP every time 
+ * Castle shield that starts with 5 to 15 HP and gains +1 to 3 HP every time
  * a defense orb is destroyed, then is gone for the matchup once it breaks.
- * 
+ *
  * Roll Ranges:
- * - startShieldHp: 3-8 HP
+ * - startShieldHp: 5-15 HP
  * - hpPerDestroyedOrb: 1-3 HP
- * 
+ *
  * Quality Tiers:
- * - Warped: Low rolls (e.g., 3 HP start, +1 per orb)
- * - Balanced: Average rolls (e.g., 5-6 HP start, +2 per orb)
- * - Honed: Good rolls (e.g., 7 HP start, +2-3 per orb)
- * - Masterwork: Perfect rolls (e.g., 8 HP start, +3 per orb)
+ * - Warped: Low rolls (e.g., 5-7 HP start, +1 per orb)
+ * - Balanced: Average rolls (e.g., 9-11 HP start, +2 per orb)
+ * - Honed: Good rolls (e.g., 12-14 HP start, +2-3 per orb)
+ * - Masterwork: Perfect rolls (e.g., 15 HP start, +3 per orb)
  */
 
 import { battleEventBus } from '../../events/EventBus';
@@ -35,10 +35,10 @@ export const LAL_IRONMAN_ARMOR_DEFINITION: ItemDefinition = {
   teamName: 'Los Angeles Lakers',
   slot: 'defense',
   name: 'AC "Ironman" Armor',
-  description: 'Castle shield that starts with 3 to 8 HP and gains +1 to 3 HP every time a defense orb is destroyed, then is gone for the matchup once it breaks.',
+  description: 'Castle shield that starts with 5 to 15 HP and gains +1 to 3 HP every time a defense orb is destroyed, then is gone for the matchup once it breaks.',
   icon: '🛡️',
   rollRanges: {
-    startShieldHp: { min: 3, max: 8, step: 1 },
+    startShieldHp: { min: 5, max: 15, step: 1 },
     hpPerDestroyedOrb: { min: 1, max: 3, step: 1 },
   },
 };
