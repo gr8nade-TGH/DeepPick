@@ -75,181 +75,220 @@ export class DefenseDot {
     graphics.clear();
 
     const hpPercent = currentHP / this.maxHp;
-    const w = this.radius * 2; // 20px wide
-    const h = this.radius * 2.4; // 24px tall
+    const w = this.radius * 2.2; // 22px wide
+    const h = this.radius * 2.6; // 26px tall
 
     // Outer glow (team color, soft)
-    const glowAlpha = 0.3 + (hpPercent * 0.3);
-    this.drawShieldOutline(graphics, w + 6, h + 6, shieldColor, glowAlpha);
+    const glowAlpha = 0.25 + (hpPercent * 0.35);
+    this.drawShieldOutline(graphics, w + 5, h + 5, shieldColor, glowAlpha);
 
-    // Dark blue border (outer edge - like reference)
-    this.drawShieldOutline(graphics, w + 1, h + 1, 0x1a5f7a, 1.0);
+    // Dark blue border (outer edge)
+    this.drawShieldOutline(graphics, w + 1.5, h + 1.5, 0x1a5f7a, 1.0);
 
-    // Lighter blue/teal border (3D highlight)
-    this.drawShieldOutline(graphics, w - 0.5, h - 0.5, 0x2a9d8f, 1.0);
+    // Lighter teal border (3D highlight)
+    this.drawShieldOutline(graphics, w, h, 0x2a9d8f, 1.0);
 
-    // Black inner background
-    this.drawShieldOutline(graphics, w - 2, h - 2, 0x000000, 1.0);
+    // Black background fill
+    this.drawShieldOutline(graphics, w - 1.5, h - 1.5, 0x000000, 1.0);
 
-    // Draw 3 curved vertical segments that follow shield shape
-    this.drawCurvedVerticalSegments(graphics, w - 3, h - 3, shieldColor, currentHP);
+    // Draw 3 curved vertical segments using clipping
+    this.drawShieldSegments(graphics, w - 2, h - 2, shieldColor, currentHP);
   }
 
   /**
-   * Draw 3 curved vertical segments using bezier curves to match shield contour
+   * Draw 3 shield segments - each segment is a curved path following shield outline
    */
-  private drawCurvedVerticalSegments(
+  private drawShieldSegments(
     graphics: PIXI.Graphics,
     width: number,
     height: number,
     baseColor: number,
     currentHP: number
   ): void {
+    // Get shield curve points at different Y levels
+    const points = this.getShieldCurvePoints(width, height);
+
+    // Calculate X positions for 3 vertical dividers
+    const divider1X = -width * 0.2; // Left divider
+    const divider2X = width * 0.2;  // Right divider
+
+    // Draw each segment with proper curved edges
+    for (let segmentIndex = 0; segmentIndex < 3; segmentIndex++) {
+      const isFilled = segmentIndex < currentHP;
+
+      // Determine left and right X bounds for this segment
+      let leftBound: (y: number) => number;
+      let rightBound: (y: number) => number;
+
+      if (segmentIndex === 0) {
+        // Left segment: shield left edge to divider1
+        leftBound = (y: number) => this.getShieldXAtY(y, width, height, 'left');
+        rightBound = (y: number) => divider1X;
+      } else if (segmentIndex === 1) {
+        // Center segment: divider1 to divider2
+        leftBound = (y: number) => divider1X;
+        rightBound = (y: number) => divider2X;
+      } else {
+        // Right segment: divider2 to shield right edge
+        leftBound = (y: number) => divider2X;
+        rightBound = (y: number) => this.getShieldXAtY(y, width, height, 'right');
+      }
+
+      // Draw segment with gradient (lighter top, darker bottom)
+      if (isFilled) {
+        const lightColor = this.lightenColor(baseColor, 1.4);
+        const darkColor = this.darkenColor(baseColor, 0.65);
+
+        // Top half (lighter)
+        this.drawSegmentHalf(graphics, leftBound, rightBound, -height / 2, 0, lightColor);
+
+        // Bottom half (darker)
+        this.drawSegmentHalf(graphics, leftBound, rightBound, 0, height / 2, darkColor);
+
+        // Add glossy highlight on left edge of left segment
+        if (segmentIndex === 0) {
+          this.drawSegmentHighlight(graphics, leftBound, -height / 2, height / 2);
+        }
+      } else {
+        // Empty segment - dark
+        this.drawSegmentHalf(graphics, leftBound, rightBound, -height / 2, height / 2, 0x0a0a0a);
+      }
+    }
+
+    // Draw black divider lines
+    this.drawDividerLine(graphics, divider1X, width, height);
+    this.drawDividerLine(graphics, divider2X, width, height);
+  }
+
+  /**
+   * Get X coordinate of shield edge at given Y position
+   */
+  private getShieldXAtY(y: number, width: number, height: number, side: 'left' | 'right'): number {
     const topY = -height / 2;
     const midY = 0;
     const bottomY = height / 2;
 
-    // Shield width at different heights
-    const topW = width * 0.7;
+    const topW = width * 0.65;
     const midW = width;
-    const bottomW = width * 0.35;
+    const bottomW = width * 0.3;
 
-    // Segment positions (left, center, right)
-    const segments = [
-      { // Left segment
-        topL: -topW / 2,
-        topR: -topW / 6,
-        midL: -midW / 2,
-        midR: -midW / 6,
-        bottomL: -bottomW / 2,
-        bottomR: 0,
-      },
-      { // Center segment
-        topL: -topW / 6,
-        topR: topW / 6,
-        midL: -midW / 6,
-        midR: midW / 6,
-        bottomL: 0,
-        bottomR: 0,
-      },
-      { // Right segment
-        topL: topW / 6,
-        topR: topW / 2,
-        midL: midW / 6,
-        midR: midW / 2,
-        bottomL: 0,
-        bottomR: bottomW / 2,
-      }
-    ];
+    let w: number;
 
-    for (let i = 0; i < 3; i++) {
-      const seg = segments[i];
-      const isFilled = i < currentHP;
-
-      if (isFilled) {
-        const lightColor = this.lightenColor(baseColor, 1.35);
-        const darkColor = this.darkenColor(baseColor, 0.7);
-
-        // Top half (lighter) - use bezier curves
-        graphics.moveTo(seg.topL, topY);
-        graphics.bezierCurveTo(
-          seg.topL, topY + height * 0.1,
-          seg.midL, midY - height * 0.1,
-          seg.midL, midY
-        );
-        graphics.lineTo(seg.midR, midY);
-        graphics.bezierCurveTo(
-          seg.midR, midY - height * 0.1,
-          seg.topR, topY + height * 0.1,
-          seg.topR, topY
-        );
-        graphics.lineTo(seg.topL, topY);
-        graphics.fill({ color: lightColor, alpha: 1.0 });
-
-        // Bottom half (darker) - use bezier curves
-        graphics.moveTo(seg.midL, midY);
-        graphics.bezierCurveTo(
-          seg.midL, midY + height * 0.15,
-          seg.bottomL, bottomY - height * 0.15,
-          seg.bottomL === 0 ? 0 : seg.bottomL, bottomY
-        );
-        if (seg.bottomR === 0 && seg.bottomL === 0) {
-          // Center segment converges to single point
-          graphics.lineTo(0, bottomY);
-        } else {
-          graphics.lineTo(seg.bottomR === 0 ? 0 : seg.bottomR, bottomY);
-        }
-        graphics.bezierCurveTo(
-          seg.bottomR === 0 ? 0 : seg.bottomR, bottomY - height * 0.15,
-          seg.midR, midY + height * 0.15,
-          seg.midR, midY
-        );
-        graphics.lineTo(seg.midL, midY);
-        graphics.fill({ color: darkColor, alpha: 1.0 });
-
-        // Glossy highlight on left edge
-        if (i === 0) {
-          graphics.moveTo(seg.topL + 1, topY + 2);
-          graphics.bezierCurveTo(
-            seg.topL + 1, topY + height * 0.15,
-            seg.midL + 1, midY - height * 0.1,
-            seg.midL + 1, midY
-          );
-          graphics.lineTo(seg.midL + 0.5, midY);
-          graphics.bezierCurveTo(
-            seg.midL + 0.5, midY - height * 0.1,
-            seg.topL + 0.5, topY + height * 0.15,
-            seg.topL + 0.5, topY + 2
-          );
-          graphics.fill({ color: 0xffffff, alpha: 0.35 });
-        }
-      } else {
-        // Empty segment - dark with curves
-        graphics.moveTo(seg.topL, topY);
-        graphics.bezierCurveTo(
-          seg.topL, topY + height * 0.1,
-          seg.midL, midY - height * 0.1,
-          seg.midL, midY
-        );
-        graphics.bezierCurveTo(
-          seg.midL, midY + height * 0.15,
-          seg.bottomL === 0 ? 0 : seg.bottomL, bottomY - height * 0.15,
-          seg.bottomL === 0 ? 0 : seg.bottomL, bottomY
-        );
-        if (seg.bottomR !== 0) {
-          graphics.lineTo(seg.bottomR, bottomY);
-        }
-        graphics.bezierCurveTo(
-          seg.bottomR === 0 ? 0 : seg.bottomR, bottomY - height * 0.15,
-          seg.midR, midY + height * 0.15,
-          seg.midR, midY
-        );
-        graphics.bezierCurveTo(
-          seg.midR, midY - height * 0.1,
-          seg.topR, topY + height * 0.1,
-          seg.topR, topY
-        );
-        graphics.lineTo(seg.topL, topY);
-        graphics.fill({ color: 0x0a0a0a, alpha: 0.95 });
-      }
-
-      // Black curved divider line between segments
-      if (i < 2) {
-        const nextSeg = segments[i + 1];
-        graphics.moveTo(seg.topR, topY);
-        graphics.bezierCurveTo(
-          seg.topR, topY + height * 0.1,
-          seg.midR, midY - height * 0.1,
-          seg.midR, midY
-        );
-        graphics.bezierCurveTo(
-          seg.midR, midY + height * 0.15,
-          seg.bottomR === 0 ? 0 : seg.bottomR, bottomY - height * 0.15,
-          seg.bottomR === 0 ? 0 : seg.bottomR, bottomY
-        );
-        graphics.stroke({ width: 1.5, color: 0x000000, alpha: 1.0 });
-      }
+    if (y <= midY) {
+      // Top half: interpolate between topW and midW
+      const t = (y - topY) / (midY - topY);
+      w = topW + (midW - topW) * t;
+    } else {
+      // Bottom half: interpolate between midW and bottomW
+      const t = (y - midY) / (bottomY - midY);
+      w = midW + (bottomW - midW) * t;
     }
+
+    return side === 'left' ? -w / 2 : w / 2;
+  }
+
+  /**
+   * Get shield curve points for reference
+   */
+  private getShieldCurvePoints(width: number, height: number) {
+    const topY = -height / 2;
+    const midY = 0;
+    const bottomY = height / 2;
+
+    return {
+      top: { y: topY, width: width * 0.65 },
+      mid: { y: midY, width: width },
+      bottom: { y: bottomY, width: width * 0.3 }
+    };
+  }
+
+  /**
+   * Draw half of a segment (top or bottom) with curved edges
+   */
+  private drawSegmentHalf(
+    graphics: PIXI.Graphics,
+    leftBound: (y: number) => number,
+    rightBound: (y: number) => number,
+    startY: number,
+    endY: number,
+    color: number
+  ): void {
+    const steps = 8; // Number of curve steps
+    const stepSize = (endY - startY) / steps;
+
+    // Start at top-left
+    graphics.moveTo(leftBound(startY), startY);
+
+    // Draw left edge (curved)
+    for (let i = 1; i <= steps; i++) {
+      const y = startY + (stepSize * i);
+      graphics.lineTo(leftBound(y), y);
+    }
+
+    // Draw bottom edge
+    graphics.lineTo(rightBound(endY), endY);
+
+    // Draw right edge (curved, going back up)
+    for (let i = steps - 1; i >= 0; i--) {
+      const y = startY + (stepSize * i);
+      graphics.lineTo(rightBound(y), y);
+    }
+
+    // Close path
+    graphics.lineTo(leftBound(startY), startY);
+    graphics.fill({ color, alpha: 1.0 });
+  }
+
+  /**
+   * Draw glossy highlight on left edge
+   */
+  private drawSegmentHighlight(
+    graphics: PIXI.Graphics,
+    leftBound: (y: number) => number,
+    startY: number,
+    endY: number
+  ): void {
+    const steps = 8;
+    const stepSize = (endY - startY) / steps;
+    const highlightWidth = 2;
+
+    graphics.moveTo(leftBound(startY) + 0.5, startY + 2);
+
+    for (let i = 1; i <= steps; i++) {
+      const y = startY + (stepSize * i);
+      graphics.lineTo(leftBound(y) + 0.5, y);
+    }
+
+    for (let i = steps - 1; i >= 0; i--) {
+      const y = startY + (stepSize * i);
+      graphics.lineTo(leftBound(y) + highlightWidth, y);
+    }
+
+    graphics.fill({ color: 0xffffff, alpha: 0.3 });
+  }
+
+  /**
+   * Draw vertical divider line that follows shield curve
+   */
+  private drawDividerLine(
+    graphics: PIXI.Graphics,
+    x: number,
+    width: number,
+    height: number
+  ): void {
+    const steps = 12;
+    const startY = -height / 2;
+    const endY = height / 2;
+    const stepSize = (endY - startY) / steps;
+
+    graphics.moveTo(x, startY);
+
+    for (let i = 1; i <= steps; i++) {
+      const y = startY + (stepSize * i);
+      graphics.lineTo(x, y);
+    }
+
+    graphics.stroke({ width: 1.8, color: 0x000000, alpha: 1.0 });
   }
 
   /**
