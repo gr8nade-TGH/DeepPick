@@ -504,7 +504,7 @@ export async function fireStatRow(
 
   // PHASE 3: PROJECTILES FIRE WITH STAGGER DELAY (creates spacing between projectiles)
   const maxCount = Math.max(leftCount, rightCount);
-  const STAGGER_DELAY = 400; // ms
+  const STAGGER_DELAY = 600; // Increased from 400ms to 600ms for slower, more spaced out projectiles
 
   const projectilePromises: Promise<void>[] = [];
 
@@ -925,12 +925,13 @@ export async function runDebugBattleForMultiStore(battleId: string): Promise<voi
       right: quarterData.right,
     });
 
-    for (const stat of statsOrder) {
+    // Fire all stat rows simultaneously instead of one by one
+    const statRowPromises = statsOrder.map(async (stat) => {
       const leftCount = getCountForStatFromQuarter(stat, quarterData.left);
       const rightCount = getCountForStatFromQuarter(stat, quarterData.right);
 
       if (leftCount === 0 && rightCount === 0) {
-        continue;
+        return true; // No projectiles for this stat, continue
       }
 
       const shouldContinue = await fireStatRowForMultiBattle(
@@ -941,16 +942,19 @@ export async function runDebugBattleForMultiStore(battleId: string): Promise<voi
         rightCount
       );
 
-      if (!shouldContinue) {
-        console.log(
-          `🏁 [MultiBattleDebug] Battle ended during Q${quarterNumber} ${stat.toUpperCase()} row for ${battleId}`
-        );
-        collisionManager.unregisterBattle(gameId);
-        return;
-      }
+      return shouldContinue;
+    });
 
-      // Small pause between stat rows so the action is readable
-      await sleep(500);
+    // Wait for all stat rows to complete
+    const results = await Promise.all(statRowPromises);
+
+    // Check if any stat row ended the battle
+    if (results.some(result => result === false)) {
+      console.log(
+        `🏁 [MultiBattleDebug] Battle ended during Q${quarterNumber} for ${battleId}`
+      );
+      collisionManager.unregisterBattle(gameId);
+      return;
     }
 
     // Slightly longer pause between quarters so you can visually see transitions
@@ -1056,7 +1060,7 @@ async function fireStatRowForMultiBattle(
   // PHASE 3: Fire projectiles from both sides with staggered timing
   const maxCount = Math.max(leftCount, rightCount);
   const projectilePromises: Promise<void>[] = [];
-  const STAGGER_DELAY = 220;
+  const STAGGER_DELAY = 600; // Increased from 220ms to 600ms for slower, more spaced out projectiles
 
   for (let i = 0; i < maxCount; i++) {
     const delay = i * STAGGER_DELAY;
