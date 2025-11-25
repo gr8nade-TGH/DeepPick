@@ -14,6 +14,7 @@ import { rollItem } from '../../game/items/ItemRollSystem';
 import { useMultiGameStore } from '../../store/multiGameStore';
 import { castleHealthSystem } from '../../game/systems/CastleHealthSystem';
 import { castleManager } from '../../game/managers/CastleManager';
+import { itemEffectRegistry } from '../../game/items/ItemEffectRegistry';
 import { ItemTooltip } from './ItemTooltip';
 
 interface PreGameItemSelectorProps {
@@ -213,7 +214,7 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
     setSelectedSlot(null);
   };
 
-  const handleSaveAndClose = () => {
+  const handleSaveAndClose = async () => {
     console.log('💾 [PreGameItemSelector] Saving items:', {
       left: { slot1: leftSlot1, slot2: leftSlot2, slot3: leftSlot3 },
       right: { slot1: rightSlot1, slot2: rightSlot2, slot3: rightSlot3 }
@@ -224,6 +225,9 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
 
     // Immediately activate/deactivate shields for defense items
     activateDefenseItems();
+
+    // Activate item effects (event listeners for DEFENSE_ORB_DESTROYED, etc.)
+    await activateItemEffects();
 
     // Close popup
     onClose?.();
@@ -263,7 +267,7 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
       // Deactivate shield if item was unequipped
       const castleId = `${battleId}-left`;
       const shield = castleHealthSystem.getShield(castleId);
-      if (shield && shield.itemId === 'LAL_def_ironman_armor') {
+      if (shield && shield.source === 'LAL_def_ironman_armor') {
         console.log(`🛡️ [PreGameItemSelector] Deactivating Ironman Armor shield for LEFT castle`);
         castleHealthSystem.deactivateShield(castleId);
         const castle = castleManager.getCastle(battleId, castleId);
@@ -303,7 +307,7 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
       // Deactivate shield if item was unequipped
       const castleId = `${battleId}-right`;
       const shield = castleHealthSystem.getShield(castleId);
-      if (shield && shield.itemId === 'LAL_def_ironman_armor') {
+      if (shield && shield.source === 'LAL_def_ironman_armor') {
         console.log(`🛡️ [PreGameItemSelector] Deactivating Ironman Armor shield for RIGHT castle`);
         castleHealthSystem.deactivateShield(castleId);
         const castle = castleManager.getCastle(battleId, castleId);
@@ -312,6 +316,47 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
         }
       }
     }
+  };
+
+  /**
+   * Activate item effects (register event listeners)
+   * This is called when "APPLY ITEMS" is clicked
+   */
+  const activateItemEffects = async () => {
+    console.log('🎮 [PreGameItemSelector] Activating item effects...');
+
+    // Deactivate all existing items for this battle first (cleanup)
+    itemEffectRegistry.deactivateGame(battleId);
+
+    // Activate left side items
+    if (leftSlot1) {
+      await itemEffectRegistry.activateItem(battleId, 'left', leftSlot1);
+      console.log(`✅ [PreGameItemSelector] Activated ${leftSlot1.itemId} on LEFT side`);
+    }
+    if (leftSlot2) {
+      await itemEffectRegistry.activateItem(battleId, 'left', leftSlot2);
+      console.log(`✅ [PreGameItemSelector] Activated ${leftSlot2.itemId} on LEFT side`);
+    }
+    if (leftSlot3) {
+      await itemEffectRegistry.activateItem(battleId, 'left', leftSlot3);
+      console.log(`✅ [PreGameItemSelector] Activated ${leftSlot3.itemId} on LEFT side`);
+    }
+
+    // Activate right side items
+    if (rightSlot1) {
+      await itemEffectRegistry.activateItem(battleId, 'right', rightSlot1);
+      console.log(`✅ [PreGameItemSelector] Activated ${rightSlot1.itemId} on RIGHT side`);
+    }
+    if (rightSlot2) {
+      await itemEffectRegistry.activateItem(battleId, 'right', rightSlot2);
+      console.log(`✅ [PreGameItemSelector] Activated ${rightSlot2.itemId} on RIGHT side`);
+    }
+    if (rightSlot3) {
+      await itemEffectRegistry.activateItem(battleId, 'right', rightSlot3);
+      console.log(`✅ [PreGameItemSelector] Activated ${rightSlot3.itemId} on RIGHT side`);
+    }
+
+    console.log('✅ [PreGameItemSelector] All item effects activated!');
   };
 
   /**
