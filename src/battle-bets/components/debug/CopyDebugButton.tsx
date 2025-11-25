@@ -2,7 +2,7 @@
  * CopyDebugButton - Comprehensive debug info copy button
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { collisionManager } from '../../game/managers/CollisionManager';
 import { castleManager } from '../../game/managers/CastleManager';
 import { castleHealthSystem } from '../../game/systems/CastleHealthSystem';
@@ -13,6 +13,36 @@ import { debugLogger } from '../../game/debug/DebugLogger';
 interface CopyDebugButtonProps {
   battleId: string;
 }
+
+// Capture console logs with emoji markers
+const capturedLogs: Array<{ timestamp: number; message: string }> = [];
+const originalConsoleLog = console.log;
+
+// Override console.log to capture emoji marker logs
+console.log = (...args: any[]) => {
+  originalConsoleLog(...args);
+
+  // Convert args to string
+  const message = args.map(arg => {
+    if (typeof arg === 'string') return arg;
+    if (typeof arg === 'object') return JSON.stringify(arg, null, 2);
+    return String(arg);
+  }).join(' ');
+
+  // Only capture logs with emoji markers
+  const emojiMarkers = ['💾💾💾', '🧪🧪🧪', '🎮🎮🎮', '✅✅✅', '🔔', '🛡️', '🔍'];
+  if (emojiMarkers.some(emoji => message.includes(emoji))) {
+    capturedLogs.push({
+      timestamp: Date.now(),
+      message
+    });
+
+    // Keep only last 100 logs to prevent memory issues
+    if (capturedLogs.length > 100) {
+      capturedLogs.shift();
+    }
+  }
+};
 
 export function CopyDebugButton({ battleId }: CopyDebugButtonProps) {
   const [copied, setCopied] = useState(false);
@@ -172,28 +202,47 @@ export function CopyDebugButton({ battleId }: CopyDebugButtonProps) {
       // 4.5. Item Save/Activation Flow Tracking
       try {
         lines.push('\n' + '-'.repeat(80));
-        lines.push('ITEM SAVE/ACTIVATION FLOW (from console logs)');
+        lines.push('ITEM SAVE/ACTIVATION FLOW (Captured Console Logs)');
         lines.push('-'.repeat(80));
         lines.push('');
-        lines.push('This section shows whether items were:');
-        lines.push('  1. Saved to battle state (💾 logs from PreGameItemSelector)');
-        lines.push('  2. Preserved during fetchBattles (🧪 logs from App.tsx)');
-        lines.push('  3. Activated when game started (🎮 logs from QuarterDebugControls)');
-        lines.push('');
-        lines.push('Check your browser console for these emoji markers:');
-        lines.push('  💾💾💾 = Item save attempt');
-        lines.push('  🧪🧪🧪 = fetchBattles called (check if items preserved)');
-        lines.push('  🎮🎮🎮 = Game start (item activation attempt)');
+        lines.push('Emoji markers explained:');
+        lines.push('  💾💾💾 = Item save attempt (PreGameItemSelector)');
+        lines.push('  🧪🧪🧪 = fetchBattles called (App.tsx - check if items preserved)');
+        lines.push('  🎮🎮🎮 = Game start (QuarterDebugControls - item activation attempt)');
         lines.push('  ✅✅✅ = Item successfully activated');
         lines.push('  🔔 = Event received (e.g., DEFENSE_ORB_DESTROYED)');
         lines.push('  🛡️ = Shield healing attempt');
         lines.push('');
-        lines.push('If you see:');
-        lines.push('  - 💾 but no items in "EQUIPPED ITEMS" section above = Save failed');
-        lines.push('  - Items in "EQUIPPED ITEMS" but no 🎮 logs = Activation not attempted');
-        lines.push('  - 🎮 logs but "Active items: 0" = Activation failed');
-        lines.push('  - Active items > 0 but no 🔔 logs = Events not firing');
-        lines.push('  - 🔔 logs but no 🛡️ logs = Shield healing logic not running');
+
+        if (capturedLogs.length === 0) {
+          lines.push('❌ NO EMOJI MARKER LOGS CAPTURED!');
+          lines.push('');
+          lines.push('This means:');
+          lines.push('  - You may not have equipped items (no 💾 logs)');
+          lines.push('  - You may not have started the game (no 🎮 logs)');
+          lines.push('  - The page may need a hard refresh (Ctrl+Shift+R)');
+        } else {
+          lines.push(`✅ Captured ${capturedLogs.length} emoji marker logs (most recent 50 shown):`);
+          lines.push('');
+
+          // Show most recent 50 logs
+          const recentLogs = capturedLogs.slice(-50);
+          recentLogs.forEach(log => {
+            const date = new Date(log.timestamp);
+            const timeStr = date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 });
+            lines.push(`[${timeStr}] ${log.message}`);
+          });
+        }
+
+        lines.push('');
+        lines.push('Diagnosis:');
+        lines.push('  - If NO 💾 logs: Items not being saved (PreGameItemSelector issue)');
+        lines.push('  - If 💾 but items empty above: Save failed or cleared by fetchBattles');
+        lines.push('  - If items present but NO 🎮 logs: Game not started properly');
+        lines.push('  - If 🎮 but NO ✅ logs: Item activation failed');
+        lines.push('  - If ✅ but "Active items: 0": Items deactivated or wrong battle ID');
+        lines.push('  - If active items > 0 but NO 🔔 logs: Events not firing');
+        lines.push('  - If 🔔 but NO 🛡️ logs: Shield healing logic not running');
       } catch (error) {
         lines.push(`❌ Error generating item flow info: ${error}`);
         console.error('Error generating item flow info:', error);
