@@ -5,6 +5,8 @@
 import { useState } from 'react';
 import { collisionManager } from '../../game/managers/CollisionManager';
 import { castleManager } from '../../game/managers/CastleManager';
+import { castleHealthSystem } from '../../game/systems/CastleHealthSystem';
+import { itemEffectRegistry } from '../../game/items/ItemEffectRegistry';
 import { useMultiGameStore } from '../../store/multiGameStore';
 import { debugLogger } from '../../game/debug/DebugLogger';
 
@@ -65,7 +67,71 @@ export function CopyDebugButton({ battleId }: CopyDebugButtonProps) {
       const collisionSnapshot = collisionManager.getDebugSnapshot(battleId);
       lines.push(collisionSnapshot);
 
-      // 4. Debug Logger Logs
+      // 4. Item System State
+      lines.push('\n' + '='.repeat(80));
+      lines.push('ITEM SYSTEM STATE');
+      lines.push('='.repeat(80));
+
+      // Active items
+      const activeItems = itemEffectRegistry.getActiveItems();
+      const battleItems = activeItems.filter(item => item.gameId === battleId);
+      lines.push(`Active items for this battle: ${battleItems.length}`);
+      battleItems.forEach(item => {
+        lines.push(`\nItem Instance: ${item.instanceId}`);
+        lines.push(`  Item ID: ${item.itemId}`);
+        lines.push(`  Side: ${item.side}`);
+        lines.push(`  Quality: ${item.qualityTier}`);
+        lines.push(`  Rolls: ${JSON.stringify(item.rolls)}`);
+        lines.push(`  Counters: ${JSON.stringify(Array.from(item.counters.entries()))}`);
+      });
+
+      // Shield states
+      lines.push('\n' + '-'.repeat(80));
+      lines.push('SHIELD STATES (CastleHealthSystem)');
+      lines.push('-'.repeat(80));
+      const leftCastleId = `${battleId}-left`;
+      const rightCastleId = `${battleId}-right`;
+
+      const leftShield = castleHealthSystem.getShield(leftCastleId);
+      const rightShield = castleHealthSystem.getShield(rightCastleId);
+
+      lines.push(`\nLEFT Castle Shield (${leftCastleId}):`);
+      if (leftShield) {
+        lines.push(`  Active: ${leftShield.isActive}`);
+        lines.push(`  HP: ${leftShield.currentHP}/${leftShield.maxHP}`);
+        lines.push(`  Source: ${leftShield.source}`);
+        lines.push(`  Activation Threshold: ${leftShield.activationThreshold}`);
+      } else {
+        lines.push(`  No shield`);
+      }
+
+      lines.push(`\nRIGHT Castle Shield (${rightCastleId}):`);
+      if (rightShield) {
+        lines.push(`  Active: ${rightShield.isActive}`);
+        lines.push(`  HP: ${rightShield.currentHP}/${rightShield.maxHP}`);
+        lines.push(`  Source: ${rightShield.source}`);
+        lines.push(`  Activation Threshold: ${rightShield.activationThreshold}`);
+      } else {
+        lines.push(`  No shield`);
+      }
+
+      // Equipped items from battle state
+      lines.push('\n' + '-'.repeat(80));
+      lines.push('EQUIPPED ITEMS (Battle State)');
+      lines.push('-'.repeat(80));
+      if (battle) {
+        lines.push(`\nLEFT Side Equipped Items:`);
+        lines.push(`  Slot 1: ${battle.leftCapper.equippedItems.slot1?.itemId || 'empty'}`);
+        lines.push(`  Slot 2: ${battle.leftCapper.equippedItems.slot2?.itemId || 'empty'}`);
+        lines.push(`  Slot 3: ${battle.leftCapper.equippedItems.slot3?.itemId || 'empty'}`);
+
+        lines.push(`\nRIGHT Side Equipped Items:`);
+        lines.push(`  Slot 1: ${battle.rightCapper.equippedItems.slot1?.itemId || 'empty'}`);
+        lines.push(`  Slot 2: ${battle.rightCapper.equippedItems.slot2?.itemId || 'empty'}`);
+        lines.push(`  Slot 3: ${battle.rightCapper.equippedItems.slot3?.itemId || 'empty'}`);
+      }
+
+      // 5. Debug Logger Logs
       lines.push('\n' + '='.repeat(80));
       lines.push('DEBUG LOGGER CAPTURED LOGS');
       lines.push('='.repeat(80));
