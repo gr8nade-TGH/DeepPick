@@ -584,8 +584,10 @@ function AppV2() {
         {selectedSlot && (
           <PreGameItemSelector
             battleId={selectedSlot.battleId}
-            side={selectedSlot.side}
-            slot={selectedSlot.slot}
+            initialSlot={{ side: selectedSlot.side, slot: selectedSlot.slot }}
+            onItemsChanged={() => {
+              // Items changed - keep popup open
+            }}
             onClose={() => setSelectedSlot(null)}
           />
         )}
