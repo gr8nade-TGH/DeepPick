@@ -83,7 +83,8 @@ export function createShieldHealAnimation(
   healOrb.zIndex = 10000;
 
   // Add to the CORRECT battle's PixiJS container (using local coordinates)
-  pixiManager.addSprite(healOrb, battleId);
+  // IMPORTANT: addSprite signature is (sprite, name?, battleId?)
+  pixiManager.addSprite(healOrb, 'shield-heal-orb', battleId);
 
   // Animate the orb flying to the castle - smooth and visible
   gsap.timeline()
@@ -137,21 +138,21 @@ export function createShieldHealAnimation(
 }
 
 /**
- * Show floating +HP text above the castle - BIGGER AND MORE VISIBLE
+ * Show floating +HP text above the castle - smaller and cleaner
  */
 function showHealText(battleId: string, x: number, y: number, amount: number): void {
   const healText = new PIXI.Text({
     text: `+${amount} HP 🛡️`,
     style: {
       fontFamily: 'Arial Black, Arial',
-      fontSize: 32, // MUCH BIGGER
+      fontSize: 18, // Smaller, cleaner size
       fontWeight: '900',
       fill: 0x00ff00,
-      stroke: { color: 0x000000, width: 5 }, // Thicker stroke
+      stroke: { color: 0x000000, width: 3 }, // Thinner stroke
       dropShadow: {
         color: 0x00ff00,
-        blur: 8,
-        alpha: 1.0,
+        blur: 4,
+        alpha: 0.8,
         distance: 0
       }
     }
@@ -163,23 +164,24 @@ function showHealText(battleId: string, x: number, y: number, amount: number): v
   // CRITICAL: Set z-index to be in front of EVERYTHING
   healText.zIndex = 10001; // Higher than heal orb
 
-  pixiManager.addSprite(healText, battleId);
+  // IMPORTANT: addSprite signature is (sprite, name?, battleId?)
+  pixiManager.addSprite(healText, 'shield-heal-text', battleId);
 
-  // Float up and fade out - SLOWER
+  // Float up and fade out
   gsap.timeline()
     .to(healText.position, {
-      y: y - 100, // Float higher
-      duration: 2.0, // Slower
+      y: y - 80, // Float up
+      duration: 1.5,
       ease: 'power2.out'
     })
     .to(healText, {
       alpha: 0,
-      duration: 0.6,
+      duration: 0.5,
       ease: 'power2.in',
       onComplete: () => {
         pixiManager.removeSprite(healText, battleId);
         healText.destroy();
       }
-    }, '-=0.6');
+    }, '-=0.5');
 }
 
