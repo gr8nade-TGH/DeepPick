@@ -68,51 +68,72 @@ export class DefenseDot {
   }
 
   /**
-   * Draw HP segments as a pixel-art shield with 3 horizontal bars
-   * Each bar represents 1 HP (max 3 bars)
+   * Draw HP segments as a shield with 3 VERTICAL segments (like the reference image)
+   * Each vertical segment represents 1 HP (max 3 segments)
    */
   private drawHPSegments(graphics: PIXI.Graphics, shieldColor: number, currentHP: number): void {
     graphics.clear();
 
     const hpPercent = currentHP / this.maxHp;
-    const size = this.radius * 2; // 16px base size
+    const size = this.radius * 2.2; // 17.6px base size (slightly bigger for shield shape)
 
-    // Outer glow
-    const glowAlpha = 0.25 + (hpPercent * 0.25);
+    // Outer glow (team color)
+    const glowAlpha = 0.3 + (hpPercent * 0.4);
     const glowSize = size + 6;
     this.drawShieldOutline(graphics, glowSize, shieldColor, glowAlpha);
 
-    // Shield border (dark outline)
-    this.drawShieldOutline(graphics, size, 0x000000, 1.0);
+    // Blue/teal border (like the reference image)
+    const borderColor = 0x2a9d8f; // Teal/cyan border
+    this.drawShieldOutline(graphics, size, borderColor, 1.0);
 
-    // Shield background (slightly lighter than border)
-    this.drawShieldOutline(graphics, size - 2, 0x222222, 0.9);
+    // Inner shield area (slightly smaller)
+    const innerSize = size - 3;
 
-    // Draw 3 HP bars (horizontal segments from top to bottom)
-    const barWidth = size - 6;
-    const barHeight = 3;
-    const barSpacing = 1;
-    const totalBarsHeight = (barHeight * 3) + (barSpacing * 2);
-    const startY = -totalBarsHeight / 2;
+    // Draw 3 VERTICAL segments (left, middle, right)
+    const segmentWidth = (innerSize * 0.7) / 3; // 70% of width divided by 3
+    const segmentHeight = innerSize * 0.85; // 85% of height
+    const startX = -segmentWidth * 1.5; // Start from left
+    const startY = -segmentHeight / 2 + 2; // Slightly below top
 
     for (let i = 0; i < this.maxHp; i++) {
       const isFilled = i < currentHP;
-      const barY = startY + (i * (barHeight + barSpacing));
+      const segmentX = startX + (i * segmentWidth);
 
       if (isFilled) {
-        // Filled HP bar - team color
-        graphics.rect(-barWidth / 2, barY, barWidth, barHeight);
-        graphics.fill({ color: shieldColor, alpha: 1.0 });
+        // Filled segment - team color with gradient (lighter left, darker right)
+        const lightColor = this.lightenColor(shieldColor, 1.2);
+        const darkColor = this.darkenColor(shieldColor, 0.8);
+
+        // Create vertical gradient effect with two rectangles
+        // Left half (lighter)
+        graphics.rect(segmentX, startY, segmentWidth / 2, segmentHeight);
+        graphics.fill({ color: lightColor, alpha: 1.0 });
+
+        // Right half (darker)
+        graphics.rect(segmentX + segmentWidth / 2, startY, segmentWidth / 2, segmentHeight);
+        graphics.fill({ color: darkColor, alpha: 1.0 });
+
+        // Vertical divider line between segments (black)
+        if (i < this.maxHp - 1) {
+          graphics.rect(segmentX + segmentWidth - 0.5, startY, 1, segmentHeight);
+          graphics.fill({ color: 0x000000, alpha: 0.8 });
+        }
       } else {
-        // Empty HP bar - dark
-        graphics.rect(-barWidth / 2, barY, barWidth, barHeight);
-        graphics.fill({ color: 0x000000, alpha: 0.6 });
+        // Empty segment - very dark
+        graphics.rect(segmentX, startY, segmentWidth, segmentHeight);
+        graphics.fill({ color: 0x000000, alpha: 0.7 });
+
+        // Vertical divider line
+        if (i < this.maxHp - 1) {
+          graphics.rect(segmentX + segmentWidth - 0.5, startY, 1, segmentHeight);
+          graphics.fill({ color: 0x000000, alpha: 0.8 });
+        }
       }
     }
   }
 
   /**
-   * Draw shield outline shape (pixel-art style)
+   * Draw shield outline shape (pointed bottom, rounded top)
    */
   private drawShieldOutline(
     graphics: PIXI.Graphics,
@@ -121,19 +142,39 @@ export class DefenseDot {
     alpha: number
   ): void {
     const halfSize = size / 2;
-    const topWidth = size * 0.8;
+    const topWidth = size * 0.75;
     const halfTopWidth = topWidth / 2;
 
-    // Shield shape (like the pixel art image)
+    // Shield shape (pointed bottom like reference image)
     graphics.moveTo(-halfTopWidth, -halfSize); // Top-left
     graphics.lineTo(halfTopWidth, -halfSize); // Top-right
-    graphics.lineTo(halfSize, -halfSize * 0.3); // Right shoulder
-    graphics.lineTo(halfSize, halfSize * 0.3); // Right side
+    graphics.lineTo(halfSize, -halfSize * 0.2); // Right shoulder
+    graphics.lineTo(halfSize, halfSize * 0.4); // Right side
     graphics.lineTo(0, halfSize); // Bottom point
-    graphics.lineTo(-halfSize, halfSize * 0.3); // Left side
-    graphics.lineTo(-halfSize, -halfSize * 0.3); // Left shoulder
+    graphics.lineTo(-halfSize, halfSize * 0.4); // Left side
+    graphics.lineTo(-halfSize, -halfSize * 0.2); // Left shoulder
     graphics.lineTo(-halfTopWidth, -halfSize); // Back to top-left
     graphics.fill({ color, alpha });
+  }
+
+  /**
+   * Lighten a color by a factor
+   */
+  private lightenColor(color: number, factor: number): number {
+    const r = Math.min(255, ((color >> 16) & 0xff) * factor);
+    const g = Math.min(255, ((color >> 8) & 0xff) * factor);
+    const b = Math.min(255, (color & 0xff) * factor);
+    return (r << 16) | (g << 8) | b;
+  }
+
+  /**
+   * Darken a color by a factor
+   */
+  private darkenColor(color: number, factor: number): number {
+    const r = ((color >> 16) & 0xff) * factor;
+    const g = ((color >> 8) & 0xff) * factor;
+    const b = (color & 0xff) * factor;
+    return (r << 16) | (g << 8) | b;
   }
 
   /**
