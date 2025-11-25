@@ -559,6 +559,13 @@ function App() {
                   />
                 </div>
               </div>
+
+              {/* Copy Debug Button - One per battle when debug mode is on */}
+              {debugMode && (
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <CopyDebugButton battleId={game.id} />
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -655,11 +662,6 @@ function App() {
       {showDebugControls && battles.map((battle, index) => (
         <QuarterDebugControls key={battle.id} battleId={battle.id} index={index} />
       ))}
-
-      {/* Copy Debug Button - Only show when ?debug=1 */}
-      {debugMode && battles.length > 0 && (
-        <CopyDebugButton battleId={battles[0].id} />
-      )}
 
       {/* Pre-Game Item Selector - Show when slot is clicked */}
       {selectedSlot ? (
