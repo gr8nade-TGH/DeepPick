@@ -1066,32 +1066,41 @@ async function fireStatRowForMultiBattle(
 
   // Queue all left side projectiles
   for (let i = 0; i < leftProj; i++) {
+    // Capture the index in a closure to avoid variable capture issues
+    const projectileIndex = i;
     attackNodeQueueManager.enqueueProjectile(
       gameId,
       'left',
       stat,
-      () => fireSingleProjectileForMultiBattle(battleId, gameId, stat, 'left', i),
+      () => fireSingleProjectileForMultiBattle(battleId, gameId, stat, 'left', projectileIndex),
       'BASE'
     );
   }
 
   // Queue all right side projectiles
   for (let i = 0; i < rightProj; i++) {
+    // Capture the index in a closure to avoid variable capture issues
+    const projectileIndex = i;
     attackNodeQueueManager.enqueueProjectile(
       gameId,
       'right',
       stat,
-      () => fireSingleProjectileForMultiBattle(battleId, gameId, stat, 'right', i),
+      () => fireSingleProjectileForMultiBattle(battleId, gameId, stat, 'right', projectileIndex),
       'BASE'
     );
   }
 
-  // Wait for all projectiles to finish firing from the queues
-  // Calculate total time needed: max(leftProj, rightProj) * 0.5s per projectile
+  // Wait for all projectiles to START firing from the queues
+  // Calculate time needed for all projectiles to be LAUNCHED (not completed)
+  // Each attack node fires at 0.5s intervals, so max projectiles * 0.5s
   const maxCount = Math.max(leftProj, rightProj);
-  const totalWaitTime = maxCount * 500; // 500ms per projectile
-  console.log(`⏳ [MultiBattleDebug] Waiting ${totalWaitTime}ms for ${maxCount} projectiles to fire from queues`);
-  await sleep(totalWaitTime + 500); // Add 500ms buffer
+  const launchTime = maxCount * 500; // 500ms per projectile to launch
+  console.log(`⏳ [MultiBattleDebug] Waiting ${launchTime}ms for ${maxCount} projectiles to launch from queues`);
+  await sleep(launchTime);
+
+  // Add extra time for projectiles to travel and collide (projectiles take ~1-2s to complete)
+  console.log(`⏳ [MultiBattleDebug] Waiting for projectiles to complete their flight...`);
+  await sleep(2000); // 2 second buffer for projectiles to finish traveling
 
   // After the row resolves, check HP for this battle
   const state = useMultiGameStore.getState();

@@ -40,7 +40,7 @@ class AttackNodeQueueManagerClass {
    */
   private getNodeState(gameId: string, side: 'left' | 'right', lane: StatType): AttackNodeState {
     const key = this.getNodeKey(gameId, side, lane);
-    
+
     if (!this.nodes.has(key)) {
       this.nodes.set(key, {
         queue: [],
@@ -48,7 +48,7 @@ class AttackNodeQueueManagerClass {
         lastFireTime: 0,
       });
     }
-    
+
     return this.nodes.get(key)!;
   }
 
@@ -64,7 +64,7 @@ class AttackNodeQueueManagerClass {
     itemId?: string
   ): void {
     const nodeState = this.getNodeState(gameId, side, lane);
-    
+
     const queuedProjectile: QueuedProjectile = {
       gameId,
       side,
@@ -73,11 +73,11 @@ class AttackNodeQueueManagerClass {
       itemId,
       fireFn,
     };
-    
+
     nodeState.queue.push(queuedProjectile);
-    
+
     console.log(`🎯 [AttackNodeQueue] Enqueued projectile for ${side} ${lane.toUpperCase()} (Queue: ${nodeState.queue.length}, Source: ${source})`);
-    
+
     // Start processing if not already running
     if (!nodeState.isProcessing) {
       this.processQueue(gameId, side, lane);
@@ -89,38 +89,39 @@ class AttackNodeQueueManagerClass {
    */
   private async processQueue(gameId: string, side: 'left' | 'right', lane: StatType): Promise<void> {
     const nodeState = this.getNodeState(gameId, side, lane);
-    
+
     if (nodeState.isProcessing) {
       return; // Already processing
     }
-    
+
     nodeState.isProcessing = true;
-    
+
     while (nodeState.queue.length > 0) {
       const now = Date.now();
       const timeSinceLastFire = now - nodeState.lastFireTime;
-      
+
       // Wait if we need to respect the fire interval
       if (timeSinceLastFire < this.FIRE_INTERVAL && nodeState.lastFireTime > 0) {
         const waitTime = this.FIRE_INTERVAL - timeSinceLastFire;
         console.log(`⏳ [AttackNodeQueue] Waiting ${waitTime}ms before next projectile from ${side} ${lane.toUpperCase()}`);
         await new Promise(resolve => setTimeout(resolve, waitTime));
       }
-      
+
       // Fire the next projectile
       const projectile = nodeState.queue.shift();
       if (projectile) {
         console.log(`🚀 [AttackNodeQueue] Firing projectile from ${side} ${lane.toUpperCase()} (${nodeState.queue.length} remaining in queue)`);
-        
-        try {
-          await projectile.fireFn();
-          nodeState.lastFireTime = Date.now();
-        } catch (error) {
+
+        // Fire projectile WITHOUT awaiting (fire and forget)
+        // This allows the next projectile to fire 0.5s later without waiting for collision
+        projectile.fireFn().catch(error => {
           console.error(`❌ [AttackNodeQueue] Error firing projectile:`, error);
-        }
+        });
+
+        nodeState.lastFireTime = Date.now();
       }
     }
-    
+
     nodeState.isProcessing = false;
     console.log(`✅ [AttackNodeQueue] Queue empty for ${side} ${lane.toUpperCase()}`);
   }
@@ -130,15 +131,15 @@ class AttackNodeQueueManagerClass {
    */
   public clearGame(gameId: string): void {
     const keysToDelete: string[] = [];
-    
+
     this.nodes.forEach((state, key) => {
       if (key.startsWith(gameId)) {
         keysToDelete.push(key);
       }
     });
-    
+
     keysToDelete.forEach(key => this.nodes.delete(key));
-    
+
     console.log(`🗑️ [AttackNodeQueue] Cleared ${keysToDelete.length} attack node queues for game ${gameId}`);
   }
 
