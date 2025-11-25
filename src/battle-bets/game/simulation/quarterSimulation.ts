@@ -325,13 +325,14 @@ export async function simulateQuarter(
 
   // Fire all stat rows SIMULTANEOUSLY (all at once): PTS, REB, AST, STL, 3PT
   // Use fireStatRowForMultiBattle (the working version from auto-start mode)
+  // Double all projectile counts for better visual effect (2x multiplier)
   try {
     const statRowPromises = [
-      fireStatRowForMultiBattle(battleId, gameId, 'pts', quarterData.left.points, quarterData.right.points),
-      fireStatRowForMultiBattle(battleId, gameId, 'reb', quarterData.left.rebounds, quarterData.right.rebounds),
-      fireStatRowForMultiBattle(battleId, gameId, 'ast', quarterData.left.assists, quarterData.right.assists),
-      fireStatRowForMultiBattle(battleId, gameId, 'stl', quarterData.left.steals, quarterData.right.steals),
-      fireStatRowForMultiBattle(battleId, gameId, '3pt', quarterData.left.threePointers, quarterData.right.threePointers),
+      fireStatRowForMultiBattle(battleId, gameId, 'pts', quarterData.left.points * 2, quarterData.right.points * 2),
+      fireStatRowForMultiBattle(battleId, gameId, 'reb', quarterData.left.rebounds * 2, quarterData.right.rebounds * 2),
+      fireStatRowForMultiBattle(battleId, gameId, 'ast', quarterData.left.assists * 2, quarterData.right.assists * 2),
+      fireStatRowForMultiBattle(battleId, gameId, 'stl', quarterData.left.steals * 2, quarterData.right.steals * 2),
+      fireStatRowForMultiBattle(battleId, gameId, '3pt', quarterData.left.threePointers * 2, quarterData.right.threePointers * 2),
     ];
 
     // Wait for all stat rows to complete
