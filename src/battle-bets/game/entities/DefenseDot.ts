@@ -69,9 +69,10 @@ export class DefenseDot {
   }
 
   /**
-   * Draw HP segments as a shield with simple solid fill
-   * - Brightness/opacity changes based on HP
-   * - Clean, simple approach that can't fail
+   * Draw HP segments as a shield with cracks showing damage
+   * - 3/3 HP: Bright, no cracks
+   * - 2/3 HP: Subtle crack
+   * - 1/3 HP: More severe cracks
    */
   private drawHPSegments(graphics: PIXI.Graphics, shieldColor: number, currentHP: number): void {
     graphics.clear();
@@ -80,25 +81,69 @@ export class DefenseDot {
     const size = this.radius * 2; // 16px
 
     // Outer glow (team color, intensity based on HP)
-    const glowAlpha = 0.2 + (hpPercent * 0.3);
+    const glowAlpha = 0.3 + (hpPercent * 0.4);
     this.drawShieldOutline(graphics, size + 4, size + 4, shieldColor, glowAlpha);
 
     // Dark border
     this.drawShieldOutline(graphics, size + 1, size + 1, 0x1a1a1a, 1.0);
 
-    // Main shield fill - adjust brightness based on HP
-    const fillColor = currentHP === 3 ? shieldColor :
-      currentHP === 2 ? this.darkenColor(shieldColor, 0.7) :
-        this.darkenColor(shieldColor, 0.4);
+    // Main shield fill - brighter at full health
+    const fillColor = currentHP === 3 ? this.lightenColor(shieldColor, 1.3) :
+      currentHP === 2 ? shieldColor :
+        this.darkenColor(shieldColor, 0.7);
 
-    const fillAlpha = currentHP === 3 ? 1.0 :
-      currentHP === 2 ? 0.8 :
-        0.5;
+    const fillAlpha = 1.0; // Keep solid
 
     this.drawShieldOutline(graphics, size - 1, size - 1, fillColor, fillAlpha);
+
+    // Draw cracks based on damage
+    if (currentHP === 2) {
+      this.drawSubtleCrack(graphics, size - 1);
+    } else if (currentHP === 1) {
+      this.drawSevereCracks(graphics, size - 1);
+    }
   }
 
 
+
+  /**
+   * Draw a subtle crack for 2/3 HP
+   */
+  private drawSubtleCrack(graphics: PIXI.Graphics, size: number): void {
+    const halfSize = size / 2;
+
+    // Single diagonal crack from top-left to center
+    graphics.moveTo(-halfSize * 0.4, -halfSize * 0.6);
+    graphics.lineTo(-halfSize * 0.1, -halfSize * 0.2);
+    graphics.lineTo(0, 0);
+    graphics.stroke({ width: 1.0, color: 0x000000, alpha: 0.5 });
+  }
+
+  /**
+   * Draw severe cracks for 1/3 HP
+   */
+  private drawSevereCracks(graphics: PIXI.Graphics, size: number): void {
+    const halfSize = size / 2;
+
+    // Main crack from top to bottom (slightly jagged)
+    graphics.moveTo(-halfSize * 0.3, -halfSize * 0.7);
+    graphics.lineTo(-halfSize * 0.15, -halfSize * 0.3);
+    graphics.lineTo(0, 0);
+    graphics.lineTo(halfSize * 0.1, halfSize * 0.3);
+    graphics.lineTo(halfSize * 0.2, halfSize * 0.6);
+    graphics.stroke({ width: 1.2, color: 0x000000, alpha: 0.7 });
+
+    // Secondary crack from top-right
+    graphics.moveTo(halfSize * 0.4, -halfSize * 0.5);
+    graphics.lineTo(halfSize * 0.2, -halfSize * 0.2);
+    graphics.lineTo(halfSize * 0.1, 0);
+    graphics.stroke({ width: 1.0, color: 0x000000, alpha: 0.6 });
+
+    // Small crack from left
+    graphics.moveTo(-halfSize * 0.5, -halfSize * 0.1);
+    graphics.lineTo(-halfSize * 0.2, 0);
+    graphics.stroke({ width: 0.8, color: 0x000000, alpha: 0.5 });
+  }
 
   /**
    * Get shield width at given Y position
