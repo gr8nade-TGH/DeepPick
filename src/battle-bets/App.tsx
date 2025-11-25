@@ -165,6 +165,11 @@ function App() {
       // TEST MODE: Create 2 fake battles for testing
       if (testMode) {
         console.log('🧪 TEST MODE: Creating 2 fake battles for testing');
+
+        // Check if test battles already exist in store (preserve equipped items)
+        const existingBattle1 = useMultiGameStore.getState().getBattle('test-battle-1');
+        const existingBattle2 = useMultiGameStore.getState().getBattle('test-battle-2');
+
         const testBattles: Game[] = [
           {
             id: 'test-battle-1',
@@ -180,7 +185,7 @@ function App() {
               experience: 0,
               leaderboardRank: 1,
               teamRecords: [{ teamId: 'lal', units: 30, wins: 10, losses: 5, pushes: 0 }],
-              equippedItems: { slot1: null, slot2: null, slot3: null }
+              equippedItems: existingBattle1?.game.leftCapper.equippedItems || { slot1: null, slot2: null, slot3: null }
             },
             rightCapper: {
               id: 'test-capper-2',
@@ -192,7 +197,7 @@ function App() {
               experience: 0,
               leaderboardRank: 2,
               teamRecords: [{ teamId: 'mem', units: 24, wins: 8, losses: 6, pushes: 0 }],
-              equippedItems: { slot1: null, slot2: null, slot3: null }
+              equippedItems: existingBattle1?.game.rightCapper.equippedItems || { slot1: null, slot2: null, slot3: null }
             },
             currentQuarter: 0,
             spread: -4.5,
@@ -216,7 +221,7 @@ function App() {
               experience: 0,
               leaderboardRank: 3,
               teamRecords: [{ teamId: 'bos', units: 27, wins: 9, losses: 5, pushes: 1 }],
-              equippedItems: { slot1: null, slot2: null, slot3: null }
+              equippedItems: existingBattle2?.game.leftCapper.equippedItems || { slot1: null, slot2: null, slot3: null }
             },
             rightCapper: {
               id: 'test-capper-4',
@@ -228,7 +233,7 @@ function App() {
               experience: 0,
               leaderboardRank: 4,
               teamRecords: [{ teamId: 'gsw', units: 21, wins: 7, losses: 6, pushes: 1 }],
-              equippedItems: { slot1: null, slot2: null, slot3: null }
+              equippedItems: existingBattle2?.game.rightCapper.equippedItems || { slot1: null, slot2: null, slot3: null }
             },
             currentQuarter: 0,
             spread: -2.5,

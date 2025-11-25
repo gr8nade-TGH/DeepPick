@@ -481,7 +481,7 @@ export async function fireStatRow(
 
   // PHASE 3: PROJECTILES FIRE WITH STAGGER DELAY (creates spacing between projectiles)
   const maxCount = Math.max(leftCount, rightCount);
-  const STAGGER_DELAY = 600; // Increased from 400ms to 600ms for slower, more spaced out projectiles
+  const STAGGER_DELAY = 1000; // Increased from 600ms to 1000ms for much slower, more spaced out projectiles
 
   const projectilePromises: Promise<void>[] = [];
 
@@ -1037,7 +1037,7 @@ async function fireStatRowForMultiBattle(
   // PHASE 3: Fire projectiles from both sides with staggered timing
   const maxCount = Math.max(leftCount, rightCount);
   const projectilePromises: Promise<void>[] = [];
-  const STAGGER_DELAY = 600; // Increased from 220ms to 600ms for slower, more spaced out projectiles
+  const STAGGER_DELAY = 1000; // Increased from 600ms to 1000ms for much slower, more spaced out projectiles
 
   for (let i = 0; i < maxCount; i++) {
     const delay = i * STAGGER_DELAY;
