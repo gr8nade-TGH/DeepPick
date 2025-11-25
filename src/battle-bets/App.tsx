@@ -164,11 +164,18 @@ function App() {
     try {
       // TEST MODE: Create 2 fake battles for testing
       if (testMode) {
-        console.log('🧪 TEST MODE: Creating 2 fake battles for testing');
-
         // Check if test battles already exist in store (preserve equipped items)
         const existingBattle1 = useMultiGameStore.getState().getBattle('test-battle-1');
         const existingBattle2 = useMultiGameStore.getState().getBattle('test-battle-2');
+
+        // If battles already exist, don't recreate them (preserves equipped items)
+        if (existingBattle1 && existingBattle2) {
+          console.log('🧪 TEST MODE: Test battles already exist, skipping recreation to preserve equipped items');
+          setLoading(false);
+          return;
+        }
+
+        console.log('🧪 TEST MODE: Creating 2 fake battles for testing');
 
         const testBattles: Game[] = [
           {
