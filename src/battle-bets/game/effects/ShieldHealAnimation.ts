@@ -42,80 +42,81 @@ export function createShieldHealAnimation(
     return;
   }
 
-  // CRITICAL FIX: Get GLOBAL position of defense orb sprite
-  // defenseDot.sprite.x/y are LOCAL coordinates, we need GLOBAL screen coordinates
-  const orbGlobalPos = defenseDot.sprite.getGlobalPosition();
-  const startX = orbGlobalPos.x;
-  const startY = orbGlobalPos.y;
+  // Get LOCAL position of defense orb sprite (relative to battle container)
+  const startX = defenseDot.sprite.x;
+  const startY = defenseDot.sprite.y;
 
-  // Get GLOBAL position of castle sprite
-  const castleGlobalPos = castle.sprite ? castle.sprite.getGlobalPosition() : { x: 0, y: 0 };
-  const endX = castleGlobalPos.x;
-  const endY = castleGlobalPos.y - 30; // Above castle
+  // Get LOCAL position of castle sprite (relative to battle container)
+  const endX = castle.sprite.x;
+  const endY = castle.sprite.y - 30; // Above castle
 
-  console.log(`💚 [ShieldHeal] Defense orb side: ${defenseDot.side}, Castle ID: ${castleId}`);
-  console.log(`💚 [ShieldHeal] Orb local pos: (${defenseDot.sprite.x}, ${defenseDot.sprite.y})`);
-  console.log(`💚 [ShieldHeal] Orb GLOBAL pos: (${startX}, ${startY})`);
-  console.log(`💚 [ShieldHeal] Castle GLOBAL pos: (${endX}, ${endY})`);
-  console.log(`💚 [ShieldHeal] Animation path: (${startX}, ${startY}) → (${endX}, ${endY})`);
+  console.log(`🔵 [ShieldHeal] Defense orb side: ${defenseDot.side}, Castle ID: ${castleId}`);
+  console.log(`🔵 [ShieldHeal] Battle ID: ${battleId}`);
+  console.log(`🔵 [ShieldHeal] Orb local pos: (${startX}, ${startY})`);
+  console.log(`🔵 [ShieldHeal] Castle local pos: (${endX}, ${endY})`);
+  console.log(`🔵 [ShieldHeal] Animation path: (${startX}, ${startY}) → (${endX}, ${endY})`);
 
-  // Create green healing orb - MUCH BIGGER AND BRIGHTER
+  // Create BLUE healing orb (matching shield color) - smaller and cleaner
   const healOrb = new PIXI.Graphics();
 
-  // Outer glow - HUGE and BRIGHT
-  healOrb.circle(0, 0, 30);
-  healOrb.fill({ color: 0x00ff00, alpha: 0.6 });
+  // Shield blue colors (matching the shield design)
+  const shieldBlue = 0x2a9d8f; // Teal/blue from shield border
+  const lightBlue = 0x5dccbd;  // Lighter blue
 
-  // Middle layer - BRIGHT
-  healOrb.circle(0, 0, 20);
-  healOrb.fill({ color: 0x00ff88, alpha: 0.8 });
+  // Outer glow - blue
+  healOrb.circle(0, 0, 18);
+  healOrb.fill({ color: shieldBlue, alpha: 0.5 });
 
-  // Inner core - VERY BRIGHT
+  // Middle layer - lighter blue
   healOrb.circle(0, 0, 12);
-  healOrb.fill({ color: 0xffffff, alpha: 1.0 });
+  healOrb.fill({ color: lightBlue, alpha: 0.7 });
+
+  // Inner core - white
+  healOrb.circle(0, 0, 6);
+  healOrb.fill({ color: 0xffffff, alpha: 0.9 });
 
   healOrb.position.set(startX, startY);
 
   // CRITICAL: Set z-index to be in front of EVERYTHING
   healOrb.zIndex = 10000;
 
-  // Add to PixiJS container
+  // Add to the CORRECT battle's PixiJS container (using local coordinates)
   pixiManager.addSprite(healOrb, battleId);
 
-  // Animate the orb flying to the castle - SLOWER AND MORE VISIBLE
+  // Animate the orb flying to the castle - smooth and visible
   gsap.timeline()
-    // Fly to castle with arc motion - MUCH SLOWER (1.5s instead of 0.6s)
+    // Fly to castle with arc motion
     .to(healOrb.position, {
       x: endX,
       y: endY,
-      duration: 1.5,
+      duration: 1.0,
       ease: 'power1.inOut',
       onUpdate: function () {
-        // Add bigger arc to the motion
+        // Add arc to the motion
         const progress = this.progress();
-        const arcHeight = 60; // Bigger arc
+        const arcHeight = 40; // Arc height
         healOrb.position.y = startY + (endY - startY) * progress - Math.sin(progress * Math.PI) * arcHeight;
       }
     })
-    // Pulse during flight - BIGGER PULSE
+    // Pulse during flight
     .to(healOrb.scale, {
-      x: 1.5,
-      y: 1.5,
-      duration: 0.5,
+      x: 1.3,
+      y: 1.3,
+      duration: 0.4,
       yoyo: true,
-      repeat: 2, // More pulses
+      repeat: 1,
       ease: 'sine.inOut'
     }, 0)
     // Impact effect - burst into shield
     .to(healOrb.scale, {
-      x: 2.5,
-      y: 2.5,
-      duration: 0.2,
+      x: 2.0,
+      y: 2.0,
+      duration: 0.15,
       ease: 'power2.out'
     })
     .to(healOrb, {
       alpha: 0,
-      duration: 0.2,
+      duration: 0.15,
       ease: 'power2.in',
       onComplete: () => {
         // Cleanup
