@@ -160,26 +160,38 @@
   color: #4ECDC4;
 }
 
-/* Pick Box - Prominent */
-.pick-box {
+/* Combined Pick Box - Team + Spread + Units + Record in one box */
+.pick-box-combined {
+  position: relative;
   display: flex;
-  align-items: center;
-  gap: 4px;
+  flex-direction: column;
+  gap: 1px;
   background: rgba(255, 215, 0, 0.15);
   border: 2px solid #FFD700;
   border-radius: 5px;
   padding: 3px 8px;
   box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
-  min-width: 65px;
+  min-width: 85px;
+  height: 24px;
   justify-content: center;
+  cursor: help;
 }
 
-.pick-box.left-pick {
+.pick-box-combined.left-pick {
   margin-left: 6px;
 }
 
-.pick-box.right-pick {
+.pick-box-combined.right-pick {
   margin-right: 6px;
+}
+
+/* Top row: Team + Spread */
+.pick-info {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: center;
+  line-height: 1;
 }
 
 .pick-team {
@@ -194,6 +206,29 @@
   font-weight: 800;
   color: #FFD700;
   letter-spacing: 0.5px;
+}
+
+/* Bottom row: Units + Record */
+.pick-stats {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+  line-height: 1;
+}
+
+.pick-units {
+  font-size: 10px;
+  font-weight: 700;
+  color: #4ECDC4;
+  letter-spacing: 0.3px;
+}
+
+.pick-record {
+  font-size: 8px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 0.2px;
 }
 
 /* Units - Compact with hover tooltip */
