@@ -30,7 +30,7 @@ console.log = (...args: any[]) => {
   }).join(' ');
 
   // Only capture logs with emoji markers
-  const emojiMarkers = ['💾💾💾', '🧪🧪🧪', '🎮🎮🎮', '✅✅✅', '🔔', '🛡️', '🔍'];
+  const emojiMarkers = ['💾💾💾', '🧪🧪🧪', '🎮🎮🎮', '✅✅✅', '🔔', '🛡️', '🔍', '📢📢📢', '💀', '💥'];
   if (emojiMarkers.some(emoji => message.includes(emoji))) {
     capturedLogs.push({
       timestamp: Date.now(),
@@ -210,8 +210,11 @@ export function CopyDebugButton({ battleId }: CopyDebugButtonProps) {
         lines.push('  🧪🧪🧪 = fetchBattles called (App.tsx - check if items preserved)');
         lines.push('  🎮🎮🎮 = Game start (QuarterDebugControls - item activation attempt)');
         lines.push('  ✅✅✅ = Item successfully activated');
-        lines.push('  🔔 = Event received (e.g., DEFENSE_ORB_DESTROYED)');
+        lines.push('  📢📢📢 = DEFENSE_ORB_DESTROYED event EMITTED (CollisionManager)');
+        lines.push('  🔔 = DEFENSE_ORB_DESTROYED event RECEIVED (Ironman Armor listener)');
         lines.push('  🛡️ = Shield healing attempt');
+        lines.push('  💀 = Defense orb destroyed');
+        lines.push('  💥 = Projectile collision');
         lines.push('');
 
         if (capturedLogs.length === 0) {
