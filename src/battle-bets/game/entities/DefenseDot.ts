@@ -25,7 +25,7 @@ export class DefenseDot {
   public readonly team: Team;
   public readonly position: Position;
   public sprite: PIXI.Graphics; // Back to Graphics for custom shapes
-  public readonly radius: number = 8; // Defense icon size - smaller and cleaner
+  public readonly radius: number = 10; // Shield size - bigger for detail
 
   constructor(config: DefenseDotConfig) {
     this.id = config.id;
@@ -75,150 +75,175 @@ export class DefenseDot {
     graphics.clear();
 
     const hpPercent = currentHP / this.maxHp;
-    const width = this.radius * 2.4; // 19.2px wide
-    const height = this.radius * 2.6; // 20.8px tall
+    const w = this.radius * 1.8; // 18px wide
+    const h = this.radius * 2.2; // 22px tall (taller than wide)
 
     // Outer glow (team color, soft)
     const glowAlpha = 0.3 + (hpPercent * 0.3);
-    this.drawShieldShape(graphics, width + 8, height + 8, shieldColor, glowAlpha, true);
+    this.drawShieldOutline(graphics, w + 6, h + 6, shieldColor, glowAlpha);
 
-    // Dark blue/teal border (3D outer edge)
-    this.drawShieldShape(graphics, width, height, 0x1a5f7a, 1.0, true);
+    // Dark blue/teal border (outer 3D edge)
+    this.drawShieldOutline(graphics, w, h, 0x1a5f7a, 1.0);
 
-    // Lighter blue/teal inner border (3D depth effect)
-    this.drawShieldShape(graphics, width - 2, height - 2, 0x2a9d8f, 1.0, true);
+    // Lighter teal border (inner 3D highlight)
+    this.drawShieldOutline(graphics, w - 2, h - 2, 0x2a9d8f, 1.0);
 
-    // Black inner outline
-    this.drawShieldShape(graphics, width - 4, height - 4, 0x000000, 1.0, true);
+    // Black background
+    this.drawShieldOutline(graphics, w - 3.5, h - 3.5, 0x000000, 1.0);
 
-    // Draw 3 VERTICAL curved segments that follow shield shape
-    this.drawVerticalSegments(graphics, width - 6, height - 6, shieldColor, currentHP);
+    // Draw 3 VERTICAL curved segments
+    this.drawCurvedSegments(graphics, w - 4, h - 4, shieldColor, currentHP);
   }
 
   /**
-   * Draw 3 vertical segments with curved edges and gradient shading
+   * Draw 3 curved vertical segments that taper with the shield shape
    */
-  private drawVerticalSegments(
+  private drawCurvedSegments(
     graphics: PIXI.Graphics,
     width: number,
     height: number,
     baseColor: number,
     currentHP: number
   ): void {
-    const segmentWidth = width / 3;
-    const startX = -width / 2;
-    const startY = -height / 2;
+    // Each segment is a curved polygon that follows shield contour
+    const topY = -height / 2;
+    const midY = 0;
+    const bottomY = height / 2;
 
+    // Top width (narrower)
+    const topWidth = width * 0.75;
+    const topSegW = topWidth / 3;
+
+    // Middle width (widest)
+    const midWidth = width;
+    const midSegW = midWidth / 3;
+
+    // Bottom width (narrowest - converges to point)
+    const bottomWidth = width * 0.4;
+    const bottomSegW = bottomWidth / 3;
+
+    // Draw each of the 3 segments
     for (let i = 0; i < 3; i++) {
       const isFilled = i < currentHP;
-      const x = startX + (i * segmentWidth);
+
+      // Calculate X positions for this segment at each Y level
+      const topLeft = -topWidth / 2 + (i * topSegW);
+      const topRight = topLeft + topSegW;
+
+      const midLeft = -midWidth / 2 + (i * midSegW);
+      const midRight = midLeft + midSegW;
+
+      const bottomLeft = -bottomWidth / 2 + (i * bottomSegW);
+      const bottomRight = bottomLeft + bottomSegW;
 
       if (isFilled) {
-        // Create gradient: lighter at top-left, darker at bottom-right
-        const lightColor = this.lightenColor(baseColor, 1.4);
-        const midColor = baseColor;
-        const darkColor = this.darkenColor(baseColor, 0.7);
+        // Draw curved segment with gradient
+        const lightColor = this.lightenColor(baseColor, 1.3);
+        const darkColor = this.darkenColor(baseColor, 0.75);
 
-        // Top half (lighter gradient)
-        graphics.rect(x, startY, segmentWidth, height / 2);
+        // Top half (lighter)
+        graphics.moveTo(topLeft, topY);
+        graphics.lineTo(topRight, topY);
+        graphics.lineTo(midRight, midY);
+        graphics.lineTo(midLeft, midY);
+        graphics.lineTo(topLeft, topY);
         graphics.fill({ color: lightColor, alpha: 1.0 });
 
-        // Bottom half (darker gradient)
-        graphics.rect(x, startY + height / 2, segmentWidth, height / 2);
+        // Bottom half (darker)
+        graphics.moveTo(midLeft, midY);
+        graphics.lineTo(midRight, midY);
+        graphics.lineTo(bottomRight, bottomY);
+        graphics.lineTo(bottomLeft, bottomY);
+        graphics.lineTo(midLeft, midY);
         graphics.fill({ color: darkColor, alpha: 1.0 });
 
-        // Add highlight on left edge of segment (glossy effect)
-        if (i === 0 || i === 1) {
-          graphics.rect(x + 1, startY + 2, 1.5, height - 4);
-          graphics.fill({ color: 0xffffff, alpha: 0.3 });
+        // Glossy highlight on left edge
+        if (i === 0) {
+          graphics.moveTo(topLeft + 0.5, topY + 1);
+          graphics.lineTo(topLeft + 1.5, topY + 1);
+          graphics.lineTo(midLeft + 1.5, midY);
+          graphics.lineTo(midLeft + 0.5, midY);
+          graphics.fill({ color: 0xffffff, alpha: 0.4 });
         }
-
-        // Add shadow on right edge of segment
-        graphics.rect(x + segmentWidth - 1.5, startY + 2, 1.5, height - 4);
-        graphics.fill({ color: 0x000000, alpha: 0.4 });
       } else {
-        // Empty segment - very dark with subtle gradient
-        graphics.rect(x, startY, segmentWidth, height / 2);
-        graphics.fill({ color: 0x1a1a1a, alpha: 0.9 });
-
-        graphics.rect(x, startY + height / 2, segmentWidth, height / 2);
-        graphics.fill({ color: 0x000000, alpha: 0.9 });
+        // Empty segment - dark
+        graphics.moveTo(topLeft, topY);
+        graphics.lineTo(topRight, topY);
+        graphics.lineTo(midRight, midY);
+        graphics.lineTo(bottomRight, bottomY);
+        graphics.lineTo(bottomLeft, bottomY);
+        graphics.lineTo(midLeft, midY);
+        graphics.lineTo(topLeft, topY);
+        graphics.fill({ color: 0x0a0a0a, alpha: 0.95 });
       }
 
       // Black divider line between segments
       if (i < 2) {
-        graphics.rect(x + segmentWidth - 0.5, startY + 1, 1, height - 2);
-        graphics.fill({ color: 0x000000, alpha: 0.9 });
+        graphics.moveTo(topRight, topY);
+        graphics.lineTo(midRight, midY);
+        graphics.lineTo(bottomRight, bottomY);
+        graphics.stroke({ width: 1.2, color: 0x000000, alpha: 1.0 });
       }
     }
   }
 
   /**
-   * Draw smooth shield shape with rounded top and pointed bottom
+   * Draw classic medieval shield outline - wider at top, curves in, pointed bottom
    */
-  private drawShieldShape(
+  private drawShieldOutline(
     graphics: PIXI.Graphics,
     width: number,
     height: number,
     color: number,
-    alpha: number,
-    fill: boolean = true
+    alpha: number
   ): void {
-    const halfWidth = width / 2;
-    const halfHeight = height / 2;
-    const topWidth = width * 0.85; // Narrower at top
-    const halfTopWidth = topWidth / 2;
-    const shoulderHeight = height * 0.15; // Where it widens
-    const pointHeight = height * 0.35; // Where it narrows to point
+    const topY = -height / 2;
+    const midY = 0; // Widest point
+    const bottomY = height / 2;
 
-    graphics.moveTo(-halfTopWidth, -halfHeight);
+    const topWidth = width * 0.75; // Narrower at top
+    const midWidth = width; // Widest at middle
+    const bottomWidth = width * 0.4; // Narrow at bottom (converges to point)
+
+    // Start at top-left
+    graphics.moveTo(-topWidth / 2, topY);
 
     // Top edge (slightly curved)
     graphics.bezierCurveTo(
-      -halfTopWidth, -halfHeight - 1,
-      halfTopWidth, -halfHeight - 1,
-      halfTopWidth, -halfHeight
+      -topWidth / 2, topY - 0.5,
+      topWidth / 2, topY - 0.5,
+      topWidth / 2, topY
     );
 
-    // Right shoulder (curves outward)
+    // Right side: top to middle (curves outward)
     graphics.bezierCurveTo(
-      halfTopWidth + 2, -halfHeight + shoulderHeight / 2,
-      halfWidth, -halfHeight + shoulderHeight,
-      halfWidth, -halfHeight + shoulderHeight
+      topWidth / 2 + 1, topY + height * 0.15,
+      midWidth / 2, midY - height * 0.1,
+      midWidth / 2, midY
     );
 
-    // Right side (straight down)
-    graphics.lineTo(halfWidth, halfHeight - pointHeight);
-
-    // Right diagonal to bottom point (curved)
+    // Right side: middle to bottom (curves inward to point)
     graphics.bezierCurveTo(
-      halfWidth, halfHeight - pointHeight / 2,
-      halfWidth / 2, halfHeight - 2,
-      0, halfHeight
+      midWidth / 2, midY + height * 0.15,
+      bottomWidth / 2 + 1, bottomY - height * 0.2,
+      0, bottomY
     );
 
-    // Left diagonal from bottom point (curved)
+    // Left side: bottom to middle (curves inward from point)
     graphics.bezierCurveTo(
-      -halfWidth / 2, halfHeight - 2,
-      -halfWidth, halfHeight - pointHeight / 2,
-      -halfWidth, halfHeight - pointHeight
+      -bottomWidth / 2 - 1, bottomY - height * 0.2,
+      -midWidth / 2, midY + height * 0.15,
+      -midWidth / 2, midY
     );
 
-    // Left side (straight up)
-    graphics.lineTo(-halfWidth, -halfHeight + shoulderHeight);
-
-    // Left shoulder (curves outward)
+    // Left side: middle to top (curves outward)
     graphics.bezierCurveTo(
-      -halfWidth, -halfHeight + shoulderHeight,
-      -halfTopWidth - 2, -halfHeight + shoulderHeight / 2,
-      -halfTopWidth, -halfHeight
+      -midWidth / 2, midY - height * 0.1,
+      -topWidth / 2 - 1, topY + height * 0.15,
+      -topWidth / 2, topY
     );
 
-    if (fill) {
-      graphics.fill({ color, alpha });
-    } else {
-      graphics.stroke({ width: 1, color, alpha });
-    }
+    graphics.fill({ color, alpha });
   }
 
   /**
