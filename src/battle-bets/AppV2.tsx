@@ -255,8 +255,8 @@ function AppV2() {
         // Use fake test battles
         apiBattles = generateTestBattles();
       } else {
-        // Fetch real battles from API
-        const response = await fetch('/api/battle-bets/battles?limit=20');
+        // Fetch real battles from API (use correct endpoint)
+        const response = await fetch('/api/battle-bets/active?limit=20');
         if (!response.ok) {
           throw new Error(`Failed to fetch battles: ${response.statusText}`);
         }
