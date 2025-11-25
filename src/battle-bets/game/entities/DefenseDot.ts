@@ -99,21 +99,22 @@ export class DefenseDot {
     baseColor: number,
     currentHP: number
   ): void {
-    const halfSize = size / 2;
-    const steps = 20; // Smoothness of curves
-
     // Draw 3 vertical sections (left, center, right)
+    // Each section is 1/3 of the shield width
     for (let sectionIndex = 0; sectionIndex < 3; sectionIndex++) {
       const isFilled = sectionIndex < currentHP;
 
-      // Calculate X boundaries for this section
-      const leftX = -1 / 3 + (sectionIndex / 3); // -1/3, 0, 1/3
-      const rightX = leftX + 1 / 3; // 0, 1/3, 2/3
+      // Calculate normalized X boundaries (-1 to 1, where 0 is center)
+      // Section 0 (left):   -1.0 to -0.333
+      // Section 1 (center): -0.333 to 0.333
+      // Section 2 (right):   0.333 to 1.0
+      const leftX = -1.0 + (sectionIndex * 2 / 3);
+      const rightX = -1.0 + ((sectionIndex + 1) * 2 / 3);
 
       // Draw section with gradient
       if (isFilled) {
-        const lightColor = this.lightenColor(baseColor, 1.25);
-        const darkColor = this.darkenColor(baseColor, 0.75);
+        const lightColor = this.lightenColor(baseColor, 1.3);
+        const darkColor = this.darkenColor(baseColor, 0.7);
 
         // Top half (lighter)
         this.drawShieldSection(graphics, size, leftX, rightX, -1, 0, lightColor);
@@ -122,13 +123,13 @@ export class DefenseDot {
         this.drawShieldSection(graphics, size, leftX, rightX, 0, 1, darkColor);
       } else {
         // Empty section - dark
-        this.drawShieldSection(graphics, size, leftX, rightX, -1, 1, 0x0a0a0a);
+        this.drawShieldSection(graphics, size, leftX, rightX, -1, 1, 0x1a1a1a);
       }
     }
 
-    // Draw vertical divider lines
-    this.drawVerticalDivider(graphics, size, -1 / 3, 1 / 3);
-    this.drawVerticalDivider(graphics, size, 1 / 3, 2 / 3);
+    // Draw vertical divider lines at -0.333 and 0.333
+    this.drawVerticalDivider(graphics, size, -0.333);
+    this.drawVerticalDivider(graphics, size, 0.333);
   }
 
   /**
@@ -183,23 +184,21 @@ export class DefenseDot {
   }
 
   /**
-   * Draw a vertical divider line between sections
+   * Draw a vertical divider line at normalized X position
    */
   private drawVerticalDivider(
     graphics: PIXI.Graphics,
     size: number,
-    leftBoundary: number,
-    rightBoundary: number
+    normalizedX: number
   ): void {
-    const x = (leftBoundary + rightBoundary) / 2; // Midpoint
-    const steps = 20;
+    const steps = 25;
     const points: { x: number; y: number }[] = [];
 
     for (let i = 0; i <= steps; i++) {
       const normalizedY = -1 + (2 * i / steps); // -1 to 1
       const y = normalizedY * (size / 2);
       const shieldWidth = this.getShieldWidthAtY(y, size);
-      const xPos = x * (shieldWidth / 2);
+      const xPos = normalizedX * (shieldWidth / 2);
       points.push({ x: xPos, y });
     }
 
@@ -209,7 +208,7 @@ export class DefenseDot {
       for (let i = 1; i < points.length; i++) {
         graphics.lineTo(points[i].x, points[i].y);
       }
-      graphics.stroke({ width: 1.5, color: 0x000000, alpha: 0.9 });
+      graphics.stroke({ width: 1.2, color: 0x000000, alpha: 0.85 });
     }
   }
 
