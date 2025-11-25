@@ -69,32 +69,8 @@ export function createBattleStatusOverlay(config: OverlayConfig): PIXI.Container
 
   switch (status) {
     case 'scheduled':
-      if (gameStartTime) {
-        const timeRemaining = getTimeRemaining(gameStartTime)
-        if (timeRemaining > 0) {
-          message = 'GAME START'
-          countdown = formatTime(timeRemaining)
-          showOverlay = true
-        }
-      } else {
-        // Only show the premium "FINDING OPPONENT" overlay when this battle truly
-        // does not yet have an opponent. If both cappers are present, we skip the
-        // overlay entirely so the live battle action is always visible.
-        if (config.hasOpponent === false) {
-          isFindingOpponent = true
-          const phases = [
-            'FINDING OPPONENT',
-            'FINDING OPPONENT.',
-            'FINDING OPPONENT..',
-            'FINDING OPPONENT...',
-          ]
-          loadingPhase = Math.floor(now / 500) % phases.length
-          message = phases[loadingPhase]
-          showOverlay = true
-        } else {
-          showOverlay = false
-        }
-      }
+      // Don't show overlay for scheduled games - countdown is shown in top game info bar
+      showOverlay = false
       break
 
     case 'q1_pending':
