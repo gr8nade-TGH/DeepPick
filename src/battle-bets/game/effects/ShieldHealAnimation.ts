@@ -29,7 +29,7 @@ export function createShieldHealAnimation(
   // Get the destroyed defense orb position from the store
   const battle = useMultiGameStore.getState().getBattle(battleId);
   const defenseDot = battle?.defenseDots.get(orbId);
-  
+
   if (!defenseDot) {
     console.warn(`⚠️ [ShieldHeal] Defense orb ${orbId} not found in store`);
     return;
@@ -50,120 +50,127 @@ export function createShieldHealAnimation(
   const endX = castle.sprite.x;
   const endY = castle.sprite.y - 30; // Above castle
 
+  console.log(`💚 [ShieldHeal] Defense orb side: ${defenseDot.side}, Castle ID: ${castleId}`);
   console.log(`💚 [ShieldHeal] Animation path: (${startX}, ${startY}) → (${endX}, ${endY})`);
 
-  // Create green healing orb
+  // Create green healing orb - MUCH BIGGER AND BRIGHTER
   const healOrb = new PIXI.Graphics();
-  
-  // Outer glow
+
+  // Outer glow - HUGE and BRIGHT
+  healOrb.circle(0, 0, 30);
+  healOrb.fill({ color: 0x00ff00, alpha: 0.6 });
+
+  // Middle layer - BRIGHT
+  healOrb.circle(0, 0, 20);
+  healOrb.fill({ color: 0x00ff88, alpha: 0.8 });
+
+  // Inner core - VERY BRIGHT
   healOrb.circle(0, 0, 12);
-  healOrb.fill({ color: 0x00ff00, alpha: 0.3 });
-  
-  // Middle layer
-  healOrb.circle(0, 0, 8);
-  healOrb.fill({ color: 0x00ff88, alpha: 0.6 });
-  
-  // Inner core
-  healOrb.circle(0, 0, 4);
-  healOrb.fill({ color: 0xffffff, alpha: 0.9 });
+  healOrb.fill({ color: 0xffffff, alpha: 1.0 });
 
   healOrb.position.set(startX, startY);
+
+  // CRITICAL: Set z-index to be in front of EVERYTHING
+  healOrb.zIndex = 10000;
 
   // Add to PixiJS container
   pixiManager.addSprite(healOrb, battleId);
 
-  // Animate the orb flying to the castle
+  // Animate the orb flying to the castle - SLOWER AND MORE VISIBLE
   gsap.timeline()
-    // Fly to castle with arc motion
+    // Fly to castle with arc motion - MUCH SLOWER (1.5s instead of 0.6s)
     .to(healOrb.position, {
       x: endX,
       y: endY,
-      duration: 0.6,
-      ease: 'power2.inOut',
-      onUpdate: function() {
-        // Add slight arc to the motion
+      duration: 1.5,
+      ease: 'power1.inOut',
+      onUpdate: function () {
+        // Add bigger arc to the motion
         const progress = this.progress();
-        const arcHeight = 30;
+        const arcHeight = 60; // Bigger arc
         healOrb.position.y = startY + (endY - startY) * progress - Math.sin(progress * Math.PI) * arcHeight;
       }
     })
-    // Pulse during flight
+    // Pulse during flight - BIGGER PULSE
     .to(healOrb.scale, {
-      x: 1.3,
-      y: 1.3,
-      duration: 0.3,
+      x: 1.5,
+      y: 1.5,
+      duration: 0.5,
       yoyo: true,
-      repeat: 1,
+      repeat: 2, // More pulses
       ease: 'sine.inOut'
     }, 0)
     // Impact effect - burst into shield
     .to(healOrb.scale, {
-      x: 2,
-      y: 2,
-      duration: 0.15,
+      x: 2.5,
+      y: 2.5,
+      duration: 0.2,
       ease: 'power2.out'
     })
     .to(healOrb, {
       alpha: 0,
-      duration: 0.15,
+      duration: 0.2,
       ease: 'power2.in',
       onComplete: () => {
         // Cleanup
         pixiManager.removeSprite(healOrb, battleId);
         healOrb.destroy();
-        
+
         // Trigger shield visual update
         castle.updateShieldVisual();
-        
+
         // Show +HP text on castle
         showHealText(battleId, endX, endY, healAmount);
-        
+
         console.log(`✅ [ShieldHeal] Animation complete`);
       }
-    }, '-=0.05');
+    }, '-=0.1');
 }
 
 /**
- * Show floating +HP text above the castle
+ * Show floating +HP text above the castle - BIGGER AND MORE VISIBLE
  */
 function showHealText(battleId: string, x: number, y: number, amount: number): void {
   const healText = new PIXI.Text({
-    text: `+${amount} HP`,
+    text: `+${amount} HP 🛡️`,
     style: {
       fontFamily: 'Arial Black, Arial',
-      fontSize: 18,
+      fontSize: 32, // MUCH BIGGER
       fontWeight: '900',
       fill: 0x00ff00,
-      stroke: { color: 0x000000, width: 3 },
+      stroke: { color: 0x000000, width: 5 }, // Thicker stroke
       dropShadow: {
         color: 0x00ff00,
-        blur: 4,
-        alpha: 0.8,
+        blur: 8,
+        alpha: 1.0,
         distance: 0
       }
     }
   });
 
   healText.anchor.set(0.5);
-  healText.position.set(x, y - 20);
+  healText.position.set(x, y - 40);
+
+  // CRITICAL: Set z-index to be in front of EVERYTHING
+  healText.zIndex = 10001; // Higher than heal orb
 
   pixiManager.addSprite(healText, battleId);
 
-  // Float up and fade out
+  // Float up and fade out - SLOWER
   gsap.timeline()
     .to(healText.position, {
-      y: y - 60,
-      duration: 1.2,
+      y: y - 100, // Float higher
+      duration: 2.0, // Slower
       ease: 'power2.out'
     })
     .to(healText, {
       alpha: 0,
-      duration: 0.4,
+      duration: 0.6,
       ease: 'power2.in',
       onComplete: () => {
         pixiManager.removeSprite(healText, battleId);
         healText.destroy();
       }
-    }, '-=0.4');
+    }, '-=0.6');
 }
 
