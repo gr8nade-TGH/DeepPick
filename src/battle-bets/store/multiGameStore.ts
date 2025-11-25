@@ -21,6 +21,7 @@ import { getDefenseCellPosition } from '../game/utils/positioning';
 import { debugLogger } from '../game/debug/DebugLogger';
 import { itemEffectRegistry } from '../game/items/ItemEffectRegistry';
 import { rollTestItem } from '../game/items/ItemTestUtils';
+import { attackNodeQueueManager } from '../game/managers/AttackNodeQueueManager';
 
 /**
  * State for a single battle
@@ -427,6 +428,9 @@ export const useMultiGameStore = create<MultiGameState>()(
         // Clean up projectiles
         battle.projectiles.forEach(p => p.dispose());
 
+        // Clear attack node queues for this battle
+        attackNodeQueueManager.clearGame(battleId);
+
         // Remove battle from map
         set(state => {
           const newBattles = new Map(state.battles);
@@ -443,6 +447,8 @@ export const useMultiGameStore = create<MultiGameState>()(
         battles.forEach((battle, battleId) => {
           battle.defenseDots.forEach(dot => dot.dispose());
           battle.projectiles.forEach(p => p.dispose());
+          // Clear attack node queues for each battle
+          attackNodeQueueManager.clearGame(battleId);
         });
 
         // Clear all battles

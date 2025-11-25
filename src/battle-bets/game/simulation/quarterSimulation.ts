@@ -35,6 +35,7 @@ import { battleEventBus } from '../events/EventBus';
 import type { QuarterStartPayload, QuarterEndPayload, ProjectileFiredPayload } from '../events/types';
 import { debugGridPositions } from '../debug/positionDebug';
 import { battleEventEmitter } from '../items/EventEmitter';
+import { attackNodeQueueManager } from '../managers/AttackNodeQueueManager';
 
 /**
  * Quarter stats for both teams
@@ -1059,35 +1060,38 @@ async function fireStatRowForMultiBattle(
     console.error('❌ [MultiBattleDebug] Error during weapon activation:', error?.message || error);
   }
 
-  // PHASE 3: Fire projectiles from both sides with staggered timing
+  // PHASE 3: Queue projectiles for attack nodes (0.5s interval enforced by queue manager)
   // Use projectile counts (which may be 3x the display count)
-  const maxCount = Math.max(leftProj, rightProj);
-  const projectilePromises: Promise<void>[] = [];
-  const STAGGER_DELAY = 400; // Faster projectiles (reduced from 1000ms)
+  console.log(`🎯 [MultiBattleDebug] Queueing ${leftProj} left and ${rightProj} right projectiles for ${statName}`);
 
-  for (let i = 0; i < maxCount; i++) {
-    const delay = i * STAGGER_DELAY;
-
-    if (i < leftProj) {
-      projectilePromises.push(
-        (async () => {
-          await sleep(delay);
-          await fireSingleProjectileForMultiBattle(battleId, gameId, stat, 'left', i);
-        })()
-      );
-    }
-
-    if (i < rightProj) {
-      projectilePromises.push(
-        (async () => {
-          await sleep(delay);
-          await fireSingleProjectileForMultiBattle(battleId, gameId, stat, 'right', i);
-        })()
-      );
-    }
+  // Queue all left side projectiles
+  for (let i = 0; i < leftProj; i++) {
+    attackNodeQueueManager.enqueueProjectile(
+      gameId,
+      'left',
+      stat,
+      () => fireSingleProjectileForMultiBattle(battleId, gameId, stat, 'left', i),
+      'BASE'
+    );
   }
 
-  await Promise.all(projectilePromises);
+  // Queue all right side projectiles
+  for (let i = 0; i < rightProj; i++) {
+    attackNodeQueueManager.enqueueProjectile(
+      gameId,
+      'right',
+      stat,
+      () => fireSingleProjectileForMultiBattle(battleId, gameId, stat, 'right', i),
+      'BASE'
+    );
+  }
+
+  // Wait for all projectiles to finish firing from the queues
+  // Calculate total time needed: max(leftProj, rightProj) * 0.5s per projectile
+  const maxCount = Math.max(leftProj, rightProj);
+  const totalWaitTime = maxCount * 500; // 500ms per projectile
+  console.log(`⏳ [MultiBattleDebug] Waiting ${totalWaitTime}ms for ${maxCount} projectiles to fire from queues`);
+  await sleep(totalWaitTime + 500); // Add 500ms buffer
 
   // After the row resolves, check HP for this battle
   const state = useMultiGameStore.getState();

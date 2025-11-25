@@ -30,6 +30,7 @@ import { pixiManager } from '../../managers/PixiManager';
 import { projectilePool } from '../../entities/projectiles/ProjectilePool';
 import { getProjectileType } from '../../../types/projectileTypes';
 import type { StatType } from '../../../types/game';
+import { attackNodeQueueManager } from '../../managers/AttackNodeQueueManager';
 
 /**
  * Item definition for Shortsword
@@ -81,27 +82,32 @@ export function registerShortswordEffect(context: ItemRuntimeContext): void {
 
     // Check if threshold reached
     if (ptsFired >= ptsThreshold) {
-      console.log(`⚔️⚔️⚔️ [Shortsword] THRESHOLD REACHED! Firing ${bonusProjectiles} bonus projectiles from each stat row!`);
+      console.log(`⚔️⚔️⚔️ [Shortsword] THRESHOLD REACHED! Queueing ${bonusProjectiles} bonus projectiles from each stat row!`);
 
       // Reset counter
       itemEffectRegistry.setCounter(itemInstanceId, 'ptsFired', 0);
 
-      // Fire bonus projectiles from REB, AST, STL, 3PT rows
+      // Queue bonus projectiles from REB, AST, STL, 3PT rows
       const bonusLanes: StatType[] = ['reb', 'ast', 'stl', '3pt'];
 
       bonusLanes.forEach((lane) => {
         for (let i = 0; i < bonusProjectiles; i++) {
-          // Small delay between projectiles for visual effect (50ms per projectile)
-          setTimeout(() => {
-            fireBonusProjectile(gameId, side, lane);
-          }, i * 50);
+          // Enqueue projectile to attack node queue (0.5s interval enforced)
+          attackNodeQueueManager.enqueueProjectile(
+            gameId,
+            side,
+            lane,
+            () => fireBonusProjectile(gameId, side, lane),
+            'ITEM',
+            STARTER_SHORTSWORD_DEFINITION.id
+          );
         }
       });
 
-      // Track total bonus projectiles fired
+      // Track total bonus projectiles queued
       const totalBonusFired = bonusProjectiles * bonusLanes.length;
       const totalBonus = itemEffectRegistry.incrementCounter(itemInstanceId, 'totalBonusProjectiles', totalBonusFired);
-      console.log(`✅ [Shortsword] Fired ${totalBonusFired} bonus projectiles! Total bonus projectiles: ${totalBonus}`);
+      console.log(`✅ [Shortsword] Queued ${totalBonusFired} bonus projectiles! Total bonus projectiles: ${totalBonus}`);
     }
   });
 
