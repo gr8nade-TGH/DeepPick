@@ -58,7 +58,7 @@
   box-shadow: 0 2px 6px rgba(255, 215, 0, 0.3);
 }
 
-/* Capper Name - Max 7 chars */
+/* Capper Name - Increased width to prevent cutoff */
 .capper-name {
   font-size: 13px;
   font-weight: 700;
@@ -66,8 +66,8 @@
   text-transform: uppercase;
   letter-spacing: 0.8px;
   white-space: nowrap;
-  min-width: 60px;
-  max-width: 60px;
+  min-width: 100px;
+  max-width: 100px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -113,6 +113,51 @@
   white-space: nowrap;
   min-width: 24px;
   text-align: center;
+}
+
+/* Units Display with Tooltip */
+.capper-units {
+  position: relative;
+  font-size: 11px;
+  font-weight: 700;
+  color: #4ECDC4;
+  background: rgba(78, 205, 196, 0.15);
+  border: 1px solid #4ECDC4;
+  border-radius: 3px;
+  padding: 2px 6px;
+  white-space: nowrap;
+  min-width: 40px;
+  text-align: center;
+  cursor: help;
+}
+
+.units-value {
+  display: block;
+}
+
+.units-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(20, 20, 40, 0.98);
+  border: 1px solid #4ECDC4;
+  border-radius: 6px;
+  padding: 8px 12px;
+  white-space: nowrap;
+  font-size: 11px;
+  color: #ffffff;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+.units-tooltip div {
+  margin: 2px 0;
+}
+
+.units-tooltip strong {
+  color: #4ECDC4;
 }
 
 /* Pick Box - Prominent */

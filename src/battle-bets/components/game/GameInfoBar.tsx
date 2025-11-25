@@ -221,7 +221,7 @@ export const GameInfoBar: React.FC<GameInfoBarProps> = ({
 
   return (
     <div className="game-info-bar">
-      {/* Left Capper - [Rank] [Name] [Team Spread] [Q#] [Record] */}
+      {/* Left Capper - [Rank] [Name] [Team Spread] [Q#] [Units] [Record] */}
       <div className="capper-section left">
         {/* Rank Badge */}
         <div className="capper-icon">
@@ -239,6 +239,22 @@ export const GameInfoBar: React.FC<GameInfoBarProps> = ({
 
         {/* Quarter Indicator */}
         <div className="quarter-indicator">Q{currentQuarter || '#'}</div>
+
+        {/* Units with tooltip */}
+        <div
+          className="capper-units"
+          onMouseEnter={() => setLeftRecordHover(true)}
+          onMouseLeave={() => setLeftRecordHover(false)}
+        >
+          <span className="units-value">{leftUnits > 0 ? '+' : ''}{Math.round(leftUnits * 10) / 10}U</span>
+          {leftRecordHover && (
+            <div className="units-tooltip">
+              <div><strong>{game.leftCapper.name}'s {game.leftTeam.abbreviation} Spread Record</strong></div>
+              <div>{leftRecord?.wins || 0}W - {leftRecord?.losses || 0}L - {leftRecord?.pushes || 0}P</div>
+              <div>{leftUnits} units ÷ 3 = <strong>{leftOrbs} defense orbs</strong></div>
+            </div>
+          )}
+        </div>
 
         {/* Record */}
         <div className="capper-record">
@@ -279,11 +295,27 @@ export const GameInfoBar: React.FC<GameInfoBarProps> = ({
         </div>
       </div>
 
-      {/* Right Capper - [Record] [Q#] [Team Spread] [Name] [Rank] (mirrored, right-aligned) */}
+      {/* Right Capper - [Record] [Units] [Q#] [Team Spread] [Name] [Rank] (mirrored, right-aligned) */}
       <div className="capper-section right">
         {/* Record */}
         <div className="capper-record">
           {rightRecord ? `${rightRecord.wins}-${rightRecord.losses}-${rightRecord.pushes}` : '0-0-0'}
+        </div>
+
+        {/* Units with tooltip */}
+        <div
+          className="capper-units"
+          onMouseEnter={() => setRightRecordHover(true)}
+          onMouseLeave={() => setRightRecordHover(false)}
+        >
+          <span className="units-value">{rightUnits > 0 ? '+' : ''}{Math.round(rightUnits * 10) / 10}U</span>
+          {rightRecordHover && (
+            <div className="units-tooltip">
+              <div><strong>{game.rightCapper.name}'s {game.rightTeam.abbreviation} Spread Record</strong></div>
+              <div>{rightRecord?.wins || 0}W - {rightRecord?.losses || 0}L - {rightRecord?.pushes || 0}P</div>
+              <div>{rightUnits} units ÷ 3 = <strong>{rightOrbs} defense orbs</strong></div>
+            </div>
+          )}
         </div>
 
         {/* Quarter Indicator */}
