@@ -323,46 +323,23 @@ export async function simulateQuarter(
     },
   });
 
-  // Fire stat rows SEQUENTIALLY (one at a time): PTS → REB → AST → STL → 3PT
+  // Fire all stat rows SIMULTANEOUSLY (all at once): PTS, REB, AST, STL, 3PT
   // Use fireStatRowForMultiBattle (the working version from auto-start mode)
   try {
-    // 1. POINTS
-    let shouldContinue = await fireStatRowForMultiBattle(battleId, gameId, 'pts', quarterData.left.points, quarterData.right.points);
-    if (!shouldContinue) {
-      console.log('⚠️ Battle ended during PTS');
-      return quarterData;
-    }
-    await sleep(500); // Small pause between stat rows (same as auto-start mode)
+    const statRowPromises = [
+      fireStatRowForMultiBattle(battleId, gameId, 'pts', quarterData.left.points, quarterData.right.points),
+      fireStatRowForMultiBattle(battleId, gameId, 'reb', quarterData.left.rebounds, quarterData.right.rebounds),
+      fireStatRowForMultiBattle(battleId, gameId, 'ast', quarterData.left.assists, quarterData.right.assists),
+      fireStatRowForMultiBattle(battleId, gameId, 'stl', quarterData.left.steals, quarterData.right.steals),
+      fireStatRowForMultiBattle(battleId, gameId, '3pt', quarterData.left.threePointers, quarterData.right.threePointers),
+    ];
 
-    // 2. REBOUNDS
-    shouldContinue = await fireStatRowForMultiBattle(battleId, gameId, 'reb', quarterData.left.rebounds, quarterData.right.rebounds);
-    if (!shouldContinue) {
-      console.log('⚠️ Battle ended during REB');
-      return quarterData;
-    }
-    await sleep(500);
+    // Wait for all stat rows to complete
+    const results = await Promise.all(statRowPromises);
 
-    // 3. ASSISTS
-    shouldContinue = await fireStatRowForMultiBattle(battleId, gameId, 'ast', quarterData.left.assists, quarterData.right.assists);
-    if (!shouldContinue) {
-      console.log('⚠️ Battle ended during AST');
-      return quarterData;
-    }
-    await sleep(500);
-
-    // 4. STEALS
-    console.log(`🔴 [STL DEBUG] About to fire STL row: left=${quarterData.left.steals}, right=${quarterData.right.steals}`);
-    shouldContinue = await fireStatRowForMultiBattle(battleId, gameId, 'stl', quarterData.left.steals, quarterData.right.steals);
-    if (!shouldContinue) {
-      console.log('⚠️ Battle ended during STL');
-      return quarterData;
-    }
-    await sleep(500);
-
-    // 5. THREE POINTERS
-    shouldContinue = await fireStatRowForMultiBattle(battleId, gameId, '3pt', quarterData.left.threePointers, quarterData.right.threePointers);
-    if (!shouldContinue) {
-      console.log('⚠️ Battle ended during 3PT');
+    // Check if any stat row ended the battle
+    if (results.some(result => result === false)) {
+      console.log('⚠️ Battle ended during quarter simulation');
       return quarterData;
     }
   } catch (error: any) {
