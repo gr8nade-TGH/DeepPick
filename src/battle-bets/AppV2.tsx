@@ -17,27 +17,37 @@ import { debugLogger } from './game/debug/DebugLogger';
 import type { Game, GameStatus } from './types/game';
 import './App.css';
 
-// Import all the helper functions from original App.tsx
+// Map battle status from API to GameStatus format
 function mapBattleStatusToGameStatus(status: string): GameStatus {
   switch (status) {
-    case 'scheduled':
+    case 'SCHEDULED':
       return 'SCHEDULED';
-    case 'q1_pending':
-    case 'q1_complete':
+    case 'Q1_IN_PROGRESS':
+    case 'Q1_BATTLE':
       return '1Q';
-    case 'q2_pending':
-    case 'q2_complete':
+    case 'Q2_IN_PROGRESS':
+    case 'Q2_BATTLE':
+    case 'HALFTIME':
       return '2Q';
-    case 'halftime':
-      return '2Q';
-    case 'q3_pending':
-    case 'q3_complete':
+    case 'Q3_IN_PROGRESS':
+    case 'Q3_BATTLE':
       return '3Q';
-    case 'q4_pending':
-    case 'q4_complete':
+    case 'Q4_IN_PROGRESS':
+    case 'Q4_BATTLE':
       return '4Q';
-    case 'final':
-    case 'complete':
+    case 'OT1_IN_PROGRESS':
+    case 'OT1_BATTLE':
+      return 'OT';
+    case 'OT2_IN_PROGRESS':
+    case 'OT2_BATTLE':
+      return 'OT2';
+    case 'OT3_IN_PROGRESS':
+    case 'OT3_BATTLE':
+      return 'OT3';
+    case 'OT4_IN_PROGRESS':
+    case 'OT4_BATTLE':
+      return 'OT4';
+    case 'GAME_OVER':
       return 'FINAL';
     default:
       return 'SCHEDULED';
@@ -78,9 +88,9 @@ type TabType = 'ALL' | 'LIVE' | 'UPCOMING' | 'FINAL';
 
 // Battle status categories
 function getBattleCategory(status: string): TabType {
-  if (status === 'scheduled') return 'UPCOMING';
-  if (status === 'final' || status === 'complete') return 'FINAL';
-  // q1_pending, q1_complete, q2_pending, etc. are LIVE
+  if (status === 'SCHEDULED') return 'UPCOMING';
+  if (status === 'GAME_OVER') return 'FINAL';
+  // All IN_PROGRESS, BATTLE, HALFTIME states are LIVE
   return 'LIVE';
 }
 
@@ -97,7 +107,7 @@ function generateTestBattles(): ApiBattle[] {
       left_hp: 100,
       right_hp: 100,
       spread: -4.5,
-      status: 'scheduled', // Start as UPCOMING so items can be equipped
+      status: 'SCHEDULED', // Start as UPCOMING so items can be equipped
       created_at: new Date().toISOString(),
       game_start_time: new Date(Date.now() + 3600000).toISOString(), // 1 hour in future
       left_capper: {
@@ -127,7 +137,7 @@ function generateTestBattles(): ApiBattle[] {
       left_hp: 100,
       right_hp: 100,
       spread: -2.5,
-      status: 'scheduled', // Start as UPCOMING so items can be equipped
+      status: 'SCHEDULED', // Start as UPCOMING so items can be equipped
       created_at: new Date().toISOString(),
       game_start_time: new Date(Date.now() + 7200000).toISOString(), // 2 hours in future
       left_capper: {

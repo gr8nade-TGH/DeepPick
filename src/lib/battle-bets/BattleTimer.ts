@@ -1,22 +1,42 @@
 /**
  * Battle Timer Utility
- * 
+ *
  * Calculates countdown timers for different battle states
+ *
+ * Status Flow:
+ * SCHEDULED → Q1_IN_PROGRESS → Q1_BATTLE → Q2_IN_PROGRESS → Q2_BATTLE →
+ * HALFTIME → Q3_IN_PROGRESS → Q3_BATTLE → Q4_IN_PROGRESS → Q4_BATTLE →
+ * [OT1_IN_PROGRESS → OT1_BATTLE → ...] → GAME_OVER
  */
 
-export type BattleStatus = 
-  | 'scheduled'
-  | 'q1_pending'
-  | 'q1_complete'
-  | 'q2_pending'
-  | 'q2_complete'
-  | 'halftime'
-  | 'q3_pending'
-  | 'q3_complete'
-  | 'q4_pending'
-  | 'q4_complete'
-  | 'final'
-  | 'complete'
+export type BattleStatus =
+  // Pre-game
+  | 'SCHEDULED'
+  // Quarter 1
+  | 'Q1_IN_PROGRESS'
+  | 'Q1_BATTLE'
+  // Quarter 2
+  | 'Q2_IN_PROGRESS'
+  | 'Q2_BATTLE'
+  // Halftime
+  | 'HALFTIME'
+  // Quarter 3
+  | 'Q3_IN_PROGRESS'
+  | 'Q3_BATTLE'
+  // Quarter 4
+  | 'Q4_IN_PROGRESS'
+  | 'Q4_BATTLE'
+  // Overtime periods
+  | 'OT1_IN_PROGRESS'
+  | 'OT1_BATTLE'
+  | 'OT2_IN_PROGRESS'
+  | 'OT2_BATTLE'
+  | 'OT3_IN_PROGRESS'
+  | 'OT3_BATTLE'
+  | 'OT4_IN_PROGRESS'
+  | 'OT4_BATTLE'
+  // Final
+  | 'GAME_OVER'
 
 export interface TimerState {
   status: BattleStatus
@@ -25,6 +45,29 @@ export interface TimerState {
   countdownDisplay: string | null // formatted time (e.g., "2:45")
   isActive: boolean // true if game is in progress
   isPending: boolean // true if waiting for quarter to complete
+  isBattle: boolean // true when battle animation should play
+}
+
+/**
+ * Helper to create timer state
+ */
+function createTimerState(
+  status: BattleStatus,
+  message: string,
+  countdown: number | null,
+  isActive: boolean,
+  isPending: boolean,
+  isBattle: boolean
+): TimerState {
+  return {
+    status,
+    message,
+    countdown,
+    countdownDisplay: countdown !== null ? formatTime(countdown) : null,
+    isActive,
+    isPending,
+    isBattle
+  }
 }
 
 /**
@@ -41,220 +84,81 @@ export function calculateTimerState(
 ): TimerState {
   const now = new Date()
 
+  // Helper to calculate seconds until a target time
+  const secondsUntil = (time: string | null): number | null => {
+    if (!time) return null
+    return Math.max(0, Math.floor((new Date(time).getTime() - now.getTime()) / 1000))
+  }
+
   switch (status) {
-    case 'scheduled':
-      if (!gameStartTime) {
-        return {
-          status,
-          message: 'Game Scheduled',
-          countdown: null,
-          countdownDisplay: null,
-          isActive: false,
-          isPending: false
-        }
-      }
+    // Pre-game
+    case 'SCHEDULED': {
+      const seconds = secondsUntil(gameStartTime)
+      return createTimerState(status, seconds !== null ? 'Game Starts In' : 'Game Scheduled', seconds, false, false, false)
+    }
 
-      const gameStart = new Date(gameStartTime)
-      const secondsUntilStart = Math.max(0, Math.floor((gameStart.getTime() - now.getTime()) / 1000))
+    // Quarter 1
+    case 'Q1_IN_PROGRESS': {
+      const seconds = secondsUntil(q1EndTime)
+      return createTimerState(status, 'Q1 In Progress', seconds, true, true, false)
+    }
+    case 'Q1_BATTLE':
+      return createTimerState(status, 'Q1 Battle', null, true, false, true)
 
-      return {
-        status,
-        message: 'Game Starts In',
-        countdown: secondsUntilStart,
-        countdownDisplay: formatTime(secondsUntilStart),
-        isActive: false,
-        isPending: false
-      }
+    // Quarter 2
+    case 'Q2_IN_PROGRESS': {
+      const seconds = secondsUntil(q2EndTime)
+      return createTimerState(status, 'Q2 In Progress', seconds, true, true, false)
+    }
+    case 'Q2_BATTLE':
+      return createTimerState(status, 'Q2 Battle', null, true, false, true)
 
-    case 'q1_pending':
-      if (!q1EndTime) {
-        return {
-          status,
-          message: 'Q1 In Progress',
-          countdown: null,
-          countdownDisplay: null,
-          isActive: true,
-          isPending: true
-        }
-      }
+    // Halftime
+    case 'HALFTIME': {
+      const seconds = secondsUntil(halftimeEndTime)
+      return createTimerState(status, seconds !== null ? 'Halftime - Q3 Starts In' : 'Halftime', seconds, false, false, false)
+    }
 
-      const q1End = new Date(q1EndTime)
-      const secondsUntilQ1 = Math.max(0, Math.floor((q1End.getTime() - now.getTime()) / 1000))
+    // Quarter 3
+    case 'Q3_IN_PROGRESS': {
+      const seconds = secondsUntil(q3EndTime)
+      return createTimerState(status, 'Q3 In Progress', seconds, true, true, false)
+    }
+    case 'Q3_BATTLE':
+      return createTimerState(status, 'Q3 Battle', null, true, false, true)
 
-      return {
-        status,
-        message: 'Q1 Ends In',
-        countdown: secondsUntilQ1,
-        countdownDisplay: formatTime(secondsUntilQ1),
-        isActive: true,
-        isPending: true
-      }
+    // Quarter 4
+    case 'Q4_IN_PROGRESS': {
+      const seconds = secondsUntil(q4EndTime)
+      return createTimerState(status, 'Q4 In Progress', seconds, true, true, false)
+    }
+    case 'Q4_BATTLE':
+      return createTimerState(status, 'Q4 Battle', null, true, false, true)
 
-    case 'q1_complete':
-      return {
-        status,
-        message: 'Q1 Complete - Simulating...',
-        countdown: null,
-        countdownDisplay: null,
-        isActive: true,
-        isPending: false
-      }
+    // Overtime periods (no countdown times tracked yet)
+    case 'OT1_IN_PROGRESS':
+      return createTimerState(status, 'OT1 In Progress', null, true, true, false)
+    case 'OT1_BATTLE':
+      return createTimerState(status, 'OT1 Battle', null, true, false, true)
+    case 'OT2_IN_PROGRESS':
+      return createTimerState(status, 'OT2 In Progress', null, true, true, false)
+    case 'OT2_BATTLE':
+      return createTimerState(status, 'OT2 Battle', null, true, false, true)
+    case 'OT3_IN_PROGRESS':
+      return createTimerState(status, 'OT3 In Progress', null, true, true, false)
+    case 'OT3_BATTLE':
+      return createTimerState(status, 'OT3 Battle', null, true, false, true)
+    case 'OT4_IN_PROGRESS':
+      return createTimerState(status, 'OT4 In Progress', null, true, true, false)
+    case 'OT4_BATTLE':
+      return createTimerState(status, 'OT4 Battle', null, true, false, true)
 
-    case 'q2_pending':
-      if (!q2EndTime) {
-        return {
-          status,
-          message: 'Q2 In Progress',
-          countdown: null,
-          countdownDisplay: null,
-          isActive: true,
-          isPending: true
-        }
-      }
-
-      const q2End = new Date(q2EndTime)
-      const secondsUntilQ2 = Math.max(0, Math.floor((q2End.getTime() - now.getTime()) / 1000))
-
-      return {
-        status,
-        message: 'Q2 Ends In',
-        countdown: secondsUntilQ2,
-        countdownDisplay: formatTime(secondsUntilQ2),
-        isActive: true,
-        isPending: true
-      }
-
-    case 'q2_complete':
-      return {
-        status,
-        message: 'Q2 Complete - Simulating...',
-        countdown: null,
-        countdownDisplay: null,
-        isActive: true,
-        isPending: false
-      }
-
-    case 'halftime':
-      if (!halftimeEndTime) {
-        return {
-          status,
-          message: 'Halftime',
-          countdown: null,
-          countdownDisplay: null,
-          isActive: false,
-          isPending: false
-        }
-      }
-
-      const halftimeEnd = new Date(halftimeEndTime)
-      const secondsUntilHalftime = Math.max(0, Math.floor((halftimeEnd.getTime() - now.getTime()) / 1000))
-
-      return {
-        status,
-        message: 'Halftime - Q3 Starts In',
-        countdown: secondsUntilHalftime,
-        countdownDisplay: formatTime(secondsUntilHalftime),
-        isActive: false,
-        isPending: false
-      }
-
-    case 'q3_pending':
-      if (!q3EndTime) {
-        return {
-          status,
-          message: 'Q3 In Progress',
-          countdown: null,
-          countdownDisplay: null,
-          isActive: true,
-          isPending: true
-        }
-      }
-
-      const q3End = new Date(q3EndTime)
-      const secondsUntilQ3 = Math.max(0, Math.floor((q3End.getTime() - now.getTime()) / 1000))
-
-      return {
-        status,
-        message: 'Q3 Ends In',
-        countdown: secondsUntilQ3,
-        countdownDisplay: formatTime(secondsUntilQ3),
-        isActive: true,
-        isPending: true
-      }
-
-    case 'q3_complete':
-      return {
-        status,
-        message: 'Q3 Complete - Simulating...',
-        countdown: null,
-        countdownDisplay: null,
-        isActive: true,
-        isPending: false
-      }
-
-    case 'q4_pending':
-      if (!q4EndTime) {
-        return {
-          status,
-          message: 'Q4 In Progress',
-          countdown: null,
-          countdownDisplay: null,
-          isActive: true,
-          isPending: true
-        }
-      }
-
-      const q4End = new Date(q4EndTime)
-      const secondsUntilQ4 = Math.max(0, Math.floor((q4End.getTime() - now.getTime()) / 1000))
-
-      return {
-        status,
-        message: 'Q4 Ends In',
-        countdown: secondsUntilQ4,
-        countdownDisplay: formatTime(secondsUntilQ4),
-        isActive: true,
-        isPending: true
-      }
-
-    case 'q4_complete':
-      return {
-        status,
-        message: 'Q4 Complete - Final Blow!',
-        countdown: null,
-        countdownDisplay: null,
-        isActive: true,
-        isPending: false
-      }
-
-    case 'final':
-      return {
-        status,
-        message: 'Game Final - Calculating Winner...',
-        countdown: null,
-        countdownDisplay: null,
-        isActive: false,
-        isPending: false
-      }
-
-    case 'complete':
-      return {
-        status,
-        message: 'Battle Complete',
-        countdown: null,
-        countdownDisplay: null,
-        isActive: false,
-        isPending: false
-      }
+    // Game Over
+    case 'GAME_OVER':
+      return createTimerState(status, 'Game Over', null, false, false, false)
 
     default:
-      return {
-        status,
-        message: 'Unknown Status',
-        countdown: null,
-        countdownDisplay: null,
-        isActive: false,
-        isPending: false
-      }
+      return createTimerState(status, 'Unknown Status', null, false, false, false)
   }
 }
 
@@ -280,24 +184,30 @@ export function formatTime(seconds: number): string {
  */
 export function getStatusColor(status: BattleStatus): string {
   switch (status) {
-    case 'scheduled':
+    case 'SCHEDULED':
       return 'text-gray-400'
-    case 'q1_pending':
-    case 'q2_pending':
-    case 'q3_pending':
-    case 'q4_pending':
+    case 'Q1_IN_PROGRESS':
+    case 'Q2_IN_PROGRESS':
+    case 'Q3_IN_PROGRESS':
+    case 'Q4_IN_PROGRESS':
+    case 'OT1_IN_PROGRESS':
+    case 'OT2_IN_PROGRESS':
+    case 'OT3_IN_PROGRESS':
+    case 'OT4_IN_PROGRESS':
       return 'text-yellow-400'
-    case 'q1_complete':
-    case 'q2_complete':
-    case 'q3_complete':
-    case 'q4_complete':
+    case 'Q1_BATTLE':
+    case 'Q2_BATTLE':
+    case 'Q3_BATTLE':
+    case 'Q4_BATTLE':
+    case 'OT1_BATTLE':
+    case 'OT2_BATTLE':
+    case 'OT3_BATTLE':
+    case 'OT4_BATTLE':
       return 'text-green-400'
-    case 'halftime':
+    case 'HALFTIME':
       return 'text-blue-400'
-    case 'final':
+    case 'GAME_OVER':
       return 'text-purple-400'
-    case 'complete':
-      return 'text-gray-500'
     default:
       return 'text-gray-400'
   }
@@ -308,26 +218,80 @@ export function getStatusColor(status: BattleStatus): string {
  */
 export function getStatusEmoji(status: BattleStatus): string {
   switch (status) {
-    case 'scheduled':
+    case 'SCHEDULED':
       return '⏰'
-    case 'q1_pending':
-    case 'q2_pending':
-    case 'q3_pending':
-    case 'q4_pending':
+    case 'Q1_IN_PROGRESS':
+    case 'Q2_IN_PROGRESS':
+    case 'Q3_IN_PROGRESS':
+    case 'Q4_IN_PROGRESS':
+    case 'OT1_IN_PROGRESS':
+    case 'OT2_IN_PROGRESS':
+    case 'OT3_IN_PROGRESS':
+    case 'OT4_IN_PROGRESS':
       return '⚔️'
-    case 'q1_complete':
-    case 'q2_complete':
-    case 'q3_complete':
-    case 'q4_complete':
+    case 'Q1_BATTLE':
+    case 'Q2_BATTLE':
+    case 'Q3_BATTLE':
+    case 'Q4_BATTLE':
+    case 'OT1_BATTLE':
+    case 'OT2_BATTLE':
+    case 'OT3_BATTLE':
+    case 'OT4_BATTLE':
       return '✨'
-    case 'halftime':
-      return '☕'
-    case 'final':
+    case 'HALFTIME':
+      return '⭐'
+    case 'GAME_OVER':
       return '🏆'
-    case 'complete':
-      return '✅'
     default:
       return '❓'
+  }
+}
+
+/**
+ * Get display text for status (what shows in the UI badge)
+ */
+export function getStatusDisplayText(status: BattleStatus): string {
+  switch (status) {
+    case 'SCHEDULED':
+      return 'SCHEDULED'
+    case 'Q1_IN_PROGRESS':
+      return 'Q1 IN-PROGRESS'
+    case 'Q1_BATTLE':
+      return 'Q1 BATTLE'
+    case 'Q2_IN_PROGRESS':
+      return 'Q2 IN-PROGRESS'
+    case 'Q2_BATTLE':
+      return 'Q2 BATTLE'
+    case 'HALFTIME':
+      return 'HALFTIME'
+    case 'Q3_IN_PROGRESS':
+      return 'Q3 IN-PROGRESS'
+    case 'Q3_BATTLE':
+      return 'Q3 BATTLE'
+    case 'Q4_IN_PROGRESS':
+      return 'Q4 IN-PROGRESS'
+    case 'Q4_BATTLE':
+      return 'Q4 BATTLE'
+    case 'OT1_IN_PROGRESS':
+      return 'OT1 IN-PROGRESS'
+    case 'OT1_BATTLE':
+      return 'OT1 BATTLE'
+    case 'OT2_IN_PROGRESS':
+      return 'OT2 IN-PROGRESS'
+    case 'OT2_BATTLE':
+      return 'OT2 BATTLE'
+    case 'OT3_IN_PROGRESS':
+      return 'OT3 IN-PROGRESS'
+    case 'OT3_BATTLE':
+      return 'OT3 BATTLE'
+    case 'OT4_IN_PROGRESS':
+      return 'OT4 IN-PROGRESS'
+    case 'OT4_BATTLE':
+      return 'OT4 BATTLE'
+    case 'GAME_OVER':
+      return 'GAME OVER'
+    default:
+      return status
   }
 }
 

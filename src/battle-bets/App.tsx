@@ -18,29 +18,39 @@ import './App.css';
 
 /**
  * Map battle status from API to GameStatus format
- * API: 'scheduled', 'q1_pending', 'q1_complete', 'q2_pending', etc.
- * Game: 'SCHEDULED', '1Q', '2Q', '3Q', '4Q', 'OT', 'FINAL'
+ * API uses BattleStatus: 'SCHEDULED', 'Q1_IN_PROGRESS', 'Q1_BATTLE', etc.
+ * Game uses GameStatus: 'SCHEDULED', '1Q', '2Q', '3Q', '4Q', 'OT', 'FINAL'
  */
 function mapBattleStatusToGameStatus(status: string): GameStatus {
   switch (status) {
-    case 'scheduled':
+    case 'SCHEDULED':
       return 'SCHEDULED';
-    case 'q1_pending':
-    case 'q1_complete':
+    case 'Q1_IN_PROGRESS':
+    case 'Q1_BATTLE':
       return '1Q';
-    case 'q2_pending':
-    case 'q2_complete':
+    case 'Q2_IN_PROGRESS':
+    case 'Q2_BATTLE':
+    case 'HALFTIME':
       return '2Q';
-    case 'halftime':
-      return '2Q'; // Halftime is still Q2
-    case 'q3_pending':
-    case 'q3_complete':
+    case 'Q3_IN_PROGRESS':
+    case 'Q3_BATTLE':
       return '3Q';
-    case 'q4_pending':
-    case 'q4_complete':
+    case 'Q4_IN_PROGRESS':
+    case 'Q4_BATTLE':
       return '4Q';
-    case 'final':
-    case 'complete':
+    case 'OT1_IN_PROGRESS':
+    case 'OT1_BATTLE':
+      return 'OT';
+    case 'OT2_IN_PROGRESS':
+    case 'OT2_BATTLE':
+      return 'OT2';
+    case 'OT3_IN_PROGRESS':
+    case 'OT3_BATTLE':
+      return 'OT3';
+    case 'OT4_IN_PROGRESS':
+    case 'OT4_BATTLE':
+      return 'OT4';
+    case 'GAME_OVER':
       return 'FINAL';
     default:
       return 'SCHEDULED';

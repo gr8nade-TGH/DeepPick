@@ -17,6 +17,7 @@ import { pixiManager } from '../../game/managers/PixiManager'
 import { runDebugBattleForMultiStore } from '../../game/simulation/quarterSimulation'
 import { QuarterDebugControls } from '../debug/QuarterDebugControls'
 import { DebugToggleButton } from '../debug/DebugToggleButton'
+import { HalftimeStarButton } from './HalftimeStarButton'
 import type { Game } from '../../types/game'
 import type { BattleStatus } from '@/lib/battle-bets/BattleTimer'
 
@@ -38,7 +39,7 @@ interface BattleCanvasProps {
 export const BattleCanvas: React.FC<BattleCanvasProps> = ({
   battleId,
   game,
-  status = 'scheduled',
+  status = 'SCHEDULED',
   gameStartTime,
   q1EndTime,
   q2EndTime,
@@ -416,6 +417,9 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
       {showDebugControls && (
         <QuarterDebugControls battleId={battleId} />
       )}
+
+      {/* Halftime Star Button - Shows during halftime for LIVE PICK feature */}
+      <HalftimeStarButton isHalftime={status === 'HALFTIME'} />
     </div>
   )
 }

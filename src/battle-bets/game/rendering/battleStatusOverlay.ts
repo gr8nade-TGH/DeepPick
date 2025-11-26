@@ -68,12 +68,13 @@ export function createBattleStatusOverlay(config: OverlayConfig): PIXI.Container
   const now = Date.now()
 
   switch (status) {
-    case 'scheduled':
+    case 'SCHEDULED':
       // Don't show overlay for scheduled games - countdown is shown in top game info bar
       showOverlay = false
       break
 
-    case 'q1_pending':
+    // IN_PROGRESS states - show countdown to battle
+    case 'Q1_IN_PROGRESS':
       if (q1EndTime) {
         const timeRemaining = getTimeRemaining(q1EndTime)
         if (timeRemaining > 0) {
@@ -84,7 +85,7 @@ export function createBattleStatusOverlay(config: OverlayConfig): PIXI.Container
       }
       break
 
-    case 'q2_pending':
+    case 'Q2_IN_PROGRESS':
       if (q2EndTime) {
         const timeRemaining = getTimeRemaining(q2EndTime)
         if (timeRemaining > 0) {
@@ -95,7 +96,7 @@ export function createBattleStatusOverlay(config: OverlayConfig): PIXI.Container
       }
       break
 
-    case 'halftime':
+    case 'HALFTIME':
       if (halftimeEndTime) {
         const timeRemaining = getTimeRemaining(halftimeEndTime)
         if (timeRemaining > 0) {
@@ -106,7 +107,7 @@ export function createBattleStatusOverlay(config: OverlayConfig): PIXI.Container
       }
       break
 
-    case 'q3_pending':
+    case 'Q3_IN_PROGRESS':
       if (q3EndTime) {
         const timeRemaining = getTimeRemaining(q3EndTime)
         if (timeRemaining > 0) {
@@ -117,7 +118,7 @@ export function createBattleStatusOverlay(config: OverlayConfig): PIXI.Container
       }
       break
 
-    case 'q4_pending':
+    case 'Q4_IN_PROGRESS':
       if (q4EndTime) {
         const timeRemaining = getTimeRemaining(q4EndTime)
         if (timeRemaining > 0) {
@@ -128,33 +129,30 @@ export function createBattleStatusOverlay(config: OverlayConfig): PIXI.Container
       }
       break
 
-    case 'q1_complete':
-      // Disabled - quarter logic needs to be re-implemented
-      showOverlay = false
-      break
-
-    case 'q2_complete':
-      // Disabled - quarter logic needs to be re-implemented
-      showOverlay = false
-      break
-
-    case 'q3_complete':
-      // Disabled - quarter logic needs to be re-implemented
-      showOverlay = false
-      break
-
-    case 'q4_complete':
-      // Disabled - quarter logic needs to be re-implemented
-      showOverlay = false
-      break
-
-    case 'final':
-      message = 'FINAL'
+    // OT IN_PROGRESS states
+    case 'OT1_IN_PROGRESS':
+    case 'OT2_IN_PROGRESS':
+    case 'OT3_IN_PROGRESS':
+    case 'OT4_IN_PROGRESS':
+      message = `${status.replace('_IN_PROGRESS', '')} IN PROGRESS`
       showOverlay = true
       break
 
-    case 'complete':
-      message = 'BATTLE COMPLETE'
+    // BATTLE states - battle is happening, no overlay needed
+    case 'Q1_BATTLE':
+    case 'Q2_BATTLE':
+    case 'Q3_BATTLE':
+    case 'Q4_BATTLE':
+    case 'OT1_BATTLE':
+    case 'OT2_BATTLE':
+    case 'OT3_BATTLE':
+    case 'OT4_BATTLE':
+      // Battle is in progress - no overlay
+      showOverlay = false
+      break
+
+    case 'GAME_OVER':
+      message = 'GAME OVER'
       showOverlay = true
       break
 

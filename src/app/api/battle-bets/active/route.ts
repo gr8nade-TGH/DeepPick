@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
           left_team: 'LAL',
           right_team: 'PHX',
           spread: -4.5,
-          status: 'scheduled',
+          status: 'SCHEDULED',
           current_quarter: 0,
           left_hp: 100,
           right_hp: 100,
@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
           left_team: 'BOS',
           right_team: 'MIA',
           spread: -3.5,
-          status: 'q2_pending',
+          status: 'Q2_IN_PROGRESS',
           current_quarter: 1,
           left_hp: 95,
           right_hp: 92,
@@ -121,7 +121,7 @@ export async function GET(request: NextRequest) {
           left_team: 'GSW',
           right_team: 'DEN',
           spread: 2.5,
-          status: 'q4_pending',
+          status: 'Q4_IN_PROGRESS',
           current_quarter: 3,
           left_hp: 88,
           right_hp: 90,
@@ -152,7 +152,7 @@ export async function GET(request: NextRequest) {
           left_team: 'DAL',
           right_team: 'NYK',
           spread: -1.5,
-          status: 'scheduled',
+          status: 'SCHEDULED',
           current_quarter: 0,
           left_hp: 100,
           right_hp: 100,
@@ -195,7 +195,7 @@ export async function GET(request: NextRequest) {
     let countQuery = supabase
       .from('battle_matchups')
       .select('*', { count: 'exact', head: true })
-      .neq('status', 'complete')
+      .neq('status', 'GAME_OVER')
 
     // Filter by capper if provided
     if (capperId) {
@@ -221,7 +221,7 @@ export async function GET(request: NextRequest) {
     let battlesQuery = supabase
       .from('battle_matchups')
       .select('*')
-      .neq('status', 'complete')
+      .neq('status', 'GAME_OVER')
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
 
@@ -537,7 +537,7 @@ async function getPendingSingleCapperBattles(
       left_team: homeAbbr,
       right_team: awayAbbr,
       spread: spreadValue,
-      status: 'scheduled',
+      status: 'SCHEDULED',
       game_start_time: null,
       game,
       left_capper: leftCapperData,

@@ -67,18 +67,27 @@ export async function POST(
     console.log(`[Simulate Quarter] Damage - Left: ${damage.leftDamage}, Right: ${damage.rightDamage}`)
     console.log(`[Simulate Quarter] HP - Left: ${battle.left_hp} → ${newLeftHP}, Right: ${battle.right_hp} → ${newRightHP}`)
 
-    // Determine new status
+    // Determine new status based on quarter progression
+    // Flow: Q1_BATTLE → Q2_IN_PROGRESS → Q2_BATTLE → HALFTIME → Q3_IN_PROGRESS → etc.
     let newStatus = battle.status
     const quarterCompleteKey = `q${quarter}_complete` as 'q1_complete' | 'q2_complete' | 'q3_complete' | 'q4_complete'
 
     if (quarter === 1) {
-      newStatus = 'q2_pending'
+      newStatus = 'Q2_IN_PROGRESS'
     } else if (quarter === 2) {
-      newStatus = 'halftime'
+      newStatus = 'HALFTIME'
     } else if (quarter === 3) {
-      newStatus = 'q4_pending'
+      newStatus = 'Q4_IN_PROGRESS'
     } else if (quarter === 4) {
-      newStatus = 'final'
+      newStatus = 'GAME_OVER'
+    } else if (quarter === 5) {
+      newStatus = 'OT2_IN_PROGRESS'
+    } else if (quarter === 6) {
+      newStatus = 'OT3_IN_PROGRESS'
+    } else if (quarter === 7) {
+      newStatus = 'OT4_IN_PROGRESS'
+    } else if (quarter === 8) {
+      newStatus = 'GAME_OVER'
     }
 
     // Check for knockout
@@ -88,11 +97,11 @@ export async function POST(
     if (newLeftHP === 0 && newRightHP > 0) {
       winner = 'right'
       finalBlowSide = 'right'
-      newStatus = 'complete'
+      newStatus = 'GAME_OVER'
     } else if (newRightHP === 0 && newLeftHP > 0) {
       winner = 'left'
       finalBlowSide = 'left'
-      newStatus = 'complete'
+      newStatus = 'GAME_OVER'
     } else if (newLeftHP === 0 && newRightHP === 0) {
       // Tie - determine winner by score
       if (quarterStats.leftScore > quarterStats.rightScore) {
@@ -104,7 +113,7 @@ export async function POST(
       } else {
         winner = 'tie'
       }
-      newStatus = 'complete'
+      newStatus = 'GAME_OVER'
     }
 
     // Update battle

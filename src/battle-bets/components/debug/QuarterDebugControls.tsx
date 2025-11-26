@@ -2,12 +2,18 @@
  * Quarter Debug Controls
  * Manual controls to force quarter progression for testing
  * Allows testing full game flow without waiting for real game times
+ *
+ * Flow: SCHEDULED → Q1_IN_PROGRESS → Q1_BATTLE → Q2_IN_PROGRESS → Q2_BATTLE →
+ *       HALFTIME → Q3_IN_PROGRESS → Q3_BATTLE → Q4_IN_PROGRESS → Q4_BATTLE →
+ *       [OT1_IN_PROGRESS → OT1_BATTLE → ...] → GAME_OVER
  */
 
 import React, { useState } from 'react';
 import { useMultiGameStore } from '../../store/multiGameStore';
 import { simulateQuarter } from '../../game/simulation/quarterSimulation';
 import type { GameStatus } from '../../types/game';
+import type { BattleStatus } from '../../lib/BattleTimer';
+import { getStatusDisplayText } from '../../lib/BattleTimer';
 import './QuarterDebugControls.css';
 import { PreGameItemSelector } from './PreGameItemSelector';
 import { itemEffectRegistry } from '../../game/items/ItemEffectRegistry';
@@ -127,7 +133,16 @@ export const QuarterDebugControls: React.FC<QuarterDebugControlsProps> = ({ batt
   };
 
   /**
+   * Get quarter label for display (includes OT)
+   */
+  const getQuarterLabel = (quarter: number): string => {
+    if (quarter <= 4) return `Q${quarter}`;
+    return `OT${quarter - 4}`;
+  };
+
+  /**
    * Force next quarter with random stats
+   * Supports Q1-Q4 and OT1-OT4
    */
   const handleForceNextQuarter = async () => {
     if (isProcessing) return;
@@ -143,24 +158,29 @@ export const QuarterDebugControls: React.FC<QuarterDebugControlsProps> = ({ batt
         return;
       }
 
-      // Check if we've exceeded 4 quarters (would need OT logic)
-      if (nextQuarter > 4) {
-        setLastAction('❌ Q4 complete - need OT logic');
+      // Support up to Q4 + 4 OT periods = 8 total quarters
+      if (nextQuarter > 8) {
+        setLastAction('❌ Maximum overtime periods reached');
         setIsProcessing(false);
         return;
       }
 
-      setLastAction(`⏳ Simulating Q${nextQuarter}...`);
+      const quarterLabel = getQuarterLabel(nextQuarter);
+      setLastAction(`⏳ Simulating ${quarterLabel}...`);
 
       // Update quarter number
       useMultiGameStore.getState().setCurrentQuarter(battleId, nextQuarter);
 
-      // Update game status
+      // Update game status based on quarter
       const statusMap: Record<number, GameStatus> = {
         1: '1Q',
         2: '2Q',
         3: '3Q',
         4: '4Q',
+        5: 'OT',
+        6: 'OT2',
+        7: 'OT3',
+        8: 'OT4',
       };
       useMultiGameStore.getState().updateGameStatus(battleId, statusMap[nextQuarter]);
 
@@ -175,9 +195,9 @@ export const QuarterDebugControls: React.FC<QuarterDebugControlsProps> = ({ batt
       if (updatedLeftHP <= 0 || updatedRightHP <= 0) {
         useMultiGameStore.getState().updateGameStatus(battleId, 'FINAL');
         const winner = updatedLeftHP > 0 ? 'LEFT' : 'RIGHT';
-        setLastAction(`✅ Q${nextQuarter} complete - ${winner} WINS!`);
+        setLastAction(`✅ ${quarterLabel} complete - ${winner} WINS!`);
       } else {
-        setLastAction(`✅ Q${nextQuarter} complete`);
+        setLastAction(`✅ ${quarterLabel} complete`);
       }
     } catch (error) {
       console.error('Failed to force quarter:', error);
@@ -266,9 +286,9 @@ export const QuarterDebugControls: React.FC<QuarterDebugControlsProps> = ({ batt
           <button
             className="debug-btn force-btn"
             onClick={handleForceNextQuarter}
-            disabled={isProcessing || currentQuarter >= 4}
+            disabled={isProcessing || currentQuarter >= 8}
           >
-            ⚡ Force Q{currentQuarter + 1}
+            ⚡ Force {getQuarterLabel(currentQuarter + 1)}
           </button>
         )}
 

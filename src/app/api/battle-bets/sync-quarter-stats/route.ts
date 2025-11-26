@@ -165,7 +165,7 @@ export async function POST(request: NextRequest) {
     const { data: battles, error: battlesError } = await supabase
       .from('battle_matchups')
       .select('*')
-      .neq('status', 'complete')
+      .neq('status', 'GAME_OVER')
       .order('created_at', { ascending: false })
 
     if (battlesError) {
