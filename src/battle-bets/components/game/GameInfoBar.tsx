@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import type { Game } from '../../types/game';
 import { getCapperUnitsForTeam, getTotalDefenseDotCount } from '../../types/game';
 import { useMultiGameStore } from '../../store/multiGameStore';
@@ -265,20 +266,22 @@ export const GameInfoBar: React.FC<GameInfoBarProps> = ({
           onMouseLeave={() => setLeftRecordHover(false)}
         >
           <span className="units-value" style={{ color: game.leftTeam.colorHex }}>{leftUnits > 0 ? '+' : ''}{leftUnits.toFixed(1)}</span>
-          {leftRecordHover && (
-            <div
-              className="units-tooltip"
-              style={{
-                top: `${leftTooltipPos.top}px`,
-                left: `${leftTooltipPos.left}px`
-              }}
-            >
-              <div><strong>{game.leftCapper.name}'s {game.leftTeam.abbreviation} Spread Record</strong></div>
-              <div>{leftRecord?.wins || 0}W - {leftRecord?.losses || 0}L - {leftRecord?.pushes || 0}P</div>
-              <div>{leftUnits > 0 ? '+' : ''}{leftUnits.toFixed(1)} units ÷ 3 = <strong>{leftOrbs} defense orbs</strong></div>
-            </div>
-          )}
         </div>
+        {/* Left Units Tooltip - Rendered via Portal to ensure it's above everything */}
+        {leftRecordHover && createPortal(
+          <div
+            className="units-tooltip"
+            style={{
+              top: `${leftTooltipPos.top}px`,
+              left: `${leftTooltipPos.left}px`
+            }}
+          >
+            <div><strong>{game.leftCapper.name}'s {game.leftTeam.abbreviation} Spread Record</strong></div>
+            <div>{leftRecord?.wins || 0}W - {leftRecord?.losses || 0}L - {leftRecord?.pushes || 0}P</div>
+            <div>{leftUnits > 0 ? '+' : ''}{leftUnits.toFixed(1)} units ÷ 3 = <strong>{leftOrbs} defense orbs</strong></div>
+          </div>,
+          document.body
+        )}
       </div>
 
       {/* Center Score - Single line layout */}
@@ -335,20 +338,22 @@ export const GameInfoBar: React.FC<GameInfoBarProps> = ({
           onMouseLeave={() => setRightRecordHover(false)}
         >
           <span className="units-value" style={{ color: game.rightTeam.colorHex }}>{rightUnits > 0 ? '+' : ''}{rightUnits.toFixed(1)}</span>
-          {rightRecordHover && (
-            <div
-              className="units-tooltip"
-              style={{
-                top: `${rightTooltipPos.top}px`,
-                left: `${rightTooltipPos.left}px`
-              }}
-            >
-              <div><strong>{game.rightCapper.name}'s {game.rightTeam.abbreviation} Spread Record</strong></div>
-              <div>{rightRecord?.wins || 0}W - {rightRecord?.losses || 0}L - {rightRecord?.pushes || 0}P</div>
-              <div>{rightUnits > 0 ? '+' : ''}{rightUnits.toFixed(1)} units ÷ 3 = <strong>{rightOrbs} defense orbs</strong></div>
-            </div>
-          )}
         </div>
+        {/* Right Units Tooltip - Rendered via Portal to ensure it's above everything */}
+        {rightRecordHover && createPortal(
+          <div
+            className="units-tooltip"
+            style={{
+              top: `${rightTooltipPos.top}px`,
+              left: `${rightTooltipPos.left}px`
+            }}
+          >
+            <div><strong>{game.rightCapper.name}'s {game.rightTeam.abbreviation} Spread Record</strong></div>
+            <div>{rightRecord?.wins || 0}W - {rightRecord?.losses || 0}L - {rightRecord?.pushes || 0}P</div>
+            <div>{rightUnits > 0 ? '+' : ''}{rightUnits.toFixed(1)} units ÷ 3 = <strong>{rightOrbs} defense orbs</strong></div>
+          </div>,
+          document.body
+        )}
 
         {/* Pick Box (Team + Spread) */}
         <div
