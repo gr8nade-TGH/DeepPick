@@ -807,32 +807,25 @@ export class KnightDefender {
     bloodPool.y = this.position.y + 10;
     bloodPool.alpha = 0;
     bloodPool.scale.set(0.3);
-    bloodPool.name = 'blood-stain';
+    bloodPool.name = 'blood-stain-permanent';
 
     parentContainer.addChildAt(bloodPool, 0);
 
-    // Dramatic appearance - blood spreads out and STAYS
+    // Dramatic appearance - blood spreads out and STAYS FOREVER
     gsap.timeline()
       .to(bloodPool, {
-        alpha: 0.7,
-        duration: 0.4,
-        delay: 0.2,
+        alpha: 0.75,
+        duration: 0.5,
+        delay: 0.15,
         ease: 'power2.out',
       })
       .to(bloodPool.scale, {
-        x: 1.3,
-        y: 1.3,
-        duration: 0.8,
+        x: 1.4,
+        y: 1.4,
+        duration: 1.0,
         ease: 'power2.out',
-      }, '-=0.3')
-      // Blood stain stays permanently (or until battle ends)
-      .to(bloodPool, {
-        alpha: 0.5, // Slightly fade but remain visible
-        duration: 2,
-        delay: 5,
-        ease: 'power1.inOut',
-      });
-    // Note: No cleanup - stain remains on the battlefield as a reminder
+      }, '-=0.4');
+    // IMPORTANT: No further animations - blood stain stays at full opacity forever
   }
 
   /**

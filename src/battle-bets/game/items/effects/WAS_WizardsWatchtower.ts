@@ -268,10 +268,26 @@ export function registerWizardsWatchtowerEffect(context: ItemRuntimeContext): vo
     if (payload.gameId !== gameId) return;
     if (payload.side !== side) return;
 
-    // Check if this orb had a glow (was buffed)
+    console.log(`🔮 [WizardsWatchtower] DEFENSE_ORB_HIT received for orbId: ${payload.orbId}`);
+
+    // Try cleanup from orbGlowMap first
     if (orbGlowMap.has(payload.orbId)) {
-      console.log(`🔮 [WizardsWatchtower] Buffed orb ${payload.orbId} was hit! Removing enchantment glow.`);
+      console.log(`🔮 [WizardsWatchtower] Found in orbGlowMap - removing glow`);
       cleanupOrbGlow(payload.orbId);
+    }
+
+    // Also try to cleanup via the orb's _wizardGlow reference (backup method)
+    const battle = useMultiGameStore.getState().battles.get(gameId);
+    if (battle) {
+      const orb = battle.defenseDots.get(payload.orbId);
+      if (orb && (orb as any)._wizardGlow) {
+        console.log(`🔮 [WizardsWatchtower] Found _wizardGlow on orb - removing directly`);
+        const glowRef = (orb as any)._wizardGlow as PIXI.Graphics;
+        if (glowRef.parent) glowRef.parent.removeChild(glowRef);
+        glowRef.destroy();
+        (orb as any)._wizardGlow = null;
+        (orb as any).isWizardBuffed = false;
+      }
     }
   });
 
@@ -280,8 +296,22 @@ export function registerWizardsWatchtowerEffect(context: ItemRuntimeContext): vo
     if (payload.gameId !== gameId) return;
     if (payload.side !== side) return;
 
-    // Clean up glow just in case (if orb was one-shot before hit event)
+    console.log(`🔮 [WizardsWatchtower] DEFENSE_ORB_DESTROYED for orbId: ${payload.orbId}`);
+
+    // Clean up glow from map (in case one-shot without hit event)
     cleanupOrbGlow(payload.orbId);
+
+    // Also cleanup via orb reference (backup)
+    const battle = useMultiGameStore.getState().battles.get(gameId);
+    if (battle) {
+      const orb = battle.defenseDots.get(payload.orbId);
+      if (orb && (orb as any)._wizardGlow) {
+        const glowRef = (orb as any)._wizardGlow as PIXI.Graphics;
+        if (glowRef.parent) glowRef.parent.removeChild(glowRef);
+        glowRef.destroy();
+        (orb as any)._wizardGlow = null;
+      }
+    }
 
     const castleId = `${gameId}-${side}`;
 
