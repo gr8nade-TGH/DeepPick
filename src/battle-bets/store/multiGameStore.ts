@@ -17,6 +17,7 @@ import {
   distributeDotsAcrossStats
 } from '../types/game';
 import { castleManager } from '../game/managers/CastleManager';
+import { castleHealthSystem } from '../game/systems/CastleHealthSystem';
 import { getDefenseCellPosition } from '../game/utils/positioning';
 import { debugLogger } from '../game/debug/DebugLogger';
 import { itemEffectRegistry } from '../game/items/ItemEffectRegistry';
@@ -272,47 +273,51 @@ export const useMultiGameStore = create<MultiGameState>()(
         console.log(`🏰 [applyDamageToCapperHP] ${hpMsg}`);
         debugLogger.log('store-hp', hpMsg);
 
-        const newHP = Math.max(0, hp.currentHP - damage);
-        const actualDamage = hp.currentHP - newHP;
+        // FIRST: Damage the Castle entity (which uses CastleHealthSystem with shield logic)
+        const castleId = `${battleId}-${side}`;
+        castleManager.damageCastle(battleId, castleId, damage);
+        const castleMsg = `Called castleManager.damageCastle(battleId=${battleId}, castleId=${castleId}, damage=${damage})`;
+        console.log(`🏰 [applyDamageToCapperHP] ${castleMsg}`);
+        debugLogger.log('store-hp', castleMsg);
 
-        if (actualDamage > 0) {
-          const capperName = side === 'left' ? battle.game.leftCapper.name : battle.game.rightCapper.name;
-          const damageMsg = `${capperName} HP: ${hp.currentHP} → ${newHP} (-${actualDamage})`;
+        // THEN: Get the actual HP from CastleHealthSystem (accounts for shields!)
+        const actualCastleHP = castleHealthSystem.getCurrentHP(castleId);
+        const capperName = side === 'left' ? battle.game.leftCapper.name : battle.game.rightCapper.name;
+
+        console.log(`🏰 [applyDamageToCapperHP] CastleHealthSystem reports actual HP: ${actualCastleHP}`);
+        debugLogger.log('store-hp', `CastleHealthSystem HP: ${actualCastleHP}`);
+
+        // Update store HP to match the actual castle HP (after shield absorption)
+        if (actualCastleHP !== hp.currentHP) {
+          const damageMsg = `${capperName} HP: ${hp.currentHP} → ${actualCastleHP} (after shield logic)`;
           console.log(`💥 [Multi-Game Store] ${damageMsg}`);
-          debugLogger.log('store-hp', damageMsg, { battleId, side, oldHP: hp.currentHP, newHP, actualDamage });
+          debugLogger.log('store-hp', damageMsg, { battleId, side, oldHP: hp.currentHP, newHP: actualCastleHP });
 
-          if (newHP === 0) {
+          if (actualCastleHP === 0) {
             const defeatMsg = `${capperName} HAS BEEN DEFEATED!`;
             console.log(`☠️ [Multi-Game Store] ${defeatMsg}`);
             debugLogger.log('store-hp', defeatMsg);
           }
 
-          // Update HP in store
+          // Sync store HP with actual castle HP
           set(state => {
             const newBattles = new Map(state.battles);
             const updatedBattle = newBattles.get(battleId);
             if (updatedBattle) {
               const newCapperHP = new Map(updatedBattle.capperHP);
               newCapperHP.set(side, {
-                currentHP: newHP,
+                currentHP: actualCastleHP,
                 maxHP: hp.maxHP,
               });
               updatedBattle.capperHP = newCapperHP;
-              const updateMsg = `HP updated in store for ${side}: ${newHP}/${hp.maxHP}`;
+              const updateMsg = `HP synced in store for ${side}: ${actualCastleHP}/${hp.maxHP}`;
               console.log(`✅ [applyDamageToCapperHP] ${updateMsg}`);
               debugLogger.log('store-hp', updateMsg);
             }
             return { battles: newBattles };
           });
-
-          // CRITICAL: Also damage the Castle entity to update visual HP bar
-          const castleId = `${battleId}-${side}`;
-          castleManager.damageCastle(battleId, castleId, actualDamage);
-          const castleMsg = `Called castleManager.damageCastle(battleId=${battleId}, castleId=${castleId}, damage=${actualDamage})`;
-          console.log(`🏰 [applyDamageToCapperHP] ${castleMsg}`);
-          debugLogger.log('store-hp', castleMsg);
         } else {
-          const noOpMsg = 'No actual damage applied (already at 0 HP or invalid damage)';
+          const noOpMsg = 'Store HP already matches castle HP (shield may have absorbed all damage)';
           console.log(`⚠️ [applyDamageToCapperHP] ${noOpMsg}`);
           debugLogger.log('store-hp', noOpMsg);
         }
