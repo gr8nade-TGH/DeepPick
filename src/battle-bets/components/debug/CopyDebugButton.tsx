@@ -29,16 +29,18 @@ console.log = (...args: any[]) => {
     return String(arg);
   }).join(' ');
 
-  // Only capture logs with emoji markers
-  const emojiMarkers = ['💾💾💾', '🧪🧪🧪', '🎮🎮🎮', '✅✅✅', '🔔', '🛡️', '🔍', '📢📢📢', '💀', '💥'];
-  if (emojiMarkers.some(emoji => message.includes(emoji))) {
+  // Capture ALL logs with emoji markers OR specific keywords
+  const emojiMarkers = ['💾💾💾', '🧪🧪🧪', '🎮🎮🎮', '✅✅✅', '🔔', '🛡️', '🔍', '📢📢📢', '💀', '💥', '⚔️', '🎯', '📦', '🚀'];
+  const keywords = ['[ItemEffectRegistry]', '[Shortsword]', '[IronmanArmor]', '[PreGameItemSelector]', 'activateItem', 'registerEffect'];
+
+  if (emojiMarkers.some(emoji => message.includes(emoji)) || keywords.some(kw => message.includes(kw))) {
     capturedLogs.push({
       timestamp: Date.now(),
       message
     });
 
-    // Keep only last 100 logs to prevent memory issues
-    if (capturedLogs.length > 100) {
+    // Keep only last 200 logs to prevent memory issues (increased from 100)
+    if (capturedLogs.length > 200) {
       capturedLogs.shift();
     }
   }
@@ -57,7 +59,23 @@ export function CopyDebugButton({ battleId }: CopyDebugButtonProps) {
       lines.push('='.repeat(80));
       lines.push(`Generated: ${new Date().toISOString()}`);
       lines.push(`Battle ID: ${battleId}`);
+      lines.push(`User Agent: ${navigator.userAgent}`);
+      lines.push(`Current URL: ${window.location.href}`);
       lines.push('='.repeat(80));
+      lines.push('');
+
+      // Bundle version detection
+      lines.push('\n' + '='.repeat(80));
+      lines.push('BUNDLE VERSION CHECK');
+      lines.push('='.repeat(80));
+      const scripts = Array.from(document.querySelectorAll('script[src*="main-"]'));
+      if (scripts.length > 0) {
+        scripts.forEach((script: any) => {
+          lines.push(`Loaded bundle: ${script.src}`);
+        });
+      } else {
+        lines.push('❌ No main bundle script found!');
+      }
       lines.push('');
 
       console.log('📋 Starting debug report generation...');
@@ -215,21 +233,26 @@ export function CopyDebugButton({ battleId }: CopyDebugButtonProps) {
         lines.push('  🛡️ = Shield healing attempt');
         lines.push('  💀 = Defense orb destroyed');
         lines.push('  💥 = Projectile collision');
+        lines.push('  🎯 = ItemEffectRegistry registration/activation');
+        lines.push('  ⚔️ = Shortsword effect logs');
+        lines.push('  📦 = Item effect registered');
+        lines.push('  🚀 = Calling effect function');
         lines.push('');
 
         if (capturedLogs.length === 0) {
-          lines.push('❌ NO EMOJI MARKER LOGS CAPTURED!');
+          lines.push('❌ NO LOGS CAPTURED!');
           lines.push('');
           lines.push('This means:');
           lines.push('  - You may not have equipped items (no 💾 logs)');
           lines.push('  - You may not have started the game (no 🎮 logs)');
           lines.push('  - The page may need a hard refresh (Ctrl+Shift+R)');
+          lines.push('  - The bundle may not have loaded correctly');
         } else {
-          lines.push(`✅ Captured ${capturedLogs.length} emoji marker logs (most recent 50 shown):`);
+          lines.push(`✅ Captured ${capturedLogs.length} logs (most recent 100 shown):`);
           lines.push('');
 
-          // Show most recent 50 logs
-          const recentLogs = capturedLogs.slice(-50);
+          // Show most recent 100 logs (increased from 50)
+          const recentLogs = capturedLogs.slice(-100);
           recentLogs.forEach(log => {
             const date = new Date(log.timestamp);
             const timeStr = date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 });

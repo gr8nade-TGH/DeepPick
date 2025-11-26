@@ -131,10 +131,11 @@
 }
 
 .units-tooltip {
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
+  position: fixed;
+  bottom: auto;
+  top: auto;
+  left: auto;
+  transform: translate(-50%, -100%);
   background: rgba(10, 15, 30, 0.98);
   border: 2px solid #4ECDC4;
   border-radius: 8px;
@@ -146,6 +147,7 @@
   z-index: 9999;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.8), 0 0 15px rgba(78, 205, 196, 0.3);
   pointer-events: none;
+  margin-top: -8px;
 }
 
 .units-tooltip div {

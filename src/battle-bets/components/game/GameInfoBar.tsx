@@ -3,7 +3,7 @@
  * Designed for multi-game stacking view
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { Game } from '../../types/game';
 import { getCapperUnitsForTeam, getTotalDefenseDotCount } from '../../types/game';
 import { useMultiGameStore } from '../../store/multiGameStore';
