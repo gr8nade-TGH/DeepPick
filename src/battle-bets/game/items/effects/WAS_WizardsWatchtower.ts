@@ -58,20 +58,35 @@ export function cleanupOrbGlow(glowKey: string): void {
 
   const glow = orbGlowMap.get(glowKey);
   if (glow) {
-    console.log(`🔮 [WizardsWatchtower] Found glow in map, removing...`);
+    console.log(`🔮 [WizardsWatchtower] Found glow in map. Parent exists: ${!!glow.parent}, destroyed: ${glow.destroyed}`);
 
-    // Kill animation
+    // Kill animation first
     const anim = glowAnimations.get(glowKey);
     if (anim) {
       anim.kill();
       glowAnimations.delete(glowKey);
     }
 
-    // Remove from parent and destroy
+    // Make invisible immediately
+    glow.visible = false;
+    glow.alpha = 0;
+
+    // Clear all graphics
+    glow.clear();
+
+    // Remove from parent
     if (glow.parent) {
+      console.log(`🔮 [WizardsWatchtower] Removing from parent...`);
       glow.parent.removeChild(glow);
+    } else {
+      console.log(`⚠️ [WizardsWatchtower] Glow has no parent!`);
     }
-    glow.destroy();
+
+    // Destroy
+    if (!glow.destroyed) {
+      glow.destroy({ children: true });
+    }
+
     orbGlowMap.delete(glowKey);
     console.log(`✅ [WizardsWatchtower] Glow cleaned up for key: ${glowKey}`);
   }
@@ -321,12 +336,41 @@ export function registerWizardsWatchtowerEffect(context: ItemRuntimeContext): vo
           glowAnimations.delete(storedKey);
         }
 
+        // Make invisible immediately
+        glowRef.visible = false;
+        glowRef.alpha = 0;
+        glowRef.clear();
+
         if (glowRef.parent) glowRef.parent.removeChild(glowRef);
-        glowRef.destroy();
+        if (!glowRef.destroyed) glowRef.destroy({ children: true });
+
         (orb as any)._wizardGlow = null;
         (orb as any)._wizardGlowKey = null;
         (orb as any).isWizardBuffed = false;
         console.log(`✅ [WizardsWatchtower] Glow removed from orb ${payload.orbId}`);
+      }
+
+      // NUCLEAR OPTION: Find and destroy ANY wizard-glow graphics near the orb sprite
+      if (orb && orb.sprite && orb.sprite.parent) {
+        const parent = orb.sprite.parent;
+        const toRemove: PIXI.Graphics[] = [];
+        for (const child of parent.children) {
+          if (child instanceof PIXI.Graphics && child.name === 'wizard-glow') {
+            // Check if it's at the same position as this orb
+            if (Math.abs(child.x - orb.sprite.x) < 5 && Math.abs(child.y - orb.sprite.y) < 5) {
+              toRemove.push(child);
+            }
+          }
+        }
+        if (toRemove.length > 0) {
+          console.log(`🔮 [WizardsWatchtower] NUCLEAR: Found ${toRemove.length} wizard-glow graphics at orb position`);
+          for (const g of toRemove) {
+            g.visible = false;
+            g.clear();
+            parent.removeChild(g);
+            if (!g.destroyed) g.destroy({ children: true });
+          }
+        }
       }
     }
   });
