@@ -1,25 +1,22 @@
-export const metadata = {
-  title: 'Battle Arena V2 | Sharp Siege',
-  description: 'Battle Arena V2 - Multi-game tabbed interface',
-}
+'use client';
+
+import { useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 export default function BattleArenaV2Page() {
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    // Build the URL with query params preserved
+    const params = searchParams.toString();
+    const url = `/battle-arena-v2/index.html${params ? `?${params}` : ''}`;
+    window.location.replace(url);
+  }, [searchParams]);
+
   return (
-    <html lang="en">
-      <head>
-        <meta charSet="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="/battle-arena-v2/vite.svg" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <meta httpEquiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-        <meta httpEquiv="Pragma" content="no-cache" />
-        <meta httpEquiv="Expires" content="0" />
-        <script type="module" src="/battle-arena-v2/assets/main-CUc0l1M9.js"></script>
-        <link rel="stylesheet" href="/battle-arena-v2/assets/main-Cp-CPgsX.css" />
-      </head>
-      <body>
-        <div id="root"></div>
-      </body>
-    </html>
-  )
+    <div className="flex items-center justify-center min-h-screen bg-black">
+      <div className="text-white text-xl">Loading Battle Arena...</div>
+    </div>
+  );
 }
 
