@@ -134,9 +134,14 @@ export function registerShortswordEffect(context: ItemRuntimeContext): void {
     if (payload.gameId !== gameId) return;
     if (payload.side !== side) return;
 
-    // Get the projectile from the store
-    const projectile = multiStore.getState().games[gameId]?.projectiles.find(p => p.id === payload.projectileId);
-    if (!projectile) return;
+    // Get the projectile from the store (battles is a Map, not games object)
+    const battle = useMultiGameStore.getState().battles.get(gameId);
+    const projectile = battle?.projectiles.find(p => p.id === payload.projectileId);
+
+    if (!projectile) {
+      console.log(`⚠️ [Shortsword] Could not find projectile ${payload.projectileId} in store for game ${gameId}`);
+      return;
+    }
 
     // Apply speed boost to PTS projectiles
     if (payload.lane === 'pts') {
