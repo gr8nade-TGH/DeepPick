@@ -4,23 +4,29 @@
  * Wizard's Watchtower - Washington Wizards Defense Item
  *
  * Description:
- * Buffs the last defense orb in each stat row by adding 1-3 extra HP.
- * Similar to Ironman Armor but strengthens existing orbs instead of creating a shield.
- * Buffed orbs have a glowing purple edge to indicate the enchantment.
+ * Castle shield (same as Ironman Armor) that starts with 5-15 HP and gains +1-3 HP
+ * when defense orbs are destroyed. PLUS enchants the last defense orb in each stat row
+ * with +1-3 bonus HP and a purple glowing edge.
  *
  * Roll Ranges:
- * - bonusHP: 1-3 HP added to last orb in each row
+ * - startShieldHp: 5-15 HP (castle shield)
+ * - hpPerDestroyedOrb: 1-3 HP (shield heal per orb destroyed)
+ * - orbBonusHP: 1-3 HP (extra HP added to last orb in each row)
  *
  * Quality Tiers:
- * - Warped: +1 HP to last orbs
- * - Balanced: +2 HP to last orbs
- * - Honed/Masterwork: +3 HP to last orbs
+ * - Warped: Low rolls on all stats
+ * - Balanced: Average rolls
+ * - Honed: Good rolls
+ * - Masterwork: Perfect rolls on all stats
  */
 
 import { battleEventBus } from '../../events/EventBus';
 import { itemEffectRegistry } from '../ItemEffectRegistry';
 import type { ItemRuntimeContext } from '../ItemEffectRegistry';
 import type { ItemDefinition } from '../ItemRollSystem';
+import { castleHealthSystem } from '../../systems/CastleHealthSystem';
+import { castleManager } from '../../managers/CastleManager';
+import { createShieldHealAnimation } from '../../effects/ShieldHealAnimation';
 import { useMultiGameStore } from '../../../store/multiGameStore';
 import type { StatType } from '../../../types/game';
 import * as PIXI from 'pixi.js';
@@ -37,10 +43,12 @@ export const WAS_WIZARDS_WATCHTOWER_DEFINITION: ItemDefinition = {
   teamName: 'Washington Wizards',
   slot: 'defense',
   name: "Wizard's Watchtower",
-  description: "Enchants the last defense orb in each stat row with +1-3 bonus HP. Buffed orbs glow with purple magic.",
+  description: "Castle shield (5-15 HP, heals +1-3 per orb destroyed) plus enchants the last defense orb in each row with +1-3 bonus HP and a purple glow.",
   icon: '🔮',
   rollRanges: {
-    bonusHP: { min: 1, max: 3, step: 1 },
+    startShieldHp: { min: 5, max: 15, step: 1 },
+    hpPerDestroyedOrb: { min: 1, max: 3, step: 1 },
+    orbBonusHP: { min: 1, max: 3, step: 1 },
   },
 };
 
@@ -84,23 +92,56 @@ function addGlowingEdge(sprite: PIXI.Graphics, glowColor: number = WIZARD_GLOW_C
 
 /**
  * Register Wizard's Watchtower effect
+ *
+ * This combines Ironman Armor functionality (castle shield) with
+ * bonus HP to the last defense orb in each stat row.
  */
 export function registerWizardsWatchtowerEffect(context: ItemRuntimeContext): void {
   const { itemInstanceId, gameId, side, rolls } = context;
-  const { bonusHP } = rolls;
+  const { startShieldHp, hpPerDestroyedOrb, orbBonusHP } = rolls;
 
   console.log(`🔮 [WizardsWatchtower] REGISTERING EFFECT for ${side} side in game ${gameId}`);
-  console.log(`🔮 [WizardsWatchtower] Bonus HP per last orb: +${bonusHP}`);
+  console.log(`🔮 [WizardsWatchtower] Shield: ${startShieldHp} HP, +${hpPerDestroyedOrb} per orb | Orb Buff: +${orbBonusHP} HP to last orbs`);
 
-  // Track buffed orb IDs for cleanup
-  const buffedOrbIds: string[] = [];
-
-  // BATTLE_START: Buff last orbs in each row
+  // BATTLE_START: Create shield AND buff last orbs
   battleEventBus.on('BATTLE_START', (payload) => {
     if (payload.gameId !== gameId) return;
     if (payload.side !== side) return;
 
-    console.log(`🔮 [WizardsWatchtower] Buffing last orbs for ${side} with +${bonusHP} HP each`);
+    // ===== PART 1: Castle Shield (same as Ironman Armor) =====
+    console.log(`🔮 [WizardsWatchtower] Creating shield for ${side} with ${startShieldHp} HP`);
+
+    const castleId = `${gameId}-${side}`;
+
+    // Create shield using CastleHealthSystem
+    castleHealthSystem.activateShield(
+      castleId,
+      startShieldHp,
+      0, // No activation threshold - shield is active immediately
+      'WAS_def_wizards_watchtower'
+    );
+
+    // Trigger visual update on castle
+    const castle = castleManager.getCastle(gameId, castleId);
+    if (castle) {
+      castle.activateShield({
+        id: 'WAS_def_wizards_watchtower',
+        name: "Wizard's Watchtower",
+        description: 'Castle shield with orb enchantment',
+        icon: '🔮',
+        shieldHP: startShieldHp,
+        shieldActivationThreshold: 0,
+      });
+    }
+
+    console.log(`✅ [WizardsWatchtower] Shield created with ${startShieldHp} HP!`);
+
+    // Store shield state
+    itemEffectRegistry.setCounter(itemInstanceId, 'shieldId', 1);
+    itemEffectRegistry.setCounter(itemInstanceId, 'shieldActive', 1);
+
+    // ===== PART 2: Buff last orbs in each row =====
+    console.log(`🔮 [WizardsWatchtower] Buffing last orbs for ${side} with +${orbBonusHP} HP each`);
 
     const battle = useMultiGameStore.getState().battles.get(gameId);
     if (!battle) {
@@ -127,29 +168,72 @@ export function registerWizardsWatchtowerEffect(context: ItemRuntimeContext): vo
 
       // Buff the orb's HP
       const oldHP = lastOrb.hp;
-      lastOrb.hp += bonusHP;
-      // Note: We're adding HP beyond maxHp - this is intentional for the buff
+      lastOrb.hp += orbBonusHP;
+      lastOrb.maxHp = Math.max(lastOrb.maxHp, lastOrb.hp); // Increase maxHp too
 
-      console.log(`🔮 [WizardsWatchtower] Buffed ${stat} last orb: ${oldHP} → ${lastOrb.hp} HP (+${bonusHP})`);
+      console.log(`🔮 [WizardsWatchtower] Buffed ${stat} last orb: ${oldHP} → ${lastOrb.hp} HP (+${orbBonusHP})`);
 
-      // Add visual glow effect
+      // Mark orb as buffed and trigger visual update
+      (lastOrb as any).isWizardBuffed = true;
+
+      // Update the orb's visual to show purple glow
       if (lastOrb.sprite && lastOrb.sprite.parent) {
         const glow = addGlowingEdge(lastOrb.sprite);
         lastOrb.sprite.parent.addChild(glow);
-
-        // Store reference for potential cleanup
         (lastOrb as any)._wizardGlow = glow;
       }
 
-      buffedOrbIds.push(lastOrb.id);
       orbsBuffed++;
     });
 
     // Track total buffed
     itemEffectRegistry.setCounter(itemInstanceId, 'orbsBuffed', orbsBuffed);
-    itemEffectRegistry.setCounter(itemInstanceId, 'totalBonusHP', orbsBuffed * bonusHP);
+    itemEffectRegistry.setCounter(itemInstanceId, 'totalOrbBonusHP', orbsBuffed * orbBonusHP);
 
-    console.log(`✅ [WizardsWatchtower] Buffed ${orbsBuffed} orbs with +${bonusHP} HP each (total: +${orbsBuffed * bonusHP} HP)`);
+    console.log(`✅ [WizardsWatchtower] Buffed ${orbsBuffed} orbs with +${orbBonusHP} HP each (total: +${orbsBuffed * orbBonusHP} HP)`);
+  });
+
+  // DEFENSE_ORB_DESTROYED: Add HP to shield (same as Ironman Armor)
+  battleEventBus.on('DEFENSE_ORB_DESTROYED', (payload) => {
+    if (payload.gameId !== gameId) return;
+    if (payload.side !== side) return;
+
+    const castleId = `${gameId}-${side}`;
+
+    // Check if shield is still active
+    const shield = castleHealthSystem.getShield(castleId);
+    if (!shield || !shield.isActive) {
+      console.log(`🔮 [WizardsWatchtower] Shield not active, ignoring orb destruction`);
+      return;
+    }
+
+    console.log(`🔮 [WizardsWatchtower] Defense orb destroyed, adding +${hpPerDestroyedOrb} HP to shield`);
+
+    // Only heal if shield is not at max HP
+    const needsHealing = shield.currentHP < shield.maxHP;
+
+    // Heal shield
+    castleHealthSystem.healShield(castleId, hpPerDestroyedOrb, false);
+
+    // Get castle for animation
+    const castle = castleManager.getCastle(gameId, castleId);
+    if (castle && needsHealing) {
+      castle.updateShieldVisual();
+      createShieldHealAnimation(gameId, payload.orbId, castleId, hpPerDestroyedOrb);
+    }
+
+    // Track total HP gained
+    const totalHpGained = itemEffectRegistry.incrementCounter(itemInstanceId, 'totalShieldHpGained', hpPerDestroyedOrb);
+    console.log(`✅ [WizardsWatchtower] Shield healed by +${hpPerDestroyedOrb} HP! Total: ${totalHpGained}`);
+  });
+
+  // SHIELD_BROKEN: Mark shield as inactive
+  battleEventBus.on('SHIELD_BROKEN', (payload) => {
+    if (payload.gameId !== gameId) return;
+    if (payload.side !== side) return;
+
+    console.log(`💥 [WizardsWatchtower] Shield broken on ${side}!`);
+    itemEffectRegistry.setCounter(itemInstanceId, 'shieldActive', 0);
   });
 
   console.log(`✅ [WizardsWatchtower] Effect registered for ${side} (${itemInstanceId})`);
