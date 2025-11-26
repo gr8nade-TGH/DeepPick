@@ -208,6 +208,14 @@ export function registerWizardsWatchtowerEffect(context: ItemRuntimeContext): vo
   const { startShieldHp, orbBonusHP } = rolls;
   const hpPerDestroyedOrb = 1; // Fixed at 1, no roll
 
+  // Prevent duplicate handler registration
+  const handlerKey = `${gameId}_${side}`;
+  if (registeredHandlers.has(handlerKey)) {
+    console.log(`⚠️ [WizardsWatchtower] Handler already registered for ${handlerKey}, skipping`);
+    return;
+  }
+  registeredHandlers.add(handlerKey);
+
   console.log(`🔮 [WizardsWatchtower] REGISTERING EFFECT for ${side} side in game ${gameId}`);
   console.log(`🔮 [WizardsWatchtower] Shield: ${startShieldHp} HP, +${hpPerDestroyedOrb} per orb | Orb Buff: +${orbBonusHP} HP to last orbs`);
 
@@ -281,11 +289,34 @@ export function registerWizardsWatchtowerEffect(context: ItemRuntimeContext): vo
 
       console.log(`🔮 [WizardsWatchtower] Buffed ${stat} last orb (${lastOrb.id}): ${oldHP} → ${lastOrb.hp} HP (+${orbBonusHP})`);
 
+      // Skip if already buffed (prevent double glows)
+      if ((lastOrb as any).isWizardBuffed && (lastOrb as any)._wizardGlow) {
+        console.log(`⚠️ [WizardsWatchtower] Orb ${lastOrb.id} already has glow, skipping`);
+        return;
+      }
+
       // Mark orb as buffed and trigger visual update
       (lastOrb as any).isWizardBuffed = true;
 
       // Create unique glow key for this orb
       const glowKey = getGlowKey(gameId, side, lastOrb.id);
+
+      // Clean up any existing glow first
+      if (orbGlowMap.has(glowKey)) {
+        console.log(`🔮 [WizardsWatchtower] Cleaning existing glow before creating new one`);
+        cleanupOrbGlow(glowKey);
+      }
+
+      // Also clean up via orb reference
+      if ((lastOrb as any)._wizardGlow) {
+        const existingGlow = (lastOrb as any)._wizardGlow as PIXI.Graphics;
+        existingGlow.visible = false;
+        existingGlow.clear();
+        if (existingGlow.parent) existingGlow.parent.removeChild(existingGlow);
+        if (!existingGlow.destroyed) existingGlow.destroy({ children: true });
+        (lastOrb as any)._wizardGlow = null;
+      }
+
       console.log(`🔮 [WizardsWatchtower] Creating glow with key: ${glowKey}`);
 
       // Update the orb's visual to show purple glow

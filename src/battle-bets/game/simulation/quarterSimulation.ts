@@ -851,8 +851,8 @@ function createCollisionEffect(x: number, y: number, color: number): void {
 
   const collision = new PIXI.Graphics();
 
-  // Small subtle spark - no X mark, just a quick flash
-  const size = 6;
+  // Slightly larger spark - visible but not overwhelming
+  const size = 10;
 
   // Soft colored glow
   collision.circle(0, 0, size);
@@ -1244,8 +1244,8 @@ function createCollisionEffectForBattle(
 
   const collision = new PIXI.Graphics();
 
-  // Small subtle spark
-  const size = 6;
+  // Slightly larger spark - visible but not overwhelming
+  const size = 10;
 
   // Soft colored glow
   collision.circle(0, 0, size);
