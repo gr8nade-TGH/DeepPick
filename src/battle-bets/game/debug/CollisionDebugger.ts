@@ -55,8 +55,12 @@ class CollisionDebugger {
   ): string {
     const lines: string[] = [];
 
+    // Safety check for undefined/null gameId
+    const safeGameId = gameId || 'unknown';
+    const gameLabel = safeGameId.includes('-') ? safeGameId.split('-')[0] : safeGameId;
+
     lines.push('🔍 COLLISION DEBUG SNAPSHOT');
-    lines.push(`Game: ${gameId.split('-')[0]} | ${new Date().toLocaleTimeString()}`);
+    lines.push(`Game: ${gameLabel} | ${new Date().toLocaleTimeString()}`);
     lines.push('');
 
     // Defense Orbs Summary (grouped by stat/side)
