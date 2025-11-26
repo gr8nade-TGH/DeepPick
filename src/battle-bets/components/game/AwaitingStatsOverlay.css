@@ -1,0 +1,102 @@
+/**
+ * Awaiting Stats Overlay Styles
+ */
+
+.awaiting-stats-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+  pointer-events: none;
+}
+
+.awaiting-stats-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 20px 30px;
+  background: rgba(0, 0, 0, 0.85);
+  border: 2px solid #ff9f43;
+  border-radius: 12px;
+  box-shadow: 
+    0 0 20px rgba(255, 159, 67, 0.3),
+    0 0 40px rgba(255, 159, 67, 0.1);
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+.awaiting-icon {
+  font-size: 36px;
+  animation: spin 3s linear infinite;
+}
+
+.awaiting-text {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.awaiting-text .quarter-label {
+  color: #ff9f43;
+  font-weight: 800;
+}
+
+/* Animated dots */
+.awaiting-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.awaiting-dots .dot {
+  font-size: 24px;
+  font-weight: 700;
+  color: #ff9f43;
+  animation: dotPulse 1.4s ease-in-out infinite;
+}
+
+.awaiting-dots .dot:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.awaiting-dots .dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.awaiting-dots .dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 
+      0 0 20px rgba(255, 159, 67, 0.3),
+      0 0 40px rgba(255, 159, 67, 0.1);
+    border-color: #ff9f43;
+  }
+  50% {
+    box-shadow: 
+      0 0 30px rgba(255, 159, 67, 0.5),
+      0 0 60px rgba(255, 159, 67, 0.2);
+    border-color: #ffb366;
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes dotPulse {
+  0%, 80%, 100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-5px);
+  }
+}
+

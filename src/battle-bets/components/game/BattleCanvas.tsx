@@ -18,6 +18,7 @@ import { runDebugBattleForMultiStore } from '../../game/simulation/quarterSimula
 import { QuarterDebugControls } from '../debug/QuarterDebugControls'
 import { DebugToggleButton } from '../debug/DebugToggleButton'
 import { HalftimeStarButton } from './HalftimeStarButton'
+import { AwaitingStatsOverlay } from './AwaitingStatsOverlay'
 import type { Game } from '../../types/game'
 import type { BattleStatus } from '@/lib/battle-bets/BattleTimer'
 
@@ -420,6 +421,9 @@ export const BattleCanvas: React.FC<BattleCanvasProps> = ({
 
       {/* Halftime Star Button - Shows during halftime for LIVE PICK feature */}
       <HalftimeStarButton isHalftime={status === 'HALFTIME'} />
+
+      {/* Awaiting Stats Overlay - Shows during IN_PROGRESS phases */}
+      <AwaitingStatsOverlay battleStatus={status} />
     </div>
   )
 }

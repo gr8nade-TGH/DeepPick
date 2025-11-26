@@ -8,11 +8,13 @@ import { createPortal } from 'react-dom';
 import type { Game } from '../../types/game';
 import { getCapperUnitsForTeam, getTotalDefenseDotCount } from '../../types/game';
 import { useMultiGameStore } from '../../store/multiGameStore';
+import type { BattleStatus } from '@/lib/battle-bets/BattleTimer';
 import './GameInfoBar.css';
 
 interface GameInfoBarProps {
   game: Game;
   // Battle timing data for dynamic status display
+  battleStatus?: BattleStatus;
   gameStartTime?: string | null;
   q1EndTime?: string | null;
   q2EndTime?: string | null;
@@ -22,6 +24,7 @@ interface GameInfoBarProps {
 
 export const GameInfoBar: React.FC<GameInfoBarProps> = ({
   game,
+  battleStatus = 'SCHEDULED',
   gameStartTime,
   q1EndTime,
   q2EndTime,
@@ -126,31 +129,16 @@ export const GameInfoBar: React.FC<GameInfoBarProps> = ({
     return parts[parts.length - 1].toUpperCase();
   };
 
-  // Calculate dynamic status display (similar to PixiJS dynamicVSDisplay.ts)
+  // Calculate dynamic status display based on BattleStatus
   useEffect(() => {
     const updateStatus = () => {
-      // If battle is in progress for a specific quarter, show "Q# Battle In-Progress"
-      if (isBattleInProgress && currentQuarter) {
-        setDynamicStatus({
-          main: `Q${currentQuarter}`,
-          subtitle: 'In Progress',
-          subtitleColor: '#ff9f43', // Orange for active battle
-        });
-        return;
-      }
-
-      const status = game.status || 'SCHEDULED';
-
-      switch (status) {
+      switch (battleStatus) {
         case 'SCHEDULED':
           // Show countdown timer if game start time is available
           if (gameStartTime) {
             const countdown = getCountdownText(gameStartTime);
             if (countdown) {
-              setDynamicStatus({
-                main: countdown, // Just the countdown, no "VS"
-                subtitleColor: '#4ecdc4', // Cyan
-              });
+              setDynamicStatus({ main: countdown });
             } else {
               setDynamicStatus({ main: 'Starting Soon' });
             }
@@ -159,48 +147,75 @@ export const GameInfoBar: React.FC<GameInfoBarProps> = ({
           }
           break;
 
-        case '1Q':
-        case '2Q':
-        case '3Q':
-        case '4Q':
-          // Show quarter with countdown if available
-          const quarterNum = parseInt(status[0]);
-          if (quarterEndTime) {
-            const countdown = getCountdownText(quarterEndTime);
-            if (countdown) {
-              setDynamicStatus({
-                main: `Q${quarterNum}`,
-                subtitle: countdown, // Just the countdown
-                subtitleColor: '#4ecdc4', // Cyan
-              });
-            } else {
-              setDynamicStatus({ main: `Q${quarterNum}` });
-            }
-          } else {
-            setDynamicStatus({ main: `Q${quarterNum}` });
-          }
+        // IN-PROGRESS states: Real NBA quarter is happening, awaiting stats
+        case 'Q1_IN_PROGRESS':
+          setDynamicStatus({ main: 'Q1 IN-PROGRESS', subtitleColor: '#ff9f43' });
+          break;
+        case 'Q2_IN_PROGRESS':
+          setDynamicStatus({ main: 'Q2 IN-PROGRESS', subtitleColor: '#ff9f43' });
+          break;
+        case 'Q3_IN_PROGRESS':
+          setDynamicStatus({ main: 'Q3 IN-PROGRESS', subtitleColor: '#ff9f43' });
+          break;
+        case 'Q4_IN_PROGRESS':
+          setDynamicStatus({ main: 'Q4 IN-PROGRESS', subtitleColor: '#ff9f43' });
+          break;
+        case 'OT1_IN_PROGRESS':
+          setDynamicStatus({ main: 'OT1 IN-PROGRESS', subtitleColor: '#ff9f43' });
+          break;
+        case 'OT2_IN_PROGRESS':
+          setDynamicStatus({ main: 'OT2 IN-PROGRESS', subtitleColor: '#ff9f43' });
+          break;
+        case 'OT3_IN_PROGRESS':
+          setDynamicStatus({ main: 'OT3 IN-PROGRESS', subtitleColor: '#ff9f43' });
+          break;
+        case 'OT4_IN_PROGRESS':
+          setDynamicStatus({ main: 'OT4 IN-PROGRESS', subtitleColor: '#ff9f43' });
           break;
 
-        case 'OT':
-        case 'OT2':
-        case 'OT3':
-        case 'OT4':
-          setDynamicStatus({ main: status });
+        // BATTLE states: We have stats, battle animation is playing
+        case 'Q1_BATTLE':
+          setDynamicStatus({ main: 'Q1 BATTLE', subtitleColor: '#4ecdc4' });
+          break;
+        case 'Q2_BATTLE':
+          setDynamicStatus({ main: 'Q2 BATTLE', subtitleColor: '#4ecdc4' });
+          break;
+        case 'Q3_BATTLE':
+          setDynamicStatus({ main: 'Q3 BATTLE', subtitleColor: '#4ecdc4' });
+          break;
+        case 'Q4_BATTLE':
+          setDynamicStatus({ main: 'Q4 BATTLE', subtitleColor: '#4ecdc4' });
+          break;
+        case 'OT1_BATTLE':
+          setDynamicStatus({ main: 'OT1 BATTLE', subtitleColor: '#4ecdc4' });
+          break;
+        case 'OT2_BATTLE':
+          setDynamicStatus({ main: 'OT2 BATTLE', subtitleColor: '#4ecdc4' });
+          break;
+        case 'OT3_BATTLE':
+          setDynamicStatus({ main: 'OT3 BATTLE', subtitleColor: '#4ecdc4' });
+          break;
+        case 'OT4_BATTLE':
+          setDynamicStatus({ main: 'OT4 BATTLE', subtitleColor: '#4ecdc4' });
           break;
 
-        case 'FINAL':
-          setDynamicStatus({ main: 'FINAL' });
+        case 'HALFTIME':
+          setDynamicStatus({ main: 'HALFTIME', subtitleColor: '#ffd700' });
+          break;
+
+        case 'GAME_OVER':
+          setDynamicStatus({ main: 'GAME OVER', subtitleColor: '#e74c3c' });
           break;
 
         default:
-          setDynamicStatus({ main: status });
+          setDynamicStatus({ main: battleStatus });
       }
     };
 
     updateStatus();
     const interval = setInterval(updateStatus, 1000); // Update every second for countdown
     return () => clearInterval(interval);
-  }, [game.status, gameStartTime, currentQuarter, quarterEndTime, isBattleInProgress, completedQuarters]);
+  }, [battleStatus, gameStartTime]);
 
   // Helper function to get countdown text
   const getCountdownText = (targetTime: string): string | null => {

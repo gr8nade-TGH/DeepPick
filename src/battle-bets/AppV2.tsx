@@ -539,6 +539,7 @@ function AppV2() {
               <div style={{ display: 'flex', justifyContent: 'center', background: '#020617' }}>
                 <GameInfoBar
                   game={game}
+                  battleStatus={(game as any)._battleData?.status || 'SCHEDULED'}
                   gameStartTime={(game as any)._battleData?.gameStartTime}
                   q1EndTime={(game as any)._battleData?.q1EndTime}
                   q2EndTime={(game as any)._battleData?.q2EndTime}
