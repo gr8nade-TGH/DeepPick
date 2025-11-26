@@ -214,7 +214,12 @@ export async function simulateQuarter(
     () => {
       const state = useMultiGameStore.getState();
       const currentBattle = state.getBattle(battleId);
-      return currentBattle?.defenseDots ?? new Map();
+      const dots = currentBattle?.defenseDots ?? new Map();
+      // Debug: Log defense dots count periodically
+      if (Math.random() < 0.01) { // 1% chance to log (reduce spam)
+        console.log(`🔍 [Collision Callback] getDots for ${battleId}: ${dots.size} dots`);
+      }
+      return dots;
     },
     (dotId: string, damage: number) => {
       const state = useMultiGameStore.getState();

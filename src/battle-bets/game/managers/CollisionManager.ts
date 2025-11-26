@@ -210,6 +210,12 @@ class CollisionManager {
 
     const freshDots = getDotsForGame();
 
+    // Debug: Log when checking for defense collision
+    if (freshDots.size === 0) {
+      console.warn(`⚠️ [COLLISION] Empty defense dots map for gameId=${projectile.gameId}! Did registration expire?`);
+      return null;
+    }
+
     // Direct Map lookup - O(1) instead of O(n) search!
     const targetDot = freshDots.get(dotId);
 
