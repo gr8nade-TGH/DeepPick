@@ -29,6 +29,10 @@ export const GameInfoBar: React.FC<GameInfoBarProps> = ({
 }) => {
   const [leftRecordHover, setLeftRecordHover] = useState(false);
   const [rightRecordHover, setRightRecordHover] = useState(false);
+  const [leftTooltipPos, setLeftTooltipPos] = useState({ top: 0, left: 0 });
+  const [rightTooltipPos, setRightTooltipPos] = useState({ top: 0, left: 0 });
+  const leftUnitsRef = useRef<HTMLDivElement>(null);
+  const rightUnitsRef = useRef<HTMLDivElement>(null);
   const [dynamicStatus, setDynamicStatus] = useState<{ main: string; subtitle?: string; subtitleColor?: string }>({ main: 'SCHEDULED' });
 
   // Get battle state from store
@@ -249,12 +253,26 @@ export const GameInfoBar: React.FC<GameInfoBarProps> = ({
             borderColor: game.leftTeam.colorHex,
             boxShadow: `0 0 10px ${game.leftTeam.colorHex}80`,
           }}
-          onMouseEnter={() => setLeftRecordHover(true)}
+          ref={leftUnitsRef}
+          onMouseEnter={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            setLeftTooltipPos({
+              top: rect.top - 8,
+              left: rect.left + rect.width / 2
+            });
+            setLeftRecordHover(true);
+          }}
           onMouseLeave={() => setLeftRecordHover(false)}
         >
           <span className="units-value" style={{ color: game.leftTeam.colorHex }}>{leftUnits > 0 ? '+' : ''}{leftUnits.toFixed(1)}</span>
           {leftRecordHover && (
-            <div className="units-tooltip">
+            <div
+              className="units-tooltip"
+              style={{
+                top: `${leftTooltipPos.top}px`,
+                left: `${leftTooltipPos.left}px`
+              }}
+            >
               <div><strong>{game.leftCapper.name}'s {game.leftTeam.abbreviation} Spread Record</strong></div>
               <div>{leftRecord?.wins || 0}W - {leftRecord?.losses || 0}L - {leftRecord?.pushes || 0}P</div>
               <div>{leftUnits > 0 ? '+' : ''}{leftUnits.toFixed(1)} units ÷ 3 = <strong>{leftOrbs} defense orbs</strong></div>
@@ -305,12 +323,26 @@ export const GameInfoBar: React.FC<GameInfoBarProps> = ({
             borderColor: game.rightTeam.colorHex,
             boxShadow: `0 0 10px ${game.rightTeam.colorHex}80`,
           }}
-          onMouseEnter={() => setRightRecordHover(true)}
+          ref={rightUnitsRef}
+          onMouseEnter={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            setRightTooltipPos({
+              top: rect.top - 8,
+              left: rect.left + rect.width / 2
+            });
+            setRightRecordHover(true);
+          }}
           onMouseLeave={() => setRightRecordHover(false)}
         >
           <span className="units-value" style={{ color: game.rightTeam.colorHex }}>{rightUnits > 0 ? '+' : ''}{rightUnits.toFixed(1)}</span>
           {rightRecordHover && (
-            <div className="units-tooltip">
+            <div
+              className="units-tooltip"
+              style={{
+                top: `${rightTooltipPos.top}px`,
+                left: `${rightTooltipPos.left}px`
+              }}
+            >
               <div><strong>{game.rightCapper.name}'s {game.rightTeam.abbreviation} Spread Record</strong></div>
               <div>{rightRecord?.wins || 0}W - {rightRecord?.losses || 0}L - {rightRecord?.pushes || 0}P</div>
               <div>{rightUnits > 0 ? '+' : ''}{rightUnits.toFixed(1)} units ÷ 3 = <strong>{rightOrbs} defense orbs</strong></div>
