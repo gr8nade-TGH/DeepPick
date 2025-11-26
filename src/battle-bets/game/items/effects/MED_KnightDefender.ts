@@ -74,7 +74,7 @@ function spawnKnight(gameId: string, side: 'left' | 'right'): KnightDefender | n
   activeKnights.set(`${gameId}-${side}`, knight);
 
   // Add knight sprite to game container
-  const container = pixiManager.getGameContainer(gameId);
+  const container = pixiManager.getContainer(gameId);
   if (container) {
     container.addChild(knight.sprite);
     console.log(`🐴 [KnightDefender] Added knight sprite to container at position (${knight.position.x}, ${knight.position.y})`);

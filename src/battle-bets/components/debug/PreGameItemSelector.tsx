@@ -384,7 +384,7 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
     });
 
     // Add knight sprite to game container
-    const container = pixiManager.getGameContainer(battleId);
+    const container = pixiManager.getContainer(battleId);
     if (container) {
       container.addChild(knight.sprite);
       console.log(`🐴 [PreGameItemSelector] Added knight sprite to container for ${side}`);
