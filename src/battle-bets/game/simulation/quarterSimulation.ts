@@ -396,8 +396,9 @@ export async function simulateQuarter(
     }
   } as QuarterEndPayload);
 
-  // Cleanup collision callbacks for this battle
-  collisionManager.unregisterBattle(gameId);
+  // DON'T cleanup collision callbacks here - projectiles may still be in flight!
+  // Callbacks will be cleaned up when the entire battle ends or when a new battle starts
+  // collisionManager.unregisterBattle(gameId);
 
   // Mark battle as complete and quarter as complete
   multiStore.setBattleInProgress(battleId, false);

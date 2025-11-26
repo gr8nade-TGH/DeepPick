@@ -13,7 +13,7 @@ export default function BattleArenaV2Page() {
         <meta httpEquiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
         <meta httpEquiv="Pragma" content="no-cache" />
         <meta httpEquiv="Expires" content="0" />
-        <script type="module" src="/battle-arena-v2/assets/main-BIz5fmKT.js"></script>
+        <script type="module" src="/battle-arena-v2/assets/main-BCXR8o_g.js"></script>
         <link rel="stylesheet" href="/battle-arena-v2/assets/main-Cp-CPgsX.css" />
       </head>
       <body>

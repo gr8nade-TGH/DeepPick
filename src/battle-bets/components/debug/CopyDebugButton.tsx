@@ -289,16 +289,46 @@ export function CopyDebugButton({ battleId }: CopyDebugButtonProps) {
       console.log('📋 Report generated, copying to clipboard...');
       console.log('Report length:', report.length, 'characters');
 
-      await navigator.clipboard.writeText(report);
+      // Try clipboard API first
+      try {
+        await navigator.clipboard.writeText(report);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+        console.log('✅ Comprehensive debug report copied to clipboard!');
+      } catch (clipboardError) {
+        // Fallback: Create a textarea and use execCommand
+        console.warn('⚠️ Clipboard API failed, trying fallback method...', clipboardError);
 
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+        const textarea = document.createElement('textarea');
+        textarea.value = report;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
 
-      console.log('✅ Comprehensive debug report copied to clipboard!');
+        try {
+          const success = document.execCommand('copy');
+          document.body.removeChild(textarea);
+
+          if (success) {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+            console.log('✅ Debug report copied using fallback method!');
+          } else {
+            throw new Error('execCommand failed');
+          }
+        } catch (fallbackError) {
+          document.body.removeChild(textarea);
+          throw new Error(`Both clipboard methods failed: ${clipboardError}, ${fallbackError}`);
+        }
+      }
     } catch (error) {
       console.error('❌ Failed to copy debug report:', error);
       console.error('Error details:', error);
-      alert(`Failed to copy. Error: ${error}\nCheck console for details.`);
+
+      // Show a more helpful error message
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      alert(`Failed to copy debug report.\n\nError: ${errorMsg}\n\nTry:\n1. Hard refresh (Ctrl+Shift+R)\n2. Check browser console\n3. Grant clipboard permissions`);
     }
   };
 
