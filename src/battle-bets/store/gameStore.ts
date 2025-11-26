@@ -184,7 +184,7 @@ export const useGameStore = create<GameState>()(
       },
 
       // Initialize defense dots for a game
-      // Creates ONLY 1 base defense dot per stat row (5 per side = 10 total)
+      // Creates 2 base defense dots per stat row (10 per side = 20 total)
       // Full distribution happens during orb animation when "Simulate Battle" is clicked
       initializeDefenseDots: (gameId: string) => {
         const game = get().games.find(g => g.id === gameId);
@@ -193,6 +193,7 @@ export const useGameStore = create<GameState>()(
         const defenseDots = new Map<string, DefenseDot>();
         const stats: StatType[] = ['pts', 'reb', 'ast', 'stl', '3pt'];
         const sides: ('left' | 'right')[] = ['left', 'right'];
+        const BASE_DOTS_PER_STAT = 2; // 2 base dots per stat row
 
         sides.forEach(side => {
           const team = side === 'left' ? game.leftTeam : game.rightTeam;
@@ -204,35 +205,36 @@ export const useGameStore = create<GameState>()(
 
           console.log(`📊 ${capper.name} has ${units} units on ${team.abbreviation} = ${totalDots} TOTAL defense dots (will be distributed during orb animation)`);
 
-          // Create ONLY 1 base defense dot per stat row (cell #1)
+          // Create 2 base defense dots per stat row (cells #1 and #2)
           stats.forEach((stat) => {
-            const cellNumber = 1; // Only first cell
-            const is3ptRow = stat === '3pt';
-            const cellId = getDefenseCellId(stat, side, cellNumber);
-            const id = `${gameId}-${cellId}`;
+            for (let cellNumber = 1; cellNumber <= BASE_DOTS_PER_STAT; cellNumber++) {
+              const is3ptRow = stat === '3pt';
+              const cellId = getDefenseCellId(stat, side, cellNumber);
+              const id = `${gameId}-${cellId}`;
 
-            // GridManager already returns the CENTER of the cell, no offset needed
-            const position = getDefenseCellPosition(stat, side, cellNumber);
+              // GridManager already returns the CENTER of the cell, no offset needed
+              const position = getDefenseCellPosition(stat, side, cellNumber);
 
-            const dot = new DefenseDot({
-              id,
-              gameId,
-              stat,
-              side,
-              index: cellNumber - 1,
-              cellId,
-              position,
-              team,
-              maxHp: 3,
-              isRegenerated: is3ptRow, // 3PT dots are golden
-            });
+              const dot = new DefenseDot({
+                id,
+                gameId,
+                stat,
+                side,
+                index: cellNumber - 1,
+                cellId,
+                position,
+                team,
+                maxHp: 3,
+                isRegenerated: is3ptRow, // 3PT dots are golden
+              });
 
-            defenseDots.set(id, dot);
+              defenseDots.set(id, dot);
+            }
           });
         });
 
         set({ defenseDots });
-        console.log(`✅ Initialized ${defenseDots.size} BASE defense dots for ${gameId} (1 per stat row)`);
+        console.log(`✅ Initialized ${defenseDots.size} BASE defense dots for ${gameId} (2 per stat row)`);
       },
 
       // Add a projectile to the game

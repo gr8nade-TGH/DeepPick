@@ -104,13 +104,17 @@ function generateTestBattles(): ApiBattle[] {
         id: 'test-capper-1',
         name: 'Test Capper 1',
         displayName: 'TEST CAPPER 1',
-        colorTheme: '#552583'
+        colorTheme: '#552583',
+        // 15 units = 5 extra defense dots (3:1 ratio)
+        units: 15
       },
       right_capper: {
         id: 'test-capper-2',
         name: 'Test Capper 2',
         displayName: 'TEST CAPPER 2',
-        colorTheme: '#5D76A9'
+        colorTheme: '#5D76A9',
+        // 9 units = 3 extra defense dots (3:1 ratio)
+        units: 9
       }
     },
     {
@@ -130,13 +134,17 @@ function generateTestBattles(): ApiBattle[] {
         id: 'test-capper-3',
         name: 'Test Capper 3',
         displayName: 'TEST CAPPER 3',
-        colorTheme: '#007A33'
+        colorTheme: '#007A33',
+        // 21 units = 7 extra defense dots (3:1 ratio)
+        units: 21
       },
       right_capper: {
         id: 'test-capper-4',
         name: 'Test Capper 4',
         displayName: 'TEST CAPPER 4',
-        colorTheme: '#1D428A'
+        colorTheme: '#1D428A',
+        // 6 units = 2 extra defense dots (3:1 ratio)
+        units: 6
       }
     }
   ];
@@ -175,7 +183,10 @@ function transformApiBattleToGame(battle: ApiBattle): Game {
       level: 1,
       experience: 0,
       leaderboardRank: 1,
-      teamRecords: [],
+      // Use units from API to create teamRecords for defense dot calculation
+      teamRecords: battle.left_capper?.units ? [
+        { teamId: battle.left_team.toLowerCase(), units: battle.left_capper.units, wins: 0, losses: 0, pushes: 0 }
+      ] : [],
       equippedItems: { slot1: null, slot2: null, slot3: null }
     },
     rightCapper: {
@@ -193,7 +204,10 @@ function transformApiBattleToGame(battle: ApiBattle): Game {
       level: 1,
       experience: 0,
       leaderboardRank: 2,
-      teamRecords: [],
+      // Use units from API to create teamRecords for defense dot calculation
+      teamRecords: battle.right_capper?.units ? [
+        { teamId: battle.right_team.toLowerCase(), units: battle.right_capper.units, wins: 0, losses: 0, pushes: 0 }
+      ] : [],
       equippedItems: { slot1: null, slot2: null, slot3: null }
     },
     currentQuarter: 0,

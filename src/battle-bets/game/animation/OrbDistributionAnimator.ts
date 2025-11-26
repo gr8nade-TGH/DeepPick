@@ -51,7 +51,7 @@ class OrbDistributionAnimatorClass {
     console.log(`   Existing defense dots: ${existingDefenseDots.size}`);
     console.log(`   Container children: ${this.container.children.length}`);
 
-    // Start with existing base defense dots (1 per stat row = 10 total)
+    // Start with existing base defense dots (2 per stat row = 20 total)
     const allDefenseDots = new Map(existingDefenseDots);
 
     // Animate left team first, then right team
@@ -210,14 +210,16 @@ class OrbDistributionAnimatorClass {
     const orbsToAnimate: OrbParticle[] = [];
 
     // Create orb particles for each defense dot
-    // Start from cell #2 since cell #1 already has a base dot
+    // Start from cell #3 since cells #1 and #2 already have base dots
+    const BASE_DOTS_PER_STAT = 2;
     stats.forEach((stat) => {
       const dotsForStat = distribution[stat];
+      const orbsToCreate = dotsForStat - BASE_DOTS_PER_STAT;
 
-      console.log(`   ${stat.toUpperCase()}: ${dotsForStat} dots (creating ${dotsForStat - 1} orbs)`);
+      console.log(`   ${stat.toUpperCase()}: ${dotsForStat} dots (creating ${orbsToCreate} orbs)`);
 
-      // Start from cellNumber = 2 (cell #1 already exists as base dot)
-      for (let cellNumber = 2; cellNumber <= dotsForStat; cellNumber++) {
+      // Start from cellNumber = 3 (cells #1 and #2 already exist as base dots)
+      for (let cellNumber = BASE_DOTS_PER_STAT + 1; cellNumber <= dotsForStat; cellNumber++) {
         const targetPos = getDefenseCellPosition(stat, side, cellNumber);
 
         // Create orb particle

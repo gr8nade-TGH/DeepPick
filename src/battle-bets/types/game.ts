@@ -282,13 +282,15 @@ export function getTotalDefenseDotCount(units: number): number {
  *   Final on grid: [1+7, 1+2, 1+1, 1+1, 1+0] = [8, 3, 2, 2, 1] = 16 total
  */
 export function distributeDotsAcrossStats(totalDots: number): number[] {
+  // Base dots: 2 per stat row (10 per side = 20 total)
+  const BASE_DOTS_PER_STAT = 2;
+
   if (totalDots <= 0) {
-    return [1, 1, 1, 1, 1]; // Return base dots only
+    return [BASE_DOTS_PER_STAT, BASE_DOTS_PER_STAT, BASE_DOTS_PER_STAT, BASE_DOTS_PER_STAT, BASE_DOTS_PER_STAT]; // Return base dots only
   }
 
-  // Base dots are already on the grid (1 per stat = 5 total)
+  // Base dots are already on the grid (2 per stat = 10 total per side)
   // We're distributing ADDITIONAL dots on top of those
-  const BASE_DOTS_PER_STAT = 1;
 
   // Start with base allocation
   let ptsTotal = BASE_DOTS_PER_STAT;
