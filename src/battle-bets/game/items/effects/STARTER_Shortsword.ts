@@ -214,7 +214,9 @@ async function fireBonusProjectile(
   } as ProjectileFiredPayload);
 
   // Small delay to allow event handlers to apply speed modifiers
-  await new Promise(resolve => setTimeout(resolve, 10));
+  await new Promise(resolve => setTimeout(resolve, 50));
+
+  console.log(`🚀 [Shortsword] Animating bonus projectile ${projectileId} with speed multiplier: ${projectile.speedMultiplier}`);
 
   // Animate projectile to target
   await projectile.animateToTarget();

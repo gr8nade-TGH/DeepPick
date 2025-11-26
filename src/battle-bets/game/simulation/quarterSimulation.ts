@@ -1176,7 +1176,9 @@ async function fireSingleProjectileForMultiBattle(
   } as ProjectileFiredPayload);
 
   // Small delay to allow event handlers to apply speed modifiers
-  await new Promise(resolve => setTimeout(resolve, 10));
+  await new Promise(resolve => setTimeout(resolve, 50));
+
+  console.log(`🚀 [QuarterSim] Animating projectile ${projectileId} with speed multiplier: ${projectile.speedMultiplier}`);
 
   // Animate towards target; collisions are checked during flight
   await projectile.animateToTarget();

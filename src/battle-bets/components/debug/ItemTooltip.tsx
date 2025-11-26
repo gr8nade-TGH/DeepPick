@@ -94,12 +94,12 @@ export const ItemTooltip: React.FC<ItemTooltipProps> = ({ item, rolls, quality }
         };
       case 'ptsSpeedBoost':
         return {
-          label: 'Pts Speed Boost',
+          label: 'Projectile Speed for PTS stat row',
           prefix: '+'
         };
       case 'bonusStatSpeedBoost':
         return {
-          label: 'Bonus Stat Speed Boost',
+          label: 'Projectile Speed for random stat row (REB/AST/STL/3PT)',
           prefix: '+'
         };
       default:
