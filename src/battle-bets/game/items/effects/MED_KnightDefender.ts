@@ -47,6 +47,50 @@ export function getKnight(gameId: string, side: 'left' | 'right'): KnightDefende
 }
 
 /**
+ * Spawn knight helper function
+ */
+function spawnKnight(gameId: string, side: 'left' | 'right'): KnightDefender | null {
+  console.log(`🐴 [KnightDefender] Spawning knight for ${side} in game ${gameId}`);
+
+  // Get team color from battle state
+  const battle = useMultiGameStore.getState().battles.get(gameId);
+  if (!battle) {
+    console.error(`🐴 [KnightDefender] No battle found for ${gameId}`);
+    return null;
+  }
+
+  const team = side === 'left' ? battle.game.leftTeam : battle.game.rightTeam;
+  const teamColor = team.color;
+
+  // Create knight
+  const knight = new KnightDefender({
+    id: `knight-${gameId}-${side}`,
+    gameId,
+    side,
+    teamColor,
+  });
+
+  // Store reference
+  activeKnights.set(`${gameId}-${side}`, knight);
+
+  // Add knight sprite to game container
+  const container = pixiManager.getGameContainer(gameId);
+  if (container) {
+    container.addChild(knight.sprite);
+    console.log(`🐴 [KnightDefender] Added knight sprite to container at position (${knight.position.x}, ${knight.position.y})`);
+  } else {
+    console.error(`🐴 [KnightDefender] No container found for ${gameId}`);
+    return null;
+  }
+
+  // Start patrolling
+  knight.startPatrol();
+
+  console.log(`🐴 [KnightDefender] Knight spawned and patrolling!`);
+  return knight;
+}
+
+/**
  * Register Knight Defender effect
  */
 export function registerKnightDefenderEffect(context: ItemRuntimeContext): void {
@@ -54,47 +98,32 @@ export function registerKnightDefenderEffect(context: ItemRuntimeContext): void 
 
   console.log(`🐴 [KnightDefender] REGISTERING EFFECT for ${side} side in game ${gameId}`);
 
-  // BATTLE_START: Spawn the knight
+  // Check if knight already exists (from previous activation)
+  const existingKnight = activeKnights.get(`${gameId}-${side}`);
+  if (existingKnight && existingKnight.alive) {
+    console.log(`🐴 [KnightDefender] Knight already exists for ${side} in ${gameId}, skipping spawn`);
+    return;
+  }
+
+  // Spawn knight immediately when item is equipped (pre-game)
+  // This way the knight is visible before Q1 starts
+  console.log(`🐴 [KnightDefender] Spawning knight immediately on equip...`);
+  spawnKnight(gameId, side);
+
+  // Also listen to BATTLE_START in case this is called before game init
   battleEventBus.on('BATTLE_START', (payload) => {
     if (payload.gameId !== gameId) return;
     if (payload.side !== side) return;
 
-    console.log(`🐴 [KnightDefender] Spawning knight for ${side} in game ${gameId}`);
-
-    // Get team color from battle state
-    const battle = useMultiGameStore.getState().battles.get(gameId);
-    if (!battle) {
-      console.error(`🐴 [KnightDefender] No battle found for ${gameId}`);
+    // Check if knight already exists
+    const knight = activeKnights.get(`${gameId}-${side}`);
+    if (knight && knight.alive) {
+      console.log(`🐴 [KnightDefender] Knight already exists on BATTLE_START, skipping`);
       return;
     }
 
-    const team = side === 'left' ? battle.game.leftTeam : battle.game.rightTeam;
-    const teamColor = team.color;
-
-    // Create knight
-    const knight = new KnightDefender({
-      id: `knight-${gameId}-${side}`,
-      gameId,
-      side,
-      teamColor,
-    });
-
-    // Store reference
-    activeKnights.set(`${gameId}-${side}`, knight);
-
-    // Add knight sprite to game container
-    const container = pixiManager.getGameContainer(gameId);
-    if (container) {
-      container.addChild(knight.sprite);
-      console.log(`🐴 [KnightDefender] Added knight sprite to container`);
-    } else {
-      console.error(`🐴 [KnightDefender] No container found for ${gameId}`);
-    }
-
-    // Start patrolling
-    knight.startPatrol();
-
-    console.log(`🐴 [KnightDefender] Knight spawned and patrolling!`);
+    // Spawn if not already spawned
+    spawnKnight(gameId, side);
   });
 
   console.log(`✅ [KnightDefender] Effect registered for ${side} (${itemInstanceId})`);

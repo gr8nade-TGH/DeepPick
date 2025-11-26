@@ -232,9 +232,9 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
     }
 
     // If clearing a defense item (slot 1), deactivate shield immediately
-    if (slot === 1 && currentItem?.itemId === 'LAL_def_ironman_armor') {
+    if (slot === 1 && (currentItem?.itemId === 'LAL_def_ironman_armor' || currentItem?.itemId === 'WAS_def_wizards_watchtower')) {
       const castleId = `${battleId}-${side}`;
-      console.log(`🛡️ [PreGameItemSelector] Clearing Ironman Armor from ${side} side, deactivating shield`);
+      console.log(`🛡️ [PreGameItemSelector] Clearing defense item from ${side} side, deactivating shield`);
 
       castleHealthSystem.deactivateShield(castleId);
       const castle = castleManager.getCastle(battleId, castleId);
@@ -259,8 +259,8 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
       // Save to battle state
       updateBattleEquippedItems();
 
-      // Immediately activate/deactivate shields for defense items
-      activateDefenseItems();
+      // Immediately activate/deactivate item visuals (shields, knights, etc.)
+      await activateItemVisuals();
 
       // Activate item effects (event listeners for DEFENSE_ORB_DESTROYED, etc.)
       console.log('💾 [PreGameItemSelector] About to call activateItemEffects()...');
@@ -276,88 +276,125 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
   };
 
   /**
-   * Immediately activate or deactivate shields when defense items are equipped/unequipped
+   * Activate a shield item for a given side (Ironman Armor or Wizard's Watchtower)
    */
-  const activateDefenseItems = () => {
-    // Left side - slot 1 (defense)
-    if (leftSlot1?.itemId === 'LAL_def_ironman_armor') {
-      const castleId = `${battleId}-left`;
-      const shieldHP = leftSlot1.rolls.startShieldHp; // Use the rolled shield HP!
+  const activateShieldItem = (side: 'left' | 'right', item: RolledItemStats) => {
+    const castleId = `${battleId}-${side}`;
+    const shieldHP = item.rolls.startShieldHp;
+    const itemName = item.itemId === 'LAL_def_ironman_armor' ? 'AC "Ironman" Armor' : "Wizard's Watchtower";
+    const itemIcon = item.itemId === 'LAL_def_ironman_armor' ? '🛡️' : '🔮';
 
-      console.log(`🛡️ [PreGameItemSelector] Activating Ironman Armor shield for LEFT castle with ${shieldHP} HP (rolled)`);
+    console.log(`🛡️ [PreGameItemSelector] Activating ${itemName} shield for ${side.toUpperCase()} castle with ${shieldHP} HP`);
 
-      // Activate shield in system
-      castleHealthSystem.activateShield(castleId, shieldHP, 0, 'LAL_def_ironman_armor');
+    // Activate shield in system
+    castleHealthSystem.activateShield(castleId, shieldHP, 0, item.itemId);
 
-      // Activate shield visual
-      const castle = castleManager.getCastle(battleId, castleId);
-      console.log(`🔍 [PreGameItemSelector] Looking for castle: ${castleId}, found:`, castle ? 'YES' : 'NO');
-      if (castle) {
-        castle.activateShield({
-          id: 'LAL_def_ironman_armor',
-          name: 'AC "Ironman" Armor',
-          description: 'Castle shield',
-          icon: '🛡️',
-          shieldHP: shieldHP,
-          shieldActivationThreshold: 0,
-        });
-        console.log(`✅ [PreGameItemSelector] Shield activated for LEFT castle`);
-      } else {
-        console.error(`❌ [PreGameItemSelector] Castle not found: ${castleId}`);
-      }
+    // Activate shield visual
+    const castle = castleManager.getCastle(battleId, castleId);
+    if (castle) {
+      castle.activateShield({
+        id: item.itemId,
+        name: itemName,
+        description: 'Castle shield',
+        icon: itemIcon,
+        shieldHP: shieldHP,
+        shieldActivationThreshold: 0,
+      });
+      console.log(`✅ [PreGameItemSelector] Shield activated for ${side.toUpperCase()} castle`);
     } else {
-      // Deactivate shield if item was unequipped
-      const castleId = `${battleId}-left`;
-      const shield = castleHealthSystem.getShield(castleId);
-      if (shield && shield.source === 'LAL_def_ironman_armor') {
-        console.log(`🛡️ [PreGameItemSelector] Deactivating Ironman Armor shield for LEFT castle`);
-        castleHealthSystem.deactivateShield(castleId);
-        const castle = castleManager.getCastle(battleId, castleId);
-        if (castle) {
-          castle.deactivateShield();
-        }
+      console.error(`❌ [PreGameItemSelector] Castle not found: ${castleId}`);
+    }
+  };
+
+  /**
+   * Deactivate shield for a given side
+   */
+  const deactivateShieldItem = (side: 'left' | 'right', source: string) => {
+    const castleId = `${battleId}-${side}`;
+    const shield = castleHealthSystem.getShield(castleId);
+    if (shield && shield.source === source) {
+      console.log(`🛡️ [PreGameItemSelector] Deactivating shield for ${side.toUpperCase()} castle`);
+      castleHealthSystem.deactivateShield(castleId);
+      const castle = castleManager.getCastle(battleId, castleId);
+      if (castle) {
+        castle.deactivateShield();
       }
     }
+  };
 
-    // Right side - slot 1 (defense)
-    if (rightSlot1?.itemId === 'LAL_def_ironman_armor') {
-      const castleId = `${battleId}-right`;
-      const shieldHP = rightSlot1.rolls.startShieldHp; // Use the rolled shield HP!
-
-      console.log(`🛡️ [PreGameItemSelector] Activating Ironman Armor shield for RIGHT castle with ${shieldHP} HP (rolled)`);
-
-      // Activate shield in system
-      castleHealthSystem.activateShield(castleId, shieldHP, 0, 'LAL_def_ironman_armor');
-
-      // Activate shield visual
-      const castle = castleManager.getCastle(battleId, castleId);
-      console.log(`🔍 [PreGameItemSelector] Looking for castle: ${castleId}, found:`, castle ? 'YES' : 'NO');
-      if (castle) {
-        castle.activateShield({
-          id: 'LAL_def_ironman_armor',
-          name: 'AC "Ironman" Armor',
-          description: 'Castle shield',
-          icon: '🛡️',
-          shieldHP: shieldHP,
-          shieldActivationThreshold: 0,
-        });
-        console.log(`✅ [PreGameItemSelector] Shield activated for RIGHT castle`);
-      } else {
-        console.error(`❌ [PreGameItemSelector] Castle not found: ${castleId}`);
-      }
+  /**
+   * Immediately activate or deactivate item visuals when items are equipped/unequipped
+   */
+  const activateItemVisuals = () => {
+    // Handle LEFT side defense items (slot 1)
+    const leftDefenseItem = leftSlot1;
+    if (leftDefenseItem?.itemId === 'LAL_def_ironman_armor' || leftDefenseItem?.itemId === 'WAS_def_wizards_watchtower') {
+      activateShieldItem('left', leftDefenseItem);
     } else {
-      // Deactivate shield if item was unequipped
-      const castleId = `${battleId}-right`;
-      const shield = castleHealthSystem.getShield(castleId);
-      if (shield && shield.source === 'LAL_def_ironman_armor') {
-        console.log(`🛡️ [PreGameItemSelector] Deactivating Ironman Armor shield for RIGHT castle`);
-        castleHealthSystem.deactivateShield(castleId);
-        const castle = castleManager.getCastle(battleId, castleId);
-        if (castle) {
-          castle.deactivateShield();
-        }
-      }
+      // Deactivate any existing shields
+      deactivateShieldItem('left', 'LAL_def_ironman_armor');
+      deactivateShieldItem('left', 'WAS_def_wizards_watchtower');
     }
+
+    // Handle RIGHT side defense items (slot 1)
+    const rightDefenseItem = rightSlot1;
+    if (rightDefenseItem?.itemId === 'LAL_def_ironman_armor' || rightDefenseItem?.itemId === 'WAS_def_wizards_watchtower') {
+      activateShieldItem('right', rightDefenseItem);
+    } else {
+      // Deactivate any existing shields
+      deactivateShieldItem('right', 'LAL_def_ironman_armor');
+      deactivateShieldItem('right', 'WAS_def_wizards_watchtower');
+    }
+
+    // Handle Knight Defender (power item - slot 2)
+    // Import and spawn knights for equipped Knight Defender items
+    if (leftSlot2?.itemId === 'MED_pwr_knight_defender') {
+      spawnKnightForSide('left');
+    }
+    if (rightSlot2?.itemId === 'MED_pwr_knight_defender') {
+      spawnKnightForSide('right');
+    }
+  };
+
+  /**
+   * Spawn a knight for a given side (immediate visual)
+   */
+  const spawnKnightForSide = async (side: 'left' | 'right') => {
+    console.log(`🐴 [PreGameItemSelector] Spawning knight for ${side} side`);
+
+    // Dynamically import to avoid circular dependencies
+    const { KnightDefender } = await import('../../game/entities/KnightDefender');
+    const { pixiManager } = await import('../../game/managers/PixiManager');
+
+    // Get team color from battle state
+    if (!battle) {
+      console.error(`🐴 [PreGameItemSelector] No battle found`);
+      return;
+    }
+
+    const team = side === 'left' ? battle.game.leftTeam : battle.game.rightTeam;
+    const teamColor = team.color;
+
+    // Create knight
+    const knight = new KnightDefender({
+      id: `knight-${battleId}-${side}`,
+      gameId: battleId,
+      side,
+      teamColor,
+    });
+
+    // Add knight sprite to game container
+    const container = pixiManager.getGameContainer(battleId);
+    if (container) {
+      container.addChild(knight.sprite);
+      console.log(`🐴 [PreGameItemSelector] Added knight sprite to container for ${side}`);
+    } else {
+      console.error(`🐴 [PreGameItemSelector] No container found for ${battleId}`);
+    }
+
+    // Start patrolling
+    knight.startPatrol();
+    console.log(`🐴 [PreGameItemSelector] Knight spawned and patrolling for ${side}!`);
   };
 
   /**
