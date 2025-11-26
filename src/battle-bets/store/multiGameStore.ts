@@ -1,6 +1,6 @@
 /**
  * Multi-Game Battle Store
- * 
+ *
  * Manages multiple simultaneous battles (up to 4 per page)
  * Each battle has its own state: game data, HP, defense dots, projectiles
  */
@@ -23,6 +23,7 @@ import { debugLogger } from '../game/debug/DebugLogger';
 import { itemEffectRegistry } from '../game/items/ItemEffectRegistry';
 import { rollTestItem } from '../game/items/ItemTestUtils';
 import { attackNodeQueueManager } from '../game/managers/AttackNodeQueueManager';
+import type { BattleStatus } from '@/lib/battle-bets/BattleTimer';
 
 /**
  * State for a single battle
@@ -30,6 +31,7 @@ import { attackNodeQueueManager } from '../game/managers/AttackNodeQueueManager'
 export interface BattleState {
   game: Game;
   currentQuarter: number;
+  battleStatus: BattleStatus; // Detailed status: SCHEDULED, Q1_IN_PROGRESS, Q1_BATTLE, etc.
   capperHP: Map<string, { currentHP: number; maxHP: number }>; // Key: "side" (e.g., "left", "right")
   defenseDots: Map<string, DefenseDot>;
   projectiles: BaseProjectile[];
@@ -56,6 +58,7 @@ interface MultiGameState {
   setCurrentQuarter: (battleId: string, quarter: number) => void;
   updateScore: (battleId: string, leftScore: number, rightScore: number) => void;
   updateGameStatus: (battleId: string, status: Game['status']) => void;
+  updateBattleStatus: (battleId: string, status: BattleStatus) => void;
   setBattleInProgress: (battleId: string, inProgress: boolean) => void;
   markQuarterComplete: (battleId: string, quarter: number) => void;
   updateBattle: (battleId: string, updater: (battle: BattleState) => BattleState) => void;
@@ -81,6 +84,7 @@ export const useMultiGameStore = create<MultiGameState>()(
         const battleState: BattleState = {
           game,
           currentQuarter: 0,
+          battleStatus: 'SCHEDULED',
           capperHP: new Map(),
           defenseDots: new Map(),
           projectiles: [],
@@ -380,6 +384,19 @@ export const useMultiGameStore = create<MultiGameState>()(
           const battle = newBattles.get(battleId);
           if (battle) {
             battle.game.status = status;
+          }
+          return { battles: newBattles };
+        });
+      },
+
+      // Update detailed battle status (IN_PROGRESS vs BATTLE phases)
+      updateBattleStatus: (battleId: string, status: BattleStatus) => {
+        console.log(`[Multi-Game Store] Updating battle status: ${battleId} → ${status}`);
+        set(state => {
+          const newBattles = new Map(state.battles);
+          const battle = newBattles.get(battleId);
+          if (battle) {
+            battle.battleStatus = status;
           }
           return { battles: newBattles };
         });

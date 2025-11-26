@@ -322,24 +322,18 @@ function AppV2() {
           const storeBattle = useMultiGameStore.getState().getBattle(battle.id);
           if (!storeBattle) return battle;
 
-          // Map store status to API status format
-          const storeStatus = storeBattle.status;
-          let apiStatus = (battle as any)._battleData?.status || 'scheduled';
-
-          if (storeStatus === '1Q') apiStatus = 'q1_pending';
-          else if (storeStatus === '2Q') apiStatus = 'q2_pending';
-          else if (storeStatus === '3Q') apiStatus = 'q3_pending';
-          else if (storeStatus === '4Q') apiStatus = 'q4_pending';
-          else if (storeStatus === 'FINAL') apiStatus = 'final';
+          // Use battleStatus from store (SCHEDULED, Q1_IN_PROGRESS, Q1_BATTLE, etc.)
+          const storeBattleStatus = storeBattle.battleStatus || 'SCHEDULED';
+          const currentStatus = (battle as any)._battleData?.status;
 
           // Update battle data if status changed
-          if (apiStatus !== (battle as any)._battleData?.status) {
+          if (storeBattleStatus !== currentStatus) {
             return {
               ...battle,
-              status: storeStatus,
+              status: storeBattle.game.status,
               _battleData: {
                 ...(battle as any)._battleData,
-                status: apiStatus
+                status: storeBattleStatus
               }
             };
           }

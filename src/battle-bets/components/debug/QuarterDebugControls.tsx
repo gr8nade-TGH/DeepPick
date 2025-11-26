@@ -103,27 +103,13 @@ export const QuarterDebugControls: React.FC<QuarterDebugControlsProps> = ({ batt
 
       console.log(`✅✅✅ [PreGame] All items activated!`);
 
-      // STEP 3: Update status to Q1
+      // STEP 3: Transition to Q1_IN_PROGRESS (awaiting stats from MySportsFeeds)
+      // User will click "Force Q1" to trigger the actual battle
       useMultiGameStore.getState().updateGameStatus(battleId, '1Q');
       useMultiGameStore.getState().setCurrentQuarter(battleId, 1);
+      useMultiGameStore.getState().updateBattleStatus(battleId, 'Q1_IN_PROGRESS');
 
-      setLastAction('⏳ Simulating Q1...');
-
-      // STEP 4: Simulate Q1 (this will generate stats and fire projectiles)
-      await simulateQuarter(battleId, 1);
-
-      // Check if game ended
-      const updatedBattle = useMultiGameStore.getState().getBattle(battleId);
-      const updatedLeftHP = updatedBattle?.capperHP.get('left')?.currentHP ?? 0;
-      const updatedRightHP = updatedBattle?.capperHP.get('right')?.currentHP ?? 0;
-
-      if (updatedLeftHP <= 0 || updatedRightHP <= 0) {
-        useMultiGameStore.getState().updateGameStatus(battleId, 'FINAL');
-        const winner = updatedLeftHP > 0 ? 'LEFT' : 'RIGHT';
-        setLastAction(`✅ Q1 complete - ${winner} WINS!`);
-      } else {
-        setLastAction('✅ Q1 complete');
-      }
+      setLastAction('✅ Game started - Q1 In Progress (awaiting stats)');
     } catch (error) {
       console.error('Failed to start game:', error);
       setLastAction('❌ Failed to start game');
@@ -149,7 +135,36 @@ export const QuarterDebugControls: React.FC<QuarterDebugControlsProps> = ({ batt
     setIsProcessing(true);
 
     try {
-      const nextQuarter = currentQuarter + 1;
+      // Get the current battle status to determine what quarter we're forcing
+      const currentBattle = useMultiGameStore.getState().getBattle(battleId);
+      const currentBattleStatus = currentBattle?.battleStatus || 'SCHEDULED';
+
+      // Determine which quarter to run based on current status
+      // If IN_PROGRESS, run that quarter's battle
+      // If BATTLE just finished or first time, this shouldn't happen (Start Game should be clicked first)
+      const battleStatusToQuarter: Record<BattleStatus, number> = {
+        'SCHEDULED': 0,
+        'Q1_IN_PROGRESS': 1,
+        'Q1_BATTLE': 1,
+        'Q2_IN_PROGRESS': 2,
+        'Q2_BATTLE': 2,
+        'HALFTIME': 2,
+        'Q3_IN_PROGRESS': 3,
+        'Q3_BATTLE': 3,
+        'Q4_IN_PROGRESS': 4,
+        'Q4_BATTLE': 4,
+        'OT1_IN_PROGRESS': 5,
+        'OT1_BATTLE': 5,
+        'OT2_IN_PROGRESS': 6,
+        'OT2_BATTLE': 6,
+        'OT3_IN_PROGRESS': 7,
+        'OT3_BATTLE': 7,
+        'OT4_IN_PROGRESS': 8,
+        'OT4_BATTLE': 8,
+        'GAME_OVER': 0,
+      };
+
+      const nextQuarter = battleStatusToQuarter[currentBattleStatus] || currentQuarter + 1;
 
       // Check if game is over
       if (leftHP <= 0 || rightHP <= 0) {
@@ -166,7 +181,20 @@ export const QuarterDebugControls: React.FC<QuarterDebugControlsProps> = ({ batt
       }
 
       const quarterLabel = getQuarterLabel(nextQuarter);
-      setLastAction(`⏳ Simulating ${quarterLabel}...`);
+
+      // Set status to BATTLE for this quarter
+      const battleStatusMap: Record<number, BattleStatus> = {
+        1: 'Q1_BATTLE',
+        2: 'Q2_BATTLE',
+        3: 'Q3_BATTLE',
+        4: 'Q4_BATTLE',
+        5: 'OT1_BATTLE',
+        6: 'OT2_BATTLE',
+        7: 'OT3_BATTLE',
+        8: 'OT4_BATTLE',
+      };
+      useMultiGameStore.getState().updateBattleStatus(battleId, battleStatusMap[nextQuarter]);
+      setLastAction(`⏳ ${quarterLabel} BATTLE...`);
 
       // Update quarter number
       useMultiGameStore.getState().setCurrentQuarter(battleId, nextQuarter);
@@ -194,9 +222,22 @@ export const QuarterDebugControls: React.FC<QuarterDebugControlsProps> = ({ batt
 
       if (updatedLeftHP <= 0 || updatedRightHP <= 0) {
         useMultiGameStore.getState().updateGameStatus(battleId, 'FINAL');
+        useMultiGameStore.getState().updateBattleStatus(battleId, 'GAME_OVER');
         const winner = updatedLeftHP > 0 ? 'LEFT' : 'RIGHT';
         setLastAction(`✅ ${quarterLabel} complete - ${winner} WINS!`);
       } else {
+        // After battle, transition to next IN_PROGRESS state
+        const nextInProgressMap: Record<number, BattleStatus> = {
+          1: 'Q2_IN_PROGRESS',
+          2: 'HALFTIME',  // After Q2 battle, go to halftime
+          3: 'Q4_IN_PROGRESS',
+          4: 'GAME_OVER', // TODO: Check for OT
+          5: 'OT2_IN_PROGRESS',
+          6: 'OT3_IN_PROGRESS',
+          7: 'OT4_IN_PROGRESS',
+          8: 'GAME_OVER',
+        };
+        useMultiGameStore.getState().updateBattleStatus(battleId, nextInProgressMap[nextQuarter]);
         setLastAction(`✅ ${quarterLabel} complete`);
       }
     } catch (error) {
