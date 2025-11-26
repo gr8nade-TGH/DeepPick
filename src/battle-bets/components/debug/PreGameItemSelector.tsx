@@ -12,6 +12,7 @@ import { LAL_IRONMAN_ARMOR_DEFINITION } from '../../game/items/effects/LAL_Ironm
 import { STARTER_SHORTSWORD_DEFINITION } from '../../game/items/effects/STARTER_Shortsword';
 import { CHA_HORNETS_NEST_DEFINITION } from '../../game/items/effects/CHA_HornetsNest';
 import { WAS_WIZARDS_WATCHTOWER_DEFINITION } from '../../game/items/effects/WAS_WizardsWatchtower';
+import { MED_KNIGHT_DEFENDER_DEFINITION } from '../../game/items/effects/MED_KnightDefender';
 import type { ItemDefinition, RolledItemStats } from '../../game/items/ItemRollSystem';
 import { rollItem } from '../../game/items/ItemRollSystem';
 import { useMultiGameStore } from '../../store/multiGameStore';
@@ -33,6 +34,7 @@ const AVAILABLE_ITEMS: ItemDefinition[] = [
   STARTER_SHORTSWORD_DEFINITION,
   CHA_HORNETS_NEST_DEFINITION,
   WAS_WIZARDS_WATCHTOWER_DEFINITION,
+  MED_KNIGHT_DEFENDER_DEFINITION,
   // Add more items as they're implemented
 ];
 

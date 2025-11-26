@@ -14,6 +14,7 @@ import { LAL_IRONMAN_ARMOR_DEFINITION } from './effects/LAL_IronmanArmor';
 import { STARTER_SHORTSWORD_DEFINITION } from './effects/STARTER_Shortsword';
 import { CHA_HORNETS_NEST_DEFINITION } from './effects/CHA_HornetsNest';
 import { WAS_WIZARDS_WATCHTOWER_DEFINITION } from './effects/WAS_WizardsWatchtower';
+import { MED_KNIGHT_DEFENDER_DEFINITION } from './effects/MED_KnightDefender';
 
 /**
  * All available item definitions
@@ -23,6 +24,7 @@ export const ALL_ITEM_DEFINITIONS: ItemDefinition[] = [
   STARTER_SHORTSWORD_DEFINITION,
   CHA_HORNETS_NEST_DEFINITION,
   WAS_WIZARDS_WATCHTOWER_DEFINITION,
+  MED_KNIGHT_DEFENDER_DEFINITION,
   // Add more as they're implemented
 ];
 
