@@ -168,6 +168,18 @@ export const ItemTooltip: React.FC<ItemTooltipProps> = ({ item, rolls, quality }
               </div>
             );
           })}
+
+          {/* Fixed stats for Wizard's Watchtower (shield regen is fixed at +1) */}
+          {item.id === 'WAS_def_wizards_watchtower' && (
+            <div className="tooltip-stat-bullet">
+              <span className="bullet">◆</span>
+              <span className="stat-text">
+                <span className="stat-value">+1</span>
+                {' '}Shield Regeneration per Orb Destroyed
+                <span className="stat-range"> (fixed)</span>
+              </span>
+            </div>
+          )}
         </div>
       )}
 

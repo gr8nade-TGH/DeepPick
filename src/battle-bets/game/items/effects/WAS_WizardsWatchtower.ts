@@ -4,14 +4,16 @@
  * Wizard's Watchtower - Washington Wizards Defense Item
  *
  * Description:
- * Castle shield (same as Ironman Armor) that starts with 5-15 HP and gains +1-3 HP
- * when defense orbs are destroyed. PLUS enchants the last defense orb in each stat row
- * with +1-3 bonus HP and a purple glowing edge.
+ * Castle shield that starts with 5-15 HP and regenerates +1 HP every time a defense
+ * orb is destroyed. PLUS enchants the last defense orb in each stat row with +1-3
+ * bonus HP and a purple glowing edge.
  *
  * Roll Ranges:
- * - startShieldHp: 5-15 HP (castle shield)
- * - hpPerDestroyedOrb: 1-3 HP (shield heal per orb destroyed)
+ * - startShieldHp: 5-15 HP (castle shield starting HP)
  * - orbBonusHP: 1-3 HP (extra HP added to last orb in each row)
+ *
+ * Fixed Stats:
+ * - hpPerDestroyedOrb: +1 HP (shield regeneration per orb destroyed - not rolled)
  *
  * Quality Tiers:
  * - Warped: Low rolls on all stats
@@ -130,12 +132,13 @@ export const WAS_WIZARDS_WATCHTOWER_DEFINITION: ItemDefinition = {
   teamName: 'Washington Wizards',
   slot: 'defense',
   name: "Wizard's Watchtower",
-  description: "Castle shield (5-15 HP, heals +1 per orb destroyed) plus enchants the last defense orb in each row with +1-3 bonus HP and a purple glow.",
+  description: "Castle shield (5-15 HP) that regenerates +1 HP each time a defense orb is destroyed. Also enchants the last defense orb in each row with +1-3 bonus HP and a purple glow.",
   icon: '🔮',
   rollRanges: {
     startShieldHp: { min: 5, max: 15, step: 1 },
     orbBonusHP: { min: 1, max: 3, step: 1 },
   },
+  // Note: hpPerDestroyedOrb is fixed at 1, not rolled
 };
 
 /**
