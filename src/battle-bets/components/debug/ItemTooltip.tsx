@@ -98,10 +98,17 @@ export const ItemTooltip: React.FC<ItemTooltipProps> = ({ item, rolls, quality }
           prefix: '+'
         };
       case 'bonusStatSpeedBoost':
+        // Get the actual bonus stat from rolls (0=REB, 1=AST, 2=STL, 3=3PT)
+        const bonusStatOptions = ['REB', 'AST', 'STL', '3PT'];
+        const bonusStatIndex = rolls?.bonusStat || 0;
+        const bonusStatName = bonusStatOptions[bonusStatIndex];
         return {
-          label: 'Projectile Speed for random stat row (REB/AST/STL/3PT)',
+          label: `Projectile Speed for ${bonusStatName} stat row`,
           prefix: '+'
         };
+      case 'bonusStat':
+        // Don't display this stat in the tooltip (it's used internally)
+        return { label: '', prefix: '' };
       default:
         // Generic formatting
         const formatted = key
@@ -141,6 +148,9 @@ export const ItemTooltip: React.FC<ItemTooltipProps> = ({ item, rolls, quality }
             const isMax = roll === range.max;
             const isMin = roll === range.min;
             const { label, prefix } = getStatDescription(key, roll, range);
+
+            // Skip bonusStat (internal value, not displayed)
+            if (key === 'bonusStat' || !label) return null;
 
             // Add % suffix for speed boost stats
             const suffix = (key === 'ptsSpeedBoost' || key === 'bonusStatSpeedBoost') ? '%' : '';

@@ -55,6 +55,7 @@ export const STARTER_SHORTSWORD_DEFINITION: ItemDefinition = {
     bonusProjectiles: { min: 1, max: 3, step: 1 },
     ptsSpeedBoost: { min: 10, max: 90, step: 1 }, // 10-90% speed boost for PTS
     bonusStatSpeedBoost: { min: 10, max: 90, step: 1 }, // 10-90% speed boost for random stat
+    bonusStat: { min: 0, max: 3, step: 1 }, // 0=REB, 1=AST, 2=STL, 3=3PT (rolled once when item is created)
   },
 };
 
@@ -70,9 +71,10 @@ export function registerShortswordEffect(context: ItemRuntimeContext): void {
   const { itemInstanceId, gameId, side, rolls } = context;
   const { ptsThreshold, bonusProjectiles, ptsSpeedBoost, bonusStatSpeedBoost } = rolls;
 
-  // Randomly select bonus stat for speed boost (REB, AST, STL, or 3PT)
+  // Get bonus stat from rolls (0=REB, 1=AST, 2=STL, 3=3PT)
   const bonusStatOptions: StatType[] = ['reb', 'ast', 'stl', '3pt'];
-  const bonusStat = bonusStatOptions[Math.floor(Math.random() * bonusStatOptions.length)];
+  const bonusStatIndex = rolls.bonusStat || 0;
+  const bonusStat = bonusStatOptions[bonusStatIndex];
 
   console.log(`⚔️⚔️⚔️ [Shortsword] REGISTERING EFFECT for ${side} side in game ${gameId}`);
   console.log(`⚔️ [Shortsword] PTS Threshold: ${ptsThreshold}, Bonus Projectiles: ${bonusProjectiles}`);
