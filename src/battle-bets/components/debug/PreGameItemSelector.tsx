@@ -347,7 +347,7 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
     }
 
     // Handle Knight Defender (power item - slot 2)
-    // Import and spawn knights for equipped Knight Defender items
+    // Use centralized spawn function from MED_KnightDefender to avoid duplicates
     if (leftSlot2?.itemId === 'MED_pwr_knight_defender') {
       spawnKnightForSide('left');
     }
@@ -357,44 +357,20 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
   };
 
   /**
-   * Spawn a knight for a given side (immediate visual)
+   * Spawn a knight for a given side using centralized spawn function
    */
   const spawnKnightForSide = async (side: 'left' | 'right') => {
-    console.log(`🐴 [PreGameItemSelector] Spawning knight for ${side} side`);
+    console.log(`🐴 [PreGameItemSelector] Requesting knight spawn for ${side} side`);
 
-    // Dynamically import to avoid circular dependencies
-    const { KnightDefender } = await import('../../game/entities/KnightDefender');
-    const { pixiManager } = await import('../../game/managers/PixiManager');
+    // Use centralized spawn function - handles deduplication automatically
+    const { getOrSpawnKnight } = await import('../../game/items/effects/MED_KnightDefender');
 
-    // Get team color from battle state
-    if (!battle) {
-      console.error(`🐴 [PreGameItemSelector] No battle found`);
-      return;
-    }
-
-    const team = side === 'left' ? battle.game.leftTeam : battle.game.rightTeam;
-    const teamColor = team.color;
-
-    // Create knight
-    const knight = new KnightDefender({
-      id: `knight-${battleId}-${side}`,
-      gameId: battleId,
-      side,
-      teamColor,
-    });
-
-    // Add knight sprite to game container
-    const container = pixiManager.getContainer(battleId);
-    if (container) {
-      container.addChild(knight.sprite);
-      console.log(`🐴 [PreGameItemSelector] Added knight sprite to container for ${side}`);
+    const knight = getOrSpawnKnight(battleId, side);
+    if (knight) {
+      console.log(`🐴 [PreGameItemSelector] Knight active for ${side}!`);
     } else {
-      console.error(`🐴 [PreGameItemSelector] No container found for ${battleId}`);
+      console.error(`🐴 [PreGameItemSelector] Failed to spawn knight for ${side}`);
     }
-
-    // Start patrolling
-    knight.startPatrol();
-    console.log(`🐴 [PreGameItemSelector] Knight spawned and patrolling for ${side}!`);
   };
 
   /**

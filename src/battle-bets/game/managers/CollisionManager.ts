@@ -6,6 +6,11 @@
  * - Defense dots are fetched FRESH from store on every collision check (not cached)
  * - Damage is applied IMMEDIATELY when collision is detected
  * - Store is the single source of truth for defense dot HP and alive status
+ *
+ * COLLISION PRIORITY:
+ * 1. Projectile-to-projectile (mid-air collision)
+ * 2. Knight collision (roaming defender in battlefield)
+ * 3. Defense orb collision (stationary defense)
  */
 
 import type { BaseProjectile } from '../entities/projectiles/BaseProjectile';
@@ -15,6 +20,8 @@ import { battleEventBus } from '../events/EventBus';
 import type { DefenseOrbDestroyedPayload, OpponentOrbDestroyedPayload, ProjectileCollisionPayload } from '../events/types';
 import { gridManager } from './GridManager';
 import { collisionDebugger } from '../debug/CollisionDebugger';
+import { getKnight } from '../items/effects/MED_KnightDefender';
+import { DEFAULT_GRID_CONFIG } from '../../types/game';
 
 /**
  * Collision detection manager
@@ -161,7 +168,14 @@ class CollisionManager {
       }
     }
 
-    // Priority 2: GRID-BASED defense orb collision
+    // Priority 2: Knight collision (roaming defender in battlefield zone)
+    // Knights belong to a side and can only block projectiles from the OPPONENT
+    const knightResult = this.checkKnightCollision(projectile);
+    if (knightResult) {
+      return 'knight' as 'defense'; // Return as 'defense' type for backwards compatibility
+    }
+
+    // Priority 3: GRID-BASED defense orb collision
     // ONLY check for defense orbs when projectile is in the OPPONENT's defense zone!
     const targetSide = projectile.side === 'left' ? 'right' : 'left'; // Projectile hits OPPONENT's defense
 
@@ -335,9 +349,68 @@ class CollisionManager {
     }
   }
 
+  /**
+   * Check if projectile collides with an opponent's knight
+   * Knights can only block projectiles coming FROM the opponent (toward their own castle)
+   */
+  private checkKnightCollision(projectile: BaseProjectile): boolean {
+    // Knight belongs to the DEFENDER (same side as target)
+    // So left projectile targets right side → check right knight
+    // Right projectile targets left side → check left knight
+    const defenderSide = projectile.side === 'left' ? 'right' : 'left';
 
+    // Get knight for the defending side
+    const knight = getKnight(projectile.gameId, defenderSide);
 
+    if (!knight || !knight.alive) {
+      return false;
+    }
 
+    // Check if projectile is in the battlefield zone (where knight patrols)
+    const layout = gridManager.getLayout();
+    const inBattlefieldX = projectile.position.x >= layout.battlefieldStart
+      && projectile.position.x <= layout.battlefieldEnd;
+
+    if (!inBattlefieldX) {
+      return false;
+    }
+
+    // Check if knight and projectile are on the same row
+    const cellHeight = DEFAULT_GRID_CONFIG.cellHeight;
+    const projectileRow = Math.floor(projectile.position.y / cellHeight);
+    const knightRow = Math.floor(knight.position.y / cellHeight);
+
+    // Must be on same row or adjacent (knight has some vertical reach)
+    const rowDistance = Math.abs(projectileRow - knightRow);
+    if (rowDistance > 0.5) {
+      // Too far vertically - but register as threat for AI to track
+      knight.registerThreat(projectileRow);
+      return false;
+    }
+
+    // Check actual collision
+    if (knight.checkCollision(projectile.position.x, projectile.position.y, projectile.typeConfig.collisionRadius)) {
+      // Collision! Let knight handle it (deflect or take damage based on cooldown)
+      const destroyed = knight.handleProjectileHit();
+
+      if (destroyed) {
+        console.log(`🐴 [Collision] Projectile ${projectile.id} intercepted by ${knight.id}!`);
+
+        // Emit knight deflection event (for game stats/UI)
+        battleEventBus.emit('KNIGHT_DEFLECTION', {
+          gameId: projectile.gameId,
+          side: defenderSide,
+          knightId: knight.id,
+          projectileId: projectile.id,
+          deflected: knight.canDeflect(), // Will be false if hit during cooldown
+        });
+
+        return true;
+      }
+    }
+
+    return false;
+  }
 
   /**
    * Clear all tracked entities (for reset)

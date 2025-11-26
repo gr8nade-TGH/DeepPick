@@ -1,13 +1,14 @@
 /**
  * MED_KnightDefender.ts
- * 
+ *
  * Medieval Knight Defender Power Item
  * Spawns a knight that patrols the battlefield and deflects projectiles.
- * 
+ *
  * - Spawns in the middle battlefield zone on owner's side
  * - Roams up and down between stat rows
+ * - Smart AI: evades threats, protects weak lanes
  * - Deflects first projectile, but if hit within 1 second, takes damage
- * - Has 20 HP
+ * - Has 20 HP with visual HP bar
  */
 
 import { battleEventBus } from '../../events/EventBus';
@@ -35,7 +36,8 @@ export const MED_KNIGHT_DEFENDER_DEFINITION: ItemDefinition = {
 };
 
 /**
- * Store for active knights (per game)
+ * Store for active knights (per game) - SINGLETON REGISTRY
+ * Key format: "gameId-side" (e.g., "battle-123-left")
  */
 const activeKnights: Map<string, KnightDefender> = new Map();
 
@@ -47,10 +49,36 @@ export function getKnight(gameId: string, side: 'left' | 'right'): KnightDefende
 }
 
 /**
- * Spawn knight helper function
+ * Check if a knight exists and is alive for a game/side
  */
-function spawnKnight(gameId: string, side: 'left' | 'right'): KnightDefender | null {
-  console.log(`🐴 [KnightDefender] Spawning knight for ${side} in game ${gameId}`);
+export function hasActiveKnight(gameId: string, side: 'left' | 'right'): boolean {
+  const knight = activeKnights.get(`${gameId}-${side}`);
+  return !!knight && knight.alive;
+}
+
+/**
+ * Spawn or get existing knight - CENTRALIZED SPAWN FUNCTION
+ * This is the ONLY function that should be used to spawn knights.
+ * Returns existing knight if already spawned and alive.
+ */
+export function getOrSpawnKnight(gameId: string, side: 'left' | 'right'): KnightDefender | null {
+  const key = `${gameId}-${side}`;
+
+  // Check if knight already exists and is alive
+  const existing = activeKnights.get(key);
+  if (existing && existing.alive) {
+    console.log(`🐴 [KnightDefender] Knight already exists for ${side} in ${gameId}, returning existing`);
+    return existing;
+  }
+
+  // If dead knight exists, clean it up
+  if (existing && !existing.alive) {
+    console.log(`🐴 [KnightDefender] Cleaning up dead knight for ${side} in ${gameId}`);
+    existing.dispose();
+    activeKnights.delete(key);
+  }
+
+  console.log(`🐴 [KnightDefender] Spawning NEW knight for ${side} in game ${gameId}`);
 
   // Get team color from battle state
   const battle = useMultiGameStore.getState().battles.get(gameId);
@@ -71,7 +99,7 @@ function spawnKnight(gameId: string, side: 'left' | 'right'): KnightDefender | n
   });
 
   // Store reference
-  activeKnights.set(`${gameId}-${side}`, knight);
+  activeKnights.set(key, knight);
 
   // Add knight sprite to game container
   const container = pixiManager.getContainer(gameId);
@@ -80,6 +108,7 @@ function spawnKnight(gameId: string, side: 'left' | 'right'): KnightDefender | n
     console.log(`🐴 [KnightDefender] Added knight sprite to container at position (${knight.position.x}, ${knight.position.y})`);
   } else {
     console.error(`🐴 [KnightDefender] No container found for ${gameId}`);
+    activeKnights.delete(key);
     return null;
   }
 
@@ -91,40 +120,41 @@ function spawnKnight(gameId: string, side: 'left' | 'right'): KnightDefender | n
 }
 
 /**
+ * Remove and dispose knight for a game/side
+ */
+export function removeKnight(gameId: string, side: 'left' | 'right'): void {
+  const key = `${gameId}-${side}`;
+  const knight = activeKnights.get(key);
+  if (knight) {
+    knight.dispose();
+    activeKnights.delete(key);
+    console.log(`🐴 [KnightDefender] Removed knight for ${side} in ${gameId}`);
+  }
+}
+
+/**
  * Register Knight Defender effect
+ * Note: This is called when activateItemEffects is triggered.
+ * The visual spawn happens in PreGameItemSelector via getOrSpawnKnight.
  */
 export function registerKnightDefenderEffect(context: ItemRuntimeContext): void {
   const { itemInstanceId, gameId, side } = context;
 
   console.log(`🐴 [KnightDefender] REGISTERING EFFECT for ${side} side in game ${gameId}`);
 
-  // Check if knight already exists (from previous activation)
-  const existingKnight = activeKnights.get(`${gameId}-${side}`);
-  if (existingKnight && existingKnight.alive) {
-    console.log(`🐴 [KnightDefender] Knight already exists for ${side} in ${gameId}, skipping spawn`);
-    return;
-  }
+  // Use centralized spawn function - won't duplicate if already exists
+  getOrSpawnKnight(gameId, side);
 
-  // Spawn knight immediately when item is equipped (pre-game)
-  // This way the knight is visible before Q1 starts
-  console.log(`🐴 [KnightDefender] Spawning knight immediately on equip...`);
-  spawnKnight(gameId, side);
-
-  // Also listen to BATTLE_START in case this is called before game init
-  battleEventBus.on('BATTLE_START', (payload) => {
+  // Listen to BATTLE_START for late spawns (in case effect registered before container ready)
+  const battleStartHandler = (payload: { gameId: string; side: 'left' | 'right' }) => {
     if (payload.gameId !== gameId) return;
     if (payload.side !== side) return;
 
-    // Check if knight already exists
-    const knight = activeKnights.get(`${gameId}-${side}`);
-    if (knight && knight.alive) {
-      console.log(`🐴 [KnightDefender] Knight already exists on BATTLE_START, skipping`);
-      return;
-    }
+    // Use centralized spawn - handles deduplication automatically
+    getOrSpawnKnight(gameId, side);
+  };
 
-    // Spawn if not already spawned
-    spawnKnight(gameId, side);
-  });
+  battleEventBus.on('BATTLE_START', battleStartHandler);
 
   console.log(`✅ [KnightDefender] Effect registered for ${side} (${itemInstanceId})`);
 }

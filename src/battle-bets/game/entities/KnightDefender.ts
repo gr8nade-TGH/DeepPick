@@ -1,10 +1,12 @@
 /**
- * KnightDefender entity - A roaming defender in the battlefield zone
- * 
+ * KnightDefender entity - A smart roaming defender in the battlefield zone
+ *
+ * Features:
  * - Spawns in the middle battlefield area on owner's side
- * - Roams up and down between stat rows
- * - Deflects projectiles (1 second cooldown)
- * - Has 20 HP
+ * - Smart AI: evades heavy fire, prioritizes weak lanes
+ * - Deflects projectiles with shield animation (1 second cooldown)
+ * - Has HP bar and visual feedback
+ * - Dramatic death animation
  */
 
 import * as PIXI from 'pixi.js';
@@ -18,6 +20,13 @@ export interface KnightDefenderConfig {
   side: 'left' | 'right';
   hp?: number;
   teamColor: number;
+}
+
+// Threat tracking for smart AI
+interface ThreatInfo {
+  row: number;
+  count: number;
+  lastUpdate: number;
 }
 
 export class KnightDefender {
@@ -36,15 +45,28 @@ export class KnightDefender {
   // Visual
   public sprite: PIXI.Container;
   public readonly teamColor: number;
-  private knightGraphics: PIXI.Graphics;
+  private knightSprite: PIXI.Sprite | PIXI.Graphics;
+  private hpBarContainer: PIXI.Container;
+  private hpBarFill: PIXI.Graphics;
+  private hpBarBg: PIXI.Graphics;
+  private shieldEffect: PIXI.Graphics;
+  private glowEffect: PIXI.Graphics;
 
   // Position & Movement
   public position: { x: number; y: number };
   private patrolTween: gsap.core.Tween | null = null;
-  private readonly patrolSpeed: number = 2000; // ms to move between rows
+  private readonly patrolSpeed: number = 1500; // ms to move between rows (faster for evasion)
+
+  // Smart AI
+  private threatMap: Map<number, ThreatInfo> = new Map();
+  private targetRow: number = 2; // Start at AST row
 
   // Collision
-  public readonly collisionRadius: number = 20;
+  public readonly collisionRadius: number = 25;
+
+  // Stats
+  public deflectCount: number = 0;
+  public damageBlocked: number = 0;
 
   constructor(config: KnightDefenderConfig) {
     this.id = config.id;
@@ -56,12 +78,34 @@ export class KnightDefender {
     // Calculate starting position in battlefield zone
     this.position = this.calculateStartPosition();
 
-    // Create sprite
+    // Create sprite container
     this.sprite = new PIXI.Container();
-    this.knightGraphics = this.createKnightGraphics();
-    this.sprite.addChild(this.knightGraphics);
+
+    // Create glow effect (behind knight)
+    this.glowEffect = this.createGlowEffect();
+    this.sprite.addChild(this.glowEffect);
+
+    // Create knight visual
+    this.knightSprite = this.createKnightGraphics();
+    this.sprite.addChild(this.knightSprite);
+
+    // Create shield effect (for deflections)
+    this.shieldEffect = this.createShieldEffect();
+    this.shieldEffect.visible = false;
+    this.sprite.addChild(this.shieldEffect);
+
+    // Create HP bar
+    this.hpBarContainer = new PIXI.Container();
+    this.hpBarBg = new PIXI.Graphics();
+    this.hpBarFill = new PIXI.Graphics();
+    this.createHpBar();
+    this.sprite.addChild(this.hpBarContainer);
+
     this.sprite.x = this.position.x;
     this.sprite.y = this.position.y;
+
+    // Start idle animation
+    this.startIdleAnimation();
 
     console.log(`🐴 [KnightDefender] Created for ${this.side} at (${this.position.x}, ${this.position.y})`);
   }
@@ -75,7 +119,7 @@ export class KnightDefender {
 
     // Middle of battlefield, offset to owner's side
     const battlefieldCenter = (layout.battlefieldStart + layout.battlefieldEnd) / 2;
-    const offset = 30; // Offset from center toward owner's side
+    const offset = 35; // Offset from center toward owner's side
 
     const x = this.side === 'left'
       ? battlefieldCenter - offset
@@ -88,81 +132,298 @@ export class KnightDefender {
   }
 
   /**
-   * Create knight graphics (simple horseman shape)
+   * Create glow effect behind knight
+   */
+  private createGlowEffect(): PIXI.Graphics {
+    const g = new PIXI.Graphics();
+    const color = this.teamColor;
+
+    // Outer glow
+    g.circle(0, 0, 35);
+    g.fill({ color, alpha: 0.15 });
+
+    // Inner glow
+    g.circle(0, 0, 25);
+    g.fill({ color, alpha: 0.1 });
+
+    return g;
+  }
+
+  /**
+   * Create knight graphics (detailed horseman)
    */
   private createKnightGraphics(): PIXI.Graphics {
     const g = new PIXI.Graphics();
-    const size = 24;
-
-    // Draw a simple knight on horse silhouette
+    const size = 20;
     const color = this.teamColor;
+    const facing = this.side === 'left' ? 1 : -1;
 
-    // Horse body (ellipse)
-    g.ellipse(0, 4, size * 0.6, size * 0.35);
-    g.fill({ color, alpha: 1 });
+    // Horse body (main ellipse)
+    g.ellipse(0, 8, size * 0.8, size * 0.4);
+    g.fill({ color: 0x8B4513, alpha: 1 });
+
+    // Horse legs
+    const legPositions = [-10, -4, 4, 10];
+    legPositions.forEach(lx => {
+      g.roundRect(lx - 2, 14, 4, 10, 2);
+      g.fill({ color: 0x6B3510, alpha: 1 });
+    });
 
     // Horse head
-    const headX = this.side === 'left' ? size * 0.4 : -size * 0.4;
-    g.ellipse(headX, -2, size * 0.2, size * 0.15);
+    g.ellipse(facing * 18, 2, 7, 5);
+    g.fill({ color: 0x8B4513, alpha: 1 });
+
+    // Horse nose
+    g.ellipse(facing * 24, 0, 4, 3);
+    g.fill({ color: 0x6B3510, alpha: 1 });
+
+    // Horse ear
+    g.poly([facing * 16, -6, facing * 18, -2, facing * 20, -6]);
+    g.fill({ color: 0x8B4513, alpha: 1 });
+
+    // Knight armor body
+    g.ellipse(0, -4, 8, 10);
+    g.fill({ color: 0xC0C0C0, alpha: 1 });
+
+    // Knight armor shine
+    g.ellipse(-2, -6, 3, 6);
+    g.fill({ color: 0xE8E8E8, alpha: 0.5 });
+
+    // Knight helmet
+    g.circle(0, -16, 7);
+    g.fill({ color: 0x808080, alpha: 1 });
+
+    // Helmet visor
+    g.roundRect(-5, -18, 10, 4, 1);
+    g.fill({ color: 0x404040, alpha: 1 });
+
+    // Helmet plume (team colored)
+    g.moveTo(0, -23);
+    g.quadraticCurveTo(facing * 8, -26, facing * 6, -20);
     g.fill({ color, alpha: 1 });
 
-    // Knight body (on top of horse)
-    g.ellipse(0, -8, size * 0.25, size * 0.35);
+    // Shield (on opposite side of lance)
+    g.ellipse(-facing * 10, -2, 5, 7);
     g.fill({ color, alpha: 1 });
-
-    // Knight head
-    g.circle(0, -18, size * 0.18);
-    g.fill({ color, alpha: 1 });
+    // Shield cross
+    g.moveTo(-facing * 10, -8);
+    g.lineTo(-facing * 10, 4);
+    g.stroke({ width: 2, color: 0xFFD700, alpha: 1 });
+    g.moveTo(-facing * 14, -2);
+    g.lineTo(-facing * 6, -2);
+    g.stroke({ width: 2, color: 0xFFD700, alpha: 1 });
 
     // Lance
-    const lanceDir = this.side === 'left' ? 1 : -1;
-    g.moveTo(0, -12);
-    g.lineTo(lanceDir * size * 0.8, -25);
-    g.stroke({ width: 2, color, alpha: 1 });
+    g.moveTo(facing * 8, -10);
+    g.lineTo(facing * 32, -22);
+    g.stroke({ width: 3, color: 0x8B4513, alpha: 1 });
 
     // Lance tip
-    g.circle(lanceDir * size * 0.8, -25, 3);
-    g.fill({ color: 0xCCCCCC, alpha: 1 });
-
-    // Outline glow
-    g.circle(0, 0, size * 0.8);
-    g.stroke({ width: 2, color: this.teamColor, alpha: 0.3 });
+    g.poly([facing * 32, -22, facing * 30, -26, facing * 36, -22]);
+    g.fill({ color: 0xC0C0C0, alpha: 1 });
 
     return g;
+  }
+
+  /**
+   * Create shield deflection effect
+   */
+  private createShieldEffect(): PIXI.Graphics {
+    const g = new PIXI.Graphics();
+
+    // Circular shield burst
+    g.circle(0, 0, 40);
+    g.stroke({ width: 3, color: 0x00FFFF, alpha: 0.8 });
+
+    g.circle(0, 0, 35);
+    g.fill({ color: 0x00FFFF, alpha: 0.2 });
+
+    return g;
+  }
+
+  /**
+   * Create HP bar above knight
+   */
+  private createHpBar(): void {
+    const barWidth = 40;
+    const barHeight = 6;
+    const yOffset = -35;
+
+    // Background (dark)
+    this.hpBarBg.roundRect(-barWidth / 2, yOffset, barWidth, barHeight, 2);
+    this.hpBarBg.fill({ color: 0x1a1a2e, alpha: 0.9 });
+    this.hpBarBg.stroke({ width: 1, color: 0x444466, alpha: 1 });
+
+    // Fill (green gradient effect via multiple rects)
+    this.updateHpBar();
+
+    this.hpBarContainer.addChild(this.hpBarBg);
+    this.hpBarContainer.addChild(this.hpBarFill);
+  }
+
+  /**
+   * Update HP bar fill
+   */
+  private updateHpBar(): void {
+    const barWidth = 38;
+    const barHeight = 4;
+    const yOffset = -34;
+    const hpPercent = this.hp / this.maxHp;
+    const fillWidth = barWidth * hpPercent;
+
+    // Color based on HP percentage
+    let color: number;
+    if (hpPercent > 0.6) {
+      color = 0x00FF00; // Green
+    } else if (hpPercent > 0.3) {
+      color = 0xFFAA00; // Orange
+    } else {
+      color = 0xFF4444; // Red
+    }
+
+    this.hpBarFill.clear();
+    if (fillWidth > 0) {
+      this.hpBarFill.roundRect(-barWidth / 2 + 1, yOffset + 1, fillWidth, barHeight, 1);
+      this.hpBarFill.fill({ color, alpha: 1 });
+    }
+  }
+
+  /**
+   * Idle bob animation
+   */
+  private startIdleAnimation(): void {
+    // Gentle bobbing
+    gsap.to(this.knightSprite, {
+      y: -2,
+      duration: 1.5,
+      ease: 'sine.inOut',
+      yoyo: true,
+      repeat: -1,
+    });
+
+    // Glow pulse
+    gsap.to(this.glowEffect, {
+      alpha: 0.6,
+      duration: 2,
+      ease: 'sine.inOut',
+      yoyo: true,
+      repeat: -1,
+    });
   }
 
   /**
    * Start roaming patrol
    */
   public startPatrol(): void {
-    this.patrol();
+    this.smartPatrol();
   }
 
   /**
-   * Patrol up and down randomly
+   * Register threat from incoming projectile (for smart AI)
    */
-  private patrol(): void {
+  public registerThreat(row: number): void {
+    const existing = this.threatMap.get(row) || { row, count: 0, lastUpdate: 0 };
+    existing.count++;
+    existing.lastUpdate = Date.now();
+    this.threatMap.set(row, existing);
+  }
+
+  /**
+   * Get safest row to move to (lowest threat)
+   */
+  private getSafestRow(): number {
+    const cellHeight = DEFAULT_GRID_CONFIG.cellHeight;
+    const rows = [0, 1, 2, 3, 4]; // PTS, REB, AST, STL, 3PT
+
+    // Decay old threats
+    const now = Date.now();
+    this.threatMap.forEach((threat, row) => {
+      if (now - threat.lastUpdate > 2000) {
+        threat.count = Math.max(0, threat.count - 1);
+      }
+    });
+
+    // Find row with lowest threat
+    let safestRow = this.targetRow;
+    let lowestThreat = Infinity;
+
+    rows.forEach(row => {
+      const threat = this.threatMap.get(row);
+      const threatLevel = threat ? threat.count : 0;
+      if (threatLevel < lowestThreat) {
+        lowestThreat = threatLevel;
+        safestRow = row;
+      }
+    });
+
+    return safestRow;
+  }
+
+  /**
+   * Smart patrol - evade threats, protect weak lanes
+   */
+  private smartPatrol(): void {
     if (!this.alive) return;
 
     const cellHeight = DEFAULT_GRID_CONFIG.cellHeight;
-    const minY = cellHeight / 2; // Top of PTS row
-    const maxY = cellHeight * 4 + cellHeight / 2; // Bottom of 3PT row
+    const minY = cellHeight / 2;
+    const maxY = cellHeight * 4 + cellHeight / 2;
 
-    // Pick random target Y
-    const targetY = minY + Math.random() * (maxY - minY);
-    const distance = Math.abs(targetY - this.position.y);
+    // 60% chance to use smart positioning, 40% random (keeps it interesting)
+    let targetRow: number;
+    if (Math.random() < 0.6) {
+      targetRow = this.getSafestRow();
+    } else {
+      targetRow = Math.floor(Math.random() * 5);
+    }
+
+    this.targetRow = targetRow;
+    const targetY = cellHeight * targetRow + cellHeight / 2;
+
+    // Clamp to bounds
+    const clampedY = Math.max(minY, Math.min(maxY, targetY));
+    const distance = Math.abs(clampedY - this.position.y);
     const duration = (distance / (maxY - minY)) * this.patrolSpeed / 1000;
 
     this.patrolTween = gsap.to(this.sprite, {
-      y: targetY,
-      duration: Math.max(0.5, duration),
-      ease: 'sine.inOut',
+      y: clampedY,
+      duration: Math.max(0.4, duration),
+      ease: 'power2.inOut',
       onUpdate: () => {
         this.position.y = this.sprite.y;
       },
       onComplete: () => {
-        // Small pause then patrol again
-        gsap.delayedCall(0.3 + Math.random() * 0.5, () => this.patrol());
+        // Shorter pause for more responsive movement
+        gsap.delayedCall(0.2 + Math.random() * 0.3, () => this.smartPatrol());
+      },
+    });
+  }
+
+  /**
+   * Emergency evade - quick movement away from danger
+   */
+  public evade(dangerY: number): void {
+    if (!this.alive) return;
+    if (this.patrolTween) this.patrolTween.kill();
+
+    const cellHeight = DEFAULT_GRID_CONFIG.cellHeight;
+    const minY = cellHeight / 2;
+    const maxY = cellHeight * 4 + cellHeight / 2;
+
+    // Move away from danger
+    const evadeDirection = this.position.y > dangerY ? 1 : -1;
+    const evadeDistance = cellHeight * 1.5;
+    const targetY = Math.max(minY, Math.min(maxY, this.position.y + evadeDirection * evadeDistance));
+
+    gsap.to(this.sprite, {
+      y: targetY,
+      duration: 0.25,
+      ease: 'power3.out',
+      onUpdate: () => {
+        this.position.y = this.sprite.y;
+      },
+      onComplete: () => {
+        gsap.delayedCall(0.3, () => this.smartPatrol());
       },
     });
   }
@@ -180,17 +441,65 @@ export class KnightDefender {
    */
   public deflect(): void {
     this.lastDeflectTime = Date.now();
-    console.log(`🛡️ [KnightDefender] ${this.id} DEFLECTED a projectile!`);
+    this.deflectCount++;
+    this.damageBlocked++;
+    console.log(`🛡️ [KnightDefender] ${this.id} DEFLECTED! (Total: ${this.deflectCount})`);
 
-    // Visual feedback - flash
+    // Show shield effect
+    this.shieldEffect.visible = true;
+    this.shieldEffect.alpha = 1;
+    this.shieldEffect.scale.set(0.5);
+
+    // Shield burst animation
     gsap.timeline()
-      .to(this.sprite, { alpha: 0.3, duration: 0.05 })
-      .to(this.sprite, { alpha: 1, duration: 0.1 });
+      .to(this.shieldEffect.scale, { x: 1.5, y: 1.5, duration: 0.3, ease: 'power2.out' })
+      .to(this.shieldEffect, { alpha: 0, duration: 0.2 }, '-=0.1')
+      .call(() => {
+        this.shieldEffect.visible = false;
+        this.shieldEffect.scale.set(1);
+      });
+
+    // Knight flash
+    gsap.timeline()
+      .to(this.knightSprite, { alpha: 1.5, duration: 0.1 })
+      .to(this.knightSprite, { alpha: 1, duration: 0.15 });
 
     // Scale pulse
     gsap.timeline()
-      .to(this.sprite.scale, { x: 1.3, y: 1.3, duration: 0.1, ease: 'power2.out' })
+      .to(this.sprite.scale, { x: 1.2, y: 1.2, duration: 0.1, ease: 'power2.out' })
       .to(this.sprite.scale, { x: 1, y: 1, duration: 0.2, ease: 'elastic.out(1, 0.5)' });
+
+    // Create floating "BLOCKED!" text
+    this.showFloatingText('🛡️', 0x00FFFF);
+  }
+
+  /**
+   * Show floating text above knight
+   */
+  private showFloatingText(text: string, color: number): void {
+    const style = new PIXI.TextStyle({
+      fontFamily: 'Arial Black',
+      fontSize: 14,
+      fill: color,
+      stroke: { color: 0x000000, width: 3 },
+      dropShadow: true,
+      dropShadowColor: 0x000000,
+      dropShadowBlur: 2,
+      dropShadowDistance: 1,
+    });
+
+    const floatText = new PIXI.Text({ text, style });
+    floatText.anchor.set(0.5);
+    floatText.x = 0;
+    floatText.y = -50;
+    this.sprite.addChild(floatText);
+
+    gsap.timeline()
+      .to(floatText, { y: -70, alpha: 0, duration: 0.8, ease: 'power2.out' })
+      .call(() => {
+        this.sprite.removeChild(floatText);
+        floatText.destroy();
+      });
   }
 
   /**
@@ -203,36 +512,113 @@ export class KnightDefender {
     this.hp = Math.max(0, this.hp - amount);
     console.log(`💥 [KnightDefender] ${this.id} took ${amount} damage | ${hpBefore} → ${this.hp} HP`);
 
+    // Update HP bar
+    this.updateHpBar();
+
+    // Flash HP bar red
+    gsap.timeline()
+      .to(this.hpBarContainer, { alpha: 0.3, duration: 0.05 })
+      .to(this.hpBarContainer, { alpha: 1, duration: 0.1 });
+
     if (this.hp <= 0) {
       this.destroy();
     } else {
-      // Damage flash (red tint)
+      // Red flash on knight
+      const originalTint = (this.knightSprite as PIXI.Graphics).tint;
+      (this.knightSprite as PIXI.Graphics).tint = 0xFF4444;
+      gsap.delayedCall(0.15, () => {
+        (this.knightSprite as PIXI.Graphics).tint = originalTint;
+      });
+
+      // Shake effect
       gsap.timeline()
-        .to(this.knightGraphics, { alpha: 0.5, duration: 0.1 })
-        .to(this.knightGraphics, { alpha: 1, duration: 0.15 });
+        .to(this.knightSprite, { x: -3, duration: 0.03 })
+        .to(this.knightSprite, { x: 3, duration: 0.03 })
+        .to(this.knightSprite, { x: -2, duration: 0.03 })
+        .to(this.knightSprite, { x: 0, duration: 0.03 });
+
+      // Show damage number
+      this.showFloatingText(`-${amount}`, 0xFF4444);
     }
   }
 
   /**
-   * Destroy the knight
+   * Destroy the knight with dramatic death animation
    */
   private destroy(): void {
     this.alive = false;
-    console.log(`💀 [KnightDefender] ${this.id} DESTROYED!`);
+    console.log(`💀 [KnightDefender] ${this.id} DESTROYED! (Blocked ${this.deflectCount} projectiles)`);
 
     // Stop patrol
     if (this.patrolTween) {
       this.patrolTween.kill();
     }
 
-    // Death animation
+    // Kill idle animations
+    gsap.killTweensOf(this.knightSprite);
+    gsap.killTweensOf(this.glowEffect);
+
+    // Hide HP bar immediately
+    this.hpBarContainer.visible = false;
+
+    // Create death particles
+    this.createDeathParticles();
+
+    // Show "SLAIN!" text
+    this.showFloatingText('💀 SLAIN!', 0xFF0000);
+
+    // Dramatic death animation
     gsap.timeline()
-      .to(this.sprite.scale, { x: 1.5, y: 1.5, duration: 0.15, ease: 'power2.out' })
-      .to(this.sprite, { alpha: 0, duration: 0.3, ease: 'power2.in' }, '-=0.1')
-      .to(this.sprite.scale, { x: 0.5, y: 0.5, duration: 0.3 }, '-=0.3')
+      // Flash red
+      .to(this.knightSprite, { alpha: 0, duration: 0.1 })
+      .to(this.knightSprite, { alpha: 1, duration: 0.1 })
+      .to(this.knightSprite, { alpha: 0, duration: 0.1 })
+      .to(this.knightSprite, { alpha: 1, duration: 0.1 })
+      // Spin and shrink
+      .to(this.sprite, { rotation: Math.PI * 2, duration: 0.5, ease: 'power2.in' }, '-=0.2')
+      .to(this.sprite.scale, { x: 0, y: 0, duration: 0.5, ease: 'power2.in' }, '-=0.5')
+      // Final fade
+      .to(this.sprite, { alpha: 0, duration: 0.2 })
       .call(() => {
         this.sprite.visible = false;
       });
+  }
+
+  /**
+   * Create death particle explosion
+   */
+  private createDeathParticles(): void {
+    const particleCount = 12;
+
+    for (let i = 0; i < particleCount; i++) {
+      const particle = new PIXI.Graphics();
+      const size = 4 + Math.random() * 6;
+      const color = Math.random() > 0.5 ? this.teamColor : 0xC0C0C0;
+
+      particle.circle(0, 0, size);
+      particle.fill({ color, alpha: 1 });
+
+      particle.x = 0;
+      particle.y = 0;
+      this.sprite.addChild(particle);
+
+      const angle = (i / particleCount) * Math.PI * 2;
+      const distance = 40 + Math.random() * 30;
+      const targetX = Math.cos(angle) * distance;
+      const targetY = Math.sin(angle) * distance;
+
+      gsap.to(particle, {
+        x: targetX,
+        y: targetY,
+        alpha: 0,
+        duration: 0.5 + Math.random() * 0.3,
+        ease: 'power2.out',
+        onComplete: () => {
+          this.sprite.removeChild(particle);
+          particle.destroy();
+        },
+      });
+    }
   }
 
   /**
@@ -257,11 +643,18 @@ export class KnightDefender {
 
     if (this.canDeflect()) {
       this.deflect();
-      return true; // Projectile destroyed
+      return true; // Projectile destroyed, knight unharmed
     } else {
       this.takeDamage(1);
-      return true; // Projectile still destroyed, but knight takes damage
+      return true; // Projectile destroyed, but knight takes damage
     }
+  }
+
+  /**
+   * Get current HP percentage
+   */
+  public getHpPercent(): number {
+    return this.hp / this.maxHp;
   }
 
   /**
@@ -273,7 +666,10 @@ export class KnightDefender {
     }
     gsap.killTweensOf(this.sprite);
     gsap.killTweensOf(this.sprite.scale);
-    gsap.killTweensOf(this.knightGraphics);
+    gsap.killTweensOf(this.knightSprite);
+    gsap.killTweensOf(this.glowEffect);
+    gsap.killTweensOf(this.shieldEffect);
+    gsap.killTweensOf(this.hpBarContainer);
     this.sprite.destroy({ children: true });
   }
 }
