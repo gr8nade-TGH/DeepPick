@@ -34,6 +34,24 @@ import * as PIXI from 'pixi.js';
 // Purple glow color for wizard enchantment
 const WIZARD_GLOW_COLOR = 0x9b59b6;
 
+// Track glows so we can clean them up
+const orbGlowMap = new Map<string, PIXI.Graphics>();
+
+/**
+ * Clean up glow for a destroyed orb
+ */
+export function cleanupOrbGlow(orbId: string): void {
+  const glow = orbGlowMap.get(orbId);
+  if (glow) {
+    console.log(`🔮 [WizardsWatchtower] Cleaning up glow for destroyed orb: ${orbId}`);
+    if (glow.parent) {
+      glow.parent.removeChild(glow);
+    }
+    glow.destroy();
+    orbGlowMap.delete(orbId);
+  }
+}
+
 /**
  * Item definition for WAS Wizard's Watchtower
  */
@@ -53,40 +71,61 @@ export const WAS_WIZARDS_WATCHTOWER_DEFINITION: ItemDefinition = {
 
 /**
  * Add glowing edge effect to a defense orb sprite
+ * Creates a bright pulsing purple outline directly on the shield edge
  */
-function addGlowingEdge(sprite: PIXI.Graphics, glowColor: number = WIZARD_GLOW_COLOR): PIXI.Graphics {
-  const glowGraphics = new PIXI.Graphics();
+function addGlowingEdge(sprite: PIXI.Graphics, orbId: string, glowColor: number = WIZARD_GLOW_COLOR): PIXI.Graphics {
+  const glowContainer = new PIXI.Graphics();
+  const size = 18; // Match shield size exactly
 
-  // Create pulsing glow ring around the shield
-  const size = 24; // Slightly larger than the shield
-  const height = size;
-  const width = size;
+  // Helper to draw shield shape
+  const drawShield = (g: PIXI.Graphics, s: number, strokeWidth: number, color: number, alpha: number) => {
+    const topY = -s / 2;
+    const topWidth = s * 0.8;
+    const midWidth = s;
+    const bottomY = s / 2;
 
-  // Draw multiple glow layers for depth
-  for (let i = 3; i >= 1; i--) {
-    const layerSize = size + (i * 3);
-    const alpha = 0.2 / i;
+    g.moveTo(-topWidth / 2, topY);
+    // Top edge
+    g.lineTo(topWidth / 2, topY);
+    // Right edge curves down
+    g.bezierCurveTo(midWidth / 2, topY + s * 0.1, midWidth / 2, s * 0.1, midWidth / 2, 0);
+    // Right bottom curve to point
+    g.bezierCurveTo(midWidth / 2, s * 0.25, s * 0.15, bottomY - s * 0.15, 0, bottomY);
+    // Left bottom curve from point
+    g.bezierCurveTo(-s * 0.15, bottomY - s * 0.15, -midWidth / 2, s * 0.25, -midWidth / 2, 0);
+    // Left edge curves up
+    g.bezierCurveTo(-midWidth / 2, s * 0.1, -midWidth / 2, topY + s * 0.1, -topWidth / 2, topY);
+    g.stroke({ width: strokeWidth, color, alpha });
+  };
 
-    const topY = -layerSize / 2;
-    const topWidth = layerSize * 0.75;
-    const midWidth = layerSize;
-    const bottomY = layerSize / 2;
+  // Outer glow (softer, larger)
+  drawShield(glowContainer, size + 8, 6, glowColor, 0.3);
+  drawShield(glowContainer, size + 5, 4, glowColor, 0.5);
+  // Inner bright edge (the actual highlight)
+  drawShield(glowContainer, size + 2, 2.5, glowColor, 0.9);
+  // Innermost white core for pop
+  drawShield(glowContainer, size, 1.5, 0xFFFFFF, 0.6);
 
-    glowGraphics.moveTo(-topWidth / 2, topY);
-    glowGraphics.bezierCurveTo(-topWidth / 2, topY - 0.5, topWidth / 2, topY - 0.5, topWidth / 2, topY);
-    glowGraphics.bezierCurveTo(topWidth / 2 + 1, topY + layerSize * 0.15, midWidth / 2, -layerSize * 0.05, midWidth / 2, 0);
-    glowGraphics.bezierCurveTo(midWidth / 2, layerSize * 0.15, layerSize * 0.2 + 1, bottomY - layerSize * 0.2, 0, bottomY);
-    glowGraphics.bezierCurveTo(-layerSize * 0.2 - 1, bottomY - layerSize * 0.2, -midWidth / 2, layerSize * 0.15, -midWidth / 2, 0);
-    glowGraphics.bezierCurveTo(-midWidth / 2, -layerSize * 0.05, -topWidth / 2 - 1, topY + layerSize * 0.15, -topWidth / 2, topY);
-    glowGraphics.stroke({ width: 2, color: glowColor, alpha });
-  }
+  // Position at sprite location
+  glowContainer.x = sprite.x;
+  glowContainer.y = sprite.y;
+  glowContainer.name = 'wizard-glow';
 
-  // Add to sprite's parent at same position
-  glowGraphics.x = sprite.x;
-  glowGraphics.y = sprite.y;
-  glowGraphics.name = 'wizard-glow';
+  // Track for cleanup
+  orbGlowMap.set(orbId, glowContainer);
 
-  return glowGraphics;
+  // Add pulsing animation
+  import('gsap').then(({ gsap }) => {
+    gsap.to(glowContainer, {
+      alpha: 0.5,
+      duration: 0.8,
+      repeat: -1,
+      yoyo: true,
+      ease: 'sine.inOut',
+    });
+  });
+
+  return glowContainer;
 }
 
 /**
@@ -178,7 +217,7 @@ export function registerWizardsWatchtowerEffect(context: ItemRuntimeContext): vo
 
       // Update the orb's visual to show purple glow
       if (lastOrb.sprite && lastOrb.sprite.parent) {
-        const glow = addGlowingEdge(lastOrb.sprite);
+        const glow = addGlowingEdge(lastOrb.sprite, lastOrb.id);
         lastOrb.sprite.parent.addChild(glow);
         (lastOrb as any)._wizardGlow = glow;
       }
@@ -193,10 +232,13 @@ export function registerWizardsWatchtowerEffect(context: ItemRuntimeContext): vo
     console.log(`✅ [WizardsWatchtower] Buffed ${orbsBuffed} orbs with +${orbBonusHP} HP each (total: +${orbsBuffed * orbBonusHP} HP)`);
   });
 
-  // DEFENSE_ORB_DESTROYED: Add HP to shield (same as Ironman Armor)
+  // DEFENSE_ORB_DESTROYED: Add HP to shield AND clean up glow
   battleEventBus.on('DEFENSE_ORB_DESTROYED', (payload) => {
     if (payload.gameId !== gameId) return;
     if (payload.side !== side) return;
+
+    // Clean up glow for the destroyed orb (if it was a buffed orb)
+    cleanupOrbGlow(payload.orbId);
 
     const castleId = `${gameId}-${side}`;
 

@@ -649,7 +649,7 @@ export class KnightDefender {
   }
 
   /**
-   * Destroy the knight with dramatic death animation
+   * Destroy the knight with dramatic death animation and blood splatter
    */
   private destroy(): void {
     this.alive = false;
@@ -667,26 +667,143 @@ export class KnightDefender {
     // Hide HP bar immediately
     this.hpBarContainer.visible = false;
 
-    // Create death particles
-    this.createDeathParticles();
+    // Create blood burst effect
+    this.createBloodBurst();
+
+    // Create blood pool on the ground
+    this.createBloodPool();
 
     // Show "SLAIN!" text
     this.showFloatingText('💀 SLAIN!', 0xFF0000);
 
-    // Dramatic death animation
+    // Dramatic death animation - knight falls
     gsap.timeline()
       // Flash red
-      .to(this.knightSprite, { alpha: 0, duration: 0.1 })
-      .to(this.knightSprite, { alpha: 1, duration: 0.1 })
-      .to(this.knightSprite, { alpha: 0, duration: 0.1 })
-      .to(this.knightSprite, { alpha: 1, duration: 0.1 })
-      // Spin and shrink
-      .to(this.sprite, { rotation: Math.PI * 2, duration: 0.5, ease: 'power2.in' }, '-=0.2')
-      .to(this.sprite.scale, { x: 0, y: 0, duration: 0.5, ease: 'power2.in' }, '-=0.5')
+      .to(this.knightSprite, { alpha: 0, duration: 0.05 })
+      .to(this.knightSprite, { alpha: 1, duration: 0.05 })
+      .to(this.knightSprite, { alpha: 0, duration: 0.05 })
+      .to(this.knightSprite, { alpha: 1, duration: 0.05 })
+      // Tilt and fall
+      .to(this.sprite, { rotation: Math.PI * 0.5, y: this.position.y + 10, duration: 0.4, ease: 'power2.in' }, '-=0.1')
+      .to(this.sprite.scale, { x: 0.3, y: 0.3, duration: 0.4, ease: 'power2.in' }, '-=0.4')
       // Final fade
-      .to(this.sprite, { alpha: 0, duration: 0.2 })
+      .to(this.sprite, { alpha: 0, duration: 0.3 })
       .call(() => {
         this.sprite.visible = false;
+      });
+  }
+
+  /**
+   * Create blood burst particles when knight dies
+   */
+  private createBloodBurst(): void {
+    const particleCount = 20;
+    const bloodColors = [0x8B0000, 0xB22222, 0xDC143C, 0xA52A2A, 0x800000];
+
+    for (let i = 0; i < particleCount; i++) {
+      const blood = new PIXI.Graphics();
+      const color = bloodColors[Math.floor(Math.random() * bloodColors.length)];
+
+      // Random blood drop size
+      const size = 3 + Math.random() * 5;
+
+      // Irregular blood shapes
+      if (Math.random() > 0.5) {
+        blood.ellipse(0, 0, size, size * (0.5 + Math.random() * 0.5));
+      } else {
+        blood.circle(0, 0, size);
+      }
+      blood.fill({ color, alpha: 0.9 });
+
+      blood.x = 0;
+      blood.y = 0;
+      this.sprite.addChild(blood);
+
+      // Random burst direction - more upward and outward
+      const angle = Math.random() * Math.PI * 2;
+      const distance = 25 + Math.random() * 50;
+      const targetX = Math.cos(angle) * distance;
+      const targetY = Math.sin(angle) * distance - 20; // Bias upward initially
+
+      gsap.timeline()
+        .to(blood, {
+          x: targetX,
+          y: targetY + 40, // Fall down after burst
+          duration: 0.4 + Math.random() * 0.3,
+          ease: 'power2.out',
+        })
+        .to(blood, {
+          alpha: 0,
+          duration: 0.3,
+          ease: 'power2.in',
+        })
+        .call(() => {
+          this.sprite.removeChild(blood);
+          blood.destroy();
+        });
+    }
+  }
+
+  /**
+   * Create a blood pool that stays on the ground
+   */
+  private createBloodPool(): void {
+    // Create blood pool in parent container so it persists after knight fades
+    const parentContainer = this.sprite.parent;
+    if (!parentContainer) return;
+
+    const bloodPool = new PIXI.Graphics();
+
+    // Dark red blood pool with irregular shape
+    const poolColor = 0x5C0000;
+
+    // Main pool - ellipse shape
+    bloodPool.ellipse(0, 0, 8, 4);
+    bloodPool.fill({ color: poolColor, alpha: 0.8 });
+
+    // Add some smaller splatters around the main pool
+    for (let i = 0; i < 5; i++) {
+      const offsetX = (Math.random() - 0.5) * 25;
+      const offsetY = (Math.random() - 0.5) * 10;
+      const splatterSize = 2 + Math.random() * 4;
+
+      bloodPool.ellipse(offsetX, offsetY, splatterSize, splatterSize * 0.6);
+      bloodPool.fill({ color: 0x6B0000, alpha: 0.6 + Math.random() * 0.2 });
+    }
+
+    bloodPool.x = this.position.x;
+    bloodPool.y = this.position.y + 15; // Slightly below knight position
+    bloodPool.alpha = 0;
+    bloodPool.name = 'blood-pool';
+
+    // Add to parent container at bottom layer
+    parentContainer.addChildAt(bloodPool, 0);
+
+    // Fade in the blood pool
+    gsap.timeline()
+      .to(bloodPool, {
+        alpha: 0.7,
+        duration: 0.5,
+        delay: 0.2, // Start after knight begins falling
+        ease: 'power2.out',
+      })
+      // Slowly spread the pool
+      .to(bloodPool.scale, {
+        x: 1.5,
+        y: 1.5,
+        duration: 1,
+        ease: 'power2.out',
+      }, '-=0.3')
+      // Slowly fade out over time
+      .to(bloodPool, {
+        alpha: 0,
+        duration: 3,
+        delay: 2, // Stay visible for a while
+        ease: 'power2.in',
+        onComplete: () => {
+          parentContainer.removeChild(bloodPool);
+          bloodPool.destroy();
+        },
       });
   }
 
