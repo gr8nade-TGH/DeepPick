@@ -175,6 +175,25 @@ export async function simulateQuarter(
 
     // Emit BATTLE_START events for both sides (only on Q1)
     console.log(`🎬 [EventEmitter] Emitting BATTLE_START events for battle ${battleId}`);
+
+    // Old event bus (for item system - battleEventBus)
+    battleEventBus.emit('BATTLE_START', {
+      side: 'left',
+      opponentSide: 'right',
+      quarter: 1,
+      battleId,
+      gameId: battleId,
+    });
+
+    battleEventBus.emit('BATTLE_START', {
+      side: 'right',
+      opponentSide: 'left',
+      quarter: 1,
+      battleId,
+      gameId: battleId,
+    });
+
+    // New event emitter (battleEventEmitter)
     await battleEventEmitter.emit({
       type: 'BATTLE_START',
       payload: {

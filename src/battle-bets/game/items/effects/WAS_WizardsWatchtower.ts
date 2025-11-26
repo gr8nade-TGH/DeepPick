@@ -43,11 +43,10 @@ export const WAS_WIZARDS_WATCHTOWER_DEFINITION: ItemDefinition = {
   teamName: 'Washington Wizards',
   slot: 'defense',
   name: "Wizard's Watchtower",
-  description: "Castle shield (5-15 HP, heals +1-3 per orb destroyed) plus enchants the last defense orb in each row with +1-3 bonus HP and a purple glow.",
+  description: "Castle shield (5-15 HP, heals +1 per orb destroyed) plus enchants the last defense orb in each row with +1-3 bonus HP and a purple glow.",
   icon: '🔮',
   rollRanges: {
     startShieldHp: { min: 5, max: 15, step: 1 },
-    hpPerDestroyedOrb: { min: 1, max: 3, step: 1 },
     orbBonusHP: { min: 1, max: 3, step: 1 },
   },
 };
@@ -98,7 +97,8 @@ function addGlowingEdge(sprite: PIXI.Graphics, glowColor: number = WIZARD_GLOW_C
  */
 export function registerWizardsWatchtowerEffect(context: ItemRuntimeContext): void {
   const { itemInstanceId, gameId, side, rolls } = context;
-  const { startShieldHp, hpPerDestroyedOrb, orbBonusHP } = rolls;
+  const { startShieldHp, orbBonusHP } = rolls;
+  const hpPerDestroyedOrb = 1; // Fixed at 1, no roll
 
   console.log(`🔮 [WizardsWatchtower] REGISTERING EFFECT for ${side} side in game ${gameId}`);
   console.log(`🔮 [WizardsWatchtower] Shield: ${startShieldHp} HP, +${hpPerDestroyedOrb} per orb | Orb Buff: +${orbBonusHP} HP to last orbs`);
