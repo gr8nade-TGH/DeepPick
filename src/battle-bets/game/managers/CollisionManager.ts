@@ -17,7 +17,7 @@ import type { BaseProjectile } from '../entities/projectiles/BaseProjectile';
 import type { DefenseDot } from '../entities/DefenseDot';
 import type { Position, StatType } from '../../types/game';
 import { battleEventBus } from '../events/EventBus';
-import type { DefenseOrbDestroyedPayload, OpponentOrbDestroyedPayload, ProjectileCollisionPayload } from '../events/types';
+import type { DefenseOrbDestroyedPayload, DefenseOrbHitPayload, OpponentOrbDestroyedPayload, ProjectileCollisionPayload } from '../events/types';
 import { gridManager } from './GridManager';
 import { collisionDebugger } from '../debug/CollisionDebugger';
 import { getKnight } from '../items/effects/MED_KnightDefender';
@@ -258,16 +258,31 @@ class CollisionManager {
 
       // Get ACTUAL HP after damage (from the dot itself, not calculated)
       const hpAfter = targetDot.hp;
+      const dotSide = targetDot.side;
+      const opponentSide = dotSide === 'left' ? 'right' : 'left';
 
       // Log collision with HP change
       const status = hpAfter === 0 ? '💀 DESTROYED' : `${hpAfter}/${targetDot.maxHp} HP remaining`;
       console.log(`🛡️ [DEFENSE HIT] ${projectile.id} → ${targetDot.id} | ${hpBefore} → ${hpAfter} HP | ${status}`);
 
+      // Always emit DEFENSE_ORB_HIT when an orb is hit (even if destroyed)
+      const hitPayload: DefenseOrbHitPayload = {
+        side: dotSide,
+        opponentSide,
+        quarter: 1, // TODO: Track actual quarter
+        battleId: projectile.gameId,
+        gameId: projectile.gameId,
+        lane: projectile.stat,
+        orbId: targetDot.id,
+        damage: projectile.typeConfig.damage,
+        hpBefore,
+        hpAfter,
+        hitByProjectileId: projectile.id
+      };
+      battleEventBus.emit('DEFENSE_ORB_HIT', hitPayload);
+
       // Emit DEFENSE_ORB_DESTROYED event if orb was destroyed
       if (hpAfter === 0) {
-        const dotSide = targetDot.side;
-        const opponentSide = dotSide === 'left' ? 'right' : 'left';
-
         const payload = {
           side: dotSide,
           opponentSide,

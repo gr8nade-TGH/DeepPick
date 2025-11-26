@@ -34,22 +34,53 @@ import * as PIXI from 'pixi.js';
 // Purple glow color for wizard enchantment
 const WIZARD_GLOW_COLOR = 0x9b59b6;
 
-// Track glows so we can clean them up
+// Track glows by orb ID for cleanup
 const orbGlowMap = new Map<string, PIXI.Graphics>();
+// Also track glow animations so we can kill them
+const glowAnimations = new Map<string, gsap.core.Tween>();
 
 /**
  * Clean up glow for a destroyed orb
  */
 export function cleanupOrbGlow(orbId: string): void {
+  console.log(`🔮 [WizardsWatchtower] Attempting to clean up glow for: ${orbId}`);
+  console.log(`🔮 [WizardsWatchtower] Current glow map keys:`, Array.from(orbGlowMap.keys()));
+
   const glow = orbGlowMap.get(orbId);
   if (glow) {
-    console.log(`🔮 [WizardsWatchtower] Cleaning up glow for destroyed orb: ${orbId}`);
+    console.log(`🔮 [WizardsWatchtower] Found glow, removing...`);
+
+    // Kill animation
+    const anim = glowAnimations.get(orbId);
+    if (anim) {
+      anim.kill();
+      glowAnimations.delete(orbId);
+    }
+
     if (glow.parent) {
       glow.parent.removeChild(glow);
     }
     glow.destroy();
     orbGlowMap.delete(orbId);
+    console.log(`✅ [WizardsWatchtower] Glow cleaned up for: ${orbId}`);
+  } else {
+    console.log(`⚠️ [WizardsWatchtower] No glow found for orbId: ${orbId}`);
   }
+}
+
+/**
+ * Clean up ALL glows (for battle end/reset)
+ */
+export function cleanupAllGlows(): void {
+  console.log(`🔮 [WizardsWatchtower] Cleaning up ALL ${orbGlowMap.size} glows`);
+  orbGlowMap.forEach((glow, orbId) => {
+    const anim = glowAnimations.get(orbId);
+    if (anim) anim.kill();
+    if (glow.parent) glow.parent.removeChild(glow);
+    glow.destroy();
+  });
+  orbGlowMap.clear();
+  glowAnimations.clear();
 }
 
 /**
@@ -232,12 +263,24 @@ export function registerWizardsWatchtowerEffect(context: ItemRuntimeContext): vo
     console.log(`✅ [WizardsWatchtower] Buffed ${orbsBuffed} orbs with +${orbBonusHP} HP each (total: +${orbsBuffed * orbBonusHP} HP)`);
   });
 
-  // DEFENSE_ORB_DESTROYED: Add HP to shield AND clean up glow
+  // DEFENSE_ORB_HIT: Remove glow on first hit (bonus HP consumed)
+  battleEventBus.on('DEFENSE_ORB_HIT', (payload) => {
+    if (payload.gameId !== gameId) return;
+    if (payload.side !== side) return;
+
+    // Check if this orb had a glow (was buffed)
+    if (orbGlowMap.has(payload.orbId)) {
+      console.log(`🔮 [WizardsWatchtower] Buffed orb ${payload.orbId} was hit! Removing enchantment glow.`);
+      cleanupOrbGlow(payload.orbId);
+    }
+  });
+
+  // DEFENSE_ORB_DESTROYED: Add HP to shield (glow already removed on hit)
   battleEventBus.on('DEFENSE_ORB_DESTROYED', (payload) => {
     if (payload.gameId !== gameId) return;
     if (payload.side !== side) return;
 
-    // Clean up glow for the destroyed orb (if it was a buffed orb)
+    // Clean up glow just in case (if orb was one-shot before hit event)
     cleanupOrbGlow(payload.orbId);
 
     const castleId = `${gameId}-${side}`;

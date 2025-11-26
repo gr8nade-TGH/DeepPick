@@ -717,44 +717,44 @@ export class KnightDefender {
   }
 
   /**
-   * Create subtle blood mist when knight dies - not gory, but impactful
+   * Create dramatic blood burst when knight dies
    */
   private createBloodBurst(): void {
-    const particleCount = 12; // Fewer, more meaningful particles
-    const bloodColors = [0x8B0000, 0x6B0000, 0x4B0000]; // Darker, more subtle reds
+    const particleCount = 25; // More particles for dramatic effect
+    const bloodColors = [0x8B0000, 0xB22222, 0x6B0000, 0xDC143C]; // Mix of blood reds
 
     for (let i = 0; i < particleCount; i++) {
       const blood = new PIXI.Graphics();
       const color = bloodColors[Math.floor(Math.random() * bloodColors.length)];
 
-      // Small blood droplets
-      const size = 2 + Math.random() * 3;
+      // Varied blood droplet sizes
+      const size = 2 + Math.random() * 5;
       blood.circle(0, 0, size);
-      blood.fill({ color, alpha: 0.7 });
+      blood.fill({ color, alpha: 0.85 });
 
       blood.x = 0;
-      blood.y = -5; // Start near body
+      blood.y = -5;
       this.sprite.addChild(blood);
 
-      // Subtle outward spray, biased downward (gravity)
-      const angle = Math.PI * 0.3 + Math.random() * Math.PI * 0.4; // 54-126 degrees (mostly down-sides)
-      const distance = 15 + Math.random() * 25;
-      const targetX = Math.cos(angle) * distance * (Math.random() > 0.5 ? 1 : -1);
-      const targetY = Math.sin(angle) * distance;
+      // Dramatic burst in all directions
+      const angle = Math.random() * Math.PI * 2;
+      const distance = 20 + Math.random() * 40;
+      const targetX = Math.cos(angle) * distance;
+      const targetY = Math.sin(angle) * distance * 0.6 + 15; // Bias downward
 
       gsap.timeline()
         .to(blood, {
           x: targetX,
           y: targetY,
-          duration: 0.5 + Math.random() * 0.2,
-          ease: 'power1.out',
+          duration: 0.3 + Math.random() * 0.2,
+          ease: 'power2.out',
         })
         .to(blood, {
           alpha: 0,
-          y: targetY + 10, // Drip down
-          duration: 0.4,
-          ease: 'power2.in',
-        }, '-=0.2')
+          y: targetY + 8,
+          duration: 0.5,
+          ease: 'power1.in',
+        }, '-=0.1')
         .call(() => {
           this.sprite.removeChild(blood);
           blood.destroy();
@@ -763,7 +763,7 @@ export class KnightDefender {
   }
 
   /**
-   * Create a subtle blood pool that seeps out where knight fell
+   * Create permanent blood stain on the grid where knight fell
    */
   private createBloodPool(): void {
     const parentContainer = this.sprite.parent;
@@ -771,56 +771,68 @@ export class KnightDefender {
 
     const bloodPool = new PIXI.Graphics();
 
-    // Very dark, subtle pool
-    const poolColor = 0x3D0000;
+    // Dark blood pool colors
+    const poolColor = 0x4A0000;
 
-    // Main pool - small ellipse that grows
-    bloodPool.ellipse(0, 0, 6, 3);
-    bloodPool.fill({ color: poolColor, alpha: 0.6 });
+    // Main central pool
+    bloodPool.ellipse(0, 0, 12, 6);
+    bloodPool.fill({ color: poolColor, alpha: 0.75 });
 
-    // Just 2-3 small droplets nearby for realism
+    // Inner darker core
+    bloodPool.ellipse(0, 1, 7, 3);
+    bloodPool.fill({ color: 0x2D0000, alpha: 0.8 });
+
+    // Splatter droplets around the pool
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2 + Math.random() * 0.5;
+      const dist = 12 + Math.random() * 15;
+      const offsetX = Math.cos(angle) * dist;
+      const offsetY = Math.sin(angle) * dist * 0.5;
+      const splatterSize = 2 + Math.random() * 3;
+
+      bloodPool.ellipse(offsetX, offsetY, splatterSize, splatterSize * 0.6);
+      bloodPool.fill({ color: 0x5A0000, alpha: 0.5 + Math.random() * 0.3 });
+    }
+
+    // Some drip trails
     for (let i = 0; i < 3; i++) {
-      const offsetX = (Math.random() - 0.5) * 18;
-      const offsetY = (Math.random() - 0.5) * 6;
-      const splatterSize = 1.5 + Math.random() * 2;
-
-      bloodPool.ellipse(offsetX, offsetY, splatterSize, splatterSize * 0.5);
-      bloodPool.fill({ color: 0x4B0000, alpha: 0.4 + Math.random() * 0.2 });
+      const startX = (Math.random() - 0.5) * 10;
+      const dripLength = 8 + Math.random() * 12;
+      bloodPool.moveTo(startX, 4);
+      bloodPool.lineTo(startX + (Math.random() - 0.5) * 4, 4 + dripLength);
+      bloodPool.stroke({ width: 1.5 + Math.random(), color: 0x3D0000, alpha: 0.6 });
     }
 
     bloodPool.x = this.position.x;
-    bloodPool.y = this.position.y + 12;
+    bloodPool.y = this.position.y + 10;
     bloodPool.alpha = 0;
-    bloodPool.scale.set(0.5); // Start small
-    bloodPool.name = 'blood-pool';
+    bloodPool.scale.set(0.3);
+    bloodPool.name = 'blood-stain';
 
     parentContainer.addChildAt(bloodPool, 0);
 
-    // Subtle fade in and slow spread
+    // Dramatic appearance - blood spreads out and STAYS
     gsap.timeline()
       .to(bloodPool, {
-        alpha: 0.5,
-        duration: 0.8,
-        delay: 0.3,
+        alpha: 0.7,
+        duration: 0.4,
+        delay: 0.2,
         ease: 'power2.out',
       })
       .to(bloodPool.scale, {
-        x: 1.2,
-        y: 1.2,
-        duration: 1.5,
-        ease: 'power1.out',
-      }, '-=0.6')
-      // Fade out gracefully
+        x: 1.3,
+        y: 1.3,
+        duration: 0.8,
+        ease: 'power2.out',
+      }, '-=0.3')
+      // Blood stain stays permanently (or until battle ends)
       .to(bloodPool, {
-        alpha: 0,
-        duration: 4,
-        delay: 3,
-        ease: 'power1.in',
-        onComplete: () => {
-          parentContainer.removeChild(bloodPool);
-          bloodPool.destroy();
-        },
+        alpha: 0.5, // Slightly fade but remain visible
+        duration: 2,
+        delay: 5,
+        ease: 'power1.inOut',
       });
+    // Note: No cleanup - stain remains on the battlefield as a reminder
   }
 
   /**

@@ -16,6 +16,7 @@ export type BattleEventType =
   | 'PROJECTILE_FIRED'
   | 'PROJECTILE_COLLISION'
   | 'PROJECTILE_HIT_CASTLE'
+  | 'DEFENSE_ORB_HIT'
   | 'DEFENSE_ORB_DESTROYED'
   | 'OPPONENT_ORB_DESTROYED'
   | 'CASTLE_SHIELD_HIT'
@@ -62,6 +63,18 @@ export interface ProjectileHitCastlePayload extends BaseEventPayload {
   projectileId: string;
   damage: number;
   lane: Lane;
+}
+
+/**
+ * Defense orb hit event (your orb took damage but wasn't destroyed)
+ */
+export interface DefenseOrbHitPayload extends BaseEventPayload {
+  lane: Lane;
+  orbId: string;
+  damage: number;
+  hpBefore: number;
+  hpAfter: number;
+  hitByProjectileId?: string;
 }
 
 /**
