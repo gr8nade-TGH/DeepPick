@@ -12,6 +12,7 @@ import type { ItemDefinition, QualityTier, RolledItemStats } from './ItemRollSys
 // Import item definitions
 import { LAL_IRONMAN_ARMOR_DEFINITION } from './effects/LAL_IronmanArmor';
 import { STARTER_SHORTSWORD_DEFINITION } from './effects/STARTER_Shortsword';
+import { CHA_HORNETS_NEST_DEFINITION } from './effects/CHA_HornetsNest';
 
 /**
  * All available item definitions
@@ -19,6 +20,7 @@ import { STARTER_SHORTSWORD_DEFINITION } from './effects/STARTER_Shortsword';
 export const ALL_ITEM_DEFINITIONS: ItemDefinition[] = [
   LAL_IRONMAN_ARMOR_DEFINITION,
   STARTER_SHORTSWORD_DEFINITION,
+  CHA_HORNETS_NEST_DEFINITION,
   // Add more as they're implemented
 ];
 
