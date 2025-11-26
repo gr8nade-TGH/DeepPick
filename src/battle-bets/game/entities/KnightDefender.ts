@@ -85,9 +85,12 @@ export class KnightDefender {
     this.glowEffect = this.createGlowEffect();
     this.sprite.addChild(this.glowEffect);
 
-    // Create knight visual
+    // Create knight visual - use fallback graphics first, then try to load SVG
     this.knightSprite = this.createKnightGraphics();
     this.sprite.addChild(this.knightSprite);
+
+    // Try to load SVG sprite (async, will replace graphics when ready)
+    this.loadSvgSprite();
 
     // Create shield effect (for deflections)
     this.shieldEffect = this.createShieldEffect();
@@ -108,6 +111,51 @@ export class KnightDefender {
     this.startIdleAnimation();
 
     console.log(`🐴 [KnightDefender] Created for ${this.side} at (${this.position.x}, ${this.position.y})`);
+  }
+
+  /**
+   * Load SVG sprite and replace graphics
+   */
+  private async loadSvgSprite(): Promise<void> {
+    try {
+      const svgPath = this.side === 'left'
+        ? '/battle-arena-v2/knight-left.svg'
+        : '/battle-arena-v2/knight-right.svg';
+
+      // Load SVG as texture
+      const texture = await PIXI.Assets.load(svgPath);
+
+      if (!this.alive) return; // Knight was destroyed while loading
+
+      // Create sprite from texture
+      const svgSprite = new PIXI.Sprite(texture);
+      svgSprite.anchor.set(0.5);
+
+      // Scale to appropriate size (64x64 SVG → ~50px height)
+      const targetSize = 50;
+      svgSprite.scale.set(targetSize / 64);
+
+      // Apply team color tint
+      svgSprite.tint = this.teamColor;
+
+      // Get the index of current knight graphics
+      const oldIndex = this.sprite.getChildIndex(this.knightSprite);
+
+      // Remove old graphics
+      this.sprite.removeChild(this.knightSprite);
+      if (this.knightSprite instanceof PIXI.Graphics) {
+        this.knightSprite.destroy();
+      }
+
+      // Add new sprite at same position
+      this.knightSprite = svgSprite;
+      this.sprite.addChildAt(this.knightSprite, oldIndex);
+
+      console.log(`🐴 [KnightDefender] SVG sprite loaded for ${this.side}`);
+    } catch (error) {
+      console.warn(`🐴 [KnightDefender] Failed to load SVG, using fallback graphics:`, error);
+      // Keep using the fallback graphics
+    }
   }
 
   /**
@@ -445,32 +493,90 @@ export class KnightDefender {
     this.damageBlocked++;
     console.log(`🛡️ [KnightDefender] ${this.id} DEFLECTED! (Total: ${this.deflectCount})`);
 
-    // Show shield effect
+    // LANCE SWING ANIMATION - rotate knight to show attack
+    const facing = this.side === 'left' ? 1 : -1;
+    gsap.timeline()
+      .to(this.knightSprite, { rotation: facing * -0.3, duration: 0.08, ease: 'power2.out' })
+      .to(this.knightSprite, { rotation: facing * 0.2, duration: 0.12, ease: 'power2.in' })
+      .to(this.knightSprite, { rotation: 0, duration: 0.15, ease: 'elastic.out(1, 0.5)' });
+
+    // Show shield effect with team color
     this.shieldEffect.visible = true;
     this.shieldEffect.alpha = 1;
-    this.shieldEffect.scale.set(0.5);
+    this.shieldEffect.scale.set(0.3);
 
-    // Shield burst animation
+    // Shield burst animation - BIGGER and more visible
     gsap.timeline()
-      .to(this.shieldEffect.scale, { x: 1.5, y: 1.5, duration: 0.3, ease: 'power2.out' })
-      .to(this.shieldEffect, { alpha: 0, duration: 0.2 }, '-=0.1')
+      .to(this.shieldEffect.scale, { x: 2.0, y: 2.0, duration: 0.25, ease: 'power2.out' })
+      .to(this.shieldEffect, { alpha: 0, duration: 0.3 }, '-=0.15')
       .call(() => {
         this.shieldEffect.visible = false;
         this.shieldEffect.scale.set(1);
       });
 
-    // Knight flash
-    gsap.timeline()
-      .to(this.knightSprite, { alpha: 1.5, duration: 0.1 })
-      .to(this.knightSprite, { alpha: 1, duration: 0.15 });
+    // Create spark particles on deflection
+    this.createDeflectionSparks();
 
-    // Scale pulse
+    // Knight flash - brighter
     gsap.timeline()
-      .to(this.sprite.scale, { x: 1.2, y: 1.2, duration: 0.1, ease: 'power2.out' })
-      .to(this.sprite.scale, { x: 1, y: 1, duration: 0.2, ease: 'elastic.out(1, 0.5)' });
+      .to(this.knightSprite, { alpha: 2, duration: 0.05 })
+      .to(this.knightSprite, { alpha: 1, duration: 0.2 });
 
-    // Create floating "BLOCKED!" text
-    this.showFloatingText('🛡️', 0x00FFFF);
+    // Scale pulse - more dramatic
+    gsap.timeline()
+      .to(this.sprite.scale, { x: 1.3, y: 1.3, duration: 0.08, ease: 'power2.out' })
+      .to(this.sprite.scale, { x: 1, y: 1, duration: 0.25, ease: 'elastic.out(1, 0.4)' });
+
+    // Glow pulse
+    gsap.timeline()
+      .to(this.glowEffect, { alpha: 1, duration: 0.1 })
+      .to(this.glowEffect, { alpha: 0.3, duration: 0.3 });
+
+    // Create floating "BLOCKED!" text - more visible
+    this.showFloatingText('⚔️ BLOCKED!', 0x00FFFF);
+  }
+
+  /**
+   * Create spark particles when deflecting
+   */
+  private createDeflectionSparks(): void {
+    const sparkCount = 8;
+    const facing = this.side === 'left' ? 1 : -1;
+
+    for (let i = 0; i < sparkCount; i++) {
+      const spark = new PIXI.Graphics();
+
+      // Random spark color (cyan/white/yellow)
+      const colors = [0x00FFFF, 0xFFFFFF, 0xFFFF00, this.teamColor];
+      const color = colors[Math.floor(Math.random() * colors.length)];
+
+      spark.circle(0, 0, 3 + Math.random() * 3);
+      spark.fill({ color, alpha: 1 });
+
+      // Start position (at lance tip area)
+      spark.x = facing * 20;
+      spark.y = -10;
+      this.sprite.addChild(spark);
+
+      // Random direction
+      const angle = (Math.PI / 4) + (Math.random() * Math.PI / 2); // 45-135 degrees
+      const distance = 30 + Math.random() * 40;
+      const targetX = spark.x + Math.cos(angle) * distance * facing;
+      const targetY = spark.y - Math.sin(angle) * distance;
+
+      gsap.timeline()
+        .to(spark, {
+          x: targetX,
+          y: targetY,
+          alpha: 0,
+          duration: 0.3 + Math.random() * 0.2,
+          ease: 'power2.out',
+        })
+        .call(() => {
+          this.sprite.removeChild(spark);
+          spark.destroy();
+        });
+    }
   }
 
   /**
