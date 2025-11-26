@@ -143,15 +143,14 @@ export const GameInfoBar: React.FC<GameInfoBarProps> = ({
             const countdown = getCountdownText(gameStartTime);
             if (countdown) {
               setDynamicStatus({
-                main: 'VS',
-                subtitle: countdown, // Just the countdown, no "Game starts in"
+                main: countdown, // Just the countdown, no "VS"
                 subtitleColor: '#4ecdc4', // Cyan
               });
             } else {
-              setDynamicStatus({ main: 'VS' });
+              setDynamicStatus({ main: 'Starting Soon' });
             }
           } else {
-            setDynamicStatus({ main: 'VS' });
+            setDynamicStatus({ main: 'Starting Soon' });
           }
           break;
 

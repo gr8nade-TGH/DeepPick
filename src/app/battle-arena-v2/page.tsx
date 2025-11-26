@@ -13,8 +13,8 @@ export default function BattleArenaV2Page() {
         <meta httpEquiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
         <meta httpEquiv="Pragma" content="no-cache" />
         <meta httpEquiv="Expires" content="0" />
-        <script type="module" src="/battle-arena-v2/assets/main-D1lKopYi.js"></script>
-        <link rel="stylesheet" href="/battle-arena-v2/assets/main-DKYbpuGL.css" />
+        <script type="module" src="/battle-arena-v2/assets/main-CfpJygyB.js"></script>
+        <link rel="stylesheet" href="/battle-arena-v2/assets/main-my_-ZQsJ.css" />
       </head>
       <body>
         <div id="root"></div>
