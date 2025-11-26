@@ -104,8 +104,8 @@ export const PROJECTILE_TYPES: Record<StatType, ProjectileTypeConfig> = {
     damage: 1,
     behavior: 'straight',
 
-    // Collision
-    collisionRadius: 8, // 8px collision radius
+    // Collision - INCREASED for better collision detection with fast projectiles
+    collisionRadius: 15, // Increased from 8px to catch fast-moving projectiles
 
     // Special
     rapidFire: false,
@@ -131,8 +131,8 @@ export const PROJECTILE_TYPES: Record<StatType, ProjectileTypeConfig> = {
     damage: 1,
     behavior: 'straight',
 
-    // Collision
-    collisionRadius: 10, // Larger collision radius
+    // Collision - INCREASED for better collision detection
+    collisionRadius: 18, // Increased from 10px (larger projectile)
 
     // Special
     rapidFire: false,
@@ -158,8 +158,8 @@ export const PROJECTILE_TYPES: Record<StatType, ProjectileTypeConfig> = {
     damage: 1,
     behavior: 'straight',
 
-    // Collision
-    collisionRadius: 6, // Smaller collision radius
+    // Collision - INCREASED for better collision detection
+    collisionRadius: 12, // Increased from 6px
 
     // Special
     rapidFire: false,
@@ -185,8 +185,8 @@ export const PROJECTILE_TYPES: Record<StatType, ProjectileTypeConfig> = {
     damage: 1,
     behavior: 'straight',
 
-    // Collision
-    collisionRadius: 8,
+    // Collision - INCREASED for better collision detection
+    collisionRadius: 15, // Increased from 8px
 
     // Special
     rapidFire: false,
@@ -212,8 +212,8 @@ export const PROJECTILE_TYPES: Record<StatType, ProjectileTypeConfig> = {
     damage: 1,
     behavior: 'straight',
 
-    // Collision
-    collisionRadius: 8,
+    // Collision - INCREASED for better collision detection
+    collisionRadius: 15, // Increased from 8px to catch fast-moving projectiles
 
     // Special - ALL projectiles must collide with each other
     rapidFire: false,

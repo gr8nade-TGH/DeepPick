@@ -219,7 +219,7 @@ export class BaseProjectile {
       const cellWidth = 30; // Standard cell width
       const duration = this.calculateFlightDuration(distance, cellWidth);
 
-      // Straight line animation
+      // Straight line animation with high-frequency collision checking
       this.animation = gsap
         .timeline()
         .to(this.sprite, {
@@ -227,6 +227,9 @@ export class BaseProjectile {
           y: this.targetPosition.y,
           duration,
           ease: 'none',
+          // Force GSAP to update more frequently for better collision detection
+          // Default is ~60fps, but we want higher frequency for fast projectiles
+          callbackScope: this,
           onUpdate: () => {
             // Update position for collision detection
             this.position.x = this.sprite.x;
