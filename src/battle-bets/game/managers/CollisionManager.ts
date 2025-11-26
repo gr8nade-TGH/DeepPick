@@ -167,21 +167,25 @@ class CollisionManager {
 
     // Get defense zone boundaries from GridManager
     const layout = gridManager.getLayout();
-    const leftDefenseEnd = layout.leftDefenseStart + (layout.defenseCells * layout.cellWidth);
+    const leftDefenseStart = layout.leftDefenseStart;
+    const leftDefenseEnd = leftDefenseStart + (layout.defenseCells * layout.cellWidth);
     const rightDefenseStart = layout.rightDefenseStart;
+    const rightDefenseEnd = rightDefenseStart + (layout.defenseCells * layout.cellWidth);
 
-    // Check if projectile is in the opponent's defense zone
+    // Check if projectile is WITHIN the opponent's defense zone (not past it)
     let inDefenseZone = false;
     if (projectile.side === 'left') {
       // Left projectile traveling right → check if in RIGHT defense zone
-      inDefenseZone = projectile.position.x >= rightDefenseStart;
+      // Must be WITHIN the zone: rightDefenseStart <= x <= rightDefenseEnd
+      inDefenseZone = projectile.position.x >= rightDefenseStart && projectile.position.x <= rightDefenseEnd;
     } else {
       // Right projectile traveling left → check if in LEFT defense zone
-      inDefenseZone = projectile.position.x <= leftDefenseEnd;
+      // Must be WITHIN the zone: leftDefenseStart <= x <= leftDefenseEnd
+      inDefenseZone = projectile.position.x >= leftDefenseStart && projectile.position.x <= leftDefenseEnd;
     }
 
     if (!inDefenseZone) {
-      // Projectile not in defense zone yet - no collision check needed
+      // Projectile not in defense zone (either hasn't reached it, or has passed through it)
       return null;
     }
 
