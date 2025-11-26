@@ -258,7 +258,7 @@ export const GameInfoBar: React.FC<GameInfoBarProps> = ({
             <div className="units-tooltip">
               <div><strong>{game.leftCapper.name}'s {game.leftTeam.abbreviation} Spread Record</strong></div>
               <div>{leftRecord?.wins || 0}W - {leftRecord?.losses || 0}L - {leftRecord?.pushes || 0}P</div>
-              <div>{leftUnits} units ÷ 3 = <strong>{leftOrbs} defense orbs</strong></div>
+              <div>{leftUnits > 0 ? '+' : ''}{leftUnits.toFixed(1)} units ÷ 3 = <strong>{leftOrbs} defense orbs</strong></div>
             </div>
           )}
         </div>
@@ -314,7 +314,7 @@ export const GameInfoBar: React.FC<GameInfoBarProps> = ({
             <div className="units-tooltip">
               <div><strong>{game.rightCapper.name}'s {game.rightTeam.abbreviation} Spread Record</strong></div>
               <div>{rightRecord?.wins || 0}W - {rightRecord?.losses || 0}L - {rightRecord?.pushes || 0}P</div>
-              <div>{rightUnits} units ÷ 3 = <strong>{rightOrbs} defense orbs</strong></div>
+              <div>{rightUnits > 0 ? '+' : ''}{rightUnits.toFixed(1)} units ÷ 3 = <strong>{rightOrbs} defense orbs</strong></div>
             </div>
           )}
         </div>

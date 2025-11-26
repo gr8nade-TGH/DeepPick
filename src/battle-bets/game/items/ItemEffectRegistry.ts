@@ -56,8 +56,10 @@ class ItemEffectRegistryClass {
     side: 'left' | 'right',
     rolledItem: RolledItemStats
   ): Promise<string> {
+    console.log(`🎯 [ItemEffectRegistry] activateItem called:`, { gameId, side, itemId: rolledItem.itemId, rolls: rolledItem.rolls });
+
     const instanceId = `${gameId}_${side}_${rolledItem.itemId}_${Date.now()}`;
-    
+
     const item: RegisteredItem = {
       instanceId,
       gameId,
@@ -68,17 +70,19 @@ class ItemEffectRegistryClass {
       counters: new Map(),
       subscriptionIds: [],
     };
-    
+
     this.items.set(instanceId, item);
-    
+    console.log(`📦 [ItemEffectRegistry] Item stored in registry:`, instanceId);
+
     // Get effect registration function
     const effectFn = this.effectRegistrations.get(rolledItem.itemId);
-    
+    console.log(`🔍 [ItemEffectRegistry] Effect function lookup for ${rolledItem.itemId}:`, effectFn ? 'FOUND' : 'NOT FOUND');
+
     if (!effectFn) {
       console.warn(`⚠️ [ItemEffectRegistry] No effect registered for ${rolledItem.itemId}`);
       return instanceId;
     }
-    
+
     // Create runtime context
     const context: ItemRuntimeContext = {
       itemInstanceId: instanceId,
@@ -87,12 +91,13 @@ class ItemEffectRegistryClass {
       rolls: rolledItem.rolls,
       qualityTier: rolledItem.qualityTier,
     };
-    
+
+    console.log(`🚀 [ItemEffectRegistry] Calling effect function for ${rolledItem.itemId}...`);
     // Call effect registration function
     await effectFn(context);
-    
+
     console.log(`✅ [ItemEffectRegistry] Activated ${rolledItem.itemId} (${instanceId})`);
-    
+
     return instanceId;
   }
 
@@ -101,17 +106,17 @@ class ItemEffectRegistryClass {
    */
   public deactivateItem(instanceId: string): void {
     const item = this.items.get(instanceId);
-    
+
     if (!item) {
       console.warn(`⚠️ [ItemEffectRegistry] Item not found: ${instanceId}`);
       return;
     }
-    
+
     // Unsubscribe from all events
     item.subscriptionIds.forEach((subId) => {
       battleEventEmitter.off(subId);
     });
-    
+
     this.items.delete(instanceId);
     console.log(`🗑️ [ItemEffectRegistry] Deactivated ${item.itemId} (${instanceId})`);
   }
@@ -121,13 +126,13 @@ class ItemEffectRegistryClass {
    */
   public deactivateGame(gameId: string): void {
     const toRemove: string[] = [];
-    
+
     this.items.forEach((item, instanceId) => {
       if (item.gameId === gameId) {
         toRemove.push(instanceId);
       }
     });
-    
+
     toRemove.forEach((instanceId) => this.deactivateItem(instanceId));
     console.log(`🗑️ [ItemEffectRegistry] Deactivated ${toRemove.length} items for game ${gameId}`);
   }
