@@ -30,57 +30,80 @@ import { createShieldHealAnimation } from '../../effects/ShieldHealAnimation';
 import { useMultiGameStore } from '../../../store/multiGameStore';
 import type { StatType } from '../../../types/game';
 import * as PIXI from 'pixi.js';
+import gsap from 'gsap';
 
 // Purple glow color for wizard enchantment
 const WIZARD_GLOW_COLOR = 0x9b59b6;
 
-// Track glows by orb ID for cleanup
+// Track glows by orb ID for cleanup - keyed by gameId-side-orbId
 const orbGlowMap = new Map<string, PIXI.Graphics>();
 // Also track glow animations so we can kill them
 const glowAnimations = new Map<string, gsap.core.Tween>();
 
+// Track registered handlers to prevent duplicates
+const registeredHandlers = new Set<string>();
+
+/**
+ * Get unique key for orb glow tracking
+ */
+function getGlowKey(gameId: string, side: string, orbId: string): string {
+  return `${gameId}-${side}-${orbId}`;
+}
+
 /**
  * Clean up glow for a destroyed orb
  */
-export function cleanupOrbGlow(orbId: string): void {
-  console.log(`🔮 [WizardsWatchtower] Attempting to clean up glow for: ${orbId}`);
-  console.log(`🔮 [WizardsWatchtower] Current glow map keys:`, Array.from(orbGlowMap.keys()));
+export function cleanupOrbGlow(glowKey: string): void {
+  console.log(`🔮 [WizardsWatchtower] Attempting to clean up glow for key: ${glowKey}`);
 
-  const glow = orbGlowMap.get(orbId);
+  const glow = orbGlowMap.get(glowKey);
   if (glow) {
-    console.log(`🔮 [WizardsWatchtower] Found glow, removing...`);
+    console.log(`🔮 [WizardsWatchtower] Found glow in map, removing...`);
 
     // Kill animation
-    const anim = glowAnimations.get(orbId);
+    const anim = glowAnimations.get(glowKey);
     if (anim) {
       anim.kill();
-      glowAnimations.delete(orbId);
+      glowAnimations.delete(glowKey);
     }
 
+    // Remove from parent and destroy
     if (glow.parent) {
       glow.parent.removeChild(glow);
     }
     glow.destroy();
-    orbGlowMap.delete(orbId);
-    console.log(`✅ [WizardsWatchtower] Glow cleaned up for: ${orbId}`);
-  } else {
-    console.log(`⚠️ [WizardsWatchtower] No glow found for orbId: ${orbId}`);
+    orbGlowMap.delete(glowKey);
+    console.log(`✅ [WizardsWatchtower] Glow cleaned up for key: ${glowKey}`);
   }
 }
 
 /**
- * Clean up ALL glows (for battle end/reset)
+ * Clean up ALL glows for a specific game/side (for battle end/reset)
  */
-export function cleanupAllGlows(): void {
-  console.log(`🔮 [WizardsWatchtower] Cleaning up ALL ${orbGlowMap.size} glows`);
-  orbGlowMap.forEach((glow, orbId) => {
-    const anim = glowAnimations.get(orbId);
+export function cleanupAllGlows(gameId?: string, side?: string): void {
+  console.log(`🔮 [WizardsWatchtower] Cleaning up glows for game=${gameId}, side=${side}`);
+
+  const keysToRemove: string[] = [];
+
+  orbGlowMap.forEach((glow, key) => {
+    // If gameId/side specified, only clean matching ones
+    if (gameId && side) {
+      if (!key.startsWith(`${gameId}-${side}-`)) return;
+    }
+
+    keysToRemove.push(key);
+    const anim = glowAnimations.get(key);
     if (anim) anim.kill();
     if (glow.parent) glow.parent.removeChild(glow);
     glow.destroy();
   });
-  orbGlowMap.clear();
-  glowAnimations.clear();
+
+  keysToRemove.forEach(key => {
+    orbGlowMap.delete(key);
+    glowAnimations.delete(key);
+  });
+
+  console.log(`🔮 [WizardsWatchtower] Cleaned up ${keysToRemove.length} glows`);
 }
 
 /**
@@ -104,7 +127,7 @@ export const WAS_WIZARDS_WATCHTOWER_DEFINITION: ItemDefinition = {
  * Add glowing edge effect to a defense orb sprite
  * Creates a bright pulsing purple outline directly on the shield edge
  */
-function addGlowingEdge(sprite: PIXI.Graphics, orbId: string, glowColor: number = WIZARD_GLOW_COLOR): PIXI.Graphics {
+function addGlowingEdge(sprite: PIXI.Graphics, glowKey: string, glowColor: number = WIZARD_GLOW_COLOR): PIXI.Graphics {
   const glowContainer = new PIXI.Graphics();
   const size = 18; // Match shield size exactly
 
@@ -142,19 +165,19 @@ function addGlowingEdge(sprite: PIXI.Graphics, orbId: string, glowColor: number 
   glowContainer.y = sprite.y;
   glowContainer.name = 'wizard-glow';
 
-  // Track for cleanup
-  orbGlowMap.set(orbId, glowContainer);
+  // Track for cleanup using the unique key
+  orbGlowMap.set(glowKey, glowContainer);
+  console.log(`🔮 [WizardsWatchtower] Added glow to map with key: ${glowKey}`);
 
-  // Add pulsing animation
-  import('gsap').then(({ gsap }) => {
-    gsap.to(glowContainer, {
-      alpha: 0.5,
-      duration: 0.8,
-      repeat: -1,
-      yoyo: true,
-      ease: 'sine.inOut',
-    });
+  // Add pulsing animation (synchronous - gsap is already imported at top)
+  const anim = gsap.to(glowContainer, {
+    alpha: 0.5,
+    duration: 0.8,
+    repeat: -1,
+    yoyo: true,
+    ease: 'sine.inOut',
   });
+  glowAnimations.set(glowKey, anim);
 
   return glowContainer;
 }
@@ -241,16 +264,21 @@ export function registerWizardsWatchtowerEffect(context: ItemRuntimeContext): vo
       lastOrb.hp += orbBonusHP;
       lastOrb.maxHp = Math.max(lastOrb.maxHp, lastOrb.hp); // Increase maxHp too
 
-      console.log(`🔮 [WizardsWatchtower] Buffed ${stat} last orb: ${oldHP} → ${lastOrb.hp} HP (+${orbBonusHP})`);
+      console.log(`🔮 [WizardsWatchtower] Buffed ${stat} last orb (${lastOrb.id}): ${oldHP} → ${lastOrb.hp} HP (+${orbBonusHP})`);
 
       // Mark orb as buffed and trigger visual update
       (lastOrb as any).isWizardBuffed = true;
 
+      // Create unique glow key for this orb
+      const glowKey = getGlowKey(gameId, side, lastOrb.id);
+      console.log(`🔮 [WizardsWatchtower] Creating glow with key: ${glowKey}`);
+
       // Update the orb's visual to show purple glow
       if (lastOrb.sprite && lastOrb.sprite.parent) {
-        const glow = addGlowingEdge(lastOrb.sprite, lastOrb.id);
+        const glow = addGlowingEdge(lastOrb.sprite, glowKey);
         lastOrb.sprite.parent.addChild(glow);
         (lastOrb as any)._wizardGlow = glow;
+        (lastOrb as any)._wizardGlowKey = glowKey; // Store key for cleanup
       }
 
       orbsBuffed++;
@@ -268,12 +296,14 @@ export function registerWizardsWatchtowerEffect(context: ItemRuntimeContext): vo
     if (payload.gameId !== gameId) return;
     if (payload.side !== side) return;
 
-    console.log(`🔮 [WizardsWatchtower] DEFENSE_ORB_HIT received for orbId: ${payload.orbId}`);
+    // Build the glow key to look up
+    const glowKey = getGlowKey(gameId, side, payload.orbId);
+    console.log(`🔮 [WizardsWatchtower] DEFENSE_ORB_HIT for orbId: ${payload.orbId}, glowKey: ${glowKey}`);
 
-    // Try cleanup from orbGlowMap first
-    if (orbGlowMap.has(payload.orbId)) {
-      console.log(`🔮 [WizardsWatchtower] Found in orbGlowMap - removing glow`);
-      cleanupOrbGlow(payload.orbId);
+    // Try cleanup from orbGlowMap using proper key
+    if (orbGlowMap.has(glowKey)) {
+      console.log(`🔮 [WizardsWatchtower] Found glowKey in orbGlowMap - removing glow`);
+      cleanupOrbGlow(glowKey);
     }
 
     // Also try to cleanup via the orb's _wizardGlow reference (backup method)
@@ -283,10 +313,20 @@ export function registerWizardsWatchtowerEffect(context: ItemRuntimeContext): vo
       if (orb && (orb as any)._wizardGlow) {
         console.log(`🔮 [WizardsWatchtower] Found _wizardGlow on orb - removing directly`);
         const glowRef = (orb as any)._wizardGlow as PIXI.Graphics;
+
+        // Kill animation if tracked
+        const storedKey = (orb as any)._wizardGlowKey;
+        if (storedKey && glowAnimations.has(storedKey)) {
+          glowAnimations.get(storedKey)?.kill();
+          glowAnimations.delete(storedKey);
+        }
+
         if (glowRef.parent) glowRef.parent.removeChild(glowRef);
         glowRef.destroy();
         (orb as any)._wizardGlow = null;
+        (orb as any)._wizardGlowKey = null;
         (orb as any).isWizardBuffed = false;
+        console.log(`✅ [WizardsWatchtower] Glow removed from orb ${payload.orbId}`);
       }
     }
   });
@@ -296,10 +336,13 @@ export function registerWizardsWatchtowerEffect(context: ItemRuntimeContext): vo
     if (payload.gameId !== gameId) return;
     if (payload.side !== side) return;
 
-    console.log(`🔮 [WizardsWatchtower] DEFENSE_ORB_DESTROYED for orbId: ${payload.orbId}`);
+    const glowKey = getGlowKey(gameId, side, payload.orbId);
+    console.log(`🔮 [WizardsWatchtower] DEFENSE_ORB_DESTROYED for orbId: ${payload.orbId}, glowKey: ${glowKey}`);
 
     // Clean up glow from map (in case one-shot without hit event)
-    cleanupOrbGlow(payload.orbId);
+    if (orbGlowMap.has(glowKey)) {
+      cleanupOrbGlow(glowKey);
+    }
 
     // Also cleanup via orb reference (backup)
     const battle = useMultiGameStore.getState().battles.get(gameId);
@@ -307,9 +350,18 @@ export function registerWizardsWatchtowerEffect(context: ItemRuntimeContext): vo
       const orb = battle.defenseDots.get(payload.orbId);
       if (orb && (orb as any)._wizardGlow) {
         const glowRef = (orb as any)._wizardGlow as PIXI.Graphics;
+
+        const storedKey = (orb as any)._wizardGlowKey;
+        if (storedKey && glowAnimations.has(storedKey)) {
+          glowAnimations.get(storedKey)?.kill();
+          glowAnimations.delete(storedKey);
+        }
+
         if (glowRef.parent) glowRef.parent.removeChild(glowRef);
         glowRef.destroy();
         (orb as any)._wizardGlow = null;
+        (orb as any)._wizardGlowKey = null;
+        console.log(`✅ [WizardsWatchtower] Glow removed on destroy for orb ${payload.orbId}`);
       }
     }
 
