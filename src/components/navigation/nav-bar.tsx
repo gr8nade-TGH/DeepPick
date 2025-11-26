@@ -180,6 +180,13 @@ export function NavBar() {
                       <span>Game Debug</span>
                     </Link>
                     <Link
+                      href="/battle-arena-v2/index.html?debug=1&testMode=1"
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-slate-700 transition-colors text-slate-300 hover:text-white"
+                    >
+                      <Flame className="w-4 h-4 text-red-400" />
+                      <span>Battle Arena V2 Test</span>
+                    </Link>
+                    <Link
                       href="/admin/system-health"
                       className="flex items-center gap-3 px-4 py-3 hover:bg-slate-700 transition-colors text-slate-300 hover:text-white"
                     >
@@ -333,6 +340,13 @@ export function NavBar() {
                   >
                     <Swords className="w-5 h-5 text-orange-400" />
                     <span>Game Debug</span>
+                  </Link>
+                  <Link
+                    href="/battle-arena-v2/index.html?debug=1&testMode=1"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-all"
+                  >
+                    <Flame className="w-5 h-5 text-red-400" />
+                    <span>Battle Arena V2 Test</span>
                   </Link>
                   <Link
                     href="/admin/system-health"
