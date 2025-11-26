@@ -843,42 +843,78 @@ function checkBattleEnd(gameId: string): boolean {
 }
 
 /**
- * Create subtle spark when projectiles collide mid-battlefield
+ * Create collision effect when projectiles collide mid-battlefield (legacy version without battleId)
+ * Size varies by collision type:
+ * - 'projectile': smallest (two projectiles colliding mid-air)
+ * - 'defense': medium (projectile hitting defense orb)
+ * - 'castle': largest (projectile hitting attack node, dealing castle damage)
  */
-function createCollisionEffect(x: number, y: number, color: number): void {
+function createCollisionEffect(
+  x: number,
+  y: number,
+  color: number,
+  collisionType: 'castle' | 'defense' | 'projectile' = 'projectile'
+): void {
   const container = pixiManager.getContainer();
   if (!container) return;
 
   const collision = new PIXI.Graphics();
 
-  // Slightly larger spark - visible but not overwhelming
-  const size = 10;
+  // Size based on collision type
+  const sizeMap = {
+    projectile: 8,   // Smallest - mid-air collision
+    defense: 14,     // Medium - hit defense orb
+    castle: 22,      // Largest - dealt castle damage
+  };
+  const size = sizeMap[collisionType];
+
+  // Animation scale based on collision type
+  const scaleMap = {
+    projectile: 1.2,
+    defense: 1.5,
+    castle: 2.0,
+  };
+  const maxScale = scaleMap[collisionType];
 
   // Soft colored glow
   collision.circle(0, 0, size);
-  collision.fill({ color, alpha: 0.5 });
+  collision.fill({ color, alpha: 0.6 });
 
   // Inner bright core
   collision.circle(0, 0, size * 0.4);
-  collision.fill({ color: 0xFFFFFF, alpha: 0.7 });
+  collision.fill({ color: 0xFFFFFF, alpha: 0.8 });
+
+  // Add extra ring for castle hits
+  if (collisionType === 'castle') {
+    collision.circle(0, 0, size * 1.3);
+    collision.stroke({ width: 2, color: 0xFFFFFF, alpha: 0.5 });
+  }
 
   collision.x = x;
   collision.y = y;
 
   container.addChild(collision);
 
-  // Quick subtle pop
+  // Animation timing based on collision type
+  const durationMap = {
+    projectile: 0.1,
+    defense: 0.15,
+    castle: 0.25,
+  };
+  const duration = durationMap[collisionType];
+
+  // Quick pop animation
   gsap.timeline()
     .to(collision.scale, {
-      x: 1.3,
-      y: 1.3,
-      duration: 0.12,
+      x: maxScale,
+      y: maxScale,
+      duration: duration,
       ease: 'power2.out',
     })
     .to(collision, {
       alpha: 0,
-      duration: 0.15,
-    }, '-=0.05')
+      duration: duration * 0.8,
+    }, `-=${duration * 0.3}`)
     .call(() => {
       collision.destroy();
     });
@@ -1218,8 +1254,12 @@ async function fireSingleProjectileForMultiBattle(
     console.log(`⚔️ [Projectile Collision] Projectile ${projectile.id} collided with another projectile`);
   }
 
-  // Impact effect at final position
-  createCollisionEffectForBattle(battleId, projectile.sprite.x, projectile.sprite.y, projectile.typeConfig.color);
+  // Impact effect at final position - size varies by collision type
+  // No collision (hit attack node/castle) = largest, defense dot = medium, projectile = smallest
+  const collisionType: 'castle' | 'defense' | 'projectile' =
+    !projectile.collidedWith ? 'castle' :
+      projectile.collidedWith === 'defense' ? 'defense' : 'projectile';
+  createCollisionEffectForBattle(battleId, projectile.sprite.x, projectile.sprite.y, projectile.typeConfig.color, collisionType);
 
   await sleep(150);
 
@@ -1231,47 +1271,79 @@ async function fireSingleProjectileForMultiBattle(
 }
 
 /**
- * Create subtle spark scoped to a specific battle's Pixi container.
+ * Create collision effect scoped to a specific battle's Pixi container.
+ * Size varies by collision type:
+ * - 'projectile': smallest (two projectiles colliding mid-air)
+ * - 'defense': medium (projectile hitting defense orb)
+ * - 'castle': largest (projectile hitting attack node, dealing castle damage)
  */
 function createCollisionEffectForBattle(
   battleId: string,
   x: number,
   y: number,
-  color: number
+  color: number,
+  collisionType: 'castle' | 'defense' | 'projectile' = 'projectile'
 ): void {
   const container = pixiManager.getContainer(battleId);
   if (!container) return;
 
   const collision = new PIXI.Graphics();
 
-  // Slightly larger spark - visible but not overwhelming
-  const size = 10;
+  // Size based on collision type
+  const sizeMap = {
+    projectile: 8,   // Smallest - mid-air collision
+    defense: 14,     // Medium - hit defense orb
+    castle: 22,      // Largest - dealt castle damage
+  };
+  const size = sizeMap[collisionType];
+
+  // Animation scale based on collision type
+  const scaleMap = {
+    projectile: 1.2,
+    defense: 1.5,
+    castle: 2.0,
+  };
+  const maxScale = scaleMap[collisionType];
 
   // Soft colored glow
   collision.circle(0, 0, size);
-  collision.fill({ color, alpha: 0.5 });
+  collision.fill({ color, alpha: 0.6 });
 
   // Inner bright core
   collision.circle(0, 0, size * 0.4);
-  collision.fill({ color: 0xFFFFFF, alpha: 0.7 });
+  collision.fill({ color: 0xFFFFFF, alpha: 0.8 });
+
+  // Add extra ring for castle hits
+  if (collisionType === 'castle') {
+    collision.circle(0, 0, size * 1.3);
+    collision.stroke({ width: 2, color: 0xFFFFFF, alpha: 0.5 });
+  }
 
   collision.x = x;
   collision.y = y;
 
   container.addChild(collision);
 
-  // Quick subtle pop
+  // Animation timing based on collision type
+  const durationMap = {
+    projectile: 0.1,
+    defense: 0.15,
+    castle: 0.25,
+  };
+  const duration = durationMap[collisionType];
+
+  // Quick pop animation
   gsap.timeline()
     .to(collision.scale, {
-      x: 1.3,
-      y: 1.3,
-      duration: 0.12,
+      x: maxScale,
+      y: maxScale,
+      duration: duration,
       ease: 'power2.out',
     })
     .to(collision, {
       alpha: 0,
-      duration: 0.15,
-    }, '-=0.05')
+      duration: duration * 0.8,
+    }, `-=${duration * 0.3}`)
     .call(() => {
       collision.destroy();
     });
