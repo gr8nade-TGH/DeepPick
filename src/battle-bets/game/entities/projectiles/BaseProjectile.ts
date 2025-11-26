@@ -284,18 +284,14 @@ export class BaseProjectile {
   }
 
   /**
-   * Create impact effect when projectile hits target
+   * Create subtle impact effect when projectile hits target
    */
   protected createImpactEffect(): void {
     const impact = new PIXI.Graphics();
 
-    // Outer explosion ring
-    impact.circle(0, 0, 15);
-    impact.fill({ color: this.typeConfig.color, alpha: 0.6 });
-
-    // Inner explosion
-    impact.circle(0, 0, 8);
-    impact.fill({ color: this.typeConfig.glowColor, alpha: 0.8 });
+    // Small subtle spark effect
+    impact.circle(0, 0, 4);
+    impact.fill({ color: this.typeConfig.glowColor, alpha: 0.6 });
 
     impact.x = this.sprite.x;
     impact.y = this.sprite.y;
@@ -305,18 +301,18 @@ export class BaseProjectile {
       this.sprite.parent.addChild(impact);
     }
 
-    // Animate explosion
+    // Quick subtle pop
     gsap.timeline()
       .to(impact.scale, {
-        x: 2,
-        y: 2,
-        duration: 0.3,
+        x: 1.5,
+        y: 1.5,
+        duration: 0.15,
         ease: 'power2.out',
       })
       .to(impact, {
         alpha: 0,
-        duration: 0.2,
-      }, '-=0.1')
+        duration: 0.1,
+      }, '-=0.05')
       .call(() => {
         impact.destroy();
       });

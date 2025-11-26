@@ -843,7 +843,7 @@ function checkBattleEnd(gameId: string): boolean {
 }
 
 /**
- * Create collision effect (X mark) when projectiles collide mid-battlefield
+ * Create subtle spark when projectiles collide mid-battlefield
  */
 function createCollisionEffect(x: number, y: number, color: number): void {
   const container = pixiManager.getContainer();
@@ -851,40 +851,34 @@ function createCollisionEffect(x: number, y: number, color: number): void {
 
   const collision = new PIXI.Graphics();
 
-  // Draw X mark (two diagonal lines)
-  const size = 20;
+  // Small subtle spark - no X mark, just a quick flash
+  const size = 6;
 
-  // Line 1: top-left to bottom-right
-  collision.moveTo(-size, -size);
-  collision.lineTo(size, size);
-
-  // Line 2: top-right to bottom-left
-  collision.moveTo(size, -size);
-  collision.lineTo(-size, size);
-
-  collision.stroke({ width: 4, color: 0xFFFFFF, alpha: 0.9 });
-
-  // Add colored glow circle
+  // Soft colored glow
   collision.circle(0, 0, size);
-  collision.fill({ color, alpha: 0.3 });
+  collision.fill({ color, alpha: 0.5 });
+
+  // Inner bright core
+  collision.circle(0, 0, size * 0.4);
+  collision.fill({ color: 0xFFFFFF, alpha: 0.7 });
 
   collision.x = x;
   collision.y = y;
 
   container.addChild(collision);
 
-  // Animate collision effect
+  // Quick subtle pop
   gsap.timeline()
     .to(collision.scale, {
-      x: 1.5,
-      y: 1.5,
-      duration: 0.2,
+      x: 1.3,
+      y: 1.3,
+      duration: 0.12,
       ease: 'power2.out',
     })
     .to(collision, {
       alpha: 0,
-      duration: 0.3,
-    }, '-=0.1')
+      duration: 0.15,
+    }, '-=0.05')
     .call(() => {
       collision.destroy();
     });
@@ -1237,7 +1231,7 @@ async function fireSingleProjectileForMultiBattle(
 }
 
 /**
- * Create a collision effect scoped to a specific battle's Pixi container.
+ * Create subtle spark scoped to a specific battle's Pixi container.
  */
 function createCollisionEffectForBattle(
   battleId: string,
@@ -1250,39 +1244,34 @@ function createCollisionEffectForBattle(
 
   const collision = new PIXI.Graphics();
 
-  const size = 20;
+  // Small subtle spark
+  const size = 6;
 
-  collision.moveTo(-size, -size);
-  collision.lineTo(size, size);
-
-  collision.moveTo(size, -size);
-  collision.lineTo(-size, size);
-
-  collision.stroke({ width: 4, color: 0xffffff, alpha: 0.9 });
+  // Soft colored glow
   collision.circle(0, 0, size);
-  collision.fill({ color, alpha: 0.3 });
+  collision.fill({ color, alpha: 0.5 });
+
+  // Inner bright core
+  collision.circle(0, 0, size * 0.4);
+  collision.fill({ color: 0xFFFFFF, alpha: 0.7 });
 
   collision.x = x;
   collision.y = y;
 
   container.addChild(collision);
 
-  gsap
-    .timeline()
+  // Quick subtle pop
+  gsap.timeline()
     .to(collision.scale, {
-      x: 1.5,
-      y: 1.5,
-      duration: 0.2,
+      x: 1.3,
+      y: 1.3,
+      duration: 0.12,
       ease: 'power2.out',
     })
-    .to(
-      collision,
-      {
-        alpha: 0,
-        duration: 0.3,
-      },
-      '-=0.1'
-    )
+    .to(collision, {
+      alpha: 0,
+      duration: 0.15,
+    }, '-=0.05')
     .call(() => {
       collision.destroy();
     });
