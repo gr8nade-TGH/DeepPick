@@ -4,7 +4,7 @@
 
 .awaiting-stats-overlay {
   position: absolute;
-  top: 50%;
+  top: 55%;
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 50;
@@ -20,7 +20,7 @@
   background: rgba(0, 0, 0, 0.85);
   border: 2px solid #ff9f43;
   border-radius: 12px;
-  box-shadow: 
+  box-shadow:
     0 0 20px rgba(255, 159, 67, 0.3),
     0 0 40px rgba(255, 159, 67, 0.1);
   animation: pulseGlow 2s ease-in-out infinite;
@@ -70,14 +70,17 @@
 }
 
 @keyframes pulseGlow {
-  0%, 100% {
-    box-shadow: 
+
+  0%,
+  100% {
+    box-shadow:
       0 0 20px rgba(255, 159, 67, 0.3),
       0 0 40px rgba(255, 159, 67, 0.1);
     border-color: #ff9f43;
   }
+
   50% {
-    box-shadow: 
+    box-shadow:
       0 0 30px rgba(255, 159, 67, 0.5),
       0 0 60px rgba(255, 159, 67, 0.2);
     border-color: #ffb366;
@@ -85,18 +88,26 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes dotPulse {
-  0%, 80%, 100% {
+
+  0%,
+  80%,
+  100% {
     opacity: 0.3;
     transform: translateY(0);
   }
+
   40% {
     opacity: 1;
     transform: translateY(-5px);
   }
 }
-
