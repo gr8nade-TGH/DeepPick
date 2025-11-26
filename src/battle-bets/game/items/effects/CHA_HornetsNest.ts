@@ -37,10 +37,10 @@ import { attackNodeQueueManager } from '../../managers/AttackNodeQueueManager';
  * Item definition for CHA Hornets' Nest
  */
 export const CHA_HORNETS_NEST_DEFINITION: ItemDefinition = {
-  id: 'CHA_def_hornets_nest',
+  id: 'CHA_pwr_hornets_nest',
   team: 'CHA',
   teamName: 'Charlotte Hornets',
-  slot: 'defense',
+  slot: 'power',
   name: "Hornets' Nest",
   description: "When a defense orb is destroyed, fire 1-3 retaliatory projectiles from that row. If it's the last orb in that row, fire an additional 1-5 projectiles.",
   icon: '🐝',
