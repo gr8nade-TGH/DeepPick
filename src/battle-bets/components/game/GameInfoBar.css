@@ -341,37 +341,40 @@
   line-height: 1;
 }
 
-/* VS / Status Display - Horizontal layout */
+/* VS / Status Display - Clean inline layout */
 .game-status-dynamic {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 2px;
+  justify-content: center;
+  gap: 0;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 6px;
+  border: 2px solid #4ecdc4;
+  padding: 6px 12px;
+  min-width: 100px;
+  box-shadow: 0 0 10px rgba(78, 205, 196, 0.3);
 }
 
 .status-main {
   font-size: 14px;
   font-weight: 800;
   color: #4ecdc4;
-  background: rgba(0, 0, 0, 0.5);
-  padding: 6px 16px;
-  border-radius: 6px;
-  border: 2px solid #4ecdc4;
   letter-spacing: 0.8px;
   line-height: 1;
   text-align: center;
-  min-width: 80px;
-  box-shadow: 0 0 10px rgba(78, 205, 196, 0.3);
 }
 
 .status-subtitle {
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
   line-height: 1;
   text-align: center;
   white-space: nowrap;
-  color: #4ecdc4;
+  margin-left: 6px;
+  padding-left: 6px;
+  border-left: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 @keyframes pulse-glow {
