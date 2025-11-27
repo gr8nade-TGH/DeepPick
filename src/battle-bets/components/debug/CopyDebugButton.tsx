@@ -32,8 +32,8 @@ console.log = (...args: any[]) => {
   }).join(' ');
 
   // Capture ALL logs with emoji markers OR specific keywords
-  const emojiMarkers = ['💾💾💾', '🧪🧪🧪', '🎮🎮🎮', '✅✅✅', '🔔', '🛡️', '🔍', '📢📢📢', '💀', '💥', '⚔️', '🎯', '📦', '🚀', '🐴', '🏰', '📡', '⚔️⚔️⚔️', '🐝', '🐝🐝🐝', '🔮', '🔮🔮🔮'];
-  const keywords = ['[ItemEffectRegistry]', '[Shortsword]', '[IronmanArmor]', '[PreGameItemSelector]', '[PreGame]', '[getKnight]', '[KnightDefender]', 'activateItem', 'registerEffect', 'knight', 'startPatrol', '[EventBus]', '[HornetsNest]', '[WizardsWatchtower]', 'PROJECTILE_FIRED', 'DEFENSE_ORB_DESTROYED', 'BATTLE_START', 'FILTERED OUT', 'PASSED ALL FILTERS', 'PASSED FILTERS', 'SUBSCRIBING', 'ADDING GLOW', 'CANNOT ADD GLOW'];
+  const emojiMarkers = ['💾💾💾', '🧪🧪🧪', '🎮🎮🎮', '✅✅✅', '🔔', '🛡️', '🔍', '📢📢📢', '💀', '💥', '⚔️', '🎯', '📦', '🚀', '🐴', '🏰', '📡', '⚔️⚔️⚔️', '🐝', '🐝🐝🐝', '🔮', '🔮🔮🔮', '🏰🏰🏰', '🧹'];
+  const keywords = ['[ItemEffectRegistry]', '[Shortsword]', '[IronmanArmor]', '[PreGameItemSelector]', '[PreGame]', '[getKnight]', '[KnightDefender]', 'activateItem', 'registerEffect', 'knight', 'startPatrol', '[EventBus]', '[HornetsNest]', '[WizardsWatchtower]', 'PROJECTILE_FIRED', 'DEFENSE_ORB_DESTROYED', 'BATTLE_START', 'FILTERED OUT', 'PASSED ALL FILTERS', 'PASSED FILTERS', 'SUBSCRIBING', 'ADDING GLOW', 'CANNOT ADD GLOW', '[Multi-Game Store]', 'setCastleHP', '[ForceQuarter]', 'handleStartGame', 'handleRollCastle', 'getOrSpawnKnight', 'equipCastle', 'HP Check', 'battleId='];
 
   if (emojiMarkers.some(emoji => message.includes(emoji)) || keywords.some(kw => message.includes(kw))) {
     capturedLogs.push({
@@ -66,6 +66,25 @@ export function CopyDebugButton({ battleId }: CopyDebugButtonProps) {
       lines.push('='.repeat(80));
       lines.push('');
 
+      // Quick Summary at top
+      const battle = getBattle(battleId);
+      const leftHP = battle?.capperHP.get('left')?.currentHP ?? 'NOT SET';
+      const rightHP = battle?.capperHP.get('right')?.currentHP ?? 'NOT SET';
+      const battleStatus = battle?.battleStatus ?? 'UNKNOWN';
+      const currentQ = battle?.currentQuarter ?? 0;
+      const knightDebugQuick = getKnightDebugInfo(battleId);
+
+      lines.push('📊 QUICK SUMMARY');
+      lines.push('-'.repeat(40));
+      lines.push(`Battle Status: ${battleStatus}`);
+      lines.push(`Current Quarter: ${currentQ}`);
+      lines.push(`Left HP: ${leftHP}`);
+      lines.push(`Right HP: ${rightHP}`);
+      lines.push(`Knights: ${knightDebugQuick.allKeys.join(', ') || 'NONE'}`);
+      lines.push(`Active Items: ${itemEffectRegistry.getActiveItems().filter(i => i.gameId === battleId).length}`);
+      lines.push(`Captured Logs: ${capturedLogs.length}`);
+      lines.push('');
+
       // Bundle version detection
       lines.push('\n' + '='.repeat(80));
       lines.push('BUNDLE VERSION CHECK');
@@ -82,11 +101,10 @@ export function CopyDebugButton({ battleId }: CopyDebugButtonProps) {
 
       console.log('📋 Starting debug report generation...');
 
-      // 1. Battle State from Store
+      // 1. Battle State from Store (already fetched in summary above)
       lines.push('\n' + '='.repeat(80));
       lines.push('BATTLE STATE (from multiGameStore)');
       lines.push('='.repeat(80));
-      const battle = getBattle(battleId);
       if (battle) {
         lines.push(`Current Quarter: ${battle.currentQuarter}`);
         lines.push('\nCapper HP:');
@@ -120,6 +138,23 @@ export function CopyDebugButton({ battleId }: CopyDebugButtonProps) {
         const knightDebug = getKnightDebugInfo(battleId);
         lines.push(`\nAll active knight keys: ${JSON.stringify(knightDebug.allKeys)}`);
         lines.push(`Battle ID being checked: "${battleId}"`);
+
+        // Check for battle ID mismatch
+        const expectedLeftKey = `${battleId}-left`;
+        const expectedRightKey = `${battleId}-right`;
+        const hasLeftKnight = knightDebug.allKeys.includes(expectedLeftKey);
+        const hasRightKnight = knightDebug.allKeys.includes(expectedRightKey);
+        const otherBattleKnights = knightDebug.allKeys.filter((k: string) => !k.startsWith(battleId));
+
+        if (otherBattleKnights.length > 0) {
+          lines.push(`\n⚠️ BATTLE ID MISMATCH DETECTED!`);
+          lines.push(`  Knights exist for OTHER battles: ${JSON.stringify(otherBattleKnights)}`);
+          lines.push(`  Expected keys: "${expectedLeftKey}" or "${expectedRightKey}"`);
+          lines.push(`  This battle has left knight: ${hasLeftKnight}`);
+          lines.push(`  This battle has right knight: ${hasRightKnight}`);
+          lines.push(`  → You may have rolled a castle on a different battle!`);
+        }
+
         lines.push(`\nLEFT Knight:`);
         if (knightDebug.left) {
           lines.push(`  Key: ${knightDebug.left.key}`);
@@ -318,7 +353,51 @@ export function CopyDebugButton({ battleId }: CopyDebugButtonProps) {
         console.error('Error generating item flow info:', error);
       }
 
-      // 5. Debug Logger Logs
+      // 5. Castle/HP Flow Tracking
+      try {
+        lines.push('\n' + '='.repeat(80));
+        lines.push('CASTLE/HP FLOW TRACKING');
+        lines.push('='.repeat(80));
+        lines.push('');
+        lines.push('Key log markers for Castle debugging:');
+        lines.push('  🏰🏰🏰 = handleRollCastle called (PreGameItemSelector)');
+        lines.push('  🏰 [Multi-Game Store] setCastleHP = HP being set in store');
+        lines.push('  🎮🎮🎮 [handleStartGame] = Start Game button clicked');
+        lines.push('  🎮 [ForceQuarter] HP Check = HP values when Force Q button clicked');
+        lines.push('');
+
+        // Extract castle/HP related logs
+        const castleLogs = capturedLogs.filter(log =>
+          log.message.includes('🏰') ||
+          log.message.includes('setCastleHP') ||
+          log.message.includes('HP Check') ||
+          log.message.includes('handleStartGame') ||
+          log.message.includes('handleRollCastle') ||
+          log.message.includes('ForceQuarter')
+        );
+
+        if (castleLogs.length === 0) {
+          lines.push('❌ NO CASTLE/HP LOGS CAPTURED!');
+          lines.push('');
+          lines.push('This means:');
+          lines.push('  - You may not have rolled a castle yet');
+          lines.push('  - You may not have clicked Start Game');
+          lines.push('  - The bundle may need a hard refresh (Ctrl+Shift+R)');
+        } else {
+          lines.push(`✅ Captured ${castleLogs.length} castle/HP logs:`);
+          lines.push('');
+          castleLogs.forEach(log => {
+            const date = new Date(log.timestamp);
+            const timeStr = date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 });
+            lines.push(`[${timeStr}] ${log.message}`);
+          });
+        }
+        lines.push('');
+      } catch (error) {
+        lines.push(`❌ Error generating castle/HP flow: ${error}`);
+      }
+
+      // 6. Debug Logger Logs
       lines.push('\n' + '='.repeat(80));
       lines.push('DEBUG LOGGER CAPTURED LOGS');
       lines.push('='.repeat(80));
