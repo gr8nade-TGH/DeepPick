@@ -647,10 +647,18 @@ export class KnightDefender {
     });
 
     try {
+      // Force kill any existing tween to prevent conflicts
+      if (this.patrolTween) {
+        this.patrolTween.kill();
+        this.patrolTween = null;
+      }
+
       this.patrolTween = gsap.to(this.sprite, {
         y: clampedY,
         duration: Math.max(0.4, duration),
         ease: this.isDefenderMode ? 'power3.inOut' : 'power2.inOut',
+        immediateRender: false, // Don't render immediately, let GSAP handle timing
+        overwrite: 'auto', // Automatically overwrite conflicting tweens
         onStart: () => {
           logMsg(`gsap.to STARTED`, { targetY: clampedY });
         },
@@ -667,11 +675,25 @@ export class KnightDefender {
         },
       });
 
+      // Check tween status after a frame to see if GSAP is running
       logMsg(`gsap.to created`, {
         patrolTweenExists: !!this.patrolTween,
         tweenActive: this.patrolTween?.isActive?.() ?? 'unknown',
-        tweenPaused: this.patrolTween?.paused?.() ?? 'unknown'
+        tweenPaused: this.patrolTween?.paused?.() ?? 'unknown',
+        tweenProgress: this.patrolTween?.progress?.() ?? 'unknown'
       });
+
+      // Force GSAP to update by requesting a tick
+      gsap.ticker.tick();
+
+      // Log status after tick
+      setTimeout(() => {
+        logMsg(`gsap.to after tick`, {
+          tweenActive: this.patrolTween?.isActive?.() ?? 'unknown',
+          progress: this.patrolTween?.progress?.() ?? 'unknown',
+          spriteY: this.sprite?.y
+        });
+      }, 100);
     } catch (error) {
       logMsg(`ERROR creating gsap.to`, { error: String(error) });
     }
