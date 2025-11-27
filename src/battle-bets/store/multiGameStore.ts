@@ -330,8 +330,16 @@ export const useMultiGameStore = create<MultiGameState>()(
 
       // Set castle HP directly (used by Castle item)
       setCastleHP: (battleId: string, side: 'left' | 'right', hp: number) => {
+        console.log(`🏰 [Multi-Game Store] setCastleHP called: battleId=${battleId}, side=${side}, hp=${hp}`);
+
         const battle = get().battles.get(battleId);
-        if (!battle) return;
+        if (!battle) {
+          console.error(`🏰 [Multi-Game Store] setCastleHP FAILED - battle not found: ${battleId}`);
+          console.log(`🏰 [Multi-Game Store] Available battles:`, Array.from(get().battles.keys()));
+          return;
+        }
+
+        console.log(`🏰 [Multi-Game Store] Battle found, setting HP...`);
 
         set(state => {
           const newBattles = new Map(state.battles);

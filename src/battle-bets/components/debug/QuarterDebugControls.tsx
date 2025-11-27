@@ -171,6 +171,12 @@ export const QuarterDebugControls: React.FC<QuarterDebugControlsProps> = ({ batt
       const currentBattle = useMultiGameStore.getState().getBattle(battleId);
       const currentBattleStatus = currentBattle?.battleStatus || 'SCHEDULED';
 
+      // DEBUG: Log HP values from both sources
+      const storeLeftHP = currentBattle?.capperHP.get('left')?.currentHP ?? 'NOT SET';
+      const storeRightHP = currentBattle?.capperHP.get('right')?.currentHP ?? 'NOT SET';
+      console.log(`🎮 [ForceQuarter] HP Check - React hook: left=${leftHP}, right=${rightHP}`);
+      console.log(`🎮 [ForceQuarter] HP Check - Fresh store: left=${storeLeftHP}, right=${storeRightHP}`);
+
       // Determine which quarter to run based on current status
       // If IN_PROGRESS, run that quarter's battle
       // If BATTLE just finished or first time, this shouldn't happen (Start Game should be clicked first)
