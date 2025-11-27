@@ -106,21 +106,31 @@ export const QuarterDebugControls: React.FC<QuarterDebugControlsProps> = ({ batt
 
       // STEP 3: Start patrol for any existing knights (they were spawned idle when castle was rolled)
       // Using getKnight() to only get existing knights - NOT spawn new ones
-      console.log(`🐴 [PreGame] Starting knight patrols (if any exist)...`);
+      console.log(`🐴 [PreGame] Starting knight patrols for battleId: ${battleId}`);
 
       const leftKnight = getKnight(battleId, 'left');
       const rightKnight = getKnight(battleId, 'right');
 
+      console.log(`🐴 [PreGame] getKnight results: left=${leftKnight ? 'FOUND' : 'null'}, right=${rightKnight ? 'FOUND' : 'null'}`);
+
       if (leftKnight) {
-        leftKnight.startPatrol();
-        console.log(`🐴 [PreGame] Left knight now patrolling`);
+        try {
+          leftKnight.startPatrol();
+          console.log(`🐴 [PreGame] Left knight now patrolling`);
+        } catch (err) {
+          console.error(`🐴 [PreGame] ERROR starting left knight patrol:`, err);
+        }
       } else {
         console.log(`🐴 [PreGame] No left knight equipped`);
       }
 
       if (rightKnight) {
-        rightKnight.startPatrol();
-        console.log(`🐴 [PreGame] Right knight now patrolling`);
+        try {
+          rightKnight.startPatrol();
+          console.log(`🐴 [PreGame] Right knight now patrolling`);
+        } catch (err) {
+          console.error(`🐴 [PreGame] ERROR starting right knight patrol:`, err);
+        }
       } else {
         console.log(`🐴 [PreGame] No right knight equipped`);
       }

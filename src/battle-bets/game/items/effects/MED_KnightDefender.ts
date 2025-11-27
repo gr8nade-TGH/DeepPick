@@ -46,7 +46,10 @@ const activeKnights: Map<string, KnightDefender> = new Map();
  * Get knight for a game/side (only returns if alive)
  */
 export function getKnight(gameId: string, side: 'left' | 'right'): KnightDefender | null {
-  const knight = activeKnights.get(`${gameId}-${side}`);
+  const key = `${gameId}-${side}`;
+  const knight = activeKnights.get(key);
+  console.log(`🐴 [getKnight] Looking for key="${key}", found=${!!knight}, alive=${knight?.alive}`);
+  console.log(`🐴 [getKnight] All active knights:`, Array.from(activeKnights.keys()));
   return (knight && knight.alive) ? knight : null;
 }
 

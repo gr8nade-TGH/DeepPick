@@ -491,10 +491,13 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
 
     // Spawn knight immediately (visual only - idle animation)
     // Knight will NOT patrol yet - patrol starts on "Start Game" click
+    console.log(`🏰 [PreGameItemSelector] Spawning knight for battleId="${battleId}", side="${side}"`);
     const knight = getOrSpawnKnight(battleId, side);
     if (knight) {
       knight.setShieldCharges(shieldCharges);
-      console.log(`🏰 [PreGameItemSelector] Knight deployed with ${shieldCharges} shield charges (idle, will patrol on game start)`);
+      console.log(`🏰 [PreGameItemSelector] Knight deployed for battleId="${battleId}", side="${side}" with ${shieldCharges} shield charges`);
+    } else {
+      console.error(`🏰 [PreGameItemSelector] FAILED to spawn knight for battleId="${battleId}", side="${side}"`);
     }
 
     setSelectingCastle(null);
