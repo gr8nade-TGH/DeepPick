@@ -73,9 +73,10 @@ const BattleControl: React.FC<BattleControlProps> = ({ battleId, battleIndex }) 
     setIsProcessing(true);
     setLastAction('Starting...');
     try {
-      console.log(`🧹 [BottomBar] Deactivating items for battle ${battleId}`);
-      itemEffectRegistry.deactivateGame(battleId);
-      console.log(`🎮 [BottomBar] Activating items for battle ${battleId}`);
+      // NOTE: Do NOT call itemEffectRegistry.deactivateGame() here!
+      // Items are already activated by PreGameItemSelector.activateItemEffects()
+      // Calling deactivateGame would remove all item effects (shields, knight, etc.)
+      console.log(`🎮 [BottomBar] Starting game for battle ${battleId} (items already activated)`);
       console.log(`🐴 [BottomBar] Starting knight patrols for battleId: ${battleId}`);
 
       const leftKnight = getKnight(battleId, 'left');
