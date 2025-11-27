@@ -795,6 +795,28 @@ export class Castle {
   }
 
   /**
+   * Set castle HP (used by Castle item to override default HP)
+   * Updates both max and current HP
+   */
+  public setHP(hp: number): void {
+    if (this.isDestroyed) return;
+
+    console.log(`🏰 [Castle.setHP] Setting HP for ${this.id}: ${this.maxHP} → ${hp}`);
+
+    this.maxHP = hp;
+    this.currentHP = hp;
+
+    // Re-initialize in health system with new HP
+    castleHealthSystem.initializeCastle(this.id, hp, hp);
+
+    // Update visuals
+    this.updateDamageState();
+    this.updateHPBar();
+
+    console.log(`✅ [Castle.setHP] HP updated to ${hp}/${hp}`);
+  }
+
+  /**
    * Get current HP percentage (0.0 to 1.0)
    */
   public getHPPercentage(): number {

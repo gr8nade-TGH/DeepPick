@@ -22,6 +22,7 @@ import type { ItemDefinition, RolledItemStats, QualityTier } from '../ItemRollSy
 import { TEAM_NAMES, LEGENDARY_PLAYERS, CASTLE_TYPES, type CastleRarity } from '../../../data/castleNames';
 import { useMultiGameStore } from '../../../store/multiGameStore';
 import { getOrSpawnKnight, getKnight } from './MED_KnightDefender';
+import { castleManager } from '../../managers/CastleManager';
 
 /**
  * Castle Item Definition (base - name is generated dynamically)
@@ -150,6 +151,10 @@ export function equipCastle(
 
   // Apply castle HP to battle state using store action
   useMultiGameStore.getState().setCastleHP(battleId, side, hp);
+
+  // Also update the visual castle entity (if it exists already)
+  const castleId = `${side}-castle`;
+  castleManager.setCastleHP(battleId, castleId, hp);
 
   // Store pending shield charges (will be applied when knight spawns)
   pendingShieldCharges.set(`${battleId}-${side}`, shieldCharges);

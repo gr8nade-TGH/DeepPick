@@ -126,6 +126,19 @@ export class CastleManager {
   }
 
   /**
+   * Set castle HP (used by Castle item to override default HP)
+   */
+  public setCastleHP(battleId: string, castleId: string, hp: number): void {
+    const castle = this.getCastle(battleId, castleId);
+    if (castle) {
+      console.log(`🏰 [CastleManager.setCastleHP] Setting HP for ${castleId} in battle ${battleId} to ${hp}`);
+      castle.setHP(hp);
+    } else {
+      console.warn(`⚠️ [CastleManager.setCastleHP] Castle ${castleId} not found in battle ${battleId}`);
+    }
+  }
+
+  /**
    * Remove a single castle from a specific battle
    */
   public removeCastle(battleId: string, id: string): void {
