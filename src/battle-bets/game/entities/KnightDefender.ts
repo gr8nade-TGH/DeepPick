@@ -100,12 +100,9 @@ export class KnightDefender {
     this.glowEffect = this.createGlowEffect();
     this.sprite.addChild(this.glowEffect);
 
-    // Create knight visual - use fallback graphics first, then try to load SVG
+    // Create knight visual using graphics (SVG assets not available)
     this.knightSprite = this.createKnightGraphics();
     this.sprite.addChild(this.knightSprite);
-
-    // Try to load SVG sprite (async, will replace graphics when ready)
-    this.loadSvgSprite();
 
     // Create shield effect (for deflections)
     this.shieldEffect = this.createShieldEffect();

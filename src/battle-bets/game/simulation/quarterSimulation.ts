@@ -252,11 +252,12 @@ export async function simulateQuarter(
   // Fall back to random stats if API fails or data is unavailable
   let quarterData: { left: QuarterStats; right: QuarterStats };
 
-  // Check if we have a real game ID (format: YYYYMMDD-AWAY-HOME)
+  // Check if we have a real game ID (format: YYYYMMDD-AWAY-HOME like "20241205-LAL-BOS")
+  // Test battles have IDs like "test-battle-1" which should NOT call the API
   const gameIdForAPI = battle.game.id || battle.game.gameId;
-  const hasRealGameId = gameIdForAPI && gameIdForAPI.includes('-');
+  const isRealGameId = gameIdForAPI && /^\d{8}-[A-Z]{2,3}-[A-Z]{2,3}$/.test(gameIdForAPI);
 
-  if (hasRealGameId) {
+  if (isRealGameId) {
     console.log(`🌐 Attempting to fetch real quarter stats from MySportsFeeds for game ${gameIdForAPI}...`);
     const realData = await fetchRealQuarterStats(
       gameIdForAPI,
