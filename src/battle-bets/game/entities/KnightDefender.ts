@@ -1126,12 +1126,8 @@ export class KnightDefender {
     this.maxShieldCharges = charges;
     console.log(`🛡️ [KnightDefender] ${this.id} received ${charges} shield charges`);
 
-    // Create visual shield charge orbs
+    // Create visual shield charge orbs (small dots at horse's feet)
     this.createShieldChargeOrbs();
-
-    if (charges > 0) {
-      this.showFloatingText(`🛡️ ${charges} SHIELDS`, 0x00FFFF);
-    }
   }
 
   /**
@@ -1246,12 +1242,8 @@ export class KnightDefender {
         this.shieldEffect.scale.set(1);
       });
 
-    // Show remaining shields
-    const shieldText = this.shieldCharges > 0
-      ? `🛡️ SHIELD! (${this.shieldCharges} left)`
-      : '🛡️ SHIELDS DEPLETED!';
-    const textColor = this.shieldCharges > 0 ? 0x00FFFF : 0xFFAA00;
-    this.showFloatingText(shieldText, textColor);
+    // Show subtle block text (small, no emoji clutter)
+    this.showFloatingText('BLOCKED', 0x00FFFF, 0.7);
 
     // Start recharge timer if not already running and we have shields to recharge
     this.startShieldRechargeTimer();
@@ -1310,8 +1302,8 @@ export class KnightDefender {
         });
     }
 
-    // Show subtle recharge text
-    this.showFloatingText(`🛡️ +1`, 0x00FFFF, 0.6);
+    // Show subtle recharge text (very small)
+    this.showFloatingText('+1', 0x00FFFF, 0.5);
 
     // Clear current timer
     this.shieldRechargeTimer = null;
