@@ -150,6 +150,11 @@ export const DebugBottomBar: React.FC<DebugBottomBarProps> = ({ battleIds }) => 
       const battle = useMultiGameStore.getState().getBattle(selectedBattleId);
       const knightInfo = getKnightDebugInfo(selectedBattleId);
 
+      const formatKnight = (k: any) => {
+        if (!k) return 'None';
+        return `HP=${k.hp}/${k.maxHP}, Patrolling=${k.isPatrolling}, Pos=(${k.position?.x?.toFixed(0) ?? '?'}, ${k.position?.y?.toFixed(0) ?? '?'}), Shields=${k.shieldCharges ?? 0}`;
+      };
+
       const report = [
         '='.repeat(80),
         'BATTLE DEBUG REPORT',
@@ -162,8 +167,9 @@ export const DebugBottomBar: React.FC<DebugBottomBarProps> = ({ battleIds }) => 
         `Right HP: ${battle?.capperHP.get('right')?.currentHP ?? 'N/A'}`,
         '',
         '--- KNIGHT STATE ---',
-        `Left Knight: ${knightInfo.left ? `HP=${knightInfo.left.hp}, Patrolling=${knightInfo.left.isPatrolling}` : 'None'}`,
-        `Right Knight: ${knightInfo.right ? `HP=${knightInfo.right.hp}, Patrolling=${knightInfo.right.isPatrolling}` : 'None'}`,
+        `Left Knight: ${formatKnight(knightInfo.left)}`,
+        `Right Knight: ${formatKnight(knightInfo.right)}`,
+        `All Active Knights: ${knightInfo.allKeys.join(', ') || 'none'}`,
         '='.repeat(80),
       ].join('\n');
 

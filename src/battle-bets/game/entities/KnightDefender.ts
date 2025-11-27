@@ -554,13 +554,19 @@ export class KnightDefender {
    * In Defender Mode: more aggressive, faster movement
    */
   private smartPatrol(): void {
-    if (!this.alive) return;
+    console.log(`🐴 [KnightDefender] smartPatrol() called for ${this.side}, alive=${this.alive}, sprite exists=${!!this.sprite}`);
+
+    if (!this.alive) {
+      console.log(`🐴 [KnightDefender] smartPatrol() aborted - knight not alive`);
+      return;
+    }
 
     // Check if we should enter Defender Mode
     this.checkDefenderMode();
 
     const cellHeight = DEFAULT_GRID_CONFIG.cellHeight;
     const { minY, maxY } = this.getPatrolBounds();
+    console.log(`🐴 [KnightDefender] Patrol bounds: minY=${minY}, maxY=${maxY}, current position.y=${this.position.y}`);
 
     let targetRow: number;
 

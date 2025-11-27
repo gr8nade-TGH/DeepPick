@@ -73,8 +73,8 @@ export function getKnightDebugInfo(gameId: string): { left: any; right: any; all
     left: leftKnight ? {
       key: leftKey,
       alive: leftKnight.alive,
-      hp: leftKnight.currentHP,
-      maxHP: leftKnight.maxHP,
+      hp: leftKnight.hp,
+      maxHP: leftKnight.maxHp,
       shieldCharges: leftKnight.shieldCharges,
       isPatrolling: leftKnight.isPatrolling,
       position: leftKnight.sprite ? { x: leftKnight.sprite.x, y: leftKnight.sprite.y } : null,
@@ -82,8 +82,8 @@ export function getKnightDebugInfo(gameId: string): { left: any; right: any; all
     right: rightKnight ? {
       key: rightKey,
       alive: rightKnight.alive,
-      hp: rightKnight.currentHP,
-      maxHP: rightKnight.maxHP,
+      hp: rightKnight.hp,
+      maxHP: rightKnight.maxHp,
       shieldCharges: rightKnight.shieldCharges,
       isPatrolling: rightKnight.isPatrolling,
       position: rightKnight.sprite ? { x: rightKnight.sprite.x, y: rightKnight.sprite.y } : null,
