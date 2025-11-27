@@ -488,12 +488,14 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
     // Apply castle effect (sets HP in store and CastleManager)
     equipCastle(battleId, side, rolledStats);
 
+    // TEMPORARILY DISABLED - Testing if knight is causing the render loop error
     // Spawn knight directly (avoids async/circular dependency issues)
-    const knight = getOrSpawnKnight(battleId, side);
-    if (knight) {
-      knight.setShieldCharges(shieldCharges);
-      console.log(`🏰 [PreGameItemSelector] Knight deployed with ${shieldCharges} shield charges`);
-    }
+    // const knight = getOrSpawnKnight(battleId, side);
+    // if (knight) {
+    //   knight.setShieldCharges(shieldCharges);
+    //   console.log(`🏰 [PreGameItemSelector] Knight deployed with ${shieldCharges} shield charges`);
+    // }
+    console.log(`🏰 [PreGameItemSelector] Castle equipped. Knight spawning DISABLED for testing.`);
 
     setSelectingCastle(null);
   };
