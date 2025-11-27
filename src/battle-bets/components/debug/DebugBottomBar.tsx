@@ -13,6 +13,7 @@ import { getKnight, getKnightDebugInfo } from '../../game/items/effects/MED_Knig
 import { debugLogger } from '../../game/debug/DebugLogger';
 import { getEquippedCastle } from '../../game/items/effects/CASTLE_Fortress';
 import { castleManager } from '../../game/managers/CastleManager';
+import gsap from 'gsap';
 
 // Capture console logs with emoji markers for debug report
 const capturedLogs: Array<{ timestamp: number; message: string }> = [];
@@ -30,10 +31,10 @@ if (!(console.log as any).__debugBottomBarPatched) {
     }).join(' ');
 
     // Capture logs with emoji markers or keywords
-    const emojiMarkers = ['🏰', '🎮', '✅', '🔔', '🛡️', '🔍', '💀', '💥', '⚔️', '🎯', '📦', '🚀', '🐴', '📡', '🐝', '🔮', '🧹', '❌'];
+    const emojiMarkers = ['🏰', '🎮', '✅', '🔔', '🛡️', '🔍', '💀', '💥', '⚔️', '🎯', '📦', '🚀', '🐴', '📡', '🐝', '🔮', '🧹', '❌', '🎬'];
     const keywords = ['setCastleHP', 'HP Check', 'handleStartGame', 'handleRollCastle', 'getOrSpawnKnight',
       'equipCastle', 'battleId=', 'ForceQuarter', 'startPatrol', 'gsap.to', 'knight',
-      'Multi-Game Store', 'PreGame', 'ItemEffectRegistry', 'activateItem'];
+      'Multi-Game Store', 'PreGame', 'ItemEffectRegistry', 'activateItem', 'GSAP Init', 'Ticker'];
 
     if (emojiMarkers.some(emoji => message.includes(emoji)) || keywords.some(kw => message.includes(kw))) {
       capturedLogs.push({ timestamp: Date.now(), message });
@@ -236,6 +237,28 @@ export const DebugBottomBar: React.FC<DebugBottomBarProps> = ({ battleIds }) => 
         lines.push(`  → You may have rolled castle on wrong battle!`);
         lines.push('');
       }
+
+      // GSAP State
+      lines.push('--- GSAP STATE ---');
+      try {
+        const tickerTime = gsap.ticker?.time ?? 'N/A';
+        const globalPaused = gsap.globalTimeline?.paused?.() ?? 'N/A';
+        const globalChildren = gsap.globalTimeline?.getChildren?.()?.length ?? 'N/A';
+        const tickerListeners = (gsap.ticker as any)?._listeners?.tick?.length ?? 'N/A';
+        lines.push(`Ticker Time: ${tickerTime}`);
+        lines.push(`Ticker Listeners: ${tickerListeners}`);
+        lines.push(`Global Timeline Paused: ${globalPaused}`);
+        lines.push(`Global Timeline Children: ${globalChildren}`);
+
+        // Test if GSAP is actually animating
+        const testObj = { val: 0 };
+        const testTween = gsap.to(testObj, { val: 1, duration: 0.1, paused: false });
+        lines.push(`Test Tween Created: isActive=${testTween.isActive()}, paused=${testTween.paused()}, progress=${testTween.progress()}`);
+        testTween.kill();
+      } catch (e) {
+        lines.push(`GSAP Error: ${e}`);
+      }
+      lines.push('');
 
       lines.push('--- CASTLE ITEMS ---');
       lines.push(`Left Castle: ${leftCastle ? `HP=${leftCastle.castleHP}, Shields=${leftCastle.shieldCharges}` : 'Not equipped'}`);
