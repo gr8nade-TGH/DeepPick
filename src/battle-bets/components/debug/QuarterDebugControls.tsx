@@ -18,7 +18,7 @@ import './QuarterDebugControls.css';
 import { PreGameItemSelector } from './PreGameItemSelector';
 import { itemEffectRegistry } from '../../game/items/ItemEffectRegistry';
 import { rollTestItem } from '../../game/items/ItemTestUtils';
-import { getOrSpawnKnight } from '../../game/items/effects/MED_KnightDefender';
+import { getKnight } from '../../game/items/effects/MED_KnightDefender';
 
 interface QuarterDebugControlsProps {
   battleId: string;
@@ -105,19 +105,24 @@ export const QuarterDebugControls: React.FC<QuarterDebugControlsProps> = ({ batt
       console.log(`✅✅✅ [PreGame] All items activated!`);
 
       // STEP 3: Start patrol for any existing knights (they were spawned idle when castle was rolled)
-      console.log(`🐴 [PreGame] Starting knight patrols...`);
+      // Using getKnight() to only get existing knights - NOT spawn new ones
+      console.log(`🐴 [PreGame] Starting knight patrols (if any exist)...`);
 
-      const leftKnight = getOrSpawnKnight(battleId, 'left');
-      const rightKnight = getOrSpawnKnight(battleId, 'right');
+      const leftKnight = getKnight(battleId, 'left');
+      const rightKnight = getKnight(battleId, 'right');
 
       if (leftKnight) {
         leftKnight.startPatrol();
         console.log(`🐴 [PreGame] Left knight now patrolling`);
+      } else {
+        console.log(`🐴 [PreGame] No left knight equipped`);
       }
 
       if (rightKnight) {
         rightKnight.startPatrol();
         console.log(`🐴 [PreGame] Right knight now patrolling`);
+      } else {
+        console.log(`🐴 [PreGame] No right knight equipped`);
       }
 
       // STEP 4: Transition to Q1_IN_PROGRESS (awaiting stats from MySportsFeeds)

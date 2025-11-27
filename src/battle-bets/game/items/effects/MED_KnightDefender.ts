@@ -43,10 +43,11 @@ export const MED_KNIGHT_DEFENDER_DEFINITION: ItemDefinition = {
 const activeKnights: Map<string, KnightDefender> = new Map();
 
 /**
- * Get knight for a game/side
+ * Get knight for a game/side (only returns if alive)
  */
-export function getKnight(gameId: string, side: 'left' | 'right'): KnightDefender | undefined {
-  return activeKnights.get(`${gameId}-${side}`);
+export function getKnight(gameId: string, side: 'left' | 'right'): KnightDefender | null {
+  const knight = activeKnights.get(`${gameId}-${side}`);
+  return (knight && knight.alive) ? knight : null;
 }
 
 /**
