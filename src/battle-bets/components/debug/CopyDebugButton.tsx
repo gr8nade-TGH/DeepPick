@@ -9,6 +9,8 @@ import { castleHealthSystem } from '../../game/systems/CastleHealthSystem';
 import { itemEffectRegistry } from '../../game/items/ItemEffectRegistry';
 import { useMultiGameStore } from '../../store/multiGameStore';
 import { debugLogger } from '../../game/debug/DebugLogger';
+import { getKnight, getActiveKnightKeys, getKnightDebugInfo } from '../../game/items/effects/MED_KnightDefender';
+import { getEquippedCastle } from '../../game/items/effects/CASTLE_Fortress';
 
 interface CopyDebugButtonProps {
   battleId: string;
@@ -30,8 +32,8 @@ console.log = (...args: any[]) => {
   }).join(' ');
 
   // Capture ALL logs with emoji markers OR specific keywords
-  const emojiMarkers = ['💾💾💾', '🧪🧪🧪', '🎮🎮🎮', '✅✅✅', '🔔', '🛡️', '🔍', '📢📢📢', '💀', '💥', '⚔️', '🎯', '📦', '🚀'];
-  const keywords = ['[ItemEffectRegistry]', '[Shortsword]', '[IronmanArmor]', '[PreGameItemSelector]', 'activateItem', 'registerEffect'];
+  const emojiMarkers = ['💾💾💾', '🧪🧪🧪', '🎮🎮🎮', '✅✅✅', '🔔', '🛡️', '🔍', '📢📢📢', '💀', '💥', '⚔️', '🎯', '📦', '🚀', '🐴', '🏰'];
+  const keywords = ['[ItemEffectRegistry]', '[Shortsword]', '[IronmanArmor]', '[PreGameItemSelector]', '[PreGame]', '[getKnight]', '[KnightDefender]', 'activateItem', 'registerEffect', 'knight', 'startPatrol'];
 
   if (emojiMarkers.some(emoji => message.includes(emoji)) || keywords.some(kw => message.includes(kw))) {
     capturedLogs.push({
@@ -109,6 +111,46 @@ export function CopyDebugButton({ battleId }: CopyDebugButtonProps) {
         lines.push(`  Side: ${castle.side}`);
         lines.push(`  Destroyed: ${castle.isDestroyed}`);
       });
+
+      // 2.5 Knight & Castle Item State
+      lines.push('\n' + '='.repeat(80));
+      lines.push('KNIGHT & CASTLE ITEM STATE');
+      lines.push('='.repeat(80));
+      try {
+        const knightDebug = getKnightDebugInfo(battleId);
+        lines.push(`\nAll active knight keys: ${JSON.stringify(knightDebug.allKeys)}`);
+        lines.push(`Battle ID being checked: "${battleId}"`);
+        lines.push(`\nLEFT Knight:`);
+        if (knightDebug.left) {
+          lines.push(`  Key: ${knightDebug.left.key}`);
+          lines.push(`  Alive: ${knightDebug.left.alive}`);
+          lines.push(`  HP: ${knightDebug.left.hp}/${knightDebug.left.maxHP}`);
+          lines.push(`  Shield Charges: ${knightDebug.left.shieldCharges}`);
+          lines.push(`  Is Patrolling: ${knightDebug.left.isPatrolling}`);
+          lines.push(`  Position: ${JSON.stringify(knightDebug.left.position)}`);
+        } else {
+          lines.push(`  No knight spawned`);
+        }
+        lines.push(`\nRIGHT Knight:`);
+        if (knightDebug.right) {
+          lines.push(`  Key: ${knightDebug.right.key}`);
+          lines.push(`  Alive: ${knightDebug.right.alive}`);
+          lines.push(`  HP: ${knightDebug.right.hp}/${knightDebug.right.maxHP}`);
+          lines.push(`  Shield Charges: ${knightDebug.right.shieldCharges}`);
+          lines.push(`  Is Patrolling: ${knightDebug.right.isPatrolling}`);
+          lines.push(`  Position: ${JSON.stringify(knightDebug.right.position)}`);
+        } else {
+          lines.push(`  No knight spawned`);
+        }
+
+        // Castle items
+        const leftCastle = getEquippedCastle(battleId, 'left');
+        const rightCastle = getEquippedCastle(battleId, 'right');
+        lines.push(`\nLEFT Castle Item: ${leftCastle ? JSON.stringify(leftCastle) : 'Not equipped'}`);
+        lines.push(`RIGHT Castle Item: ${rightCastle ? JSON.stringify(rightCastle) : 'Not equipped'}`);
+      } catch (error) {
+        lines.push(`❌ Error getting knight/castle state: ${error}`);
+      }
 
       // 3. Collision Manager State
       lines.push('\n' + '='.repeat(80));

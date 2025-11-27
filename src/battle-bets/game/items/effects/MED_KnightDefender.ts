@@ -54,6 +54,45 @@ export function getKnight(gameId: string, side: 'left' | 'right'): KnightDefende
 }
 
 /**
+ * Get all active knight keys (for debugging)
+ */
+export function getActiveKnightKeys(): string[] {
+  return Array.from(activeKnights.keys());
+}
+
+/**
+ * Get knight debug info for a game
+ */
+export function getKnightDebugInfo(gameId: string): { left: any; right: any; allKeys: string[] } {
+  const leftKey = `${gameId}-left`;
+  const rightKey = `${gameId}-right`;
+  const leftKnight = activeKnights.get(leftKey);
+  const rightKnight = activeKnights.get(rightKey);
+
+  return {
+    left: leftKnight ? {
+      key: leftKey,
+      alive: leftKnight.alive,
+      hp: leftKnight.currentHP,
+      maxHP: leftKnight.maxHP,
+      shieldCharges: leftKnight.shieldCharges,
+      isPatrolling: leftKnight.isPatrolling,
+      position: leftKnight.sprite ? { x: leftKnight.sprite.x, y: leftKnight.sprite.y } : null,
+    } : null,
+    right: rightKnight ? {
+      key: rightKey,
+      alive: rightKnight.alive,
+      hp: rightKnight.currentHP,
+      maxHP: rightKnight.maxHP,
+      shieldCharges: rightKnight.shieldCharges,
+      isPatrolling: rightKnight.isPatrolling,
+      position: rightKnight.sprite ? { x: rightKnight.sprite.x, y: rightKnight.sprite.y } : null,
+    } : null,
+    allKeys: Array.from(activeKnights.keys()),
+  };
+}
+
+/**
  * Check if a knight exists and is alive for a game/side
  */
 export function hasActiveKnight(gameId: string, side: 'left' | 'right'): boolean {

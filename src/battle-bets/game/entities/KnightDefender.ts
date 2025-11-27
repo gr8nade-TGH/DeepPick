@@ -66,6 +66,7 @@ export class KnightDefender {
   public position: { x: number; y: number };
   private patrolTween: gsap.core.Tween | null = null;
   private readonly patrolSpeed: number = 1500; // ms to move between rows (faster for evasion)
+  public isPatrolling: boolean = false; // Track patrol state for debugging
 
   // Smart AI
   private threatMap: Map<number, ThreatInfo> = new Map();
@@ -382,8 +383,11 @@ export class KnightDefender {
    * Start roaming patrol
    */
   public startPatrol(): void {
+    console.log(`🐴 [KnightDefender] startPatrol() called for ${this.side} knight`);
+    this.isPatrolling = true;
     this.checkDefenderMode(); // Check castle HP on start
     this.smartPatrol();
+    console.log(`🐴 [KnightDefender] startPatrol() completed, isPatrolling=${this.isPatrolling}`);
   }
 
   /**
