@@ -11,6 +11,37 @@ import type { BattleStatus } from '../../lib/BattleTimer';
 import { itemEffectRegistry } from '../../game/items/ItemEffectRegistry';
 import { getKnight, getKnightDebugInfo } from '../../game/items/effects/MED_KnightDefender';
 import { debugLogger } from '../../game/debug/DebugLogger';
+import { getEquippedCastle } from '../../game/items/effects/CASTLE_Fortress';
+import { castleManager } from '../../game/managers/CastleManager';
+
+// Capture console logs with emoji markers for debug report
+const capturedLogs: Array<{ timestamp: number; message: string }> = [];
+const originalConsoleLog = console.log;
+
+// Override console.log to capture relevant logs
+if (!(console.log as any).__debugBottomBarPatched) {
+  console.log = (...args: any[]) => {
+    originalConsoleLog(...args);
+
+    const message = args.map(arg => {
+      if (typeof arg === 'string') return arg;
+      if (typeof arg === 'object') return JSON.stringify(arg, null, 2);
+      return String(arg);
+    }).join(' ');
+
+    // Capture logs with emoji markers or keywords
+    const emojiMarkers = ['🏰', '🎮', '✅', '🔔', '🛡️', '🔍', '💀', '💥', '⚔️', '🎯', '📦', '🚀', '🐴', '📡', '🐝', '🔮', '🧹', '❌'];
+    const keywords = ['setCastleHP', 'HP Check', 'handleStartGame', 'handleRollCastle', 'getOrSpawnKnight',
+      'equipCastle', 'battleId=', 'ForceQuarter', 'startPatrol', 'gsap.to', 'knight',
+      'Multi-Game Store', 'PreGame', 'ItemEffectRegistry', 'activateItem'];
+
+    if (emojiMarkers.some(emoji => message.includes(emoji)) || keywords.some(kw => message.includes(kw))) {
+      capturedLogs.push({ timestamp: Date.now(), message });
+      if (capturedLogs.length > 300) capturedLogs.shift();
+    }
+  };
+  (console.log as any).__debugBottomBarPatched = true;
+}
 
 interface BattleControlProps {
   battleId: string;
@@ -157,36 +188,96 @@ export const DebugBottomBar: React.FC<DebugBottomBarProps> = ({ battleIds }) => 
       // Build debug report for selected battle
       const battle = useMultiGameStore.getState().getBattle(selectedBattleId);
       const knightInfo = getKnightDebugInfo(selectedBattleId);
+      const activeItems = itemEffectRegistry.getActiveItems().filter(i => i.gameId === selectedBattleId);
+      const leftCastle = getEquippedCastle(selectedBattleId, 'left');
+      const rightCastle = getEquippedCastle(selectedBattleId, 'right');
+      const castles = castleManager.getAllCastles(selectedBattleId);
 
       const formatKnight = (k: any) => {
         if (!k) return 'None';
         return `HP=${k.hp}/${k.maxHP}, Patrolling=${k.isPatrolling}, Pos=(${k.position?.x?.toFixed(0) ?? '?'}, ${k.position?.y?.toFixed(0) ?? '?'}), Shields=${k.shieldCharges ?? 0}`;
       };
 
+      // Check for battle ID mismatch
+      const expectedLeftKey = `${selectedBattleId}-left`;
+      const expectedRightKey = `${selectedBattleId}-right`;
+      const otherBattleKnights = knightInfo.allKeys.filter((k: string) => !k.startsWith(selectedBattleId));
+      const hasMismatch = otherBattleKnights.length > 0;
+
       // Get knight logs from debugLogger
       const knightLogs = debugLogger.getReport(selectedBattleId);
 
-      const report = [
+      // Format captured console logs
+      const formatTime = (ts: number) => {
+        const d = new Date(ts);
+        return d.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 });
+      };
+
+      const lines = [
         '='.repeat(80),
-        'BATTLE DEBUG REPORT',
+        'BATTLE DEBUG REPORT (COMPREHENSIVE)',
         '='.repeat(80),
         `Generated: ${new Date().toISOString()}`,
         `Battle ID: ${selectedBattleId}`,
         `Status: ${battle?.game?.status || 'N/A'}`,
+        `Battle Status: ${battle?.battleStatus || 'N/A'}`,
         `Quarter: ${battle?.currentQuarter || 0}`,
-        `Left HP: ${battle?.capperHP.get('left')?.currentHP ?? 'N/A'}`,
-        `Right HP: ${battle?.capperHP.get('right')?.currentHP ?? 'N/A'}`,
+        `Left HP: ${battle?.capperHP.get('left')?.currentHP ?? 'NOT SET'}`,
+        `Right HP: ${battle?.capperHP.get('right')?.currentHP ?? 'NOT SET'}`,
+        `Active Items: ${activeItems.length}`,
+        `Captured Logs: ${capturedLogs.length}`,
         '',
-        '--- KNIGHT STATE ---',
-        `Left Knight: ${formatKnight(knightInfo.left)}`,
-        `Right Knight: ${formatKnight(knightInfo.right)}`,
-        `All Active Knights: ${knightInfo.allKeys.join(', ') || 'none'}`,
-        '',
-        '--- KNIGHT LOGS ---',
-        knightLogs,
-        '='.repeat(80),
-      ].join('\n');
+      ];
 
+      // Battle ID mismatch warning
+      if (hasMismatch) {
+        lines.push('⚠️⚠️⚠️ BATTLE ID MISMATCH DETECTED! ⚠️⚠️⚠️');
+        lines.push(`  Knights exist for OTHER battles: ${otherBattleKnights.join(', ')}`);
+        lines.push(`  Expected: "${expectedLeftKey}" or "${expectedRightKey}"`);
+        lines.push(`  → You may have rolled castle on wrong battle!`);
+        lines.push('');
+      }
+
+      lines.push('--- CASTLE ITEMS ---');
+      lines.push(`Left Castle: ${leftCastle ? `HP=${leftCastle.castleHP}, Shields=${leftCastle.shieldCharges}` : 'Not equipped'}`);
+      lines.push(`Right Castle: ${rightCastle ? `HP=${rightCastle.castleHP}, Shields=${rightCastle.shieldCharges}` : 'Not equipped'}`);
+      lines.push(`CastleManager Castles: ${castles.length}`);
+      castles.forEach(c => lines.push(`  ${c.id}: HP=${c.currentHP}/${c.maxHP}, side=${c.side}`));
+      lines.push('');
+
+      lines.push('--- KNIGHT STATE ---');
+      lines.push(`Left Knight: ${formatKnight(knightInfo.left)}`);
+      lines.push(`Right Knight: ${formatKnight(knightInfo.right)}`);
+      lines.push(`All Active Knights: ${knightInfo.allKeys.join(', ') || 'none'}`);
+      lines.push('');
+
+      lines.push('--- ACTIVE ITEMS ---');
+      if (activeItems.length === 0) {
+        lines.push('  No active items for this battle');
+      } else {
+        activeItems.forEach(item => {
+          lines.push(`  ${item.itemId} (${item.side}): ${item.qualityTier}`);
+        });
+      }
+      lines.push('');
+
+      lines.push('--- CONSOLE LOGS (Castle/HP/Knight Flow) ---');
+      if (capturedLogs.length === 0) {
+        lines.push('❌ NO LOGS CAPTURED! Hard refresh (Ctrl+Shift+R) and try again.');
+      } else {
+        // Show last 50 logs
+        const recentLogs = capturedLogs.slice(-50);
+        recentLogs.forEach(log => {
+          lines.push(`[${formatTime(log.timestamp)}] ${log.message.substring(0, 200)}`);
+        });
+      }
+      lines.push('');
+
+      lines.push('--- KNIGHT LOGS (from debugLogger) ---');
+      lines.push(knightLogs);
+      lines.push('='.repeat(80));
+
+      const report = lines.join('\n');
       await navigator.clipboard.writeText(report);
       setCopyStatus('✅ Copied!');
       setTimeout(() => setCopyStatus(''), 2000);
