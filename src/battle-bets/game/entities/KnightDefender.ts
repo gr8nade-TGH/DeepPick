@@ -660,43 +660,61 @@ export class KnightDefender {
         return;
       }
 
+      // Check GSAP global state before creating tween
+      logMsg(`GSAP state before tween`, {
+        globalTimelinePaused: gsap.globalTimeline?.paused?.() ?? 'unknown',
+        tickerTime: gsap.ticker?.time ?? 'unknown',
+        tickerActive: !(gsap.ticker as any)?._paused
+      });
+
       this.patrolTween = gsap.to(sprite, {
         y: clampedY,
         duration: Math.max(0.4, duration),
         ease: this.isDefenderMode ? 'power3.inOut' : 'power2.inOut',
-        immediateRender: false, // Don't render immediately, let GSAP handle timing
-        overwrite: 'auto', // Automatically overwrite conflicting tweens
+        paused: false, // Explicitly not paused
         onStart: () => {
           logMsg(`gsap.to STARTED`, { targetY: clampedY, spriteY: sprite.y });
         },
         onUpdate: () => {
-          // Update position tracker from sprite (using captured reference)
+          // Update position tracker from sprite
           this.position.y = sprite.y;
         },
         onComplete: () => {
           logMsg(`gsap.to COMPLETED`, { finalY: sprite.y });
-          // Longer pauses to reduce jumpiness
           const pauseTime = this.isDefenderMode
-            ? 0.4 + Math.random() * 0.3  // 0.4-0.7s in defender mode
-            : 0.8 + Math.random() * 0.6; // 0.8-1.4s in normal mode
+            ? 0.4 + Math.random() * 0.3
+            : 0.8 + Math.random() * 0.6;
           gsap.delayedCall(pauseTime, () => this.smartPatrol());
         },
       });
 
-      // Check tween status after a frame to see if GSAP is running
+      // Check tween status immediately
       logMsg(`gsap.to created`, {
         patrolTweenExists: !!this.patrolTween,
         tweenActive: this.patrolTween?.isActive?.() ?? 'unknown',
         tweenPaused: this.patrolTween?.paused?.() ?? 'unknown',
-        tweenProgress: this.patrolTween?.progress?.() ?? 'unknown'
+        tweenProgress: this.patrolTween?.progress?.() ?? 'unknown',
+        tweenParent: this.patrolTween?.parent?.constructor?.name ?? 'unknown',
+        globalTimelineChildren: gsap.globalTimeline?.getChildren?.()?.length ?? 'unknown'
       });
 
-      // Log status after 100ms to see if tween is progressing
+      // Try to force the tween to play
+      if (this.patrolTween && !this.patrolTween.isActive()) {
+        logMsg(`Tween not active, trying play()...`);
+        this.patrolTween.play();
+        logMsg(`After play()`, {
+          tweenActive: this.patrolTween?.isActive?.() ?? 'unknown',
+          tweenPaused: this.patrolTween?.paused?.() ?? 'unknown'
+        });
+      }
+
+      // Log status after 100ms
       setTimeout(() => {
         logMsg(`gsap.to after 100ms`, {
           tweenActive: this.patrolTween?.isActive?.() ?? 'unknown',
           progress: this.patrolTween?.progress?.() ?? 'unknown',
-          spriteY: sprite.y
+          spriteY: sprite.y,
+          globalTimelinePaused: gsap.globalTimeline?.paused?.() ?? 'unknown'
         });
       }, 100);
     } catch (error) {
