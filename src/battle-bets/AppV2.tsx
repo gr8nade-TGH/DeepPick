@@ -602,7 +602,10 @@ function AppV2() {
         {showDebugControls && (
           <>
             <CopyDebugButton />
-            <QuarterDebugControls />
+            {/* QuarterDebugControls are rendered per-battle in the battle loop, not here */}
+            {battles.map((game, index) => (
+              <QuarterDebugControls key={`debug-${game.id}`} battleId={game.id} index={index} />
+            ))}
           </>
         )}
 
