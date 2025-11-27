@@ -12,7 +12,8 @@
 import * as PIXI from 'pixi.js';
 import gsap from 'gsap';
 import { gridManager } from '../managers/GridManager';
-import { DEFAULT_GRID_CONFIG } from '../../types/game';
+import { DEFAULT_GRID_CONFIG, StatType } from '../../types/game';
+import { useMultiGameStore } from '../../store/multiGameStore';
 
 export interface KnightDefenderConfig {
   id: string;
@@ -60,6 +61,11 @@ export class KnightDefender {
   // Smart AI
   private threatMap: Map<number, ThreatInfo> = new Map();
   private targetRow: number = 2; // Start at AST row
+  private static readonly STAT_ROWS: StatType[] = ['pts', 'reb', 'ast', 'stl', '3pt'];
+
+  // Defender Mode (activated when castle HP < 10)
+  private isDefenderMode: boolean = false;
+  private defenderModeActivated: boolean = false; // Only show animation once
 
   // Collision
   public readonly collisionRadius: number = 25;
@@ -365,7 +371,120 @@ export class KnightDefender {
    * Start roaming patrol
    */
   public startPatrol(): void {
+    this.checkDefenderMode(); // Check castle HP on start
     this.smartPatrol();
+  }
+
+  /**
+   * Get Y bounds for patrol (with padding for HP bar visibility)
+   */
+  private getPatrolBounds(): { minY: number; maxY: number } {
+    const cellHeight = DEFAULT_GRID_CONFIG.cellHeight;
+    // Add top padding so HP bar (at y=-35) doesn't get cut off
+    const topPadding = 40;
+    const minY = cellHeight / 2 + topPadding;
+    const maxY = cellHeight * 4 + cellHeight / 2;
+    return { minY, maxY };
+  }
+
+  /**
+   * Get defense dot counts per lane for this knight's side
+   */
+  private getDefenseDotsPerLane(): Map<StatType, number> {
+    const battle = useMultiGameStore.getState().getBattle(this.gameId);
+    if (!battle) return new Map();
+
+    const counts = new Map<StatType, number>();
+    KnightDefender.STAT_ROWS.forEach(stat => counts.set(stat, 0));
+
+    // Count alive defense dots per lane on our side
+    battle.defenseDots.forEach(dot => {
+      if (dot.side === this.side && dot.alive) {
+        const current = counts.get(dot.stat) || 0;
+        counts.set(dot.stat, current + 1);
+      }
+    });
+
+    return counts;
+  }
+
+  /**
+   * Get the 3 weakest lanes (fewest defense dots) sorted by weakness
+   * Returns array of row indices [0-4] where 0=pts, 1=reb, etc.
+   */
+  private getWeakestLanes(): number[] {
+    const dotsPerLane = this.getDefenseDotsPerLane();
+
+    // Convert to array of { row, count } and sort by count ascending
+    const laneCounts: { row: number; count: number }[] = [];
+    KnightDefender.STAT_ROWS.forEach((stat, index) => {
+      laneCounts.push({ row: index, count: dotsPerLane.get(stat) || 0 });
+    });
+
+    // Sort by count ascending (weakest first)
+    laneCounts.sort((a, b) => a.count - b.count);
+
+    // Return the 3 weakest lanes
+    return laneCounts.slice(0, 3).map(lc => lc.row);
+  }
+
+  /**
+   * Check if Defender Mode should be activated (castle HP < 10)
+   */
+  private checkDefenderMode(): void {
+    if (this.defenderModeActivated) return; // Already activated once
+
+    const battle = useMultiGameStore.getState().getBattle(this.gameId);
+    if (!battle) return;
+
+    const castleHP = battle.capperHP.get(this.side);
+    if (!castleHP) return;
+
+    if (castleHP.currentHP < 10 && !this.isDefenderMode) {
+      this.activateDefenderMode();
+    }
+  }
+
+  /**
+   * Activate Defender Mode with dramatic animation
+   */
+  private activateDefenderMode(): void {
+    this.isDefenderMode = true;
+    this.defenderModeActivated = true;
+
+    console.log(`🛡️⚔️ [KnightDefender] ${this.id} DEFENDER MODE ACTIVATED! Castle HP low!`);
+
+    // Stop current patrol
+    if (this.patrolTween) this.patrolTween.kill();
+
+    // Dramatic activation animation
+    const facing = this.side === 'left' ? 1 : -1;
+
+    // Flash and pulse effect
+    gsap.timeline()
+      // Quick red flash
+      .to(this.glowEffect, { alpha: 1, duration: 0.1 })
+      .to(this.glowEffect, { alpha: 0.3, duration: 0.1 })
+      .to(this.glowEffect, { alpha: 1, duration: 0.1 })
+      // Scale up dramatically
+      .to(this.sprite.scale, { x: 1.4, y: 1.4, duration: 0.2, ease: 'power2.out' }, '-=0.2')
+      .to(this.sprite.scale, { x: 1, y: 1, duration: 0.3, ease: 'elastic.out(1, 0.5)' })
+      // Spin the knight
+      .to(this.knightSprite, { rotation: facing * Math.PI * 2, duration: 0.5, ease: 'power2.inOut' }, '-=0.4')
+      .set(this.knightSprite, { rotation: 0 });
+
+    // Change glow color to red (defensive)
+    this.glowEffect.clear();
+    this.glowEffect.circle(0, 0, 35);
+    this.glowEffect.fill({ color: 0xFF4444, alpha: 0.25 });
+    this.glowEffect.circle(0, 0, 25);
+    this.glowEffect.fill({ color: 0xFF0000, alpha: 0.15 });
+
+    // Show floating text
+    this.showFloatingText('⚔️ DEFENDER MODE! ⚔️', 0xFF4444);
+
+    // Resume patrol after animation (faster in defender mode)
+    gsap.delayedCall(0.6, () => this.smartPatrol());
   }
 
   /**
@@ -410,41 +529,105 @@ export class KnightDefender {
   }
 
   /**
-   * Smart patrol - evade threats, protect weak lanes
+   * Smart patrol - protect weak lanes (lanes with fewest defense dots)
+   * In Defender Mode: more aggressive, faster movement
    */
   private smartPatrol(): void {
     if (!this.alive) return;
 
-    const cellHeight = DEFAULT_GRID_CONFIG.cellHeight;
-    const minY = cellHeight / 2;
-    const maxY = cellHeight * 4 + cellHeight / 2;
+    // Check if we should enter Defender Mode
+    this.checkDefenderMode();
 
-    // 60% chance to use smart positioning, 40% random (keeps it interesting)
+    const cellHeight = DEFAULT_GRID_CONFIG.cellHeight;
+    const { minY, maxY } = this.getPatrolBounds();
+
     let targetRow: number;
-    if (Math.random() < 0.6) {
-      targetRow = this.getSafestRow();
+
+    if (this.isDefenderMode) {
+      // DEFENDER MODE: Patrol ALL lanes aggressively, prioritize weakest
+      const weakestLanes = this.getWeakestLanes();
+      // Always pick the weakest lane in defender mode
+      targetRow = weakestLanes[0];
     } else {
-      targetRow = Math.floor(Math.random() * 5);
+      // NORMAL MODE: Patrol between the 3 weakest lanes
+      const weakestLanes = this.getWeakestLanes();
+
+      // 70% chance to pick from weakest lanes, 30% any of the 3
+      if (Math.random() < 0.7) {
+        // Weighted towards the weakest (index 0 = weakest)
+        const weights = [0.5, 0.3, 0.2]; // 50% weakest, 30% second, 20% third
+        const rand = Math.random();
+        if (rand < weights[0]) {
+          targetRow = weakestLanes[0];
+        } else if (rand < weights[0] + weights[1]) {
+          targetRow = weakestLanes[1];
+        } else {
+          targetRow = weakestLanes[2];
+        }
+      } else {
+        // Random from the 3 weakest
+        targetRow = weakestLanes[Math.floor(Math.random() * 3)];
+      }
     }
 
     this.targetRow = targetRow;
     const targetY = cellHeight * targetRow + cellHeight / 2;
 
-    // Clamp to bounds
+    // Clamp to bounds (accounts for HP bar visibility)
     const clampedY = Math.max(minY, Math.min(maxY, targetY));
     const distance = Math.abs(clampedY - this.position.y);
-    const duration = (distance / (maxY - minY)) * this.patrolSpeed / 1000;
+
+    // Faster movement in Defender Mode
+    const speedMultiplier = this.isDefenderMode ? 0.5 : 1.0;
+    const duration = (distance / (maxY - minY)) * this.patrolSpeed * speedMultiplier / 1000;
 
     this.patrolTween = gsap.to(this.sprite, {
       y: clampedY,
-      duration: Math.max(0.4, duration),
-      ease: 'power2.inOut',
+      duration: Math.max(0.25, duration),
+      ease: this.isDefenderMode ? 'power3.inOut' : 'power2.inOut',
       onUpdate: () => {
         this.position.y = this.sprite.y;
       },
       onComplete: () => {
-        // Shorter pause for more responsive movement
-        gsap.delayedCall(0.2 + Math.random() * 0.3, () => this.smartPatrol());
+        // Shorter pause in Defender Mode (more urgent)
+        const pauseTime = this.isDefenderMode
+          ? 0.1 + Math.random() * 0.15
+          : 0.2 + Math.random() * 0.3;
+        gsap.delayedCall(pauseTime, () => this.smartPatrol());
+      },
+    });
+  }
+
+  /**
+   * Move to a new lane after blocking a projectile
+   */
+  public moveAfterBlock(): void {
+    if (!this.alive) return;
+    if (this.patrolTween) this.patrolTween.kill();
+
+    const cellHeight = DEFAULT_GRID_CONFIG.cellHeight;
+    const { minY, maxY } = this.getPatrolBounds();
+
+    // Get weakest lanes and move to one we're not currently at
+    const weakestLanes = this.getWeakestLanes();
+    const currentRow = Math.round((this.position.y - cellHeight / 2) / cellHeight);
+
+    // Pick a different lane from the weakest ones
+    let targetRow = weakestLanes.find(row => row !== currentRow) ?? weakestLanes[0];
+
+    const targetY = cellHeight * targetRow + cellHeight / 2;
+    const clampedY = Math.max(minY, Math.min(maxY, targetY));
+
+    // Quick movement after block
+    gsap.to(this.sprite, {
+      y: clampedY,
+      duration: 0.3,
+      ease: 'power2.out',
+      onUpdate: () => {
+        this.position.y = this.sprite.y;
+      },
+      onComplete: () => {
+        gsap.delayedCall(0.15, () => this.smartPatrol());
       },
     });
   }
@@ -457,8 +640,7 @@ export class KnightDefender {
     if (this.patrolTween) this.patrolTween.kill();
 
     const cellHeight = DEFAULT_GRID_CONFIG.cellHeight;
-    const minY = cellHeight / 2;
-    const maxY = cellHeight * 4 + cellHeight / 2;
+    const { minY, maxY } = this.getPatrolBounds();
 
     // Move away from danger
     const evadeDirection = this.position.y > dangerY ? 1 : -1;
@@ -536,6 +718,9 @@ export class KnightDefender {
 
     // Create floating "BLOCKED!" text - more visible
     this.showFloatingText('⚔️ BLOCKED!', 0x00FFFF);
+
+    // Move to a new lane after blocking (delayed to let animation play)
+    gsap.delayedCall(0.35, () => this.moveAfterBlock());
   }
 
   /**
