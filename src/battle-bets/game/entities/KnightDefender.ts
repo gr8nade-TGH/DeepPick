@@ -119,9 +119,9 @@ export class KnightDefender {
     this.createHpBar();
     this.sprite.addChild(this.hpBarContainer);
 
-    // Create shield charge indicator container (above HP bar)
+    // Create shield charge indicator container (at horse's feet)
     this.shieldChargeContainer = new PIXI.Container();
-    this.shieldChargeContainer.y = -45; // Above HP bar
+    this.shieldChargeContainer.y = 28; // At horse's feet level
     this.sprite.addChild(this.shieldChargeContainer);
 
     this.sprite.x = this.position.x;

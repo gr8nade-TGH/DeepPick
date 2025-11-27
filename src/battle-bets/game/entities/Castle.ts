@@ -708,19 +708,9 @@ export class Castle {
   public takeDamage(damage: number): void {
     if (this.isDestroyed) return;
 
-    console.log(`🛡️ takeDamage called: damage=${damage}, currentHP=${this.currentHP}`);
+    console.log(`🏰 takeDamage called: damage=${damage}, currentHP=${this.currentHP}`);
 
-    // Check if shield should activate BEFORE taking damage
-    // This handles Blue Orb Shield auto-activation at HP < 3
-    const currentHP = castleHealthSystem.getCurrentHP(this.id);
-    const hpAfterDamage = currentHP - damage;
-
-    if (!castleHealthSystem.hasActiveShield(this.id) && (currentHP < 3 || hpAfterDamage < 3)) {
-      console.log(`🛡️ Shield activation condition met! Checking for shield items...`);
-      this.checkAndActivateShield();
-    }
-
-    // Apply damage through health system
+    // Apply damage through health system (no auto-shield activation)
     const result = castleHealthSystem.takeDamage(this.id, damage);
 
     console.log(`💔 Damage result:`, result);
@@ -906,23 +896,292 @@ export class Castle {
   }
 
   /**
-   * Mark castle as destroyed
+   * Mark castle as destroyed with dramatic bloody explosion
    */
   private destroy(): void {
     this.isDestroyed = true;
+    console.log(`💥🩸 Castle ${this.id} DESTROYED! Initiating bloody destruction...`);
 
-    if (this.sprite) {
-      // Fade out animation
-      const fadeOut = () => {
-        if (this.sprite && this.sprite.alpha > 0) {
-          this.sprite.alpha -= 0.02;
-          requestAnimationFrame(fadeOut);
+    // Create massive blood explosion
+    this.createBloodyExplosion();
+
+    // Create debris/rubble flying outward
+    this.createDebrisExplosion();
+
+    // Create blood pool beneath castle
+    this.createDeathBloodPool();
+
+    // Show "DESTROYED" text
+    this.showDestroyedText();
+
+    // Dramatic destruction animation
+    if (this.sprite && this.container) {
+      // Shake violently first
+      const originalX = this.container.x;
+      const originalY = this.container.y;
+      let shakeCount = 0;
+      const maxShakes = 15;
+
+      const violentShake = () => {
+        if (shakeCount < maxShakes) {
+          const intensity = 8 * (1 - shakeCount / maxShakes);
+          this.container!.x = originalX + (Math.random() - 0.5) * intensity;
+          this.container!.y = originalY + (Math.random() - 0.5) * intensity;
+          shakeCount++;
+          requestAnimationFrame(violentShake);
+        } else {
+          this.container!.x = originalX;
+          this.container!.y = originalY;
+          // Start collapse after shake
+          this.collapseAnimation();
         }
       };
-      fadeOut();
+      violentShake();
     }
+  }
 
-    console.log(`💥 Castle ${this.id} destroyed!`);
+  /**
+   * Create massive blood explosion particles
+   */
+  private createBloodyExplosion(): void {
+    if (!this.container) return;
+
+    const bloodColors = [0x8B0000, 0xB22222, 0x6B0000, 0xDC143C, 0xFF0000, 0x4A0000];
+    const particleCount = 60;
+
+    for (let i = 0; i < particleCount; i++) {
+      const blood = new PIXI.Graphics();
+      const color = bloodColors[Math.floor(Math.random() * bloodColors.length)];
+      const size = 3 + Math.random() * 8;
+
+      // Random shape - circles and elongated drops
+      if (Math.random() > 0.5) {
+        blood.circle(0, 0, size);
+      } else {
+        blood.ellipse(0, 0, size * 0.6, size * 1.5);
+      }
+      blood.fill({ color, alpha: 0.9 });
+
+      // Start from castle center
+      blood.x = 0;
+      blood.y = -60;
+
+      this.container.addChild(blood);
+
+      // Explosive outward trajectory
+      const angle = (Math.PI * 2 * i) / particleCount + (Math.random() - 0.5) * 0.5;
+      const distance = 80 + Math.random() * 120;
+      const targetX = Math.cos(angle) * distance;
+      const targetY = Math.sin(angle) * distance - 30;
+      const duration = 0.4 + Math.random() * 0.4;
+
+      // Animate outward with gravity
+      const startTime = performance.now();
+      const animate = () => {
+        const elapsed = (performance.now() - startTime) / 1000;
+        const progress = Math.min(elapsed / duration, 1);
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+
+        blood.x = targetX * easeOut;
+        blood.y = targetY * easeOut + (progress * progress * 50); // Gravity
+        blood.alpha = 0.9 * (1 - progress * 0.5);
+        blood.scale.set(1 - progress * 0.3);
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          this.container?.removeChild(blood);
+          blood.destroy();
+        }
+      };
+
+      // Stagger the explosions slightly
+      setTimeout(() => animate(), Math.random() * 100);
+    }
+  }
+
+  /**
+   * Create debris/rubble explosion
+   */
+  private createDebrisExplosion(): void {
+    if (!this.container) return;
+
+    const debrisColors = [0x4A4A4A, 0x6B6B6B, 0x8B8B8B, 0x5C4033, 0x3D2817];
+    const debrisCount = 25;
+
+    for (let i = 0; i < debrisCount; i++) {
+      const debris = new PIXI.Graphics();
+      const color = debrisColors[Math.floor(Math.random() * debrisColors.length)];
+      const size = 4 + Math.random() * 10;
+
+      // Rocky/angular shapes
+      debris.rect(-size / 2, -size / 2, size, size * (0.5 + Math.random() * 0.5));
+      debris.fill({ color, alpha: 1 });
+
+      debris.x = (Math.random() - 0.5) * 40;
+      debris.y = -60 + (Math.random() - 0.5) * 40;
+      debris.rotation = Math.random() * Math.PI;
+
+      this.container.addChild(debris);
+
+      // Explosive trajectory
+      const angle = Math.random() * Math.PI * 2;
+      const distance = 60 + Math.random() * 100;
+      const targetX = debris.x + Math.cos(angle) * distance;
+      const targetY = debris.y + Math.sin(angle) * distance;
+      const spinSpeed = (Math.random() - 0.5) * 10;
+      const duration = 0.6 + Math.random() * 0.5;
+
+      const startTime = performance.now();
+      const startX = debris.x;
+      const startY = debris.y;
+      const startRot = debris.rotation;
+
+      const animate = () => {
+        const elapsed = (performance.now() - startTime) / 1000;
+        const progress = Math.min(elapsed / duration, 1);
+        const easeOut = 1 - Math.pow(1 - progress, 2);
+
+        debris.x = startX + (targetX - startX) * easeOut;
+        debris.y = startY + (targetY - startY) * easeOut + (progress * progress * 80);
+        debris.rotation = startRot + spinSpeed * elapsed;
+        debris.alpha = 1 - progress;
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          this.container?.removeChild(debris);
+          debris.destroy();
+        }
+      };
+      animate();
+    }
+  }
+
+  /**
+   * Create large blood pool that spreads beneath the castle
+   */
+  private createDeathBloodPool(): void {
+    if (!this.container) return;
+
+    const pool = new PIXI.Graphics();
+    pool.ellipse(0, 0, 5, 3);
+    pool.fill({ color: 0x6B0000, alpha: 0.8 });
+    pool.y = 20;
+
+    this.container.addChild(pool);
+
+    // Spread the blood pool
+    const startTime = performance.now();
+    const duration = 2.0;
+
+    const animate = () => {
+      const elapsed = (performance.now() - startTime) / 1000;
+      const progress = Math.min(elapsed / duration, 1);
+      const easeOut = 1 - Math.pow(1 - progress, 3);
+
+      pool.clear();
+      const width = 5 + 70 * easeOut;
+      const height = 3 + 25 * easeOut;
+      pool.ellipse(0, 0, width, height);
+      pool.fill({ color: 0x6B0000, alpha: 0.7 - progress * 0.3 });
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    };
+    animate();
+  }
+
+  /**
+   * Show floating "DESTROYED" text
+   */
+  private showDestroyedText(): void {
+    if (!this.container) return;
+
+    const text = new PIXI.Text({
+      text: '💀 DESTROYED 💀',
+      style: {
+        fontFamily: 'Arial Black',
+        fontSize: 18,
+        fill: 0xFF0000,
+        stroke: { color: 0x000000, width: 4 },
+        dropShadow: true,
+        dropShadowColor: 0x000000,
+        dropShadowBlur: 4,
+        dropShadowDistance: 2,
+      }
+    });
+    text.anchor.set(0.5);
+    text.x = 0;
+    text.y = -100;
+    text.alpha = 0;
+
+    this.container.addChild(text);
+
+    // Fade in, float up, fade out
+    const startTime = performance.now();
+    const animate = () => {
+      const elapsed = (performance.now() - startTime) / 1000;
+
+      if (elapsed < 0.3) {
+        // Fade in
+        text.alpha = elapsed / 0.3;
+      } else if (elapsed < 1.5) {
+        // Hold and float
+        text.alpha = 1;
+        text.y = -100 - (elapsed - 0.3) * 20;
+      } else if (elapsed < 2.5) {
+        // Fade out
+        text.alpha = 1 - (elapsed - 1.5);
+        text.y = -100 - 24 - (elapsed - 1.5) * 10;
+      } else {
+        this.container?.removeChild(text);
+        text.destroy();
+        return;
+      }
+      requestAnimationFrame(animate);
+    };
+    animate();
+  }
+
+  /**
+   * Castle collapse animation
+   */
+  private collapseAnimation(): void {
+    if (!this.sprite || !this.container) return;
+
+    const startTime = performance.now();
+    const duration = 1.5;
+    const startAlpha = this.sprite.alpha;
+
+    const animate = () => {
+      const elapsed = (performance.now() - startTime) / 1000;
+      const progress = Math.min(elapsed / duration, 1);
+
+      // Sink down
+      if (this.sprite) {
+        this.sprite.y = this.sprite.y + progress * 0.5;
+        this.sprite.alpha = startAlpha * (1 - progress);
+        // Slight tilt as it collapses
+        this.sprite.rotation = progress * 0.1 * (this.side === 'left' ? 1 : -1);
+      }
+
+      // Fade HP bar
+      if (this.hpBarContainer) {
+        this.hpBarContainer.alpha = 1 - progress;
+      }
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        // Final state - very faded remains
+        if (this.sprite) {
+          this.sprite.alpha = 0.1;
+        }
+      }
+    };
+    animate();
   }
 
   /**
