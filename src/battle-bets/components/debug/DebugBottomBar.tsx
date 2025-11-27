@@ -172,8 +172,7 @@ interface DebugBottomBarProps {
 }
 
 export const DebugBottomBar: React.FC<DebugBottomBarProps> = ({ battleIds }) => {
-  const [selectedBattleId, setSelectedBattleId] = useState<string>(battleIds[0] || '');
-  const [copyStatus, setCopyStatus] = useState<string>('');
+  const [copyStatus, setCopyStatus] = useState<Record<string, string>>({});
 
   // Enable debug logger on mount
   useEffect(() => {
@@ -182,16 +181,16 @@ export const DebugBottomBar: React.FC<DebugBottomBarProps> = ({ battleIds }) => 
     return () => debugLogger.disable();
   }, []);
 
-  const handleCopyDebug = async () => {
-    setCopyStatus('Copying...');
+  const handleCopyDebug = async (battleId: string, battleIndex: number) => {
+    setCopyStatus(prev => ({ ...prev, [battleId]: 'Copying...' }));
     try {
-      // Build debug report for selected battle
-      const battle = useMultiGameStore.getState().getBattle(selectedBattleId);
-      const knightInfo = getKnightDebugInfo(selectedBattleId);
-      const activeItems = itemEffectRegistry.getActiveItems().filter(i => i.gameId === selectedBattleId);
-      const leftCastle = getEquippedCastle(selectedBattleId, 'left');
-      const rightCastle = getEquippedCastle(selectedBattleId, 'right');
-      const castles = castleManager.getAllCastles(selectedBattleId);
+      // Build debug report for this specific battle
+      const battle = useMultiGameStore.getState().getBattle(battleId);
+      const knightInfo = getKnightDebugInfo(battleId);
+      const activeItems = itemEffectRegistry.getActiveItems().filter(i => i.gameId === battleId);
+      const leftCastle = getEquippedCastle(battleId, 'left');
+      const rightCastle = getEquippedCastle(battleId, 'right');
+      const castles = castleManager.getAllCastles(battleId);
 
       const formatKnight = (k: any) => {
         if (!k) return 'None';
@@ -199,13 +198,13 @@ export const DebugBottomBar: React.FC<DebugBottomBarProps> = ({ battleIds }) => 
       };
 
       // Check for battle ID mismatch
-      const expectedLeftKey = `${selectedBattleId}-left`;
-      const expectedRightKey = `${selectedBattleId}-right`;
-      const otherBattleKnights = knightInfo.allKeys.filter((k: string) => !k.startsWith(selectedBattleId));
+      const expectedLeftKey = `${battleId}-left`;
+      const expectedRightKey = `${battleId}-right`;
+      const otherBattleKnights = knightInfo.allKeys.filter((k: string) => !k.startsWith(battleId));
       const hasMismatch = otherBattleKnights.length > 0;
 
       // Get knight logs from debugLogger
-      const knightLogs = debugLogger.getReport(selectedBattleId);
+      const knightLogs = debugLogger.getReport(battleId);
 
       // Format captured console logs
       const formatTime = (ts: number) => {
@@ -215,10 +214,10 @@ export const DebugBottomBar: React.FC<DebugBottomBarProps> = ({ battleIds }) => 
 
       const lines = [
         '='.repeat(80),
-        'BATTLE DEBUG REPORT (COMPREHENSIVE)',
+        `BATTLE #${battleIndex + 1} DEBUG REPORT (v2)`,
         '='.repeat(80),
         `Generated: ${new Date().toISOString()}`,
-        `Battle ID: ${selectedBattleId}`,
+        `Battle ID: ${battleId}`,
         `Status: ${battle?.game?.status || 'N/A'}`,
         `Battle Status: ${battle?.battleStatus || 'N/A'}`,
         `Quarter: ${battle?.currentQuarter || 0}`,
@@ -279,11 +278,11 @@ export const DebugBottomBar: React.FC<DebugBottomBarProps> = ({ battleIds }) => 
 
       const report = lines.join('\n');
       await navigator.clipboard.writeText(report);
-      setCopyStatus('✅ Copied!');
-      setTimeout(() => setCopyStatus(''), 2000);
+      setCopyStatus(prev => ({ ...prev, [battleId]: '✅' }));
+      setTimeout(() => setCopyStatus(prev => ({ ...prev, [battleId]: '' })), 2000);
     } catch (error) {
       console.error('Failed to copy:', error);
-      setCopyStatus('❌ Failed');
+      setCopyStatus(prev => ({ ...prev, [battleId]: '❌' }));
     }
   };
 
@@ -300,29 +299,18 @@ export const DebugBottomBar: React.FC<DebugBottomBarProps> = ({ battleIds }) => 
           🎮 DEBUG CONTROL BAR
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <span style={{ fontSize: '10px', color: '#9ca3af' }}>Copy Debug for:</span>
-          <select
-            value={selectedBattleId}
-            onChange={(e) => setSelectedBattleId(e.target.value)}
-            style={{
-              fontSize: '11px', padding: '4px 8px', background: '#374151', color: '#fff',
-              border: '1px solid #4b5563', borderRadius: '4px',
-            }}
-          >
-            {battleIds.map((id, idx) => (
-              <option key={id} value={id}>Battle #{idx + 1} ({id})</option>
-            ))}
-          </select>
-          <button
-            onClick={handleCopyDebug}
-            style={{
-              fontSize: '11px', padding: '6px 12px', background: '#2563eb', color: '#fff',
-              border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold',
-            }}
-          >
-            📋 Copy Debug
-          </button>
-          {copyStatus && <span style={{ fontSize: '10px', color: '#9ca3af' }}>{copyStatus}</span>}
+          {battleIds.map((id, idx) => (
+            <button
+              key={id}
+              onClick={() => handleCopyDebug(id, idx)}
+              style={{
+                fontSize: '11px', padding: '6px 12px', background: '#2563eb', color: '#fff',
+                border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold',
+              }}
+            >
+              📋 Battle #{idx + 1} {copyStatus[id] || ''}
+            </button>
+          ))}
         </div>
       </div>
 
