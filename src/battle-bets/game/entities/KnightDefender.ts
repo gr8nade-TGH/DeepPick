@@ -14,6 +14,7 @@ import gsap from 'gsap';
 import { gridManager } from '../managers/GridManager';
 import { DEFAULT_GRID_CONFIG, StatType } from '../../types/game';
 import { useMultiGameStore } from '../../store/multiGameStore';
+import { debugLogger } from '../debug/DebugLogger';
 
 export interface KnightDefenderConfig {
   id: string;
@@ -383,11 +384,17 @@ export class KnightDefender {
    * Start roaming patrol
    */
   public startPatrol(): void {
-    console.log(`🐴 [KnightDefender] startPatrol() called for ${this.side} knight`);
+    const msg = `startPatrol() called for ${this.side} knight, gameId=${this.gameId}`;
+    console.log(`🐴 [KnightDefender] ${msg}`);
+    debugLogger.log('knight', msg, { side: this.side, gameId: this.gameId });
+
     this.isPatrolling = true;
     this.checkDefenderMode(); // Check castle HP on start
     this.smartPatrol();
-    console.log(`🐴 [KnightDefender] startPatrol() completed, isPatrolling=${this.isPatrolling}`);
+
+    const msg2 = `startPatrol() completed, isPatrolling=${this.isPatrolling}`;
+    console.log(`🐴 [KnightDefender] ${msg2}`);
+    debugLogger.log('knight', msg2, { isPatrolling: this.isPatrolling });
   }
 
   /**
@@ -554,10 +561,15 @@ export class KnightDefender {
    * In Defender Mode: more aggressive, faster movement
    */
   private smartPatrol(): void {
-    console.log(`🐴 [KnightDefender] smartPatrol() called for ${this.side}, alive=${this.alive}, sprite exists=${!!this.sprite}`);
+    const logMsg = (msg: string, data?: any) => {
+      console.log(`🐴 [KnightDefender] ${msg}`);
+      debugLogger.log('knight', msg, data);
+    };
+
+    logMsg(`smartPatrol() called`, { side: this.side, alive: this.alive, spriteExists: !!this.sprite });
 
     if (!this.alive) {
-      console.log(`🐴 [KnightDefender] smartPatrol() aborted - knight not alive`);
+      logMsg(`smartPatrol() aborted - knight not alive`);
       return;
     }
 
@@ -566,7 +578,7 @@ export class KnightDefender {
 
     const cellHeight = DEFAULT_GRID_CONFIG.cellHeight;
     const { minY, maxY } = this.getPatrolBounds();
-    console.log(`🐴 [KnightDefender] Patrol bounds: minY=${minY}, maxY=${maxY}, current position.y=${this.position.y}`);
+    logMsg(`Patrol bounds`, { minY, maxY, currentY: this.position.y });
 
     let targetRow: number;
 
@@ -608,21 +620,20 @@ export class KnightDefender {
     const speedMultiplier = this.isDefenderMode ? 0.5 : 1.0;
     const duration = (distance / (maxY - minY)) * this.patrolSpeed * speedMultiplier / 1000;
 
-    console.log(`🐴 [KnightDefender] Starting gsap.to: targetRow=${targetRow}, targetY=${targetY}, clampedY=${clampedY}, duration=${duration.toFixed(2)}`);
-    console.log(`🐴 [KnightDefender] sprite.y BEFORE = ${this.sprite.y}`);
+    logMsg(`Creating gsap.to`, { targetRow, targetY, clampedY, duration: duration.toFixed(2), spriteYBefore: this.sprite.y });
 
     this.patrolTween = gsap.to(this.sprite, {
       y: clampedY,
       duration: Math.max(0.4, duration),
       ease: this.isDefenderMode ? 'power3.inOut' : 'power2.inOut',
       onStart: () => {
-        console.log(`🐴 [KnightDefender] gsap.to STARTED, moving to y=${clampedY}`);
+        logMsg(`gsap.to STARTED`, { targetY: clampedY });
       },
       onUpdate: () => {
         this.position.y = this.sprite.y;
       },
       onComplete: () => {
-        console.log(`🐴 [KnightDefender] gsap.to COMPLETED, now at y=${this.sprite.y}`);
+        logMsg(`gsap.to COMPLETED`, { finalY: this.sprite.y });
         // Longer pauses to reduce jumpiness
         const pauseTime = this.isDefenderMode
           ? 0.4 + Math.random() * 0.3  // 0.4-0.7s in defender mode
@@ -631,7 +642,7 @@ export class KnightDefender {
       },
     });
 
-    console.log(`🐴 [KnightDefender] gsap.to created, patrolTween exists=${!!this.patrolTween}`);
+    logMsg(`gsap.to created`, { patrolTweenExists: !!this.patrolTween });
   }
 
   /**

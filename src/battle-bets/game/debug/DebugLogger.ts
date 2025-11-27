@@ -4,7 +4,7 @@
 
 interface DebugLog {
   timestamp: number;
-  type: 'castle-damage' | 'castle-manager' | 'store-hp' | 'collision' | 'projectile' | 'general';
+  type: 'castle-damage' | 'castle-manager' | 'store-hp' | 'collision' | 'projectile' | 'knight' | 'general';
   message: string;
   data?: any;
 }
@@ -52,7 +52,7 @@ class DebugLogger {
    */
   getReport(battleId?: string): string {
     const lines: string[] = [];
-    
+
     lines.push('='.repeat(80));
     lines.push('BATTLE BETS DEBUG REPORT');
     lines.push('='.repeat(80));
@@ -76,7 +76,7 @@ class DebugLogger {
       lines.push(`\n${'='.repeat(80)}`);
       lines.push(`${type.toUpperCase()} (${typeLogs.length} logs)`);
       lines.push('='.repeat(80));
-      
+
       typeLogs.forEach(log => {
         const time = new Date(log.timestamp).toISOString().split('T')[1];
         lines.push(`[${time}] ${log.message}`);

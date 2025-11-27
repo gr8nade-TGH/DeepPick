@@ -3,13 +3,14 @@
  * Shows controls for all battles in a single organized bar
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMultiGameStore } from '../../store/multiGameStore';
 import { simulateQuarter } from '../../game/simulation/quarterSimulation';
 import type { GameStatus } from '../../types/game';
 import type { BattleStatus } from '../../lib/BattleTimer';
 import { itemEffectRegistry } from '../../game/items/ItemEffectRegistry';
 import { getKnight, getKnightDebugInfo } from '../../game/items/effects/MED_KnightDefender';
+import { debugLogger } from '../../game/debug/DebugLogger';
 
 interface BattleControlProps {
   battleId: string;
@@ -143,6 +144,13 @@ export const DebugBottomBar: React.FC<DebugBottomBarProps> = ({ battleIds }) => 
   const [selectedBattleId, setSelectedBattleId] = useState<string>(battleIds[0] || '');
   const [copyStatus, setCopyStatus] = useState<string>('');
 
+  // Enable debug logger on mount
+  useEffect(() => {
+    debugLogger.enable();
+    debugLogger.clear();
+    return () => debugLogger.disable();
+  }, []);
+
   const handleCopyDebug = async () => {
     setCopyStatus('Copying...');
     try {
@@ -154,6 +162,9 @@ export const DebugBottomBar: React.FC<DebugBottomBarProps> = ({ battleIds }) => 
         if (!k) return 'None';
         return `HP=${k.hp}/${k.maxHP}, Patrolling=${k.isPatrolling}, Pos=(${k.position?.x?.toFixed(0) ?? '?'}, ${k.position?.y?.toFixed(0) ?? '?'}), Shields=${k.shieldCharges ?? 0}`;
       };
+
+      // Get knight logs from debugLogger
+      const knightLogs = debugLogger.getReport(selectedBattleId);
 
       const report = [
         '='.repeat(80),
@@ -170,6 +181,9 @@ export const DebugBottomBar: React.FC<DebugBottomBarProps> = ({ battleIds }) => 
         `Left Knight: ${formatKnight(knightInfo.left)}`,
         `Right Knight: ${formatKnight(knightInfo.right)}`,
         `All Active Knights: ${knightInfo.allKeys.join(', ') || 'none'}`,
+        '',
+        '--- KNIGHT LOGS ---',
+        knightLogs,
         '='.repeat(80),
       ].join('\n');
 
