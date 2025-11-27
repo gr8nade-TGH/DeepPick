@@ -480,8 +480,14 @@ export class KnightDefender {
     this.glowEffect.circle(0, 0, 25);
     this.glowEffect.fill({ color: 0xFF0000, alpha: 0.15 });
 
+    // Grant +5 HP bonus when entering Defender Mode
+    this.hp = Math.min(this.maxHp, this.hp + 5);
+    this.maxHp = Math.max(this.maxHp, this.hp); // Increase max if needed
+    this.updateHPBar();
+    console.log(`🛡️ [KnightDefender] ${this.id} gained +5 HP! Now: ${this.hp}/${this.maxHp}`);
+
     // Show floating text
-    this.showFloatingText('⚔️ DEFENDER MODE! ⚔️', 0xFF4444);
+    this.showFloatingText('⚔️ DEFENDER MODE! +5 HP ⚔️', 0xFF4444);
 
     // Resume patrol after animation (faster in defender mode)
     gsap.delayedCall(0.6, () => this.smartPatrol());
@@ -583,16 +589,16 @@ export class KnightDefender {
 
     this.patrolTween = gsap.to(this.sprite, {
       y: clampedY,
-      duration: Math.max(0.25, duration),
+      duration: Math.max(0.4, duration),
       ease: this.isDefenderMode ? 'power3.inOut' : 'power2.inOut',
       onUpdate: () => {
         this.position.y = this.sprite.y;
       },
       onComplete: () => {
-        // Shorter pause in Defender Mode (more urgent)
+        // Longer pauses to reduce jumpiness
         const pauseTime = this.isDefenderMode
-          ? 0.1 + Math.random() * 0.15
-          : 0.2 + Math.random() * 0.3;
+          ? 0.4 + Math.random() * 0.3  // 0.4-0.7s in defender mode
+          : 0.8 + Math.random() * 0.6; // 0.8-1.4s in normal mode
         gsap.delayedCall(pauseTime, () => this.smartPatrol());
       },
     });
@@ -621,13 +627,13 @@ export class KnightDefender {
     // Quick movement after block
     gsap.to(this.sprite, {
       y: clampedY,
-      duration: 0.3,
+      duration: 0.4,
       ease: 'power2.out',
       onUpdate: () => {
         this.position.y = this.sprite.y;
       },
       onComplete: () => {
-        gsap.delayedCall(0.15, () => this.smartPatrol());
+        gsap.delayedCall(0.5, () => this.smartPatrol());
       },
     });
   }
