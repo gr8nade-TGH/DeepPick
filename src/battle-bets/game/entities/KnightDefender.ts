@@ -653,20 +653,28 @@ export class KnightDefender {
         this.patrolTween = null;
       }
 
-      this.patrolTween = gsap.to(this.sprite, {
+      // Store local reference to sprite to avoid null reference in callbacks
+      const sprite = this.sprite;
+      if (!sprite) {
+        logMsg(`ERROR: sprite is null, cannot create patrol tween`);
+        return;
+      }
+
+      this.patrolTween = gsap.to(sprite, {
         y: clampedY,
         duration: Math.max(0.4, duration),
         ease: this.isDefenderMode ? 'power3.inOut' : 'power2.inOut',
         immediateRender: false, // Don't render immediately, let GSAP handle timing
         overwrite: 'auto', // Automatically overwrite conflicting tweens
         onStart: () => {
-          logMsg(`gsap.to STARTED`, { targetY: clampedY });
+          logMsg(`gsap.to STARTED`, { targetY: clampedY, spriteY: sprite.y });
         },
         onUpdate: () => {
-          this.position.y = this.sprite.y;
+          // Update position tracker from sprite (using captured reference)
+          this.position.y = sprite.y;
         },
         onComplete: () => {
-          logMsg(`gsap.to COMPLETED`, { finalY: this.sprite.y });
+          logMsg(`gsap.to COMPLETED`, { finalY: sprite.y });
           // Longer pauses to reduce jumpiness
           const pauseTime = this.isDefenderMode
             ? 0.4 + Math.random() * 0.3  // 0.4-0.7s in defender mode
@@ -683,15 +691,12 @@ export class KnightDefender {
         tweenProgress: this.patrolTween?.progress?.() ?? 'unknown'
       });
 
-      // Force GSAP to update by requesting a tick
-      gsap.ticker.tick();
-
-      // Log status after tick
+      // Log status after 100ms to see if tween is progressing
       setTimeout(() => {
-        logMsg(`gsap.to after tick`, {
+        logMsg(`gsap.to after 100ms`, {
           tweenActive: this.patrolTween?.isActive?.() ?? 'unknown',
           progress: this.patrolTween?.progress?.() ?? 'unknown',
-          spriteY: this.sprite?.y
+          spriteY: sprite.y
         });
       }, 100);
     } catch (error) {
