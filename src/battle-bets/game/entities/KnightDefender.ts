@@ -47,6 +47,8 @@ export class KnightDefender {
   // Set by Castle item (1-3 charges based on rarity)
   private shieldCharges: number = 0;
   private maxShieldCharges: number = 0;
+  private shieldRechargeTimer: gsap.core.Tween | null = null;
+  private readonly SHIELD_RECHARGE_TIME: number = 10; // seconds
 
   // Visual
   public sprite: PIXI.Container;
@@ -57,6 +59,8 @@ export class KnightDefender {
   private hpBarBg: PIXI.Graphics;
   private shieldEffect: PIXI.Graphics;
   private glowEffect: PIXI.Graphics;
+  private shieldChargeContainer: PIXI.Container;
+  private shieldChargeOrbs: PIXI.Graphics[] = [];
 
   // Position & Movement
   public position: { x: number; y: number };
@@ -114,6 +118,11 @@ export class KnightDefender {
     this.hpBarFill = new PIXI.Graphics();
     this.createHpBar();
     this.sprite.addChild(this.hpBarContainer);
+
+    // Create shield charge indicator container (above HP bar)
+    this.shieldChargeContainer = new PIXI.Container();
+    this.shieldChargeContainer.y = -45; // Above HP bar
+    this.sprite.addChild(this.shieldChargeContainer);
 
     this.sprite.x = this.position.x;
     this.sprite.y = this.position.y;
@@ -779,13 +788,15 @@ export class KnightDefender {
 
   /**
    * Show floating text above knight
+   * @param scale - Optional scale for subtler text (default 1.0)
    */
-  private showFloatingText(text: string, color: number): void {
+  private showFloatingText(text: string, color: number, scale: number = 1.0): void {
+    const fontSize = Math.round(14 * scale);
     const style = new PIXI.TextStyle({
       fontFamily: 'Arial Black',
-      fontSize: 14,
+      fontSize,
       fill: color,
-      stroke: { color: 0x000000, width: 3 },
+      stroke: { color: 0x000000, width: Math.round(3 * scale) },
       dropShadow: true,
       dropShadowColor: 0x000000,
       dropShadowBlur: 2,
@@ -859,12 +870,22 @@ export class KnightDefender {
       this.patrolTween.kill();
     }
 
+    // Kill shield recharge timer
+    if (this.shieldRechargeTimer) {
+      this.shieldRechargeTimer.kill();
+      this.shieldRechargeTimer = null;
+    }
+
     // Kill idle animations
     gsap.killTweensOf(this.knightSprite);
     gsap.killTweensOf(this.glowEffect);
 
-    // Fade HP bar
+    // Kill shield orb animations
+    this.shieldChargeOrbs.forEach(orb => gsap.killTweensOf(orb));
+
+    // Fade HP bar and shield orbs
     gsap.to(this.hpBarContainer, { alpha: 0, duration: 0.3 });
+    gsap.to(this.shieldChargeContainer, { alpha: 0, duration: 0.3 });
 
     // Create subtle blood effects
     this.createBloodBurst();
@@ -1105,9 +1126,83 @@ export class KnightDefender {
     this.maxShieldCharges = charges;
     console.log(`🛡️ [KnightDefender] ${this.id} received ${charges} shield charges`);
 
+    // Create visual shield charge orbs
+    this.createShieldChargeOrbs();
+
     if (charges > 0) {
       this.showFloatingText(`🛡️ ${charges} SHIELDS`, 0x00FFFF);
     }
+  }
+
+  /**
+   * Create visual orbs for shield charges
+   */
+  private createShieldChargeOrbs(): void {
+    // Clear existing orbs
+    this.shieldChargeOrbs.forEach(orb => {
+      this.shieldChargeContainer.removeChild(orb);
+      orb.destroy();
+    });
+    this.shieldChargeOrbs = [];
+
+    if (this.maxShieldCharges === 0) return;
+
+    // Create orbs spaced evenly
+    const orbSize = 5;
+    const spacing = 12;
+    const totalWidth = (this.maxShieldCharges - 1) * spacing;
+    const startX = -totalWidth / 2;
+
+    for (let i = 0; i < this.maxShieldCharges; i++) {
+      const orb = new PIXI.Graphics();
+      const x = startX + i * spacing;
+
+      // Orb glow
+      orb.circle(0, 0, orbSize + 2);
+      orb.fill({ color: 0x00FFFF, alpha: 0.3 });
+
+      // Orb core
+      orb.circle(0, 0, orbSize);
+      orb.fill({ color: 0x00FFFF, alpha: 0.9 });
+
+      // Inner highlight
+      orb.circle(-1, -1, orbSize / 2);
+      orb.fill({ color: 0xFFFFFF, alpha: 0.5 });
+
+      orb.x = x;
+      orb.alpha = i < this.shieldCharges ? 1 : 0.2;
+
+      this.shieldChargeContainer.addChild(orb);
+      this.shieldChargeOrbs.push(orb);
+
+      // Subtle float animation for active orbs
+      if (i < this.shieldCharges) {
+        gsap.to(orb, {
+          y: -2,
+          duration: 1 + Math.random() * 0.5,
+          ease: 'sine.inOut',
+          repeat: -1,
+          yoyo: true,
+          delay: i * 0.2,
+        });
+      }
+    }
+  }
+
+  /**
+   * Update shield charge orb visuals
+   */
+  private updateShieldChargeOrbs(): void {
+    this.shieldChargeOrbs.forEach((orb, i) => {
+      const isActive = i < this.shieldCharges;
+      orb.alpha = isActive ? 1 : 0.2;
+
+      // Stop animation for depleted orbs
+      if (!isActive) {
+        gsap.killTweensOf(orb);
+        orb.y = 0;
+      }
+    });
   }
 
   /**
@@ -1119,6 +1214,19 @@ export class KnightDefender {
     this.damageBlocked++;
 
     console.log(`🛡️ [KnightDefender] ${this.id} SHIELD BLOCK! (${this.shieldCharges}/${this.maxShieldCharges} remaining)`);
+
+    // Animate the depleted orb
+    const depletedOrbIndex = this.shieldCharges; // The one that was just used
+    if (this.shieldChargeOrbs[depletedOrbIndex]) {
+      const orb = this.shieldChargeOrbs[depletedOrbIndex];
+      gsap.killTweensOf(orb);
+
+      // Pop and fade animation
+      gsap.timeline()
+        .to(orb.scale, { x: 1.5, y: 1.5, duration: 0.1, ease: 'power2.out' })
+        .to(orb.scale, { x: 1, y: 1, duration: 0.2, ease: 'power2.in' }, '-=0.05')
+        .to(orb, { alpha: 0.2, duration: 0.2 }, '-=0.15');
+    }
 
     // Shield block animation (similar to deflect but cyan colored)
     const facing = this.side === 'left' ? 1 : -1;
@@ -1145,8 +1253,73 @@ export class KnightDefender {
     const textColor = this.shieldCharges > 0 ? 0x00FFFF : 0xFFAA00;
     this.showFloatingText(shieldText, textColor);
 
+    // Start recharge timer if not already running and we have shields to recharge
+    this.startShieldRechargeTimer();
+
     // Move after block
     gsap.delayedCall(0.25, () => this.moveAfterBlock());
+  }
+
+  /**
+   * Start shield recharge timer (recharges 1 shield every 10 seconds)
+   */
+  private startShieldRechargeTimer(): void {
+    // Don't start if already running, no max shields, or fully charged
+    if (this.shieldRechargeTimer || this.maxShieldCharges === 0 || this.shieldCharges >= this.maxShieldCharges) {
+      return;
+    }
+
+    console.log(`🛡️ [KnightDefender] ${this.id} Starting shield recharge timer...`);
+
+    this.shieldRechargeTimer = gsap.delayedCall(this.SHIELD_RECHARGE_TIME, () => {
+      this.rechargeOneShield();
+    });
+  }
+
+  /**
+   * Recharge one shield charge
+   */
+  private rechargeOneShield(): void {
+    if (!this.alive || this.shieldCharges >= this.maxShieldCharges) {
+      this.shieldRechargeTimer = null;
+      return;
+    }
+
+    this.shieldCharges++;
+    console.log(`🛡️ [KnightDefender] ${this.id} Shield recharged! (${this.shieldCharges}/${this.maxShieldCharges})`);
+
+    // Animate the recharged orb
+    const rechargedOrbIndex = this.shieldCharges - 1;
+    if (this.shieldChargeOrbs[rechargedOrbIndex]) {
+      const orb = this.shieldChargeOrbs[rechargedOrbIndex];
+
+      // Recharge animation - glow and restore
+      gsap.timeline()
+        .to(orb.scale, { x: 1.8, y: 1.8, duration: 0.2, ease: 'power2.out' })
+        .to(orb, { alpha: 1, duration: 0.15 }, '<')
+        .to(orb.scale, { x: 1, y: 1, duration: 0.3, ease: 'elastic.out(1, 0.5)' })
+        .call(() => {
+          // Restart float animation
+          gsap.to(orb, {
+            y: -2,
+            duration: 1 + Math.random() * 0.5,
+            ease: 'sine.inOut',
+            repeat: -1,
+            yoyo: true,
+          });
+        });
+    }
+
+    // Show subtle recharge text
+    this.showFloatingText(`🛡️ +1`, 0x00FFFF, 0.6);
+
+    // Clear current timer
+    this.shieldRechargeTimer = null;
+
+    // Continue recharging if not at max
+    if (this.shieldCharges < this.maxShieldCharges) {
+      this.startShieldRechargeTimer();
+    }
   }
 
   /**
@@ -1170,12 +1343,17 @@ export class KnightDefender {
     if (this.patrolTween) {
       this.patrolTween.kill();
     }
+    if (this.shieldRechargeTimer) {
+      this.shieldRechargeTimer.kill();
+    }
     gsap.killTweensOf(this.sprite);
     gsap.killTweensOf(this.sprite.scale);
     gsap.killTweensOf(this.knightSprite);
     gsap.killTweensOf(this.glowEffect);
     gsap.killTweensOf(this.shieldEffect);
     gsap.killTweensOf(this.hpBarContainer);
+    gsap.killTweensOf(this.shieldChargeContainer);
+    this.shieldChargeOrbs.forEach(orb => gsap.killTweensOf(orb));
     this.sprite.destroy({ children: true });
   }
 }
