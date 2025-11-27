@@ -10,8 +10,7 @@ import { GameErrorBoundary } from './components/ErrorBoundary';
 import { BattleCanvas } from './components/game/BattleCanvas';
 import { GameInfoBar } from './components/game/GameInfoBar';
 import { InventoryBar } from './components/game/InventoryBar';
-import { CopyDebugButton } from './components/debug/CopyDebugButton';
-import { QuarterDebugControls } from './components/debug/QuarterDebugControls';
+import { DebugBottomBar } from './components/debug/DebugBottomBar';
 import { PreGameItemSelector } from './components/debug/PreGameItemSelector';
 import { debugLogger } from './game/debug/DebugLogger';
 import type { Game, GameStatus } from './types/game';
@@ -598,15 +597,9 @@ function AppV2() {
           ))}
         </div>
 
-        {/* Debug Controls (same as original) */}
+        {/* Debug Bottom Bar - unified control bar for all battles */}
         {showDebugControls && (
-          <>
-            <CopyDebugButton />
-            {/* QuarterDebugControls are rendered per-battle in the battle loop, not here */}
-            {battles.map((game, index) => (
-              <QuarterDebugControls key={`debug-${game.id}`} battleId={game.id} index={index} />
-            ))}
-          </>
+          <DebugBottomBar battleIds={battles.map(b => b.id)} />
         )}
 
         {/* Pre-Game Item Selector Modal (same as original) */}
