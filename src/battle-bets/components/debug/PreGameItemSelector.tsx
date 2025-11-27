@@ -14,6 +14,7 @@ import { CHA_HORNETS_NEST_DEFINITION } from '../../game/items/effects/CHA_Hornet
 import { WAS_WIZARDS_WATCHTOWER_DEFINITION } from '../../game/items/effects/WAS_WizardsWatchtower';
 // Note: MED_KNIGHT_DEFENDER_DEFINITION removed - knight is now deployed via Castle item
 import { CASTLE_FORTRESS_DEFINITION, equipCastle, generateCastleName, getCastleType, getCastleRarityColor } from '../../game/items/effects/CASTLE_Fortress';
+import { getOrSpawnKnight } from '../../game/items/effects/MED_KnightDefender';
 import type { ItemDefinition, RolledItemStats } from '../../game/items/ItemRollSystem';
 import { rollItem } from '../../game/items/ItemRollSystem';
 import { useMultiGameStore } from '../../store/multiGameStore';
@@ -463,6 +464,7 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
   const handleRollCastle = (side: 'left' | 'right') => {
     const rolledStats = rollItem(CASTLE_FORTRESS_DEFINITION);
     const hp = Math.round(rolledStats.rolls.castleHP || 20);
+    const shieldCharges = Math.round(rolledStats.rolls.shieldCharges || 1);
     const generatedName = generateCastleName(hp);
 
     const castleWithName = {
@@ -473,7 +475,7 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
     console.log(`🏰 [PreGameItemSelector] Rolled castle for ${side}:`, {
       name: generatedName,
       hp,
-      shieldCharges: Math.round(rolledStats.rolls.shieldCharges || 1),
+      shieldCharges,
       quality: rolledStats.qualityTier,
     });
 
@@ -483,8 +485,16 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
       setRightCastle(castleWithName);
     }
 
-    // Apply castle effect immediately
+    // Apply castle effect (sets HP in store and CastleManager)
     equipCastle(battleId, side, rolledStats);
+
+    // Spawn knight directly (avoids async/circular dependency issues)
+    const knight = getOrSpawnKnight(battleId, side);
+    if (knight) {
+      knight.setShieldCharges(shieldCharges);
+      console.log(`🏰 [PreGameItemSelector] Knight deployed with ${shieldCharges} shield charges`);
+    }
+
     setSelectingCastle(null);
   };
 

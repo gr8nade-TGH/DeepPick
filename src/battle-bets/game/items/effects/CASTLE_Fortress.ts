@@ -110,7 +110,7 @@ export function getEquippedCastle(battleId: string, side: 'left' | 'right') {
 
 /**
  * Equip a castle and apply its effects
- * Spawns knight immediately using dynamic import to avoid circular dependency.
+ * NOTE: Knight spawning is handled by PreGameItemSelector directly to avoid circular dependencies.
  */
 export function equipCastle(
   battleId: string,
@@ -137,22 +137,14 @@ export function equipCastle(
   useMultiGameStore.getState().setCastleHP(battleId, side, hp);
 
   // Also update the visual castle entity (if it exists already)
-  const castleId = `${side}-castle`;
+  // Castle IDs in BattleCanvas are: "${battleId}-left" and "${battleId}-right"
+  const castleId = `${battleId}-${side}`;
   castleManager.setCastleHP(battleId, castleId, hp);
 
   // Store pending shield charges using shared state (backup in case knight spawns later)
   setPendingShieldCharges(battleId, side, shieldCharges);
 
-  // Spawn knight immediately using dynamic import to avoid circular dependency
-  import('./MED_KnightDefender').then(({ getOrSpawnKnight }) => {
-    const knight = getOrSpawnKnight(battleId, side);
-    if (knight) {
-      knight.setShieldCharges(shieldCharges);
-      console.log(`🏰 [Castle] Knight deployed with ${shieldCharges} shield charges`);
-    }
-  }).catch(err => {
-    console.error(`🏰 [Castle] Failed to spawn knight:`, err);
-  });
+  console.log(`🏰 [Castle] Castle equipped. HP=${hp}, ShieldCharges=${shieldCharges} stored.`);
 }
 
 /**
