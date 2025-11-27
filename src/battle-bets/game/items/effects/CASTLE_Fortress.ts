@@ -21,8 +21,8 @@ import type { ItemRuntimeContext } from '../ItemEffectRegistry';
 import type { ItemDefinition, RolledItemStats, QualityTier } from '../ItemRollSystem';
 import { TEAM_NAMES, LEGENDARY_PLAYERS, CASTLE_TYPES, type CastleRarity } from '../../../data/castleNames';
 import { useMultiGameStore } from '../../../store/multiGameStore';
-import { getOrSpawnKnight, getKnight } from './MED_KnightDefender';
 import { castleManager } from '../../managers/CastleManager';
+import { setPendingShieldCharges } from './sharedKnightState';
 
 /**
  * Castle Item Definition (base - name is generated dynamically)
@@ -102,11 +102,6 @@ export function getCastleRarityColor(rarity: CastleRarity): string {
 const equippedCastles: Map<string, RolledItemStats & { generatedName: string }> = new Map();
 
 /**
- * Store pending shield charges (applied when knight spawns)
- */
-const pendingShieldCharges: Map<string, number> = new Map();
-
-/**
  * Get equipped castle for a battle/side
  */
 export function getEquippedCastle(battleId: string, side: 'left' | 'right') {
@@ -114,19 +109,9 @@ export function getEquippedCastle(battleId: string, side: 'left' | 'right') {
 }
 
 /**
- * Get pending shield charges for a side (called by KnightDefender when spawning)
- */
-export function getPendingShieldCharges(battleId: string, side: 'left' | 'right'): number {
-  const key = `${battleId}-${side}`;
-  const charges = pendingShieldCharges.get(key) || 0;
-  if (charges > 0) {
-    pendingShieldCharges.delete(key); // Clear after retrieval
-  }
-  return charges;
-}
-
-/**
  * Equip a castle and apply its effects
+ * NOTE: Knight spawning is handled separately by registerCastleEffect when the game starts.
+ * This prevents circular import issues.
  */
 export function equipCastle(
   battleId: string,
@@ -156,27 +141,30 @@ export function equipCastle(
   const castleId = `${side}-castle`;
   castleManager.setCastleHP(battleId, castleId, hp);
 
-  // Store pending shield charges (will be applied when knight spawns)
-  pendingShieldCharges.set(`${battleId}-${side}`, shieldCharges);
+  // Store pending shield charges using shared state (will be applied when knight spawns)
+  setPendingShieldCharges(battleId, side, shieldCharges);
   console.log(`🏰 [Castle] Stored ${shieldCharges} pending shield charges for ${side}`);
-
-  // Spawn knight (or get existing if already spawned)
-  // The knight is now deployed by the Castle item, not a separate Knight Defender item
-  const knight = getOrSpawnKnight(battleId, side);
-  if (knight) {
-    knight.setShieldCharges(shieldCharges);
-    pendingShieldCharges.delete(`${battleId}-${side}`);
-    console.log(`🏰 [Castle] Knight deployed with ${shieldCharges} shield charges`);
-  }
 }
 
 /**
  * Register Castle effect
+ * This is called when the game starts (from QuarterDebugControls.handleStartGame)
+ * We use dynamic import to avoid circular dependency with MED_KnightDefender
  */
 export function registerCastleEffect(context: ItemRuntimeContext): void {
   const { gameId, side, rolledStats } = context;
   if (rolledStats) {
     equipCastle(gameId, side, rolledStats);
+
+    // Spawn knight using dynamic import to avoid circular dependency
+    import('./MED_KnightDefender').then(({ getOrSpawnKnight }) => {
+      const knight = getOrSpawnKnight(gameId, side);
+      if (knight) {
+        const shieldCharges = Math.round(rolledStats.rolls.shieldCharges || 1);
+        knight.setShieldCharges(shieldCharges);
+        console.log(`🏰 [Castle] Knight deployed with ${shieldCharges} shield charges`);
+      }
+    });
   }
 }
 

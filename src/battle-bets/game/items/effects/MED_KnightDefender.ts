@@ -18,7 +18,7 @@ import type { ItemDefinition } from '../ItemRollSystem';
 import { KnightDefender } from '../../entities/KnightDefender';
 import { useMultiGameStore } from '../../../store/multiGameStore';
 import { pixiManager } from '../../managers/PixiManager';
-import { getPendingShieldCharges } from './CASTLE_Fortress';
+import { getPendingShieldCharges } from './sharedKnightState';
 
 /**
  * Knight Defender Item Definition
