@@ -54,6 +54,7 @@ interface MultiGameState {
   addProjectile: (battleId: string, projectile: BaseProjectile) => void;
   removeProjectile: (battleId: string, id: string) => void;
   applyDamageToCapperHP: (battleId: string, side: 'left' | 'right', damage: number) => void;
+  setCastleHP: (battleId: string, side: 'left' | 'right', hp: number) => void;
   applyDamage: (battleId: string, dotId: string, damage: number) => void;
   setCurrentQuarter: (battleId: string, quarter: number) => void;
   updateScore: (battleId: string, leftScore: number, rightScore: number) => void;
@@ -325,6 +326,28 @@ export const useMultiGameStore = create<MultiGameState>()(
           console.log(`⚠️ [applyDamageToCapperHP] ${noOpMsg}`);
           debugLogger.log('store-hp', noOpMsg);
         }
+      },
+
+      // Set castle HP directly (used by Castle item)
+      setCastleHP: (battleId: string, side: 'left' | 'right', hp: number) => {
+        const battle = get().battles.get(battleId);
+        if (!battle) return;
+
+        set(state => {
+          const newBattles = new Map(state.battles);
+          const updatedBattle = newBattles.get(battleId);
+          if (updatedBattle) {
+            const newCapperHP = new Map(updatedBattle.capperHP);
+            newCapperHP.set(side, {
+              currentHP: hp,
+              maxHP: hp,
+            });
+            updatedBattle.capperHP = newCapperHP;
+          }
+          return { battles: newBattles };
+        });
+
+        console.log(`🏰 [Multi-Game Store] Set ${side} castle HP to ${hp}`);
       },
 
       // Apply damage to a defense dot

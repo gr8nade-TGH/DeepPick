@@ -13,6 +13,7 @@ import { STARTER_SHORTSWORD_DEFINITION } from '../../game/items/effects/STARTER_
 import { CHA_HORNETS_NEST_DEFINITION } from '../../game/items/effects/CHA_HornetsNest';
 import { WAS_WIZARDS_WATCHTOWER_DEFINITION } from '../../game/items/effects/WAS_WizardsWatchtower';
 import { MED_KNIGHT_DEFENDER_DEFINITION } from '../../game/items/effects/MED_KnightDefender';
+import { CASTLE_FORTRESS_DEFINITION, getEquippedCastle, getCastleType, getCastleRarityColor } from '../../game/items/effects/CASTLE_Fortress';
 import type { ItemDefinition, RolledItemStats } from '../../game/items/ItemRollSystem';
 import { ItemTooltip } from '../debug/ItemTooltip';
 
@@ -35,9 +36,10 @@ interface InventoryBarProps {
   battleId: string;
   side: 'left' | 'right';
   onSlotClick?: (side: 'left' | 'right', slot: 1 | 2 | 3) => void;
+  onCastleSlotClick?: (side: 'left' | 'right') => void;
 }
 
-export const InventoryBar: React.FC<InventoryBarProps> = ({ battleId, side, onSlotClick }) => {
+export const InventoryBar: React.FC<InventoryBarProps> = ({ battleId, side, onSlotClick, onCastleSlotClick }) => {
   const [isFireOrbPulsing, setIsFireOrbPulsing] = useState(false);
   const [tooltipData, setTooltipData] = useState<{
     item: ItemDefinition;
@@ -160,8 +162,63 @@ export const InventoryBar: React.FC<InventoryBarProps> = ({ battleId, side, onSl
     </svg>
   );
 
+  // Get equipped castle for this side
+  const equippedCastle = getEquippedCastle(battleId, side);
+  const castleHP = equippedCastle ? Math.round(equippedCastle.rolls.castleHP || 20) : null;
+  const castleShields = equippedCastle ? Math.round(equippedCastle.rolls.shieldCharges || 1) : null;
+  const castleRarity = castleHP ? getCastleType(castleHP) : null;
+  const castleRarityColor = castleRarity ? getCastleRarityColor(castleRarity.rarity) : '#9CA3AF';
+
+  const handleCastleClick = () => {
+    if (isPreGame && onCastleSlotClick) {
+      onCastleSlotClick(side);
+    }
+  };
+
+  const handleCastleHover = (event: React.MouseEvent) => {
+    if (equippedCastle) {
+      const rect = event.currentTarget.getBoundingClientRect();
+      setTooltipData({
+        item: {
+          ...CASTLE_FORTRESS_DEFINITION,
+          name: equippedCastle.generatedName || 'Castle',
+          description: `HP: ${castleHP} | Knight Shield Charges: ${castleShields}`,
+        },
+        rolls: equippedCastle.rolls,
+        quality: equippedCastle.qualityTier,
+        x: rect.right + 10,
+        y: rect.top,
+      });
+    }
+  };
+
   return (
     <div className={`inventory-bar ${side}`}>
+      {/* Castle Slot - Always at top */}
+      <div
+        className={`inventory-slot castle-slot ${equippedCastle ? 'inventory-slot-equipped' : 'inventory-slot-empty'} ${isPreGame ? 'inventory-slot-clickable' : ''}`}
+        onClick={handleCastleClick}
+        onMouseEnter={handleCastleHover}
+        onMouseLeave={handleItemLeave}
+        style={{
+          cursor: isPreGame ? 'pointer' : 'default',
+          borderColor: equippedCastle ? castleRarityColor : undefined,
+          boxShadow: equippedCastle ? `0 0 8px ${castleRarityColor}40` : undefined,
+        }}
+      >
+        {equippedCastle ? (
+          <div className="slot-icon-equipped castle-icon">
+            <span style={{ fontSize: '1.5rem' }}>🏰</span>
+            <span className="castle-hp-badge" style={{ backgroundColor: castleRarityColor }}>
+              {castleHP}
+            </span>
+          </div>
+        ) : (
+          <div className="slot-icon-empty">🏰</div>
+        )}
+      </div>
+
+      {/* Item Slots */}
       {slots.map((slot) => {
         const itemData = equippedItems[slot.slotKey];
         const rolledItem = typeof itemData === 'object' ? itemData : null;

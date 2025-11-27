@@ -38,10 +38,15 @@ export class KnightDefender {
 
   // State
   public hp: number;
-  public readonly maxHp: number = 20;
+  public maxHp: number = 20;
   public alive: boolean = true;
   public lastDeflectTime: number = 0;
   public readonly deflectCooldown: number = 1000; // 1 second in ms
+
+  // Shield Charges - blocks projectiles without taking damage or triggering cooldown
+  // Set by Castle item (1-3 charges based on rarity)
+  private shieldCharges: number = 0;
+  private maxShieldCharges: number = 0;
 
   // Visual
   public sprite: PIXI.Container;
@@ -1076,6 +1081,13 @@ export class KnightDefender {
   public handleProjectileHit(): boolean {
     if (!this.alive) return false;
 
+    // Shield charges block without cooldown or damage
+    if (this.shieldCharges > 0) {
+      this.useShieldCharge();
+      return true; // Projectile destroyed, shield absorbed it
+    }
+
+    // Normal deflect/damage logic
     if (this.canDeflect()) {
       this.deflect();
       return true; // Projectile destroyed, knight unharmed
@@ -1083,6 +1095,65 @@ export class KnightDefender {
       this.takeDamage(1);
       return true; // Projectile destroyed, but knight takes damage
     }
+  }
+
+  /**
+   * Set shield charges (called by Castle item)
+   */
+  public setShieldCharges(charges: number): void {
+    this.shieldCharges = charges;
+    this.maxShieldCharges = charges;
+    console.log(`🛡️ [KnightDefender] ${this.id} received ${charges} shield charges`);
+
+    if (charges > 0) {
+      this.showFloatingText(`🛡️ ${charges} SHIELDS`, 0x00FFFF);
+    }
+  }
+
+  /**
+   * Use one shield charge
+   */
+  private useShieldCharge(): void {
+    this.shieldCharges--;
+    this.deflectCount++;
+    this.damageBlocked++;
+
+    console.log(`🛡️ [KnightDefender] ${this.id} SHIELD BLOCK! (${this.shieldCharges}/${this.maxShieldCharges} remaining)`);
+
+    // Shield block animation (similar to deflect but cyan colored)
+    const facing = this.side === 'left' ? 1 : -1;
+    gsap.timeline()
+      .to(this.knightSprite, { rotation: facing * -0.2, duration: 0.06, ease: 'power2.out' })
+      .to(this.knightSprite, { rotation: 0, duration: 0.1, ease: 'elastic.out(1, 0.5)' });
+
+    // Cyan shield burst
+    this.shieldEffect.visible = true;
+    this.shieldEffect.alpha = 1;
+    this.shieldEffect.scale.set(0.5);
+    gsap.timeline()
+      .to(this.shieldEffect.scale, { x: 2.5, y: 2.5, duration: 0.2, ease: 'power2.out' })
+      .to(this.shieldEffect, { alpha: 0, duration: 0.25 }, '-=0.1')
+      .call(() => {
+        this.shieldEffect.visible = false;
+        this.shieldEffect.scale.set(1);
+      });
+
+    // Show remaining shields
+    const shieldText = this.shieldCharges > 0
+      ? `🛡️ SHIELD! (${this.shieldCharges} left)`
+      : '🛡️ SHIELDS DEPLETED!';
+    const textColor = this.shieldCharges > 0 ? 0x00FFFF : 0xFFAA00;
+    this.showFloatingText(shieldText, textColor);
+
+    // Move after block
+    gsap.delayedCall(0.25, () => this.moveAfterBlock());
+  }
+
+  /**
+   * Get remaining shield charges
+   */
+  public getShieldCharges(): number {
+    return this.shieldCharges;
   }
 
   /**
