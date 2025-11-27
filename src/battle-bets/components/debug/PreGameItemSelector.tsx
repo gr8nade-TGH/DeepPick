@@ -486,16 +486,13 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
     }
 
     // Apply castle effect (sets HP in store and CastleManager)
+    // Also stores shield charges for later knight spawning
     equipCastle(battleId, side, rolledStats);
 
-    // TEMPORARILY DISABLED - Testing if knight is causing the render loop error
-    // Spawn knight directly (avoids async/circular dependency issues)
-    // const knight = getOrSpawnKnight(battleId, side);
-    // if (knight) {
-    //   knight.setShieldCharges(shieldCharges);
-    //   console.log(`🏰 [PreGameItemSelector] Knight deployed with ${shieldCharges} shield charges`);
-    // }
-    console.log(`🏰 [PreGameItemSelector] Castle equipped. Knight spawning DISABLED for testing.`);
+    // NOTE: Knight is NOT spawned here anymore.
+    // Knight will be spawned when "Start Game" is clicked via the castle item effect.
+    // This matches the timing of the old knight item which worked correctly.
+    console.log(`🏰 [PreGameItemSelector] Castle equipped. Knight will spawn on game start.`);
 
     setSelectingCastle(null);
   };
