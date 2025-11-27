@@ -487,11 +487,13 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
 
     // Apply castle effect (sets HP in store and CastleManager)
     // Also stores shield charges for later knight spawning
+    console.log(`🏰🏰🏰 [PreGameItemSelector] handleRollCastle: battleId="${battleId}", side="${side}"`);
+    console.log(`🏰🏰🏰 [PreGameItemSelector] rolledStats:`, JSON.stringify(rolledStats));
     equipCastle(battleId, side, rolledStats);
 
     // Spawn knight immediately (visual only - idle animation)
     // Knight will NOT patrol yet - patrol starts on "Start Game" click
-    console.log(`🏰 [PreGameItemSelector] Spawning knight for battleId="${battleId}", side="${side}"`);
+    console.log(`🏰🏰🏰 [PreGameItemSelector] Calling getOrSpawnKnight(battleId="${battleId}", side="${side}")`);
     const knight = getOrSpawnKnight(battleId, side);
     if (knight) {
       knight.setShieldCharges(shieldCharges);

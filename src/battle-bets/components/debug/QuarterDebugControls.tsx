@@ -57,6 +57,9 @@ export const QuarterDebugControls: React.FC<QuarterDebugControlsProps> = ({ batt
     setLastAction('Starting game...');
 
     try {
+      console.log(`🎮🎮🎮 [handleStartGame] STARTING for battleId="${battleId}"`);
+      console.log(`🎮🎮🎮 [handleStartGame] Current HP: left=${leftHP}, right=${rightHP}`);
+
       // STEP 1: Deactivate any existing items for this battle (prevent duplicates)
       console.log(`🧹 [PreGame] Deactivating existing items for battle ${battleId}`);
       itemEffectRegistry.deactivateGame(battleId);
