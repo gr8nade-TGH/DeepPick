@@ -101,10 +101,27 @@ export function getCastleRarityColor(rarity: CastleRarity): string {
 const equippedCastles: Map<string, RolledItemStats & { generatedName: string }> = new Map();
 
 /**
+ * Store pending shield charges (applied when knight spawns)
+ */
+const pendingShieldCharges: Map<string, number> = new Map();
+
+/**
  * Get equipped castle for a battle/side
  */
 export function getEquippedCastle(battleId: string, side: 'left' | 'right') {
   return equippedCastles.get(`${battleId}-${side}`);
+}
+
+/**
+ * Get pending shield charges for a side (called by KnightDefender when spawning)
+ */
+export function getPendingShieldCharges(battleId: string, side: 'left' | 'right'): number {
+  const key = `${battleId}-${side}`;
+  const charges = pendingShieldCharges.get(key) || 0;
+  if (charges > 0) {
+    pendingShieldCharges.delete(key); // Clear after retrieval
+  }
+  return charges;
 }
 
 /**
@@ -134,11 +151,16 @@ export function equipCastle(
   // Apply castle HP to battle state using store action
   useMultiGameStore.getState().setCastleHP(battleId, side, hp);
 
-  // Spawn knight with shield charges
-  const knight = getOrSpawnKnight(battleId, side);
+  // Store pending shield charges (will be applied when knight spawns)
+  pendingShieldCharges.set(`${battleId}-${side}`, shieldCharges);
+  console.log(`🏰 [Castle] Stored ${shieldCharges} pending shield charges for ${side}`);
+
+  // Try to apply to existing knight (if already spawned)
+  const knight = getKnight(battleId, side);
   if (knight) {
     knight.setShieldCharges(shieldCharges);
-    console.log(`🏰 [Castle] Knight spawned with ${shieldCharges} shield charges`);
+    pendingShieldCharges.delete(`${battleId}-${side}`);
+    console.log(`🏰 [Castle] Applied shield charges to existing knight`);
   }
 }
 

@@ -18,6 +18,7 @@ import type { ItemDefinition } from '../ItemRollSystem';
 import { KnightDefender } from '../../entities/KnightDefender';
 import { useMultiGameStore } from '../../../store/multiGameStore';
 import { pixiManager } from '../../managers/PixiManager';
+import { getPendingShieldCharges } from './CASTLE_Fortress';
 
 /**
  * Knight Defender Item Definition
@@ -114,6 +115,13 @@ export function getOrSpawnKnight(gameId: string, side: 'left' | 'right'): Knight
 
   // Start patrolling
   knight.startPatrol();
+
+  // Check for pending shield charges from Castle item
+  const pendingCharges = getPendingShieldCharges(gameId, side);
+  if (pendingCharges > 0) {
+    knight.setShieldCharges(pendingCharges);
+    console.log(`🐴 [KnightDefender] Applied ${pendingCharges} pending shield charges from Castle item`);
+  }
 
   console.log(`🐴 [KnightDefender] Knight spawned and patrolling!`);
   return knight;
