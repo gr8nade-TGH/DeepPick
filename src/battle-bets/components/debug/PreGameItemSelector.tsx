@@ -26,6 +26,7 @@ interface PreGameItemSelectorProps {
   battleId: string;
   onItemsChanged: (leftItems: string[], rightItems: string[]) => void;
   initialSlot?: { side: 'left' | 'right'; slot: 1 | 2 | 3 };
+  initialCastleSide?: 'left' | 'right';
   onClose?: () => void;
 }
 
@@ -43,6 +44,7 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
   battleId,
   onItemsChanged,
   initialSlot,
+  initialCastleSide,
   onClose,
 }) => {
   const battle = useMultiGameStore(state => state.getBattle(battleId));
@@ -84,12 +86,12 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
   // Castle slots (separate from item slots)
   const [leftCastle, setLeftCastle] = useState<(RolledItemStats & { generatedName?: string }) | null>(null);
   const [rightCastle, setRightCastle] = useState<(RolledItemStats & { generatedName?: string }) | null>(null);
-  const [selectingCastle, setSelectingCastle] = useState<'left' | 'right' | null>(null);
+  const [selectingCastle, setSelectingCastle] = useState<'left' | 'right' | null>(initialCastleSide || null);
 
   const [selectedSlot, setSelectedSlot] = useState<{
     side: 'left' | 'right';
     slot: 1 | 2 | 3;
-  } | null>(initialSlot || null);
+  } | null>(initialCastleSide ? null : (initialSlot || null));
 
   // Tooltip state
   const [tooltipData, setTooltipData] = useState<{

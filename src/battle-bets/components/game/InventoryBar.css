@@ -134,39 +134,19 @@
   box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
 }
 
-/* Castle Slot - Special styling */
+/* Castle Slot - Same styling as other inventory slots */
 .castle-slot {
-  width: 50px;
-  height: 50px;
-  margin-bottom: 4px;
-  border-width: 2px;
-  border-style: solid;
+  margin-bottom: 6px;
 }
 
-.castle-slot.inventory-slot-empty {
-  border-color: rgba(150, 150, 150, 0.4);
-  background: linear-gradient(135deg, rgba(30, 30, 40, 0.9) 0%, rgba(50, 50, 70, 0.9) 100%);
-}
-
-.castle-slot.inventory-slot-empty:hover {
-  border-color: rgba(200, 200, 200, 0.6);
-}
-
-.castle-slot.inventory-slot-clickable {
-  animation: castle-pulse-border 2s ease-in-out infinite;
-}
-
-@keyframes castle-pulse-border {
-
-  0%,
-  100% {
-    box-shadow: 0 0 5px rgba(255, 255, 255, 0.2);
-  }
-
-  50% {
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
-  }
-}
+/* Castle slot uses same base styles as inventory-slot */
+/* The .inventory-slot class already provides:
+   - size (45x45)
+   - background gradient
+   - border (gold)
+   - hover effects
+   - pulse animation when clickable
+*/
 
 .castle-icon {
   position: relative;
@@ -178,8 +158,8 @@
 
 .castle-hp-badge {
   position: absolute;
-  bottom: -2px;
-  right: -2px;
+  bottom: -4px;
+  right: -4px;
   font-size: 9px;
   font-weight: bold;
   color: #fff;
@@ -188,4 +168,5 @@
   min-width: 14px;
   text-align: center;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }

@@ -245,6 +245,7 @@ function AppV2() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<{ battleId: string; side: 'left' | 'right'; slot: number } | null>(null);
+  const [selectedCastleSlot, setSelectedCastleSlot] = useState<{ battleId: string; side: 'left' | 'right' } | null>(null);
   const [showDebugControls, setShowDebugControls] = useState(false);
 
   // NEW: Tab state
@@ -558,6 +559,9 @@ function AppV2() {
                     onSlotClick={(side, slot) => {
                       setSelectedSlot({ battleId: game.id, side, slot });
                     }}
+                    onCastleSlotClick={(side) => {
+                      setSelectedCastleSlot({ battleId: game.id, side });
+                    }}
                   />
 
                   {/* Battle Canvas */}
@@ -584,6 +588,9 @@ function AppV2() {
                     onSlotClick={(side, slot) => {
                       setSelectedSlot({ battleId: game.id, side, slot });
                     }}
+                    onCastleSlotClick={(side) => {
+                      setSelectedCastleSlot({ battleId: game.id, side });
+                    }}
                   />
                 </div>
               </div>
@@ -603,11 +610,23 @@ function AppV2() {
         {selectedSlot && (
           <PreGameItemSelector
             battleId={selectedSlot.battleId}
-            initialSlot={{ side: selectedSlot.side, slot: selectedSlot.slot }}
+            initialSlot={{ side: selectedSlot.side, slot: selectedSlot.slot as 1 | 2 | 3 }}
             onItemsChanged={() => {
               // Items changed - keep popup open
             }}
             onClose={() => setSelectedSlot(null)}
+          />
+        )}
+
+        {/* Castle Slot Selector Modal */}
+        {selectedCastleSlot && (
+          <PreGameItemSelector
+            battleId={selectedCastleSlot.battleId}
+            initialCastleSide={selectedCastleSlot.side}
+            onItemsChanged={() => {
+              // Castle changed - keep popup open
+            }}
+            onClose={() => setSelectedCastleSlot(null)}
           />
         )}
       </main>
