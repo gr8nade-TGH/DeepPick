@@ -620,29 +620,45 @@ export class KnightDefender {
     const speedMultiplier = this.isDefenderMode ? 0.5 : 1.0;
     const duration = (distance / (maxY - minY)) * this.patrolSpeed * speedMultiplier / 1000;
 
-    logMsg(`Creating gsap.to`, { targetRow, targetY, clampedY, duration: duration.toFixed(2), spriteYBefore: this.sprite.y });
-
-    this.patrolTween = gsap.to(this.sprite, {
-      y: clampedY,
-      duration: Math.max(0.4, duration),
-      ease: this.isDefenderMode ? 'power3.inOut' : 'power2.inOut',
-      onStart: () => {
-        logMsg(`gsap.to STARTED`, { targetY: clampedY });
-      },
-      onUpdate: () => {
-        this.position.y = this.sprite.y;
-      },
-      onComplete: () => {
-        logMsg(`gsap.to COMPLETED`, { finalY: this.sprite.y });
-        // Longer pauses to reduce jumpiness
-        const pauseTime = this.isDefenderMode
-          ? 0.4 + Math.random() * 0.3  // 0.4-0.7s in defender mode
-          : 0.8 + Math.random() * 0.6; // 0.8-1.4s in normal mode
-        gsap.delayedCall(pauseTime, () => this.smartPatrol());
-      },
+    logMsg(`Creating gsap.to`, {
+      targetRow, targetY, clampedY,
+      duration: duration.toFixed(2),
+      spriteYBefore: this.sprite.y,
+      spriteValid: !!this.sprite,
+      spriteParent: !!this.sprite?.parent,
+      spriteVisible: this.sprite?.visible,
+      spriteAlpha: this.sprite?.alpha
     });
 
-    logMsg(`gsap.to created`, { patrolTweenExists: !!this.patrolTween });
+    try {
+      this.patrolTween = gsap.to(this.sprite, {
+        y: clampedY,
+        duration: Math.max(0.4, duration),
+        ease: this.isDefenderMode ? 'power3.inOut' : 'power2.inOut',
+        onStart: () => {
+          logMsg(`gsap.to STARTED`, { targetY: clampedY });
+        },
+        onUpdate: () => {
+          this.position.y = this.sprite.y;
+        },
+        onComplete: () => {
+          logMsg(`gsap.to COMPLETED`, { finalY: this.sprite.y });
+          // Longer pauses to reduce jumpiness
+          const pauseTime = this.isDefenderMode
+            ? 0.4 + Math.random() * 0.3  // 0.4-0.7s in defender mode
+            : 0.8 + Math.random() * 0.6; // 0.8-1.4s in normal mode
+          gsap.delayedCall(pauseTime, () => this.smartPatrol());
+        },
+      });
+
+      logMsg(`gsap.to created`, {
+        patrolTweenExists: !!this.patrolTween,
+        tweenActive: this.patrolTween?.isActive?.() ?? 'unknown',
+        tweenPaused: this.patrolTween?.paused?.() ?? 'unknown'
+      });
+    } catch (error) {
+      logMsg(`ERROR creating gsap.to`, { error: String(error) });
+    }
   }
 
   /**
