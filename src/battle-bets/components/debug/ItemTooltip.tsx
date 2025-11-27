@@ -109,6 +109,16 @@ export const ItemTooltip: React.FC<ItemTooltipProps> = ({ item, rolls, quality }
       case 'bonusStat':
         // Don't display this stat in the tooltip (it's used internally)
         return { label: '', prefix: '' };
+      case 'castleHP':
+        return {
+          label: 'Castle HP',
+          prefix: ''
+        };
+      case 'shieldCharges':
+        return {
+          label: 'Knight Shield Charges',
+          prefix: ''
+        };
       default:
         // Generic formatting
         const formatted = key

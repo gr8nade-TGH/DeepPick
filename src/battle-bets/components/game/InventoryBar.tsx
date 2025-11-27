@@ -178,11 +178,15 @@ export const InventoryBar: React.FC<InventoryBarProps> = ({ battleId, side, onSl
   const handleCastleHover = (event: React.MouseEvent) => {
     if (equippedCastle) {
       const rect = event.currentTarget.getBoundingClientRect();
+      // Build detailed description explaining castle mechanics
+      const shieldText = castleShields === 1 ? 'charge' : 'charges';
+      const description = `Deploys a Knight Defender with ${castleShields} shield ${shieldText}. Shield charges allow the knight to block projectiles without taking damage. After shields are depleted, knight uses normal deflect cooldown (takes damage if hit again within 0.5s of blocking).`;
+
       setTooltipData({
         item: {
           ...CASTLE_FORTRESS_DEFINITION,
           name: equippedCastle.generatedName || 'Castle',
-          description: `HP: ${castleHP} | Knight Shield Charges: ${castleShields}`,
+          description,
         },
         rolls: equippedCastle.rolls,
         quality: equippedCastle.qualityTier,
