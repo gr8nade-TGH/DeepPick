@@ -608,14 +608,21 @@ export class KnightDefender {
     const speedMultiplier = this.isDefenderMode ? 0.5 : 1.0;
     const duration = (distance / (maxY - minY)) * this.patrolSpeed * speedMultiplier / 1000;
 
+    console.log(`🐴 [KnightDefender] Starting gsap.to: targetRow=${targetRow}, targetY=${targetY}, clampedY=${clampedY}, duration=${duration.toFixed(2)}`);
+    console.log(`🐴 [KnightDefender] sprite.y BEFORE = ${this.sprite.y}`);
+
     this.patrolTween = gsap.to(this.sprite, {
       y: clampedY,
       duration: Math.max(0.4, duration),
       ease: this.isDefenderMode ? 'power3.inOut' : 'power2.inOut',
+      onStart: () => {
+        console.log(`🐴 [KnightDefender] gsap.to STARTED, moving to y=${clampedY}`);
+      },
       onUpdate: () => {
         this.position.y = this.sprite.y;
       },
       onComplete: () => {
+        console.log(`🐴 [KnightDefender] gsap.to COMPLETED, now at y=${this.sprite.y}`);
         // Longer pauses to reduce jumpiness
         const pauseTime = this.isDefenderMode
           ? 0.4 + Math.random() * 0.3  // 0.4-0.7s in defender mode
@@ -623,6 +630,8 @@ export class KnightDefender {
         gsap.delayedCall(pauseTime, () => this.smartPatrol());
       },
     });
+
+    console.log(`🐴 [KnightDefender] gsap.to created, patrolTween exists=${!!this.patrolTween}`);
   }
 
   /**
