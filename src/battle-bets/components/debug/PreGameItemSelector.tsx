@@ -489,10 +489,13 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
     // Also stores shield charges for later knight spawning
     equipCastle(battleId, side, rolledStats);
 
-    // NOTE: Knight is NOT spawned here anymore.
-    // Knight will be spawned when "Start Game" is clicked via the castle item effect.
-    // This matches the timing of the old knight item which worked correctly.
-    console.log(`🏰 [PreGameItemSelector] Castle equipped. Knight will spawn on game start.`);
+    // Spawn knight immediately (visual only - idle animation)
+    // Knight will NOT patrol yet - patrol starts on "Start Game" click
+    const knight = getOrSpawnKnight(battleId, side);
+    if (knight) {
+      knight.setShieldCharges(shieldCharges);
+      console.log(`🏰 [PreGameItemSelector] Knight deployed with ${shieldCharges} shield charges (idle, will patrol on game start)`);
+    }
 
     setSelectingCastle(null);
   };

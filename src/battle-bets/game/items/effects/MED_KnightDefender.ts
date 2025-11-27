@@ -113,8 +113,9 @@ export function getOrSpawnKnight(gameId: string, side: 'left' | 'right'): Knight
     return null;
   }
 
-  // Start patrolling
-  knight.startPatrol();
+  // DON'T start patrolling here - that's what caused the PIXI render crash!
+  // Patrol will be started by QuarterDebugControls.handleStartGame()
+  // Knight will sit idle with bob animation until game starts
 
   // Check for pending shield charges from Castle item
   const pendingCharges = getPendingShieldCharges(gameId, side);
@@ -123,7 +124,7 @@ export function getOrSpawnKnight(gameId: string, side: 'left' | 'right'): Knight
     console.log(`🐴 [KnightDefender] Applied ${pendingCharges} pending shield charges from Castle item`);
   }
 
-  console.log(`🐴 [KnightDefender] Knight spawned and patrolling!`);
+  console.log(`🐴 [KnightDefender] Knight spawned (idle, waiting for game start to patrol)`);
   return knight;
 }
 

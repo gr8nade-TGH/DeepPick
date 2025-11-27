@@ -19,8 +19,6 @@ import { PreGameItemSelector } from './PreGameItemSelector';
 import { itemEffectRegistry } from '../../game/items/ItemEffectRegistry';
 import { rollTestItem } from '../../game/items/ItemTestUtils';
 import { getOrSpawnKnight } from '../../game/items/effects/MED_KnightDefender';
-import { getPendingShieldCharges } from '../../game/items/effects/sharedKnightState';
-import { getEquippedCastle } from '../../game/items/effects/CASTLE_Fortress';
 
 interface QuarterDebugControlsProps {
   battleId: string;
@@ -106,33 +104,20 @@ export const QuarterDebugControls: React.FC<QuarterDebugControlsProps> = ({ batt
 
       console.log(`✅✅✅ [PreGame] All items activated!`);
 
-      // STEP 3: Spawn knights for equipped castles
-      // This timing matches the old knight item which worked correctly
-      console.log(`🐴 [PreGame] Spawning knights for equipped castles...`);
+      // STEP 3: Start patrol for any existing knights (they were spawned idle when castle was rolled)
+      console.log(`🐴 [PreGame] Starting knight patrols...`);
 
-      const leftCastle = getEquippedCastle(battleId, 'left');
-      const rightCastle = getEquippedCastle(battleId, 'right');
+      const leftKnight = getOrSpawnKnight(battleId, 'left');
+      const rightKnight = getOrSpawnKnight(battleId, 'right');
 
-      if (leftCastle) {
-        const knight = getOrSpawnKnight(battleId, 'left');
-        if (knight) {
-          const shieldCharges = getPendingShieldCharges(battleId, 'left');
-          if (shieldCharges > 0) {
-            knight.setShieldCharges(shieldCharges);
-          }
-          console.log(`🐴 [PreGame] Left knight spawned with ${shieldCharges} shield charges`);
-        }
+      if (leftKnight) {
+        leftKnight.startPatrol();
+        console.log(`🐴 [PreGame] Left knight now patrolling`);
       }
 
-      if (rightCastle) {
-        const knight = getOrSpawnKnight(battleId, 'right');
-        if (knight) {
-          const shieldCharges = getPendingShieldCharges(battleId, 'right');
-          if (shieldCharges > 0) {
-            knight.setShieldCharges(shieldCharges);
-          }
-          console.log(`🐴 [PreGame] Right knight spawned with ${shieldCharges} shield charges`);
-        }
+      if (rightKnight) {
+        rightKnight.startPatrol();
+        console.log(`🐴 [PreGame] Right knight now patrolling`);
       }
 
       // STEP 4: Transition to Q1_IN_PROGRESS (awaiting stats from MySportsFeeds)
