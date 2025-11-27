@@ -110,8 +110,7 @@ export function getEquippedCastle(battleId: string, side: 'left' | 'right') {
 
 /**
  * Equip a castle and apply its effects
- * NOTE: Knight spawning is handled separately by registerCastleEffect when the game starts.
- * This prevents circular import issues.
+ * Spawns knight immediately using dynamic import to avoid circular dependency.
  */
 export function equipCastle(
   battleId: string,
@@ -141,30 +140,31 @@ export function equipCastle(
   const castleId = `${side}-castle`;
   castleManager.setCastleHP(battleId, castleId, hp);
 
-  // Store pending shield charges using shared state (will be applied when knight spawns)
+  // Store pending shield charges using shared state (backup in case knight spawns later)
   setPendingShieldCharges(battleId, side, shieldCharges);
-  console.log(`🏰 [Castle] Stored ${shieldCharges} pending shield charges for ${side}`);
+
+  // Spawn knight immediately using dynamic import to avoid circular dependency
+  import('./MED_KnightDefender').then(({ getOrSpawnKnight }) => {
+    const knight = getOrSpawnKnight(battleId, side);
+    if (knight) {
+      knight.setShieldCharges(shieldCharges);
+      console.log(`🏰 [Castle] Knight deployed with ${shieldCharges} shield charges`);
+    }
+  }).catch(err => {
+    console.error(`🏰 [Castle] Failed to spawn knight:`, err);
+  });
 }
 
 /**
  * Register Castle effect
  * This is called when the game starts (from QuarterDebugControls.handleStartGame)
- * We use dynamic import to avoid circular dependency with MED_KnightDefender
+ * Knight is already spawned in equipCastle, this just re-equips if needed.
  */
 export function registerCastleEffect(context: ItemRuntimeContext): void {
   const { gameId, side, rolledStats } = context;
   if (rolledStats) {
+    // equipCastle handles knight spawning via dynamic import
     equipCastle(gameId, side, rolledStats);
-
-    // Spawn knight using dynamic import to avoid circular dependency
-    import('./MED_KnightDefender').then(({ getOrSpawnKnight }) => {
-      const knight = getOrSpawnKnight(gameId, side);
-      if (knight) {
-        const shieldCharges = Math.round(rolledStats.rolls.shieldCharges || 1);
-        knight.setShieldCharges(shieldCharges);
-        console.log(`🏰 [Castle] Knight deployed with ${shieldCharges} shield charges`);
-      }
-    });
   }
 }
 
