@@ -59,11 +59,28 @@ export function registerHornetsNestEffect(context: ItemRuntimeContext): void {
 
   console.log(`🐝🐝🐝 [HornetsNest] REGISTERING EFFECT for ${side} side in game ${gameId}`);
   console.log(`🐝 [HornetsNest] Retaliation: ${retaliationSize} projectiles, Last-Orb Bonus: +${lastOrbBonus}`);
+  console.log(`🐝🐝🐝 [HornetsNest] SUBSCRIBING to DEFENSE_ORB_DESTROYED for gameId=${gameId}, side=${side}`);
 
   // DEFENSE_ORB_DESTROYED: Fire retaliatory projectiles
   battleEventBus.on('DEFENSE_ORB_DESTROYED', (payload: DefenseOrbDestroyedPayload) => {
-    if (payload.gameId !== gameId) return;
-    if (payload.side !== side) return;
+    console.log(`🐝 [HornetsNest] DEFENSE_ORB_DESTROYED received!`, {
+      payloadGameId: payload.gameId,
+      expectedGameId: gameId,
+      payloadSide: payload.side,
+      expectedSide: side,
+      lane: payload.lane
+    });
+
+    if (payload.gameId !== gameId) {
+      console.log(`🐝 [HornetsNest] FILTERED OUT: gameId mismatch (${payload.gameId} !== ${gameId})`);
+      return;
+    }
+    if (payload.side !== side) {
+      console.log(`🐝 [HornetsNest] FILTERED OUT: side mismatch (${payload.side} !== ${side})`);
+      return;
+    }
+
+    console.log(`🐝 [HornetsNest] PASSED FILTERS! Processing retaliation...`);
 
     const lane = payload.lane as StatType;
     console.log(`🐝 [HornetsNest] Defense orb destroyed in ${lane.toUpperCase()} row! Firing retaliation...`);

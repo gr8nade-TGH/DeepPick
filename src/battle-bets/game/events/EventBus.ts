@@ -70,8 +70,16 @@ export class BattleEventBus {
    * Emit an event to all subscribers
    */
   emit(event: BattleEvent, payload: BattleEventPayload): void {
-    // Emit to global listeners
+    // Always log for debugging item effects
     const globalHandlers = this.listeners.get(event);
+    const battleId = payload.battleId;
+    const battleEvents = this.battleListeners.get(battleId);
+    const globalCount = globalHandlers?.size || 0;
+    const battleCount = battleEvents?.get(event)?.size || 0;
+
+    console.log(`📡 [EventBus] EMIT ${event} → ${globalCount} global + ${battleCount} battle handlers (battleId: ${battleId})`);
+
+    // Emit to global listeners
     if (globalHandlers) {
       globalHandlers.forEach(handler => {
         try {
@@ -83,8 +91,6 @@ export class BattleEventBus {
     }
 
     // Emit to battle-specific listeners
-    const battleId = payload.battleId;
-    const battleEvents = this.battleListeners.get(battleId);
     if (battleEvents) {
       const battleHandlers = battleEvents.get(event);
       if (battleHandlers) {
@@ -95,14 +101,6 @@ export class BattleEventBus {
             console.error(`[EventBus] Error in battle handler for ${event} (battle ${battleId}):`, error);
           }
         });
-      }
-    }
-
-    // Debug logging (can be disabled in production)
-    if (process.env.NODE_ENV === 'development') {
-      const handlerCount = (globalHandlers?.size || 0) + (battleEvents?.get(event)?.size || 0);
-      if (handlerCount > 0) {
-        console.log(`[EventBus] ${event} → ${handlerCount} handlers (battle: ${battleId})`);
       }
     }
   }

@@ -84,14 +84,39 @@ export function registerShortswordEffect(context: ItemRuntimeContext): void {
   itemEffectRegistry.setCounter(itemInstanceId, 'ptsFired', 0);
 
   // PROJECTILE_FIRED: Count PTS projectiles and trigger bonus projectiles
+  console.log(`⚔️⚔️⚔️ [Shortsword] SUBSCRIBING to PROJECTILE_FIRED for gameId=${gameId}, side=${side}`);
+
   battleEventBus.on('PROJECTILE_FIRED', (payload: ProjectileFiredPayload) => {
+    console.log(`⚔️ [Shortsword] PROJECTILE_FIRED received!`, {
+      payloadGameId: payload.gameId,
+      expectedGameId: gameId,
+      payloadSide: payload.side,
+      expectedSide: side,
+      lane: payload.lane,
+      source: payload.source
+    });
+
     // Filter by gameId and side
-    if (payload.gameId !== gameId) return;
-    if (payload.side !== side) return;
+    if (payload.gameId !== gameId) {
+      console.log(`⚔️ [Shortsword] FILTERED OUT: gameId mismatch (${payload.gameId} !== ${gameId})`);
+      return;
+    }
+    if (payload.side !== side) {
+      console.log(`⚔️ [Shortsword] FILTERED OUT: side mismatch (${payload.side} !== ${side})`);
+      return;
+    }
 
     // Only count PTS projectiles from BASE source (not item-generated projectiles)
-    if (payload.lane !== 'pts') return;
-    if (payload.source === 'ITEM') return; // Don't count item-generated projectiles
+    if (payload.lane !== 'pts') {
+      console.log(`⚔️ [Shortsword] FILTERED OUT: lane is ${payload.lane}, not 'pts'`);
+      return;
+    }
+    if (payload.source === 'ITEM') {
+      console.log(`⚔️ [Shortsword] FILTERED OUT: source is ITEM`);
+      return; // Don't count item-generated projectiles
+    }
+
+    console.log(`⚔️ [Shortsword] PASSED ALL FILTERS! Incrementing counter...`);
 
     // Increment PTS counter
     const ptsFired = itemEffectRegistry.incrementCounter(itemInstanceId, 'ptsFired', 1);

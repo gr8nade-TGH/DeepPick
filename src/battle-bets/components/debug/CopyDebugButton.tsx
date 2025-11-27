@@ -32,8 +32,8 @@ console.log = (...args: any[]) => {
   }).join(' ');
 
   // Capture ALL logs with emoji markers OR specific keywords
-  const emojiMarkers = ['💾💾💾', '🧪🧪🧪', '🎮🎮🎮', '✅✅✅', '🔔', '🛡️', '🔍', '📢📢📢', '💀', '💥', '⚔️', '🎯', '📦', '🚀', '🐴', '🏰'];
-  const keywords = ['[ItemEffectRegistry]', '[Shortsword]', '[IronmanArmor]', '[PreGameItemSelector]', '[PreGame]', '[getKnight]', '[KnightDefender]', 'activateItem', 'registerEffect', 'knight', 'startPatrol'];
+  const emojiMarkers = ['💾💾💾', '🧪🧪🧪', '🎮🎮🎮', '✅✅✅', '🔔', '🛡️', '🔍', '📢📢📢', '💀', '💥', '⚔️', '🎯', '📦', '🚀', '🐴', '🏰', '📡', '⚔️⚔️⚔️', '🐝', '🐝🐝🐝', '🔮', '🔮🔮🔮'];
+  const keywords = ['[ItemEffectRegistry]', '[Shortsword]', '[IronmanArmor]', '[PreGameItemSelector]', '[PreGame]', '[getKnight]', '[KnightDefender]', 'activateItem', 'registerEffect', 'knight', 'startPatrol', '[EventBus]', '[HornetsNest]', '[WizardsWatchtower]', 'PROJECTILE_FIRED', 'DEFENSE_ORB_DESTROYED', 'BATTLE_START', 'FILTERED OUT', 'PASSED ALL FILTERS', 'PASSED FILTERS', 'SUBSCRIBING', 'ADDING GLOW', 'CANNOT ADD GLOW'];
 
   if (emojiMarkers.some(emoji => message.includes(emoji)) || keywords.some(kw => message.includes(kw))) {
     capturedLogs.push({
@@ -277,8 +277,10 @@ export function CopyDebugButton({ battleId }: CopyDebugButtonProps) {
         lines.push('  💥 = Projectile collision');
         lines.push('  🎯 = ItemEffectRegistry registration/activation');
         lines.push('  ⚔️ = Shortsword effect logs');
+        lines.push('  ⚔️⚔️⚔️ = Shortsword subscribing to events');
         lines.push('  📦 = Item effect registered');
         lines.push('  🚀 = Calling effect function');
+        lines.push('  📡 = EventBus emit (shows handler count)');
         lines.push('');
 
         if (capturedLogs.length === 0) {

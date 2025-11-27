@@ -221,11 +221,27 @@ export function registerWizardsWatchtowerEffect(context: ItemRuntimeContext): vo
 
   console.log(`🔮 [WizardsWatchtower] REGISTERING EFFECT for ${side} side in game ${gameId}`);
   console.log(`🔮 [WizardsWatchtower] Shield: ${startShieldHp} HP, +${hpPerDestroyedOrb} per orb | Orb Buff: +${orbBonusHP} HP to last orbs`);
+  console.log(`🔮🔮🔮 [WizardsWatchtower] SUBSCRIBING to BATTLE_START for gameId=${gameId}, side=${side}`);
 
   // BATTLE_START: Create shield AND buff last orbs
   battleEventBus.on('BATTLE_START', (payload) => {
-    if (payload.gameId !== gameId) return;
-    if (payload.side !== side) return;
+    console.log(`🔮 [WizardsWatchtower] BATTLE_START received!`, {
+      payloadGameId: payload.gameId,
+      expectedGameId: gameId,
+      payloadSide: payload.side,
+      expectedSide: side
+    });
+
+    if (payload.gameId !== gameId) {
+      console.log(`🔮 [WizardsWatchtower] FILTERED OUT: gameId mismatch (${payload.gameId} !== ${gameId})`);
+      return;
+    }
+    if (payload.side !== side) {
+      console.log(`🔮 [WizardsWatchtower] FILTERED OUT: side mismatch (${payload.side} !== ${side})`);
+      return;
+    }
+
+    console.log(`🔮 [WizardsWatchtower] PASSED FILTERS! Creating shield and buffing orbs...`);
 
     // ===== PART 1: Castle Shield (same as Ironman Armor) =====
     console.log(`🔮 [WizardsWatchtower] Creating shield for ${side} with ${startShieldHp} HP`);
@@ -321,13 +337,22 @@ export function registerWizardsWatchtowerEffect(context: ItemRuntimeContext): vo
       }
 
       console.log(`🔮 [WizardsWatchtower] Creating glow with key: ${glowKey}`);
+      console.log(`🔮 [WizardsWatchtower] lastOrb sprite check:`, {
+        hasSprite: !!lastOrb.sprite,
+        spriteParent: lastOrb.sprite?.parent ? 'EXISTS' : 'NULL/UNDEFINED',
+        orbId: lastOrb.id
+      });
 
       // Update the orb's visual to show purple glow
       if (lastOrb.sprite && lastOrb.sprite.parent) {
+        console.log(`🔮 [WizardsWatchtower] ADDING GLOW to orb ${lastOrb.id}!`);
         const glow = addGlowingEdge(lastOrb.sprite, glowKey);
         lastOrb.sprite.parent.addChild(glow);
         (lastOrb as any)._wizardGlow = glow;
         (lastOrb as any)._wizardGlowKey = glowKey; // Store key for cleanup
+        console.log(`🔮 [WizardsWatchtower] ✅ Glow added successfully!`);
+      } else {
+        console.log(`🔮 [WizardsWatchtower] ❌ CANNOT ADD GLOW - sprite or parent missing!`);
       }
 
       orbsBuffed++;
