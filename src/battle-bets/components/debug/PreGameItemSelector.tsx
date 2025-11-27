@@ -13,6 +13,7 @@ import { STARTER_SHORTSWORD_DEFINITION } from '../../game/items/effects/STARTER_
 import { CHA_HORNETS_NEST_DEFINITION } from '../../game/items/effects/CHA_HornetsNest';
 import { WAS_WIZARDS_WATCHTOWER_DEFINITION } from '../../game/items/effects/WAS_WizardsWatchtower';
 import { MED_KNIGHT_DEFENDER_DEFINITION } from '../../game/items/effects/MED_KnightDefender';
+import { CASTLE_FORTRESS_DEFINITION, equipCastle, generateCastleName, getCastleType, getCastleRarityColor } from '../../game/items/effects/CASTLE_Fortress';
 import type { ItemDefinition, RolledItemStats } from '../../game/items/ItemRollSystem';
 import { rollItem } from '../../game/items/ItemRollSystem';
 import { useMultiGameStore } from '../../store/multiGameStore';
@@ -79,6 +80,11 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
       ? battle.game.rightCapper.equippedItems.slot3
       : null
   );
+
+  // Castle slots (separate from item slots)
+  const [leftCastle, setLeftCastle] = useState<(RolledItemStats & { generatedName?: string }) | null>(null);
+  const [rightCastle, setRightCastle] = useState<(RolledItemStats & { generatedName?: string }) | null>(null);
+  const [selectingCastle, setSelectingCastle] = useState<'left' | 'right' | null>(null);
 
   const [selectedSlot, setSelectedSlot] = useState<{
     side: 'left' | 'right';
@@ -472,6 +478,84 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
     return AVAILABLE_ITEMS.find((item) => item.id === itemId) ?? null;
   };
 
+  /**
+   * Roll a new castle for a side
+   */
+  const handleRollCastle = (side: 'left' | 'right') => {
+    const rolledStats = rollItem(CASTLE_FORTRESS_DEFINITION);
+    const hp = Math.round(rolledStats.rolls.castleHP || 20);
+    const generatedName = generateCastleName(hp);
+
+    const castleWithName = {
+      ...rolledStats,
+      generatedName,
+    };
+
+    console.log(`🏰 [PreGameItemSelector] Rolled castle for ${side}:`, {
+      name: generatedName,
+      hp,
+      shieldCharges: Math.round(rolledStats.rolls.shieldCharges || 1),
+      quality: rolledStats.qualityTier,
+    });
+
+    if (side === 'left') {
+      setLeftCastle(castleWithName);
+    } else {
+      setRightCastle(castleWithName);
+    }
+
+    // Apply castle effect immediately
+    equipCastle(battleId, side, rolledStats);
+    setSelectingCastle(null);
+  };
+
+  /**
+   * Render castle slot preview
+   */
+  const renderCastlePreview = (side: 'left' | 'right') => {
+    const castle = side === 'left' ? leftCastle : rightCastle;
+    const hp = castle ? Math.round(castle.rolls.castleHP || 20) : null;
+    const shields = castle ? Math.round(castle.rolls.shieldCharges || 1) : null;
+    const rarity = hp ? getCastleType(hp) : null;
+    const rarityColor = rarity ? getCastleRarityColor(rarity.rarity) : '#9CA3AF';
+
+    return (
+      <div
+        style={{
+          padding: '12px',
+          marginBottom: '8px',
+          background: castle ? `linear-gradient(135deg, ${rarityColor}20 0%, ${rarityColor}10 100%)` : 'rgba(100, 100, 100, 0.1)',
+          border: `2px solid ${castle ? rarityColor : 'rgba(100, 100, 100, 0.3)'}`,
+          borderRadius: '8px',
+          cursor: 'pointer',
+          transition: 'all 0.2s ease',
+        }}
+        onClick={() => setSelectingCastle(side)}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.boxShadow = `0 0 15px ${castle ? rarityColor : 'rgba(255, 255, 255, 0.3)'}40`;
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.boxShadow = 'none';
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ fontSize: '28px' }}>🏰</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ color: castle ? rarityColor : '#888', fontWeight: 'bold', marginBottom: '4px' }}>
+              {castle ? castle.generatedName : 'No Castle'}
+            </div>
+            {castle && (
+              <div style={{ color: '#aaa', fontSize: '13px' }}>
+                HP: {hp} | 🛡️ Shields: {shields} | {rarity?.rarity}
+              </div>
+            )}
+          </div>
+          <div style={{ color: castle ? rarityColor : '#666', fontSize: '18px' }}>→</div>
+        </div>
+      </div>
+    );
+  };
+
   const renderSlot = (side: 'left' | 'right', slot: 1 | 2 | 3, slotType: string) => {
     const rolledItem = getSlotItem(side, slot);
     const item = rolledItem ? getItemDefinition(rolledItem.itemId) : null;
@@ -611,6 +695,38 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
                 </button>
               </div>
             </>
+          ) : selectingCastle ? (
+            <>
+              {/* Castle Selection View */}
+              <div className="picker-header">
+                <h3>🏰 SELECT CASTLE</h3>
+                <p>{selectingCastle.toUpperCase()} CAPPER</p>
+              </div>
+
+              <div className="picker-body">
+                <div style={{ textAlign: 'center', padding: '20px' }}>
+                  <p style={{ color: '#aaa', marginBottom: '20px' }}>
+                    Roll a new castle to get random HP (15-40) and Knight Shield Charges (1-3)
+                  </p>
+                  <button
+                    className="item-button"
+                    onClick={() => handleRollCastle(selectingCastle)}
+                    style={{ width: '100%', padding: '20px' }}
+                  >
+                    <div className="item-button-content" style={{ justifyContent: 'center' }}>
+                      <div style={{ fontSize: '32px', marginRight: '12px' }}>🎲</div>
+                      <div style={{ fontSize: '18px', fontWeight: 'bold' }}>Roll New Castle</div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              <div className="picker-footer">
+                <button className="close-button" onClick={() => setSelectingCastle(null)}>
+                  Back
+                </button>
+              </div>
+            </>
           ) : (
             <>
               {/* Main View - Shows all equipped items */}
@@ -620,17 +736,19 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
               </div>
 
               <div className="picker-body">
-                {/* Left Side Slots */}
+                {/* Left Side */}
                 <div style={{ marginBottom: '20px' }}>
                   <h4 style={{ color: '#ffd700', marginBottom: '12px' }}>LEFT CAPPER</h4>
+                  {renderCastlePreview('left')}
                   {renderSlotPreview('left', 1)}
                   {renderSlotPreview('left', 2)}
                   {renderSlotPreview('left', 3)}
                 </div>
 
-                {/* Right Side Slots */}
+                {/* Right Side */}
                 <div>
                   <h4 style={{ color: '#ffd700', marginBottom: '12px' }}>RIGHT CAPPER</h4>
+                  {renderCastlePreview('right')}
                   {renderSlotPreview('right', 1)}
                   {renderSlotPreview('right', 2)}
                   {renderSlotPreview('right', 3)}
