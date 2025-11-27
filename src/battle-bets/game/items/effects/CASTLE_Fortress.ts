@@ -160,12 +160,13 @@ export function equipCastle(
   pendingShieldCharges.set(`${battleId}-${side}`, shieldCharges);
   console.log(`🏰 [Castle] Stored ${shieldCharges} pending shield charges for ${side}`);
 
-  // Try to apply to existing knight (if already spawned)
-  const knight = getKnight(battleId, side);
+  // Spawn knight (or get existing if already spawned)
+  // The knight is now deployed by the Castle item, not a separate Knight Defender item
+  const knight = getOrSpawnKnight(battleId, side);
   if (knight) {
     knight.setShieldCharges(shieldCharges);
     pendingShieldCharges.delete(`${battleId}-${side}`);
-    console.log(`🏰 [Castle] Applied shield charges to existing knight`);
+    console.log(`🏰 [Castle] Knight deployed with ${shieldCharges} shield charges`);
   }
 }
 

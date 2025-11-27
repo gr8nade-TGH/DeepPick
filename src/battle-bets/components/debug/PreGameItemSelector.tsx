@@ -12,7 +12,7 @@ import { LAL_IRONMAN_ARMOR_DEFINITION } from '../../game/items/effects/LAL_Ironm
 import { STARTER_SHORTSWORD_DEFINITION } from '../../game/items/effects/STARTER_Shortsword';
 import { CHA_HORNETS_NEST_DEFINITION } from '../../game/items/effects/CHA_HornetsNest';
 import { WAS_WIZARDS_WATCHTOWER_DEFINITION } from '../../game/items/effects/WAS_WizardsWatchtower';
-import { MED_KNIGHT_DEFENDER_DEFINITION } from '../../game/items/effects/MED_KnightDefender';
+// Note: MED_KNIGHT_DEFENDER_DEFINITION removed - knight is now deployed via Castle item
 import { CASTLE_FORTRESS_DEFINITION, equipCastle, generateCastleName, getCastleType, getCastleRarityColor } from '../../game/items/effects/CASTLE_Fortress';
 import type { ItemDefinition, RolledItemStats } from '../../game/items/ItemRollSystem';
 import { rollItem } from '../../game/items/ItemRollSystem';
@@ -31,12 +31,12 @@ interface PreGameItemSelectorProps {
 }
 
 // Available items for testing
+// Note: Knight Defender is now deployed via Castle item, not as a separate power item
 const AVAILABLE_ITEMS: ItemDefinition[] = [
   LAL_IRONMAN_ARMOR_DEFINITION,
   STARTER_SHORTSWORD_DEFINITION,
   CHA_HORNETS_NEST_DEFINITION,
   WAS_WIZARDS_WATCHTOWER_DEFINITION,
-  MED_KNIGHT_DEFENDER_DEFINITION,
   // Add more items as they're implemented
 ];
 
@@ -354,31 +354,8 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
       deactivateShieldItem('right', 'WAS_def_wizards_watchtower');
     }
 
-    // Handle Knight Defender (power item - slot 2)
-    // Use centralized spawn function from MED_KnightDefender to avoid duplicates
-    if (leftSlot2?.itemId === 'MED_pwr_knight_defender') {
-      spawnKnightForSide('left');
-    }
-    if (rightSlot2?.itemId === 'MED_pwr_knight_defender') {
-      spawnKnightForSide('right');
-    }
-  };
-
-  /**
-   * Spawn a knight for a given side using centralized spawn function
-   */
-  const spawnKnightForSide = async (side: 'left' | 'right') => {
-    console.log(`🐴 [PreGameItemSelector] Requesting knight spawn for ${side} side`);
-
-    // Use centralized spawn function - handles deduplication automatically
-    const { getOrSpawnKnight } = await import('../../game/items/effects/MED_KnightDefender');
-
-    const knight = getOrSpawnKnight(battleId, side);
-    if (knight) {
-      console.log(`🐴 [PreGameItemSelector] Knight active for ${side}!`);
-    } else {
-      console.error(`🐴 [PreGameItemSelector] Failed to spawn knight for ${side}`);
-    }
+    // Note: Knight Defender is now deployed via Castle item (equipCastle function)
+    // No longer handled as a separate power item in slot 2
   };
 
   /**
