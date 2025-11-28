@@ -242,107 +242,8 @@ function transformApiBattleToGame(battle: ApiBattle): Game {
   };
 }
 
-// Generate training battles (persistent, separate from real battles)
-function generateTrainingBattles(): Game[] {
-  return [
-    {
-      id: 'training-battle-1',
-      leftTeam: { id: 'lal', name: 'Los Angeles Lakers', abbreviation: 'LAL', color: 0x552583, colorHex: '#552583' },
-      rightTeam: { id: 'mem', name: 'Memphis Grizzlies', abbreviation: 'MEM', color: 0x5D76A9, colorHex: '#5D76A9' },
-      leftCapper: {
-        id: 'training-capper-1',
-        name: 'TRAINING CAPPER 1',
-        favoriteTeam: { id: 'lal', name: 'Los Angeles Lakers', abbreviation: 'LAL', color: 0x552583, colorHex: '#552583' },
-        health: 100,
-        maxHealth: 100,
-        level: 1,
-        experience: 0,
-        leaderboardRank: 1,
-        teamRecords: [{ teamId: 'lal', units: 15, wins: 0, losses: 0, pushes: 0 }],
-        equippedItems: { slot1: null, slot2: null, slot3: null }
-      },
-      rightCapper: {
-        id: 'training-capper-2',
-        name: 'TRAINING CAPPER 2',
-        favoriteTeam: { id: 'mem', name: 'Memphis Grizzlies', abbreviation: 'MEM', color: 0x5D76A9, colorHex: '#5D76A9' },
-        health: 100,
-        maxHealth: 100,
-        level: 1,
-        experience: 0,
-        leaderboardRank: 2,
-        teamRecords: [{ teamId: 'mem', units: 9, wins: 0, losses: 0, pushes: 0 }],
-        equippedItems: { slot1: null, slot2: null, slot3: null }
-      },
-      currentQuarter: 0,
-      spread: -4.5,
-      gameDate: 'Training Battle 1',
-      gameTime: '',
-      leftScore: 0,
-      rightScore: 0,
-      status: 'SCHEDULED',
-      _battleData: {
-        status: 'SCHEDULED',
-        gameStartTime: undefined,
-        q1EndTime: undefined,
-        q2EndTime: undefined,
-        halftimeEndTime: undefined,
-        q3EndTime: undefined,
-        q4EndTime: undefined,
-        winner: null
-      }
-    },
-    {
-      id: 'training-battle-2',
-      leftTeam: { id: 'bos', name: 'Boston Celtics', abbreviation: 'BOS', color: 0x007A33, colorHex: '#007A33' },
-      rightTeam: { id: 'gsw', name: 'Golden State Warriors', abbreviation: 'GSW', color: 0x1D428A, colorHex: '#1D428A' },
-      leftCapper: {
-        id: 'training-capper-3',
-        name: 'TRAINING CAPPER 3',
-        favoriteTeam: { id: 'bos', name: 'Boston Celtics', abbreviation: 'BOS', color: 0x007A33, colorHex: '#007A33' },
-        health: 100,
-        maxHealth: 100,
-        level: 1,
-        experience: 0,
-        leaderboardRank: 3,
-        teamRecords: [{ teamId: 'bos', units: 21, wins: 0, losses: 0, pushes: 0 }],
-        equippedItems: { slot1: null, slot2: null, slot3: null }
-      },
-      rightCapper: {
-        id: 'training-capper-4',
-        name: 'TRAINING CAPPER 4',
-        favoriteTeam: { id: 'gsw', name: 'Golden State Warriors', abbreviation: 'GSW', color: 0x1D428A, colorHex: '#1D428A' },
-        health: 100,
-        maxHealth: 100,
-        level: 1,
-        experience: 0,
-        leaderboardRank: 4,
-        teamRecords: [{ teamId: 'gsw', units: 6, wins: 0, losses: 0, pushes: 0 }],
-        equippedItems: { slot1: null, slot2: null, slot3: null }
-      },
-      currentQuarter: 0,
-      spread: -2.5,
-      gameDate: 'Training Battle 2',
-      gameTime: '',
-      leftScore: 0,
-      rightScore: 0,
-      status: 'SCHEDULED',
-      _battleData: {
-        status: 'SCHEDULED',
-        gameStartTime: undefined,
-        q1EndTime: undefined,
-        q2EndTime: undefined,
-        halftimeEndTime: undefined,
-        q3EndTime: undefined,
-        q4EndTime: undefined,
-        winner: null
-      }
-    }
-  ] as Game[];
-}
-
 function AppV2() {
   const [battles, setBattles] = useState<Game[]>([]);
-  const [trainingBattles, setTrainingBattles] = useState<Game[]>(() => generateTrainingBattles());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<{ battleId: string; side: 'left' | 'right'; slot: number } | null>(null);
@@ -454,39 +355,16 @@ function AppV2() {
         });
       });
 
-      // Also sync training battles
-      setTrainingBattles(prevBattles => {
-        return prevBattles.map(battle => {
-          const storeBattle = useMultiGameStore.getState().getBattle(battle.id);
-          if (!storeBattle) return battle;
-
-          const storeBattleStatus = storeBattle.battleStatus || 'SCHEDULED';
-          const currentStatus = (battle as any)._battleData?.status;
-
-          if (storeBattleStatus !== currentStatus) {
-            return {
-              ...battle,
-              status: storeBattle.game.status,
-              _battleData: {
-                ...(battle as any)._battleData,
-                status: storeBattleStatus
-              }
-            };
-          }
-
-          return battle;
-        });
-      });
     }, 500); // Check every 500ms
 
     return () => clearInterval(interval);
   }, []);
 
   // Filter battles by active tab
+  // TRAINING_GROUNDS shows the same battles (test battles) - no separate array needed
+  // This avoids PixiJS destroy/recreate issues when switching tabs
   const filteredBattles = useMemo(() => {
-    // TRAINING_GROUNDS shows training battles only
-    if (activeTab === 'TRAINING_GROUNDS') return trainingBattles;
-
+    if (activeTab === 'TRAINING_GROUNDS') return battles; // Same battles, just a different tab view
     if (activeTab === 'ALL') return battles;
 
     return battles.filter(battle => {
@@ -495,7 +373,7 @@ function AppV2() {
       const category = getBattleCategory(status);
       return category === activeTab;
     });
-  }, [battles, trainingBattles, activeTab]);
+  }, [battles, activeTab]);
 
   // Calculate tab counts
   const tabCounts = useMemo(() => {
@@ -504,7 +382,7 @@ function AppV2() {
       LIVE: 0,
       UPCOMING: 0,
       FINAL: 0,
-      TRAINING_GROUNDS: trainingBattles.length
+      TRAINING_GROUNDS: battles.length // Same count as ALL for now
     };
 
     battles.forEach(battle => {
@@ -517,7 +395,7 @@ function AppV2() {
     });
 
     return counts;
-  }, [battles, trainingBattles]);
+  }, [battles]);
 
   // NEW: Auto-switch to LIVE tab when battles start
   useEffect(() => {
@@ -803,12 +681,7 @@ function AppV2() {
 
         {/* Debug Bottom Bar - unified control bar for current battles */}
         {showDebugControls && (
-          <DebugBottomBar
-            battleIds={activeTab === 'TRAINING_GROUNDS'
-              ? trainingBattles.map(b => b.id)
-              : filteredBattles.map(b => b.id)
-            }
-          />
+          <DebugBottomBar battleIds={filteredBattles.map(b => b.id)} />
         )}
 
         {/* Pre-Game Item Selector Modal (same as original) */}
