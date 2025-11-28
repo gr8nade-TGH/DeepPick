@@ -1,6 +1,10 @@
 /**
  * ItemTooltip - Diablo 4 inspired item tooltip
- * 
+ *
+ * UNIFIED tooltip that works with BOTH:
+ * 1. InventoryItemInstance (from inventory store)
+ * 2. ItemDefinition + rolls + quality (from game item system)
+ *
  * Features:
  * - Quality tier colored header with gradient
  * - Ornate border design
@@ -10,6 +14,7 @@
 
 import React from 'react';
 import type { InventoryItemInstance } from '../../store/inventoryStore';
+import type { ItemDefinition, QualityTier, StatRollRange } from '../../game/items/ItemRollSystem';
 import './ItemTooltip.css';
 
 // Quality tier styling
@@ -58,29 +63,85 @@ const SLOT_NAMES: Record<string, string> = {
   castle: 'Castle',
 };
 
+/**
+ * Props - supports TWO modes:
+ * 1. inventoryItem: Pass an InventoryItemInstance directly
+ * 2. item + rolls + qualityTier: Pass ItemDefinition with rolled stats (game mode)
+ */
 interface ItemTooltipProps {
-  item: InventoryItemInstance;
+  // Mode 1: From inventory
+  inventoryItem?: InventoryItemInstance;
+  // Mode 2: From game (ItemDefinition + rolls)
+  item?: ItemDefinition;
+  rolls?: Record<string, number>;
+  qualityTier?: QualityTier;
+  qualityScore?: number;
+  // Shared
   style?: React.CSSProperties;
 }
 
-export const ItemTooltip: React.FC<ItemTooltipProps> = ({ item, style }) => {
-  const quality = QUALITY_STYLES[item.qualityTier] || QUALITY_STYLES.Balanced;
+export const ItemTooltip: React.FC<ItemTooltipProps> = ({
+  inventoryItem,
+  item,
+  rolls,
+  qualityTier,
+  qualityScore,
+  style
+}) => {
+  // Normalize data from either source
+  const name = inventoryItem?.name || item?.name || 'Unknown Item';
+  const icon = inventoryItem?.icon || item?.icon || '❓';
+  const slot = inventoryItem?.slot || item?.slot || 'defense';
+  const tier = inventoryItem?.qualityTier || qualityTier || 'Balanced';
+  const score = inventoryItem?.qualityScore ?? qualityScore ?? 50;
+  const stats = inventoryItem?.rolledStats || rolls || {};
+  const rollRanges = item?.rollRanges;
+  const description = item?.description;
+  const teamName = item?.teamName;
+
+  const quality = QUALITY_STYLES[tier] || QUALITY_STYLES.Balanced;
 
   // Format stat name for display
   const formatStatName = (key: string): string => {
-    return key
-      .replace(/([A-Z])/g, ' $1')
-      .replace(/^./, (s) => s.toUpperCase())
-      .replace(/Hp/g, 'HP')
-      .replace(/Per /g, 'per ')
-      .trim();
+    // Special handling for known stats
+    switch (key) {
+      case 'startShieldHp': return 'Shield Strength';
+      case 'hpPerDestroyedOrb': return 'Shield Regen per Orb';
+      case 'ptsThreshold': return 'PTS Threshold';
+      case 'bonusProjectiles': return 'Bonus Projectiles';
+      case 'ptsSpeedBoost': return 'PTS Speed Boost';
+      case 'bonusStatSpeedBoost': return 'Bonus Stat Speed';
+      case 'castleHP': return 'Castle HP';
+      case 'shieldCharges': return 'Shield Charges';
+      default:
+        return key
+          .replace(/([A-Z])/g, ' $1')
+          .replace(/^./, (s) => s.toUpperCase())
+          .replace(/Hp/g, 'HP')
+          .replace(/Per /g, 'per ')
+          .trim();
+    }
   };
 
-  // Get stat entries
-  const statEntries = Object.entries(item.rolledStats);
+  // Get stat entries (filter out internal stats like bonusStat)
+  const statEntries = Object.entries(stats).filter(([key]) => key !== 'bonusStat');
 
   // Calculate quality percentage for display
-  const qualityPercent = Math.round(item.qualityScore);
+  const qualityPercent = Math.round(score);
+
+  // Check if stat is at max roll
+  const isMaxRoll = (key: string, value: number): boolean => {
+    if (!rollRanges?.[key]) return false;
+    return value >= rollRanges[key].max;
+  };
+
+  // Get range display for a stat
+  const getRangeDisplay = (key: string): string | null => {
+    if (!rollRanges?.[key]) return null;
+    const range = rollRanges[key];
+    const suffix = (key === 'ptsSpeedBoost' || key === 'bonusStatSpeedBoost') ? '%' : '';
+    return `(${range.min}${suffix}-${range.max}${suffix})`;
+  };
 
   return (
     <div className="d4-item-tooltip" style={style}>
@@ -94,13 +155,14 @@ export const ItemTooltip: React.FC<ItemTooltipProps> = ({ item, style }) => {
 
         {/* Header with item name */}
         <div className="d4-tooltip-header" style={{ background: quality.headerBg }}>
-          <div className="d4-item-icon-large">{item.icon}</div>
+          <div className="d4-item-icon-large">{icon}</div>
           <div className="d4-item-title" style={{ color: quality.titleColor }}>
-            {item.name}
+            {name}
           </div>
           <div className="d4-item-type">
-            {quality.tierName} {SLOT_NAMES[item.slot]}
+            {quality.tierName} {SLOT_NAMES[slot]}
           </div>
+          {teamName && <div className="d4-item-team">{teamName}</div>}
         </div>
 
         {/* Item Power / Quality Score */}
@@ -116,33 +178,36 @@ export const ItemTooltip: React.FC<ItemTooltipProps> = ({ item, style }) => {
 
         {/* Primary Stats */}
         <div className="d4-stats-section">
-          {statEntries.map(([key, value], index) => (
-            <div key={key} className="d4-stat-row primary">
-              <span className="d4-stat-icon">→</span>
-              <span className="d4-stat-text">
-                <span className="d4-stat-value">{value}</span> {formatStatName(key)}
-              </span>
-            </div>
-          ))}
+          {statEntries.map(([key, value]) => {
+            const isMax = isMaxRoll(key, value);
+            const rangeStr = getRangeDisplay(key);
+            const suffix = (key === 'ptsSpeedBoost' || key === 'bonusStatSpeedBoost') ? '%' : '';
+
+            return (
+              <div key={key} className="d4-stat-row primary">
+                <span className="d4-stat-icon">◆</span>
+                <span className="d4-stat-text">
+                  <span className={`d4-stat-value ${isMax ? 'd4-max-roll' : ''}`}>
+                    +{value}{suffix}
+                  </span>
+                  {' '}{formatStatName(key)}
+                  {rangeStr && <span className="d4-stat-range"> {rangeStr}</span>}
+                </span>
+              </div>
+            );
+          })}
         </div>
 
-        {/* Divider */}
-        <div className="d4-tooltip-divider thin" style={{ background: quality.borderColor }} />
-
-        {/* Secondary Info */}
-        <div className="d4-stats-section secondary">
-          <div className="d4-stat-row">
-            <span className="d4-stat-icon diamond">◆</span>
-            <span className="d4-stat-text">Quality Tier: <span style={{ color: quality.titleColor }}>{item.qualityTier}</span></span>
-          </div>
-          <div className="d4-stat-row">
-            <span className="d4-stat-icon diamond">◆</span>
-            <span className="d4-stat-text">Slot: {item.slot.charAt(0).toUpperCase() + item.slot.slice(1)}</span>
-          </div>
-        </div>
+        {/* Description / Flavor text (if available) */}
+        {description && (
+          <>
+            <div className="d4-tooltip-divider thin" style={{ background: quality.borderColor }} />
+            <div className="d4-description">{description}</div>
+          </>
+        )}
 
         {/* Special Effect (if applicable) */}
-        {item.qualityTier === 'Masterwork' && (
+        {tier === 'Masterwork' && (
           <>
             <div className="d4-tooltip-divider thin" style={{ background: quality.borderColor }} />
             <div className="d4-special-effect">
@@ -155,13 +220,15 @@ export const ItemTooltip: React.FC<ItemTooltipProps> = ({ item, style }) => {
         {/* Footer */}
         <div className="d4-tooltip-footer">
           <div className="d4-footer-row">
-            <span className="d4-footer-label">Acquired:</span>
-            <span className="d4-footer-value">{new Date(item.acquiredAt).toLocaleDateString()}</span>
+            <span className="d4-footer-label">Quality:</span>
+            <span className="d4-footer-value" style={{ color: quality.titleColor }}>{tier}</span>
           </div>
-          <div className="d4-footer-row">
-            <span className="d4-footer-label">Source:</span>
-            <span className="d4-footer-value">{item.source.replace('_', ' ')}</span>
-          </div>
+          {inventoryItem && (
+            <div className="d4-footer-row">
+              <span className="d4-footer-label">Source:</span>
+              <span className="d4-footer-value">{inventoryItem.source.replace('_', ' ')}</span>
+            </div>
+          )}
         </div>
       </div>
     </div>

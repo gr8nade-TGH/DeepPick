@@ -171,7 +171,7 @@ const InventorySlot: React.FC<InventorySlotProps> = ({
           {/* Diablo-style Tooltip */}
           {showTooltip && (
             <ItemTooltip
-              item={item}
+              inventoryItem={item}
               style={{
                 position: 'fixed',
                 left: `${tooltipPos.x}px`,

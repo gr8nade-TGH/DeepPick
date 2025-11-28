@@ -246,7 +246,7 @@ const EquipSlot: React.FC<EquipSlotProps> = ({
       {/* Tooltip */}
       {item && showTooltip && (
         <ItemTooltip
-          item={item}
+          inventoryItem={item}
           style={{
             position: 'fixed',
             left: `${tooltipPos.x}px`,

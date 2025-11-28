@@ -5,7 +5,6 @@
 
 import React, { useEffect, useState } from 'react';
 import './InventoryBar.css';
-import '../debug/ItemTooltip.css';
 import { castleManager } from '../../game/managers/CastleManager';
 import { useMultiGameStore } from '../../store/multiGameStore';
 import { LAL_IRONMAN_ARMOR_DEFINITION } from '../../game/items/effects/LAL_IronmanArmor';
@@ -14,8 +13,8 @@ import { CHA_HORNETS_NEST_DEFINITION } from '../../game/items/effects/CHA_Hornet
 import { WAS_WIZARDS_WATCHTOWER_DEFINITION } from '../../game/items/effects/WAS_WizardsWatchtower';
 import { MED_KNIGHT_DEFENDER_DEFINITION } from '../../game/items/effects/MED_KnightDefender';
 import { CASTLE_FORTRESS_DEFINITION, getEquippedCastle, getCastleType, getCastleRarityColor } from '../../game/items/effects/CASTLE_Fortress';
-import type { ItemDefinition, RolledItemStats } from '../../game/items/ItemRollSystem';
-import { ItemTooltip } from '../debug/ItemTooltip';
+import type { ItemDefinition, RolledItemStats, QualityTier } from '../../game/items/ItemRollSystem';
+import { ItemTooltip } from '../inventory/ItemTooltip';
 
 // Available items registry
 const ITEM_REGISTRY: Record<string, ItemDefinition> = {
@@ -44,7 +43,8 @@ export const InventoryBar: React.FC<InventoryBarProps> = ({ battleId, side, onSl
   const [tooltipData, setTooltipData] = useState<{
     item: ItemDefinition;
     rolls: Record<string, number>;
-    quality: 'Warped' | 'Balanced' | 'Honed' | 'Masterwork';
+    qualityTier: QualityTier;
+    qualityScore: number;
     x: number;
     y: number;
   } | null>(null);
@@ -97,7 +97,8 @@ export const InventoryBar: React.FC<InventoryBarProps> = ({ battleId, side, onSl
     setTooltipData({
       item,
       rolls: rolledItem.rolls,
-      quality: rolledItem.qualityTier,
+      qualityTier: rolledItem.qualityTier,
+      qualityScore: rolledItem.qualityScore,
       x: rect.right + 10,
       y: rect.top,
     });
@@ -189,7 +190,8 @@ export const InventoryBar: React.FC<InventoryBarProps> = ({ battleId, side, onSl
           description,
         },
         rolls: equippedCastle.rolls,
-        quality: equippedCastle.qualityTier,
+        qualityTier: equippedCastle.qualityTier,
+        qualityScore: equippedCastle.qualityScore,
         x: rect.right + 10,
         y: rect.top,
       });
@@ -274,7 +276,8 @@ export const InventoryBar: React.FC<InventoryBarProps> = ({ battleId, side, onSl
           <ItemTooltip
             item={tooltipData.item}
             rolls={tooltipData.rolls}
-            quality={tooltipData.quality}
+            qualityTier={tooltipData.qualityTier}
+            qualityScore={tooltipData.qualityScore}
           />
         </div>
       )}
