@@ -15,6 +15,7 @@
 import React from 'react';
 import type { InventoryItemInstance } from '../../store/inventoryStore';
 import type { ItemDefinition, QualityTier, StatRollRange } from '../../game/items/ItemRollSystem';
+import { getItemDefinition } from '../../game/items/ItemTestUtils';
 import './ItemTooltip.css';
 
 // Quality tier styling
@@ -88,16 +89,25 @@ export const ItemTooltip: React.FC<ItemTooltipProps> = ({
   qualityScore,
   style
 }) => {
+  // If only inventoryItem is provided, look up the full item definition
+  // This ensures we have rollRanges, description, and teamName
+  const lookedUpDefinition = inventoryItem && !item
+    ? getItemDefinition(inventoryItem.itemId)
+    : null;
+
+  // Prefer explicitly passed item, fallback to looked up definition
+  const itemDef = item || lookedUpDefinition;
+
   // Normalize data from either source
-  const name = inventoryItem?.name || item?.name || 'Unknown Item';
-  const icon = inventoryItem?.icon || item?.icon || '❓';
-  const slot = inventoryItem?.slot || item?.slot || 'defense';
+  const name = inventoryItem?.name || itemDef?.name || 'Unknown Item';
+  const icon = inventoryItem?.icon || itemDef?.icon || '❓';
+  const slot = inventoryItem?.slot || itemDef?.slot || 'defense';
   const tier = inventoryItem?.qualityTier || qualityTier || 'Balanced';
   const score = inventoryItem?.qualityScore ?? qualityScore ?? 50;
   const stats = inventoryItem?.rolledStats || rolls || {};
-  const rollRanges = item?.rollRanges;
-  const description = item?.description;
-  const teamName = item?.teamName;
+  const rollRanges = itemDef?.rollRanges;
+  const description = itemDef?.description;
+  const teamName = itemDef?.teamName;
 
   const quality = QUALITY_STYLES[tier] || QUALITY_STYLES.Balanced;
 

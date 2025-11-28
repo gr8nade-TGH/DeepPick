@@ -15,6 +15,7 @@ import { STARTER_SHORTSWORD_DEFINITION } from './effects/STARTER_Shortsword';
 import { CHA_HORNETS_NEST_DEFINITION } from './effects/CHA_HornetsNest';
 import { WAS_WIZARDS_WATCHTOWER_DEFINITION } from './effects/WAS_WizardsWatchtower';
 import { MED_KNIGHT_DEFENDER_DEFINITION } from './effects/MED_KnightDefender';
+import { CASTLE_FORTRESS_DEFINITION } from './effects/CASTLE_Fortress';
 
 /**
  * All available item definitions
@@ -25,6 +26,7 @@ export const ALL_ITEM_DEFINITIONS: ItemDefinition[] = [
   CHA_HORNETS_NEST_DEFINITION,
   WAS_WIZARDS_WATCHTOWER_DEFINITION,
   MED_KNIGHT_DEFENDER_DEFINITION,
+  CASTLE_FORTRESS_DEFINITION,
   // Add more as they're implemented
 ];
 
