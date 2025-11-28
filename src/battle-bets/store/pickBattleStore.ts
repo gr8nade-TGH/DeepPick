@@ -167,11 +167,13 @@ export const usePickBattleStore = create<PickBattleStore>()(
  */
 export const useSelectedPicks = () => {
   return usePickBattleStore((state) => {
-    const picks = state.picks || [];
-    const { battle1PickId, battle2PickId } = state;
+    // Extra defensive - ensure picks is always an array
+    const picks = Array.isArray(state?.picks) ? state.picks : [];
+    const battle1PickId = state?.battle1PickId ?? null;
+    const battle2PickId = state?.battle2PickId ?? null;
     return {
-      battle1Pick: picks.find((p) => p.id === battle1PickId) ?? null,
-      battle2Pick: picks.find((p) => p.id === battle2PickId) ?? null,
+      battle1Pick: battle1PickId ? (picks.find((p) => p.id === battle1PickId) ?? null) : null,
+      battle2Pick: battle2PickId ? (picks.find((p) => p.id === battle2PickId) ?? null) : null,
     };
   });
 };
@@ -181,12 +183,12 @@ export const useSelectedPicks = () => {
  */
 export const usePickTabCounts = () => {
   return usePickBattleStore((state) => {
-    const picks = state.picks || [];
+    const picks = Array.isArray(state?.picks) ? state.picks : [];
     return {
       all: picks.length,
-      live: picks.filter((p) => p.status === 'live').length,
-      upcoming: picks.filter((p) => p.status === 'upcoming').length,
-      final: picks.filter((p) => p.status === 'final').length,
+      live: picks.filter((p) => p?.status === 'live').length,
+      upcoming: picks.filter((p) => p?.status === 'upcoming').length,
+      final: picks.filter((p) => p?.status === 'final').length,
     };
   });
 };

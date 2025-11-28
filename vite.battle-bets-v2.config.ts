@@ -17,7 +17,9 @@ export default defineConfig({
 
     rollupOptions: {
       input: {
+        // Build both index.html (main) and index-v2.html for backwards compatibility
         main: path.resolve(__dirname, 'src/battle-bets/index-v2.html'),
+        index: path.resolve(__dirname, 'src/battle-bets/index-v2.html'),
       },
       output: {
         entryFileNames: 'assets/[name]-[hash].js',
