@@ -12,7 +12,10 @@ import { GameInfoBar } from './components/game/GameInfoBar';
 import { InventoryBar } from './components/game/InventoryBar';
 import { DebugBottomBar } from './components/debug/DebugBottomBar';
 import { PreGameItemSelector } from './components/debug/PreGameItemSelector';
+import { InventoryModal } from './components/inventory';
 import { debugLogger } from './game/debug/DebugLogger';
+import { addTestItemsToInventory } from './utils/testInventory';
+import { useInventoryStore } from './store/inventoryStore';
 import type { Game, GameStatus } from './types/game';
 import './App.css';
 
@@ -246,9 +249,13 @@ function AppV2() {
   const [selectedSlot, setSelectedSlot] = useState<{ battleId: string; side: 'left' | 'right'; slot: number } | null>(null);
   const [selectedCastleSlot, setSelectedCastleSlot] = useState<{ battleId: string; side: 'left' | 'right' } | null>(null);
   const [showDebugControls, setShowDebugControls] = useState(false);
+  const [showInventory, setShowInventory] = useState(false);
 
   // NEW: Tab state
   const [activeTab, setActiveTab] = useState<TabType>('ALL');
+
+  // Inventory store
+  const inventoryItems = useInventoryStore((state) => state.items);
 
   // Check URL params for debug and testMode
   useEffect(() => {
@@ -261,6 +268,12 @@ function AppV2() {
     if (testMode) {
       console.log('🧪 [AppV2] Test mode enabled - using fake battles');
       debugLogger.log('Test mode enabled');
+
+      // Add test items to inventory if empty
+      if (inventoryItems.length === 0) {
+        console.log('📦 [AppV2] Adding test items to inventory');
+        addTestItemsToInventory();
+      }
     }
   }, []);
 
@@ -438,66 +451,108 @@ function AppV2() {
   return (
     <div className="app" style={{ background: '#0a0e1a', minHeight: '100vh', padding: '20px' }}>
       <main style={{ maxWidth: '1400px', margin: '0 auto' }}>
-        {/* NEW: Tab Navigation */}
+        {/* NEW: Tab Navigation with Inventory Button */}
         <div style={{
           display: 'flex',
-          gap: '10px',
+          justifyContent: 'space-between',
+          alignItems: 'center',
           marginBottom: '30px',
           borderBottom: '2px solid rgba(139, 92, 246, 0.2)',
           paddingBottom: '10px'
         }}>
-          {(['ALL', 'LIVE', 'UPCOMING', 'FINAL'] as TabType[]).map(tab => {
-            const isActive = activeTab === tab;
-            const count = tabCounts[tab];
-            const isLive = tab === 'LIVE' && count > 0;
+          {/* Tabs */}
+          <div style={{ display: 'flex', gap: '10px' }}>
+            {(['ALL', 'LIVE', 'UPCOMING', 'FINAL'] as TabType[]).map(tab => {
+              const isActive = activeTab === tab;
+              const count = tabCounts[tab];
+              const isLive = tab === 'LIVE' && count > 0;
 
-            return (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                style={{
-                  padding: '12px 24px',
-                  background: isActive ? 'rgba(139, 92, 246, 0.3)' : 'rgba(15, 23, 42, 0.6)',
-                  border: isActive ? '2px solid rgba(139, 92, 246, 0.8)' : '2px solid rgba(139, 92, 246, 0.2)',
-                  borderRadius: '8px',
-                  color: 'white',
-                  fontSize: '16px',
-                  fontWeight: isActive ? 'bold' : 'normal',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  position: 'relative',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}
-              >
-                {/* Live indicator dot */}
-                {isLive && (
+              return (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  style={{
+                    padding: '12px 24px',
+                    background: isActive ? 'rgba(139, 92, 246, 0.3)' : 'rgba(15, 23, 42, 0.6)',
+                    border: isActive ? '2px solid rgba(139, 92, 246, 0.8)' : '2px solid rgba(139, 92, 246, 0.2)',
+                    borderRadius: '8px',
+                    color: 'white',
+                    fontSize: '16px',
+                    fontWeight: isActive ? 'bold' : 'normal',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  {/* Live indicator dot */}
+                  {isLive && (
+                    <span style={{
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      background: '#ef4444',
+                      animation: 'pulse 2s infinite',
+                      boxShadow: '0 0 8px #ef4444'
+                    }} />
+                  )}
+
+                  {tab}
+
+                  {/* Count badge */}
                   <span style={{
-                    width: '8px',
-                    height: '8px',
-                    borderRadius: '50%',
-                    background: '#ef4444',
-                    animation: 'pulse 2s infinite',
-                    boxShadow: '0 0 8px #ef4444'
-                  }} />
-                )}
+                    background: isActive ? 'rgba(139, 92, 246, 0.8)' : 'rgba(139, 92, 246, 0.4)',
+                    padding: '2px 8px',
+                    borderRadius: '12px',
+                    fontSize: '14px',
+                    fontWeight: 'bold'
+                  }}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
 
-                {tab}
-
-                {/* Count badge */}
-                <span style={{
-                  background: isActive ? 'rgba(139, 92, 246, 0.8)' : 'rgba(139, 92, 246, 0.4)',
-                  padding: '2px 8px',
-                  borderRadius: '12px',
-                  fontSize: '14px',
-                  fontWeight: 'bold'
-                }}>
-                  {count}
-                </span>
-              </button>
-            );
-          })}
+          {/* Inventory Button */}
+          <button
+            onClick={() => setShowInventory(true)}
+            style={{
+              padding: '12px 24px',
+              background: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)',
+              border: '2px solid #f59e0b',
+              borderRadius: '8px',
+              color: 'white',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              boxShadow: '0 0 15px rgba(245, 158, 11, 0.3)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow = '0 0 25px rgba(245, 158, 11, 0.5)';
+              e.currentTarget.style.transform = 'scale(1.05)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = '0 0 15px rgba(245, 158, 11, 0.3)';
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+          >
+            📦 Inventory
+            <span style={{
+              background: 'rgba(0, 0, 0, 0.3)',
+              padding: '2px 8px',
+              borderRadius: '12px',
+              fontSize: '14px',
+            }}>
+              {inventoryItems.length}
+            </span>
+          </button>
         </div>
 
         {/* Empty state */}
@@ -625,6 +680,12 @@ function AppV2() {
             onClose={() => setSelectedCastleSlot(null)}
           />
         )}
+
+        {/* Inventory Modal */}
+        <InventoryModal
+          isOpen={showInventory}
+          onClose={() => setShowInventory(false)}
+        />
       </main>
 
       {/* Pulse animation for LIVE indicator */}
