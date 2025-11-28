@@ -244,3 +244,101 @@ battleEventBus.on('DEFENSE_ORB_DESTROYED', (event) => {
 });
 ```
 
+---
+
+## Never Use GSAP Infinite Repeat on PixiJS Objects
+
+**Rule:** Do NOT use `repeat: -1` with GSAP on PixiJS Graphics/Sprite objects
+
+**When:** Creating animations for PixiJS sprites, graphics, or containers
+
+**Why:** Infinite repeat animations (`repeat: -1`) on PixiJS objects corrupt GSAP's internal state, breaking ALL GSAP animations in the entire game (projectiles, counters, everything freezes)
+
+**Instructions:**
+1. ❌ **DON'T:** Use `repeat: -1` on PixiJS objects
+2. ✅ **DO:** Use finite tweens with `onComplete` callback to restart
+3. ✅ **DO:** Use PixiJS Ticker for infinite animations instead
+4. ✅ **DO:** Use CSS animations for UI elements (not PixiJS objects)
+
+**❌ WRONG - Breaks Everything:**
+```typescript
+// This will corrupt GSAP and freeze the entire game!
+gsap.to(pixiSprite, {
+  y: "+=10",
+  duration: 1,
+  repeat: -1,  // ❌ BREAKS ALL GSAP ANIMATIONS
+  yoyo: true
+});
+```
+
+**✅ RIGHT - Option 1 (Finite with Restart):**
+```typescript
+const animate = () => {
+  gsap.to(pixiSprite, {
+    y: "+=10",
+    duration: 1,
+    yoyo: true,
+    onComplete: animate  // ✅ Restart manually
+  });
+};
+animate();
+```
+
+**✅ RIGHT - Option 2 (Use PixiJS Ticker):**
+```typescript
+let time = 0;
+app.ticker.add(() => {
+  time += 0.05;
+  sprite.y = baseY + Math.sin(time) * 10;  // ✅ Use PixiJS's own animation
+});
+```
+
+**When This Broke Us:**
+- Castle item equipped → knight idle animation used `repeat: -1`
+- Entire game froze (projectiles, counters, everything stopped)
+- Took 22 debug commits and hours to isolate
+- Only happened with castle items, not slot 1/2/3 items
+
+**Files That Had This Bug:**
+- `KnightDefender.ts` - `startIdleAnimation()` (knight bobbing)
+- `KnightDefender.ts` - `createShieldChargeOrbs()` (orb floating)
+
+---
+
+## Test With All Item Combinations
+
+**Rule:** Before committing item changes, test with all item slot combinations
+
+**When:** Implementing new items or modifying item systems
+
+**Why:** Castle item broke the entire game, but only when equipped. We didn't catch it because we tested items individually.
+
+**Instructions:**
+1. ✅ **DO:** Test with no items equipped
+2. ✅ **DO:** Test with only slot 1/2/3 items equipped
+3. ✅ **DO:** Test with only castle item equipped
+4. ✅ **DO:** Test with all slots equipped together
+5. ✅ **DO:** Verify projectiles fire, counters animate, knights patrol
+6. ❌ **DON'T:** Assume if one item works, all combinations work
+
+**Test Checklist:**
+```
+□ No items equipped → Game starts and runs normally
+□ Slot 1 (DEFENSE) only → Game works
+□ Slot 2 (POWER) only → Game works
+□ Slot 3 (WEAPON) only → Game works
+□ Castle slot only → Game works
+□ All slots equipped → Game works
+□ Verify: Projectiles fire
+□ Verify: Counters animate
+□ Verify: Knights patrol (if castle equipped)
+□ Verify: Item effects activate
+□ Check Copy Debug for errors
+```
+
+**Why This Matters:**
+- Items can interact in unexpected ways
+- Castle items use different code paths than slot 1/2/3
+- One item's animation can break another item's functionality
+- Testing individually doesn't catch cross-item bugs
+

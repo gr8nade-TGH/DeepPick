@@ -1094,13 +1094,13 @@ export class Castle {
   }
 
   /**
-   * Show floating "DESTROYED" text
+   * Show floating "DESTROYED" text followed by winner announcement
    */
   private showDestroyedText(): void {
     if (!this.container) return;
 
     const text = new PIXI.Text({
-      text: '💀 DESTROYED 💀',
+      text: '💀 DEFEATED 💀',
       style: {
         fontFamily: 'Arial Black',
         fontSize: 18,
@@ -1119,7 +1119,7 @@ export class Castle {
 
     this.container.addChild(text);
 
-    // Fade in, float up, fade out
+    // Fade in, float up, then show winner
     const startTime = performance.now();
     const animate = () => {
       const elapsed = (performance.now() - startTime) / 1000;
@@ -1138,11 +1138,337 @@ export class Castle {
       } else {
         this.container?.removeChild(text);
         text.destroy();
+        // Show winner announcement after destroyed text fades
+        this.showWinnerAnnouncement();
         return;
       }
       requestAnimationFrame(animate);
     };
     animate();
+  }
+
+  /**
+   * Show winner announcement with treasure chest
+   * The winner is the OPPONENT of the destroyed castle
+   */
+  private showWinnerAnnouncement(): void {
+    if (!this.container?.parent) return;
+
+    // Get the parent container (battlefieldContainer) to show winner in center
+    const battlefieldContainer = this.container.parent;
+
+    // Determine winner - it's the OPPOSITE side
+    const winnerSide = this.side === 'left' ? 'right' : 'left';
+
+    // Create winner container for centered display
+    const winnerContainer = new PIXI.Container();
+    winnerContainer.label = 'winner-announcement';
+
+    // Position in center of battlefield
+    winnerContainer.x = 550; // Center of 1100px wide battlefield
+    winnerContainer.y = 150; // Center vertically
+
+    // Create glowing background
+    const bgGlow = new PIXI.Graphics();
+    bgGlow.circle(0, 0, 80);
+    bgGlow.fill({ color: 0xFFD700, alpha: 0.3 });
+    bgGlow.circle(0, 0, 60);
+    bgGlow.fill({ color: 0xFFD700, alpha: 0.2 });
+    winnerContainer.addChild(bgGlow);
+
+    // Create treasure chest (closed initially)
+    const chestContainer = new PIXI.Container();
+    chestContainer.y = 20;
+
+    // Chest base
+    const chestBase = new PIXI.Graphics();
+    chestBase.roundRect(-25, 0, 50, 30, 4);
+    chestBase.fill({ color: 0x8B4513, alpha: 1 });
+    chestBase.roundRect(-23, 2, 46, 26, 3);
+    chestBase.fill({ color: 0xA0522D, alpha: 1 });
+    // Metal bands
+    chestBase.rect(-25, 10, 50, 4);
+    chestBase.fill({ color: 0xDAA520, alpha: 1 });
+    chestBase.rect(-25, 20, 50, 4);
+    chestBase.fill({ color: 0xDAA520, alpha: 1 });
+
+    // Chest lid (will rotate open)
+    const chestLid = new PIXI.Graphics();
+    chestLid.roundRect(-25, -15, 50, 18, 4);
+    chestLid.fill({ color: 0x8B4513, alpha: 1 });
+    chestLid.roundRect(-23, -13, 46, 14, 3);
+    chestLid.fill({ color: 0xA0522D, alpha: 1 });
+    // Metal band on lid
+    chestLid.rect(-25, -8, 50, 3);
+    chestLid.fill({ color: 0xDAA520, alpha: 1 });
+    // Lock
+    chestLid.circle(0, 0, 6);
+    chestLid.fill({ color: 0xDAA520, alpha: 1 });
+    chestLid.circle(0, 0, 3);
+    chestLid.fill({ color: 0x8B4513, alpha: 1 });
+    chestLid.pivot.set(0, 0); // Pivot at bottom of lid for rotation
+
+    chestContainer.addChild(chestBase);
+    chestContainer.addChild(chestLid);
+    winnerContainer.addChild(chestContainer);
+
+    // Winner text (above chest)
+    const winnerText = new PIXI.Text({
+      text: `🏆 WINNER! 🏆`,
+      style: {
+        fontFamily: 'Arial Black',
+        fontSize: 24,
+        fill: 0xFFD700,
+        stroke: { color: 0x000000, width: 4 },
+        dropShadow: true,
+        dropShadowColor: 0x000000,
+        dropShadowBlur: 4,
+        dropShadowDistance: 2,
+      }
+    });
+    winnerText.anchor.set(0.5);
+    winnerText.x = 0;
+    winnerText.y = -50;
+    winnerContainer.addChild(winnerText);
+
+    // Side indicator text
+    const sideText = new PIXI.Text({
+      text: winnerSide === 'left' ? '← LEFT WINS!' : 'RIGHT WINS! →',
+      style: {
+        fontFamily: 'Arial',
+        fontSize: 14,
+        fill: winnerSide === 'left' ? 0x00FFFF : 0xFF6666,
+        stroke: { color: 0x000000, width: 2 },
+      }
+    });
+    sideText.anchor.set(0.5);
+    sideText.x = 0;
+    sideText.y = -25;
+    winnerContainer.addChild(sideText);
+
+    // "Click to open!" text
+    const clickText = new PIXI.Text({
+      text: '✨ Click chest to reveal rewards! ✨',
+      style: {
+        fontFamily: 'Arial',
+        fontSize: 12,
+        fill: 0xFFFFFF,
+        stroke: { color: 0x000000, width: 2 },
+      }
+    });
+    clickText.anchor.set(0.5);
+    clickText.x = 0;
+    clickText.y = 65;
+    winnerContainer.addChild(clickText);
+
+    // Start hidden, fade in
+    winnerContainer.alpha = 0;
+    winnerContainer.scale.set(0.5);
+
+    battlefieldContainer.addChild(winnerContainer);
+
+    // Fade in animation
+    const fadeIn = () => {
+      const startTime = performance.now();
+      const duration = 500;
+
+      const animate = () => {
+        const elapsed = performance.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+
+        winnerContainer.alpha = easeOut;
+        winnerContainer.scale.set(0.5 + 0.5 * easeOut);
+
+        // Pulse the glow
+        bgGlow.alpha = 0.5 + 0.2 * Math.sin(elapsed / 200);
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          // Start glow pulse loop
+          this.pulseWinnerGlow(bgGlow);
+        }
+      };
+      animate();
+    };
+    fadeIn();
+
+    // Make chest interactive
+    chestContainer.eventMode = 'static';
+    chestContainer.cursor = 'pointer';
+
+    let isOpen = false;
+    chestContainer.on('pointerdown', () => {
+      if (isOpen) return;
+      isOpen = true;
+
+      // Open chest animation
+      this.openTreasureChest(chestLid, chestContainer, clickText, winnerContainer);
+    });
+  }
+
+  /**
+   * Pulse the winner glow effect
+   */
+  private pulseWinnerGlow(glow: PIXI.Graphics): void {
+    const startTime = performance.now();
+    const pulse = () => {
+      if (!glow.parent) return; // Stop if removed
+      const elapsed = (performance.now() - startTime) / 1000;
+      glow.alpha = 0.3 + 0.15 * Math.sin(elapsed * 3);
+      requestAnimationFrame(pulse);
+    };
+    pulse();
+  }
+
+  /**
+   * Animate treasure chest opening with rewards
+   */
+  private openTreasureChest(
+    lid: PIXI.Graphics,
+    chestContainer: PIXI.Container,
+    clickText: PIXI.Text,
+    winnerContainer: PIXI.Container
+  ): void {
+    // Hide click text
+    clickText.visible = false;
+
+    // Open lid animation
+    const startTime = performance.now();
+    const duration = 400;
+
+    const animate = () => {
+      const elapsed = performance.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easeOut = 1 - Math.pow(1 - progress, 3);
+
+      // Rotate lid back (opening)
+      lid.rotation = -easeOut * 1.2; // About 70 degrees open
+      lid.y = -15 - easeOut * 5; // Lift slightly
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        // Spawn reward particles!
+        this.spawnRewardParticles(chestContainer, winnerContainer);
+      }
+    };
+    animate();
+  }
+
+  /**
+   * Spawn golden reward particles from chest
+   */
+  private spawnRewardParticles(chestContainer: PIXI.Container, winnerContainer: PIXI.Container): void {
+    const particleColors = [0xFFD700, 0xFFA500, 0xFFFF00, 0xFFFFFF, 0x00FF00];
+    const particleEmojis = ['⭐', '💎', '🪙', '✨', '🎁'];
+
+    // Spawn burst of particles
+    for (let i = 0; i < 20; i++) {
+      const isEmoji = Math.random() > 0.7;
+
+      if (isEmoji) {
+        const emoji = particleEmojis[Math.floor(Math.random() * particleEmojis.length)];
+        const text = new PIXI.Text({
+          text: emoji,
+          style: { fontSize: 16 + Math.random() * 10 }
+        });
+        text.anchor.set(0.5);
+        text.x = chestContainer.x + (Math.random() - 0.5) * 20;
+        text.y = chestContainer.y - 10;
+
+        winnerContainer.addChild(text);
+
+        // Animate upward and fade
+        const angle = -Math.PI / 2 + (Math.random() - 0.5) * 1.5;
+        const speed = 80 + Math.random() * 60;
+        const startTime = performance.now();
+        const duration = 1000 + Math.random() * 500;
+
+        const animateParticle = () => {
+          const elapsed = performance.now() - startTime;
+          const progress = elapsed / duration;
+
+          if (progress < 1) {
+            text.x = chestContainer.x + (Math.random() - 0.5) * 20 + Math.cos(angle) * speed * progress;
+            text.y = chestContainer.y - 10 + Math.sin(angle) * speed * progress + progress * progress * 30;
+            text.alpha = 1 - progress;
+            text.rotation = progress * 2;
+            requestAnimationFrame(animateParticle);
+          } else {
+            winnerContainer.removeChild(text);
+            text.destroy();
+          }
+        };
+        setTimeout(() => animateParticle(), i * 50);
+      } else {
+        const particle = new PIXI.Graphics();
+        const color = particleColors[Math.floor(Math.random() * particleColors.length)];
+        const size = 3 + Math.random() * 5;
+
+        particle.circle(0, 0, size);
+        particle.fill({ color, alpha: 1 });
+
+        particle.x = chestContainer.x + (Math.random() - 0.5) * 20;
+        particle.y = chestContainer.y - 10;
+
+        winnerContainer.addChild(particle);
+
+        // Animate
+        const angle = -Math.PI / 2 + (Math.random() - 0.5) * 2;
+        const speed = 60 + Math.random() * 80;
+        const startTime = performance.now();
+        const duration = 800 + Math.random() * 400;
+
+        const animateParticle = () => {
+          const elapsed = performance.now() - startTime;
+          const progress = elapsed / duration;
+
+          if (progress < 1) {
+            particle.x = chestContainer.x + Math.cos(angle) * speed * progress;
+            particle.y = chestContainer.y - 10 + Math.sin(angle) * speed * progress + progress * progress * 40;
+            particle.alpha = 1 - progress;
+            particle.scale.set(1 - progress * 0.5);
+            requestAnimationFrame(animateParticle);
+          } else {
+            winnerContainer.removeChild(particle);
+            particle.destroy();
+          }
+        };
+        setTimeout(() => animateParticle(), i * 30);
+      }
+    }
+
+    // Show "Rewards Collected!" text after particles
+    setTimeout(() => {
+      const rewardText = new PIXI.Text({
+        text: '🎉 Rewards Collected! 🎉',
+        style: {
+          fontFamily: 'Arial Black',
+          fontSize: 16,
+          fill: 0x00FF00,
+          stroke: { color: 0x000000, width: 3 },
+        }
+      });
+      rewardText.anchor.set(0.5);
+      rewardText.x = 0;
+      rewardText.y = 65;
+      rewardText.alpha = 0;
+      winnerContainer.addChild(rewardText);
+
+      // Fade in reward text
+      const startTime = performance.now();
+      const fadeInReward = () => {
+        const elapsed = performance.now() - startTime;
+        const progress = Math.min(elapsed / 300, 1);
+        rewardText.alpha = progress;
+        if (progress < 1) {
+          requestAnimationFrame(fadeInReward);
+        }
+      };
+      fadeInReward();
+    }, 1000);
   }
 
   /**
@@ -1613,7 +1939,7 @@ export class Castle {
 
   /**
    * Update blood overlay based on HP percentage
-   * Creates a progressive red tint that gets stronger as HP decreases
+   * Creates dripping blood from top and cracks instead of a rectangle
    */
   private updateBloodOverlay(hpPercent: number): void {
     if (!this.sprite) return;
@@ -1630,29 +1956,88 @@ export class Castle {
     // Create blood overlay
     this.bloodOverlay = new PIXI.Graphics();
 
-    // Calculate blood intensity based on damage
-    // 100% HP = 0 intensity, 0% HP = max intensity
+    // Calculate damage intensity
     const damagePercent = 1 - hpPercent;
-    const bloodIntensity = damagePercent * 0.5; // Max 50% opacity
+    const w = this.sprite.width;
+    const h = this.sprite.height;
 
-    // Red tint color (dark red)
-    const bloodColor = 0xAA0000;
+    // Blood drips from top - more drips as damage increases
+    const numDrips = Math.floor(3 + damagePercent * 8); // 3-11 drips
+    const dripMaxLength = h * (0.2 + damagePercent * 0.6); // Longer drips with more damage
 
-    // Draw overlay rectangle matching sprite size
-    this.bloodOverlay.rect(
-      -this.sprite.width / 2,
-      -this.sprite.height / 2,
-      this.sprite.width,
-      this.sprite.height
-    );
-    this.bloodOverlay.fill({ color: bloodColor, alpha: bloodIntensity });
+    for (let i = 0; i < numDrips; i++) {
+      // Random x position across the castle width
+      const x = -w / 2 + (w * (i + 0.5)) / numDrips + (Math.random() - 0.5) * 15;
+      const startY = -h / 2 - 5;
+      const dripLength = 15 + Math.random() * dripMaxLength;
+      const dripWidth = 2 + Math.random() * 3;
+
+      // Draw drip trail
+      this.bloodOverlay.moveTo(x, startY);
+      this.bloodOverlay.lineTo(x + (Math.random() - 0.5) * 5, startY + dripLength);
+      this.bloodOverlay.stroke({ width: dripWidth, color: 0x8B0000, alpha: 0.6 + damagePercent * 0.3 });
+
+      // Add blood drop at the end
+      this.bloodOverlay.circle(x + (Math.random() - 0.5) * 3, startY + dripLength, dripWidth * 0.8);
+      this.bloodOverlay.fill({ color: 0xAA0000, alpha: 0.7 });
+    }
+
+    // Add damage cracks - more cracks with more damage
+    const numCracks = Math.floor(damagePercent * 6); // 0-6 cracks
+    for (let i = 0; i < numCracks; i++) {
+      const startX = (Math.random() - 0.5) * w * 0.8;
+      const startY = (Math.random() - 0.5) * h * 0.8;
+      const crackLength = 10 + Math.random() * 25;
+      const angle = Math.random() * Math.PI * 2;
+
+      // Main crack line
+      this.bloodOverlay.moveTo(startX, startY);
+      this.bloodOverlay.lineTo(
+        startX + Math.cos(angle) * crackLength,
+        startY + Math.sin(angle) * crackLength
+      );
+      this.bloodOverlay.stroke({ width: 1 + Math.random(), color: 0x2a2a2a, alpha: 0.8 });
+
+      // Branch cracks
+      const branchX = startX + Math.cos(angle) * crackLength * 0.5;
+      const branchY = startY + Math.sin(angle) * crackLength * 0.5;
+      const branchAngle = angle + (Math.random() - 0.5) * 1.5;
+      const branchLength = crackLength * 0.4;
+
+      this.bloodOverlay.moveTo(branchX, branchY);
+      this.bloodOverlay.lineTo(
+        branchX + Math.cos(branchAngle) * branchLength,
+        branchY + Math.sin(branchAngle) * branchLength
+      );
+      this.bloodOverlay.stroke({ width: 0.5 + Math.random() * 0.5, color: 0x1a1a1a, alpha: 0.6 });
+    }
+
+    // Add some blood splatters on the walls
+    const numSplatters = Math.floor(2 + damagePercent * 5);
+    for (let i = 0; i < numSplatters; i++) {
+      const x = (Math.random() - 0.5) * w * 0.7;
+      const y = (Math.random() - 0.5) * h * 0.7;
+      const size = 3 + Math.random() * 5;
+
+      this.bloodOverlay.circle(x, y, size);
+      this.bloodOverlay.fill({ color: 0x8B0000, alpha: 0.3 + damagePercent * 0.2 });
+
+      // Small splatter drops around it
+      for (let j = 0; j < 3; j++) {
+        const dropX = x + (Math.random() - 0.5) * size * 3;
+        const dropY = y + (Math.random() - 0.5) * size * 3;
+        const dropSize = size * 0.3;
+        this.bloodOverlay.circle(dropX, dropY, dropSize);
+        this.bloodOverlay.fill({ color: 0x6B0000, alpha: 0.25 });
+      }
+    }
 
     this.bloodOverlay.label = 'blood-overlay';
 
     // Add overlay on top of castle sprite
     this.container.addChild(this.bloodOverlay);
 
-    console.log(`🩸 Blood overlay updated: ${(bloodIntensity * 100).toFixed(0)}% intensity (HP: ${(hpPercent * 100).toFixed(0)}%)`);
+    console.log(`🩸 Blood overlay updated: drips=${numDrips}, cracks=${numCracks}, splatters=${numSplatters} (HP: ${(hpPercent * 100).toFixed(0)}%)`);
   }
 }
 
