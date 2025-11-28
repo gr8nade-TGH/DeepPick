@@ -126,8 +126,9 @@ export class KnightDefender {
     this.sprite.x = this.position.x;
     this.sprite.y = this.position.y;
 
-    // Start idle animation
-    this.startIdleAnimation();
+    // NOTE: Idle animation is NOT started in constructor.
+    // It will be started when startPatrol() is called.
+    // Creating GSAP tweens during pre-game phase was breaking all GSAP animations.
 
     console.log(`🐴 [KnightDefender] Created for ${this.side} at (${this.position.x}, ${this.position.y})`);
   }
@@ -387,6 +388,9 @@ export class KnightDefender {
     const msg = `startPatrol() called for ${this.side} knight, gameId=${this.gameId}`;
     console.log(`🐴 [KnightDefender] ${msg}`);
     debugLogger.log('knight', msg, { side: this.side, gameId: this.gameId });
+
+    // Start idle animation now (wasn't started in constructor to avoid GSAP issues during pre-game)
+    this.startIdleAnimation();
 
     this.isPatrolling = true;
     this.checkDefenderMode(); // Check castle HP on start

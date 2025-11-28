@@ -504,15 +504,15 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
     console.log(`🏰🏰🏰 [PreGameItemSelector] rolledStats:`, JSON.stringify(rolledStats));
     equipCastle(battleId, side, rolledStats);
 
-    // Spawn knight immediately (visual only - idle animation)
-    // Knight will NOT patrol yet - patrol starts on "Start Game" click
+    // Spawn knight immediately (visual only - NO animations yet)
+    // Knight will be stationary until game starts to avoid GSAP issues
     console.log(`🏰🏰🏰 [PreGameItemSelector] Calling getOrSpawnKnight(battleId="${battleId}", side="${side}")`);
     const knight = getOrSpawnKnight(battleId, side);
     if (knight) {
       knight.setShieldCharges(shieldCharges);
-      // Start patrolling immediately like the original slot 2 item did!
-      knight.startPatrol();
-      console.log(`🏰 [PreGameItemSelector] Knight deployed and patrolling for battleId="${battleId}", side="${side}" with ${shieldCharges} shield charges`);
+      // NOTE: We do NOT start patrol here. Creating GSAP tweens during pre-game breaks all animations.
+      // Patrol will be started by handleStartGame() when the game begins.
+      console.log(`🏰 [PreGameItemSelector] Knight spawned (stationary) for battleId="${battleId}", side="${side}" with ${shieldCharges} shield charges`);
     } else {
       console.error(`🏰 [PreGameItemSelector] FAILED to spawn knight for battleId="${battleId}", side="${side}"`);
     }
