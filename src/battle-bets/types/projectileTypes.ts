@@ -100,7 +100,7 @@ export const PROJECTILE_TYPES: Record<StatType, ProjectileTypeConfig> = {
     trailColor: 0xFFAA77,
 
     // Gameplay - Grid-based speed (UNIFIED SPEED)
-    baseSpeed: 3, // 3 grid cells per second (UNIFIED - all projectiles same speed, MUCH SLOWER)
+    baseSpeed: 6, // 6 grid cells per second (UNIFIED - all projectiles same speed, 2X FASTER)
     damage: 1,
     behavior: 'straight',
 
@@ -127,7 +127,7 @@ export const PROJECTILE_TYPES: Record<StatType, ProjectileTypeConfig> = {
     trailColor: 0x8EEDE5,
 
     // Gameplay - Slower but heavier (UNIFIED SPEED)
-    baseSpeed: 3, // 3 cells/sec (UNIFIED - all projectiles same speed, MUCH SLOWER)
+    baseSpeed: 6, // 6 cells/sec (UNIFIED - all projectiles same speed, 2X FASTER)
     damage: 1,
     behavior: 'straight',
 
@@ -154,7 +154,7 @@ export const PROJECTILE_TYPES: Record<StatType, ProjectileTypeConfig> = {
     trailColor: 0xFBD76D,
 
     // Gameplay - Fastest (UNIFIED SPEED)
-    baseSpeed: 3, // 3 cells/sec (UNIFIED - all projectiles same speed, MUCH SLOWER)
+    baseSpeed: 6, // 6 cells/sec (UNIFIED - all projectiles same speed, 2X FASTER)
     damage: 1,
     behavior: 'straight',
 
@@ -181,7 +181,7 @@ export const PROJECTILE_TYPES: Record<StatType, ProjectileTypeConfig> = {
     trailColor: 0xFF7878,
 
     // Gameplay - Medium speed (UNIFIED SPEED)
-    baseSpeed: 3, // 3 cells/sec (UNIFIED - all projectiles same speed, MUCH SLOWER)
+    baseSpeed: 6, // 6 cells/sec (UNIFIED - all projectiles same speed, 2X FASTER)
     damage: 1,
     behavior: 'straight',
 
@@ -208,7 +208,7 @@ export const PROJECTILE_TYPES: Record<StatType, ProjectileTypeConfig> = {
     trailColor: 0x66EEFF,
 
     // Gameplay - Medium speed (UNIFIED SPEED)
-    baseSpeed: 3, // 3 cells/sec (UNIFIED - all projectiles same speed, MUCH SLOWER)
+    baseSpeed: 6, // 6 cells/sec (UNIFIED - all projectiles same speed, 2X FASTER)
     damage: 1,
     behavior: 'straight',
 
