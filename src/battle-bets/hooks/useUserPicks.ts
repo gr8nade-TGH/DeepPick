@@ -141,9 +141,11 @@ export function useUserPicks(options: UseUserPicksOptions = {}) {
 
       const picks = picksData.data.map((p: ApiPick) => {
         const teamAbbr = p.game_snapshot?.home_team?.abbreviation || '';
-        const capperPerf = perfData?.data?.[teamAbbr]?.cappers?.find(
-          (c: any) => c.capper === p.capper
-        );
+        // Safely access cappers array with extra null checks
+        const cappers = perfData?.data?.[teamAbbr]?.cappers;
+        const capperPerf = Array.isArray(cappers)
+          ? cappers.find((c: any) => c.capper === p.capper)
+          : null;
         const unitRecord: TeamUnitRecord = {
           teamId: teamAbbr,
           units: capperPerf?.netUnits || 0,
