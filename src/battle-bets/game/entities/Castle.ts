@@ -1166,11 +1166,15 @@ export class Castle {
     const winnerContainer = new PIXI.Container();
     winnerContainer.label = 'winner-announcement';
 
-    // Position in TRUE center of the battlefield grid (between the two stat columns)
-    // Grid area runs from left stat column (~180px) to right stat column (~880px)
-    // True visual center = (180 + 880) / 2 = 530, but accounting for stat widths ~560
-    winnerContainer.x = 560;
-    winnerContainer.y = 140; // Center vertically in the grid area
+    // Position CENTERED directly under the "Q2 BATTLE" box at top
+    // Canvas width is 1024, but grid area is roughly x=180 to x=880
+    // Visual center of the grid = (180 + 880) / 2 = 530
+    // Move up (y=110) to be more centered/visible
+    winnerContainer.x = 530;
+    winnerContainer.y = 110;
+
+    // Ensure popup is rendered on TOP of everything (including projectiles)
+    winnerContainer.zIndex = 9999;
 
     // Create FULLY OPAQUE dark background panel with ornate border
     const bgPanel = new PIXI.Graphics();
@@ -1317,7 +1321,12 @@ export class Castle {
     winnerContainer.alpha = 0;
     winnerContainer.scale.set(0.5);
 
+    // Enable sortableChildren so zIndex works, then add to container
+    battlefieldContainer.sortableChildren = true;
     battlefieldContainer.addChild(winnerContainer);
+
+    // Also move to top of display list as backup
+    battlefieldContainer.setChildIndex(winnerContainer, battlefieldContainer.children.length - 1);
 
     // Fade in animation
     const fadeIn = () => {

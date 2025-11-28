@@ -276,93 +276,96 @@ export function registerWizardsWatchtowerEffect(context: ItemRuntimeContext): vo
     itemEffectRegistry.setCounter(itemInstanceId, 'shieldActive', 1);
 
     // ===== PART 2: Buff last orbs in each row =====
-    console.log(`🔮 [WizardsWatchtower] Buffing last orbs for ${side} with +${orbBonusHP} HP each`);
+    // Delay slightly to ensure sprites are added to container after React render cycle
+    setTimeout(() => {
+      console.log(`🔮 [WizardsWatchtower] Buffing last orbs for ${side} with +${orbBonusHP} HP each`);
 
-    const battle = useMultiGameStore.getState().battles.get(gameId);
-    if (!battle) {
-      console.error(`❌ [WizardsWatchtower] Battle not found: ${gameId}`);
-      return;
-    }
-
-    const stats: StatType[] = ['pts', 'reb', 'ast', 'stl', '3pt'];
-    let orbsBuffed = 0;
-
-    stats.forEach(stat => {
-      // Find all alive orbs in this lane for this side
-      const laneOrbs = Array.from(battle.defenseDots.values())
-        .filter(orb => orb.stat === stat && orb.side === side && orb.alive)
-        .sort((a, b) => b.index - a.index); // Sort by index descending (last orb first)
-
-      if (laneOrbs.length === 0) {
-        console.log(`🔮 [WizardsWatchtower] No orbs in ${stat} lane for ${side}`);
+      const battle = useMultiGameStore.getState().battles.get(gameId);
+      if (!battle) {
+        console.error(`❌ [WizardsWatchtower] Battle not found: ${gameId}`);
         return;
       }
 
-      // Get the last orb (highest index = furthest from castle)
-      const lastOrb = laneOrbs[0];
+      const stats: StatType[] = ['pts', 'reb', 'ast', 'stl', '3pt'];
+      let orbsBuffed = 0;
 
-      // Buff the orb's HP
-      const oldHP = lastOrb.hp;
-      lastOrb.hp += orbBonusHP;
-      lastOrb.maxHp = Math.max(lastOrb.maxHp, lastOrb.hp); // Increase maxHp too
+      stats.forEach(stat => {
+        // Find all alive orbs in this lane for this side
+        const laneOrbs = Array.from(battle.defenseDots.values())
+          .filter(orb => orb.stat === stat && orb.side === side && orb.alive)
+          .sort((a, b) => b.index - a.index); // Sort by index descending (last orb first)
 
-      console.log(`🔮 [WizardsWatchtower] Buffed ${stat} last orb (${lastOrb.id}): ${oldHP} → ${lastOrb.hp} HP (+${orbBonusHP})`);
+        if (laneOrbs.length === 0) {
+          console.log(`🔮 [WizardsWatchtower] No orbs in ${stat} lane for ${side}`);
+          return;
+        }
 
-      // Skip if already buffed (prevent double glows)
-      if ((lastOrb as any).isWizardBuffed && (lastOrb as any)._wizardGlow) {
-        console.log(`⚠️ [WizardsWatchtower] Orb ${lastOrb.id} already has glow, skipping`);
-        return;
-      }
+        // Get the last orb (highest index = furthest from castle)
+        const lastOrb = laneOrbs[0];
 
-      // Mark orb as buffed and trigger visual update
-      (lastOrb as any).isWizardBuffed = true;
+        // Buff the orb's HP
+        const oldHP = lastOrb.hp;
+        lastOrb.hp += orbBonusHP;
+        lastOrb.maxHp = Math.max(lastOrb.maxHp, lastOrb.hp); // Increase maxHp too
 
-      // Create unique glow key for this orb
-      const glowKey = getGlowKey(gameId, side, lastOrb.id);
+        console.log(`🔮 [WizardsWatchtower] Buffed ${stat} last orb (${lastOrb.id}): ${oldHP} → ${lastOrb.hp} HP (+${orbBonusHP})`);
 
-      // Clean up any existing glow first
-      if (orbGlowMap.has(glowKey)) {
-        console.log(`🔮 [WizardsWatchtower] Cleaning existing glow before creating new one`);
-        cleanupOrbGlow(glowKey);
-      }
+        // Skip if already buffed (prevent double glows)
+        if ((lastOrb as any).isWizardBuffed && (lastOrb as any)._wizardGlow) {
+          console.log(`⚠️ [WizardsWatchtower] Orb ${lastOrb.id} already has glow, skipping`);
+          return;
+        }
 
-      // Also clean up via orb reference
-      if ((lastOrb as any)._wizardGlow) {
-        const existingGlow = (lastOrb as any)._wizardGlow as PIXI.Graphics;
-        existingGlow.visible = false;
-        existingGlow.clear();
-        if (existingGlow.parent) existingGlow.parent.removeChild(existingGlow);
-        if (!existingGlow.destroyed) existingGlow.destroy({ children: true });
-        (lastOrb as any)._wizardGlow = null;
-      }
+        // Mark orb as buffed and trigger visual update
+        (lastOrb as any).isWizardBuffed = true;
 
-      console.log(`🔮 [WizardsWatchtower] Creating glow with key: ${glowKey}`);
-      console.log(`🔮 [WizardsWatchtower] lastOrb sprite check:`, {
-        hasSprite: !!lastOrb.sprite,
-        spriteParent: lastOrb.sprite?.parent ? 'EXISTS' : 'NULL/UNDEFINED',
-        orbId: lastOrb.id
+        // Create unique glow key for this orb
+        const glowKey = getGlowKey(gameId, side, lastOrb.id);
+
+        // Clean up any existing glow first
+        if (orbGlowMap.has(glowKey)) {
+          console.log(`🔮 [WizardsWatchtower] Cleaning existing glow before creating new one`);
+          cleanupOrbGlow(glowKey);
+        }
+
+        // Also clean up via orb reference
+        if ((lastOrb as any)._wizardGlow) {
+          const existingGlow = (lastOrb as any)._wizardGlow as PIXI.Graphics;
+          existingGlow.visible = false;
+          existingGlow.clear();
+          if (existingGlow.parent) existingGlow.parent.removeChild(existingGlow);
+          if (!existingGlow.destroyed) existingGlow.destroy({ children: true });
+          (lastOrb as any)._wizardGlow = null;
+        }
+
+        console.log(`🔮 [WizardsWatchtower] Creating glow with key: ${glowKey}`);
+        console.log(`🔮 [WizardsWatchtower] lastOrb sprite check:`, {
+          hasSprite: !!lastOrb.sprite,
+          spriteParent: lastOrb.sprite?.parent ? 'EXISTS' : 'NULL/UNDEFINED',
+          orbId: lastOrb.id
+        });
+
+        // Update the orb's visual to show purple glow
+        if (lastOrb.sprite && lastOrb.sprite.parent) {
+          console.log(`🔮 [WizardsWatchtower] ADDING GLOW to orb ${lastOrb.id}!`);
+          const glow = addGlowingEdge(lastOrb.sprite, glowKey);
+          lastOrb.sprite.parent.addChild(glow);
+          (lastOrb as any)._wizardGlow = glow;
+          (lastOrb as any)._wizardGlowKey = glowKey; // Store key for cleanup
+          console.log(`🔮 [WizardsWatchtower] ✅ Glow added successfully!`);
+        } else {
+          console.log(`🔮 [WizardsWatchtower] ❌ CANNOT ADD GLOW - sprite or parent missing!`);
+        }
+
+        orbsBuffed++;
       });
 
-      // Update the orb's visual to show purple glow
-      if (lastOrb.sprite && lastOrb.sprite.parent) {
-        console.log(`🔮 [WizardsWatchtower] ADDING GLOW to orb ${lastOrb.id}!`);
-        const glow = addGlowingEdge(lastOrb.sprite, glowKey);
-        lastOrb.sprite.parent.addChild(glow);
-        (lastOrb as any)._wizardGlow = glow;
-        (lastOrb as any)._wizardGlowKey = glowKey; // Store key for cleanup
-        console.log(`🔮 [WizardsWatchtower] ✅ Glow added successfully!`);
-      } else {
-        console.log(`🔮 [WizardsWatchtower] ❌ CANNOT ADD GLOW - sprite or parent missing!`);
-      }
+      // Track total buffed
+      itemEffectRegistry.setCounter(itemInstanceId, 'orbsBuffed', orbsBuffed);
+      itemEffectRegistry.setCounter(itemInstanceId, 'totalOrbBonusHP', orbsBuffed * orbBonusHP);
 
-      orbsBuffed++;
-    });
-
-    // Track total buffed
-    itemEffectRegistry.setCounter(itemInstanceId, 'orbsBuffed', orbsBuffed);
-    itemEffectRegistry.setCounter(itemInstanceId, 'totalOrbBonusHP', orbsBuffed * orbBonusHP);
-
-    console.log(`✅ [WizardsWatchtower] Buffed ${orbsBuffed} orbs with +${orbBonusHP} HP each (total: +${orbsBuffed * orbBonusHP} HP)`);
+      console.log(`✅ [WizardsWatchtower] Buffed ${orbsBuffed} orbs with +${orbBonusHP} HP each (total: +${orbsBuffed * orbBonusHP} HP)`);
+    }, 100); // 100ms delay to ensure sprites are in the container
   });
 
   // DEFENSE_ORB_HIT: Remove glow on first hit (bonus HP consumed)
