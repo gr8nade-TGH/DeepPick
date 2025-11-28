@@ -32,7 +32,7 @@
   width: 45px;
   height: 45px;
   background: linear-gradient(135deg, rgba(15, 12, 41, 0.9) 0%, rgba(48, 43, 99, 0.9) 100%);
-  border: 2px solid rgba(255, 215, 0, 0.3);
+  border: 2px solid rgba(75, 85, 99, 0.4);
   border-radius: 6px;
   display: flex;
   align-items: center;
@@ -42,33 +42,40 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 
-.inventory-slot:hover {
-  border-color: rgba(255, 215, 0, 0.6);
+/* Empty slot hover - subtle gray highlight */
+.inventory-slot-empty:hover {
+  border-color: rgba(107, 114, 128, 0.6);
   transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
 }
 
-/* Clickable state (pre-game only) */
-.inventory-slot-clickable {
-  animation: pulse-border 2s ease-in-out infinite;
+/* Clickable state (pre-game only) - subtle pulse for empty slots */
+.inventory-slot-clickable.inventory-slot-empty {
+  animation: pulse-border-empty 2s ease-in-out infinite;
 }
 
-.inventory-slot-clickable:hover {
-  border-color: rgba(255, 215, 0, 1.0);
+.inventory-slot-clickable.inventory-slot-empty:hover {
+  border-color: rgba(139, 92, 246, 0.8);
   transform: scale(1.1);
-  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.6);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
 }
 
-@keyframes pulse-border {
+@keyframes pulse-border-empty {
 
   0%,
   100% {
-    border-color: rgba(255, 215, 0, 0.3);
+    border-color: rgba(75, 85, 99, 0.4);
   }
 
   50% {
-    border-color: rgba(255, 215, 0, 0.7);
+    border-color: rgba(139, 92, 246, 0.5);
   }
+}
+
+/* Equipped slot hover - intensify the quality color */
+.inventory-slot-clickable:not(.inventory-slot-empty):hover {
+  transform: scale(1.1);
+  filter: brightness(1.2);
 }
 
 .slot-icon-empty {
