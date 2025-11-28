@@ -1159,106 +1159,157 @@ export class Castle {
 
     // Determine winner - it's the OPPOSITE side
     const winnerSide = this.side === 'left' ? 'right' : 'left';
+    const winnerColor = winnerSide === 'left' ? 0x00FFFF : 0xFF6666;
 
     // Create winner container for centered display
     const winnerContainer = new PIXI.Container();
     winnerContainer.label = 'winner-announcement';
 
-    // Position in center of battlefield
-    winnerContainer.x = 550; // Center of 1100px wide battlefield
-    winnerContainer.y = 150; // Center vertically
+    // Position in TRUE center of the battlefield grid (between the two stat columns)
+    // Battlefield is 1100px wide, stat columns are ~150px on each side
+    // Grid area is roughly from x=200 to x=900, so center is around x=550
+    winnerContainer.x = 550;
+    winnerContainer.y = 140; // Center vertically in the grid area
 
-    // Create glowing background
+    // Create solid dark background panel with ornate border
+    const bgPanel = new PIXI.Graphics();
+    // Outer glow
+    bgPanel.roundRect(-160, -90, 320, 200, 15);
+    bgPanel.fill({ color: winnerColor, alpha: 0.3 });
+    // Main dark background
+    bgPanel.roundRect(-150, -80, 300, 180, 12);
+    bgPanel.fill({ color: 0x1a1a2e, alpha: 0.95 });
+    // Inner border
+    bgPanel.roundRect(-145, -75, 290, 170, 10);
+    bgPanel.stroke({ color: winnerColor, width: 2, alpha: 0.8 });
+    // Gold accent border
+    bgPanel.roundRect(-140, -70, 280, 160, 8);
+    bgPanel.stroke({ color: 0xFFD700, width: 1, alpha: 0.5 });
+    winnerContainer.addChild(bgPanel);
+
+    // Create glowing aura behind chest
     const bgGlow = new PIXI.Graphics();
-    bgGlow.circle(0, 0, 80);
-    bgGlow.fill({ color: 0xFFD700, alpha: 0.3 });
-    bgGlow.circle(0, 0, 60);
+    bgGlow.circle(0, 30, 70);
     bgGlow.fill({ color: 0xFFD700, alpha: 0.2 });
+    bgGlow.circle(0, 30, 50);
+    bgGlow.fill({ color: 0xFFD700, alpha: 0.15 });
+    bgGlow.circle(0, 30, 30);
+    bgGlow.fill({ color: 0xFFFFFF, alpha: 0.1 });
     winnerContainer.addChild(bgGlow);
 
-    // Create treasure chest (closed initially)
+    // Create enhanced treasure chest (closed initially)
     const chestContainer = new PIXI.Container();
-    chestContainer.y = 20;
+    chestContainer.y = 30;
 
-    // Chest base
+    // Chest shadow
+    const chestShadow = new PIXI.Graphics();
+    chestShadow.ellipse(0, 35, 40, 10);
+    chestShadow.fill({ color: 0x000000, alpha: 0.4 });
+    chestContainer.addChild(chestShadow);
+
+    // Chest base - larger and more detailed
     const chestBase = new PIXI.Graphics();
-    chestBase.roundRect(-25, 0, 50, 30, 4);
+    // Main body
+    chestBase.roundRect(-35, 0, 70, 40, 5);
+    chestBase.fill({ color: 0x654321, alpha: 1 });
+    // Wood grain highlight
+    chestBase.roundRect(-32, 3, 64, 34, 4);
     chestBase.fill({ color: 0x8B4513, alpha: 1 });
-    chestBase.roundRect(-23, 2, 46, 26, 3);
-    chestBase.fill({ color: 0xA0522D, alpha: 1 });
     // Metal bands
-    chestBase.rect(-25, 10, 50, 4);
+    chestBase.rect(-35, 8, 70, 5);
     chestBase.fill({ color: 0xDAA520, alpha: 1 });
-    chestBase.rect(-25, 20, 50, 4);
+    chestBase.rect(-35, 25, 70, 5);
     chestBase.fill({ color: 0xDAA520, alpha: 1 });
-
-    // Chest lid (will rotate open)
-    const chestLid = new PIXI.Graphics();
-    chestLid.roundRect(-25, -15, 50, 18, 4);
-    chestLid.fill({ color: 0x8B4513, alpha: 1 });
-    chestLid.roundRect(-23, -13, 46, 14, 3);
-    chestLid.fill({ color: 0xA0522D, alpha: 1 });
-    // Metal band on lid
-    chestLid.rect(-25, -8, 50, 3);
-    chestLid.fill({ color: 0xDAA520, alpha: 1 });
-    // Lock
-    chestLid.circle(0, 0, 6);
-    chestLid.fill({ color: 0xDAA520, alpha: 1 });
-    chestLid.circle(0, 0, 3);
-    chestLid.fill({ color: 0x8B4513, alpha: 1 });
-    chestLid.pivot.set(0, 0); // Pivot at bottom of lid for rotation
-
+    // Corner rivets
+    for (const x of [-30, 30]) {
+      for (const y of [5, 35]) {
+        chestBase.circle(x, y, 3);
+        chestBase.fill({ color: 0xFFD700, alpha: 1 });
+        chestBase.circle(x, y, 1.5);
+        chestBase.fill({ color: 0xFFF8DC, alpha: 0.8 });
+      }
+    }
     chestContainer.addChild(chestBase);
+
+    // Chest lid (will rotate open) - enhanced
+    const chestLid = new PIXI.Graphics();
+    // Lid body with curved top
+    chestLid.roundRect(-35, -22, 70, 25, 5);
+    chestLid.fill({ color: 0x654321, alpha: 1 });
+    chestLid.roundRect(-32, -19, 64, 19, 4);
+    chestLid.fill({ color: 0x8B4513, alpha: 1 });
+    // Metal band on lid
+    chestLid.rect(-35, -12, 70, 4);
+    chestLid.fill({ color: 0xDAA520, alpha: 1 });
+    // Ornate lock plate
+    chestLid.roundRect(-12, -8, 24, 16, 3);
+    chestLid.fill({ color: 0xDAA520, alpha: 1 });
+    chestLid.roundRect(-10, -6, 20, 12, 2);
+    chestLid.fill({ color: 0xFFD700, alpha: 1 });
+    // Keyhole
+    chestLid.circle(0, -2, 4);
+    chestLid.fill({ color: 0x1a1a1a, alpha: 1 });
+    chestLid.rect(-1.5, 0, 3, 6);
+    chestLid.fill({ color: 0x1a1a1a, alpha: 1 });
+    // Lid gems
+    for (const x of [-22, 22]) {
+      chestLid.circle(x, -10, 4);
+      chestLid.fill({ color: 0xFF0000, alpha: 1 });
+      chestLid.circle(x - 1, -11, 1.5);
+      chestLid.fill({ color: 0xFFFFFF, alpha: 0.6 });
+    }
+    chestLid.pivot.set(0, 3); // Pivot at bottom of lid for rotation
     chestContainer.addChild(chestLid);
+
     winnerContainer.addChild(chestContainer);
 
-    // Winner text (above chest)
+    // Winner text (above chest) - larger and more dramatic
     const winnerText = new PIXI.Text({
       text: `🏆 WINNER! 🏆`,
       style: {
         fontFamily: 'Arial Black',
-        fontSize: 24,
+        fontSize: 28,
         fill: 0xFFD700,
-        stroke: { color: 0x000000, width: 4 },
+        stroke: { color: 0x000000, width: 5 },
         dropShadow: true,
         dropShadowColor: 0x000000,
-        dropShadowBlur: 4,
-        dropShadowDistance: 2,
+        dropShadowBlur: 6,
+        dropShadowDistance: 3,
       }
     });
     winnerText.anchor.set(0.5);
     winnerText.x = 0;
-    winnerText.y = -50;
+    winnerText.y = -55;
     winnerContainer.addChild(winnerText);
 
-    // Side indicator text
+    // Side indicator text - more prominent
     const sideText = new PIXI.Text({
-      text: winnerSide === 'left' ? '← LEFT WINS!' : 'RIGHT WINS! →',
+      text: winnerSide === 'left' ? '◀ LEFT TEAM WINS! ◀' : '▶ RIGHT TEAM WINS! ▶',
       style: {
-        fontFamily: 'Arial',
-        fontSize: 14,
-        fill: winnerSide === 'left' ? 0x00FFFF : 0xFF6666,
-        stroke: { color: 0x000000, width: 2 },
+        fontFamily: 'Arial Black',
+        fontSize: 16,
+        fill: winnerColor,
+        stroke: { color: 0x000000, width: 3 },
       }
     });
     sideText.anchor.set(0.5);
     sideText.x = 0;
-    sideText.y = -25;
+    sideText.y = -28;
     winnerContainer.addChild(sideText);
 
-    // "Click to open!" text
+    // "Click to open!" text - positioned below the enhanced chest
     const clickText = new PIXI.Text({
       text: '✨ Click chest to reveal rewards! ✨',
       style: {
         fontFamily: 'Arial',
-        fontSize: 12,
+        fontSize: 14,
         fill: 0xFFFFFF,
         stroke: { color: 0x000000, width: 2 },
       }
     });
     clickText.anchor.set(0.5);
     clickText.x = 0;
-    clickText.y = 65;
+    clickText.y = 80;
     winnerContainer.addChild(clickText);
 
     // Start hidden, fade in
