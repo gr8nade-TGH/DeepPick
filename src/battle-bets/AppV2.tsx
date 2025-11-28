@@ -86,7 +86,7 @@ interface ApiBattle {
 }
 
 // Tab types
-type TabType = 'ALL' | 'LIVE' | 'UPCOMING' | 'FINAL';
+type TabType = 'ALL' | 'LIVE' | 'UPCOMING' | 'FINAL' | 'TRAINING_GROUNDS';
 
 // Battle status categories
 function getBattleCategory(status: string): TabType {
@@ -242,8 +242,107 @@ function transformApiBattleToGame(battle: ApiBattle): Game {
   };
 }
 
+// Generate training battles (persistent, separate from real battles)
+function generateTrainingBattles(): Game[] {
+  return [
+    {
+      id: 'training-battle-1',
+      leftTeam: { id: 'lal', name: 'Los Angeles Lakers', abbreviation: 'LAL', color: 0x552583, colorHex: '#552583' },
+      rightTeam: { id: 'mem', name: 'Memphis Grizzlies', abbreviation: 'MEM', color: 0x5D76A9, colorHex: '#5D76A9' },
+      leftCapper: {
+        id: 'training-capper-1',
+        name: 'TRAINING CAPPER 1',
+        favoriteTeam: { id: 'lal', name: 'Los Angeles Lakers', abbreviation: 'LAL', color: 0x552583, colorHex: '#552583' },
+        health: 100,
+        maxHealth: 100,
+        level: 1,
+        experience: 0,
+        leaderboardRank: 1,
+        teamRecords: [{ teamId: 'lal', units: 15, wins: 0, losses: 0, pushes: 0 }],
+        equippedItems: { slot1: null, slot2: null, slot3: null }
+      },
+      rightCapper: {
+        id: 'training-capper-2',
+        name: 'TRAINING CAPPER 2',
+        favoriteTeam: { id: 'mem', name: 'Memphis Grizzlies', abbreviation: 'MEM', color: 0x5D76A9, colorHex: '#5D76A9' },
+        health: 100,
+        maxHealth: 100,
+        level: 1,
+        experience: 0,
+        leaderboardRank: 2,
+        teamRecords: [{ teamId: 'mem', units: 9, wins: 0, losses: 0, pushes: 0 }],
+        equippedItems: { slot1: null, slot2: null, slot3: null }
+      },
+      currentQuarter: 0,
+      spread: -4.5,
+      gameDate: 'Training Battle 1',
+      gameTime: '',
+      leftScore: 0,
+      rightScore: 0,
+      status: 'SCHEDULED',
+      _battleData: {
+        status: 'SCHEDULED',
+        gameStartTime: undefined,
+        q1EndTime: undefined,
+        q2EndTime: undefined,
+        halftimeEndTime: undefined,
+        q3EndTime: undefined,
+        q4EndTime: undefined,
+        winner: null
+      }
+    },
+    {
+      id: 'training-battle-2',
+      leftTeam: { id: 'bos', name: 'Boston Celtics', abbreviation: 'BOS', color: 0x007A33, colorHex: '#007A33' },
+      rightTeam: { id: 'gsw', name: 'Golden State Warriors', abbreviation: 'GSW', color: 0x1D428A, colorHex: '#1D428A' },
+      leftCapper: {
+        id: 'training-capper-3',
+        name: 'TRAINING CAPPER 3',
+        favoriteTeam: { id: 'bos', name: 'Boston Celtics', abbreviation: 'BOS', color: 0x007A33, colorHex: '#007A33' },
+        health: 100,
+        maxHealth: 100,
+        level: 1,
+        experience: 0,
+        leaderboardRank: 3,
+        teamRecords: [{ teamId: 'bos', units: 21, wins: 0, losses: 0, pushes: 0 }],
+        equippedItems: { slot1: null, slot2: null, slot3: null }
+      },
+      rightCapper: {
+        id: 'training-capper-4',
+        name: 'TRAINING CAPPER 4',
+        favoriteTeam: { id: 'gsw', name: 'Golden State Warriors', abbreviation: 'GSW', color: 0x1D428A, colorHex: '#1D428A' },
+        health: 100,
+        maxHealth: 100,
+        level: 1,
+        experience: 0,
+        leaderboardRank: 4,
+        teamRecords: [{ teamId: 'gsw', units: 6, wins: 0, losses: 0, pushes: 0 }],
+        equippedItems: { slot1: null, slot2: null, slot3: null }
+      },
+      currentQuarter: 0,
+      spread: -2.5,
+      gameDate: 'Training Battle 2',
+      gameTime: '',
+      leftScore: 0,
+      rightScore: 0,
+      status: 'SCHEDULED',
+      _battleData: {
+        status: 'SCHEDULED',
+        gameStartTime: undefined,
+        q1EndTime: undefined,
+        q2EndTime: undefined,
+        halftimeEndTime: undefined,
+        q3EndTime: undefined,
+        q4EndTime: undefined,
+        winner: null
+      }
+    }
+  ] as Game[];
+}
+
 function AppV2() {
   const [battles, setBattles] = useState<Game[]>([]);
+  const [trainingBattles, setTrainingBattles] = useState<Game[]>(() => generateTrainingBattles());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<{ battleId: string; side: 'left' | 'right'; slot: number } | null>(null);
@@ -251,7 +350,7 @@ function AppV2() {
   const [showDebugControls, setShowDebugControls] = useState(false);
   const [showInventory, setShowInventory] = useState(false);
 
-  // NEW: Tab state
+  // Tab state
   const [activeTab, setActiveTab] = useState<TabType>('ALL');
 
   // Inventory store
@@ -326,7 +425,7 @@ function AppV2() {
     return () => clearInterval(interval);
   }, []);
 
-  // NEW: Sync battle status from store to battles array
+  // Sync battle status from store to battles array
   // This ensures tab filtering works when Force Q1 updates the store
   useEffect(() => {
     const interval = setInterval(() => {
@@ -354,13 +453,40 @@ function AppV2() {
           return battle;
         });
       });
+
+      // Also sync training battles
+      setTrainingBattles(prevBattles => {
+        return prevBattles.map(battle => {
+          const storeBattle = useMultiGameStore.getState().getBattle(battle.id);
+          if (!storeBattle) return battle;
+
+          const storeBattleStatus = storeBattle.battleStatus || 'SCHEDULED';
+          const currentStatus = (battle as any)._battleData?.status;
+
+          if (storeBattleStatus !== currentStatus) {
+            return {
+              ...battle,
+              status: storeBattle.game.status,
+              _battleData: {
+                ...(battle as any)._battleData,
+                status: storeBattleStatus
+              }
+            };
+          }
+
+          return battle;
+        });
+      });
     }, 500); // Check every 500ms
 
     return () => clearInterval(interval);
   }, []);
 
-  // NEW: Filter battles by active tab
+  // Filter battles by active tab
   const filteredBattles = useMemo(() => {
+    // TRAINING_GROUNDS shows training battles only
+    if (activeTab === 'TRAINING_GROUNDS') return trainingBattles;
+
     if (activeTab === 'ALL') return battles;
 
     return battles.filter(battle => {
@@ -369,26 +495,29 @@ function AppV2() {
       const category = getBattleCategory(status);
       return category === activeTab;
     });
-  }, [battles, activeTab]);
+  }, [battles, trainingBattles, activeTab]);
 
-  // NEW: Calculate tab counts
+  // Calculate tab counts
   const tabCounts = useMemo(() => {
-    const counts = {
+    const counts: Record<TabType, number> = {
       ALL: battles.length,
       LIVE: 0,
       UPCOMING: 0,
-      FINAL: 0
+      FINAL: 0,
+      TRAINING_GROUNDS: trainingBattles.length
     };
 
     battles.forEach(battle => {
       const battleData = (battle as any)._battleData;
       const status = battleData?.status || 'scheduled';
       const category = getBattleCategory(status);
-      counts[category]++;
+      if (category !== 'TRAINING_GROUNDS') {
+        counts[category]++;
+      }
     });
 
     return counts;
-  }, [battles]);
+  }, [battles, trainingBattles]);
 
   // NEW: Auto-switch to LIVE tab when battles start
   useEffect(() => {
@@ -514,6 +643,26 @@ function AppV2() {
                 </button>
               );
             })}
+
+            {/* Training Grounds Tab - Special styling (muted/outline) */}
+            <button
+              onClick={() => setActiveTab('TRAINING_GROUNDS')}
+              style={{
+                padding: '12px 24px',
+                background: activeTab === 'TRAINING_GROUNDS' ? 'rgba(75, 85, 99, 0.3)' : 'transparent',
+                border: activeTab === 'TRAINING_GROUNDS' ? '2px solid rgba(156, 163, 175, 0.8)' : '2px solid rgba(107, 114, 128, 0.4)',
+                borderRadius: '8px',
+                color: activeTab === 'TRAINING_GROUNDS' ? 'white' : 'rgba(156, 163, 175, 0.9)',
+                fontSize: '14px',
+                fontWeight: activeTab === 'TRAINING_GROUNDS' ? 'bold' : 'normal',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px'
+              }}
+            >
+              TRAINING GROUNDS
+            </button>
           </div>
 
           {/* Inventory Button */}
@@ -652,9 +801,14 @@ function AppV2() {
           ))}
         </div>
 
-        {/* Debug Bottom Bar - unified control bar for all battles */}
+        {/* Debug Bottom Bar - unified control bar for current battles */}
         {showDebugControls && (
-          <DebugBottomBar battleIds={battles.map(b => b.id)} />
+          <DebugBottomBar
+            battleIds={activeTab === 'TRAINING_GROUNDS'
+              ? trainingBattles.map(b => b.id)
+              : filteredBattles.map(b => b.id)
+            }
+          />
         )}
 
         {/* Pre-Game Item Selector Modal (same as original) */}
