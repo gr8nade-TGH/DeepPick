@@ -75,14 +75,41 @@ const BattleControl: React.FC<BattleControlProps> = ({ battleId, battleIndex }) 
     try {
       console.log(`🎮 [BottomBar] Starting game for battle ${battleId}`);
 
-      // Update game status - this is all we need to do
+      // Update game status
       useMultiGameStore.getState().updateGameStatus(battleId, '1Q');
       useMultiGameStore.getState().setCurrentQuarter(battleId, 1);
       useMultiGameStore.getState().updateBattleStatus(battleId, 'Q1_IN_PROGRESS');
 
-      // NOTE: Knight spawning DISABLED to debug GSAP issue
-      // The game should work without knights if the issue is knight-related
-      console.log(`🐴 [BottomBar] Knight spawning DISABLED for debugging`);
+      // Spawn knights (but DON'T start patrol - knight will be static)
+      console.log(`🐴 [BottomBar] Spawning knights (STATIC - no animations)`);
+
+      const { getOrSpawnKnight } = await import('../../game/items/effects/MED_KnightDefender');
+      const { getEquippedCastle } = await import('../../game/items/effects/CASTLE_Fortress');
+
+      const leftCastle = getEquippedCastle(battleId, 'left');
+      const rightCastle = getEquippedCastle(battleId, 'right');
+
+      if (leftCastle) {
+        console.log(`🐴 [BottomBar] Spawning LEFT knight (static)`);
+        const knight = getOrSpawnKnight(battleId, 'left');
+        if (knight) {
+          const shieldCharges = Math.round(leftCastle.rolls.shieldCharges || 1);
+          knight.setShieldCharges(shieldCharges);
+          // NOTE: NOT calling startPatrol() - knight will be static
+          console.log(`🐴 [BottomBar] Left knight spawned (STATIC)`);
+        }
+      }
+
+      if (rightCastle) {
+        console.log(`🐴 [BottomBar] Spawning RIGHT knight (static)`);
+        const knight = getOrSpawnKnight(battleId, 'right');
+        if (knight) {
+          const shieldCharges = Math.round(rightCastle.rolls.shieldCharges || 1);
+          knight.setShieldCharges(shieldCharges);
+          // NOTE: NOT calling startPatrol() - knight will be static
+          console.log(`🐴 [BottomBar] Right knight spawned (STATIC)`);
+        }
+      }
 
       setLastAction('✅ Started');
     } catch (error) {
