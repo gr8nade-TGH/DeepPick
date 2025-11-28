@@ -16,6 +16,14 @@ import { CASTLE_FORTRESS_DEFINITION, getEquippedCastle, getCastleType, getCastle
 import type { ItemDefinition, RolledItemStats, QualityTier } from '../../game/items/ItemRollSystem';
 import { ItemTooltip } from '../inventory/ItemTooltip';
 
+// Quality tier colors (matches Diablo style from InventoryGrid)
+const QUALITY_COLORS: Record<QualityTier, { border: string; glow: string; bg: string }> = {
+  Warped: { border: '#6b7280', glow: 'rgba(107, 114, 128, 0.4)', bg: 'rgba(107, 114, 128, 0.15)' },
+  Balanced: { border: '#3b82f6', glow: 'rgba(59, 130, 246, 0.5)', bg: 'rgba(59, 130, 246, 0.15)' },
+  Honed: { border: '#a855f7', glow: 'rgba(168, 85, 247, 0.6)', bg: 'rgba(168, 85, 247, 0.2)' },
+  Masterwork: { border: '#f59e0b', glow: 'rgba(245, 158, 11, 0.7)', bg: 'rgba(245, 158, 11, 0.25)' },
+};
+
 // Available items registry
 const ITEM_REGISTRY: Record<string, ItemDefinition> = {
   [LAL_IRONMAN_ARMOR_DEFINITION.id]: LAL_IRONMAN_ARMOR_DEFINITION,
@@ -246,10 +254,14 @@ export const InventoryBar: React.FC<InventoryBarProps> = ({ battleId, side, onSl
         const isFireOrb = itemId === 'fire-orb';
         const shouldPulse = isFireOrb && isFireOrbPulsing;
 
+        // Get quality-based colors for equipped items
+        const qualityTier = rolledItem?.qualityTier as QualityTier | undefined;
+        const qualityColors = qualityTier ? QUALITY_COLORS[qualityTier] : null;
+
         return (
           <div
             key={slot.num}
-            className={`inventory-slot ${isEmpty ? 'inventory-slot-empty' : 'inventory-slot-equipped'} ${isPreGame ? 'inventory-slot-clickable' : ''}`}
+            className={`inventory-slot ${isEmpty ? 'inventory-slot-empty' : ''} ${isPreGame ? 'inventory-slot-clickable' : ''}`}
             onClick={() => handleSlotClick(slot.num)}
             onMouseEnter={(e) => {
               if (!isEmpty && equippedItem && rolledItem) {
@@ -257,14 +269,30 @@ export const InventoryBar: React.FC<InventoryBarProps> = ({ battleId, side, onSl
               }
             }}
             onMouseLeave={handleItemLeave}
-            style={{ cursor: isPreGame ? 'pointer' : 'default' }}
+            style={{
+              cursor: isPreGame ? 'pointer' : 'default',
+              // Apply quality-based styling when item is equipped
+              ...(qualityColors && !isEmpty ? {
+                background: `linear-gradient(135deg, ${qualityColors.bg} 0%, rgba(15, 12, 41, 0.9) 100%)`,
+                borderColor: qualityColors.border,
+                boxShadow: `0 0 12px ${qualityColors.glow}, inset 0 0 8px ${qualityColors.glow}`,
+              } : {})
+            }}
           >
             {isEmpty ? (
               <div className="slot-icon-empty">
                 {slot.icon}
               </div>
             ) : (
-              <div className={`slot-icon-equipped ${shouldPulse ? 'fire-orb-pulsing' : ''}`}>
+              <div
+                className={`slot-icon-equipped ${shouldPulse ? 'fire-orb-pulsing' : ''}`}
+                style={{
+                  // Override the default gold glow with quality-based glow
+                  filter: qualityColors
+                    ? `drop-shadow(0 0 8px ${qualityColors.glow})`
+                    : undefined
+                }}
+              >
                 {equippedItem.id === 'blue-orb-shield' ? renderBlueShieldRing() :
                   equippedItem.id === 'fire-orb' ? renderFireRing() :
                     equippedItem.icon}

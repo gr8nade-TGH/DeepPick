@@ -82,30 +82,17 @@
   opacity: 0.4;
 }
 
-/* Equipped slot icon - full color with glow */
+/* Equipped slot icon - full color with glow (color is applied inline via quality tier) */
 .slot-icon-equipped {
   font-size: 28px;
   opacity: 1;
-  filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
-  animation: pulse-glow 2s ease-in-out infinite;
   user-select: none;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
   height: 100%;
-}
-
-@keyframes pulse-glow {
-
-  0%,
-  100% {
-    filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
-  }
-
-  50% {
-    filter: drop-shadow(0 0 12px rgba(255, 215, 0, 0.9));
-  }
+  /* Note: filter/glow is applied inline based on quality tier */
 }
 
 /* Fire Orb pulse animation - intense red/orange glow */
@@ -128,11 +115,8 @@
   animation: fire-pulse 0.5s ease-in-out 4 !important;
 }
 
-.inventory-slot-equipped {
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 165, 0, 0.1) 100%);
-  border-color: rgba(255, 215, 0, 0.5);
-  box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
-}
+/* NOTE: Equipped slot styling is now applied inline via QUALITY_COLORS in InventoryBar.tsx
+   This allows quality-based colors (Warped=gray, Balanced=blue, Honed=purple, Masterwork=gold) */
 
 /* Castle Slot - Same styling as other inventory slots */
 .castle-slot {
