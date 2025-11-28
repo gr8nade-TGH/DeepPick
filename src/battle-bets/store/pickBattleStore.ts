@@ -167,7 +167,8 @@ export const usePickBattleStore = create<PickBattleStore>()(
  */
 export const useSelectedPicks = () => {
   return usePickBattleStore((state) => {
-    const { picks, battle1PickId, battle2PickId } = state;
+    const picks = state.picks || [];
+    const { battle1PickId, battle2PickId } = state;
     return {
       battle1Pick: picks.find((p) => p.id === battle1PickId) ?? null,
       battle2Pick: picks.find((p) => p.id === battle2PickId) ?? null,
@@ -179,12 +180,15 @@ export const useSelectedPicks = () => {
  * Get tab counts
  */
 export const usePickTabCounts = () => {
-  return usePickBattleStore((state) => ({
-    all: state.picks.length,
-    live: state.picks.filter((p) => p.status === 'live').length,
-    upcoming: state.picks.filter((p) => p.status === 'upcoming').length,
-    final: state.picks.filter((p) => p.status === 'final').length,
-  }));
+  return usePickBattleStore((state) => {
+    const picks = state.picks || [];
+    return {
+      all: picks.length,
+      live: picks.filter((p) => p.status === 'live').length,
+      upcoming: picks.filter((p) => p.status === 'upcoming').length,
+      final: picks.filter((p) => p.status === 'final').length,
+    };
+  });
 };
 
 /**
