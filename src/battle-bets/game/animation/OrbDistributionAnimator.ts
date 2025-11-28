@@ -206,7 +206,7 @@ class OrbDistributionAnimatorClass {
 
     console.log(`✅ Spawn position for ${side}: (${spawnPos.x}, ${spawnPos.y})`);
 
-    const stats: StatType[] = ['pts', 'reb', 'ast', 'blk', '3pt'];
+    const stats: StatType[] = ['pts', 'reb', 'ast', 'stl', '3pt'];
     const orbsToAnimate: OrbParticle[] = [];
 
     // Create orb particles for each defense dot

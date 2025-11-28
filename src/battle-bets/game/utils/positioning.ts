@@ -19,7 +19,7 @@ export function getStatRowY(statIndex: number): number {
  * Get stat index from stat type
  */
 export function getStatIndex(stat: StatType): number {
-  const statOrder: StatType[] = ['pts', 'reb', 'ast', 'blk', '3pt'];
+  const statOrder: StatType[] = ['pts', 'reb', 'ast', 'stl', '3pt'];
   return statOrder.indexOf(stat);
 }
 

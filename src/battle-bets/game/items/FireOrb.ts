@@ -27,7 +27,7 @@ export async function fireFireOrbProjectilesV4(side: 'left' | 'right'): Promise<
   await glowFireOrbInInventory(side);
 
   // Step 2: Fire projectiles from all 5 stat rows simultaneously
-  const stats: StatType[] = ['pts', 'reb', 'ast', 'blk', '3pt'];
+  const stats: StatType[] = ['pts', 'reb', 'ast', 'stl', '3pt'];
   console.log(` [${FIRE_ORB_VERSION}] Stats array:`, stats);
 
   // Fire all projectiles at once (not sequentially)

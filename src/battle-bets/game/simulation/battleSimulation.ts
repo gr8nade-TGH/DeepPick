@@ -20,10 +20,10 @@ export async function simulateFullBattle(): Promise<{
   quarterEnded: number;
 }> {
   console.log('\n🎮 ========== FULL BATTLE SIMULATION START ==========');
-  
+
   const store = useGameStore.getState();
   const game = store.games[0];
-  
+
   if (!game) {
     console.error('❌ No game found!');
     throw new Error('No game found');
@@ -79,7 +79,7 @@ export async function simulateFullBattle(): Promise<{
 
     console.log(`\n📊 After Q${quarter}: Left HP=${leftHP}, Right HP=${rightHP}`);
     console.log(`📊 Score: ${game.leftTeam.abbreviation} ${leftTotalScore} - ${game.rightTeam.abbreviation} ${rightTotalScore}`);
-    
+
     // Check for battle end
     if (leftHP <= 0 && rightHP <= 0) {
       console.log('\n🏆 ========== BATTLE ENDED: DRAW ==========');
@@ -97,7 +97,7 @@ export async function simulateFullBattle(): Promise<{
       await spawnTreasureChest('left');
       return { winner: 'left', quarterEnded: quarter };
     }
-    
+
     // Pause between quarters (if not the last quarter)
     if (quarter < 4) {
       console.log(`\n⏸️  Pausing before Q${quarter + 1}...`);
@@ -180,7 +180,7 @@ export async function simulateFullBattle(): Promise<{
   console.log('\n🏁 ========== BATTLE COMPLETE ==========');
   console.log(`Final Score: ${game.leftTeam.abbreviation} ${leftTotalScore} - ${game.rightTeam.abbreviation} ${rightTotalScore}`);
   console.log(`Final HP: Left=${finalLeftHP}, Right=${finalRightHP}`);
-  
+
   if (finalLeftHP > finalRightHP) {
     console.log(`🏆 ${game.leftCapper.name} (${game.leftTeam.abbreviation}) wins by HP!`);
     await spawnTreasureChest('left');
@@ -239,7 +239,7 @@ async function spawnTreasureChest(winner: 'left' | 'right' | 'draw'): Promise<vo
 async function fireFinalBlow(side: 'left' | 'right', gameId: string): Promise<void> {
   console.log(`\n💥 ========== FINAL BLOW: ${side.toUpperCase()} SIDE ==========`);
 
-  const stats: StatType[] = ['pts', 'reb', 'ast', 'blk', '3pt'];
+  const stats: StatType[] = ['pts', 'reb', 'ast', 'stl', '3pt'];
 
   console.log(`🎯 Firing 6 projectiles from each stat row for ${side} side...`);
 
