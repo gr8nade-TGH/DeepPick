@@ -1114,12 +1114,13 @@ export class Castle {
     });
     text.anchor.set(0.5);
     text.x = 0;
-    text.y = -100;
+    // Start at visible position above castle (not too high!)
+    text.y = -20;
     text.alpha = 0;
 
     this.container.addChild(text);
 
-    // Fade in, float up, then show winner
+    // Fade in, float up slightly, then show winner
     const startTime = performance.now();
     const animate = () => {
       const elapsed = (performance.now() - startTime) / 1000;
@@ -1128,13 +1129,13 @@ export class Castle {
         // Fade in
         text.alpha = elapsed / 0.3;
       } else if (elapsed < 1.5) {
-        // Hold and float
+        // Hold and float up slightly (only 15px total)
         text.alpha = 1;
-        text.y = -100 - (elapsed - 0.3) * 20;
+        text.y = -20 - (elapsed - 0.3) * 12;
       } else if (elapsed < 2.5) {
         // Fade out
         text.alpha = 1 - (elapsed - 1.5);
-        text.y = -100 - 24 - (elapsed - 1.5) * 10;
+        text.y = -20 - 14.4 - (elapsed - 1.5) * 5;
       } else {
         this.container?.removeChild(text);
         text.destroy();
@@ -1166,9 +1167,9 @@ export class Castle {
     winnerContainer.label = 'winner-announcement';
 
     // Position in TRUE center of the battlefield grid (between the two stat columns)
-    // Looking at actual rendering: total width ~1024px, grid spans from ~180 to ~850
-    // True visual center of the grid area is around x=515
-    winnerContainer.x = 515;
+    // Grid area runs from left stat column (~180px) to right stat column (~880px)
+    // True visual center = (180 + 880) / 2 = 530, but accounting for stat widths ~560
+    winnerContainer.x = 560;
     winnerContainer.y = 140; // Center vertically in the grid area
 
     // Create FULLY OPAQUE dark background panel with ornate border
