@@ -13,6 +13,7 @@ import { getKnight, getKnightDebugInfo } from '../../game/items/effects/MED_Knig
 import { debugLogger } from '../../game/debug/DebugLogger';
 import { getEquippedCastle } from '../../game/items/effects/CASTLE_Fortress';
 import { castleManager } from '../../game/managers/CastleManager';
+import { getWizardsWatchtowerDebugInfo } from '../../game/items/effects/WAS_WizardsWatchtower';
 import gsap from 'gsap';
 
 // Capture console logs with emoji markers for debug report
@@ -303,6 +304,38 @@ export const DebugBottomBar: React.FC<DebugBottomBarProps> = ({ battleIds }) => 
         activeItems.forEach(item => {
           lines.push(`  ${item.itemId} (${item.side}): ${item.qualityTier}`);
         });
+      }
+      lines.push('');
+
+      // Wizard's Watchtower State
+      lines.push("--- WIZARD'S WATCHTOWER STATE ---");
+      try {
+        const wizardDebug = getWizardsWatchtowerDebugInfo(battleId);
+        lines.push(`Registered Handlers (${wizardDebug.registeredHandlersSize}):`);
+        if (wizardDebug.registeredHandlerKeys.length > 0) {
+          wizardDebug.registeredHandlerKeys.forEach(key => {
+            const isThisBattle = key.startsWith(battleId);
+            lines.push(`  ${isThisBattle ? '✅' : '⚠️'} ${key}${isThisBattle ? '' : ' (DIFFERENT BATTLE!)'}`);
+          });
+        } else {
+          lines.push('  (none - handler will register on next activation)');
+        }
+        lines.push(`Orb Glows (${wizardDebug.orbGlowMapSize}):`);
+        if (wizardDebug.glowDetails.length > 0) {
+          wizardDebug.glowDetails.forEach(glow => {
+            lines.push(`  ${glow.key}: visible=${glow.glowVisible}, alpha=${glow.glowAlpha?.toFixed(2)}, parent=${glow.hasParent}, animActive=${glow.animationActive}`);
+          });
+        } else {
+          lines.push('  (no glows tracked)');
+        }
+        lines.push(`Glow Animations (${wizardDebug.glowAnimationsSize}):`);
+        if (wizardDebug.glowAnimationKeys.length > 0) {
+          wizardDebug.glowAnimationKeys.forEach(key => lines.push(`  ${key}`));
+        } else {
+          lines.push('  (no animations)');
+        }
+      } catch (e) {
+        lines.push(`Error: ${e}`);
       }
       lines.push('');
 

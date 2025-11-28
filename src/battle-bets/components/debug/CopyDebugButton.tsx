@@ -295,6 +295,49 @@ export function CopyDebugButton({ battleId }: CopyDebugButtonProps) {
         console.error('Error getting equipped items:', error);
       }
 
+      // 4.4. Wizard's Watchtower State
+      try {
+        lines.push('\n' + '-'.repeat(80));
+        lines.push("WIZARD'S WATCHTOWER STATE");
+        lines.push('-'.repeat(80));
+        console.log('📋 Getting Wizards Watchtower debug info...');
+        const wizardDebug = getWizardsWatchtowerDebugInfo(battleId);
+
+        lines.push(`\nRegistered Handlers (${wizardDebug.registeredHandlersSize}):`);
+        wizardDebug.registeredHandlerKeys.forEach(key => {
+          const isThisBattle = key.startsWith(battleId);
+          lines.push(`  ${isThisBattle ? '✅' : '⚠️'} ${key}${isThisBattle ? '' : ' (DIFFERENT BATTLE!)'}`);
+        });
+        if (wizardDebug.registeredHandlersSize === 0) {
+          lines.push('  (none - handler will register on next activation)');
+        }
+
+        lines.push(`\nOrb Glows (${wizardDebug.orbGlowMapSize}):`);
+        if (wizardDebug.glowDetails.length > 0) {
+          wizardDebug.glowDetails.forEach(glow => {
+            lines.push(`  ${glow.key}:`);
+            lines.push(`    Has Glow: ${glow.hasGlow}`);
+            lines.push(`    Visible: ${glow.glowVisible}`);
+            lines.push(`    Alpha: ${glow.glowAlpha}`);
+            lines.push(`    Has Parent: ${glow.hasParent}`);
+            lines.push(`    Animation Active: ${glow.animationActive}`);
+          });
+        } else {
+          lines.push('  (no glows tracked)');
+        }
+
+        lines.push(`\nGlow Animations (${wizardDebug.glowAnimationsSize}):`);
+        wizardDebug.glowAnimationKeys.forEach(key => {
+          lines.push(`  ${key}`);
+        });
+        if (wizardDebug.glowAnimationsSize === 0) {
+          lines.push('  (no animations)');
+        }
+      } catch (error) {
+        lines.push(`❌ Error getting Wizard's Watchtower state: ${error}`);
+        console.error('Error getting Wizards Watchtower state:', error);
+      }
+
       // 4.5. Item Save/Activation Flow Tracking
       try {
         lines.push('\n' + '-'.repeat(80));
