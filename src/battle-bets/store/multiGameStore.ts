@@ -258,18 +258,10 @@ export const useMultiGameStore = create<MultiGameState>()(
         const battle = get().battles.get(battleId);
         if (!battle) return;
 
-        console.log(`🧹 [clearAllProjectiles] Clearing ${battle.projectiles.length} projectiles for ${battleId}`);
+        const count = battle.projectiles.length;
+        console.log(`🧹 [clearAllProjectiles] IMMEDIATELY clearing ${count} projectiles for ${battleId}`);
 
-        // Dispose each projectile (removes sprite from container)
-        battle.projectiles.forEach(p => {
-          try {
-            p.dispose();
-          } catch (e) {
-            console.warn(`Failed to dispose projectile ${p.id}:`, e);
-          }
-        });
-
-        // Clear the array
+        // First: Clear the array in state (stops any new processing)
         set(state => {
           const newBattles = new Map(state.battles);
           const updatedBattle = newBattles.get(battleId);
@@ -278,6 +270,18 @@ export const useMultiGameStore = create<MultiGameState>()(
           }
           return { battles: newBattles };
         });
+
+        // Then: Dispose each projectile (removes sprite from container, kills animations)
+        battle.projectiles.forEach(p => {
+          try {
+            // Force immediate removal - dispose handles GSAP cleanup and sprite removal
+            p.dispose();
+          } catch (e) {
+            console.warn(`Failed to dispose projectile ${p.id}:`, e);
+          }
+        });
+
+        console.log(`🧹 [clearAllProjectiles] Done - cleared ${count} projectiles`);
       },
 
       // Apply damage to capper HP
