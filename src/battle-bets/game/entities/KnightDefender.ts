@@ -359,25 +359,60 @@ export class KnightDefender {
   }
 
   /**
-   * Idle bob animation
+   * Idle bob animation - uses one-shot tweens with onComplete callbacks
+   * to avoid the GSAP infinite repeat bug that breaks all animations
    */
   private startIdleAnimation(): void {
-    // Gentle bobbing
+    if (!this.alive) return;
+
+    // Bobbing animation using safe one-shot pattern
+    this.animateBobUp();
+
+    // Glow pulse animation using safe one-shot pattern
+    this.animateGlowUp();
+  }
+
+  /** Bob the knight up (part of idle animation loop) */
+  private animateBobUp(): void {
+    if (!this.alive || !this.knightSprite) return;
     gsap.to(this.knightSprite, {
       y: -2,
       duration: 1.5,
       ease: 'sine.inOut',
-      yoyo: true,
-      repeat: -1,
+      onComplete: () => this.animateBobDown(),
     });
+  }
 
-    // Glow pulse
+  /** Bob the knight down (part of idle animation loop) */
+  private animateBobDown(): void {
+    if (!this.alive || !this.knightSprite) return;
+    gsap.to(this.knightSprite, {
+      y: 0,
+      duration: 1.5,
+      ease: 'sine.inOut',
+      onComplete: () => this.animateBobUp(),
+    });
+  }
+
+  /** Pulse glow up (part of idle animation loop) */
+  private animateGlowUp(): void {
+    if (!this.alive || !this.glowEffect) return;
     gsap.to(this.glowEffect, {
       alpha: 0.6,
       duration: 2,
       ease: 'sine.inOut',
-      yoyo: true,
-      repeat: -1,
+      onComplete: () => this.animateGlowDown(),
+    });
+  }
+
+  /** Pulse glow down (part of idle animation loop) */
+  private animateGlowDown(): void {
+    if (!this.alive || !this.glowEffect) return;
+    gsap.to(this.glowEffect, {
+      alpha: 0.3,
+      duration: 2,
+      ease: 'sine.inOut',
+      onComplete: () => this.animateGlowUp(),
     });
   }
 
@@ -389,8 +424,8 @@ export class KnightDefender {
     console.log(`🐴 [KnightDefender] ${msg}`);
     debugLogger.log('knight', msg, { side: this.side, gameId: this.gameId });
 
-    // NOTE: Idle animation DISABLED for debugging - just test patrol movement
-    // this.startIdleAnimation();
+    // Start idle animation (bobbing/glow) - now uses safe one-shot pattern
+    this.startIdleAnimation();
 
     this.isPatrolling = true;
     this.checkDefenderMode(); // Check castle HP on start
@@ -1263,11 +1298,35 @@ export class KnightDefender {
       this.shieldChargeContainer.addChild(orb);
       this.shieldChargeOrbs.push(orb);
 
-      // NOTE: Float animation DISABLED for debugging GSAP issue
-      // if (i < this.shieldCharges) {
-      //   gsap.to(orb, { y: -2, duration: 1 + Math.random() * 0.5, ease: 'sine.inOut', repeat: -1, yoyo: true, delay: i * 0.2 });
-      // }
+      // Float animation using safe one-shot pattern (no repeat: -1)
+      if (i < this.shieldCharges) {
+        const delay = i * 0.2;
+        const duration = 1 + Math.random() * 0.5;
+        gsap.delayedCall(delay, () => this.animateOrbUp(orb, duration));
+      }
     }
+  }
+
+  /** Animate orb floating up (part of shield orb loop) */
+  private animateOrbUp(orb: PIXI.Graphics, duration: number): void {
+    if (!this.alive || !orb.parent) return;
+    gsap.to(orb, {
+      y: -2,
+      duration,
+      ease: 'sine.inOut',
+      onComplete: () => this.animateOrbDown(orb, duration),
+    });
+  }
+
+  /** Animate orb floating down (part of shield orb loop) */
+  private animateOrbDown(orb: PIXI.Graphics, duration: number): void {
+    if (!this.alive || !orb.parent) return;
+    gsap.to(orb, {
+      y: 0,
+      duration,
+      ease: 'sine.inOut',
+      onComplete: () => this.animateOrbUp(orb, duration),
+    });
   }
 
   /**

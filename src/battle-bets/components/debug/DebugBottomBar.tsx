@@ -90,22 +90,24 @@ const BattleControl: React.FC<BattleControlProps> = ({ battleId, battleIndex }) 
       const rightCastle = getEquippedCastle(battleId, 'right');
 
       if (leftCastle) {
-        console.log(`🐴 [BottomBar] Spawning LEFT knight with patrol`);
+        console.log(`🐴 [BottomBar] Spawning LEFT knight`);
         const knight = getOrSpawnKnight(battleId, 'left');
         if (knight) {
-          // Try patrol movement (no idle animation, no shield orbs)
+          const shieldCharges = Math.round(leftCastle.rolls.shieldCharges || 1);
+          knight.setShieldCharges(shieldCharges);
           knight.startPatrol();
-          console.log(`🐴 [BottomBar] Left knight spawned and patrolling`);
+          console.log(`🐴 [BottomBar] Left knight spawned with ${shieldCharges} shields, patrolling`);
         }
       }
 
       if (rightCastle) {
-        console.log(`🐴 [BottomBar] Spawning RIGHT knight with patrol`);
+        console.log(`🐴 [BottomBar] Spawning RIGHT knight`);
         const knight = getOrSpawnKnight(battleId, 'right');
         if (knight) {
-          // Try patrol movement (no idle animation, no shield orbs)
+          const shieldCharges = Math.round(rightCastle.rolls.shieldCharges || 1);
+          knight.setShieldCharges(shieldCharges);
           knight.startPatrol();
-          console.log(`🐴 [BottomBar] Right knight spawned and patrolling`);
+          console.log(`🐴 [BottomBar] Right knight spawned with ${shieldCharges} shields, patrolling`);
         }
       }
 
