@@ -11,7 +11,7 @@ import './ItemTooltip.css';
 import { LAL_IRONMAN_ARMOR_DEFINITION } from '../../game/items/effects/LAL_IronmanArmor';
 import { STARTER_SHORTSWORD_DEFINITION } from '../../game/items/effects/STARTER_Shortsword';
 import { CHA_HORNETS_NEST_DEFINITION } from '../../game/items/effects/CHA_HornetsNest';
-import { WAS_WIZARDS_WATCHTOWER_DEFINITION } from '../../game/items/effects/WAS_WizardsWatchtower';
+import { WAS_WIZARDS_WATCHTOWER_DEFINITION, cleanupWizardsWatchtowerForGame } from '../../game/items/effects/WAS_WizardsWatchtower';
 // Note: MED_KNIGHT_DEFENDER_DEFINITION removed - knight is now deployed via Castle item
 import { CASTLE_FORTRESS_DEFINITION, equipCastle, generateCastleName, getCastleType, getCastleRarityColor } from '../../game/items/effects/CASTLE_Fortress';
 import { getOrSpawnKnight } from '../../game/items/effects/MED_KnightDefender';
@@ -371,6 +371,8 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
       // Deactivate all existing items for this battle first (cleanup)
       console.log('🎮 [PreGameItemSelector] Deactivating existing items...');
       itemEffectRegistry.deactivateGame(battleId);
+      // Also cleanup item-specific state (like WizardsWatchtower's registeredHandlers)
+      cleanupWizardsWatchtowerForGame(battleId);
 
       // Activate left side items
       if (leftSlot1) {

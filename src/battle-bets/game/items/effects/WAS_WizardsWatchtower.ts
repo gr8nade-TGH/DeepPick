@@ -529,6 +529,38 @@ export function registerWizardsWatchtowerEffect(context: ItemRuntimeContext): vo
 }
 
 /**
+ * Cleanup function to clear registered handlers for a game
+ * This should be called when a battle is deactivated/reset
+ */
+export function cleanupWizardsWatchtowerForGame(gameId: string): void {
+  console.log(`🧹 [WizardsWatchtower] Cleaning up handlers for game ${gameId}`);
+
+  // Clear registered handlers for both sides
+  const leftKey = `${gameId}_left`;
+  const rightKey = `${gameId}_right`;
+
+  if (registeredHandlers.has(leftKey)) {
+    registeredHandlers.delete(leftKey);
+    console.log(`🧹 [WizardsWatchtower] Removed handler key: ${leftKey}`);
+  }
+  if (registeredHandlers.has(rightKey)) {
+    registeredHandlers.delete(rightKey);
+    console.log(`🧹 [WizardsWatchtower] Removed handler key: ${rightKey}`);
+  }
+
+  // Clean up any glows for this game
+  const keysToRemove: string[] = [];
+  orbGlowMap.forEach((_, key) => {
+    if (key.startsWith(gameId)) {
+      keysToRemove.push(key);
+    }
+  });
+  keysToRemove.forEach(key => cleanupOrbGlow(key));
+
+  console.log(`🧹 [WizardsWatchtower] Cleanup complete. Removed ${keysToRemove.length} glows.`);
+}
+
+/**
  * Auto-register this item effect
  */
 itemEffectRegistry.registerEffect(

@@ -19,6 +19,7 @@ import { PreGameItemSelector } from './PreGameItemSelector';
 import { itemEffectRegistry } from '../../game/items/ItemEffectRegistry';
 import { rollTestItem } from '../../game/items/ItemTestUtils';
 import { getKnight } from '../../game/items/effects/MED_KnightDefender';
+import { cleanupWizardsWatchtowerForGame } from '../../game/items/effects/WAS_WizardsWatchtower';
 
 interface QuarterDebugControlsProps {
   battleId: string;
@@ -63,6 +64,8 @@ export const QuarterDebugControls: React.FC<QuarterDebugControlsProps> = ({ batt
       // STEP 1: Deactivate any existing items for this battle (prevent duplicates)
       console.log(`🧹 [PreGame] Deactivating existing items for battle ${battleId}`);
       itemEffectRegistry.deactivateGame(battleId);
+      // Also cleanup item-specific state (like WizardsWatchtower's registeredHandlers)
+      cleanupWizardsWatchtowerForGame(battleId);
 
       // STEP 2: Activate equipped items BEFORE battle starts
       console.log(`🎮🎮🎮 [PreGame] Activating equipped items for battle ${battleId}`);
