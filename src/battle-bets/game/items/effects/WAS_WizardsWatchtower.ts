@@ -522,3 +522,66 @@ itemEffectRegistry.registerEffect(
 
 console.log(`📦 [WizardsWatchtower] Item effect registered: ${WAS_WIZARDS_WATCHTOWER_DEFINITION.id}`);
 
+/**
+ * Debug function to get Wizard's Watchtower state for troubleshooting
+ */
+export function getWizardsWatchtowerDebugInfo(gameId?: string): {
+  orbGlowMapSize: number;
+  orbGlowKeys: string[];
+  glowAnimationsSize: number;
+  glowAnimationKeys: string[];
+  registeredHandlersSize: number;
+  registeredHandlerKeys: string[];
+  glowDetails: Array<{
+    key: string;
+    hasGlow: boolean;
+    glowVisible: boolean;
+    glowAlpha: number;
+    hasParent: boolean;
+    parentLabel: string | null;
+    hasAnimation: boolean;
+    animationActive: boolean;
+  }>;
+} {
+  const allGlowKeys = Array.from(orbGlowMap.keys());
+  const filteredGlowKeys = gameId
+    ? allGlowKeys.filter(k => k.startsWith(gameId))
+    : allGlowKeys;
+
+  const allAnimKeys = Array.from(glowAnimations.keys());
+  const filteredAnimKeys = gameId
+    ? allAnimKeys.filter(k => k.startsWith(gameId))
+    : allAnimKeys;
+
+  const allHandlerKeys = Array.from(registeredHandlers);
+  const filteredHandlerKeys = gameId
+    ? allHandlerKeys.filter(k => k.startsWith(gameId))
+    : allHandlerKeys;
+
+  // Get detailed info about each glow
+  const glowDetails = filteredGlowKeys.map(key => {
+    const glow = orbGlowMap.get(key);
+    const anim = glowAnimations.get(key);
+    return {
+      key,
+      hasGlow: !!glow,
+      glowVisible: glow?.visible ?? false,
+      glowAlpha: glow?.alpha ?? 0,
+      hasParent: !!glow?.parent,
+      parentLabel: glow?.parent?.label || null,
+      hasAnimation: !!anim,
+      animationActive: anim?.isActive() ?? false,
+    };
+  });
+
+  return {
+    orbGlowMapSize: orbGlowMap.size,
+    orbGlowKeys: filteredGlowKeys,
+    glowAnimationsSize: glowAnimations.size,
+    glowAnimationKeys: filteredAnimKeys,
+    registeredHandlersSize: registeredHandlers.size,
+    registeredHandlerKeys: filteredHandlerKeys,
+    glowDetails,
+  };
+}
+

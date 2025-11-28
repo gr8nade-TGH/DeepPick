@@ -11,6 +11,7 @@ import { useMultiGameStore } from '../../store/multiGameStore';
 import { debugLogger } from '../../game/debug/DebugLogger';
 import { getKnight, getActiveKnightKeys, getKnightDebugInfo } from '../../game/items/effects/MED_KnightDefender';
 import { getEquippedCastle } from '../../game/items/effects/CASTLE_Fortress';
+import { getWizardsWatchtowerDebugInfo } from '../../game/items/effects/WAS_WizardsWatchtower';
 
 interface CopyDebugButtonProps {
   battleId: string;

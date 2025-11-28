@@ -1173,9 +1173,9 @@ export class Castle {
     const winnerContainer = new PIXI.Container();
     winnerContainer.label = 'winner-announcement';
 
-    // Position CENTERED in the battlefield
-    // x=560 for horizontal centering, y=85 to move UP so it's not cut off at bottom
-    winnerContainer.x = 560;
+    // Position CENTERED in the battlefield - align with "Q2 BATTLE" in top bar
+    // x=600 for proper horizontal centering, y=85 to ensure popup fits vertically
+    winnerContainer.x = 600;
     winnerContainer.y = 85;
 
     // Ensure popup is rendered on TOP of everything (including projectiles)
