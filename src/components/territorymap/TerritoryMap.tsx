@@ -524,9 +524,9 @@ export function TerritoryMap() {
           </div>
         </div>
 
-        {/* Battle Arena Link - Links to standalone PixiJS game */}
+        {/* Battle Arena Link - Links to Battle Arena V2 */}
         <Link
-          href="/battle-bets-game/index.html"
+          href="/battle-arena-v2/index.html"
           className="block w-full bg-gradient-to-r from-red-600 via-orange-600 to-red-600 hover:from-red-700 hover:via-orange-700 hover:to-red-700 text-white text-center py-2.5 px-4 rounded-lg text-sm font-bold transition-all duration-200 shadow-lg hover:shadow-xl border-2 border-red-800 hover:scale-105"
         >
           <span className="flex items-center justify-center gap-2">

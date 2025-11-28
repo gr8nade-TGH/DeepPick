@@ -348,14 +348,14 @@ export function GlobalBettingSlip({ capperId, isCapper }: GlobalBettingSlipProps
 
             {activeTab === 'open' && (
               <div>
-                {/* Battle Arena Button */}
+                {/* Active Battles Button */}
                 <div className="p-4 border-b border-slate-700">
                   <Button
-                    onClick={() => router.push('/battle-arena')}
+                    onClick={() => router.push('/battle-arena-v2/index.html')}
                     className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold gap-2"
                   >
                     <Grid3x3 className="w-4 h-4" />
-                    BATTLE ARENA
+                    ACTIVE BATTLES
                   </Button>
                 </div>
 
