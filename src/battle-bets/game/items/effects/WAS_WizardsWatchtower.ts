@@ -276,9 +276,14 @@ export function registerWizardsWatchtowerEffect(context: ItemRuntimeContext): vo
     itemEffectRegistry.setCounter(itemInstanceId, 'shieldActive', 1);
 
     // ===== PART 2: Buff last orbs in each row =====
-    // Delay slightly to ensure sprites are added to container after React render cycle
-    setTimeout(() => {
-      console.log(`🔮 [WizardsWatchtower] Buffing last orbs for ${side} with +${orbBonusHP} HP each`);
+    // Use retry mechanism to ensure sprites are added to container after React render cycle
+    const maxAttempts = 10;
+    const attemptDelay = 100; // 100ms between attempts
+    let attempts = 0;
+
+    const tryAddGlows = () => {
+      attempts++;
+      console.log(`🔮 [WizardsWatchtower] Attempt ${attempts}/${maxAttempts} to add glows for ${side}`);
 
       const battle = useMultiGameStore.getState().battles.get(gameId);
       if (!battle) {
@@ -288,6 +293,7 @@ export function registerWizardsWatchtowerEffect(context: ItemRuntimeContext): vo
 
       const stats: StatType[] = ['pts', 'reb', 'ast', 'stl', '3pt'];
       let orbsBuffed = 0;
+      let orbsWithoutParent = 0;
 
       stats.forEach(stat => {
         // Find all alive orbs in this lane for this side
@@ -303,24 +309,30 @@ export function registerWizardsWatchtowerEffect(context: ItemRuntimeContext): vo
         // Get the last orb (highest index = furthest from castle)
         const lastOrb = laneOrbs[0];
 
-        // Buff the orb's HP
-        const oldHP = lastOrb.hp;
-        lastOrb.hp += orbBonusHP;
-        lastOrb.maxHp = Math.max(lastOrb.maxHp, lastOrb.hp); // Increase maxHp too
+        // Buff the orb's HP (only on first attempt)
+        if (attempts === 1) {
+          const oldHP = lastOrb.hp;
+          lastOrb.hp += orbBonusHP;
+          lastOrb.maxHp = Math.max(lastOrb.maxHp, lastOrb.hp); // Increase maxHp too
+          console.log(`🔮 [WizardsWatchtower] Buffed ${stat} last orb (${lastOrb.id}): ${oldHP} → ${lastOrb.hp} HP (+${orbBonusHP})`);
+        }
 
-        console.log(`🔮 [WizardsWatchtower] Buffed ${stat} last orb (${lastOrb.id}): ${oldHP} → ${lastOrb.hp} HP (+${orbBonusHP})`);
-
-        // Skip if already buffed (prevent double glows)
+        // Skip if already buffed with glow (prevent double glows)
         if ((lastOrb as any).isWizardBuffed && (lastOrb as any)._wizardGlow) {
           console.log(`⚠️ [WizardsWatchtower] Orb ${lastOrb.id} already has glow, skipping`);
+          orbsBuffed++; // Still count as buffed
           return;
         }
 
-        // Mark orb as buffed and trigger visual update
-        (lastOrb as any).isWizardBuffed = true;
-
         // Create unique glow key for this orb
         const glowKey = getGlowKey(gameId, side, lastOrb.id);
+
+        // Check if sprite has parent (container is ready)
+        if (!lastOrb.sprite?.parent) {
+          console.log(`🔮 [WizardsWatchtower] Orb ${lastOrb.id} sprite has no parent yet (attempt ${attempts})`);
+          orbsWithoutParent++;
+          return;
+        }
 
         // Clean up any existing glow first
         if (orbGlowMap.has(glowKey)) {
@@ -338,34 +350,38 @@ export function registerWizardsWatchtowerEffect(context: ItemRuntimeContext): vo
           (lastOrb as any)._wizardGlow = null;
         }
 
-        console.log(`🔮 [WizardsWatchtower] Creating glow with key: ${glowKey}`);
-        console.log(`🔮 [WizardsWatchtower] lastOrb sprite check:`, {
-          hasSprite: !!lastOrb.sprite,
-          spriteParent: lastOrb.sprite?.parent ? 'EXISTS' : 'NULL/UNDEFINED',
-          orbId: lastOrb.id
-        });
+        // Mark orb as buffed
+        (lastOrb as any).isWizardBuffed = true;
 
-        // Update the orb's visual to show purple glow
-        if (lastOrb.sprite && lastOrb.sprite.parent) {
-          console.log(`🔮 [WizardsWatchtower] ADDING GLOW to orb ${lastOrb.id}!`);
-          const glow = addGlowingEdge(lastOrb.sprite, glowKey);
-          lastOrb.sprite.parent.addChild(glow);
-          (lastOrb as any)._wizardGlow = glow;
-          (lastOrb as any)._wizardGlowKey = glowKey; // Store key for cleanup
-          console.log(`🔮 [WizardsWatchtower] ✅ Glow added successfully!`);
-        } else {
-          console.log(`🔮 [WizardsWatchtower] ❌ CANNOT ADD GLOW - sprite or parent missing!`);
-        }
+        console.log(`🔮 [WizardsWatchtower] ADDING GLOW to orb ${lastOrb.id}!`);
+        const glow = addGlowingEdge(lastOrb.sprite, glowKey);
+        lastOrb.sprite.parent.addChild(glow);
+        (lastOrb as any)._wizardGlow = glow;
+        (lastOrb as any)._wizardGlowKey = glowKey; // Store key for cleanup
+        console.log(`🔮 [WizardsWatchtower] ✅ Glow added successfully!`);
 
         orbsBuffed++;
       });
+
+      // If some orbs don't have parent yet and we have attempts left, retry
+      if (orbsWithoutParent > 0 && attempts < maxAttempts) {
+        console.log(`🔮 [WizardsWatchtower] ${orbsWithoutParent} orbs without parent, retrying in ${attemptDelay}ms...`);
+        setTimeout(tryAddGlows, attemptDelay);
+        return;
+      }
 
       // Track total buffed
       itemEffectRegistry.setCounter(itemInstanceId, 'orbsBuffed', orbsBuffed);
       itemEffectRegistry.setCounter(itemInstanceId, 'totalOrbBonusHP', orbsBuffed * orbBonusHP);
 
+      if (orbsWithoutParent > 0) {
+        console.warn(`⚠️ [WizardsWatchtower] ${orbsWithoutParent} orbs still missing parent after ${maxAttempts} attempts`);
+      }
       console.log(`✅ [WizardsWatchtower] Buffed ${orbsBuffed} orbs with +${orbBonusHP} HP each (total: +${orbsBuffed * orbBonusHP} HP)`);
-    }, 100); // 100ms delay to ensure sprites are in the container
+    };
+
+    // Start first attempt after initial delay
+    setTimeout(tryAddGlows, 200); // Start with 200ms delay for React to render
   });
 
   // DEFENSE_ORB_HIT: Remove glow on first hit (bonus HP consumed)

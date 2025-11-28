@@ -1174,8 +1174,8 @@ export class Castle {
     winnerContainer.label = 'winner-announcement';
 
     // Position CENTERED in the battlefield - align with "Q2 BATTLE" in top bar
-    // x=600 for proper horizontal centering, y=85 to ensure popup fits vertically
-    winnerContainer.x = 600;
+    // x=580 for proper horizontal centering, y=85 to ensure popup fits vertically
+    winnerContainer.x = 580;
     winnerContainer.y = 85;
 
     // Ensure popup is rendered on TOP of everything (including projectiles)
