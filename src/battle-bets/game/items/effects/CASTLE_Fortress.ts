@@ -149,18 +149,17 @@ export function equipCastle(
 
 /**
  * Register Castle effect
- * This is called when the game starts (from QuarterDebugControls.handleStartGame)
- * Knight is already spawned in equipCastle, this just re-equips if needed.
+ * This is a NO-OP now - castle HP is set in handleRollCastle/equipCastle.
+ * Knight spawning is handled by handleStartGame in DebugBottomBar.
+ * We register this effect just so the item registry doesn't complain.
  */
 export function registerCastleEffect(context: ItemRuntimeContext): void {
-  const { gameId, side, rolledStats } = context;
-  if (rolledStats) {
-    // equipCastle handles knight spawning via dynamic import
-    equipCastle(gameId, side, rolledStats);
-  }
+  const { gameId, side } = context;
+  console.log(`🏰 [Castle] registerCastleEffect called for ${side} in ${gameId} - NO-OP (HP already set)`);
+  // NO-OP - everything is already handled by handleRollCastle and handleStartGame
 }
 
-// Register effect
+// Register effect (required for item registry)
 itemEffectRegistry.registerEffect(CASTLE_FORTRESS_DEFINITION.id, registerCastleEffect);
 
 console.log(`📦 [Castle] Item effect registered: ${CASTLE_FORTRESS_DEFINITION.id}`);

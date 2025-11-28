@@ -406,18 +406,11 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
         console.log(`✅ [PreGameItemSelector] Activated ${rightSlot3.itemId} on RIGHT side`);
       }
 
-      // Activate castle items (these deploy knights!)
-      // Castle items are separate from the 3 slot items
-      if (leftCastle) {
-        console.log(`🏰 [PreGameItemSelector] Activating LEFT castle: ${leftCastle.itemId}`);
-        await itemEffectRegistry.activateItem(battleId, 'left', leftCastle);
-        console.log(`✅ [PreGameItemSelector] Activated castle on LEFT side`);
-      }
-      if (rightCastle) {
-        console.log(`🏰 [PreGameItemSelector] Activating RIGHT castle: ${rightCastle.itemId}`);
-        await itemEffectRegistry.activateItem(battleId, 'right', rightCastle);
-        console.log(`✅ [PreGameItemSelector] Activated castle on RIGHT side`);
-      }
+      // NOTE: Castle activation DISABLED for debugging
+      // Castle HP is already set by handleRollCastle/equipCastle
+      // Knight spawning is disabled to debug GSAP issue
+      console.log(`🏰 [PreGameItemSelector] Castle activation SKIPPED (debugging GSAP issue)`);
+      console.log(`🏰 [PreGameItemSelector] leftCastle=${!!leftCastle}, rightCastle=${!!rightCastle}`);
 
       console.log('✅✅✅ [PreGameItemSelector] ALL ITEM EFFECTS ACTIVATED!');
     } catch (error) {
