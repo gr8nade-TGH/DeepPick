@@ -366,7 +366,8 @@ export function distributeDotsAcrossStats(totalDots: number): number[] {
  * Get capper's unit record for a specific team
  */
 export function getCapperUnitsForTeam(capper: Capper, teamId: string): number {
-  const record = capper.teamRecords.find(r => r.teamId === teamId);
+  const records = capper?.teamRecords || [];
+  const record = records.find(r => r.teamId === teamId);
   return record?.units ?? 0;
 }
 

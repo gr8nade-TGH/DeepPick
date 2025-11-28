@@ -58,9 +58,11 @@ export const GameInfoBar: React.FC<GameInfoBarProps> = ({
     quarterEndTime = q4EndTime;
   }
 
-  // Get team unit records with W-L-P
-  const leftRecord = game.leftCapper.teamRecords.find(r => r.teamId === game.leftTeam.id);
-  const rightRecord = game.rightCapper.teamRecords.find(r => r.teamId === game.rightTeam.id);
+  // Get team unit records with W-L-P (with null safety)
+  const leftRecords = game.leftCapper?.teamRecords || [];
+  const rightRecords = game.rightCapper?.teamRecords || [];
+  const leftRecord = leftRecords.find(r => r.teamId === game.leftTeam?.id);
+  const rightRecord = rightRecords.find(r => r.teamId === game.rightTeam?.id);
 
   // Get units
   const leftUnits = getCapperUnitsForTeam(game.leftCapper, game.leftTeam.id);
