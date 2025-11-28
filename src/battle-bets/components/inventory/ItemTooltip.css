@@ -1,8 +1,9 @@
 /**
  * ItemTooltip.css - Diablo 4 inspired ornate tooltip styling
+ * Using .d4-tooltip prefix to avoid conflicts with debug/ItemTooltip.css
  */
 
-.item-tooltip {
+.d4-item-tooltip {
   position: absolute;
   z-index: 10000;
   pointer-events: none;
@@ -10,7 +11,7 @@
 }
 
 /* Main frame with ornate border */
-.tooltip-frame {
+.d4-tooltip-frame {
   position: relative;
   background: linear-gradient(180deg, #1a1a24 0%, #0d0d14 100%);
   border: 2px solid;
@@ -21,7 +22,7 @@
 }
 
 /* Corner ornaments */
-.corner-ornament {
+.d4-corner-ornament {
   position: absolute;
   width: 12px;
   height: 12px;
@@ -30,7 +31,7 @@
   z-index: 1;
 }
 
-.corner-ornament.top-left {
+.d4-corner-ornament.top-left {
   top: -2px;
   left: -2px;
   border-right: none;
@@ -38,7 +39,7 @@
   border-top-left-radius: 4px;
 }
 
-.corner-ornament.top-right {
+.d4-corner-ornament.top-right {
   top: -2px;
   right: -2px;
   border-left: none;
@@ -46,7 +47,7 @@
   border-top-right-radius: 4px;
 }
 
-.corner-ornament.bottom-left {
+.d4-corner-ornament.bottom-left {
   bottom: -2px;
   left: -2px;
   border-right: none;
@@ -54,7 +55,7 @@
   border-bottom-left-radius: 4px;
 }
 
-.corner-ornament.bottom-right {
+.d4-corner-ornament.bottom-right {
   bottom: -2px;
   right: -2px;
   border-left: none;
@@ -63,19 +64,19 @@
 }
 
 /* Header section */
-.tooltip-header {
+.d4-tooltip-header {
   padding: 12px 14px 10px;
   text-align: center;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.item-icon-large {
+.d4-item-icon-large {
   font-size: 32px;
   margin-bottom: 6px;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
 }
 
-.item-title {
+.d4-item-title {
   font-size: 15px;
   font-weight: bold;
   text-transform: uppercase;
@@ -84,14 +85,14 @@
   margin-bottom: 4px;
 }
 
-.item-type {
+.d4-item-type {
   font-size: 11px;
   color: #8b8b8b;
   font-style: italic;
 }
 
 /* Item Power / Quality Score */
-.item-power {
+.d4-item-power {
   display: flex;
   align-items: baseline;
   justify-content: center;
@@ -100,13 +101,13 @@
   background: rgba(0, 0, 0, 0.3);
 }
 
-.power-value {
+.d4-power-value {
   font-size: 20px;
   font-weight: bold;
   text-shadow: 0 0 8px currentColor;
 }
 
-.power-label {
+.d4-power-label {
   font-size: 11px;
   color: #6b7280;
   text-transform: uppercase;
@@ -114,27 +115,27 @@
 }
 
 /* Dividers */
-.tooltip-divider {
+.d4-tooltip-divider {
   height: 2px;
   margin: 0 10px;
   opacity: 0.6;
 }
 
-.tooltip-divider.thin {
+.d4-tooltip-divider.thin {
   height: 1px;
   opacity: 0.3;
 }
 
 /* Stats sections */
-.stats-section {
+.d4-stats-section {
   padding: 10px 14px;
 }
 
-.stats-section.secondary {
+.d4-stats-section.secondary {
   padding: 8px 14px;
 }
 
-.stat-row {
+.d4-stat-row {
   display: flex;
   align-items: flex-start;
   gap: 8px;
@@ -143,16 +144,16 @@
   color: #d4d4d4;
 }
 
-.stat-row:last-child {
+.d4-stat-row:last-child {
   margin-bottom: 0;
 }
 
-.stat-row.primary {
+.d4-stat-row.primary {
   font-size: 14px;
   color: #ffffff;
 }
 
-.stat-icon {
+.d4-stat-icon {
   color: #f59e0b;
   font-size: 12px;
   min-width: 14px;
@@ -160,23 +161,23 @@
   margin-top: 1px;
 }
 
-.stat-icon.diamond {
+.d4-stat-icon.diamond {
   color: #a855f7;
   font-size: 10px;
 }
 
-.stat-value {
+.d4-stat-value {
   color: #22c55e;
   font-weight: bold;
 }
 
-.stat-text {
+.d4-stat-text {
   flex: 1;
   line-height: 1.3;
 }
 
 /* Special effect */
-.special-effect {
+.d4-special-effect {
   display: flex;
   align-items: flex-start;
   gap: 8px;
@@ -186,25 +187,25 @@
   font-style: italic;
 }
 
-.star-icon {
+.d4-star-icon {
   color: #f59e0b;
   font-size: 14px;
   text-shadow: 0 0 6px #f59e0b;
 }
 
-.effect-text {
+.d4-effect-text {
   flex: 1;
   line-height: 1.4;
 }
 
 /* Footer */
-.tooltip-footer {
+.d4-tooltip-footer {
   padding: 10px 14px;
   background: rgba(0, 0, 0, 0.4);
   border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.footer-row {
+.d4-footer-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -212,23 +213,23 @@
   margin-bottom: 4px;
 }
 
-.footer-row:last-child {
+.d4-footer-row:last-child {
   margin-bottom: 0;
 }
 
-.footer-label {
+.d4-footer-label {
   color: #6b7280;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.footer-value {
+.d4-footer-value {
   color: #9ca3af;
   text-transform: capitalize;
 }
 
 /* Animation for tooltip appear */
-@keyframes tooltipFadeIn {
+@keyframes d4TooltipFadeIn {
   from {
     opacity: 0;
     transform: translateY(4px);
@@ -240,6 +241,6 @@
   }
 }
 
-.item-tooltip {
-  animation: tooltipFadeIn 0.15s ease-out;
+.d4-item-tooltip {
+  animation: d4TooltipFadeIn 0.15s ease-out;
 }
