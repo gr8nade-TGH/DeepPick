@@ -90,20 +90,22 @@ const BattleControl: React.FC<BattleControlProps> = ({ battleId, battleIndex }) 
       const rightCastle = getEquippedCastle(battleId, 'right');
 
       if (leftCastle) {
-        console.log(`🐴 [BottomBar] Spawning LEFT knight (static, NO shields)`);
+        console.log(`🐴 [BottomBar] Spawning LEFT knight with patrol`);
         const knight = getOrSpawnKnight(battleId, 'left');
         if (knight) {
-          // NOTE: NOT calling setShieldCharges or startPatrol - totally static knight
-          console.log(`🐴 [BottomBar] Left knight spawned (STATIC, no shields)`);
+          // Try patrol movement (no idle animation, no shield orbs)
+          knight.startPatrol();
+          console.log(`🐴 [BottomBar] Left knight spawned and patrolling`);
         }
       }
 
       if (rightCastle) {
-        console.log(`🐴 [BottomBar] Spawning RIGHT knight (static, NO shields)`);
+        console.log(`🐴 [BottomBar] Spawning RIGHT knight with patrol`);
         const knight = getOrSpawnKnight(battleId, 'right');
         if (knight) {
-          // NOTE: NOT calling setShieldCharges or startPatrol - totally static knight
-          console.log(`🐴 [BottomBar] Right knight spawned (STATIC, no shields)`);
+          // Try patrol movement (no idle animation, no shield orbs)
+          knight.startPatrol();
+          console.log(`🐴 [BottomBar] Right knight spawned and patrolling`);
         }
       }
 

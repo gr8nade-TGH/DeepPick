@@ -389,8 +389,8 @@ export class KnightDefender {
     console.log(`🐴 [KnightDefender] ${msg}`);
     debugLogger.log('knight', msg, { side: this.side, gameId: this.gameId });
 
-    // Start idle animation now (wasn't started in constructor to avoid GSAP issues during pre-game)
-    this.startIdleAnimation();
+    // NOTE: Idle animation DISABLED for debugging - just test patrol movement
+    // this.startIdleAnimation();
 
     this.isPatrolling = true;
     this.checkDefenderMode(); // Check castle HP on start
@@ -576,22 +576,6 @@ export class KnightDefender {
       logMsg(`smartPatrol() aborted - knight not alive`);
       return;
     }
-
-    // TEST 1: Can we directly modify sprite.y?
-    const testOldY = this.sprite.y;
-    this.sprite.y = 999;
-    const testNewY = this.sprite.y;
-    this.sprite.y = testOldY; // restore
-    logMsg('TEST: Direct y modification', { testOldY, attemptedY: 999, testNewY, yCanChange: testNewY === 999 });
-
-    // TEST 2: Is GSAP ticker running?
-    const gsapTickerTime = gsap.ticker.time;
-    logMsg('TEST: GSAP ticker', { tickerTime: gsapTickerTime, tickerLagSmoothing: gsap.ticker.lagSmoothing });
-
-    // TEST 3: Test gsap.delayedCall
-    gsap.delayedCall(0.5, () => {
-      logMsg('TEST: gsap.delayedCall FIRED after 0.5s');
-    });
 
     // Check if we should enter Defender Mode
     this.checkDefenderMode();
