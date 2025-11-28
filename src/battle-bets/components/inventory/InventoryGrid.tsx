@@ -1,11 +1,13 @@
 /**
  * InventoryGrid - Diablo-style item grid
- * 
+ *
  * Dark themed grid with glowing item cells based on quality tier
+ * Features Diablo 4 inspired tooltips on hover
  */
 
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { type InventoryItemInstance, useInventoryStore } from '../../store/inventoryStore';
+import { ItemTooltip } from './ItemTooltip';
 
 // Quality tier colors (matches Diablo style)
 const QUALITY_COLORS: Record<string, { border: string; glow: string; bg: string }> = {
@@ -82,19 +84,44 @@ const InventorySlot: React.FC<InventorySlotProps> = ({
   onDragStart,
   onDragEnd,
 }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+  const slotRef = useRef<HTMLDivElement>(null);
   const colors = item ? QUALITY_COLORS[item.qualityTier] || QUALITY_COLORS.Balanced : null;
+
+  const handleMouseEnter = (e: React.MouseEvent) => {
+    if (item && !isDragging) {
+      const rect = slotRef.current?.getBoundingClientRect();
+      if (rect) {
+        // Position tooltip to the right of the slot
+        setTooltipPos({
+          x: rect.right + 10,
+          y: rect.top - 20,
+        });
+      }
+      setShowTooltip(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setShowTooltip(false);
+  };
 
   return (
     <div
+      ref={slotRef}
       className={`inventory-slot ${item ? 'has-item' : 'empty'} ${isDragging ? 'dragging' : ''} ${isEquipped ? 'equipped' : ''}`}
       draggable={!!item && !isEquipped}
       onDragStart={(e) => {
         if (item && !isEquipped) {
           e.dataTransfer.effectAllowed = 'move';
+          setShowTooltip(false);
           onDragStart();
         }
       }}
       onDragEnd={onDragEnd}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       style={{
         width: '52px',
         height: '52px',
@@ -110,7 +137,6 @@ const InventorySlot: React.FC<InventorySlotProps> = ({
         transition: 'all 0.2s ease',
         position: 'relative',
       }}
-      title={item ? `${item.name} (${item.qualityTier})\n${Object.entries(item.rolledStats).map(([k, v]) => `${k}: ${v}`).join(', ')}` : 'Empty slot'}
     >
       {item && (
         <>
@@ -141,6 +167,17 @@ const InventorySlot: React.FC<InventorySlotProps> = ({
             >
               ✓
             </div>
+          )}
+          {/* Diablo-style Tooltip */}
+          {showTooltip && (
+            <ItemTooltip
+              item={item}
+              style={{
+                position: 'fixed',
+                left: `${tooltipPos.x}px`,
+                top: `${tooltipPos.y}px`,
+              }}
+            />
           )}
         </>
       )}

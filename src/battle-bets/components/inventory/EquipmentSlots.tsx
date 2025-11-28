@@ -1,11 +1,13 @@
 /**
- * EquipmentSlots - Team equipment display with castle and 3 item slots
- * 
+ * EquipmentSlots - Team equipment display with castle visual and 3 item slots
+ *
  * Shows equipped items for a team with drop zones for equipping
+ * Features castle SVG visualization and Diablo-style tooltips
  */
 
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { type TeamEquipment, type InventoryItemInstance } from '../../store/inventoryStore';
+import { ItemTooltip } from './ItemTooltip';
 
 // Quality tier colors
 const QUALITY_COLORS: Record<string, { border: string; glow: string }> = {
@@ -13,6 +15,57 @@ const QUALITY_COLORS: Record<string, { border: string; glow: string }> = {
   Balanced: { border: '#3b82f6', glow: 'rgba(59, 130, 246, 0.5)' },
   Honed: { border: '#a855f7', glow: 'rgba(168, 85, 247, 0.6)' },
   Masterwork: { border: '#f59e0b', glow: 'rgba(245, 158, 11, 0.7)' },
+};
+
+// Castle SVG component with quality-based styling
+const CastleVisual: React.FC<{ qualityTier?: string; size?: number }> = ({
+  qualityTier = 'Balanced',
+  size = 60
+}) => {
+  const colors = QUALITY_COLORS[qualityTier] || QUALITY_COLORS.Balanced;
+
+  return (
+    <svg width={size} height={size} viewBox="0 0 64 64" fill="none">
+      {/* Glow filter */}
+      <defs>
+        <filter id="castleGlow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+          <feMerge>
+            <feMergeNode in="coloredBlur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      {/* Castle base */}
+      <rect x="8" y="40" width="48" height="20" fill="#374151" stroke={colors.border} strokeWidth="2" />
+
+      {/* Castle main body */}
+      <rect x="12" y="24" width="40" height="20" fill="#1f2937" stroke={colors.border} strokeWidth="1.5" />
+
+      {/* Left tower */}
+      <rect x="4" y="16" width="14" height="28" fill="#1f2937" stroke={colors.border} strokeWidth="1.5" />
+      <rect x="4" y="10" width="4" height="8" fill="#374151" stroke={colors.border} strokeWidth="1" />
+      <rect x="10" y="10" width="4" height="8" fill="#374151" stroke={colors.border} strokeWidth="1" />
+
+      {/* Right tower */}
+      <rect x="46" y="16" width="14" height="28" fill="#1f2937" stroke={colors.border} strokeWidth="1.5" />
+      <rect x="46" y="10" width="4" height="8" fill="#374151" stroke={colors.border} strokeWidth="1" />
+      <rect x="52" y="10" width="4" height="8" fill="#374151" stroke={colors.border} strokeWidth="1" />
+
+      {/* Center tower */}
+      <rect x="24" y="8" width="16" height="20" fill="#1f2937" stroke={colors.border} strokeWidth="1.5" />
+      <polygon points="32,2 40,10 24,10" fill="#374151" stroke={colors.border} strokeWidth="1" />
+
+      {/* Gate */}
+      <rect x="26" y="44" width="12" height="16" rx="6" fill="#0f172a" stroke={colors.border} strokeWidth="1" />
+
+      {/* Windows */}
+      <circle cx="11" cy="28" r="2" fill={colors.glow} filter="url(#castleGlow)" />
+      <circle cx="53" cy="28" r="2" fill={colors.glow} filter="url(#castleGlow)" />
+      <circle cx="32" cy="18" r="2" fill={colors.glow} filter="url(#castleGlow)" />
+    </svg>
+  );
 };
 
 interface EquipmentSlotsProps {
@@ -111,11 +164,32 @@ const EquipSlot: React.FC<EquipSlotProps> = ({
   onUnequip,
   isCastle = false,
 }) => {
-  const [isOver, setIsOver] = React.useState(false);
+  const [isOver, setIsOver] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+  const slotRef = useRef<HTMLDivElement>(null);
   const colors = item ? QUALITY_COLORS[item.qualityTier] || QUALITY_COLORS.Balanced : null;
+
+  const handleMouseEnter = () => {
+    if (item) {
+      const rect = slotRef.current?.getBoundingClientRect();
+      if (rect) {
+        setTooltipPos({
+          x: rect.right + 10,
+          y: rect.top - 20,
+        });
+      }
+      setShowTooltip(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setShowTooltip(false);
+  };
 
   return (
     <div
+      ref={slotRef}
       className={`equip-slot ${isCastle ? 'castle-slot' : 'item-slot'} ${canDrop ? 'can-drop' : ''} ${isOver && canDrop ? 'drag-over' : ''}`}
       onDragOver={(e) => {
         if (canDrop) {
@@ -130,16 +204,18 @@ const EquipSlot: React.FC<EquipSlotProps> = ({
         if (canDrop) onDrop();
       }}
       onClick={() => item && onUnequip()}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       style={{
-        width: isCastle ? '70px' : '48px',
-        height: isCastle ? '70px' : '48px',
-        background: item && colors 
+        width: isCastle ? '90px' : '48px',
+        height: isCastle ? '90px' : '48px',
+        background: item && colors
           ? `linear-gradient(135deg, ${colors.glow} 0%, rgba(0,0,0,0.5) 100%)`
           : 'rgba(30, 41, 59, 0.9)',
-        border: item && colors 
-          ? `2px solid ${colors.border}` 
-          : isOver && canDrop 
-            ? '2px solid #22c55e' 
+        border: item && colors
+          ? `2px solid ${colors.border}`
+          : isOver && canDrop
+            ? '2px solid #22c55e'
             : '2px solid #4b5563',
         borderRadius: isCastle ? '10px' : '6px',
         display: 'flex',
@@ -150,12 +226,33 @@ const EquipSlot: React.FC<EquipSlotProps> = ({
         transition: 'all 0.2s ease',
         position: 'relative',
       }}
-      title={item ? `${item.name} (${item.qualityTier}) - Click to unequip` : `${isCastle ? 'Castle' : 'Item'} Slot ${label}`}
     >
-      {item ? (
-        <span style={{ fontSize: isCastle ? '32px' : '22px' }}>{item.icon}</span>
+      {isCastle ? (
+        // Castle visual
+        item ? (
+          <CastleVisual qualityTier={item.qualityTier} size={70} />
+        ) : (
+          <CastleVisual qualityTier="Warped" size={50} />
+        )
       ) : (
-        <span style={{ fontSize: '12px', color: '#6b7280' }}>{isCastle ? '🏰' : label}</span>
+        // Regular item slot
+        item ? (
+          <span style={{ fontSize: '22px' }}>{item.icon}</span>
+        ) : (
+          <span style={{ fontSize: '12px', color: '#6b7280' }}>{label}</span>
+        )
+      )}
+
+      {/* Tooltip */}
+      {item && showTooltip && (
+        <ItemTooltip
+          item={item}
+          style={{
+            position: 'fixed',
+            left: `${tooltipPos.x}px`,
+            top: `${tooltipPos.y}px`,
+          }}
+        />
       )}
     </div>
   );

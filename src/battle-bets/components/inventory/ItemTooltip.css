@@ -1,0 +1,245 @@
+/**
+ * ItemTooltip.css - Diablo 4 inspired ornate tooltip styling
+ */
+
+.item-tooltip {
+  position: absolute;
+  z-index: 10000;
+  pointer-events: none;
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.8));
+}
+
+/* Main frame with ornate border */
+.tooltip-frame {
+  position: relative;
+  background: linear-gradient(180deg, #1a1a24 0%, #0d0d14 100%);
+  border: 2px solid;
+  border-radius: 4px;
+  min-width: 220px;
+  max-width: 280px;
+  overflow: hidden;
+}
+
+/* Corner ornaments */
+.corner-ornament {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-width: 2px;
+  border-style: solid;
+  z-index: 1;
+}
+
+.corner-ornament.top-left {
+  top: -2px;
+  left: -2px;
+  border-right: none;
+  border-bottom: none;
+  border-top-left-radius: 4px;
+}
+
+.corner-ornament.top-right {
+  top: -2px;
+  right: -2px;
+  border-left: none;
+  border-bottom: none;
+  border-top-right-radius: 4px;
+}
+
+.corner-ornament.bottom-left {
+  bottom: -2px;
+  left: -2px;
+  border-right: none;
+  border-top: none;
+  border-bottom-left-radius: 4px;
+}
+
+.corner-ornament.bottom-right {
+  bottom: -2px;
+  right: -2px;
+  border-left: none;
+  border-top: none;
+  border-bottom-right-radius: 4px;
+}
+
+/* Header section */
+.tooltip-header {
+  padding: 12px 14px 10px;
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.item-icon-large {
+  font-size: 32px;
+  margin-bottom: 6px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+}
+
+.item-title {
+  font-size: 15px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-shadow: 0 0 10px currentColor;
+  margin-bottom: 4px;
+}
+
+.item-type {
+  font-size: 11px;
+  color: #8b8b8b;
+  font-style: italic;
+}
+
+/* Item Power / Quality Score */
+.item-power {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.power-value {
+  font-size: 20px;
+  font-weight: bold;
+  text-shadow: 0 0 8px currentColor;
+}
+
+.power-label {
+  font-size: 11px;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Dividers */
+.tooltip-divider {
+  height: 2px;
+  margin: 0 10px;
+  opacity: 0.6;
+}
+
+.tooltip-divider.thin {
+  height: 1px;
+  opacity: 0.3;
+}
+
+/* Stats sections */
+.stats-section {
+  padding: 10px 14px;
+}
+
+.stats-section.secondary {
+  padding: 8px 14px;
+}
+
+.stat-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: #d4d4d4;
+}
+
+.stat-row:last-child {
+  margin-bottom: 0;
+}
+
+.stat-row.primary {
+  font-size: 14px;
+  color: #ffffff;
+}
+
+.stat-icon {
+  color: #f59e0b;
+  font-size: 12px;
+  min-width: 14px;
+  text-align: center;
+  margin-top: 1px;
+}
+
+.stat-icon.diamond {
+  color: #a855f7;
+  font-size: 10px;
+}
+
+.stat-value {
+  color: #22c55e;
+  font-weight: bold;
+}
+
+.stat-text {
+  flex: 1;
+  line-height: 1.3;
+}
+
+/* Special effect */
+.special-effect {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 14px;
+  color: #f59e0b;
+  font-size: 12px;
+  font-style: italic;
+}
+
+.star-icon {
+  color: #f59e0b;
+  font-size: 14px;
+  text-shadow: 0 0 6px #f59e0b;
+}
+
+.effect-text {
+  flex: 1;
+  line-height: 1.4;
+}
+
+/* Footer */
+.tooltip-footer {
+  padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.4);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.footer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  margin-bottom: 4px;
+}
+
+.footer-row:last-child {
+  margin-bottom: 0;
+}
+
+.footer-label {
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.footer-value {
+  color: #9ca3af;
+  text-transform: capitalize;
+}
+
+/* Animation for tooltip appear */
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.item-tooltip {
+  animation: tooltipFadeIn 0.15s ease-out;
+}
