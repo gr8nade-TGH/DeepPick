@@ -100,19 +100,19 @@ function transformApiPick(apiPick: ApiPick, unitRecord: TeamUnitRecord): UserPic
   return {
     id: apiPick.id,
     oddsId: apiPick.id,
-    gameId: apiPick.game_id,
+    gameId: apiPick.game_id || '', // Null safety - API might return null
     capperId: apiPick.capper,
     capperName: apiPick.capper.toUpperCase(),
     betType: apiPick.pick_type as any,
     pickedTeam: {
       id: pickedTeamAbbr,
-      name: isHomePicked ? snapshot.home_team?.name : snapshot.away_team?.name,
+      name: (isHomePicked ? snapshot.home_team?.name : snapshot.away_team?.name) || pickedTeamAbbr,
       abbreviation: pickedTeamAbbr,
       color: TEAM_COLORS[pickedTeamAbbr] || '#6366f1',
     },
     opposingTeam: {
       id: isHomePicked ? awayAbbr : homeAbbr,
-      name: isHomePicked ? snapshot.away_team?.name : snapshot.home_team?.name,
+      name: (isHomePicked ? snapshot.away_team?.name : snapshot.home_team?.name) || (isHomePicked ? awayAbbr : homeAbbr),
       abbreviation: isHomePicked ? awayAbbr : homeAbbr,
       color: TEAM_COLORS[isHomePicked ? awayAbbr : homeAbbr] || '#6366f1',
     },

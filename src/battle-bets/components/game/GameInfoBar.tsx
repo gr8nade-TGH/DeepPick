@@ -136,7 +136,8 @@ export const GameInfoBar: React.FC<GameInfoBarProps> = ({
   };
 
   // Get team name (extract just the team name, not city)
-  const getTeamName = (fullName: string) => {
+  const getTeamName = (fullName: string | null | undefined) => {
+    if (!fullName) return 'TEAM';
     // Extract last word(s) after city name
     // "Los Angeles Lakers" -> "LAKERS"
     // "Memphis Grizzlies" -> "GRIZZLIES"

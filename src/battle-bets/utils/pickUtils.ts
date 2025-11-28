@@ -174,7 +174,8 @@ export function pickToChipData(
       pick.id === selectedBattle2Id ? 2 : null;
 
   // Determine if picked team is home team (for score display order)
-  const isHomeTeamPicked = pick.pickedTeam.id === pick.gameId.split('-')[0]; // Simplified check
+  // Null safety: gameId might be null/undefined for some picks
+  const isHomeTeamPicked = pick.gameId ? pick.pickedTeam.id === pick.gameId.split('-')[0] : false;
 
   // Build status display string based on pick status
   let statusDisplay: string;
