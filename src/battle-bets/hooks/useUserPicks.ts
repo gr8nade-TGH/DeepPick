@@ -124,17 +124,21 @@ export function useUserPicks(options: UseUserPicksOptions = {}) {
     try {
       const params = new URLSearchParams({ limit: '50' });
       if (capperId) params.set('capper', capperId);
-      
+
       const [picksRes, perfRes] = await Promise.all([
         fetch('/api/picks?' + params),
         fetch('/api/cappers/team-dominance'),
       ]);
-      
+
       const picksData = await picksRes.json();
       const perfData = perfRes.ok ? await perfRes.json() : null;
-      
-      if (!picksData.success) return;
-      
+
+      if (!picksData.success || !Array.isArray(picksData.data)) {
+        console.log('[useUserPicks] No picks data, setting empty array');
+        setPicks([]);
+        return;
+      }
+
       const picks = picksData.data.map((p: ApiPick) => {
         const teamAbbr = p.game_snapshot?.home_team?.abbreviation || '';
         const capperPerf = perfData?.data?.[teamAbbr]?.cappers?.find(
@@ -149,7 +153,7 @@ export function useUserPicks(options: UseUserPicksOptions = {}) {
         };
         return transformApiPick(p, unitRecord);
       });
-      
+
       setPicks(picks);
     } catch (err) {
       console.error('[useUserPicks] Error:', err);
@@ -157,7 +161,7 @@ export function useUserPicks(options: UseUserPicksOptions = {}) {
   }, [capperId, setPicks]);
 
   useEffect(() => { fetchPicks(); }, [fetchPicks]);
-  
+
   useEffect(() => {
     if (!autoRefresh) return;
     const id = setInterval(fetchPicks, refreshInterval);

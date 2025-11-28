@@ -32,7 +32,7 @@ interface PickSelectorBarProps {
 
 export const PickSelectorBar: React.FC<PickSelectorBarProps> = ({ className }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  
+
   // Get state from store
   const {
     filteredPicks,
@@ -41,9 +41,10 @@ export const PickSelectorBar: React.FC<PickSelectorBarProps> = ({ className }) =
     selectPick,
   } = usePickBattleStore();
 
-  // Transform picks to chip data
+  // Transform picks to chip data (with null safety)
   const chipData: PickChipData[] = useMemo(() => {
-    return filteredPicks.map((pick) =>
+    const picks = filteredPicks || [];
+    return picks.map((pick) =>
       pickToChipData(pick, battle1PickId, battle2PickId)
     );
   }, [filteredPicks, battle1PickId, battle2PickId]);
@@ -80,17 +81,17 @@ export const PickSelectorBar: React.FC<PickSelectorBarProps> = ({ className }) =
   return (
     <div className={`pick-selector-bar ${className || ''}`}>
       {/* Left scroll arrow */}
-      <button 
+      <button
         className="pick-selector-arrow"
         onClick={scrollLeft}
         aria-label="Scroll left"
       >
         <ChevronLeft />
       </button>
-      
+
       {/* Scrollable chips container */}
       <div className="pick-selector-scroll-container">
-        <div 
+        <div
           className="pick-selector-chips"
           ref={scrollContainerRef}
         >
@@ -103,9 +104,9 @@ export const PickSelectorBar: React.FC<PickSelectorBarProps> = ({ className }) =
           ))}
         </div>
       </div>
-      
+
       {/* Right scroll arrow */}
-      <button 
+      <button
         className="pick-selector-arrow"
         onClick={scrollRight}
         aria-label="Scroll right"
