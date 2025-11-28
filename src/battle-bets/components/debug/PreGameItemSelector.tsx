@@ -406,6 +406,19 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
         console.log(`✅ [PreGameItemSelector] Activated ${rightSlot3.itemId} on RIGHT side`);
       }
 
+      // Activate castle items (these deploy knights!)
+      // Castle items are separate from the 3 slot items
+      if (leftCastle) {
+        console.log(`🏰 [PreGameItemSelector] Activating LEFT castle: ${leftCastle.itemId}`);
+        await itemEffectRegistry.activateItem(battleId, 'left', leftCastle);
+        console.log(`✅ [PreGameItemSelector] Activated castle on LEFT side`);
+      }
+      if (rightCastle) {
+        console.log(`🏰 [PreGameItemSelector] Activating RIGHT castle: ${rightCastle.itemId}`);
+        await itemEffectRegistry.activateItem(battleId, 'right', rightCastle);
+        console.log(`✅ [PreGameItemSelector] Activated castle on RIGHT side`);
+      }
+
       console.log('✅✅✅ [PreGameItemSelector] ALL ITEM EFFECTS ACTIVATED!');
     } catch (error) {
       console.error('❌ [PreGameItemSelector] Error activating item effects:', error);
@@ -497,7 +510,9 @@ export const PreGameItemSelector: React.FC<PreGameItemSelectorProps> = ({
     const knight = getOrSpawnKnight(battleId, side);
     if (knight) {
       knight.setShieldCharges(shieldCharges);
-      console.log(`🏰 [PreGameItemSelector] Knight deployed for battleId="${battleId}", side="${side}" with ${shieldCharges} shield charges`);
+      // Start patrolling immediately like the original slot 2 item did!
+      knight.startPatrol();
+      console.log(`🏰 [PreGameItemSelector] Knight deployed and patrolling for battleId="${battleId}", side="${side}" with ${shieldCharges} shield charges`);
     } else {
       console.error(`🏰 [PreGameItemSelector] FAILED to spawn knight for battleId="${battleId}", side="${side}"`);
     }

@@ -186,27 +186,20 @@ export function removeKnight(gameId: string, side: 'left' | 'right'): void {
 
 /**
  * Register Knight Defender effect
- * Note: This is called when activateItemEffects is triggered.
- * The visual spawn happens in PreGameItemSelector via getOrSpawnKnight.
+ * Note: When used as a slot 2 item, this spawns and patrols the knight.
+ * When castle is equipped, the knight is spawned in PreGameItemSelector.handleRollCastle instead.
  */
 export function registerKnightDefenderEffect(context: ItemRuntimeContext): void {
   const { itemInstanceId, gameId, side } = context;
 
   console.log(`🐴 [KnightDefender] REGISTERING EFFECT for ${side} side in game ${gameId}`);
 
-  // Use centralized spawn function - won't duplicate if already exists
-  getOrSpawnKnight(gameId, side);
-
-  // Listen to BATTLE_START for late spawns (in case effect registered before container ready)
-  const battleStartHandler = (payload: { gameId: string; side: 'left' | 'right' }) => {
-    if (payload.gameId !== gameId) return;
-    if (payload.side !== side) return;
-
-    // Use centralized spawn - handles deduplication automatically
-    getOrSpawnKnight(gameId, side);
-  };
-
-  battleEventBus.on('BATTLE_START', battleStartHandler);
+  // Spawn knight immediately and start patrol (like original slot 2 item behavior)
+  const knight = getOrSpawnKnight(gameId, side);
+  if (knight) {
+    knight.startPatrol();
+    console.log(`🐴 [KnightDefender] Knight spawned and patrolling for ${side}`);
+  }
 
   console.log(`✅ [KnightDefender] Effect registered for ${side} (${itemInstanceId})`);
 }
