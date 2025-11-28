@@ -141,7 +141,10 @@ export function useUserPicks(options: UseUserPicksOptions = {}) {
         const res = await fetch('/api/auth/session');
         if (res.ok) {
           const data = await res.json();
-          console.log('[useUserPicks] Session data:', data.user?.email, data.profile?.username);
+          // full_name is used as the capper identifier (e.g., "gr8nade")
+          // username column is typically null, so we use full_name
+          const capperName = data.profile?.full_name || data.profile?.username;
+          console.log('[useUserPicks] Session data:', data.user?.email, 'capper:', capperName);
           setCurrentUser(data);
         } else {
           console.log('[useUserPicks] No session found');
@@ -169,9 +172,12 @@ export function useUserPicks(options: UseUserPicksOptions = {}) {
 
       // Determine which capper to filter by:
       // 1. Explicit capperId from options
-      // 2. Current user's username (lowercase)
+      // 2. Current user's full_name (used as capper identifier, e.g., "gr8nade")
       // 3. No filter (should not happen for logged-in users)
-      const capperId = explicitCapperId || currentUser?.profile?.username?.toLowerCase();
+      // Note: In profiles table, full_name stores the capper name, username is typically null
+      const capperId = explicitCapperId ||
+        currentUser?.profile?.full_name?.toLowerCase() ||
+        currentUser?.profile?.username?.toLowerCase();
 
       if (!capperId && !currentUser?.user) {
         console.log('[useUserPicks] No user logged in, showing no picks');
@@ -202,12 +208,14 @@ export function useUserPicks(options: UseUserPicksOptions = {}) {
 
       console.log('[useUserPicks] Found', picksData.data.length, 'picks');
 
-      // Get user display name - prioritize display_name, then username (uppercase first letter)
-      const username = currentUser?.profile?.username || '';
-      const displayName = currentUser?.profile?.display_name ||
-        (username ? username.charAt(0).toUpperCase() + username.slice(1) : 'Unknown');
+      // Get user display name - use full_name as the capper display name
+      // In profiles table: full_name = capper name (e.g., "gr8nade"), username is typically null
+      const capperName = currentUser?.profile?.full_name || currentUser?.profile?.username || '';
+      const displayName = capperName
+        ? capperName.charAt(0).toUpperCase() + capperName.slice(1)
+        : 'Unknown';
 
-      console.log('[useUserPicks] Display name:', displayName, 'from username:', username);
+      console.log('[useUserPicks] Display name:', displayName, 'from capperName:', capperName);
 
       // Fetch capper's per-team SPREAD records
       let teamSpreadRecords: Map<string, { wins: number; losses: number; pushes: number; netUnits: number }> = new Map();
