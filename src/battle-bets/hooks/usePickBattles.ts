@@ -36,7 +36,7 @@ const TEAM_COLORS: Record<string, number> = {
 function pickToGame(pick: UserPick): Game {
   const pickedAbbr = pick.pickedTeam.abbreviation;
   const opposingAbbr = pick.opposingTeam.abbreviation;
-  
+
   // Create team objects
   const leftTeam: Team = {
     id: pickedAbbr.toLowerCase(),
@@ -45,7 +45,7 @@ function pickToGame(pick: UserPick): Game {
     color: TEAM_COLORS[pickedAbbr] || 0x6366f1,
     colorHex: pick.pickedTeam.color || '#6366f1',
   };
-  
+
   const rightTeam: Team = {
     id: opposingAbbr.toLowerCase(),
     name: pick.opposingTeam.name || opposingAbbr,
@@ -53,7 +53,7 @@ function pickToGame(pick: UserPick): Game {
     color: TEAM_COLORS[opposingAbbr] || 0xef4444,
     colorHex: pick.opposingTeam.color || '#ef4444',
   };
-  
+
   // Create capper objects
   const leftCapper: Capper = {
     id: pick.capperId,
@@ -61,26 +61,26 @@ function pickToGame(pick: UserPick): Game {
     units: pick.unitRecord.units,
     colorTheme: pick.pickedTeam.color || '#6366f1',
   };
-  
+
   const rightCapper: Capper = {
     ...DEFAULT_CAPPER,
     colorTheme: pick.opposingTeam.color || '#ef4444',
   };
-  
+
   // Format game date/time
   const gameDate = pick.gameStartTime.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
   });
-  
+
   const gameTime = pick.gameStartTime.toLocaleTimeString('en-US', {
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,
     timeZoneName: 'short',
   });
-  
+
   // Map pick status to game status
   let status: Game['status'] = 'SCHEDULED';
   if (pick.status === 'live') {
@@ -88,7 +88,7 @@ function pickToGame(pick: UserPick): Game {
   } else if (pick.status === 'final') {
     status = 'FINAL';
   }
-  
+
   return {
     id: pick.gameId,
     leftTeam,
@@ -99,6 +99,7 @@ function pickToGame(pick: UserPick): Game {
     spread: pick.spread,
     gameDate,
     gameTime,
+    gameStartTimestamp: pick.gameStartTime.toISOString(),
     leftScore: pick.score?.away || pick.finalScore?.away || 0,
     rightScore: pick.score?.home || pick.finalScore?.home || 0,
     status,
@@ -123,11 +124,11 @@ export interface PickBattlesResult {
  */
 export function usePickBattles(): PickBattlesResult {
   const { battle1Pick, battle2Pick } = useSelectedPicks();
-  
+
   return useMemo(() => {
     const battle1Game = battle1Pick ? pickToGame(battle1Pick) : null;
     const battle2Game = battle2Pick ? pickToGame(battle2Pick) : null;
-    
+
     return {
       battle1Game,
       battle2Game,

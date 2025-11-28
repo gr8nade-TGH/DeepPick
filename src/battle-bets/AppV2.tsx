@@ -490,38 +490,7 @@ function AppV2() {
   return (
     <div className="app" style={{ background: '#0a0e1a', minHeight: '100vh', padding: '20px' }}>
       <main style={{ maxWidth: '1400px', margin: '0 auto' }}>
-        {/* Home Button */}
-        <div style={{ marginBottom: '20px' }}>
-          <a
-            href="/"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '10px 20px',
-              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-              color: 'white',
-              textDecoration: 'none',
-              borderRadius: '8px',
-              fontSize: '14px',
-              fontWeight: '600',
-              boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
-              transition: 'all 0.2s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'scale(1.02)';
-              e.currentTarget.style.boxShadow = '0 6px 16px rgba(99, 102, 241, 0.4)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'scale(1)';
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.3)';
-            }}
-          >
-            ← Back to Sharp Siege
-          </a>
-        </div>
-
-        {/* Tab Navigation with Inventory Button */}
+        {/* Tab Navigation with Home Button and Inventory Button */}
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -530,8 +499,29 @@ function AppV2() {
           borderBottom: '2px solid rgba(139, 92, 246, 0.2)',
           paddingBottom: '10px'
         }}>
-          {/* Tabs */}
-          <div style={{ display: 'flex', gap: '10px' }}>
+          {/* Home Button + Tabs */}
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            {/* Small Home Button */}
+            <a
+              href="/"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '36px',
+                height: '36px',
+                background: 'rgba(139, 92, 246, 0.3)',
+                border: '2px solid rgba(139, 92, 246, 0.5)',
+                color: 'white',
+                textDecoration: 'none',
+                borderRadius: '8px',
+                fontSize: '16px',
+                transition: 'all 0.2s ease',
+              }}
+              title="Back to Sharp Siege"
+            >
+              ←
+            </a>
             {(['ALL', 'LIVE', 'UPCOMING', 'FINAL'] as TabType[]).map(tab => {
               const isActive = activeTab === tab;
               // Use pick counts for tabs
@@ -704,8 +694,8 @@ function AppV2() {
               <div style={{ display: 'flex', justifyContent: 'center', background: '#020617' }}>
                 <GameInfoBar
                   game={game}
-                  battleStatus={(game as any)._battleData?.status || 'SCHEDULED'}
-                  gameStartTime={(game as any)._battleData?.gameStartTime}
+                  battleStatus={(game as any)._battleData?.status || game.status || 'SCHEDULED'}
+                  gameStartTime={(game as any)._battleData?.gameStartTime || game.gameStartTimestamp}
                   q1EndTime={(game as any)._battleData?.q1EndTime}
                   q2EndTime={(game as any)._battleData?.q2EndTime}
                   q3EndTime={(game as any)._battleData?.q3EndTime}

@@ -87,6 +87,7 @@ export interface Game {
   spread?: number; // e.g., -4.5 (negative means left team is favored)
   gameDate?: string; // e.g., "Jan 15, 2024"
   gameTime?: string; // e.g., "7:30 PM ET"
+  gameStartTimestamp?: string; // ISO timestamp for countdown (e.g., "2024-01-15T19:30:00Z")
   leftScore?: number; // Live score for left team (updated per quarter)
   rightScore?: number; // Live score for right team (updated per quarter)
   status?: GameStatus; // Current game status
