@@ -9,6 +9,7 @@
 
 import * as PIXI from 'pixi.js';
 import { castleHealthSystem } from '../systems/CastleHealthSystem';
+import { useMultiGameStore } from '../../store/multiGameStore';
 
 // Simplified inventory types (inline to avoid import issues)
 interface InventoryItem {
@@ -1158,6 +1159,12 @@ export class Castle {
     // Get the parent container (battlefieldContainer) to show winner in center
     const battlefieldContainer = this.container.parent;
 
+    // FIRST: Clear ALL projectiles so they don't fly over the popup
+    // Extract battleId from castle id (format: "battleId-left" or "battleId-right")
+    const battleId = this.id.replace(/-left$/, '').replace(/-right$/, '');
+    console.log(`🧹 [Castle] Clearing projectiles for battle ${battleId} before winner popup`);
+    useMultiGameStore.getState().clearAllProjectiles(battleId);
+
     // Determine winner - it's the OPPOSITE side
     const winnerSide = this.side === 'left' ? 'right' : 'left';
     const winnerColor = winnerSide === 'left' ? 0x00FFFF : 0xFF6666;
@@ -1166,11 +1173,9 @@ export class Castle {
     const winnerContainer = new PIXI.Container();
     winnerContainer.label = 'winner-announcement';
 
-    // Position CENTERED directly under the "Q2 BATTLE" box at top
-    // Canvas width is 1024, but grid area is roughly x=180 to x=880
-    // Visual center of the grid = (180 + 880) / 2 = 530
-    // Move up (y=110) to be more centered/visible
-    winnerContainer.x = 530;
+    // Position CENTERED in the battlefield
+    // Looking at screenshot, need to move slightly right (x=560) for better centering
+    winnerContainer.x = 560;
     winnerContainer.y = 110;
 
     // Ensure popup is rendered on TOP of everything (including projectiles)

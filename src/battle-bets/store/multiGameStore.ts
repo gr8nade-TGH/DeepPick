@@ -53,6 +53,7 @@ interface MultiGameState {
   initializeDefenseDots: (battleId: string) => void;
   addProjectile: (battleId: string, projectile: BaseProjectile) => void;
   removeProjectile: (battleId: string, id: string) => void;
+  clearAllProjectiles: (battleId: string) => void;
   applyDamageToCapperHP: (battleId: string, side: 'left' | 'right', damage: number) => void;
   setCastleHP: (battleId: string, side: 'left' | 'right', hp: number) => void;
   applyDamage: (battleId: string, dotId: string, damage: number) => void;
@@ -247,6 +248,33 @@ export const useMultiGameStore = create<MultiGameState>()(
           const battle = newBattles.get(battleId);
           if (battle) {
             battle.projectiles = battle.projectiles.filter(p => p.id !== id);
+          }
+          return { battles: newBattles };
+        });
+      },
+
+      // Clear ALL projectiles from a battle (used when winner is declared)
+      clearAllProjectiles: (battleId: string) => {
+        const battle = get().battles.get(battleId);
+        if (!battle) return;
+
+        console.log(`🧹 [clearAllProjectiles] Clearing ${battle.projectiles.length} projectiles for ${battleId}`);
+
+        // Dispose each projectile (removes sprite from container)
+        battle.projectiles.forEach(p => {
+          try {
+            p.dispose();
+          } catch (e) {
+            console.warn(`Failed to dispose projectile ${p.id}:`, e);
+          }
+        });
+
+        // Clear the array
+        set(state => {
+          const newBattles = new Map(state.battles);
+          const updatedBattle = newBattles.get(battleId);
+          if (updatedBattle) {
+            updatedBattle.projectiles = [];
           }
           return { battles: newBattles };
         });
