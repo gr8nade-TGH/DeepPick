@@ -263,15 +263,20 @@ function AppV2() {
   const inventoryItems = useInventoryStore((state) => state.items);
 
   // Pick-based battle selection
-  const { setActiveFilter, filteredPicks } = usePickBattleStore();
+  const { setActiveFilter, filteredPicks, isLoading: picksLoading } = usePickBattleStore();
   const pickTabCounts = usePickTabCounts();
   const { battle1Game, battle2Game, hasBattles } = usePickBattles();
 
-  // Initialize user picks fetching (fetches from /api/picks)
-  useUserPicks({ autoRefresh: true, refreshInterval: 30000 });
+  // Initialize user picks fetching (fetches from /api/picks for current user)
+  const { currentUser, isLoggedIn } = useUserPicks({ autoRefresh: true, refreshInterval: 30000 });
 
   // Check if we have picks to show
   const hasPickChips = (filteredPicks?.length ?? 0) > 0;
+
+  // Get user display name for UI
+  const userDisplayName = currentUser?.profile?.display_name ||
+    currentUser?.profile?.username?.toUpperCase() ||
+    'Guest';
 
   // Sync tab changes with pick store
   const handleTabChange = (tab: TabType) => {
@@ -640,12 +645,44 @@ function AppV2() {
         </div>
 
         {/* Pick Selector Bar - Always show chips (except Training Grounds) */}
-        {activeTab !== 'TRAINING_GROUNDS' && (
+        {activeTab !== 'TRAINING_GROUNDS' && isLoggedIn && (
           <PickSelectorBar />
         )}
 
-        {/* Empty state */}
-        {activeTab !== 'TRAINING_GROUNDS' && !hasBattles && (
+        {/* Not logged in state */}
+        {activeTab !== 'TRAINING_GROUNDS' && !isLoggedIn && !picksLoading && (
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '60px 20px',
+            color: 'rgba(255, 255, 255, 0.8)',
+            fontSize: '18px'
+          }}>
+            <div style={{ fontSize: '48px', marginBottom: '20px' }}>🔐</div>
+            <div style={{ marginBottom: '20px' }}>Sign in to view your battles</div>
+            <a
+              href="/login"
+              style={{
+                padding: '12px 32px',
+                background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)',
+                border: 'none',
+                borderRadius: '8px',
+                color: 'white',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                textDecoration: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              Sign In
+            </a>
+          </div>
+        )}
+
+        {/* Empty state - logged in but no picks */}
+        {activeTab !== 'TRAINING_GROUNDS' && isLoggedIn && !hasBattles && !picksLoading && (
           <div style={{
             display: 'flex',
             flexDirection: 'column',

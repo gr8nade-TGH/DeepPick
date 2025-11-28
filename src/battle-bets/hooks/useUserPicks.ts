@@ -1,15 +1,19 @@
 ﻿/**
  * useUserPicks Hook
  * Fetches user's picks and transforms them for the battle selector.
+ *
+ * This hook fetches the logged-in user's session from /api/auth/session
+ * and then fetches ONLY that user's picks from /api/picks.
  */
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { usePickBattleStore } from '../store/pickBattleStore';
 import type { UserPick, PickStatus, PickResult, TeamUnitRecord } from '../types/picks';
 
 interface ApiPick {
   id: string;
   game_id: string;
+  user_id?: string;
   capper: string;
   pick_type: string;
   selection: string;
@@ -33,6 +37,11 @@ interface ApiPick {
     final_score?: { home: number; away: number };
     game_start_timestamp: string;
   };
+}
+
+interface UserSession {
+  user: { id: string; email: string } | null;
+  profile: { username: string; role: string; display_name?: string } | null;
 }
 
 interface UseUserPicksOptions {
@@ -117,11 +126,62 @@ function transformApiPick(apiPick: ApiPick, unitRecord: TeamUnitRecord): UserPic
 }
 
 export function useUserPicks(options: UseUserPicksOptions = {}) {
-  const { capperId, autoRefresh = true, refreshInterval = 30000 } = options;
-  const { setPicks, updatePick } = usePickBattleStore();
+  const { capperId: explicitCapperId, autoRefresh = true, refreshInterval = 30000 } = options;
+  const { setPicks, updatePick, setIsLoading, setError } = usePickBattleStore();
+
+  // Store the current user's info
+  const [currentUser, setCurrentUser] = useState<UserSession | null>(null);
+  const [userLoaded, setUserLoaded] = useState(false);
+
+  // Fetch current user session on mount
+  useEffect(() => {
+    const fetchSession = async () => {
+      try {
+        console.log('[useUserPicks] Fetching user session...');
+        const res = await fetch('/api/auth/session');
+        if (res.ok) {
+          const data = await res.json();
+          console.log('[useUserPicks] Session data:', data.user?.email, data.profile?.username);
+          setCurrentUser(data);
+        } else {
+          console.log('[useUserPicks] No session found');
+          setCurrentUser(null);
+        }
+      } catch (err) {
+        console.error('[useUserPicks] Error fetching session:', err);
+        setCurrentUser(null);
+      } finally {
+        setUserLoaded(true);
+      }
+    };
+    fetchSession();
+  }, []);
 
   const fetchPicks = useCallback(async () => {
+    // Wait for user to be loaded
+    if (!userLoaded) {
+      console.log('[useUserPicks] Waiting for user session...');
+      return;
+    }
+
     try {
+      setIsLoading?.(true);
+
+      // Determine which capper to filter by:
+      // 1. Explicit capperId from options
+      // 2. Current user's username (lowercase)
+      // 3. No filter (should not happen for logged-in users)
+      const capperId = explicitCapperId || currentUser?.profile?.username?.toLowerCase();
+
+      if (!capperId && !currentUser?.user) {
+        console.log('[useUserPicks] No user logged in, showing no picks');
+        setPicks([]);
+        setIsLoading?.(false);
+        return;
+      }
+
+      console.log('[useUserPicks] Fetching picks for capper:', capperId);
+
       const params = new URLSearchParams({ limit: '50' });
       if (capperId) params.set('capper', capperId);
 
@@ -134,14 +194,21 @@ export function useUserPicks(options: UseUserPicksOptions = {}) {
       const perfData = perfRes.ok ? await perfRes.json() : null;
 
       if (!picksData.success || !Array.isArray(picksData.data)) {
-        console.log('[useUserPicks] No picks data, setting empty array');
+        console.log('[useUserPicks] No picks data for', capperId);
         setPicks([]);
+        setIsLoading?.(false);
         return;
       }
 
+      console.log('[useUserPicks] Found', picksData.data.length, 'picks');
+
+      // Transform picks with the current user's display name
+      const displayName = currentUser?.profile?.display_name ||
+        currentUser?.profile?.username?.toUpperCase() ||
+        'YOU';
+
       const picks = picksData.data.map((p: ApiPick) => {
         const teamAbbr = p.game_snapshot?.home_team?.abbreviation || '';
-        // Safely access cappers array with extra null checks
         const cappers = perfData?.data?.[teamAbbr]?.cappers;
         const capperPerf = Array.isArray(cappers)
           ? cappers.find((c: any) => c.capper === p.capper)
@@ -153,24 +220,41 @@ export function useUserPicks(options: UseUserPicksOptions = {}) {
           losses: capperPerf?.losses || 0,
           pushes: capperPerf?.pushes || 0,
         };
-        return transformApiPick(p, unitRecord);
+        // Transform with user's display name override
+        const pick = transformApiPick(p, unitRecord);
+        pick.capperName = displayName; // Override to show user's name
+        return pick;
       });
 
       setPicks(picks);
+      setIsLoading?.(false);
     } catch (err) {
       console.error('[useUserPicks] Error:', err);
+      setError?.('Failed to fetch picks');
+      setIsLoading?.(false);
     }
-  }, [capperId, setPicks]);
+  }, [explicitCapperId, currentUser, userLoaded, setPicks, setIsLoading, setError]);
 
-  useEffect(() => { fetchPicks(); }, [fetchPicks]);
-
+  // Fetch picks when user is loaded
   useEffect(() => {
-    if (!autoRefresh) return;
+    if (userLoaded) {
+      fetchPicks();
+    }
+  }, [userLoaded, fetchPicks]);
+
+  // Auto-refresh picks
+  useEffect(() => {
+    if (!autoRefresh || !userLoaded) return;
     const id = setInterval(fetchPicks, refreshInterval);
     return () => clearInterval(id);
-  }, [autoRefresh, refreshInterval, fetchPicks]);
+  }, [autoRefresh, refreshInterval, fetchPicks, userLoaded]);
 
-  return { refetch: fetchPicks, updatePick };
+  return {
+    refetch: fetchPicks,
+    updatePick,
+    currentUser,
+    isLoggedIn: !!currentUser?.user,
+  };
 }
 
 export default useUserPicks;

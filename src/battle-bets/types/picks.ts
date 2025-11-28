@@ -207,6 +207,12 @@ export interface PickSelectionActions {
   /** Auto-select top 2 picks by unit record */
   autoSelectTopPicks: () => void;
 
+  /** Set loading state */
+  setIsLoading: (isLoading: boolean) => void;
+
+  /** Set error state */
+  setError: (error: string | null) => void;
+
   /** Reset selection state */
   reset: () => void;
 }

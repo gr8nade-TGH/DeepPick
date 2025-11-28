@@ -148,6 +148,20 @@ export const usePickBattleStore = create<PickBattleStore>()(
       },
 
       /**
+       * Set loading state
+       */
+      setIsLoading: (isLoading: boolean) => {
+        set({ isLoading });
+      },
+
+      /**
+       * Set error state
+       */
+      setError: (error: string | null) => {
+        set({ error });
+      },
+
+      /**
        * Reset to initial state
        */
       reset: () => {
