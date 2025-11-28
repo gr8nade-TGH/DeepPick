@@ -99,9 +99,11 @@ export const ItemTooltip: React.FC<ItemTooltipProps> = ({
   const itemDef = item || lookedUpDefinition;
 
   // Normalize data from either source
-  const name = inventoryItem?.name || itemDef?.name || 'Unknown Item';
-  const icon = inventoryItem?.icon || itemDef?.icon || '❓';
-  const slot = inventoryItem?.slot || itemDef?.slot || 'defense';
+  // IMPORTANT: Always prefer itemDef (canonical definition) for name/icon/slot/description
+  // Only use inventoryItem values as fallback if no definition found
+  const name = itemDef?.name || inventoryItem?.name || 'Unknown Item';
+  const icon = itemDef?.icon || inventoryItem?.icon || '❓';
+  const slot = itemDef?.slot || inventoryItem?.slot || 'defense';
   const tier = inventoryItem?.qualityTier || qualityTier || 'Balanced';
   const score = inventoryItem?.qualityScore ?? qualityScore ?? 50;
   const stats = inventoryItem?.rolledStats || rolls || {};

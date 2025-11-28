@@ -16,8 +16,8 @@
   background: linear-gradient(180deg, #1a1a24 0%, #0d0d14 100%);
   border: 2px solid;
   border-radius: 4px;
-  min-width: 220px;
-  max-width: 280px;
+  min-width: 300px;
+  max-width: 340px;
   overflow: hidden;
 }
 
