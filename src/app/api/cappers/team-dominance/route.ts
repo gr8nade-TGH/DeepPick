@@ -137,20 +137,24 @@ export async function GET(request: NextRequest) {
       })
     })
 
-    // Sort by net units and take top 3
-    const top3Teams = capperTeamData
-      .sort((a, b) => b.netUnits - a.netUnits)
-      .slice(0, 3)
+    // Sort by net units
+    const sortedTeams = capperTeamData.sort((a, b) => b.netUnits - a.netUnits)
+    const top3Teams = sortedTeams.slice(0, 3)
+
+    // Check if caller wants all teams
+    const includeAll = searchParams.get('all') === '1' || searchParams.get('includeAll') === 'true'
 
     console.log('[TeamDominance] Results for', capperId, ':', {
       totalTeams: capperTeamData.length,
-      top3: top3Teams
+      top3: top3Teams,
+      includeAll
     })
 
     return NextResponse.json({
       success: true,
       capperId,
       topTeams: top3Teams,
+      allTeams: includeAll ? sortedTeams : undefined, // Include all teams if requested
       totalTeams: capperTeamData.length
     })
 

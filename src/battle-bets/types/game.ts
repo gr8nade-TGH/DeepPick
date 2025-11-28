@@ -51,17 +51,24 @@ export interface CastleData {
 export interface Capper {
   id: string;
   name: string;
-  favoriteTeam: Team;
-  health: number;
-  maxHealth: number;
-  level: number;
-  experience: number;
-  leaderboardRank: number; // Capper's rank on the global leaderboard (1 = #1, 2 = #2, etc.)
+  favoriteTeam?: Team;
+  health?: number;
+  maxHealth?: number;
+  level?: number;
+  experience?: number;
+  leaderboardRank?: number; // Capper's rank on the global leaderboard (1 = #1, 2 = #2, etc.)
+
+  // Overall record (for display in game info bar)
+  units?: number; // Net units (e.g., +40.5)
+  wins?: number;  // Total wins
+  losses?: number; // Total losses
+  pushes?: number; // Total pushes
+  colorTheme?: string; // Capper's color theme (hex string)
 
   // Unit records per team (determines TOTAL defense dot count across all stats)
   // Example: +40 units = 40 total defense dots distributed across all 5 stat rows
   // Each stat row has max 5 cells, so 40 dots = ~8 dots per stat row
-  teamRecords: TeamUnitRecord[];
+  teamRecords?: TeamUnitRecord[];
 
   // Equipped items (3 item slots)
   // Can store either just item ID (string) or full rolled item data (RolledItemStats)

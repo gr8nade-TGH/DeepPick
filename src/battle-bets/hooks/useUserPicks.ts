@@ -202,24 +202,55 @@ export function useUserPicks(options: UseUserPicksOptions = {}) {
 
       console.log('[useUserPicks] Found', picksData.data.length, 'picks');
 
-      // Transform picks with the current user's display name
+      // Get user display name - prioritize display_name, then username (uppercase first letter)
+      const username = currentUser?.profile?.username || '';
       const displayName = currentUser?.profile?.display_name ||
-        currentUser?.profile?.username?.toUpperCase() ||
-        'YOU';
+        (username ? username.charAt(0).toUpperCase() + username.slice(1) : 'Unknown');
+
+      console.log('[useUserPicks] Display name:', displayName, 'from username:', username);
+
+      // Fetch capper's per-team SPREAD records
+      let teamSpreadRecords: Map<string, { wins: number; losses: number; pushes: number; netUnits: number }> = new Map();
+      try {
+        const spreadRes = await fetch(`/api/cappers/team-dominance?capperId=${capperId}&all=1`);
+        if (spreadRes.ok) {
+          const spreadData = await spreadRes.json();
+          if (spreadData.success && Array.isArray(spreadData.allTeams)) {
+            spreadData.allTeams.forEach((team: any) => {
+              teamSpreadRecords.set(team.team, {
+                wins: team.wins || 0,
+                losses: team.losses || 0,
+                pushes: team.pushes || 0,
+                netUnits: team.netUnits || 0,
+              });
+            });
+            console.log('[useUserPicks] Found SPREAD records for', teamSpreadRecords.size, 'teams');
+          }
+        }
+      } catch (err) {
+        console.warn('[useUserPicks] Could not fetch team SPREAD records:', err);
+      }
 
       const picks = picksData.data.map((p: ApiPick) => {
-        const teamAbbr = p.game_snapshot?.home_team?.abbreviation || '';
-        const cappers = perfData?.data?.[teamAbbr]?.cappers;
-        const capperPerf = Array.isArray(cappers)
-          ? cappers.find((c: any) => c.capper === p.capper)
-          : null;
+        // Get the team that was picked (from selection)
+        const homeAbbr = p.game_snapshot?.home_team?.abbreviation || '';
+        const awayAbbr = p.game_snapshot?.away_team?.abbreviation || '';
+        const selection = p.selection?.toUpperCase() || '';
+
+        // Determine which team was picked
+        const pickedTeamAbbr = selection.includes(homeAbbr) ? homeAbbr :
+          selection.includes(awayAbbr) ? awayAbbr : homeAbbr;
+
+        // Get the SPREAD record for the picked team
+        const teamRecord = teamSpreadRecords.get(pickedTeamAbbr);
         const unitRecord: TeamUnitRecord = {
-          teamId: teamAbbr,
-          units: capperPerf?.netUnits || 0,
-          wins: capperPerf?.wins || 0,
-          losses: capperPerf?.losses || 0,
-          pushes: capperPerf?.pushes || 0,
+          teamId: pickedTeamAbbr,
+          units: teamRecord?.netUnits || 0,
+          wins: teamRecord?.wins || 0,
+          losses: teamRecord?.losses || 0,
+          pushes: teamRecord?.pushes || 0,
         };
+
         // Transform with user's display name override
         const pick = transformApiPick(p, unitRecord);
         pick.capperName = displayName; // Override to show user's name

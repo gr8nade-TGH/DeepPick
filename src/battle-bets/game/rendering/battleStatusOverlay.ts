@@ -55,7 +55,8 @@ export function createBattleStatusOverlay(config: OverlayConfig): PIXI.Container
     q3EndTime,
     q4EndTime,
     canvasWidth,
-    canvasHeight
+    canvasHeight,
+    hasOpponent = true, // Default to true for backward compatibility
   } = config
 
   // Determine what to show based on status
@@ -67,10 +68,21 @@ export function createBattleStatusOverlay(config: OverlayConfig): PIXI.Container
 
   const now = Date.now()
 
+  // Show "Finding Opponent" if we don't have a real opponent yet
+  if (!hasOpponent && status === 'SCHEDULED') {
+    message = 'FINDING OPPONENT...'
+    isFindingOpponent = true
+    showOverlay = true
+    loadingPhase = Math.floor(now / 500) % 4 // Animate dots
+  }
+
   switch (status) {
     case 'SCHEDULED':
-      // Don't show overlay for scheduled games - countdown is shown in top game info bar
-      showOverlay = false
+      // If finding opponent, that takes precedence (handled above)
+      // Otherwise don't show overlay - countdown is shown in top game info bar
+      if (!isFindingOpponent) {
+        showOverlay = false
+      }
       break
 
     // IN_PROGRESS states - show countdown to battle

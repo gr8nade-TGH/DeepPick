@@ -59,14 +59,27 @@ export const GameInfoBar: React.FC<GameInfoBarProps> = ({
   }
 
   // Get team unit records with W-L-P (with null safety)
+  // First try teamRecords (per-team), then fall back to overall capper record
   const leftRecords = game.leftCapper?.teamRecords || [];
   const rightRecords = game.rightCapper?.teamRecords || [];
-  const leftRecord = leftRecords.find(r => r.teamId === game.leftTeam?.id);
-  const rightRecord = rightRecords.find(r => r.teamId === game.rightTeam?.id);
+  const leftTeamRecord = leftRecords.find(r => r.teamId === game.leftTeam?.id);
+  const rightTeamRecord = rightRecords.find(r => r.teamId === game.rightTeam?.id);
 
-  // Get units
-  const leftUnits = getCapperUnitsForTeam(game.leftCapper, game.leftTeam.id);
-  const rightUnits = getCapperUnitsForTeam(game.rightCapper, game.rightTeam.id);
+  // Use per-team record if available, otherwise use overall capper record
+  const leftRecord = leftTeamRecord || {
+    wins: game.leftCapper?.wins || 0,
+    losses: game.leftCapper?.losses || 0,
+    pushes: game.leftCapper?.pushes || 0,
+  };
+  const rightRecord = rightTeamRecord || {
+    wins: game.rightCapper?.wins || 0,
+    losses: game.rightCapper?.losses || 0,
+    pushes: game.rightCapper?.pushes || 0,
+  };
+
+  // Get units - use capper.units if available, otherwise calculate from teamRecords
+  const leftUnits = game.leftCapper?.units ?? getCapperUnitsForTeam(game.leftCapper, game.leftTeam.id);
+  const rightUnits = game.rightCapper?.units ?? getCapperUnitsForTeam(game.rightCapper, game.rightTeam.id);
 
   // Calculate defense orbs
   const leftOrbs = getTotalDefenseDotCount(leftUnits);
@@ -293,7 +306,7 @@ export const GameInfoBar: React.FC<GameInfoBarProps> = ({
               left: `${leftTooltipPos.left}px`
             }}
           >
-            <div><strong>{game.leftCapper.name}'s {game.leftTeam.abbreviation} Spread Record</strong></div>
+            <div><strong>{game.leftCapper.name}'s {game.leftTeam.abbreviation} SPREAD Record</strong></div>
             <div>{leftRecord?.wins || 0}W - {leftRecord?.losses || 0}L - {leftRecord?.pushes || 0}P</div>
             <div>{leftUnits > 0 ? '+' : ''}{leftUnits.toFixed(1)} units ÷ 3 = <strong>{leftOrbs} defense orbs</strong></div>
           </div>,
@@ -365,7 +378,7 @@ export const GameInfoBar: React.FC<GameInfoBarProps> = ({
               left: `${rightTooltipPos.left}px`
             }}
           >
-            <div><strong>{game.rightCapper.name}'s {game.rightTeam.abbreviation} Spread Record</strong></div>
+            <div><strong>{game.rightCapper.name}'s {game.rightTeam.abbreviation} SPREAD Record</strong></div>
             <div>{rightRecord?.wins || 0}W - {rightRecord?.losses || 0}L - {rightRecord?.pushes || 0}P</div>
             <div>{rightUnits > 0 ? '+' : ''}{rightUnits.toFixed(1)} units ÷ 3 = <strong>{rightOrbs} defense orbs</strong></div>
           </div>,

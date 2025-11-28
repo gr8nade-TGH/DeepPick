@@ -54,16 +54,22 @@ function pickToGame(pick: UserPick): Game {
     colorHex: pick.opposingTeam.color || '#ef4444',
   };
 
-  // Create capper objects
+  // Create capper objects with full record
   const leftCapper: Capper = {
     id: pick.capperId,
     name: pick.capperName,
     units: pick.unitRecord.units,
+    wins: pick.unitRecord.wins,
+    losses: pick.unitRecord.losses,
+    pushes: pick.unitRecord.pushes,
     colorTheme: pick.pickedTeam.color || '#6366f1',
   };
 
+  // Right capper is "opponent" - will show "Finding Opponent" overlay
   const rightCapper: Capper = {
     ...DEFAULT_CAPPER,
+    id: '', // Empty ID indicates no opponent
+    name: 'Opponent',
     colorTheme: pick.opposingTeam.color || '#ef4444',
   };
 
