@@ -1166,19 +1166,19 @@ export class Castle {
     winnerContainer.label = 'winner-announcement';
 
     // Position in TRUE center of the battlefield grid (between the two stat columns)
-    // Battlefield is 1100px wide, stat columns are ~150px on each side
-    // Grid area is roughly from x=200 to x=900, so center is around x=550
-    winnerContainer.x = 550;
+    // Looking at actual rendering: total width ~1024px, grid spans from ~180 to ~850
+    // True visual center of the grid area is around x=515
+    winnerContainer.x = 515;
     winnerContainer.y = 140; // Center vertically in the grid area
 
-    // Create solid dark background panel with ornate border
+    // Create FULLY OPAQUE dark background panel with ornate border
     const bgPanel = new PIXI.Graphics();
     // Outer glow
     bgPanel.roundRect(-160, -90, 320, 200, 15);
-    bgPanel.fill({ color: winnerColor, alpha: 0.3 });
-    // Main dark background
+    bgPanel.fill({ color: winnerColor, alpha: 0.4 });
+    // Main dark background - FULLY OPAQUE so projectiles don't show through
     bgPanel.roundRect(-150, -80, 300, 180, 12);
-    bgPanel.fill({ color: 0x1a1a2e, alpha: 0.95 });
+    bgPanel.fill({ color: 0x1a1a2e, alpha: 1.0 });
     // Inner border
     bgPanel.roundRect(-145, -75, 290, 170, 10);
     bgPanel.stroke({ color: winnerColor, width: 2, alpha: 0.8 });
