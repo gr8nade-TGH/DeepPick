@@ -45,6 +45,9 @@ const glowAnimations = new Map<string, gsap.core.Tween>();
 // Track registered handlers to prevent duplicates
 const registeredHandlers = new Set<string>();
 
+// Track which battles have already activated their effects (prevents double activation when BATTLE_START fires each quarter)
+const activatedBattles = new Set<string>();
+
 /**
  * Get unique key for orb glow tracking
  */
@@ -241,7 +244,15 @@ export function registerWizardsWatchtowerEffect(context: ItemRuntimeContext): vo
       return;
     }
 
-    console.log(`🔮 [WizardsWatchtower] PASSED FILTERS! Creating shield and buffing orbs...`);
+    // Check if already activated for this battle session (prevents double activation on subsequent quarters)
+    const activationKey = `${gameId}_${side}`;
+    if (activatedBattles.has(activationKey)) {
+      console.log(`🔮 [WizardsWatchtower] Already activated for ${activationKey}, skipping (Q${payload.quarter})`);
+      return;
+    }
+    activatedBattles.add(activationKey);
+
+    console.log(`🔮 [WizardsWatchtower] PASSED FILTERS! Creating shield and buffing orbs... (Q${payload.quarter})`);
 
     // ===== PART 1: Castle Shield (same as Ironman Armor) =====
     console.log(`🔮 [WizardsWatchtower] Creating shield for ${side} with ${startShieldHp} HP`);
@@ -548,6 +559,16 @@ export function cleanupWizardsWatchtowerForGame(gameId: string): void {
     console.log(`🧹 [WizardsWatchtower] Removed handler key: ${rightKey}`);
   }
 
+  // Clear activated battle flags so effects can re-trigger on battle restart
+  if (activatedBattles.has(leftKey)) {
+    activatedBattles.delete(leftKey);
+    console.log(`🧹 [WizardsWatchtower] Removed activation flag: ${leftKey}`);
+  }
+  if (activatedBattles.has(rightKey)) {
+    activatedBattles.delete(rightKey);
+    console.log(`🧹 [WizardsWatchtower] Removed activation flag: ${rightKey}`);
+  }
+
   // Clean up any glows for this game
   const keysToRemove: string[] = [];
   orbGlowMap.forEach((_, key) => {
@@ -580,6 +601,8 @@ export function getWizardsWatchtowerDebugInfo(gameId?: string): {
   glowAnimationKeys: string[];
   registeredHandlersSize: number;
   registeredHandlerKeys: string[];
+  activatedBattlesSize: number;
+  activatedBattleKeys: string[];
   glowDetails: Array<{
     key: string;
     hasGlow: boolean;
@@ -606,6 +629,11 @@ export function getWizardsWatchtowerDebugInfo(gameId?: string): {
     ? allHandlerKeys.filter(k => k.startsWith(gameId))
     : allHandlerKeys;
 
+  const allActivatedKeys = Array.from(activatedBattles);
+  const filteredActivatedKeys = gameId
+    ? allActivatedKeys.filter(k => k.startsWith(gameId))
+    : allActivatedKeys;
+
   // Get detailed info about each glow
   const glowDetails = filteredGlowKeys.map(key => {
     const glow = orbGlowMap.get(key);
@@ -629,6 +657,8 @@ export function getWizardsWatchtowerDebugInfo(gameId?: string): {
     glowAnimationKeys: filteredAnimKeys,
     registeredHandlersSize: registeredHandlers.size,
     registeredHandlerKeys: filteredHandlerKeys,
+    activatedBattlesSize: activatedBattles.size,
+    activatedBattleKeys: filteredActivatedKeys,
     glowDetails,
   };
 }

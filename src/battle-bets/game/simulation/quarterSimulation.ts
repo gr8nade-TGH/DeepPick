@@ -172,50 +172,52 @@ export async function simulateQuarter(
   // Debug grid positions on first quarter
   if (quarterNumber === 1) {
     debugGridPositions();
+  }
 
-    // Emit BATTLE_START events for both sides (only on Q1)
-    console.log(`🎬 [EventEmitter] Emitting BATTLE_START events for battle ${battleId}`);
+  // Emit BATTLE_START events for both sides (on EVERY quarter start)
+  // This ensures items work when testing/debugging by starting from Q2/Q3/Q4
+  // Each item handler is responsible for ignoring duplicate activations if needed
+  console.log(`🎬 [EventEmitter] Emitting BATTLE_START events for battle ${battleId} (Q${quarterNumber})`);
 
-    // Old event bus (for item system - battleEventBus)
-    battleEventBus.emit('BATTLE_START', {
+  // Old event bus (for item system - battleEventBus)
+  battleEventBus.emit('BATTLE_START', {
+    side: 'left',
+    opponentSide: 'right',
+    quarter: quarterNumber,
+    battleId,
+    gameId: battleId,
+  });
+
+  battleEventBus.emit('BATTLE_START', {
+    side: 'right',
+    opponentSide: 'left',
+    quarter: quarterNumber,
+    battleId,
+    gameId: battleId,
+  });
+
+  // New event emitter (battleEventEmitter)
+  await battleEventEmitter.emit({
+    type: 'BATTLE_START',
+    payload: {
       side: 'left',
       opponentSide: 'right',
-      quarter: 1,
+      quarter: quarterNumber,
       battleId,
       gameId: battleId,
-    });
+    },
+  });
 
-    battleEventBus.emit('BATTLE_START', {
+  await battleEventEmitter.emit({
+    type: 'BATTLE_START',
+    payload: {
       side: 'right',
       opponentSide: 'left',
-      quarter: 1,
+      quarter: quarterNumber,
       battleId,
       gameId: battleId,
-    });
-
-    // New event emitter (battleEventEmitter)
-    await battleEventEmitter.emit({
-      type: 'BATTLE_START',
-      payload: {
-        side: 'left',
-        opponentSide: 'right',
-        quarter: 1,
-        battleId,
-        gameId: battleId,
-      },
-    });
-
-    await battleEventEmitter.emit({
-      type: 'BATTLE_START',
-      payload: {
-        side: 'right',
-        opponentSide: 'left',
-        quarter: 1,
-        battleId,
-        gameId: battleId,
-      },
-    });
-  }
+    },
+  });
 
   const battle = multiStore.getBattle(battleId);
 

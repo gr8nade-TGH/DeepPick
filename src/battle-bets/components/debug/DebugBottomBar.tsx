@@ -320,6 +320,15 @@ export const DebugBottomBar: React.FC<DebugBottomBarProps> = ({ battleIds }) => 
         } else {
           lines.push('  (none - handler will register on next activation)');
         }
+        lines.push(`Activated Battles (${wizardDebug.activatedBattlesSize}):`);
+        if (wizardDebug.activatedBattleKeys.length > 0) {
+          wizardDebug.activatedBattleKeys.forEach(key => {
+            const isThisBattle = key.startsWith(battleId);
+            lines.push(`  ${isThisBattle ? '✅' : '⚠️'} ${key} (effects already triggered)`);
+          });
+        } else {
+          lines.push('  (none - effects will trigger on BATTLE_START)');
+        }
         lines.push(`Orb Glows (${wizardDebug.orbGlowMapSize}):`);
         if (wizardDebug.glowDetails.length > 0) {
           wizardDebug.glowDetails.forEach(glow => {
