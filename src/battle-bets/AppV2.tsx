@@ -1,6 +1,7 @@
 /**
  * Battle Arena V2 - Tabbed Interface Test Page
  * NEW: Tab filtering (ALL, LIVE, UPCOMING, FINAL)
+ * NEW: Pick-based battle selection with chips
  * Reuses all existing battle components without modification
  */
 
@@ -16,7 +17,11 @@ import { InventoryModal } from './components/inventory';
 import { debugLogger } from './game/debug/DebugLogger';
 import { addTestItemsToInventory } from './utils/testInventory';
 import { useInventoryStore } from './store/inventoryStore';
+import { PickSelectorBar } from './components/picks';
+import { useUserPicks, usePickBattles } from './hooks';
+import { usePickBattleStore, usePickTabCounts } from './store/pickBattleStore';
 import type { Game, GameStatus } from './types/game';
+import type { PickStatus } from './types/picks';
 import './App.css';
 
 // Map battle status from API to GameStatus format
@@ -250,20 +255,47 @@ function AppV2() {
   const [selectedCastleSlot, setSelectedCastleSlot] = useState<{ battleId: string; side: 'left' | 'right' } | null>(null);
   const [showDebugControls, setShowDebugControls] = useState(false);
   const [showInventory, setShowInventory] = useState(false);
+  const [usePickMode, setUsePickMode] = useState(false); // Toggle between old/new mode
 
-  // Tab state
+  // Tab state - now synced with pick store
   const [activeTab, setActiveTab] = useState<TabType>('ALL');
 
   // Inventory store
   const inventoryItems = useInventoryStore((state) => state.items);
 
-  // Check URL params for debug and testMode
+  // Pick-based battle selection (NEW)
+  const { setActiveFilter } = usePickBattleStore();
+  const pickTabCounts = usePickTabCounts();
+  const { battle1Game, battle2Game, hasBattles } = usePickBattles();
+
+  // Initialize user picks fetching
+  useUserPicks({ autoRefresh: true, refreshInterval: 30000 });
+
+  // Sync tab changes with pick store
+  const handleTabChange = (tab: TabType) => {
+    setActiveTab(tab);
+    // Map TabType to PickStatus for the store
+    if (tab === 'ALL') {
+      setActiveFilter('all');
+    } else if (tab === 'LIVE') {
+      setActiveFilter('live');
+    } else if (tab === 'UPCOMING') {
+      setActiveFilter('upcoming');
+    } else if (tab === 'FINAL') {
+      setActiveFilter('final');
+    }
+    // TRAINING_GROUNDS doesn't affect pick filter
+  };
+
+  // Check URL params for debug, testMode, and pickMode
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const debug = params.get('debug') === '1';
     const testMode = params.get('testMode') === '1';
+    const pickMode = params.get('pickMode') === '1';
 
     setShowDebugControls(debug);
+    setUsePickMode(pickMode);
 
     if (testMode) {
       console.log('🧪 [AppV2] Test mode enabled - using fake battles');
@@ -274,6 +306,10 @@ function AppV2() {
         console.log('📦 [AppV2] Adding test items to inventory');
         addTestItemsToInventory();
       }
+    }
+
+    if (pickMode) {
+      console.log('🎯 [AppV2] Pick mode enabled - using pick-based battle selection');
     }
   }, []);
 
@@ -471,13 +507,19 @@ function AppV2() {
           <div style={{ display: 'flex', gap: '10px' }}>
             {(['ALL', 'LIVE', 'UPCOMING', 'FINAL'] as TabType[]).map(tab => {
               const isActive = activeTab === tab;
-              const count = tabCounts[tab];
+              // Use pick counts when in pick mode, otherwise use battle counts
+              const count = usePickMode
+                ? (tab === 'ALL' ? pickTabCounts.all :
+                  tab === 'LIVE' ? pickTabCounts.live :
+                    tab === 'UPCOMING' ? pickTabCounts.upcoming :
+                      tab === 'FINAL' ? pickTabCounts.final : 0)
+                : tabCounts[tab];
               const isLive = tab === 'LIVE' && count > 0;
 
               return (
                 <button
                   key={tab}
-                  onClick={() => setActiveTab(tab)}
+                  onClick={() => handleTabChange(tab)}
                   style={{
                     padding: '12px 24px',
                     background: isActive ? 'rgba(139, 92, 246, 0.3)' : 'rgba(15, 23, 42, 0.6)',
@@ -582,8 +624,13 @@ function AppV2() {
           </button>
         </div>
 
+        {/* Pick Selector Bar (NEW - only in pick mode) */}
+        {usePickMode && activeTab !== 'TRAINING_GROUNDS' && (
+          <PickSelectorBar />
+        )}
+
         {/* Empty state */}
-        {filteredBattles.length === 0 && (
+        {((usePickMode && !hasBattles) || (!usePickMode && filteredBattles.length === 0)) && (
           <div style={{
             display: 'flex',
             flexDirection: 'column',
@@ -594,13 +641,15 @@ function AppV2() {
             fontSize: '18px'
           }}>
             <div style={{ fontSize: '48px', marginBottom: '20px' }}>⚔️</div>
-            <div>No {activeTab.toLowerCase()} battles</div>
+            <div>No {activeTab.toLowerCase()} {usePickMode ? 'picks' : 'battles'}</div>
           </div>
         )}
 
-        {/* Battles Grid - Vertical Stack (same as original) */}
+        {/* Battles Grid - Vertical Stack */}
+        {/* In pick mode: show selected picks as battles (max 2) */}
+        {/* In normal mode: show all filtered battles */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
-          {filteredBattles.map((game, index) => (
+          {(usePickMode ? [battle1Game, battle2Game].filter(Boolean) as Game[] : filteredBattles).map((game, index) => (
             <div
               key={game.id}
               style={{

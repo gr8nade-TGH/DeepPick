@@ -1,0 +1,328 @@
+/**
+ * Pick Selector Styles
+ *
+ * Styles for the pick chip selector bar and individual chips.
+ * Uses CSS custom properties for theming consistency.
+ */
+
+/* ============================================================================
+   SELECTOR BAR CONTAINER
+   ============================================================================ */
+
+.pick-selector-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.pick-selector-scroll-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  /* Allow flex shrinking */
+}
+
+.pick-selector-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding: 4px 0;
+  flex: 1;
+
+  /* Hide scrollbar but keep functionality */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.pick-selector-chips::-webkit-scrollbar {
+  display: none;
+}
+
+/* Scroll arrows */
+.pick-selector-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.pick-selector-arrow:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.pick-selector-arrow:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.pick-selector-arrow svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ============================================================================
+   PICK CHIP
+   ============================================================================ */
+
+.pick-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px;
+  min-width: 140px;
+  max-width: 160px;
+  background: rgba(30, 30, 40, 0.8);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.pick-chip:hover {
+  background: rgba(40, 40, 55, 0.9);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+/* Selected states */
+.pick-chip--selected {
+  border-color: var(--chip-team-color, #8b5cf6);
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.4);
+}
+
+.pick-chip--slot-1 {
+  border-color: #f59e0b;
+  /* Amber for anchor */
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
+}
+
+.pick-chip--slot-2 {
+  border-color: #3b82f6;
+  /* Blue for swap slot */
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+}
+
+/* Status-based styling */
+.pick-chip--live {
+  border-color: #22c55e;
+  animation: livePulse 2s ease-in-out infinite;
+}
+
+.pick-chip--live.pick-chip--selected {
+  animation: none;
+}
+
+@keyframes livePulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 16px rgba(34, 197, 94, 0.6);
+  }
+}
+
+.pick-chip--final.pick-chip--win {
+  border-color: rgba(34, 197, 94, 0.5);
+}
+
+.pick-chip--final.pick-chip--loss {
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+/* ============================================================================
+   CHIP CONTENT ROWS
+   ============================================================================ */
+
+.pick-chip__row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+/* Row 2: Unit Record */
+.pick-chip__units {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.pick-chip__units--positive {
+  color: #22c55e;
+}
+
+.pick-chip__units--negative {
+  color: #ef4444;
+}
+
+.pick-chip__units--neutral {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Row 3: Status Display */
+.pick-chip__status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.pick-chip__status-text {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pick-chip__status--live {
+  color: #22c55e;
+}
+
+.pick-chip__status--upcoming {
+  color: #a78bfa;
+}
+
+.pick-chip__status--final-win {
+  color: #22c55e;
+}
+
+.pick-chip__status--final-loss {
+  color: #ef4444;
+}
+
+/* ============================================================================
+   HP BAR (for LIVE chips)
+   ============================================================================ */
+
+.pick-chip__hp-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.pick-chip__hp-bar-track {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.pick-chip__hp-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.pick-chip__hp-bar-fill--high {
+  background: linear-gradient(90deg, #22c55e, #4ade80);
+}
+
+.pick-chip__hp-bar-fill--medium {
+  background: linear-gradient(90deg, #eab308, #facc15);
+}
+
+.pick-chip__hp-bar-fill--low {
+  background: linear-gradient(90deg, #ef4444, #f87171);
+}
+
+.pick-chip__hp-value {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.6);
+  min-width: 20px;
+  text-align: right;
+}
+
+/* ============================================================================
+   SLOT INDICATOR BADGE
+   ============================================================================ */
+
+.pick-chip__slot-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 50%;
+  color: white;
+}
+
+.pick-chip__slot-badge--1 {
+  background: #f59e0b;
+}
+
+.pick-chip__slot-badge--2 {
+  background: #3b82f6;
+}
+
+/* Chip wrapper for positioning badge */
+.pick-chip-wrapper {
+  position: relative;
+}
+
+/* ============================================================================
+   EMPTY STATE
+   ============================================================================ */
+
+.pick-selector-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 24px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* Row 1: Team + Spread @ Opponent */
+.pick-chip__matchup {
+  font-weight: 600;
+  color: white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pick-chip__team {
+  color: var(--chip-team-color, white);
+}
+
+.pick-chip__spread {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.pick-chip__vs {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 10px;
+}
+
+.pick-chip__opponent {
+  color: rgba(255, 255, 255, 0.7);
+}
