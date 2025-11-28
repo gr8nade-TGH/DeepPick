@@ -1279,17 +1279,10 @@ export class KnightDefender {
       this.shieldChargeContainer.addChild(orb);
       this.shieldChargeOrbs.push(orb);
 
-      // Subtle float animation for active orbs
-      if (i < this.shieldCharges) {
-        gsap.to(orb, {
-          y: -2,
-          duration: 1 + Math.random() * 0.5,
-          ease: 'sine.inOut',
-          repeat: -1,
-          yoyo: true,
-          delay: i * 0.2,
-        });
-      }
+      // NOTE: Float animation DISABLED for debugging GSAP issue
+      // if (i < this.shieldCharges) {
+      //   gsap.to(orb, { y: -2, duration: 1 + Math.random() * 0.5, ease: 'sine.inOut', repeat: -1, yoyo: true, delay: i * 0.2 });
+      // }
     }
   }
 
