@@ -77,18 +77,45 @@ const BattleControl: React.FC<BattleControlProps> = ({ battleId, battleIndex }) 
       // Items are already activated by PreGameItemSelector.activateItemEffects()
       // Calling deactivateGame would remove all item effects (shields, knight, etc.)
       console.log(`🎮 [BottomBar] Starting game for battle ${battleId} (items already activated)`);
-      console.log(`🐴 [BottomBar] Starting knight patrols for battleId: ${battleId}`);
 
-      const leftKnight = getKnight(battleId, 'left');
-      const rightKnight = getKnight(battleId, 'right');
-      console.log(`🐴 [BottomBar] getKnight: left=${leftKnight ? 'FOUND' : 'null'}, right=${rightKnight ? 'FOUND' : 'null'}`);
-
-      if (leftKnight) { try { leftKnight.startPatrol(); } catch (e) { console.error(e); } }
-      if (rightKnight) { try { rightKnight.startPatrol(); } catch (e) { console.error(e); } }
-
+      // Update game status FIRST, before spawning knights
       useMultiGameStore.getState().updateGameStatus(battleId, '1Q');
       useMultiGameStore.getState().setCurrentQuarter(battleId, 1);
       useMultiGameStore.getState().updateBattleStatus(battleId, 'Q1_IN_PROGRESS');
+
+      // Now spawn and start knights (after game has started)
+      console.log(`🐴 [BottomBar] Spawning knights for battleId: ${battleId}`);
+
+      // Import getOrSpawnKnight dynamically to spawn knights that weren't created during pre-game
+      const { getOrSpawnKnight, getKnight: getKnightFn } = await import('../../game/items/effects/MED_KnightDefender');
+      const { getEquippedCastle } = await import('../../game/items/effects/CASTLE_Fortress');
+
+      // Check if left side has a castle equipped (spawn knight if so)
+      const leftCastle = getEquippedCastle(battleId, 'left');
+      const rightCastle = getEquippedCastle(battleId, 'right');
+
+      if (leftCastle) {
+        console.log(`🐴 [BottomBar] Left side has castle, spawning knight...`);
+        const knight = getOrSpawnKnight(battleId, 'left');
+        if (knight) {
+          const shieldCharges = Math.round(leftCastle.rolls.shieldCharges || 1);
+          knight.setShieldCharges(shieldCharges);
+          knight.startPatrol();
+          console.log(`🐴 [BottomBar] Left knight spawned and patrolling with ${shieldCharges} shields`);
+        }
+      }
+
+      if (rightCastle) {
+        console.log(`🐴 [BottomBar] Right side has castle, spawning knight...`);
+        const knight = getOrSpawnKnight(battleId, 'right');
+        if (knight) {
+          const shieldCharges = Math.round(rightCastle.rolls.shieldCharges || 1);
+          knight.setShieldCharges(shieldCharges);
+          knight.startPatrol();
+          console.log(`🐴 [BottomBar] Right knight spawned and patrolling with ${shieldCharges} shields`);
+        }
+      }
+
       setLastAction('✅ Started');
     } catch (error) {
       console.error('Failed to start game:', error);
