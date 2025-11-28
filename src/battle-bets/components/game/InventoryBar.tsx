@@ -94,12 +94,18 @@ export const InventoryBar: React.FC<InventoryBarProps> = ({ battleId, side, onSl
 
   const handleItemHover = (event: React.MouseEvent, item: ItemDefinition, rolledItem: RolledItemStats) => {
     const rect = event.currentTarget.getBoundingClientRect();
+    // For right side, position tooltip to the left; for left side, position to the right
+    const tooltipWidth = 280; // Approximate tooltip width
+    const x = side === 'right'
+      ? rect.left - tooltipWidth - 10  // Position to the left of the item
+      : rect.right + 10;               // Position to the right of the item
+
     setTooltipData({
       item,
       rolls: rolledItem.rolls,
       qualityTier: rolledItem.qualityTier,
       qualityScore: rolledItem.qualityScore,
-      x: rect.right + 10,
+      x,
       y: rect.top,
     });
   };
@@ -183,6 +189,12 @@ export const InventoryBar: React.FC<InventoryBarProps> = ({ battleId, side, onSl
       const shieldText = castleShields === 1 ? 'charge' : 'charges';
       const description = `Deploys a Knight Defender with ${castleShields} shield ${shieldText}. Shield charges allow the knight to block projectiles without taking damage. After shields are depleted, knight uses normal deflect cooldown (takes damage if hit again within 0.5s of blocking).`;
 
+      // For right side, position tooltip to the left; for left side, position to the right
+      const tooltipWidth = 280;
+      const x = side === 'right'
+        ? rect.left - tooltipWidth - 10
+        : rect.right + 10;
+
       setTooltipData({
         item: {
           ...CASTLE_FORTRESS_DEFINITION,
@@ -192,7 +204,7 @@ export const InventoryBar: React.FC<InventoryBarProps> = ({ battleId, side, onSl
         rolls: equippedCastle.rolls,
         qualityTier: equippedCastle.qualityTier,
         qualityScore: equippedCastle.qualityScore,
-        x: rect.right + 10,
+        x,
         y: rect.top,
       });
     }

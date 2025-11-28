@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import { type InventoryItemInstance, useInventoryStore } from '../../store/inventoryStore';
 import { ItemTooltip } from './ItemTooltip';
 
@@ -168,16 +169,19 @@ const InventorySlot: React.FC<InventorySlotProps> = ({
               ✓
             </div>
           )}
-          {/* Diablo-style Tooltip */}
-          {showTooltip && (
+          {/* Diablo-style Tooltip - rendered via portal to escape modal overflow */}
+          {showTooltip && ReactDOM.createPortal(
             <ItemTooltip
               inventoryItem={item}
               style={{
                 position: 'fixed',
                 left: `${tooltipPos.x}px`,
                 top: `${tooltipPos.y}px`,
+                zIndex: 99999,
+                pointerEvents: 'none',
               }}
-            />
+            />,
+            document.body
           )}
         </>
       )}
