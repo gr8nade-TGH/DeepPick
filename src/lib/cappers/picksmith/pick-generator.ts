@@ -48,10 +48,18 @@ export async function getUpcomingGames(): Promise<Array<{
     const gameTime = new Date(game.game_start_timestamp)
     const hoursUntilStart = (gameTime.getTime() - now.getTime()) / (1000 * 60 * 60)
 
+    // Handle both object and string formats for team data
+    const homeTeam = typeof game.home_team === 'object'
+      ? game.home_team?.abbreviation || game.home_team?.name || 'HOME'
+      : game.home_team || 'HOME'
+    const awayTeam = typeof game.away_team === 'object'
+      ? game.away_team?.abbreviation || game.away_team?.name || 'AWAY'
+      : game.away_team || 'AWAY'
+
     return {
       id: game.id,
-      homeTeam: game.home_team,
-      awayTeam: game.away_team,
+      homeTeam,
+      awayTeam,
       gameTime: game.game_start_timestamp,
       hoursUntilStart: Math.round(hoursUntilStart * 10) / 10
     }
