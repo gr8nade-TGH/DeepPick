@@ -6,9 +6,11 @@ export const runtime = 'nodejs'
 
 /**
  * GET /api/cappers/team-dominance?capperId=xxx
- * 
+ *
  * Returns a capper's top 3 teams based on SPREAD pick performance (net units)
  * Also includes their rank for each team compared to other cappers
+ *
+ * v2: Fixed JSON parsing for game_snapshot
  */
 export async function GET(request: NextRequest) {
   try {
