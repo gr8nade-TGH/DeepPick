@@ -43,14 +43,32 @@ function getCountdown(gameDate: string | undefined): string {
   }
 }
 
+// Track existing picks by game_id and pick_type
+interface ExistingPick {
+  gameId: string
+  pickType: 'spread' | 'total' | 'moneyline'
+  selection: string
+}
+
 export default function ManualPicksPage() {
   const { addSelection: addToSlip, hasSelection, picksPlacedCount } = useBettingSlip()
   const { user } = useAuth()
   const [games, setGames] = useState<Game[]>([])
   const [loading, setLoading] = useState(true)
-  const [existingPicks, setExistingPicks] = useState<Set<string>>(new Set())
+  // Map of "gameId:pickType" -> selection string (e.g., "MEM +6.5")
+  const [existingPicks, setExistingPicks] = useState<Map<string, string>>(new Map())
   const [capperId, setCapperId] = useState<string | null>(null)
   const [currentTime, setCurrentTime] = useState(new Date())
+
+  // Helper to check if a specific bet type is already picked for a game
+  const hasExistingPick = (gameId: string, pickType: 'spread' | 'total' | 'moneyline') => {
+    return existingPicks.has(`${gameId}:${pickType}`)
+  }
+
+  // Get the selection for an existing pick
+  const getExistingPickSelection = (gameId: string, pickType: 'spread' | 'total' | 'moneyline') => {
+    return existingPicks.get(`${gameId}:${pickType}`) || null
+  }
 
   // Memoize fetchExistingPicks for use in effect dependencies
   const fetchExistingPicks = useCallback(async () => {
@@ -59,8 +77,13 @@ export default function ManualPicksPage() {
       const response = await fetch(`/api/picks?capper=${capperId}&status=pending`)
       const data = await response.json()
       if (data.success) {
-        const gameIds = new Set<string>(data.picks.map((p: any) => p.game_id as string))
-        setExistingPicks(gameIds)
+        const picksMap = new Map<string, string>()
+        data.picks.forEach((p: any) => {
+          const key = `${p.game_id}:${p.pick_type}`
+          picksMap.set(key, p.selection)
+        })
+        setExistingPicks(picksMap)
+        console.log('[MakePicks] Existing picks loaded:', Array.from(picksMap.entries()))
       }
     } catch (error) {
       console.error('Error fetching existing picks:', error)
@@ -146,9 +169,9 @@ export default function ManualPicksPage() {
       return
     }
 
-    // Check if game already has a pick
-    if (existingPicks.has(game.id)) {
-      alert('You already have a pick on this game!')
+    // Check if this specific bet type already has a pick for this game
+    if (hasExistingPick(game.id, betType)) {
+      alert(`You already have a ${betType.toUpperCase()} pick on this game!`)
       return
     }
 
@@ -266,12 +289,16 @@ export default function ManualPicksPage() {
             </div>
           ) : (
             games.map(game => {
-              const hasPick = existingPicks.has(game.id)
+              const hasSpreadPick = hasExistingPick(game.id, 'spread')
+              const hasTotalPick = hasExistingPick(game.id, 'total')
+              const spreadSelection = getExistingPickSelection(game.id, 'spread')
+              const totalSelection = getExistingPickSelection(game.id, 'total')
+              const hasAnyPick = hasSpreadPick || hasTotalPick
 
               return (
                 <div
                   key={game.id}
-                  className={`bg-slate-900/50 backdrop-blur-sm border rounded-xl overflow-hidden transition-all hover:shadow-xl ${hasPick
+                  className={`bg-slate-900/50 backdrop-blur-sm border rounded-xl overflow-hidden transition-all hover:shadow-xl ${hasAnyPick
                     ? 'border-emerald-500/50 shadow-emerald-500/20'
                     : 'border-slate-700 hover:border-slate-600 hover:shadow-blue-500/20'
                     }`}
@@ -303,11 +330,19 @@ export default function ManualPicksPage() {
                           })()}
                         </div>
                       </div>
-                      {hasPick && (
-                        <div className="bg-gradient-to-r from-emerald-600 to-green-600 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-lg">
-                          ✓ PICK PLACED
-                        </div>
-                      )}
+                      {/* Show badges for existing picks */}
+                      <div className="flex gap-2">
+                        {hasSpreadPick && (
+                          <div className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg">
+                            ✓ {spreadSelection}
+                          </div>
+                        )}
+                        {hasTotalPick && (
+                          <div className="bg-gradient-to-r from-orange-600 to-amber-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg">
+                            ✓ {totalSelection}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -315,48 +350,54 @@ export default function ManualPicksPage() {
                   <div className="grid grid-cols-2 gap-3 p-5">
                     {/* Spread Column */}
                     <div className="space-y-3">
-                      <div className="text-xs text-slate-400 font-bold mb-2 text-center uppercase tracking-wider">Spread</div>
+                      <div className={`text-xs font-bold mb-2 text-center uppercase tracking-wider ${hasSpreadPick ? 'text-emerald-400' : 'text-slate-400'}`}>
+                        Spread {hasSpreadPick && '✓'}
+                      </div>
                       {game.odds.spread ? (
-                        <div className="space-y-2">
-                          {/* Away Spread */}
-                          <button
-                            onClick={() => !hasPick && addSelection(game, 'spread', 'away')}
-                            disabled={hasPick}
-                            className={`w-full bg-gradient-to-br from-slate-800 to-slate-900 hover:from-blue-900/50 hover:to-slate-800 border-2 border-slate-600 hover:border-blue-500 rounded-lg p-3 transition-all text-left group ${hasPick ? 'cursor-not-allowed opacity-40' : 'hover:shadow-lg hover:shadow-blue-500/20'
-                              }`}
-                          >
-                            <div className="flex justify-between items-center">
-                              <span className="text-white font-bold text-sm group-hover:text-blue-400 transition-colors">
-                                {game.away_team.abbreviation}
-                              </span>
-                              <div className="text-right">
-                                <div className="text-white font-bold text-base">
-                                  {game.odds.spread.line > 0 ? '+' : ''}{game.odds.spread.line.toFixed(1)}
+                        hasSpreadPick ? (
+                          // Show locked state with the pick highlighted
+                          <div className="bg-gradient-to-br from-emerald-900/30 to-slate-900 border-2 border-emerald-500/50 rounded-lg p-4 text-center">
+                            <div className="text-emerald-400 font-bold text-lg mb-1">{spreadSelection}</div>
+                            <div className="text-slate-500 text-xs">Pick Locked</div>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {/* Away Spread */}
+                            <button
+                              onClick={() => addSelection(game, 'spread', 'away')}
+                              className="w-full bg-gradient-to-br from-slate-800 to-slate-900 hover:from-blue-900/50 hover:to-slate-800 border-2 border-slate-600 hover:border-blue-500 rounded-lg p-3 transition-all text-left group hover:shadow-lg hover:shadow-blue-500/20"
+                            >
+                              <div className="flex justify-between items-center">
+                                <span className="text-white font-bold text-sm group-hover:text-blue-400 transition-colors">
+                                  {game.away_team.abbreviation}
+                                </span>
+                                <div className="text-right">
+                                  <div className="text-white font-bold text-base">
+                                    {game.odds.spread.line > 0 ? '+' : ''}{game.odds.spread.line.toFixed(1)}
+                                  </div>
+                                  <div className="text-emerald-400 text-xs font-semibold">{formatOdds(game.odds.spread.away_odds)}</div>
                                 </div>
-                                <div className="text-emerald-400 text-xs font-semibold">{formatOdds(game.odds.spread.away_odds)}</div>
                               </div>
-                            </div>
-                          </button>
-                          {/* Home Spread */}
-                          <button
-                            onClick={() => !hasPick && addSelection(game, 'spread', 'home')}
-                            disabled={hasPick}
-                            className={`w-full bg-gradient-to-br from-slate-800 to-slate-900 hover:from-cyan-900/50 hover:to-slate-800 border-2 border-slate-600 hover:border-cyan-500 rounded-lg p-3 transition-all text-left group ${hasPick ? 'cursor-not-allowed opacity-40' : 'hover:shadow-lg hover:shadow-cyan-500/20'
-                              }`}
-                          >
-                            <div className="flex justify-between items-center">
-                              <span className="text-white font-bold text-sm group-hover:text-cyan-400 transition-colors">
-                                {game.home_team.abbreviation}
-                              </span>
-                              <div className="text-right">
-                                <div className="text-white font-bold text-base">
-                                  {-game.odds.spread.line > 0 ? '+' : ''}{(-game.odds.spread.line).toFixed(1)}
+                            </button>
+                            {/* Home Spread */}
+                            <button
+                              onClick={() => addSelection(game, 'spread', 'home')}
+                              className="w-full bg-gradient-to-br from-slate-800 to-slate-900 hover:from-cyan-900/50 hover:to-slate-800 border-2 border-slate-600 hover:border-cyan-500 rounded-lg p-3 transition-all text-left group hover:shadow-lg hover:shadow-cyan-500/20"
+                            >
+                              <div className="flex justify-between items-center">
+                                <span className="text-white font-bold text-sm group-hover:text-cyan-400 transition-colors">
+                                  {game.home_team.abbreviation}
+                                </span>
+                                <div className="text-right">
+                                  <div className="text-white font-bold text-base">
+                                    {-game.odds.spread.line > 0 ? '+' : ''}{(-game.odds.spread.line).toFixed(1)}
+                                  </div>
+                                  <div className="text-emerald-400 text-xs font-semibold">{formatOdds(game.odds.spread.home_odds)}</div>
                                 </div>
-                                <div className="text-emerald-400 text-xs font-semibold">{formatOdds(game.odds.spread.home_odds)}</div>
                               </div>
-                            </div>
-                          </button>
-                        </div>
+                            </button>
+                          </div>
+                        )
                       ) : (
                         <div className="text-center text-slate-500 text-sm py-6 bg-slate-800/50 rounded-lg border border-slate-700">
                           No spread available
@@ -366,38 +407,44 @@ export default function ManualPicksPage() {
 
                     {/* Total Column */}
                     <div className="space-y-3">
-                      <div className="text-xs text-slate-400 font-bold mb-2 text-center uppercase tracking-wider">Total</div>
+                      <div className={`text-xs font-bold mb-2 text-center uppercase tracking-wider ${hasTotalPick ? 'text-emerald-400' : 'text-slate-400'}`}>
+                        Total {hasTotalPick && '✓'}
+                      </div>
                       {game.odds.total ? (
-                        <div className="space-y-2">
-                          {/* Over */}
-                          <button
-                            onClick={() => !hasPick && addSelection(game, 'total', 'over')}
-                            disabled={hasPick}
-                            className={`w-full bg-gradient-to-br from-slate-800 to-slate-900 hover:from-orange-900/50 hover:to-slate-800 border-2 border-slate-600 hover:border-orange-500 rounded-lg p-3 transition-all text-left group ${hasPick ? 'cursor-not-allowed opacity-40' : 'hover:shadow-lg hover:shadow-orange-500/20'
-                              }`}
-                          >
-                            <div className="flex justify-between items-center">
-                              <span className="text-white font-bold text-sm group-hover:text-orange-400 transition-colors">
-                                O {game.odds.total.line.toFixed(1)}
-                              </span>
-                              <div className="text-emerald-400 text-xs font-semibold">{formatOdds(game.odds.total.over_odds)}</div>
-                            </div>
-                          </button>
-                          {/* Under */}
-                          <button
-                            onClick={() => !hasPick && addSelection(game, 'total', 'under')}
-                            disabled={hasPick}
-                            className={`w-full bg-gradient-to-br from-slate-800 to-slate-900 hover:from-purple-900/50 hover:to-slate-800 border-2 border-slate-600 hover:border-purple-500 rounded-lg p-3 transition-all text-left group ${hasPick ? 'cursor-not-allowed opacity-40' : 'hover:shadow-lg hover:shadow-purple-500/20'
-                              }`}
-                          >
-                            <div className="flex justify-between items-center">
-                              <span className="text-white font-bold text-sm group-hover:text-purple-400 transition-colors">
-                                U {game.odds.total.line.toFixed(1)}
-                              </span>
-                              <div className="text-emerald-400 text-xs font-semibold">{formatOdds(game.odds.total.under_odds)}</div>
-                            </div>
-                          </button>
-                        </div>
+                        hasTotalPick ? (
+                          // Show locked state with the pick highlighted
+                          <div className="bg-gradient-to-br from-emerald-900/30 to-slate-900 border-2 border-emerald-500/50 rounded-lg p-4 text-center">
+                            <div className="text-emerald-400 font-bold text-lg mb-1">{totalSelection}</div>
+                            <div className="text-slate-500 text-xs">Pick Locked</div>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {/* Over */}
+                            <button
+                              onClick={() => addSelection(game, 'total', 'over')}
+                              className="w-full bg-gradient-to-br from-slate-800 to-slate-900 hover:from-orange-900/50 hover:to-slate-800 border-2 border-slate-600 hover:border-orange-500 rounded-lg p-3 transition-all text-left group hover:shadow-lg hover:shadow-orange-500/20"
+                            >
+                              <div className="flex justify-between items-center">
+                                <span className="text-white font-bold text-sm group-hover:text-orange-400 transition-colors">
+                                  O {game.odds.total.line.toFixed(1)}
+                                </span>
+                                <div className="text-emerald-400 text-xs font-semibold">{formatOdds(game.odds.total.over_odds)}</div>
+                              </div>
+                            </button>
+                            {/* Under */}
+                            <button
+                              onClick={() => addSelection(game, 'total', 'under')}
+                              className="w-full bg-gradient-to-br from-slate-800 to-slate-900 hover:from-purple-900/50 hover:to-slate-800 border-2 border-slate-600 hover:border-purple-500 rounded-lg p-3 transition-all text-left group hover:shadow-lg hover:shadow-purple-500/20"
+                            >
+                              <div className="flex justify-between items-center">
+                                <span className="text-white font-bold text-sm group-hover:text-purple-400 transition-colors">
+                                  U {game.odds.total.line.toFixed(1)}
+                                </span>
+                                <div className="text-emerald-400 text-xs font-semibold">{formatOdds(game.odds.total.under_odds)}</div>
+                              </div>
+                            </button>
+                          </div>
+                        )
                       ) : (
                         <div className="text-center text-slate-500 text-sm py-6 bg-slate-800/50 rounded-lg border border-slate-700">
                           No total available

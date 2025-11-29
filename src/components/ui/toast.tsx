@@ -15,7 +15,7 @@ const ToastViewport = React.forwardRef<
   <ToastPrimitives.Viewport
     ref={ref}
     className={cn(
-      'fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex max-h-screen w-full flex-col p-4 md:max-w-[420px]',
+      'fixed bottom-4 left-4 z-[9999] flex max-h-screen w-auto flex-col gap-2 md:max-w-[360px]',
       className
     )}
     {...props}
@@ -24,16 +24,16 @@ const ToastViewport = React.forwardRef<
 ToastViewport.displayName = ToastPrimitives.Viewport.displayName
 
 const toastVariants = cva(
-  'group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-md border p-6 pr-8 shadow-lg transition-all data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)] data-[swipe=move]:transition-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out data-[state=closed]:fade-out-80 data-[state=closed]:slide-out-to-right-full data-[state=open]:slide-in-from-top-full data-[state=open]:sm:slide-in-from-bottom-full',
+  'group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-md border p-4 pr-8 shadow-xl transition-all data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)] data-[swipe=move]:transition-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out data-[state=closed]:fade-out-80 data-[state=closed]:slide-out-to-left-full data-[state=open]:slide-in-from-left-full',
   {
     variants: {
       variant: {
-        default: 'border bg-background text-foreground',
+        default: 'border border-slate-600 bg-slate-900 text-white',
         destructive:
-          'destructive border-destructive bg-destructive text-destructive-foreground',
-        success: 'border-green-500 bg-green-500/10 text-green-500',
-        warning: 'border-yellow-500 bg-yellow-500/10 text-yellow-500',
-        info: 'border-blue-500 bg-blue-500/10 text-blue-500',
+          'destructive border-red-600 bg-red-900 text-white',
+        success: 'border-green-600 bg-green-900 text-white',
+        warning: 'border-yellow-600 bg-yellow-900 text-white',
+        info: 'border-blue-600 bg-blue-900 text-white',
       },
     },
     defaultVariants: {
