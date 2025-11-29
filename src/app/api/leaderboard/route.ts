@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
+import { getSystemCapperMap } from '@/lib/cappers/system-cappers'
 
 export const dynamic = 'force-dynamic'
 
@@ -152,22 +153,8 @@ export async function GET(request: NextRequest) {
       unitsBet: number
     }>()
 
-    // System cappers (known list)
-    const SYSTEM_CAPPERS = [
-      { id: 'shiva', name: 'SHIVA' },
-      { id: 'ifrit', name: 'IFRIT' },
-      { id: 'oracle', name: 'ORACLE' },
-      { id: 'sentinel', name: 'SENTINEL' },
-      { id: 'nexus', name: 'NEXUS' },
-      { id: 'blitz', name: 'BLITZ' },
-      { id: 'titan', name: 'TITAN' },
-      { id: 'thief', name: 'THIEF' },
-      { id: 'cerberus', name: 'CERBERUS' },
-      { id: 'deeppick', name: 'DeepPick' },
-    ]
-
-    // Create a map for quick system capper lookup
-    const systemCapperMap = new Map(SYSTEM_CAPPERS.map(c => [c.id, c.name]))
+    // Get system cappers from database (cached)
+    const systemCapperMap = await getSystemCapperMap()
 
     // Process picks - use capper field for ALL picks
     picks.forEach(pick => {

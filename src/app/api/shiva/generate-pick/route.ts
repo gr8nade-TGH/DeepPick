@@ -4,6 +4,7 @@ import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { generateProfessionalAnalysis } from '@/lib/cappers/professional-analysis-generator'
 import { generateBoldPredictions } from '@/lib/cappers/bold-predictions-generator'
 import { validateSpreadDirection } from '@/lib/cappers/pick-validation'
+import { isSystemCapper } from '@/lib/cappers/system-cappers'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -713,13 +714,12 @@ export async function POST(request: Request) {
       console.log(`[SHIVA:GeneratePick] ✅ PERMANENT cooldown created/updated for PICK_GENERATED (until ${cooldownUntil.toISOString()})`)
     }
 
-    // Determine if this is a system capper or user capper
-    const SYSTEM_CAPPERS = ['shiva', 'ifrit', 'nexus', 'cerberus', 'deeppick']
-    const isSystemCapper = SYSTEM_CAPPERS.includes(capperId.toLowerCase())
+    // Determine if this is a system capper or user capper (from database)
+    const isSystemCapperCheck = await isSystemCapper(capperId)
 
     // For user cappers, get the user_id from user_cappers table
     let userId: string | null = null
-    if (!isSystemCapper) {
+    if (!isSystemCapperCheck) {
       const { data: capperData } = await supabase
         .from('user_cappers')
         .select('user_id')

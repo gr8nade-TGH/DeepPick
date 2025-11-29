@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { TerritoryData } from '@/components/territorymap/types'
+import { getSystemCapperMap } from '@/lib/cappers/system-cappers'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,6 +14,9 @@ export const dynamic = 'force-dynamic'
 export async function GET() {
   try {
     const admin = getSupabaseAdmin()
+
+    // Get system cappers from database (cached)
+    const systemCapperMap = await getSystemCapperMap()
 
     // All NBA teams
     const allNBATeams = [
@@ -60,22 +64,6 @@ export async function GET() {
     }
 
     const userCapperMap = new Map(userCappers?.map(c => [c.capper_id.toLowerCase(), c]) || [])
-
-    // System cappers (complete list)
-    const SYSTEM_CAPPERS = [
-      { id: 'shiva', name: 'SHIVA' },
-      { id: 'ifrit', name: 'IFRIT' },
-      { id: 'oracle', name: 'ORACLE' },
-      { id: 'sentinel', name: 'SENTINEL' },
-      { id: 'nexus', name: 'NEXUS' },
-      { id: 'blitz', name: 'BLITZ' },
-      { id: 'titan', name: 'TITAN' },
-      { id: 'thief', name: 'THIEF' },
-      { id: 'cerberus', name: 'CERBERUS' },
-      { id: 'deeppick', name: 'DeepPick' },
-    ]
-
-    const systemCapperMap = new Map(SYSTEM_CAPPERS.map(c => [c.id, c.name]))
 
     // Helper function to safely extract team abbreviation from game_snapshot
     const extractTeamAbbr = (teamData: any): string | undefined => {
