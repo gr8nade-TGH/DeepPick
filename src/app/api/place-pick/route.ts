@@ -5,7 +5,9 @@ import { cookies } from 'next/headers'
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('[place-pick] Starting pick placement...')
     const body = await request.json()
+    console.log('[place-pick] Request body:', JSON.stringify(body, null, 2))
 
     const {
       game_id,
@@ -21,7 +23,7 @@ export async function POST(request: NextRequest) {
     } = body
 
     // Get authenticated user
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -31,40 +33,64 @@ export async function POST(request: NextRequest) {
             return cookieStore.get(name)?.value
           },
           set(name: string, value: string, options: CookieOptions) {
-            cookieStore.set({ name, value, ...options })
+            try {
+              cookieStore.set({ name, value, ...options })
+            } catch (e) {
+              // Ignore cookie set errors in API routes
+            }
           },
           remove(name: string, options: CookieOptions) {
-            cookieStore.set({ name, value: '', ...options })
+            try {
+              cookieStore.set({ name, value: '', ...options })
+            } catch (e) {
+              // Ignore cookie remove errors in API routes
+            }
           },
         },
       }
     )
 
-    const { data: { user } } = await supabase.auth.getUser()
+    console.log('[place-pick] Getting user...')
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+    if (userError) {
+      console.error('[place-pick] Auth error:', userError)
+    }
 
     if (!user) {
+      console.log('[place-pick] No user found')
       return NextResponse.json({
         success: false,
         error: 'Authentication required'
       }, { status: 401 })
     }
 
+    console.log('[place-pick] User found:', user.id)
+
     // Get user profile to check role
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, full_name')
       .eq('id', user.id)
       .single()
 
+    if (profileError) {
+      console.error('[place-pick] Profile error:', profileError)
+    }
+
     if (!profile) {
+      console.log('[place-pick] No profile found')
       return NextResponse.json({
         success: false,
         error: 'User profile not found'
       }, { status: 404 })
     }
 
+    console.log('[place-pick] Profile found:', { role: profile.role, full_name: profile.full_name })
+
     // Check if user has CAPPER or ADMIN role
     if (profile.role !== 'capper' && profile.role !== 'admin') {
+      console.log('[place-pick] Role check failed:', profile.role)
       return NextResponse.json({
         success: false,
         error: 'Capper role required. Please upgrade your account to make picks.'
@@ -106,12 +132,16 @@ export async function POST(request: NextRequest) {
       status: game.status
     }
 
+    // Use profile's full_name as capper if not specified
+    const capperName = capper || profile.full_name || 'manual'
+    console.log('[place-pick] Using capper name:', capperName)
+
     // Insert the pick with user_id
     const { data: pick, error: pickError } = await getSupabaseAdmin()
       .from('picks')
       .insert({
         game_id,
-        capper: capper || 'manual', // Use 'manual' as default for user picks
+        capper: capperName,
         pick_type,
         selection,
         odds,
@@ -128,12 +158,15 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (pickError) {
-      console.error('Error creating pick:', pickError)
+      console.error('[place-pick] Error creating pick:', pickError)
       return NextResponse.json({
         success: false,
-        error: pickError.message
+        error: pickError.message,
+        details: pickError
       }, { status: 500 })
     }
+
+    console.log('[place-pick] Pick created successfully:', pick?.id)
 
     return NextResponse.json({
       success: true,
@@ -142,10 +175,11 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error:', error)
+    console.error('[place-pick] Unexpected error:', error)
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
     }, { status: 500 })
   }
 }
