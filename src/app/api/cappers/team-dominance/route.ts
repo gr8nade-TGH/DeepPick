@@ -42,18 +42,14 @@ export async function GET(request: NextRequest) {
 
     console.log('[TeamDominance] Fetched picks:', allPicks?.length || 0)
 
-    // Debug: log first pick structure
+    // Debug: log first few picks with full details
     if (allPicks && allPicks.length > 0) {
-      const samplePick = allPicks[0]
-      const snapshot = samplePick.game_snapshot as any
-      console.log('[TeamDominance] Sample pick debug:', {
-        capper: samplePick.capper,
-        snapshotType: typeof samplePick.game_snapshot,
-        hasHomeTeam: !!snapshot?.home_team,
-        homeTeamAbbr: snapshot?.home_team?.abbreviation,
-        hasAwayTeam: !!snapshot?.away_team,
-        awayTeamAbbr: snapshot?.away_team?.abbreviation
-      })
+      console.log('[TeamDominance] First 3 picks raw:', allPicks.slice(0, 3).map(p => ({
+        capper: p.capper,
+        snapshotType: typeof p.game_snapshot,
+        snapshotKeys: p.game_snapshot ? Object.keys(p.game_snapshot as object) : [],
+        rawSnapshot: JSON.stringify(p.game_snapshot).substring(0, 200)
+      })))
     }
 
     if (allPicksError) {
@@ -97,17 +93,44 @@ export async function GET(request: NextRequest) {
       return teamData.abbreviation
     }
 
+    // Debug counters
+    let processedCount = 0
+    let skippedNoSnapshot = 0
+    let skippedParseFailure = 0
+    let skippedNoTeams = 0
+
     // Process all picks
     allPicks?.forEach(pick => {
-      if (!pick.game_snapshot) return
+      if (!pick.game_snapshot) {
+        skippedNoSnapshot++
+        return
+      }
 
       const snapshot = parseGameSnapshot(pick.game_snapshot)
-      if (!snapshot) return
+      if (!snapshot) {
+        skippedParseFailure++
+        return
+      }
 
       const homeTeam = extractTeamAbbr(snapshot.home_team)
       const awayTeam = extractTeamAbbr(snapshot.away_team)
 
-      if (!homeTeam || !awayTeam) return
+      if (!homeTeam || !awayTeam) {
+        skippedNoTeams++
+        // Log why this is failing
+        if (processedCount < 3) {
+          console.log('[TeamDominance] Skip - no teams:', {
+            capper: pick.capper,
+            homeTeamRaw: snapshot.home_team,
+            awayTeamRaw: snapshot.away_team,
+            homeTeamExtracted: homeTeam,
+            awayTeamExtracted: awayTeam
+          })
+        }
+        return
+      }
+
+      processedCount++
 
         // Process for both teams involved in the game
         ;[homeTeam, awayTeam].forEach(team => {
@@ -137,6 +160,14 @@ export async function GET(request: NextRequest) {
             stats.pushes++
           }
         })
+    })
+
+    console.log('[TeamDominance] Processing summary:', {
+      totalPicks: allPicks?.length || 0,
+      processedCount,
+      skippedNoSnapshot,
+      skippedParseFailure,
+      skippedNoTeams
     })
 
     // Build leaderboards for each team and find this capper's stats
