@@ -22,11 +22,14 @@ export async function GET() {
     ]
 
     // Fetch all graded SPREAD picks with game_snapshot
+    // Note: Supabase has a default limit, so we explicitly set a high limit to ensure all picks are fetched
     const { data: allPicks, error: picksError } = await admin
       .from('picks')
       .select('capper, user_id, status, units, net_units, is_system_pick, game_snapshot, pick_type')
       .in('status', ['won', 'lost', 'push'])
       .eq('pick_type', 'spread') // Only SPREAD picks
+      .order('created_at', { ascending: false })
+      .limit(5000)
 
     if (picksError) {
       console.error('[Territory Map] Error fetching picks:', picksError)
@@ -39,6 +42,7 @@ export async function GET() {
       .select('id, capper, user_id, is_system_pick, game_snapshot, pick_type, selection, confidence')
       .eq('status', 'pending')
       .eq('pick_type', 'spread')
+      .limit(5000)
 
     if (pendingError) {
       console.error('[Territory Map] Error fetching pending picks:', pendingError)

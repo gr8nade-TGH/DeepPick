@@ -34,11 +34,14 @@ export async function GET(request: NextRequest) {
     ]
 
     // Fetch ALL graded SPREAD picks for ALL cappers (to calculate rankings)
+    // Note: Supabase has a default limit of 1000 rows, but we explicitly set higher to ensure all picks
     const { data: allPicks, error: allPicksError } = await admin
       .from('picks')
       .select('capper, game_snapshot, status, units, net_units')
       .eq('pick_type', 'spread')
       .in('status', ['won', 'lost', 'push'])
+      .order('created_at', { ascending: false })
+      .limit(5000)
 
     console.log('[TeamDominance] Fetched picks:', allPicks?.length || 0)
 
