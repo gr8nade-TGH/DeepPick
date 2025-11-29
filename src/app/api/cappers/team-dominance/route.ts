@@ -40,6 +40,20 @@ export async function GET(request: NextRequest) {
 
     console.log('[TeamDominance] Fetched picks:', allPicks?.length || 0)
 
+    // Debug: log first pick structure
+    if (allPicks && allPicks.length > 0) {
+      const samplePick = allPicks[0]
+      const snapshot = samplePick.game_snapshot as any
+      console.log('[TeamDominance] Sample pick debug:', {
+        capper: samplePick.capper,
+        snapshotType: typeof samplePick.game_snapshot,
+        hasHomeTeam: !!snapshot?.home_team,
+        homeTeamAbbr: snapshot?.home_team?.abbreviation,
+        hasAwayTeam: !!snapshot?.away_team,
+        awayTeamAbbr: snapshot?.away_team?.abbreviation
+      })
+    }
+
     if (allPicksError) {
       console.error('[TeamDominance] Error fetching picks:', allPicksError)
       return NextResponse.json(
@@ -55,13 +69,41 @@ export async function GET(request: NextRequest) {
       teamStats.set(team, new Map())
     })
 
+    // Helper to parse game_snapshot (handles both string and object)
+    const parseGameSnapshot = (snapshot: any): any => {
+      if (!snapshot) return null
+      if (typeof snapshot === 'string') {
+        try {
+          return JSON.parse(snapshot)
+        } catch {
+          return null
+        }
+      }
+      return snapshot
+    }
+
+    // Helper to extract team abbreviation
+    const extractTeamAbbr = (teamData: any): string | undefined => {
+      if (!teamData) return undefined
+      if (typeof teamData === 'string') {
+        try {
+          return JSON.parse(teamData).abbreviation
+        } catch {
+          return undefined
+        }
+      }
+      return teamData.abbreviation
+    }
+
     // Process all picks
     allPicks?.forEach(pick => {
       if (!pick.game_snapshot) return
 
-      const snapshot = pick.game_snapshot as any
-      const homeTeam = snapshot.home_team?.abbreviation
-      const awayTeam = snapshot.away_team?.abbreviation
+      const snapshot = parseGameSnapshot(pick.game_snapshot)
+      if (!snapshot) return
+
+      const homeTeam = extractTeamAbbr(snapshot.home_team)
+      const awayTeam = extractTeamAbbr(snapshot.away_team)
 
       if (!homeTeam || !awayTeam) return
 
