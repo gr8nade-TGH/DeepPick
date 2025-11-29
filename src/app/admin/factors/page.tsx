@@ -272,8 +272,8 @@ function FactorCard({
 - **Total Runs:** ${factor.totalRuns}
 - **Last Run:** ${factor.lastRun || 'Never'}
 - **Avg Signal:** ${factor.avgSignal.toFixed(4)}
-- **Avg Away Score:** ${factor.avgAwayScore.toFixed(4)}
-- **Avg Home Score:** ${factor.avgHomeScore.toFixed(4)}
+- **Avg ${factor.betType === 'TOTAL' ? 'Over' : 'Away'} Score:** ${factor.avgAwayScore.toFixed(4)}
+- **Avg ${factor.betType === 'TOTAL' ? 'Under' : 'Home'} Score:** ${factor.avgHomeScore.toFixed(4)}
 - **Zero Count:** ${factor.zeroCount} (${factor.totalRuns > 0 ? Math.round(factor.zeroCount / factor.totalRuns * 100) : 0}%)
 
 ### Recent Samples
@@ -282,8 +282,8 @@ ${factor.recentSamples.length > 0 ? factor.recentSamples.map((s, i) => `
 - Run ID: ${s.runId}
 - Created: ${s.createdAt}
 - Signal: ${s.signal.toFixed(4)}
-- Away Score: ${s.awayScore.toFixed(4)}
-- Home Score: ${s.homeScore.toFixed(4)}
+- ${factor.betType === 'TOTAL' ? 'Over' : 'Away'} Score: ${s.awayScore.toFixed(4)}
+- ${factor.betType === 'TOTAL' ? 'Under' : 'Home'} Score: ${s.homeScore.toFixed(4)}
 `).join('\n') : 'No recent samples'}
 `.trim()
 
@@ -370,8 +370,8 @@ ${factor.recentSamples.length > 0 ? factor.recentSamples.map((s, i) => `
                   <span>Signal: <span className={sample.signal > 0 ? 'text-green-400' : 'text-red-400'}>
                     {sample.signal.toFixed(3)}
                   </span></span>
-                  <span>Away: {sample.awayScore.toFixed(2)}</span>
-                  <span>Home: {sample.homeScore.toFixed(2)}</span>
+                  <span>{factor.betType === 'TOTAL' ? 'Over' : 'Away'}: {sample.awayScore.toFixed(2)}</span>
+                  <span>{factor.betType === 'TOTAL' ? 'Under' : 'Home'}: {sample.homeScore.toFixed(2)}</span>
                 </div>
               </div>
             ))}
