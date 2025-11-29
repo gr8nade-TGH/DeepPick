@@ -348,7 +348,7 @@ export default function LeaderboardPage() {
                     </div>
 
                     {/* View Picks Button */}
-                    <Link href={capper.type === 'system' ? `/?capper=${capper.id}` : `/profile/${capper.id}`} target="_blank">
+                    <Link href={capper.type === 'system' ? `/cappers/${capper.id}` : `/profile/${capper.id}`} target="_blank">
                       <Button
                         size="sm"
                         className={`bg-gradient-to-r ${capperColor} hover:opacity-90 text-white font-bold shadow-lg whitespace-nowrap`}
