@@ -758,9 +758,12 @@ function buildInsightCard({ pick, game, run, factorContributions, predictedTotal
 
   if (isSpread) {
     // SPREAD: Edge = predicted margin vs market spread
+    // marketSpread is from HOME perspective (positive = home underdog, negative = home favorite)
+    // predictedMargin is from AWAY perspective (positive = away wins, negative = home wins)
+    // Direct subtraction gives us the edge
     const predictedMargin = run.metadata?.steps?.step4?.predictions?.spread_pred_points || 0
     const marketSpread = run.metadata?.steps?.step2?.snapshot?.spread?.line || 0
-    edgeRaw = predictedMargin - (-marketSpread) // Convert market spread to away perspective
+    edgeRaw = predictedMargin - marketSpread
     console.log('[buildInsightCard] SPREAD edge:', { predictedMargin, marketSpread, edgeRaw })
   } else {
     // TOTAL: Edge = predicted total vs market total

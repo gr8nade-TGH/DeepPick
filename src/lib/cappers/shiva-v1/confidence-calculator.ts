@@ -202,10 +202,20 @@ export function calculateConfidence(input: ConfidenceInput): ConfidenceOutput {
     })
   }
 
+  // Cap confidence score at 10.0 (max on our scale)
+  // This prevents edge cases where factor weights sum to more than expected
+  const cappedConfScore = Math.min(confScore, 10.0)
+  if (confScore > 10.0) {
+    console.warn('[ConfidenceCalculator] Confidence exceeded 10.0, capping:', {
+      original: confScore,
+      capped: cappedConfScore
+    })
+  }
+
   return {
     edgeRaw, // Positive = OVER/AWAY bias, Negative = UNDER/HOME bias
     edgePct: Math.abs(edgeRaw), // Magnitude of the edge
-    confScore, // Always positive - the confidence in the pick
+    confScore: cappedConfScore, // Always positive - the confidence in the pick (max 10.0)
     confSource,
     factorContributions
   }

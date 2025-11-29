@@ -113,7 +113,7 @@ export async function executeWizardPipeline(input: WizardOrchestratorInput): Pro
 
     // Step 4: Score Predictions
     console.log('[WizardOrchestrator] Step 4: Generating predictions...')
-    steps.step4 = await generatePredictions(runId, steps.step3, sport, betType)
+    steps.step4 = await generatePredictions(runId, steps.step3, sport, betType, game)
     console.log('[WizardOrchestrator] Step 4: Predictions generated')
 
     // Step 5: Market Edge Adjustment
@@ -124,6 +124,7 @@ export async function executeWizardPipeline(input: WizardOrchestratorInput): Pro
     let baseConfidence: number
     let pickDirection: string
     let marketEdgePts: number
+    let isAwayPick = false // Only used for SPREAD picks
 
     if (betType === 'TOTAL') {
       // TOTALS: Compare predicted total vs market total line
@@ -171,7 +172,8 @@ export async function executeWizardPipeline(input: WizardOrchestratorInput): Pro
       // Positive margin = away team favored, negative = home team favored
       const awayTeam = typeof game.away_team === 'string' ? game.away_team : game.away_team.name
       const homeTeam = typeof game.home_team === 'string' ? game.home_team : game.home_team.name
-      pickDirection = predictedMargin > 0 ? awayTeam : homeTeam
+      isAwayPick = predictedMargin > 0 // Assign to outer scope variable
+      pickDirection = isAwayPick ? awayTeam : homeTeam
 
       // Calculate edge: predicted margin vs market spread
       // marketSpread is from home perspective (negative = home favored, positive = away favored)
@@ -229,7 +231,7 @@ export async function executeWizardPipeline(input: WizardOrchestratorInput): Pro
       ? steps.step2.snapshot?.total?.line || 220
       : steps.step2.snapshot?.spread?.line || 0
 
-    steps.step7 = await finalizePick(runId, finalConfidence, predictedValue, marketLine, pickDirection, steps.step2.snapshot, betType)
+    steps.step7 = await finalizePick(runId, finalConfidence, predictedValue, marketLine, pickDirection, steps.step2.snapshot, betType, isAwayPick)
     console.log('[WizardOrchestrator] Step 7: Pick finalized')
 
     // Build result
@@ -535,7 +537,7 @@ async function computeFactors(
 /**
  * Step 4: Generate predictions
  */
-async function generatePredictions(runId: string, step3Result: any, sport: string, betType: string) {
+async function generatePredictions(runId: string, step3Result: any, sport: string, betType: string, game?: any) {
   const { calculateConfidence } = await import('@/lib/cappers/shiva-v1/confidence-calculator')
 
   if (!step3Result?.factors || step3Result.factors.length === 0) {
@@ -554,6 +556,10 @@ async function generatePredictions(runId: string, step3Result: any, sport: strin
   // TOTALS: awayPPG + homePPG (e.g., 220)
   // SPREAD: 0 (no inherent advantage)
   const baselineAvg = step3Result.baseline_avg || (betType === 'TOTAL' ? 220 : 0)
+
+  // Extract team names for winner field
+  const awayTeamName = game ? (typeof game.away_team === 'string' ? game.away_team : game.away_team?.name) : 'AWAY'
+  const homeTeamName = game ? (typeof game.home_team === 'string' ? game.home_team : game.home_team?.name) : 'HOME'
 
   if (betType === 'TOTAL') {
     // TOTALS: Calculate predicted total
@@ -581,7 +587,7 @@ async function generatePredictions(runId: string, step3Result: any, sport: strin
           home: predictedTotal / 2 + 2,
           away: predictedTotal / 2 - 2
         },
-        winner: 'TBD',
+        winner: 'TBD', // TOTALS don't have a winner prediction
         conf7_score: confidenceResult.confScore
       },
       confidence: confidenceResult,
@@ -601,8 +607,8 @@ async function generatePredictions(runId: string, step3Result: any, sport: strin
     const predictedAwayScore = (avgGameTotal / 2) + (predictedMargin / 2)
     const predictedHomeScore = (avgGameTotal / 2) - (predictedMargin / 2)
 
-    // Determine winner based on margin
-    const winner = predictedMargin > 0 ? 'AWAY' : 'HOME'
+    // Determine winner based on margin - use actual team name, not 'AWAY'/'HOME'
+    const winner = predictedMargin > 0 ? awayTeamName : homeTeamName
 
     console.log('[WizardOrchestrator:Step4] SPREAD Prediction calculation:', {
       baselineAvg,
@@ -624,7 +630,7 @@ async function generatePredictions(runId: string, step3Result: any, sport: strin
           away: predictedAwayScore,
           home: predictedHomeScore
         },
-        winner,
+        winner, // Now contains actual team name (e.g., "Chicago Bulls")
         conf7_score: confidenceResult.confScore
       },
       confidence: confidenceResult,
@@ -744,7 +750,8 @@ async function finalizePick(
   marketLine: number,
   pickDirection: string,
   oddsSnapshot: any,
-  betType: string
+  betType: string,
+  isAwayPick?: boolean // true if pick is for away team (SPREAD only)
 ) {
   // Determine units based on confidence
   // New thresholds: Higher confidence required for picks
@@ -764,7 +771,11 @@ async function finalizePick(
     selection = `${pickDirection} ${marketLine}`
   } else if (betType === 'SPREAD') {
     // pickDirection is team name for SPREAD
-    selection = `${pickDirection} ${marketLine > 0 ? '+' : ''}${marketLine}`
+    // marketLine is always from HOME perspective (positive = home underdog, negative = home favorite)
+    // If picking AWAY team, we need to show the AWAY spread (which is -marketLine)
+    // Example: marketLine = +4.5 (home gets +4.5) → away spread = -4.5
+    const teamSpread = isAwayPick ? -marketLine : marketLine
+    selection = `${pickDirection} ${teamSpread > 0 ? '+' : ''}${teamSpread}`
   } else {
     selection = pickDirection
   }

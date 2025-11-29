@@ -99,6 +99,32 @@ export async function generateProfessionalAnalysis(input: AnalysisInput): Promis
     // Generate AI prompt based on bet type
     let aiPrompt = ''
 
+    // Format team stats section for TOTALS (if available)
+    let totalsTeamStatsSection = ''
+    if (input.teamStats) {
+      const { away, home } = input.teamStats
+      totalsTeamStatsSection = `
+ACTUAL TEAM STATISTICS (Last 10 Games):
+${input.game.away_team}:
+- Offensive Rating: ${away.offensiveRating.toFixed(1)} (points per 100 possessions)
+- Defensive Rating: ${away.defensiveRating.toFixed(1)} (points allowed per 100 possessions)
+- Net Rating: ${away.netRating.toFixed(1)} (ORtg - DRtg)
+- Pace: ${away.pace.toFixed(1)} possessions per game
+- 3-Point Shooting: ${(away.threePointPct * 100).toFixed(1)}%${away.threePointPctDefense ? ` | Defense allows ${(away.threePointPctDefense * 100).toFixed(1)}%` : ''}
+- Turnovers: ${away.turnovers.toFixed(1)} per game${away.turnoversForced ? ` | Forces ${away.turnoversForced.toFixed(1)} per game` : ''}
+
+${input.game.home_team}:
+- Offensive Rating: ${home.offensiveRating.toFixed(1)} (points per 100 possessions)
+- Defensive Rating: ${home.defensiveRating.toFixed(1)} (points allowed per 100 possessions)
+- Net Rating: ${home.netRating.toFixed(1)} (ORtg - DRtg)
+- Pace: ${home.pace.toFixed(1)} possessions per game
+- 3-Point Shooting: ${(home.threePointPct * 100).toFixed(1)}%${home.threePointPctDefense ? ` | Defense allows ${(home.threePointPctDefense * 100).toFixed(1)}%` : ''}
+- Turnovers: ${home.turnovers.toFixed(1)} per game${home.turnoversForced ? ` | Forces ${home.turnoversForced.toFixed(1)} per game` : ''}
+
+CRITICAL: Use ONLY the statistics provided above. Do NOT cite any other numbers or rankings.
+`
+    }
+
     if (input.betType === 'TOTAL') {
       const edge = Math.abs(input.predictedValue - input.marketLine)
       const direction = input.predictedValue > input.marketLine ? 'higher' : 'lower'
@@ -114,7 +140,7 @@ GAME CONTEXT:
 - Pick: ${input.selection}
 - Confidence: ${input.confidence.toFixed(1)}/10.0
 - Units: ${input.units}
-
+${totalsTeamStatsSection}
 FACTOR ANALYSIS (Our Proprietary Model):
 ${factorBreakdown}
 
