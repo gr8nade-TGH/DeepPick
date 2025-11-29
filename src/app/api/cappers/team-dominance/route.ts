@@ -126,14 +126,6 @@ export async function GET(request: NextRequest) {
         })
     })
 
-    console.log('[TeamDominance] Processing summary:', {
-      totalPicks: allPicks?.length || 0,
-      processedCount,
-      skippedNoSnapshot,
-      skippedParseFailure,
-      skippedNoTeams
-    })
-
     // Build leaderboards for each team and find this capper's stats
     const capperTeamData: Array<{
       team: string
