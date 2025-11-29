@@ -304,9 +304,11 @@ export async function GET(
       const pickType = (snapshot.pick?.type || snapshot.metadata?.pick_type || pick.pick_type || 'TOTAL').toUpperCase()
       const isSpread = pickType === 'SPREAD'
 
-      // Extract team names
+      // Extract team names AND abbreviations for SPREAD factor labels
       const awayTeamName = snapshot.matchup?.away?.name || snapshot.matchup?.away || 'Away'
       const homeTeamName = snapshot.matchup?.home?.name || snapshot.matchup?.home || 'Home'
+      const awayTeamAbbr = snapshot.matchup?.away?.abbreviation || 'AWAY'
+      const homeTeamAbbr = snapshot.matchup?.home?.abbreviation || 'HOME'
 
       // Extract predicted scores from snapshot
       const predictedHomeScore = snapshot.predictions?.predicted_home_score || 0
@@ -379,8 +381,9 @@ export async function GET(
         pickId: pick.id,
         generatedAt: pick.created_at,
         matchup: {
-          away: awayTeamName,
-          home: homeTeamName,
+          // Return as objects with both name and abbreviation for SPREAD factor labels
+          away: { name: awayTeamName, abbreviation: awayTeamAbbr },
+          home: { name: homeTeamName, abbreviation: homeTeamAbbr },
           spreadText: `${awayTeamName} @ ${homeTeamName}`,
           totalText,
           gameDateLocal: snapshot.matchup?.game_date || pick.created_at
@@ -402,7 +405,7 @@ export async function GET(
         writeups: {
           prediction: writeup,
           gamePrediction: isSpread
-            ? `Predicted margin: ${predictedTotal > 0 ? 'Away' : 'Home'} by ${Math.abs(predictedTotal).toFixed(1)} pts`
+            ? `Predicted margin: ${predictedTotal > 0 ? awayTeamAbbr : homeTeamAbbr} by ${Math.abs(predictedTotal).toFixed(1)} pts`
             : `Predicted total: ${predictedTotal.toFixed(1)} vs Market: ${marketTotal.toFixed(1)}`,
           bold: boldPredictions?.summary || null
         },
@@ -791,6 +794,7 @@ function buildInsightCard({ pick, game, run, factorContributions, predictedTotal
   ]
 
   // Extract team names from game_snapshot or game object
+  // Extract team names AND abbreviations for SPREAD factor labels
   const awayTeamName = pick.game_snapshot?.away_team?.name
     || pick.game_snapshot?.away_team
     || game.away_team?.name
@@ -802,6 +806,15 @@ function buildInsightCard({ pick, game, run, factorContributions, predictedTotal
     || game.home_team?.name
     || game.home_team
     || 'Home'
+
+  // Extract abbreviations (critical for SPREAD factor display: "CHI +4.8" instead of "AWAY +4.8")
+  const awayTeamAbbr = pick.game_snapshot?.away_team?.abbreviation
+    || game.away_team?.abbreviation
+    || 'AWAY'
+
+  const homeTeamAbbr = pick.game_snapshot?.home_team?.abbreviation
+    || game.home_team?.abbreviation
+    || 'HOME'
 
   // Format spread text: "Away Team @ Home Team" or "Away +7.5 @ Home -7.5"
   const spreadData = pick.game_snapshot?.spread || game.spread || null
@@ -834,8 +847,9 @@ function buildInsightCard({ pick, game, run, factorContributions, predictedTotal
   }
 
   // Generate game prediction text based on pick type
+  // For SPREAD: Use actual team abbreviation instead of "Away" or "Home"
   const gamePrediction = isSpread
-    ? `Predicted margin: ${edgeRaw > 0 ? 'Away' : 'Home'} by ${Math.abs(edgeRaw).toFixed(1)} pts`
+    ? `Predicted margin: ${edgeRaw > 0 ? awayTeamAbbr : homeTeamAbbr} by ${Math.abs(edgeRaw).toFixed(1)} pts`
     : `Predicted total: ${predictedTotal.toFixed(1)} vs Market: ${marketTotal.toFixed(1)}`
 
   // Build the insight card
@@ -848,8 +862,9 @@ function buildInsightCard({ pick, game, run, factorContributions, predictedTotal
     generatedAt: pick.created_at,
     is_system_pick: pick.is_system_pick !== false,  // Default to true if not specified
     matchup: {
-      away: awayTeamName,
-      home: homeTeamName,
+      // Return as objects with both name and abbreviation for SPREAD factor labels
+      away: { name: awayTeamName, abbreviation: awayTeamAbbr },
+      home: { name: homeTeamName, abbreviation: homeTeamAbbr },
       spreadText,
       totalText,
       gameDateLocal: game.game_start_timestamp || game.game_date || new Date().toISOString()
