@@ -231,9 +231,15 @@ async function fetchMergedInjuryData(
     if (injuryData.players && injuryData.players.length > 0) {
       for (const injuredPlayer of injuryData.players) {
         // Only process if player has an actual injury
+        // Note: player_injuries.json has currentInjury at top level (not nested in player)
         if (!injuredPlayer.currentInjury) continue
 
-        const playerId = injuredPlayer.id
+        // player_injuries.json has player info nested in "player" object
+        const playerId = injuredPlayer.player?.id || injuredPlayer.id
+        const playerName = injuredPlayer.player
+          ? `${injuredPlayer.player.firstName} ${injuredPlayer.player.lastName}`
+          : `${injuredPlayer.firstName} ${injuredPlayer.lastName}`
+
         const playerWithStats = statsMap.get(playerId)
 
         if (playerWithStats) {
@@ -246,7 +252,7 @@ async function fetchMergedInjuryData(
             }
           })
 
-          console.log(`[InjuryFactor] Merged injury data for ${injuredPlayer.firstName} ${injuredPlayer.lastName}:`, {
+          console.log(`[InjuryFactor] Merged injury data for ${playerName}:`, {
             team: teamAbbrev,
             status: injuredPlayer.currentInjury?.playingProbability,
             ppg: playerWithStats.averages.avgPoints,
@@ -254,7 +260,7 @@ async function fetchMergedInjuryData(
           })
         } else {
           // Player not found in stats - create minimal entry
-          console.warn(`[InjuryFactor] Player ${injuredPlayer.firstName} ${injuredPlayer.lastName} not found in stats, skipping`)
+          console.warn(`[InjuryFactor] Player ${playerName} (ID: ${playerId}) not found in stats, skipping`)
         }
       }
     }

@@ -52,8 +52,14 @@ export interface BoldPredictionsResult {
 
 /**
  * Transform raw MySportsFeeds injury data into the format expected by insight cards
+ *
+ * @param rawInjuryData - Fresh injury data from player_injuries.json endpoint
+ * @param playerStats - Optional player stats from player_stats_totals.json for impact calculation
  */
-function transformInjuryData(rawInjuryData: any): BoldPredictionsResult['injury_summary'] {
+function transformInjuryData(
+  rawInjuryData: any,
+  playerStats?: any[]
+): BoldPredictionsResult['injury_summary'] {
   if (!rawInjuryData || !rawInjuryData.players) {
     return null
   }
@@ -68,15 +74,37 @@ function transformInjuryData(rawInjuryData: any): BoldPredictionsResult['injury_
     }
   }
 
+  // Create lookup map of player stats by ID for impact calculation
+  const statsMap = new Map<number, any>()
+  if (playerStats) {
+    for (const stat of playerStats) {
+      if (stat.player?.id) {
+        statsMap.set(stat.player.id, stat)
+      }
+    }
+  }
+
   const findings = injuredPlayers.map((p: any) => {
-    const playerName = `${p.player.firstName} ${p.player.lastName}`
+    // player_injuries.json has player info nested in "player" object
+    const playerName = p.player
+      ? `${p.player.firstName} ${p.player.lastName}`
+      : `${p.firstName} ${p.lastName}`
+    const playerId = p.player?.id || p.id
     const team = p.currentTeam?.abbreviation || 'Unknown'
     const status = p.currentInjury?.playingProbability || p.currentInjury?.description || 'Unknown'
 
-    // Calculate impact based on player stats (PPG / 10 + MPG / 48)
-    const ppg = p.playerStats?.offense?.pts?.avgValue || 0
-    const mpg = p.playerStats?.miscellaneous?.minSeconds?.avgValue ?
-      p.playerStats.miscellaneous.minSeconds.avgValue / 60 : 0
+    // Try to get stats from the merged player stats data
+    const playerStat = statsMap.get(playerId)
+    let ppg = 0
+    let mpg = 0
+
+    if (playerStat?.averages) {
+      // player_stats_totals.json format (from our mapping)
+      ppg = playerStat.averages.avgPoints || 0
+      mpg = playerStat.averages.avgMinutes || 0
+    }
+
+    // Calculate impact (PPG / 10 + MPG / 48 * 2)
     const impact = (ppg / 10) + (mpg / 48) * 2
 
     return {
@@ -230,6 +258,9 @@ export async function generateBoldPredictions(input: BoldPredictionsInput): Prom
     const hasAwayStats = awayPlayerStats && awayPlayerStats.length > 0
     const hasHomeStats = homePlayerStats && homePlayerStats.length > 0
 
+    // Combine all player stats for injury impact calculation
+    const allPlayerStats = [...awayPlayerStats, ...homePlayerStats]
+
     // If no player stats available for either team, return early with helpful message
     if (!hasAwayStats && !hasHomeStats) {
       console.warn('[BoldPredictions] No player stats available for either team - skipping bold predictions')
@@ -238,7 +269,7 @@ export async function generateBoldPredictions(input: BoldPredictionsInput): Prom
           predictions: [],
           summary: `Player-level predictions are not available due to missing current-season player statistics. The professional analysis above uses team-level statistics (offensive/defensive ratings, pace, efficiency metrics) which are available and accurate.`
         },
-        injury_summary: transformInjuryData(injuryData)
+        injury_summary: transformInjuryData(injuryData, allPlayerStats)
       }
     }
 
@@ -462,7 +493,7 @@ Return ONLY valid JSON in this exact format:
 
     return {
       bold_predictions: boldPredictions,
-      injury_summary: transformInjuryData(injuryData)
+      injury_summary: transformInjuryData(injuryData, allPlayerStats)
     }
 
   } catch (error) {
