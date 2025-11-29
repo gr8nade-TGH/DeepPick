@@ -285,9 +285,9 @@ export function PickGrid() {
                             <Card
                                 key={cp.key}
                                 className={`bg-gradient-to-br from-slate-900 to-slate-800 border transition-all duration-200 hover:scale-[1.02] ${cp.heatLevel >= 4 ? 'border-red-500/50 shadow-lg shadow-red-500/20'
-                                        : cp.heatLevel >= 3 ? 'border-orange-500/50 shadow-lg shadow-orange-500/20'
-                                            : cp.heatLevel >= 2 ? 'border-yellow-500/30'
-                                                : 'border-slate-700'
+                                    : cp.heatLevel >= 3 ? 'border-orange-500/50 shadow-lg shadow-orange-500/20'
+                                        : cp.heatLevel >= 2 ? 'border-yellow-500/30'
+                                            : 'border-slate-700'
                                     }`}
                             >
                                 <CardContent className="p-4">
@@ -400,10 +400,9 @@ export function PickGrid() {
             )}
 
             {/* Insight Modal */}
-            {selectedPick && (
+            {selectedPick && showInsight && (
                 <PickInsightModal
-                    pick={selectedPick}
-                    isOpen={showInsight}
+                    pickId={selectedPick.id}
                     onClose={() => {
                         setShowInsight(false)
                         setSelectedPick(null)
