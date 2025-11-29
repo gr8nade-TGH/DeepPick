@@ -116,23 +116,24 @@ export default function ManualPicksPage() {
     return () => clearInterval(interval)
   }, [])
 
-  // Fetch user's capper_id from user_cappers table
+  // Get capper name from user profile (same source as GlobalBettingSlip uses)
   useEffect(() => {
-    const fetchCapperId = async () => {
+    const fetchProfile = async () => {
       if (!user) return
 
       try {
-        const response = await fetch(`/api/user-cappers?userId=${user.id}`)
+        const response = await fetch('/api/auth/session')
         const data = await response.json()
-        if (data.success && data.cappers && data.cappers.length > 0) {
-          setCapperId(data.cappers[0].capper_id)
+        if (data.profile?.full_name) {
+          setCapperId(data.profile.full_name)
+          console.log('[MakePicks] Capper ID from profile:', data.profile.full_name)
         }
       } catch (error) {
-        console.error('Error fetching capper ID:', error)
+        console.error('Error fetching profile:', error)
       }
     }
 
-    fetchCapperId()
+    fetchProfile()
   }, [user])
 
   useEffect(() => {
@@ -156,12 +157,14 @@ export default function ManualPicksPage() {
       const response = await fetch('/api/games/today')
       const data = await response.json()
       if (data.success) {
-        // Filter out games that have already started and sort by start time (soonest first)
+        // Filter out games that have already started, have no odds, and sort by start time
         const now = new Date()
         const upcomingGames = (data.games || [])
           .filter((game: Game) => {
             const gameStartTime = new Date(game.game_start_timestamp)
-            return gameStartTime > now
+            // Must be in the future AND have at least spread or total odds
+            const hasOdds = game.odds.spread !== null || game.odds.total !== null
+            return gameStartTime > now && hasOdds
           })
           .sort((a: Game, b: Game) => {
             const aTime = new Date(a.game_start_timestamp).getTime()
