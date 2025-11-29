@@ -194,6 +194,13 @@ export function NavBar() {
                       <span>System Health</span>
                     </Link>
                     <Link
+                      href="/admin/factors"
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-slate-700 transition-colors text-slate-300 hover:text-white"
+                    >
+                      <Activity className="w-4 h-4 text-cyan-400" />
+                      <span>Factor Dashboard</span>
+                    </Link>
+                    <Link
                       href="/admin/users"
                       className="flex items-center gap-3 px-4 py-3 hover:bg-slate-700 transition-colors text-slate-300 hover:text-white border-t border-slate-700"
                     >
@@ -354,6 +361,13 @@ export function NavBar() {
                   >
                     <Shield className="w-5 h-5 text-blue-400" />
                     <span>System Health</span>
+                  </Link>
+                  <Link
+                    href="/admin/factors"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-all"
+                  >
+                    <Activity className="w-5 h-5 text-cyan-400" />
+                    <span>Factor Dashboard</span>
                   </Link>
                   <Link
                     href="/admin/users"
