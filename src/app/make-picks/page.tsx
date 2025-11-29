@@ -48,10 +48,11 @@ function getCountdown(gameDate: string | undefined): string {
 interface ExistingPickData {
   selection: string
   pickId: string
+  units: number
 }
 
 export default function ManualPicksPage() {
-  const { addSelection: addToSlip, hasSelection, picksPlacedCount } = useBettingSlip()
+  const { addSelection: addToSlip, hasSelection, getSelection, isInSlip, picksPlacedCount } = useBettingSlip()
   const { user } = useAuth()
   const [games, setGames] = useState<Game[]>([])
   const [loading, setLoading] = useState(true)
@@ -78,6 +79,11 @@ export default function ManualPicksPage() {
     return existingPicks.get(`${gameId}:${pickType}`)?.pickId || null
   }
 
+  // Get units for an existing pick
+  const getExistingPickUnits = (gameId: string, pickType: 'spread' | 'total' | 'moneyline') => {
+    return existingPicks.get(`${gameId}:${pickType}`)?.units || 1
+  }
+
   // Open insight modal for an existing pick
   const openInsightCard = (gameId: string, pickType: 'spread' | 'total' | 'moneyline') => {
     const pickId = getExistingPickId(gameId, pickType)
@@ -97,7 +103,7 @@ export default function ManualPicksPage() {
         const picksMap = new Map<string, ExistingPickData>()
         data.picks.forEach((p: any) => {
           const key = `${p.game_id}:${p.pick_type}`
-          picksMap.set(key, { selection: p.selection, pickId: p.id })
+          picksMap.set(key, { selection: p.selection, pickId: p.id, units: p.units || 1 })
         })
         setExistingPicks(picksMap)
         console.log('[MakePicks] Existing picks loaded:', Array.from(picksMap.entries()))
@@ -314,7 +320,36 @@ export default function ManualPicksPage() {
                 const hasTotalPick = hasExistingPick(game.id, 'total')
                 const spreadSelection = getExistingPickSelection(game.id, 'spread')
                 const totalSelection = getExistingPickSelection(game.id, 'total')
+                const spreadUnits = getExistingPickUnits(game.id, 'spread')
+                const totalUnits = getExistingPickUnits(game.id, 'total')
                 const hasAnyPick = hasSpreadPick || hasTotalPick
+
+                // Check what's currently in the betting slip for this game
+                const slipSpread = getSelection(game.id, 'spread')
+                const slipTotal = getSelection(game.id, 'total')
+
+                // Helper to format selection for badge display (abbreviated)
+                const formatBadgeSelection = (selection: string | null, betType: 'spread' | 'total', units: number): string => {
+                  if (!selection) return ''
+                  // For spread: "Boston Celtics -7.5" -> "BOS -7.5"
+                  // For total: "O 226.5" or "OVER 226.5" -> "o226.5"
+                  if (betType === 'spread') {
+                    // Extract just the spread number from the selection
+                    const match = selection.match(/([+-]?\d+\.?\d*)$/)
+                    const spreadNum = match ? match[1] : ''
+                    // Try to figure out which team from the selection
+                    const isHome = selection.toLowerCase().includes(game.home_team.name.toLowerCase()) ||
+                      selection.includes(game.home_team.abbreviation)
+                    const teamAbbr = isHome ? game.home_team.abbreviation : game.away_team.abbreviation
+                    return `${units}U: ${teamAbbr} ${spreadNum}`
+                  } else {
+                    // Total: normalize to "o226.5" or "u226.5" format
+                    const isOver = selection.toLowerCase().includes('over') || selection.startsWith('O ')
+                    const match = selection.match(/(\d+\.?\d*)/)
+                    const line = match ? match[1] : ''
+                    return `${units}U: ${isOver ? 'o' : 'u'}${line}`
+                  }
+                }
 
                 return (
                   <div
@@ -346,16 +381,16 @@ export default function ManualPicksPage() {
                             })()}
                           </div>
                         </div>
-                        {/* Compact pick badges */}
+                        {/* Compact pick badges - show placed picks with units */}
                         <div className="flex gap-1 flex-shrink-0">
                           {hasSpreadPick && (
                             <div className="bg-blue-600 text-white px-1.5 py-0.5 rounded text-[10px] font-bold whitespace-nowrap">
-                              ✓ {spreadSelection}
+                              ✓ {formatBadgeSelection(spreadSelection, 'spread', spreadUnits)}
                             </div>
                           )}
                           {hasTotalPick && (
                             <div className="bg-orange-600 text-white px-1.5 py-0.5 rounded text-[10px] font-bold whitespace-nowrap">
-                              ✓ {totalSelection}
+                              ✓ {formatBadgeSelection(totalSelection, 'total', totalUnits)}
                             </div>
                           )}
                         </div>
@@ -380,32 +415,48 @@ export default function ManualPicksPage() {
                             </button>
                           ) : (
                             <div className="space-y-1">
-                              <button
-                                onClick={() => addSelection(game, 'spread', 'away')}
-                                className="w-full bg-slate-800 hover:bg-blue-900/50 border border-slate-600 hover:border-blue-500 rounded p-1.5 transition-all group"
-                              >
-                                <div className="flex justify-between items-center">
-                                  <span className="text-white font-bold text-xs group-hover:text-blue-400">
-                                    {game.away_team.abbreviation}
-                                  </span>
-                                  <span className="text-white font-bold text-xs">
-                                    {game.odds.spread.line > 0 ? '+' : ''}{game.odds.spread.line.toFixed(1)} <span className="text-emerald-400 text-[10px]">{formatOdds(game.odds.spread.away_odds)}</span>
-                                  </span>
-                                </div>
-                              </button>
-                              <button
-                                onClick={() => addSelection(game, 'spread', 'home')}
-                                className="w-full bg-slate-800 hover:bg-cyan-900/50 border border-slate-600 hover:border-cyan-500 rounded p-1.5 transition-all group"
-                              >
-                                <div className="flex justify-between items-center">
-                                  <span className="text-white font-bold text-xs group-hover:text-cyan-400">
-                                    {game.home_team.abbreviation}
-                                  </span>
-                                  <span className="text-white font-bold text-xs">
-                                    {-game.odds.spread.line > 0 ? '+' : ''}{(-game.odds.spread.line).toFixed(1)} <span className="text-emerald-400 text-[10px]">{formatOdds(game.odds.spread.home_odds)}</span>
-                                  </span>
-                                </div>
-                              </button>
+                              {(() => {
+                                const awayId = `${game.id}-spread-away`
+                                const homeId = `${game.id}-spread-home`
+                                const awaySelected = isInSlip(awayId)
+                                const homeSelected = isInSlip(homeId)
+                                return (
+                                  <>
+                                    <button
+                                      onClick={() => addSelection(game, 'spread', 'away')}
+                                      className={`w-full rounded p-1.5 transition-all group ${awaySelected
+                                        ? 'bg-blue-600 border-2 border-blue-400 shadow-lg shadow-blue-500/30'
+                                        : 'bg-slate-800 hover:bg-blue-900/50 border border-slate-600 hover:border-blue-500'
+                                        }`}
+                                    >
+                                      <div className="flex justify-between items-center">
+                                        <span className={`font-bold text-xs ${awaySelected ? 'text-white' : 'text-white group-hover:text-blue-400'}`}>
+                                          {game.away_team.abbreviation}
+                                        </span>
+                                        <span className={`font-bold text-xs ${awaySelected ? 'text-white' : 'text-white'}`}>
+                                          {game.odds.spread.line > 0 ? '+' : ''}{game.odds.spread.line.toFixed(1)} <span className={`text-[10px] ${awaySelected ? 'text-blue-200' : 'text-emerald-400'}`}>{formatOdds(game.odds.spread.away_odds)}</span>
+                                        </span>
+                                      </div>
+                                    </button>
+                                    <button
+                                      onClick={() => addSelection(game, 'spread', 'home')}
+                                      className={`w-full rounded p-1.5 transition-all group ${homeSelected
+                                        ? 'bg-cyan-600 border-2 border-cyan-400 shadow-lg shadow-cyan-500/30'
+                                        : 'bg-slate-800 hover:bg-cyan-900/50 border border-slate-600 hover:border-cyan-500'
+                                        }`}
+                                    >
+                                      <div className="flex justify-between items-center">
+                                        <span className={`font-bold text-xs ${homeSelected ? 'text-white' : 'text-white group-hover:text-cyan-400'}`}>
+                                          {game.home_team.abbreviation}
+                                        </span>
+                                        <span className={`font-bold text-xs ${homeSelected ? 'text-white' : 'text-white'}`}>
+                                          {-game.odds.spread.line > 0 ? '+' : ''}{(-game.odds.spread.line).toFixed(1)} <span className={`text-[10px] ${homeSelected ? 'text-cyan-200' : 'text-emerald-400'}`}>{formatOdds(game.odds.spread.home_odds)}</span>
+                                        </span>
+                                      </div>
+                                    </button>
+                                  </>
+                                )
+                              })()}
                             </div>
                           )
                         ) : (
@@ -431,28 +482,44 @@ export default function ManualPicksPage() {
                             </button>
                           ) : (
                             <div className="space-y-1">
-                              <button
-                                onClick={() => addSelection(game, 'total', 'over')}
-                                className="w-full bg-slate-800 hover:bg-orange-900/50 border border-slate-600 hover:border-orange-500 rounded p-1.5 transition-all group"
-                              >
-                                <div className="flex justify-between items-center">
-                                  <span className="text-white font-bold text-xs group-hover:text-orange-400">
-                                    O {game.odds.total.line.toFixed(1)}
-                                  </span>
-                                  <span className="text-emerald-400 text-[10px]">{formatOdds(game.odds.total.over_odds)}</span>
-                                </div>
-                              </button>
-                              <button
-                                onClick={() => addSelection(game, 'total', 'under')}
-                                className="w-full bg-slate-800 hover:bg-purple-900/50 border border-slate-600 hover:border-purple-500 rounded p-1.5 transition-all group"
-                              >
-                                <div className="flex justify-between items-center">
-                                  <span className="text-white font-bold text-xs group-hover:text-purple-400">
-                                    U {game.odds.total.line.toFixed(1)}
-                                  </span>
-                                  <span className="text-emerald-400 text-[10px]">{formatOdds(game.odds.total.under_odds)}</span>
-                                </div>
-                              </button>
+                              {(() => {
+                                const overId = `${game.id}-total-over`
+                                const underId = `${game.id}-total-under`
+                                const overSelected = isInSlip(overId)
+                                const underSelected = isInSlip(underId)
+                                return (
+                                  <>
+                                    <button
+                                      onClick={() => addSelection(game, 'total', 'over')}
+                                      className={`w-full rounded p-1.5 transition-all group ${overSelected
+                                        ? 'bg-orange-600 border-2 border-orange-400 shadow-lg shadow-orange-500/30'
+                                        : 'bg-slate-800 hover:bg-orange-900/50 border border-slate-600 hover:border-orange-500'
+                                        }`}
+                                    >
+                                      <div className="flex justify-between items-center">
+                                        <span className={`font-bold text-xs ${overSelected ? 'text-white' : 'text-white group-hover:text-orange-400'}`}>
+                                          O {game.odds.total.line.toFixed(1)}
+                                        </span>
+                                        <span className={`text-[10px] ${overSelected ? 'text-orange-200' : 'text-emerald-400'}`}>{formatOdds(game.odds.total.over_odds)}</span>
+                                      </div>
+                                    </button>
+                                    <button
+                                      onClick={() => addSelection(game, 'total', 'under')}
+                                      className={`w-full rounded p-1.5 transition-all group ${underSelected
+                                        ? 'bg-purple-600 border-2 border-purple-400 shadow-lg shadow-purple-500/30'
+                                        : 'bg-slate-800 hover:bg-purple-900/50 border border-slate-600 hover:border-purple-500'
+                                        }`}
+                                    >
+                                      <div className="flex justify-between items-center">
+                                        <span className={`font-bold text-xs ${underSelected ? 'text-white' : 'text-white group-hover:text-purple-400'}`}>
+                                          U {game.odds.total.line.toFixed(1)}
+                                        </span>
+                                        <span className={`text-[10px] ${underSelected ? 'text-purple-200' : 'text-emerald-400'}`}>{formatOdds(game.odds.total.under_odds)}</span>
+                                      </div>
+                                    </button>
+                                  </>
+                                )
+                              })()}
                             </div>
                           )
                         ) : (

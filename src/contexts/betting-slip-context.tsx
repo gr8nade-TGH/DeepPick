@@ -21,6 +21,8 @@ interface BettingSlipContextType {
   removeSelection: (id: string) => void
   clearSelections: () => void
   hasSelection: (gameId: string) => boolean
+  getSelection: (gameId: string, betType: 'spread' | 'total' | 'moneyline') => BetSelection | undefined
+  isInSlip: (selectionId: string) => boolean
   picksPlacedCount: number  // Increments when picks are placed - triggers refetch
   notifyPicksPlaced: () => void  // Called after successful pick placement
 }
@@ -36,28 +38,30 @@ export function BettingSlipProvider({ children }: { children: ReactNode }) {
   }
 
   const addSelection = (selection: BetSelection) => {
-    // Check if already in slip
+    // Check if already in slip - if so, remove it (toggle behavior)
     if (selections.find(s => s.id === selection.id)) {
+      setSelections(selections.filter(s => s.id !== selection.id))
       toast({
-        title: "Already in Bet Slip",
-        description: "This selection is already in your bet slip!",
-        variant: "warning",
+        title: "Removed from Bet Slip",
+        description: `${selection.team} ${selection.line}`,
+        variant: "info",
       })
       return
     }
 
-    // Check if conflicting selection exists (same game, different side)
-    const conflictingSelection = selections.find(s => s.gameId === selection.gameId)
+    // Check if conflicting selection exists (same game, same bet type but different side)
+    // Auto-remove the conflicting selection and add the new one
+    const conflictingSelection = selections.find(
+      s => s.gameId === selection.gameId && s.betType === selection.betType
+    )
+
+    let newSelections = selections
     if (conflictingSelection) {
-      toast({
-        title: "Conflicting Selection",
-        description: "You already have a selection for this game. Remove it first.",
-        variant: "warning",
-      })
-      return
+      // Remove the conflicting selection
+      newSelections = selections.filter(s => s.id !== conflictingSelection.id)
     }
 
-    setSelections([...selections, selection])
+    setSelections([...newSelections, selection])
 
     // Show success toast
     toast({
@@ -97,8 +101,16 @@ export function BettingSlipProvider({ children }: { children: ReactNode }) {
     return selections.some(s => s.gameId === gameId)
   }
 
+  const getSelection = (gameId: string, betType: 'spread' | 'total' | 'moneyline') => {
+    return selections.find(s => s.gameId === gameId && s.betType === betType)
+  }
+
+  const isInSlip = (selectionId: string) => {
+    return selections.some(s => s.id === selectionId)
+  }
+
   return (
-    <BettingSlipContext.Provider value={{ selections, addSelection, removeSelection, clearSelections, hasSelection, picksPlacedCount, notifyPicksPlaced }}>
+    <BettingSlipContext.Provider value={{ selections, addSelection, removeSelection, clearSelections, hasSelection, getSelection, isInSlip, picksPlacedCount, notifyPicksPlaced }}>
       {children}
     </BettingSlipContext.Provider>
   )
