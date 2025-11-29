@@ -21,12 +21,19 @@ interface BettingSlipContextType {
   removeSelection: (id: string) => void
   clearSelections: () => void
   hasSelection: (gameId: string) => boolean
+  picksPlacedCount: number  // Increments when picks are placed - triggers refetch
+  notifyPicksPlaced: () => void  // Called after successful pick placement
 }
 
 const BettingSlipContext = createContext<BettingSlipContextType | undefined>(undefined)
 
 export function BettingSlipProvider({ children }: { children: ReactNode }) {
   const [selections, setSelections] = useState<BetSelection[]>([])
+  const [picksPlacedCount, setPicksPlacedCount] = useState(0)
+
+  const notifyPicksPlaced = () => {
+    setPicksPlacedCount(prev => prev + 1)
+  }
 
   const addSelection = (selection: BetSelection) => {
     // Check if already in slip
@@ -91,7 +98,7 @@ export function BettingSlipProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <BettingSlipContext.Provider value={{ selections, addSelection, removeSelection, clearSelections, hasSelection }}>
+    <BettingSlipContext.Provider value={{ selections, addSelection, removeSelection, clearSelections, hasSelection, picksPlacedCount, notifyPicksPlaced }}>
       {children}
     </BettingSlipContext.Provider>
   )

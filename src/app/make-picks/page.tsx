@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { RefreshCw, Clock } from 'lucide-react'
 import { useBettingSlip, BetSelection } from '@/contexts/betting-slip-context'
 import { useAuth } from '@/contexts/auth-context'
@@ -44,13 +44,28 @@ function getCountdown(gameDate: string | undefined): string {
 }
 
 export default function ManualPicksPage() {
-  const { addSelection: addToSlip, hasSelection } = useBettingSlip()
+  const { addSelection: addToSlip, hasSelection, picksPlacedCount } = useBettingSlip()
   const { user } = useAuth()
   const [games, setGames] = useState<Game[]>([])
   const [loading, setLoading] = useState(true)
   const [existingPicks, setExistingPicks] = useState<Set<string>>(new Set())
   const [capperId, setCapperId] = useState<string | null>(null)
   const [currentTime, setCurrentTime] = useState(new Date())
+
+  // Memoize fetchExistingPicks for use in effect dependencies
+  const fetchExistingPicks = useCallback(async () => {
+    if (!capperId) return
+    try {
+      const response = await fetch(`/api/picks?capper=${capperId}&status=pending`)
+      const data = await response.json()
+      if (data.success) {
+        const gameIds = new Set<string>(data.picks.map((p: any) => p.game_id as string))
+        setExistingPicks(gameIds)
+      }
+    } catch (error) {
+      console.error('Error fetching existing picks:', error)
+    }
+  }, [capperId])
 
   // Update countdown every minute
   useEffect(() => {
@@ -85,7 +100,15 @@ export default function ManualPicksPage() {
       fetchGames()
       fetchExistingPicks()
     }
-  }, [capperId])
+  }, [capperId, fetchExistingPicks])
+
+  // Re-fetch existing picks when picks are placed from the betting slip
+  useEffect(() => {
+    if (picksPlacedCount > 0 && capperId) {
+      console.log('[MakePicks] Picks placed, refreshing existing picks...')
+      fetchExistingPicks()
+    }
+  }, [picksPlacedCount, capperId, fetchExistingPicks])
 
   const fetchGames = async () => {
     setLoading(true)
@@ -111,19 +134,6 @@ export default function ManualPicksPage() {
       console.error('Error fetching games:', error)
     } finally {
       setLoading(false)
-    }
-  }
-
-  const fetchExistingPicks = async () => {
-    try {
-      const response = await fetch(`/api/picks?capper=${capperId}&status=pending`)
-      const data = await response.json()
-      if (data.success) {
-        const gameIds = new Set<string>(data.picks.map((p: any) => p.game_id as string))
-        setExistingPicks(gameIds)
-      }
-    } catch (error) {
-      console.error('Error fetching existing picks:', error)
     }
   }
 

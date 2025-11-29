@@ -32,7 +32,7 @@ interface GlobalBettingSlipProps {
 
 export function GlobalBettingSlip({ capperId, isCapper }: GlobalBettingSlipProps) {
   const router = useRouter()
-  const { selections, removeSelection, clearSelections } = useBettingSlip()
+  const { selections, removeSelection, clearSelections, notifyPicksPlaced } = useBettingSlip()
   const [activeTab, setActiveTab] = useState<'slip' | 'open'>('slip')
   const [isExpanded, setIsExpanded] = useState(false)
   const [openPicks, setOpenPicks] = useState<Pick[]>([])
@@ -147,6 +147,8 @@ export function GlobalBettingSlip({ capperId, isCapper }: GlobalBettingSlipProps
         // Switch to open bets tab to see the placed picks
         setActiveTab('open')
         fetchOpenPicks()
+        // Notify that picks were placed so make-picks page can refresh
+        notifyPicksPlaced()
       }
     } catch (error) {
       console.error('Error placing bets:', error)

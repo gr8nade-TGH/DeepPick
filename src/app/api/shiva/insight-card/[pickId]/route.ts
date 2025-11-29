@@ -349,19 +349,87 @@ export async function GET(
       console.warn('[InsightCard] Snapshot factors:', pick.insight_card_snapshot.factors)
     }
 
-    // Check if run_id is null
+    // Check if run_id is null - this could be a manual pick
     if (!pick.run_id) {
-      console.error('[InsightCard] Pick has NULL run_id - this is a data integrity issue:', {
+      console.log('[InsightCard] Pick has NULL run_id - likely a manual pick:', {
         pickId: pick.id,
         createdAt: pick.created_at,
-        selection: pick.selection
+        selection: pick.selection,
+        capper: pick.capper,
+        isSystemPick: pick.is_system_pick
       })
+
+      // For manual picks, return a simplified insight card from the snapshot
+      if (pick.insight_card_snapshot) {
+        const snapshot = pick.insight_card_snapshot
+        const gameSnapshot = pick.game_snapshot || {}
+
+        // Build a minimal but valid insight card for manual picks
+        const manualPickInsightCard: InsightCardProps = {
+          capper: pick.capper || 'manual',
+          sport: (gameSnapshot.sport as 'NBA' | 'MLB' | 'NFL') || 'NBA',
+          gameId: pick.game_id || '',
+          pickId: pick.id,
+          generatedAt: pick.created_at,
+          is_system_pick: false,
+          matchup: {
+            away: snapshot.matchup?.away || gameSnapshot.away_team || 'Away',
+            home: snapshot.matchup?.home || gameSnapshot.home_team || 'Home',
+            spreadText: '',
+            totalText: '',
+            gameDateLocal: snapshot.matchup?.game_date || gameSnapshot.game_date || ''
+          },
+          pick: {
+            type: (snapshot.pick?.type || pick.pick_type?.toUpperCase()) as 'SPREAD' | 'MONEYLINE' | 'TOTAL',
+            selection: snapshot.pick?.selection || pick.selection || '',
+            units: Number(snapshot.pick?.units || pick.units || 1),
+            confidence: Number(snapshot.pick?.confidence || pick.confidence || 5),
+            edgeRaw: 0,
+            edgePct: 0,
+            confScore: Number(snapshot.pick?.confidence || pick.confidence || 5),
+            locked_odds: null,
+            locked_at: pick.created_at
+          },
+          predictedScore: {
+            away: 0,
+            home: 0,
+            winner: 'Manual Pick'
+          },
+          market: {
+            conf7: 0,
+            confAdj: 0,
+            confFinal: Number(snapshot.pick?.confidence || pick.confidence || 5),
+            dominant: 'Manual Pick'
+          },
+          factors: [],
+          boldPredictions: [],
+          professionalAnalysis: 'This is a manual pick placed by a human capper. No AI analysis was performed.',
+          results: {
+            status: pick.status === 'won' ? 'win'
+              : pick.status === 'lost' ? 'loss'
+                : pick.status === 'push' ? 'push'
+                  : 'pending',
+            finalScore: undefined,
+            postMortem: '',
+            factorAccuracy: [],
+            tuningSuggestions: [],
+            overallAccuracy: undefined
+          },
+          onClose: () => { }
+        }
+
+        return NextResponse.json({
+          success: true,
+          data: manualPickInsightCard
+        })
+      }
+
       return NextResponse.json(
         {
-          error: 'Pick has no associated run data',
-          details: 'The pick was created without a run_id. This is a bug in pick generation.'
+          error: 'Pick has no insight card data',
+          details: 'This manual pick does not have an insight card snapshot.'
         },
-        { status: 500 }
+        { status: 404 }
       )
     }
 
