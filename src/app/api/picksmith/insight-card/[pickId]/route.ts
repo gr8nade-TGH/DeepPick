@@ -68,10 +68,22 @@ export async function GET(
     const pickType = pick.pick_type?.toUpperCase() || 'TOTAL'
     const isSpread = pickType.includes('SPREAD')
 
-    const homeTeamName = game?.home_team || pick.game_snapshot?.home_team?.name || 'Home'
-    const awayTeamName = game?.away_team || pick.game_snapshot?.away_team?.name || 'Away'
-    const homeTeamAbbr = pick.game_snapshot?.home_team?.abbreviation || homeTeamName.substring(0, 3).toUpperCase()
-    const awayTeamAbbr = pick.game_snapshot?.away_team?.abbreviation || awayTeamName.substring(0, 3).toUpperCase()
+    // Extract team names - handle both string and object formats
+    const extractTeamName = (team: any): string => {
+      if (typeof team === 'string') return team
+      if (team?.name) return typeof team.name === 'string' ? team.name : team.name?.name || 'Unknown'
+      return 'Unknown'
+    }
+    const extractTeamAbbr = (team: any, fallback: string): string => {
+      if (typeof team === 'string') return team.substring(0, 3).toUpperCase()
+      if (team?.abbreviation) return typeof team.abbreviation === 'string' ? team.abbreviation : team.abbreviation?.abbreviation || fallback
+      return fallback
+    }
+
+    const homeTeamName = extractTeamName(game?.home_team) || extractTeamName(pick.game_snapshot?.home_team) || 'Home'
+    const awayTeamName = extractTeamName(game?.away_team) || extractTeamName(pick.game_snapshot?.away_team) || 'Away'
+    const homeTeamAbbr = extractTeamAbbr(game?.home_team || pick.game_snapshot?.home_team, homeTeamName.substring(0, 3).toUpperCase())
+    const awayTeamAbbr = extractTeamAbbr(game?.away_team || pick.game_snapshot?.away_team, awayTeamName.substring(0, 3).toUpperCase())
 
     const insightCard = {
       capper: 'PICKSMITH',
