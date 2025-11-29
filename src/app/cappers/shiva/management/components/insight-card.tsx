@@ -3,6 +3,52 @@ import { useState } from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { getFactorMeta } from '@/lib/cappers/shiva-v1/factor-registry'
 
+// Manual pick insight data structure
+interface ManualInsight {
+  capper?: string
+  pickType?: 'SPREAD' | 'TOTAL'
+  selection?: string
+  units?: number
+  betTypeRecord?: {
+    wins: number
+    losses: number
+    pushes: number
+    total: number
+    winPct: number
+    netUnits: number
+  }
+  streak?: { type: 'W' | 'L' | 'none'; count: number }
+  matchupRecord?: {
+    wins: number
+    losses: number
+    pushes: number
+    total: number
+    winPct: number
+    netUnits: number
+  } | null
+  lastMatchupPick?: {
+    selection: string
+    result: 'won' | 'lost' | 'push'
+    date: string
+    netUnits: number
+  } | null
+  spread?: {
+    teamRecord?: { wins: number; losses: number; pushes: number; total: number; winPct: number; netUnits: number }
+    lastTeamPick?: { selection: string; result: string; date: string; netUnits: number } | null
+    homeRecord?: { wins: number; losses: number; pushes: number; total: number; winPct: number; netUnits: number }
+    awayRecord?: { wins: number; losses: number; pushes: number; total: number; winPct: number; netUnits: number }
+    favoriteRecord?: { wins: number; losses: number; pushes: number; total: number; winPct: number; netUnits: number }
+    underdogRecord?: { wins: number; losses: number; pushes: number; total: number; winPct: number; netUnits: number }
+  }
+  totals?: {
+    overRecord?: { wins: number; losses: number; pushes: number; total: number; winPct: number; netUnits: number }
+    underRecord?: { wins: number; losses: number; pushes: number; total: number; winPct: number; netUnits: number }
+    teamGamesRecord?: { wins: number; losses: number; pushes: number; total: number; winPct: number; netUnits: number }
+    lastTeamGamePick?: { selection: string; result: string; date: string; netUnits: number } | null
+  }
+  generatedAt?: string
+}
+
 export interface InsightCardProps {
   capper: string
   capperIconUrl?: string
@@ -11,9 +57,10 @@ export interface InsightCardProps {
   pickId?: string | null  // Only present for generated picks (not PASS)
   generatedAt: string
   is_system_pick?: boolean  // True for generated picks, false for manual picks
+  manual_insight?: ManualInsight  // Capper stats for manual picks
   matchup: {
-    away: string
-    home: string
+    away: string | { name: string; abbreviation: string }
+    home: string | { name: string; abbreviation: string }
     spreadText: string
     totalText: string
     gameDateLocal: string
@@ -146,6 +193,48 @@ function getCapperBranding(capperName: string): { icon: string; color: string; g
   return colorPalettes[paletteIndex]
 }
 
+// Stat Block component for manual picks
+function StatBlock({ label, value, subValue, positive, icon }: {
+  label: string
+  value: string
+  subValue?: string
+  positive?: boolean | null
+  icon?: string
+}) {
+  return (
+    <div className="bg-slate-800/60 rounded-lg p-3 border border-slate-700/50 text-center">
+      <div className="text-[10px] text-slate-400 uppercase tracking-wide mb-1 flex items-center justify-center gap-1">
+        {icon && <span>{icon}</span>}
+        <span>{label}</span>
+      </div>
+      <div className={`text-lg font-bold ${positive === true ? 'text-emerald-400' :
+        positive === false ? 'text-red-400' :
+          'text-white'
+        }`}>
+        {value}
+      </div>
+      {subValue && (
+        <div className={`text-xs font-medium ${positive === true ? 'text-emerald-300' :
+          positive === false ? 'text-red-300' :
+            'text-slate-400'
+          }`}>
+          {subValue}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Format record with color-coded units
+function formatRecord(record: { wins: number; losses: number; pushes?: number; netUnits?: number } | undefined | null) {
+  if (!record || record.wins + record.losses === 0) return { text: 'No picks', units: null }
+  const text = record.pushes && record.pushes > 0
+    ? `${record.wins}-${record.losses}-${record.pushes}`
+    : `${record.wins}-${record.losses}`
+  const units = record.netUnits !== undefined ? record.netUnits : null
+  return { text, units }
+}
+
 export function InsightCard(props: InsightCardProps) {
   const [hoveredFactor, setHoveredFactor] = useState<string | null>(null)
   const [showAdvancedDetails, setShowAdvancedDetails] = useState(false)
@@ -160,6 +249,10 @@ export function InsightCard(props: InsightCardProps) {
   }
 
   console.debug('InsightCard props', { props })
+
+  // Check if this is a manual pick
+  const isManualPick = props.is_system_pick === false
+  const manualInsight = props.manual_insight
 
   // Get capper branding (dynamic for new cappers)
   const capperName = (props.capper || 'SHIVA').toUpperCase()
@@ -235,19 +328,21 @@ export function InsightCard(props: InsightCardProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className={`w-12 h-12 bg-gradient-to-br ${branding.gradient} rounded-full flex items-center justify-center border-2 border-${branding.color}-400 shadow-lg`}>
-                <span className="text-2xl">{branding.icon}</span>
+                <span className="text-2xl">{isManualPick ? '👤' : branding.icon}</span>
               </div>
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-2xl font-black text-white">{capperName}'S PICK</h1>
-                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${props.is_system_pick !== false
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-green-600 text-white'
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${isManualPick
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-blue-600 text-white'
                     }`}>
-                    {props.is_system_pick !== false ? 'GENERATED' : 'MANUAL'}
+                    {isManualPick ? 'HUMAN CAPPER' : 'AI GENERATED'}
                   </span>
                 </div>
-                <div className="text-slate-400 text-xs font-medium">Professional Sports Analytics</div>
+                <div className="text-slate-400 text-xs font-medium">
+                  {isManualPick ? 'Manual Selection' : 'Professional Sports Analytics'}
+                </div>
               </div>
             </div>
             <button
@@ -260,38 +355,43 @@ export function InsightCard(props: InsightCardProps) {
         </div>
 
         {/* ===== THE PICK - HERO SECTION ===== */}
-        <div className="p-6 bg-gradient-to-r from-cyan-900 via-blue-900 to-cyan-900 border-b-2 border-cyan-400/50 shadow-xl relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-400/5 to-transparent animate-pulse"></div>
+        <div className={`p-6 bg-gradient-to-r ${isManualPick ? 'from-emerald-900 via-teal-900 to-emerald-900 border-b-2 border-emerald-400/50' : 'from-cyan-900 via-blue-900 to-cyan-900 border-b-2 border-cyan-400/50'} shadow-xl relative overflow-hidden`}>
+          <div className={`absolute inset-0 bg-gradient-to-r from-transparent ${isManualPick ? 'via-emerald-400/5' : 'via-cyan-400/5'} to-transparent animate-pulse`}></div>
 
           <div className="text-center relative z-10">
             {/* THE PICK */}
-            <div className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-blue-300 mb-2 drop-shadow-lg tracking-tight">
+            <div className={`text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r ${isManualPick ? 'from-emerald-300 to-teal-300' : 'from-cyan-300 to-blue-300'} mb-2 drop-shadow-lg tracking-tight`}>
               {safePick.units} {safePick.units === 1 ? 'UNIT' : 'UNITS'} on {safePick.selection}
             </div>
 
-            {/* Matchup */}
-            <div className="text-lg font-bold text-white mb-1">
-              {props.matchup?.spreadText || 'AWAY +spread @ HOME -spread'}
-            </div>
-            <div className="text-cyan-300 font-medium text-sm mb-3">
-              {props.matchup?.totalText || 'O/U {total_line}'}
-            </div>
+            {/* Matchup - properly extract team names */}
+            {(() => {
+              const away = props.matchup?.away
+              const home = props.matchup?.home
+              const awayName = typeof away === 'object' ? (away?.abbreviation || away?.name || 'Away') : (away || 'Away')
+              const homeName = typeof home === 'object' ? (home?.abbreviation || home?.name || 'Home') : (home || 'Home')
+              return (
+                <div className="text-lg font-bold text-white mb-1">
+                  {awayName} @ {homeName}
+                </div>
+              )
+            })()}
 
             {/* Game Date & Time */}
-            <div className="flex items-center justify-center gap-3 text-cyan-200 text-sm font-semibold">
+            <div className={`flex items-center justify-center gap-3 ${isManualPick ? 'text-emerald-200' : 'text-cyan-200'} text-sm font-semibold`}>
               <span>🗓️ {formatLocalDate(props.matchup?.gameDateLocal || props.generatedAt)}</span>
               <span>•</span>
               <span>🕐 {formatLocalTime(props.matchup?.gameDateLocal || props.generatedAt)}</span>
             </div>
 
-            {/* Show locked line based on pick type */}
-            {safePick.type === 'TOTAL' && (safePick as any).locked_odds?.total_line && (
+            {/* Show locked line based on pick type - only for AI picks */}
+            {!isManualPick && safePick.type === 'TOTAL' && (safePick as any).locked_odds?.total_line && (
               <div className="text-cyan-200 text-sm font-semibold flex items-center justify-center gap-2 mt-2">
                 <span className="text-lg">🔒</span>
                 <span>Locked O/U {(safePick as any).locked_odds.total_line}</span>
               </div>
             )}
-            {safePick.type === 'SPREAD' && (safePick as any).locked_odds?.spread_line && (
+            {!isManualPick && safePick.type === 'SPREAD' && (safePick as any).locked_odds?.spread_line && (
               <div className="text-cyan-200 text-sm font-semibold flex items-center justify-center gap-2 mt-2">
                 <span className="text-lg">🔒</span>
                 <span>Locked ATS {(safePick as any).locked_odds.spread_line > 0 ? '+' : ''}{(safePick as any).locked_odds.spread_line}</span>
@@ -300,122 +400,259 @@ export function InsightCard(props: InsightCardProps) {
           </div>
         </div>
 
-        {/* ===== EDGE SCORE - COMPACT ===== */}
-        <div className="p-4 bg-gradient-to-r from-slate-800 to-slate-700 border-b border-cyan-500/20">
-          <div className="text-center">
-            <div className="text-xs text-cyan-300 font-semibold mb-2">Edge Score: {Math.min(safeMarket.confFinal, 10).toFixed(1)} / 10.0</div>
-
-            {/* Edge Score Bar with Unit Markers */}
-            <div className="relative mx-auto max-w-md">
-              {/* Background bar */}
-              <div className="relative h-4 bg-slate-900/50 rounded-full overflow-hidden border border-cyan-500/30">
-                <div
-                  className="h-full bg-gradient-to-r from-red-500 via-yellow-400 to-cyan-400 transition-all duration-500 shadow-lg"
-                  style={{ width: `${Math.min((safeMarket.confFinal / 10) * 100, 100)}%` }}
-                />
-              </div>
-
-              {/* Unit markers */}
-              <div className="relative h-5 mt-1">
-                {[5, 6, 7, 8, 9].map((threshold) => {
-                  const position = (threshold / 10) * 100
-                  const units = threshold < 6 ? 1 : threshold < 7 ? 2 : threshold < 8 ? 3 : threshold < 9 ? 4 : 5
-                  const isActive = safeMarket.confFinal >= threshold
-
-                  return (
-                    <div
-                      key={threshold}
-                      className="absolute transform -translate-x-1/2"
-                      style={{ left: `${position}%` }}
-                    >
-                      <div className={`text-[10px] font-bold ${isActive ? 'text-cyan-400' : 'text-slate-600'}`}>
-                        {units}U
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
+        {/* ===== MANUAL PICK: CAPPER STATS SECTION ===== */}
+        {isManualPick ? (
+          <div className="p-4 bg-gradient-to-br from-slate-800 to-slate-700 border-b border-emerald-500/20">
+            {/* Section Header */}
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-lg">📊</span>
+              <h3 className="text-sm font-bold text-emerald-300 uppercase tracking-wide">Capper Stats</h3>
             </div>
 
-            <div className="text-xs text-cyan-200 mt-2 font-medium">
-              {safeMarket.confFinal >= 9 ? '🔥🔥 MAXIMUM EDGE (5 Units)' :
-                safeMarket.confFinal >= 8 ? '🔥 HIGH EDGE (4 Units)' :
-                  safeMarket.confFinal >= 7 ? '⚡ STRONG EDGE (3 Units)' :
-                    safeMarket.confFinal >= 6 ? '✅ MODERATE EDGE (2 Units)' :
-                      safeMarket.confFinal >= 5 ? '⚠️ LOW EDGE (1 Unit)' : '❌ VERY LOW EDGE'}
-            </div>
-          </div>
-        </div>
+            {manualInsight?.betTypeRecord && manualInsight.betTypeRecord.total > 0 ? (
+              <>
+                {/* Main Stats Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                  {/* Overall Record */}
+                  <StatBlock
+                    label={`${safePick.type} Record`}
+                    value={`${manualInsight.betTypeRecord.wins}-${manualInsight.betTypeRecord.losses}${manualInsight.betTypeRecord.pushes ? `-${manualInsight.betTypeRecord.pushes}` : ''}`}
+                    subValue={`${manualInsight.betTypeRecord.winPct}% Win Rate`}
+                    positive={manualInsight.betTypeRecord.winPct >= 50}
+                    icon="🎯"
+                  />
 
-        {/* ===== KEY FACTORS - TOP 3 ONLY ===== */}
-        <div className="p-4 bg-gradient-to-br from-slate-800 to-slate-700 border-b border-cyan-500/20">
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-sm font-bold text-cyan-300 flex items-center gap-2">
-              <span className="text-lg">📈</span>
-              <span>KEY FACTORS</span>
-            </div>
-            {sortedFactors.length > 0 && (
-              <div className="text-[10px] px-2 py-1 bg-cyan-500/10 text-cyan-300 rounded border border-cyan-500/30 font-semibold">
-                🏆 Dominant: {sortedFactors[0].label}
+                  {/* Net Units */}
+                  <StatBlock
+                    label="Net Units"
+                    value={`${manualInsight.betTypeRecord.netUnits > 0 ? '+' : ''}${manualInsight.betTypeRecord.netUnits.toFixed(1)}u`}
+                    subValue={`${manualInsight.betTypeRecord.total} picks`}
+                    positive={manualInsight.betTypeRecord.netUnits > 0}
+                    icon="💰"
+                  />
+
+                  {/* Current Streak */}
+                  <StatBlock
+                    label="Streak"
+                    value={manualInsight.streak?.count && manualInsight.streak.type !== 'none'
+                      ? `${manualInsight.streak.count}${manualInsight.streak.type}`
+                      : 'N/A'}
+                    subValue={manualInsight.streak?.type === 'W' ? 'Winning' : manualInsight.streak?.type === 'L' ? 'Losing' : ''}
+                    positive={manualInsight.streak?.type === 'W' ? true : manualInsight.streak?.type === 'L' ? false : null}
+                    icon={manualInsight.streak?.type === 'W' ? '🔥' : manualInsight.streak?.type === 'L' ? '❄️' : '➖'}
+                  />
+
+                  {/* Matchup Record */}
+                  {manualInsight.matchupRecord && manualInsight.matchupRecord.total > 0 ? (
+                    <StatBlock
+                      label="This Matchup"
+                      value={`${manualInsight.matchupRecord.wins}-${manualInsight.matchupRecord.losses}`}
+                      subValue={`${manualInsight.matchupRecord.winPct}%`}
+                      positive={manualInsight.matchupRecord.winPct >= 50}
+                      icon="⚔️"
+                    />
+                  ) : (
+                    <StatBlock
+                      label="This Matchup"
+                      value="First Pick"
+                      icon="🆕"
+                    />
+                  )}
+                </div>
+
+                {/* Bet Type Specific Stats */}
+                {safePick.type === 'TOTAL' && manualInsight.totals && (
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <StatBlock
+                      label="Over Picks"
+                      value={manualInsight.totals.overRecord
+                        ? `${manualInsight.totals.overRecord.wins}-${manualInsight.totals.overRecord.losses}`
+                        : '0-0'}
+                      subValue={manualInsight.totals.overRecord?.winPct ? `${manualInsight.totals.overRecord.winPct}%` : undefined}
+                      positive={manualInsight.totals.overRecord?.winPct ? manualInsight.totals.overRecord.winPct >= 50 : null}
+                      icon="⬆️"
+                    />
+                    <StatBlock
+                      label="Under Picks"
+                      value={manualInsight.totals.underRecord
+                        ? `${manualInsight.totals.underRecord.wins}-${manualInsight.totals.underRecord.losses}`
+                        : '0-0'}
+                      subValue={manualInsight.totals.underRecord?.winPct ? `${manualInsight.totals.underRecord.winPct}%` : undefined}
+                      positive={manualInsight.totals.underRecord?.winPct ? manualInsight.totals.underRecord.winPct >= 50 : null}
+                      icon="⬇️"
+                    />
+                  </div>
+                )}
+
+                {safePick.type === 'SPREAD' && manualInsight.spread && (
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <StatBlock
+                      label="Favorites"
+                      value={manualInsight.spread.favoriteRecord
+                        ? `${manualInsight.spread.favoriteRecord.wins}-${manualInsight.spread.favoriteRecord.losses}`
+                        : '0-0'}
+                      subValue={manualInsight.spread.favoriteRecord?.winPct ? `${manualInsight.spread.favoriteRecord.winPct}%` : undefined}
+                      positive={manualInsight.spread.favoriteRecord?.winPct ? manualInsight.spread.favoriteRecord.winPct >= 50 : null}
+                      icon="⭐"
+                    />
+                    <StatBlock
+                      label="Underdogs"
+                      value={manualInsight.spread.underdogRecord
+                        ? `${manualInsight.spread.underdogRecord.wins}-${manualInsight.spread.underdogRecord.losses}`
+                        : '0-0'}
+                      subValue={manualInsight.spread.underdogRecord?.winPct ? `${manualInsight.spread.underdogRecord.winPct}%` : undefined}
+                      positive={manualInsight.spread.underdogRecord?.winPct ? manualInsight.spread.underdogRecord.winPct >= 50 : null}
+                      icon="🐕"
+                    />
+                  </div>
+                )}
+
+                {/* Last Pick on This Team */}
+                {(manualInsight.lastMatchupPick || manualInsight.totals?.lastTeamGamePick || manualInsight.spread?.lastTeamPick) && (
+                  <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-700/50">
+                    <div className="text-[10px] text-slate-400 uppercase mb-1">Last Pick on This Team</div>
+                    {(() => {
+                      const lastPick = manualInsight.lastMatchupPick || manualInsight.totals?.lastTeamGamePick || manualInsight.spread?.lastTeamPick
+                      if (!lastPick) return null
+                      return (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-white font-medium">{lastPick.selection}</span>
+                          <span className={`text-sm font-bold ${lastPick.result === 'won' ? 'text-emerald-400' : lastPick.result === 'lost' ? 'text-red-400' : 'text-yellow-400'}`}>
+                            {lastPick.result === 'won' ? '✅ WON' : lastPick.result === 'lost' ? '❌ LOST' : '🤝 PUSH'}
+                          </span>
+                        </div>
+                      )
+                    })()}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-center py-6">
+                <div className="text-3xl mb-2">🆕</div>
+                <div className="text-slate-300 font-medium">First {safePick.type} pick!</div>
+                <div className="text-slate-500 text-sm">Historical stats will appear after this pick is graded.</div>
               </div>
             )}
           </div>
+        ) : (
+          /* ===== AI PICK: EDGE SCORE - COMPACT ===== */
+          <div className="p-4 bg-gradient-to-r from-slate-800 to-slate-700 border-b border-cyan-500/20">
+            <div className="text-center">
+              <div className="text-xs text-cyan-300 font-semibold mb-2">Edge Score: {Math.min(safeMarket.confFinal, 10).toFixed(1)} / 10.0</div>
 
-          {/* Top 3 Factors Only - Compact */}
-          <div className="space-y-2">
-            {sortedFactors.slice(0, 3).map((factor) => {
-              const factorMeta = getFactorMeta(factor.key)
-              const icon = factorMeta?.icon || 'ℹ️'
-              const shortName = factorMeta?.shortName || factor.label || factor.key
-              const tooltip = factorMeta?.description || factor.rationale || 'Factor'
+              {/* Edge Score Bar with Unit Markers */}
+              <div className="relative mx-auto max-w-md">
+                {/* Background bar */}
+                <div className="relative h-4 bg-slate-900/50 rounded-full overflow-hidden border border-cyan-500/30">
+                  <div
+                    className="h-full bg-gradient-to-r from-red-500 via-yellow-400 to-cyan-400 transition-all duration-500 shadow-lg"
+                    style={{ width: `${Math.min((safeMarket.confFinal / 10) * 100, 100)}%` }}
+                  />
+                </div>
 
-              const netContribution = (factor.overScore || 0) - (factor.underScore || 0)
-              const isOver = factor.overScore > 0
-              const isUnder = factor.underScore > 0
+                {/* Unit markers */}
+                <div className="relative h-5 mt-1">
+                  {[5, 6, 7, 8, 9].map((threshold) => {
+                    const position = (threshold / 10) * 100
+                    const units = threshold < 6 ? 1 : threshold < 7 ? 2 : threshold < 8 ? 3 : threshold < 9 ? 4 : 5
+                    const isActive = safeMarket.confFinal >= threshold
 
-              return (
-                <div
-                  key={factor.key}
-                  className="bg-slate-900/40 rounded-lg p-3 border border-slate-700/50 hover:border-slate-600 transition-all group"
-                  onMouseEnter={() => setHoveredFactor(factor.key)}
-                  onMouseLeave={() => setHoveredFactor(null)}
-                >
-                  <div className="flex items-center gap-3">
-                    {/* Icon */}
-                    <div className="text-xl flex-shrink-0 relative">
-                      <span title={tooltip}>{icon}</span>
-                      {hoveredFactor === factor.key && (
-                        <div className="absolute left-full ml-3 top-0 z-20 w-64 bg-slate-800 text-white text-xs p-3 rounded-lg shadow-xl border border-slate-600">
-                          {tooltip}
+                    return (
+                      <div
+                        key={threshold}
+                        className="absolute transform -translate-x-1/2"
+                        style={{ left: `${position}%` }}
+                      >
+                        <div className={`text-[10px] font-bold ${isActive ? 'text-cyan-400' : 'text-slate-600'}`}>
+                          {units}U
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
 
-                    {/* Factor Name */}
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-bold text-white">
-                        {shortName}
+              <div className="text-xs text-cyan-200 mt-2 font-medium">
+                {safeMarket.confFinal >= 9 ? '🔥🔥 MAXIMUM EDGE (5 Units)' :
+                  safeMarket.confFinal >= 8 ? '🔥 HIGH EDGE (4 Units)' :
+                    safeMarket.confFinal >= 7 ? '⚡ STRONG EDGE (3 Units)' :
+                      safeMarket.confFinal >= 6 ? '✅ MODERATE EDGE (2 Units)' :
+                        safeMarket.confFinal >= 5 ? '⚠️ LOW EDGE (1 Unit)' : '❌ VERY LOW EDGE'}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===== KEY FACTORS - TOP 3 ONLY (AI picks only) ===== */}
+        {!isManualPick && (
+          <div className="p-4 bg-gradient-to-br from-slate-800 to-slate-700 border-b border-cyan-500/20">
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-sm font-bold text-cyan-300 flex items-center gap-2">
+                <span className="text-lg">📈</span>
+                <span>KEY FACTORS</span>
+              </div>
+              {sortedFactors.length > 0 && (
+                <div className="text-[10px] px-2 py-1 bg-cyan-500/10 text-cyan-300 rounded border border-cyan-500/30 font-semibold">
+                  🏆 Dominant: {sortedFactors[0].label}
+                </div>
+              )}
+            </div>
+
+            {/* Top 3 Factors Only - Compact */}
+            <div className="space-y-2">
+              {sortedFactors.slice(0, 3).map((factor) => {
+                const factorMeta = getFactorMeta(factor.key)
+                const icon = factorMeta?.icon || 'ℹ️'
+                const shortName = factorMeta?.shortName || factor.label || factor.key
+                const tooltip = factorMeta?.description || factor.rationale || 'Factor'
+
+                const isOver = factor.overScore > 0
+                const isUnder = factor.underScore > 0
+
+                return (
+                  <div
+                    key={factor.key}
+                    className="bg-slate-900/40 rounded-lg p-3 border border-slate-700/50 hover:border-slate-600 transition-all group"
+                    onMouseEnter={() => setHoveredFactor(factor.key)}
+                    onMouseLeave={() => setHoveredFactor(null)}
+                  >
+                    <div className="flex items-center gap-3">
+                      {/* Icon */}
+                      <div className="text-xl flex-shrink-0 relative">
+                        <span title={tooltip}>{icon}</span>
+                        {hoveredFactor === factor.key && (
+                          <div className="absolute left-full ml-3 top-0 z-20 w-64 bg-slate-800 text-white text-xs p-3 rounded-lg shadow-xl border border-slate-600">
+                            {tooltip}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Factor Name */}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-bold text-white">
+                          {shortName}
+                        </div>
+                      </div>
+
+                      {/* Direction Label + Value */}
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className={`text-xs font-bold uppercase w-14 text-right ${isOver ? 'text-green-400' : isUnder ? 'text-red-400' : 'text-slate-500'}`}>
+                          {isOver ? 'OVER' : isUnder ? 'UNDER' : 'NEUTRAL'}
+                        </span>
+                        <span className={`text-sm font-mono font-bold w-10 ${isOver ? 'text-green-400' : isUnder ? 'text-red-400' : 'text-slate-500'}`}>
+                          {isOver ? `+${factor.overScore.toFixed(1)}` : isUnder ? `+${factor.underScore.toFixed(1)}` : '0.0'}
+                        </span>
                       </div>
                     </div>
-
-                    {/* Direction Label + Value */}
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className={`text-xs font-bold uppercase w-14 text-right ${isOver ? 'text-green-400' : isUnder ? 'text-red-400' : 'text-slate-500'}`}>
-                        {isOver ? 'OVER' : isUnder ? 'UNDER' : 'NEUTRAL'}
-                      </span>
-                      <span className={`text-sm font-mono font-bold w-10 ${isOver ? 'text-green-400' : isUnder ? 'text-red-400' : 'text-slate-500'}`}>
-                        {isOver ? `+${factor.overScore.toFixed(1)}` : isUnder ? `+${factor.underScore.toFixed(1)}` : '0.0'}
-                      </span>
-                    </div>
                   </div>
-                </div>
-              )
-            })}
+                )
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* ===== QUICK SUMMARY - Game Prediction ===== */}
-        {props.writeups && props.writeups.gamePrediction && (
+        {/* ===== QUICK SUMMARY - Game Prediction (AI picks only) ===== */}
+        {!isManualPick && props.writeups && props.writeups.gamePrediction && (
           <div className="p-4 bg-gradient-to-br from-slate-800 to-slate-700 border-b border-cyan-500/20">
             <div className="bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-lg p-4 border border-cyan-500/20">
               <div className="text-[10px] font-bold text-cyan-400 uppercase mb-2 flex items-center gap-2">
@@ -429,7 +666,7 @@ export function InsightCard(props: InsightCardProps) {
                   <div className="text-center">
                     <div className="text-[10px] text-cyan-300 font-semibold mb-1">PREDICTED FINAL SCORE</div>
                     <div className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-blue-300">
-                      {props.matchup?.away || 'Away'} {safePredictedScore.away} - {safePredictedScore.home} {props.matchup?.home || 'Home'}
+                      {typeof props.matchup?.away === 'object' ? props.matchup.away.name : props.matchup?.away || 'Away'} {safePredictedScore.away} - {safePredictedScore.home} {typeof props.matchup?.home === 'object' ? props.matchup.home.name : props.matchup?.home || 'Home'}
                     </div>
                   </div>
                 </div>
@@ -438,30 +675,32 @@ export function InsightCard(props: InsightCardProps) {
           </div>
         )}
 
-        {/* ===== COLLAPSIBLE ADVANCED DETAILS BUTTON ===== */}
-        <div className="p-4 bg-slate-800 border-b border-slate-700">
-          <button
-            onClick={() => setShowAdvancedDetails(!showAdvancedDetails)}
-            className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-lg transition-all duration-200 text-sm"
-          >
-            {showAdvancedDetails ? (
-              <>
-                <ChevronUp className="w-5 h-5" />
-                <span>HIDE ADVANCED DETAILS</span>
-                <ChevronUp className="w-5 h-5" />
-              </>
-            ) : (
-              <>
-                <ChevronDown className="w-5 h-5" />
-                <span>SHOW ADVANCED DETAILS</span>
-                <ChevronDown className="w-5 h-5" />
-              </>
-            )}
-          </button>
-        </div>
+        {/* ===== COLLAPSIBLE ADVANCED DETAILS BUTTON (AI picks only) ===== */}
+        {!isManualPick && (
+          <div className="p-4 bg-slate-800 border-b border-slate-700">
+            <button
+              onClick={() => setShowAdvancedDetails(!showAdvancedDetails)}
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-lg transition-all duration-200 text-sm"
+            >
+              {showAdvancedDetails ? (
+                <>
+                  <ChevronUp className="w-5 h-5" />
+                  <span>HIDE ADVANCED DETAILS</span>
+                  <ChevronUp className="w-5 h-5" />
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-5 h-5" />
+                  <span>SHOW ADVANCED DETAILS</span>
+                  <ChevronDown className="w-5 h-5" />
+                </>
+              )}
+            </button>
+          </div>
+        )}
 
-        {/* ===== ADVANCED DETAILS SECTION (COLLAPSIBLE) ===== */}
-        {showAdvancedDetails && (
+        {/* ===== ADVANCED DETAILS SECTION (COLLAPSIBLE - AI picks only) ===== */}
+        {!isManualPick && showAdvancedDetails && (
           <div className="border-b border-slate-700">
             {/* AI Writeups - Bold Predictions */}
             {props.bold_predictions && props.bold_predictions.predictions && props.bold_predictions.predictions.length > 0 && (
@@ -818,7 +1057,9 @@ export function InsightCard(props: InsightCardProps) {
           ) : (
             <div className="text-center py-8">
               <div className="text-slate-400 text-sm leading-relaxed">
-                Game has not started yet. Check back to see the outcome and our AI's assessment of what we did right or wrong in predicting this matchup!
+                {isManualPick
+                  ? 'Game has not started yet. Check back after the game to see the result!'
+                  : "Game has not started yet. Check back to see the outcome and our AI's assessment of what we did right or wrong in predicting this matchup!"}
               </div>
             </div>
           )}
@@ -829,9 +1070,19 @@ export function InsightCard(props: InsightCardProps) {
           {/* Metadata - Moved to small footer */}
           <div className="text-center text-slate-500 text-[9px] mb-2">
             <div className="flex items-center justify-center gap-2">
-              <span>{safePick.type === 'SPREAD' ? '🎯 NBA Spread Model v1' : '🎯 NBA Totals Model v1'}</span>
-              <span>•</span>
-              <span>Pick Generated: {formatLocalTime(props.generatedAt)}</span>
+              {isManualPick ? (
+                <>
+                  <span>👤 {capperName}</span>
+                  <span>•</span>
+                  <span>Pick Placed: {formatLocalTime(props.generatedAt)}</span>
+                </>
+              ) : (
+                <>
+                  <span>{safePick.type === 'SPREAD' ? '🎯 NBA Spread Model v1' : '🎯 NBA Totals Model v1'}</span>
+                  <span>•</span>
+                  <span>Pick Generated: {formatLocalTime(props.generatedAt)}</span>
+                </>
+              )}
             </div>
           </div>
 
