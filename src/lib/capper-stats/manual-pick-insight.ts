@@ -197,12 +197,12 @@ export async function generateManualPickInsight(
   const supabase = getSupabaseAdmin()
   const betType = pickType.toUpperCase() as 'SPREAD' | 'TOTAL'
 
-  // Fetch all graded picks for this capper and bet type
+  // Fetch all graded picks for this capper and bet type (case-insensitive)
   const { data: allPicks, error } = await supabase
     .from('picks')
     .select('id, selection, status, units, net_units, created_at, game_snapshot')
-    .eq('capper', capper.toLowerCase())
-    .eq('pick_type', pickType)
+    .ilike('capper', capper)
+    .ilike('pick_type', pickType)
     .in('status', ['won', 'lost', 'push'])
     .order('created_at', { ascending: false })
     .limit(200)
@@ -210,6 +210,8 @@ export async function generateManualPickInsight(
   if (error) {
     console.error('[ManualPickInsight] Error fetching picks:', error)
   }
+
+  console.log(`[ManualPickInsight] Found ${allPicks?.length || 0} graded ${pickType} picks for ${capper}`)
 
   const picks = allPicks || []
   const betTypeRecord = calcRecord(picks)
