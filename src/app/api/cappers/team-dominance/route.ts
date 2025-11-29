@@ -225,12 +225,29 @@ export async function GET(request: NextRequest) {
       includeAll
     })
 
+    // Include debug info if requested
+    const includeDebug = searchParams.get('debug') === '1'
+
     return NextResponse.json({
       success: true,
       capperId,
       topTeams: top3Teams,
       allTeams: includeAll ? sortedTeams : undefined, // Include all teams if requested
-      totalTeams: capperTeamData.length
+      totalTeams: capperTeamData.length,
+      ...(includeDebug && {
+        debug: {
+          totalPicksFetched: allPicks?.length || 0,
+          processedCount,
+          skippedNoSnapshot,
+          skippedParseFailure,
+          skippedNoTeams,
+          samplePick: allPicks?.[0] ? {
+            capper: allPicks[0].capper,
+            snapshotType: typeof allPicks[0].game_snapshot,
+            snapshotKeys: allPicks[0].game_snapshot ? Object.keys(allPicks[0].game_snapshot as object) : []
+          } : null
+        }
+      })
     })
 
   } catch (error) {
