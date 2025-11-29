@@ -634,10 +634,12 @@ export function InsightCard(props: InsightCardProps) {
                         </div>
                       </div>
 
-                      {/* Direction Label + Value */}
+                      {/* Direction Label + Value - SPREAD shows AWAY/HOME, TOTAL shows OVER/UNDER */}
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <span className={`text-xs font-bold uppercase w-14 text-right ${isOver ? 'text-green-400' : isUnder ? 'text-red-400' : 'text-slate-500'}`}>
-                          {isOver ? 'OVER' : isUnder ? 'UNDER' : 'NEUTRAL'}
+                          {safePick.type === 'SPREAD'
+                            ? (isOver ? 'AWAY' : isUnder ? 'HOME' : 'NEUTRAL')
+                            : (isOver ? 'OVER' : isUnder ? 'UNDER' : 'NEUTRAL')}
                         </span>
                         <span className={`text-sm font-mono font-bold w-10 ${isOver ? 'text-green-400' : isUnder ? 'text-red-400' : 'text-slate-500'}`}>
                           {isOver ? `+${factor.overScore.toFixed(1)}` : isUnder ? `+${factor.underScore.toFixed(1)}` : '0.0'}
@@ -828,10 +830,12 @@ export function InsightCard(props: InsightCardProps) {
                           </div>
                         </div>
 
-                        {/* Direction Label + Value */}
+                        {/* Direction Label + Value - SPREAD shows AWAY/HOME, TOTAL shows OVER/UNDER */}
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <span className={`text-xs font-bold uppercase w-14 text-right ${isOver ? 'text-green-400' : isUnder ? 'text-red-400' : 'text-slate-500'}`}>
-                            {isOver ? 'OVER' : isUnder ? 'UNDER' : 'NEUTRAL'}
+                            {safePick.type === 'SPREAD'
+                              ? (isOver ? 'AWAY' : isUnder ? 'HOME' : 'NEUTRAL')
+                              : (isOver ? 'OVER' : isUnder ? 'UNDER' : 'NEUTRAL')}
                           </span>
                           <span className={`text-sm font-mono font-bold w-10 ${isOver ? 'text-green-400' : isUnder ? 'text-red-400' : 'text-slate-500'}`}>
                             {isOver ? `+${factor.overScore.toFixed(1)}` : isUnder ? `+${factor.underScore.toFixed(1)}` : '0.0'}
