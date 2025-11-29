@@ -217,7 +217,8 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
   }
 
   // Handle deterministic injury factor (async)
-  if (enabledFactorKeys.includes('injuryImpact')) {
+  // NOTE: Capper profiles use 'injuryAvailability' key, not 'injuryImpact'
+  if (enabledFactorKeys.includes('injuryAvailability')) {
     console.log('[TOTALS:COMPUTING_INJURY]', 'Key Injuries & Availability enabled, running deterministic analysis...')
     try {
       const injuryFactor = await computeInjuryAvailability(bundle, ctx)
@@ -233,7 +234,7 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
       // Add error factor
       factors.push({
         factor_no: 6,
-        key: 'injuryImpact',
+        key: 'injuryAvailability',
         name: 'Key Injuries & Availability - Totals',
         normalized_value: 0,
         raw_values_json: {

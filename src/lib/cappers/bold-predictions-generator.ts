@@ -38,7 +38,75 @@ export interface BoldPredictionsResult {
     }>
     summary: string
   } | null
-  injury_summary: any
+  injury_summary: {
+    findings: Array<{
+      team: string
+      player: string
+      status: string
+      impact: number
+    }>
+    total_impact: number
+    summary: string
+  } | null
+}
+
+/**
+ * Transform raw MySportsFeeds injury data into the format expected by insight cards
+ */
+function transformInjuryData(rawInjuryData: any): BoldPredictionsResult['injury_summary'] {
+  if (!rawInjuryData || !rawInjuryData.players) {
+    return null
+  }
+
+  const injuredPlayers = rawInjuryData.players.filter((p: any) => p.currentInjury)
+
+  if (injuredPlayers.length === 0) {
+    return {
+      findings: [],
+      total_impact: 0,
+      summary: 'No significant injuries reported for either team.'
+    }
+  }
+
+  const findings = injuredPlayers.map((p: any) => {
+    const playerName = `${p.player.firstName} ${p.player.lastName}`
+    const team = p.currentTeam?.abbreviation || 'Unknown'
+    const status = p.currentInjury?.playingProbability || p.currentInjury?.description || 'Unknown'
+
+    // Calculate impact based on player stats (PPG / 10 + MPG / 48)
+    const ppg = p.playerStats?.offense?.pts?.avgValue || 0
+    const mpg = p.playerStats?.miscellaneous?.minSeconds?.avgValue ?
+      p.playerStats.miscellaneous.minSeconds.avgValue / 60 : 0
+    const impact = (ppg / 10) + (mpg / 48) * 2
+
+    return {
+      team,
+      player: playerName,
+      status,
+      impact: Math.round(impact * 100) / 100
+    }
+  })
+
+  const totalImpact = findings.reduce((sum: number, f: any) => sum + f.impact, 0)
+
+  // Generate summary
+  const teamInjuries: Record<string, string[]> = {}
+  for (const f of findings) {
+    if (!teamInjuries[f.team]) teamInjuries[f.team] = []
+    teamInjuries[f.team].push(`${f.player} (${f.status})`)
+  }
+
+  const summaryParts = Object.entries(teamInjuries).map(([team, players]) =>
+    `${team}: ${players.join(', ')}`
+  )
+
+  return {
+    findings,
+    total_impact: Math.round(totalImpact * 100) / 100,
+    summary: summaryParts.length > 0
+      ? `Key injuries: ${summaryParts.join('; ')}`
+      : 'No significant injuries reported.'
+  }
 }
 
 /**
@@ -170,7 +238,7 @@ export async function generateBoldPredictions(input: BoldPredictionsInput): Prom
           predictions: [],
           summary: `Player-level predictions are not available due to missing current-season player statistics. The professional analysis above uses team-level statistics (offensive/defensive ratings, pace, efficiency metrics) which are available and accurate.`
         },
-        injury_summary: injuryData
+        injury_summary: transformInjuryData(injuryData)
       }
     }
 
@@ -394,7 +462,7 @@ Return ONLY valid JSON in this exact format:
 
     return {
       bold_predictions: boldPredictions,
-      injury_summary: injuryData
+      injury_summary: transformInjuryData(injuryData)
     }
 
   } catch (error) {

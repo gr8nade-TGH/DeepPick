@@ -161,7 +161,8 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
   }
 
   // S6: Injury Availability (deterministic)
-  if (enabledFactorKeys.includes('injuryImpact')) {
+  // NOTE: Capper profiles use 'injuryAvailability' key for SPREAD too (same as TOTALS)
+  if (enabledFactorKeys.includes('injuryAvailability')) {
     console.log('[SPREAD:S6] Computing Key Injuries & Availability...')
     try {
       const injuryFactor = await computeInjuryAvailabilitySpread(bundle, ctx)
@@ -177,7 +178,7 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
       // Add error factor
       factors.push({
         factor_no: 6,
-        key: 'injuryImpact',
+        key: 'injuryAvailability',
         name: 'Key Injuries & Availability - Spread',
         normalized_value: 0,
         raw_values_json: {

@@ -177,7 +177,7 @@ export const NBA_SPREAD_FACTORS: FactorMeta[] = [
     defaultDataSource: 'mysportsfeeds'
   },
   {
-    key: 'injuryImpact',
+    key: 'injuryAvailability',  // NOTE: Same key as TOTALS for consistency
     name: 'Key Injuries & Availability - Spread',
     shortName: 'INJ',
     icon: '🏥',
