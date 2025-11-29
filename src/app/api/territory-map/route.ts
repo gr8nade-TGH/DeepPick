@@ -103,12 +103,35 @@ export async function GET() {
     const territories: TerritoryData[] = []
     const pickIdMap: Record<string, string> = {}
 
-    // Log first pick to debug
+    // Comprehensive debug logging
+    console.log('[Territory Map] Total graded SPREAD picks:', allPicks.length)
+
     if (allPicks.length > 0) {
       const samplePick = allPicks[0]
-      console.log('[Territory Map] Sample pick game_snapshot type:', typeof samplePick.game_snapshot)
-      console.log('[Territory Map] Sample pick home_team type:', typeof samplePick.game_snapshot?.home_team)
+      const sampleSnapshot = parseGameSnapshot(samplePick.game_snapshot)
+      console.log('[Territory Map] Sample pick debug:', {
+        capper: samplePick.capper,
+        snapshotType: typeof samplePick.game_snapshot,
+        parsedSnapshot: sampleSnapshot ? 'valid' : 'null',
+        homeTeamType: typeof sampleSnapshot?.home_team,
+        homeTeamAbbr: extractTeamAbbr(sampleSnapshot?.home_team),
+        awayTeamType: typeof sampleSnapshot?.away_team,
+        awayTeamAbbr: extractTeamAbbr(sampleSnapshot?.away_team)
+      })
     }
+
+    // Pre-process: count picks per team to debug
+    const teamPickCounts: Record<string, number> = {}
+    allPicks.forEach(pick => {
+      const snapshot = parseGameSnapshot(pick.game_snapshot)
+      if (snapshot) {
+        const homeTeam = extractTeamAbbr(snapshot.home_team)
+        const awayTeam = extractTeamAbbr(snapshot.away_team)
+        if (homeTeam) teamPickCounts[homeTeam] = (teamPickCounts[homeTeam] || 0) + 1
+        if (awayTeam) teamPickCounts[awayTeam] = (teamPickCounts[awayTeam] || 0) + 1
+      }
+    })
+    console.log('[Territory Map] Picks per team:', teamPickCounts)
 
     for (const teamAbbr of allNBATeams) {
       // Filter picks for this team (home or away)
