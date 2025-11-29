@@ -182,6 +182,16 @@ export async function GET(request: NextRequest) {
       totalCappers: number
     }> = []
 
+    // Debug: check what cappers exist for first team with data
+    let debugCapperList: string[] = []
+    for (const team of allNBATeams) {
+      const capperMap = teamStats.get(team)!
+      if (capperMap.size > 0) {
+        debugCapperList = Array.from(capperMap.keys())
+        break
+      }
+    }
+
     allNBATeams.forEach(team => {
       const capperMap = teamStats.get(team)!
       const capperStats = capperMap.get(capperId.toLowerCase())
@@ -241,6 +251,9 @@ export async function GET(request: NextRequest) {
           skippedNoSnapshot,
           skippedParseFailure,
           skippedNoTeams,
+          requestedCapperId: capperId,
+          requestedCapperIdLower: capperId.toLowerCase(),
+          cappersInData: debugCapperList,
           samplePick: allPicks?.[0] ? {
             capper: allPicks[0].capper,
             snapshotType: typeof allPicks[0].game_snapshot,
