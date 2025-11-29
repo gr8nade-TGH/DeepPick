@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Trophy, TrendingUp, Target, Calendar, ExternalLink, Twitter, Instagram, Youtube, Globe, ArrowLeft, Clock, CheckCircle2, XCircle, Minus, Map, Crown, Medal, Award, Star, X } from 'lucide-react'
+import { Trophy, TrendingUp, Target, Calendar, ExternalLink, Twitter, Instagram, Youtube, Globe, ArrowLeft, Clock, CheckCircle2, XCircle, Minus, Map, Crown, Medal, Award, Star, X, Eye } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useParams } from 'next/navigation'
+import { PickInsightModal } from '@/components/dashboard/pick-insight-modal'
 
 interface CapperProfile {
   capper_id: string
@@ -82,6 +83,10 @@ export default function CapperPublicProfile() {
   const [currentPicks, setCurrentPicks] = useState<Pick[]>([])
   const [topTeams, setTopTeams] = useState<TeamDominance[]>([])
   const [pickHistoryFilter, setPickHistoryFilter] = useState<'7d' | '30d' | 'all'>('all')
+
+  // Insight modal state
+  const [selectedPickId, setSelectedPickId] = useState<string | null>(null)
+  const [showInsightModal, setShowInsightModal] = useState(false)
 
   const fetchCapperData = async () => {
     if (!capperId) return
@@ -499,12 +504,21 @@ export default function CapperPublicProfile() {
                   return (
                     <div
                       key={pick.id}
-                      className="relative p-4 rounded-xl bg-gradient-to-br from-slate-900/80 to-slate-800/80 border-2 border-emerald-500/30 hover:border-emerald-500/50 transition-all group"
+                      onClick={() => {
+                        setSelectedPickId(pick.id)
+                        setShowInsightModal(true)
+                      }}
+                      className="relative p-4 rounded-xl bg-gradient-to-br from-slate-900/80 to-slate-800/80 border-2 border-emerald-500/30 hover:border-emerald-500/50 transition-all group cursor-pointer"
                     >
                       {/* LIVE indicator */}
                       <div className="absolute -top-2 -right-2 px-2 py-1 bg-emerald-500 text-white text-xs font-bold rounded-full shadow-lg flex items-center gap-1">
                         <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
                         LIVE
+                      </div>
+
+                      {/* Click to view hint */}
+                      <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Eye className="w-4 h-4 text-emerald-400" />
                       </div>
 
                       {/* Game matchup */}
@@ -555,6 +569,12 @@ export default function CapperPublicProfile() {
                             </div>
                           </div>
                         </div>
+                      </div>
+
+                      {/* Click hint */}
+                      <div className="mt-3 pt-2 border-t border-emerald-500/20 text-xs text-slate-500 group-hover:text-emerald-400 transition-colors flex items-center gap-1">
+                        <Eye className="w-3 h-3" />
+                        <span>Click to view insight card</span>
                       </div>
 
                       {/* Hover glow effect */}
@@ -663,7 +683,14 @@ export default function CapperPublicProfile() {
                     else starCount = 0
 
                     return (
-                      <div key={pick.id} className="p-4 rounded-lg bg-slate-900/50 border border-slate-700 hover:border-slate-600 transition-all">
+                      <div
+                        key={pick.id}
+                        onClick={() => {
+                          setSelectedPickId(pick.id)
+                          setShowInsightModal(true)
+                        }}
+                        className="p-4 rounded-lg bg-slate-900/50 border border-slate-700 hover:border-blue-500/50 hover:bg-slate-800/50 transition-all cursor-pointer group"
+                      >
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
@@ -716,6 +743,11 @@ export default function CapperPublicProfile() {
                             {gameTime ? new Date(gameTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : new Date(pick.created_at).toLocaleDateString()}
                           </span>
                         </div>
+                        {/* Hover hint */}
+                        <div className="mt-2 pt-2 border-t border-slate-700/50 opacity-0 group-hover:opacity-100 transition-opacity text-xs text-blue-400 flex items-center gap-1">
+                          <Eye className="w-3 h-3" />
+                          <span>Click to view insight card</span>
+                        </div>
                       </div>
                     )
                   })}
@@ -724,6 +756,17 @@ export default function CapperPublicProfile() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Pick Insight Modal */}
+      {showInsightModal && selectedPickId && (
+        <PickInsightModal
+          pickId={selectedPickId}
+          onClose={() => {
+            setShowInsightModal(false)
+            setSelectedPickId(null)
+          }}
+        />
+      )}
     </div>
   )
 }
