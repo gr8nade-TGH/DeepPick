@@ -586,7 +586,7 @@ export function ProfessionalDashboard() {
                 </div>
               </CardHeader>
 
-              <CardContent className="px-2 sm:px-3 py-2 space-y-2 flex-1 overflow-y-auto max-h-[600px] lg:max-h-none">
+              <CardContent className="px-2 sm:px-3 py-2 flex-1 overflow-y-auto max-h-[600px] lg:max-h-none">
                 {todaysPicks.length === 0 ? (
                   <div className="h-full flex items-center justify-center">
                     <div className="text-center">
@@ -595,195 +595,124 @@ export function ProfessionalDashboard() {
                       <p className="text-xs text-slate-600 mt-1">Check back later for today's elite picks</p>
                     </div>
                   </div>
-                ) : todaysPicks.slice(0, 5).map((pick, index) => {
-                  const confidenceBadge = getConfidenceBadge(pick.confidence)
-                  const gameStatus = getGameStatus(pick)
-                  const homeTeam = pick.game_snapshot?.home_team
-                  const awayTeam = pick.game_snapshot?.away_team
-                  const matchup = `${awayTeam?.name || 'Away'} @ ${homeTeam?.name || 'Home'}`
-                  const boldPredictionsKey = `${matchup}_${pick.capper}`
-                  const boldPredictions = boldPredictionsMap.get(boldPredictionsKey)
-                  const isExpanded = expandedPicks.has(pick.id)
-                  const hasPredictions = boldPredictions && boldPredictions.predictions && boldPredictions.predictions.length > 0
-                  const isLocked = !user && index >= 2 // Lock picks 3+ for non-authenticated users
+                ) : (
+                  /* Card Grid Layout - 3 columns x 2 rows */
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+                    {todaysPicks.slice(0, 6).map((pick, index) => {
+                      const confidenceBadge = getConfidenceBadge(pick.confidence)
+                      const gameStatus = getGameStatus(pick)
+                      const homeTeam = pick.game_snapshot?.home_team
+                      const awayTeam = pick.game_snapshot?.away_team
+                      const matchup = `${awayTeam?.name || 'Away'} @ ${homeTeam?.name || 'Home'}`
+                      const boldPredictionsKey = `${matchup}_${pick.capper}`
+                      const boldPredictions = boldPredictionsMap.get(boldPredictionsKey)
+                      const isExpanded = expandedPicks.has(pick.id)
+                      const hasPredictions = boldPredictions && boldPredictions.predictions && boldPredictions.predictions.length > 0
+                      const isLocked = !user && index >= 2 // Lock picks 3+ for non-authenticated users
+                      const capperBadge = getCapperBadge(pick.capper || 'DeepPick')
 
-                  return (
-                    <div
-                      key={pick.id}
-                      className={`relative rounded-lg transition-all ${isLocked
-                        ? 'bg-slate-900/80 border border-slate-700/50'
-                        : 'bg-gradient-to-r from-cyan-500/10 via-blue-500/5 to-purple-500/10 border border-cyan-500/40 hover:border-cyan-400 hover:shadow-lg hover:shadow-cyan-500/10'
-                        }`}
-                    >
-                      {/* Locked Overlay */}
-                      {isLocked && (
-                        <div className="absolute inset-0 z-10 bg-slate-900/95 backdrop-blur-sm rounded-lg flex items-center justify-center gap-3">
-                          <div className="bg-gradient-to-br from-cyan-500/20 to-blue-500/20 p-2 rounded-full border border-cyan-500/30">
-                            <Lock className="h-5 w-5 text-cyan-400" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-bold text-white">Premium Pick</p>
-                            <Link href="/signup" className="text-xs text-cyan-400 hover:text-cyan-300 underline">
-                              Sign up to unlock
-                            </Link>
-                          </div>
-                        </div>
-                      )}
+                      // Get countdown
+                      const gameTime = pick.games?.game_start_timestamp ||
+                        pick.game_snapshot?.game_start_timestamp ||
+                        pick.game_snapshot?.game_date
+                      const countdown = getCountdown(gameTime)
 
-                      {/* Main Pick Card - Clickable - Responsive Layout */}
-                      <div
-                        className={`cursor-pointer group p-2 sm:p-4 ${isLocked ? 'blur-sm' : ''}`}
-                        onClick={() => {
-                          if (!isLocked) {
-                            setSelectedPick(pick)
-                            setShowInsight(true)
-                          }
-                        }}
-                      >
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
-                          {/* LEFT SECTION: Capper + Pick Info */}
-                          <div className="flex items-start sm:items-center gap-2 sm:gap-4 flex-1 min-w-0 w-full sm:w-auto">
-                            {/* Capper Badge - Minimal */}
-                            {(() => {
-                              const capperBadge = getCapperBadge(pick.capper || 'DeepPick')
-                              return (
-                                <div className={`px-2 sm:px-2.5 py-1 rounded text-[9px] sm:text-[10px] font-bold ${capperBadge.gradient} ${capperBadge.text} uppercase tracking-wide flex-shrink-0`}>
-                                  {pick.capper || 'DeepPick'}
-                                </div>
-                              )
-                            })()}
-
-                            {/* Pick Details */}
-                            <div className="flex-1 min-w-0">
-                              {/* The Pick - HERO */}
-                              <div className="text-base sm:text-xl font-black text-white group-hover:text-cyan-400 transition-colors truncate mb-1">
-                                {pick.selection}
+                      return (
+                        <div
+                          key={pick.id}
+                          className={`relative rounded-xl transition-all duration-200 cursor-pointer group overflow-hidden ${isLocked
+                            ? 'bg-slate-900/80 border border-slate-700/50'
+                            : 'bg-gradient-to-br from-slate-800/90 via-slate-800/70 to-slate-900/90 border border-cyan-500/30 hover:border-cyan-400 hover:shadow-xl hover:shadow-cyan-500/20 hover:scale-[1.02]'
+                            }`}
+                          onClick={() => {
+                            if (!isLocked) {
+                              setSelectedPick(pick)
+                              setShowInsight(true)
+                            }
+                          }}
+                        >
+                          {/* Locked Overlay */}
+                          {isLocked && (
+                            <div className="absolute inset-0 z-10 bg-slate-900/95 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center gap-2 p-4">
+                              <div className="bg-gradient-to-br from-cyan-500/20 to-blue-500/20 p-2 rounded-full border border-cyan-500/30">
+                                <Lock className="h-4 w-4 text-cyan-400" />
                               </div>
-
-                              {/* Metadata Row - Clean & Minimal - Responsive */}
-                              <div className="flex items-center gap-1 sm:gap-2 text-[10px] sm:text-xs text-slate-400 flex-wrap">
-                                <span className="font-medium truncate max-w-[150px] sm:max-w-none">{matchup}</span>
-                                <span className="text-slate-600 hidden sm:inline">•</span>
-                                <span className="uppercase font-semibold">{pick.pick_type}</span>
-                                <span className="text-slate-600 hidden sm:inline">•</span>
-                                <span className={`font-semibold ${gameStatus.color.includes('green') ? 'text-green-400' : gameStatus.color.includes('yellow') ? 'text-yellow-400' : 'text-slate-400'}`}>
-                                  {gameStatus.text}
-                                </span>
-                                {(() => {
-                                  // Try multiple sources for game start time
-                                  const gameTime = pick.games?.game_start_timestamp ||
-                                    pick.game_snapshot?.game_start_timestamp ||
-                                    pick.game_snapshot?.game_date
-                                  const countdown = getCountdown(gameTime)
-                                  return countdown ? (
-                                    <>
-                                      <span className="text-slate-600 hidden sm:inline">•</span>
-                                      <span className="text-cyan-400 font-semibold">🕐 {countdown}</span>
-                                    </>
-                                  ) : null
-                                })()}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* RIGHT SECTION: Stars + Units - Responsive */}
-                          <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0 self-end sm:self-auto">
-                            {/* Stars + Confidence */}
-                            <div className="flex flex-col items-end gap-1.5">
-                              {renderConfidenceStars(pick.confidence)}
-                              <div className="text-xs font-bold text-slate-500">
-                                {pick.confidence?.toFixed(1)}
-                              </div>
-                            </div>
-
-                            {/* Units - Clean & Bold - Responsive */}
-                            <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-emerald-500 to-green-600 rounded-lg shadow-lg">
-                              <div className="text-base sm:text-xl font-black text-white">
-                                {pick.units}<span className="text-xs sm:text-sm">U</span>
-                              </div>
-                            </div>
-
-                            <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 text-slate-600 group-hover:text-cyan-400 transition-colors" />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Bold Predictions Toggle Button */}
-                      {hasPredictions && !isLocked && (
-                        <div className="border-t border-slate-700/50 px-3 py-2">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              togglePickExpansion(pick.id)
-                            }}
-                            className="w-full flex items-center justify-between text-[10px] text-purple-400 hover:text-purple-300 transition-colors"
-                          >
-                            <span className="flex items-center gap-1">
-                              <span className="font-semibold">🎯 Bold Player Predictions</span>
-                              <span className="text-slate-500">({boldPredictions.predictions.length})</span>
-                            </span>
-                            <span className="text-slate-500">{isExpanded ? '▼' : '▶'}</span>
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Expanded Bold Predictions */}
-                      {isExpanded && hasPredictions && !isLocked && (
-                        <div className="px-3 pb-2 space-y-2">
-                          {/* Summary */}
-                          {boldPredictions.summary && (
-                            <div className="bg-gradient-to-r from-purple-900/20 to-pink-900/20 border border-purple-500/30 rounded p-2">
-                              <div className="text-[9px] font-bold text-purple-400 uppercase mb-1">
-                                📊 Summary
-                              </div>
-                              <div className="text-[10px] text-slate-300 leading-relaxed">
-                                {boldPredictions.summary}
-                              </div>
+                              <p className="text-xs font-bold text-white">Premium</p>
+                              <Link href="/signup" className="text-[10px] text-cyan-400 hover:text-cyan-300 underline">
+                                Unlock
+                              </Link>
                             </div>
                           )}
 
-                          {/* Predictions */}
-                          <div className="space-y-1.5">
-                            {boldPredictions.predictions.map((pred: any, idx: number) => (
-                              <div key={idx} className="bg-slate-900/50 border border-slate-700/50 rounded p-2">
-                                <div className="flex items-start justify-between mb-1">
-                                  <div className="flex-1">
-                                    <div className="text-[10px] font-bold text-white">
-                                      {pred.player}
-                                    </div>
-                                    <div className="text-[9px] text-slate-400">
-                                      {pred.team}
-                                    </div>
-                                  </div>
-                                  <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${pred.confidence === 'HIGH' ? 'bg-emerald-900/50 text-emerald-400' :
-                                    pred.confidence === 'MEDIUM' ? 'bg-yellow-900/50 text-yellow-400' :
-                                      'bg-slate-700/50 text-slate-400'
-                                    }`}>
-                                    {pred.confidence}
-                                  </span>
-                                </div>
-                                <div className="text-[10px] text-cyan-400 font-semibold mb-1">
-                                  {pred.prediction}
-                                </div>
-                                <div className="text-[9px] text-slate-400 leading-relaxed">
-                                  {pred.reasoning}
+                          {/* Card Content */}
+                          <div className={`p-3 h-full flex flex-col ${isLocked ? 'blur-sm' : ''}`}>
+                            {/* Top Row: Capper Badge + Units */}
+                            <div className="flex items-center justify-between mb-2">
+                              <div className={`px-2 py-0.5 rounded text-[8px] sm:text-[9px] font-bold ${capperBadge.gradient} ${capperBadge.text} uppercase tracking-wide`}>
+                                {pick.capper || 'DeepPick'}
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                {/* Stars - compact */}
+                                <div className="flex gap-0.5">
+                                  {renderConfidenceStars(pick.confidence)}
                                 </div>
                               </div>
-                            ))}
+                            </div>
+
+                            {/* Pick Selection - HERO */}
+                            <div className="text-sm sm:text-base font-black text-white group-hover:text-cyan-400 transition-colors leading-tight mb-2 line-clamp-2">
+                              {pick.selection}
+                            </div>
+
+                            {/* Matchup */}
+                            <div className="text-[10px] sm:text-xs text-slate-400 font-medium mb-2 truncate">
+                              {matchup}
+                            </div>
+
+                            {/* Bottom Row: Type + Status + Countdown + Units */}
+                            <div className="mt-auto flex items-center justify-between gap-1">
+                              <div className="flex items-center gap-1 flex-wrap">
+                                {/* Bet Type Badge */}
+                                <span className="px-1.5 py-0.5 bg-slate-700/80 rounded text-[8px] sm:text-[9px] text-slate-300 font-semibold uppercase">
+                                  {pick.pick_type}
+                                </span>
+                                {/* Status */}
+                                <span className={`px-1.5 py-0.5 rounded text-[8px] sm:text-[9px] font-semibold ${gameStatus.text === 'LIVE' ? 'bg-red-600/80 text-white animate-pulse' :
+                                  gameStatus.text === 'FINAL' ? 'bg-slate-600 text-slate-300' :
+                                    'bg-blue-600/50 text-blue-200'
+                                  }`}>
+                                  {gameStatus.text}
+                                </span>
+                              </div>
+
+                              {/* Units Badge */}
+                              <div className="flex items-center justify-center min-w-[32px] h-7 sm:h-8 bg-gradient-to-br from-emerald-500 to-green-600 rounded-lg shadow-lg px-2">
+                                <span className="text-sm sm:text-base font-black text-white">
+                                  {pick.units}<span className="text-[8px] sm:text-[10px]">u</span>
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Countdown - subtle at bottom */}
+                            {countdown && (
+                              <div className="mt-2 text-[9px] sm:text-[10px] text-cyan-400 font-semibold flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {countdown}
+                              </div>
+                            )}
+
+                            {/* Bold Predictions indicator */}
+                            {hasPredictions && (
+                              <div className="mt-1.5 text-[8px] text-purple-400 flex items-center gap-1">
+                                <span>🔮</span>
+                                <span className="font-medium">Bold Predictions</span>
+                              </div>
+                            )}
                           </div>
                         </div>
-                      )}
-                    </div>
-                  )
-                })}
-
-                {/* Pagination Controls */}
-                {todaysPicks.length > 5 && (
-                  <Link href="/picks">
-                    <Button className="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white text-xs h-8">
-                      View All {todaysPicks.length} Picks →
-                    </Button>
-                  </Link>
+                      )
+                    })}
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -964,10 +893,10 @@ export function ProfessionalDashboard() {
                   </Link>
                 )}
               </CardContent>
-            </Card>
+            </Card >
 
             {/* PERFORMANCE TREND GRAPH - Responsive Height */}
-            <Card className="bg-slate-900/50 border-slate-800 h-auto lg:h-[227px] flex flex-col">
+            < Card className="bg-slate-900/50 border-slate-800 h-auto lg:h-[227px] flex flex-col" >
               <CardHeader className="pb-2 px-2 sm:px-3 pt-2.5 border-b border-slate-800 flex-shrink-0">
                 <CardTitle className="text-sm font-semibold text-white flex items-center gap-1.5">
                   <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
@@ -1068,12 +997,12 @@ export function ProfessionalDashboard() {
                   </div>
                 )}
               </CardContent>
-            </Card>
-          </div>
-        </div>
+            </Card >
+          </div >
+        </div >
 
         {/* PICK HISTORY - FULL WIDTH AT BOTTOM */}
-        <Card className="bg-slate-900/50 border-slate-800 h-[250px] flex flex-col">
+        < Card className="bg-slate-900/50 border-slate-800 h-[250px] flex flex-col" >
           <CardHeader className="pb-2 px-3 pt-2.5 border-b border-slate-800 flex-shrink-0">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold text-white flex items-center gap-1.5">
@@ -1202,20 +1131,22 @@ export function ProfessionalDashboard() {
               </div>
             )}
           </CardContent>
-        </Card>
-      </div>
+        </Card >
+      </div >
 
       {/* Insight Modal */}
-      {showInsight && selectedPick && (
-        <PickInsightModal
-          pickId={selectedPick.id}
-          onClose={() => {
-            setShowInsight(false)
-            setSelectedPick(null)
-          }}
-        />
-      )}
-    </div>
+      {
+        showInsight && selectedPick && (
+          <PickInsightModal
+            pickId={selectedPick.id}
+            onClose={() => {
+              setShowInsight(false)
+              setSelectedPick(null)
+            }}
+          />
+        )
+      }
+    </div >
   )
 }
 
