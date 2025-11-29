@@ -6,8 +6,9 @@ export const runtime = 'nodejs'
 
 /**
  * GET /api/cappers/public-profile?capperId=xxx
- * 
+ *
  * Fetches public profile information for a capper (user or system)
+ * Falls back to creating a basic profile from picks data if the capper has placed picks
  */
 export async function GET(request: NextRequest) {
   try {
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
     const { data: userCapper, error: userCapperError } = await supabase
       .from('user_cappers')
       .select('capper_id, display_name, description, color_theme, created_at, social_links')
-      .eq('capper_id', capperId.toLowerCase())
+      .ilike('capper_id', capperId)
       .single()
 
     if (userCapper) {
@@ -37,11 +38,11 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // If not found in user_cappers, try system cappers (capper_profiles)
+    // If not found in user_cappers, try system cappers (capper_profiles) - case-insensitive
     const { data: systemCapper, error: systemCapperError } = await supabase
       .from('capper_profiles')
       .select('capper_id, display_name, description, color_theme, created_at')
-      .eq('capper_id', capperId)
+      .ilike('capper_id', capperId)
       .single()
 
     if (systemCapper) {
@@ -51,7 +52,32 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // Capper not found
+    // Fallback: Check if this capper has any picks (they're a user who placed manual picks)
+    const { data: capperPicks, error: picksError } = await supabase
+      .from('shiva_picks')
+      .select('capper, created_at')
+      .ilike('capper', capperId)
+      .order('created_at', { ascending: true })
+      .limit(1)
+
+    if (capperPicks && capperPicks.length > 0) {
+      // Create a basic profile from picks data
+      const firstPick = capperPicks[0]
+      return NextResponse.json({
+        success: true,
+        capper: {
+          capper_id: capperId.toLowerCase(),
+          display_name: firstPick.capper || capperId, // Use the capper name from picks
+          description: 'Sharp Siege capper placing manual picks.',
+          color_theme: 'purple', // Default color for user cappers
+          created_at: firstPick.created_at,
+          social_links: null,
+          is_fallback: true // Flag to indicate this is generated, not a formal profile
+        }
+      })
+    }
+
+    // Capper truly not found
     return NextResponse.json(
       { success: false, error: 'Capper not found' },
       { status: 404 }

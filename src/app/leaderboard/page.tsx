@@ -281,8 +281,8 @@ export default function LeaderboardPage() {
                     <div className="flex-1 min-w-0">
                       {/* Name Row */}
                       <div className="flex items-center gap-2 mb-3 flex-wrap">
-                        {capper.type === 'user' ? (
-                          <Link href={`/profile/${capper.id}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                        <Link href={`/cappers/${capper.id}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity group">
+                          {capper.type === 'user' ? (
                             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold flex-shrink-0">
                               {capper.avatar_url ? (
                                 <img src={capper.avatar_url} alt={capper.name} className="w-full h-full rounded-full object-cover" />
@@ -290,16 +290,12 @@ export default function LeaderboardPage() {
                                 <User className="w-4 h-4" />
                               )}
                             </div>
-                            <span className={`bg-gradient-to-r ${capperColor} text-white font-bold text-base px-3 py-1 rounded-lg`}>
-                              {capper.name}
-                            </span>
-                          </Link>
-                        ) : (
-                          <span className={`bg-gradient-to-r ${capperColor} text-white font-bold text-base px-3 py-1 rounded-lg inline-flex items-center gap-1`}>
-                            {capperIcon && <span>{capperIcon}</span>}
+                          ) : null}
+                          <span className={`bg-gradient-to-r ${capperColor} text-white font-bold text-base px-3 py-1 rounded-lg inline-flex items-center gap-1 group-hover:ring-2 group-hover:ring-white/30 transition-all`}>
+                            {capper.type === 'system' && capperIcon && <span>{capperIcon}</span>}
                             {capper.name}
                           </span>
-                        )}
+                        </Link>
 
                         {capper.rank === 1 && (
                           <span className="bg-yellow-500/20 text-yellow-400 border border-yellow-500/50 text-xs px-2 py-0.5 rounded-md font-bold">
@@ -348,13 +344,13 @@ export default function LeaderboardPage() {
                     </div>
 
                     {/* View Picks Button */}
-                    <Link href={capper.type === 'system' ? `/cappers/${capper.id}` : `/profile/${capper.id}`} target="_blank">
+                    <Link href={`/cappers/${capper.id}`} target="_blank">
                       <Button
                         size="sm"
                         className={`bg-gradient-to-r ${capperColor} hover:opacity-90 text-white font-bold shadow-lg whitespace-nowrap`}
                       >
                         <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
-                        View Picks
+                        View Profile
                       </Button>
                     </Link>
                   </div>
