@@ -525,7 +525,10 @@ async function computeFactors(
     factors: result.factors || [],
     factorWeights,
     factor_version: factorVersion,
-    baseline_avg: result.baseline_avg || (betType === 'TOTAL' ? 220 : 0) // TOTALS: 220, SPREAD: 0
+    baseline_avg: result.baseline_avg || (betType === 'TOTAL' ? 220 : 0), // TOTALS: 220, SPREAD: 0
+    // Pass through debug info (used for recalibration checks)
+    totals_debug: result.totals_debug,
+    spread_debug: result.spread_debug
   }
 }
 

@@ -206,7 +206,11 @@ export function useUserPicks(options: UseUserPicksOptions = {}) {
         return;
       }
 
-      console.log('[useUserPicks] Found', picksData.data.length, 'picks');
+      // Filter out PASS picks - Battle Arena only shows actual bets
+      const actualPicks = picksData.data.filter((p: ApiPick) =>
+        p.pick_type?.toLowerCase() !== 'pass' && p.selection?.toUpperCase() !== 'PASS'
+      );
+      console.log('[useUserPicks] Found', picksData.data.length, 'total picks,', actualPicks.length, 'actual bets (excluding PASS)');
 
       // Get user display name - use full_name as the capper display name
       // In profiles table: full_name = capper name (e.g., "gr8nade"), username is typically null
@@ -217,10 +221,15 @@ export function useUserPicks(options: UseUserPicksOptions = {}) {
 
       console.log('[useUserPicks] Display name:', displayName, 'from capperName:', capperName);
 
-      // Fetch capper's per-team SPREAD records
+      // Fetch capper's per-team SPREAD records and leaderboard rank
       let teamSpreadRecords: Map<string, { wins: number; losses: number; pushes: number; netUnits: number }> = new Map();
+      let leaderboardRank: number | undefined;
       try {
-        const spreadRes = await fetch(`/api/cappers/team-dominance?capperId=${capperId}&all=1`);
+        const [spreadRes, leaderboardRes] = await Promise.all([
+          fetch(`/api/cappers/team-dominance?capperId=${capperId}&all=1`),
+          fetch('/api/leaderboard'),
+        ]);
+
         if (spreadRes.ok) {
           const spreadData = await spreadRes.json();
           if (spreadData.success && Array.isArray(spreadData.allTeams)) {
@@ -235,8 +244,22 @@ export function useUserPicks(options: UseUserPicksOptions = {}) {
             console.log('[useUserPicks] Found SPREAD records for', teamSpreadRecords.size, 'teams');
           }
         }
+
+        if (leaderboardRes.ok) {
+          const leaderboardData = await leaderboardRes.json();
+          if (leaderboardData.success && Array.isArray(leaderboardData.data)) {
+            // Find the capper's rank in the leaderboard
+            const capperEntry = leaderboardData.data.find(
+              (entry: any) => entry.id?.toLowerCase() === capperId?.toLowerCase()
+            );
+            if (capperEntry) {
+              leaderboardRank = capperEntry.rank;
+              console.log('[useUserPicks] Found leaderboard rank:', leaderboardRank, 'for capper:', capperId);
+            }
+          }
+        }
       } catch (err) {
-        console.warn('[useUserPicks] Could not fetch team SPREAD records:', err);
+        console.warn('[useUserPicks] Could not fetch team SPREAD records or leaderboard:', err);
       }
 
       const picks = picksData.data.map((p: ApiPick) => {
@@ -262,6 +285,7 @@ export function useUserPicks(options: UseUserPicksOptions = {}) {
         // Transform with user's display name override
         const pick = transformApiPick(p, unitRecord);
         pick.capperName = displayName; // Override to show user's name
+        pick.leaderboardRank = leaderboardRank; // Add leaderboard rank
         return pick;
       });
 

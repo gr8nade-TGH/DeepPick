@@ -358,179 +358,76 @@ export async function POST(request: Request) {
     }
 
     // ========================================
-    // CONFIDENCE RECALIBRATION
+    // CONFIDENCE RECALIBRATION (DISABLED)
     // ========================================
-    // Apply confidence penalties for data quality issues and large market disagreements
-    let recalibratedConfidence = confFinal
-    const confidencePenalties: any[] = []
+    // Previously applied penalties for missing data, but this was causing valid picks
+    // to be converted to PASS because the data path checks were incorrect.
+    // TODO: Fix the underlying data issues (missing team stats, injury data) before re-enabling.
+    // See: step3.totals_debug.console_logs.bundle (team stats)
+    // See: step3.totals_debug.injury_impact (injury data)
+    console.log('[SHIVA:GeneratePick] Confidence recalibration DISABLED - using original confidence:', {
+      confidence: confFinal.toFixed(2),
+      units: result.pick?.units || 0
+    })
 
-    if (result.pick && result.pick.selection !== 'PASS') {
-      try {
-        // PENALTY 1: Large market disagreement (edge > 5 points for SPREAD, > 10 points for TOTAL)
-        const edgeThreshold = betType === 'SPREAD' ? 5.0 : 10.0
-        const actualEdge = Math.abs(predictedValue - marketLine)
+    // ========================================
+    // CRITICAL: Handle PASS after recalibration
+    // ========================================
+    // If confidence recalibration converted the pick to PASS, we should NOT save to picks table
+    // Instead, create a cooldown and return early (same as when !result.pick)
+    if (result.pick && result.pick.selection === 'PASS') {
+      console.log('[SHIVA:GeneratePick] Pick converted to PASS after recalibration - NOT saving to picks table')
 
-        if (actualEdge > edgeThreshold) {
-          const edgePenalty = betType === 'SPREAD'
-            ? Math.min(actualEdge * 0.15, 2.0)  // SPREAD: 0.15 per point, max 2.0
-            : Math.min((actualEdge - 10) * 0.10, 1.5)  // TOTAL: 0.10 per point over 10, max 1.5
+      // Create cooldown for PASS decision (same logic as when !result.pick)
+      let cooldownUntil: Date
+      const twoHoursFromNow = new Date(Date.now() + 2 * 60 * 60 * 1000)
+      const gameDate = game.game_date
+      const gameTime = game.game_time
 
-          recalibratedConfidence -= edgePenalty
-          confidencePenalties.push({
-            type: 'large_market_disagreement',
-            edge: actualEdge.toFixed(1),
-            threshold: edgeThreshold,
-            penalty: edgePenalty.toFixed(2),
-            reason: `Edge of ${actualEdge.toFixed(1)} points exceeds ${edgeThreshold} threshold`
-          })
-
-          console.warn('[SHIVA:GeneratePick] ⚠️ Confidence penalty for large market disagreement:', {
-            edge: actualEdge.toFixed(1),
-            penalty: edgePenalty.toFixed(2)
-          })
+      if (gameDate && gameTime) {
+        const gameDateTime = new Date(`${gameDate}T${gameTime}Z`)
+        if (gameDateTime > new Date()) {
+          cooldownUntil = gameDateTime < twoHoursFromNow ? gameDateTime : twoHoursFromNow
+        } else {
+          cooldownUntil = twoHoursFromNow
         }
-
-        // PENALTY 2: Large total discrepancy for SPREAD picks (>10 points)
-        if (betType === 'SPREAD' && metadata.total_edge_warning) {
-          const totalEdgeAbs = metadata.total_edge_warning.total_edge_abs
-          const totalPenalty = totalEdgeAbs > 15
-            ? 1.5  // EXTREME discrepancy (>15pts)
-            : 0.75 // HIGH discrepancy (10-15pts)
-
-          recalibratedConfidence -= totalPenalty
-          confidencePenalties.push({
-            type: 'total_edge_discrepancy',
-            total_edge: totalEdgeAbs.toFixed(1),
-            severity: metadata.total_edge_warning.severity,
-            penalty: totalPenalty.toFixed(2),
-            reason: `Predicted total differs from market by ${totalEdgeAbs.toFixed(1)} points`
-          })
-
-          console.warn('[SHIVA:GeneratePick] ⚠️ Confidence penalty for total edge discrepancy:', {
-            totalEdge: totalEdgeAbs.toFixed(1),
-            penalty: totalPenalty.toFixed(2)
-          })
-        }
-
-        // PENALTY 3: Missing team stats (AI will hallucinate)
-        const statsBundle = result.steps?.step3?.totals_debug?.console_logs?.bundle
-        if (!statsBundle) {
-          const missingStatsPenalty = 1.0
-          recalibratedConfidence -= missingStatsPenalty
-          confidencePenalties.push({
-            type: 'missing_team_stats',
-            penalty: missingStatsPenalty.toFixed(2),
-            reason: 'Team stats bundle not available - AI may hallucinate'
-          })
-
-          console.warn('[SHIVA:GeneratePick] ⚠️ Confidence penalty for missing team stats:', {
-            penalty: missingStatsPenalty.toFixed(2)
-          })
-        }
-
-        // PENALTY 4: Missing injury data
-        // For TOTALS: injury data is in totals_debug.injury_impact
-        // For SPREAD: injury data is in spread_debug.injury_data (if exists)
-        let injuryData: any = null
-        if (betType === 'TOTAL') {
-          injuryData = result.steps?.step3?.totals_debug?.injury_impact
-        } else if (betType === 'SPREAD') {
-          // SPREAD picks may have injury data in different location
-          injuryData = result.steps?.step3?.spread_debug?.injury_data ||
-            result.steps?.step3?.totals_debug?.injury_impact
-        }
-
-        // Check if injury data is missing or empty
-        const hasInjuryData = injuryData && (
-          (injuryData.summary && injuryData.summary !== 'Not needed') ||
-          (Array.isArray(injuryData) && injuryData.length > 0) ||
-          (injuryData.awayInjuries && injuryData.homeInjuries)
-        )
-
-        if (!hasInjuryData) {
-          const missingInjuryPenalty = 0.5
-          recalibratedConfidence -= missingInjuryPenalty
-          confidencePenalties.push({
-            type: 'missing_injury_data',
-            penalty: missingInjuryPenalty.toFixed(2),
-            reason: 'Injury data not available - injury factors may be inaccurate'
-          })
-
-          console.warn('[SHIVA:GeneratePick] ⚠️ Confidence penalty for missing injury data:', {
-            penalty: missingInjuryPenalty.toFixed(2),
-            betType
-          })
-        }
-
-        // Ensure confidence stays within bounds [0, 10]
-        recalibratedConfidence = Math.max(0, Math.min(10, recalibratedConfidence))
-
-        // Log recalibration summary
-        if (confidencePenalties.length > 0) {
-          const totalPenalty = confidencePenalties.reduce((sum, p) => sum + parseFloat(p.penalty), 0)
-          console.log('[SHIVA:GeneratePick] 📊 Confidence recalibration summary:', {
-            original: confFinal.toFixed(2),
-            recalibrated: recalibratedConfidence.toFixed(2),
-            totalPenalty: totalPenalty.toFixed(2),
-            penaltyCount: confidencePenalties.length
-          })
-
-          // Add to metadata
-          metadata.confidence_recalibration = {
-            original_confidence: confFinal,
-            recalibrated_confidence: recalibratedConfidence,
-            total_penalty: totalPenalty,
-            penalties: confidencePenalties
-          }
-
-          // Update confidence in result
-          confidence = recalibratedConfidence
-
-          // Recalculate units based on recalibrated confidence
-          // Units thresholds (same as wizard):
-          // 8.5+ = 5 units, 8.0-8.49 = 4 units, 7.5-7.99 = 3 units, 7.0-7.49 = 2 units, 6.5-6.99 = 1 unit, <6.5 = PASS
-          let recalibratedUnits = 0
-          if (recalibratedConfidence >= 8.5) {
-            recalibratedUnits = 5
-          } else if (recalibratedConfidence >= 8.0) {
-            recalibratedUnits = 4
-          } else if (recalibratedConfidence >= 7.5) {
-            recalibratedUnits = 3
-          } else if (recalibratedConfidence >= 7.0) {
-            recalibratedUnits = 2
-          } else if (recalibratedConfidence >= 6.5) {
-            recalibratedUnits = 1
-          } else {
-            // Confidence too low after recalibration - convert to PASS
-            recalibratedUnits = 0
-            result.pick.selection = 'PASS'
-            result.pick.pickType = 'PASS'
-            console.warn('[SHIVA:GeneratePick] ⚠️ Pick converted to PASS due to low recalibrated confidence:', {
-              recalibratedConfidence: recalibratedConfidence.toFixed(2)
-            })
-          }
-
-          // Update units in result
-          const originalUnits = result.pick.units
-          result.pick.units = recalibratedUnits
-          result.pick.confidence = recalibratedConfidence
-
-          if (originalUnits !== recalibratedUnits) {
-            console.log('[SHIVA:GeneratePick] 📊 Units adjusted due to confidence recalibration:', {
-              originalUnits,
-              recalibratedUnits,
-              originalConfidence: confFinal.toFixed(2),
-              recalibratedConfidence: recalibratedConfidence.toFixed(2)
-            })
-
-            metadata.confidence_recalibration.original_units = originalUnits
-            metadata.confidence_recalibration.recalibrated_units = recalibratedUnits
-          }
-        }
-
-      } catch (recalibrationError) {
-        console.error('[SHIVA:GeneratePick] Error during confidence recalibration:', recalibrationError)
+      } else {
+        cooldownUntil = twoHoursFromNow
       }
+
+      const { error: passCooldownError } = await supabase
+        .from('pick_generation_cooldowns')
+        .upsert({
+          game_id: game.id,
+          capper: capperId,
+          bet_type: betType.toLowerCase(),
+          result: 'PASS',
+          units: 0,
+          confidence_score: confidence,
+          reason: `Low confidence after recalibration: ${confidence.toFixed(2)}`,
+          cooldown_until: cooldownUntil.toISOString(),
+          created_at: new Date().toISOString()
+        }, {
+          onConflict: 'game_id,capper,bet_type'
+        })
+
+      if (passCooldownError) {
+        console.error('[SHIVA:GeneratePick] Error creating PASS cooldown after recalibration:', passCooldownError)
+      } else {
+        console.log(`[SHIVA:GeneratePick] ✅ PASS cooldown created until ${cooldownUntil.toISOString()}`)
+      }
+
+      return NextResponse.json({
+        success: false,
+        decision: 'PASS',
+        message: 'Pick converted to PASS after confidence recalibration',
+        confidence,
+        runId,
+        factors: result.log?.factors || [],
+        recalibration: metadata.confidence_recalibration,
+        cooldown_until: cooldownUntil.toISOString(),
+        duration: `${duration}ms`
+      })
     }
 
     // Generate Bold Player Predictions and Professional Analysis (if pick was generated)
@@ -749,6 +646,41 @@ export async function POST(request: Request) {
     }
 
     const pick = result.pick
+
+    // ========================================
+    // CRITICAL: Final PASS guard - never save PASS picks
+    // ========================================
+    if (!pick || pick.selection === 'PASS' || pick.units === 0) {
+      console.log('[SHIVA:GeneratePick] ❌ Final guard: Rejecting PASS pick - NOT saving to picks table')
+
+      // Create cooldown for PASS decision
+      const twoHoursFromNow = new Date(Date.now() + 2 * 60 * 60 * 1000)
+      await supabase
+        .from('pick_generation_cooldowns')
+        .upsert({
+          game_id: game.id,
+          capper: capperId,
+          bet_type: betType.toLowerCase(),
+          result: 'PASS',
+          units: 0,
+          confidence_score: confidence,
+          reason: 'Final guard: Pick was PASS or 0 units',
+          cooldown_until: twoHoursFromNow.toISOString(),
+          created_at: new Date().toISOString()
+        }, {
+          onConflict: 'game_id,capper,bet_type'
+        })
+
+      return NextResponse.json({
+        success: false,
+        decision: 'PASS',
+        message: 'Pick rejected by final guard (PASS or 0 units)',
+        confidence,
+        runId,
+        factors: result.log?.factors || [],
+        cooldown_until: twoHoursFromNow.toISOString(),
+      })
+    }
 
     console.log(`✅ [SHIVA:GeneratePick] Pick generated: ${pick.selection} (${pick.units} units, ${confidence.toFixed(2)} confidence)`)
 

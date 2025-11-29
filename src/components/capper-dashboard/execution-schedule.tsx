@@ -248,10 +248,10 @@ export function ExecutionSchedule({ capperId, intervalMinutes, isActive }: Execu
                   className="p-3 rounded-lg bg-slate-900/50 border border-slate-700 hover:border-slate-600 transition-all"
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <Badge className={getStatusColor(run.status)}>
+                    <Badge className={getStatusColor(run.status || 'pending')}>
                       <span className="flex items-center gap-1">
-                        {getStatusIcon(run.status)}
-                        {run.status.toUpperCase()}
+                        {getStatusIcon(run.status || 'pending')}
+                        {(run.status || 'PENDING').toUpperCase()}
                       </span>
                     </Badge>
                     <span className="text-xs text-slate-500">

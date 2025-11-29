@@ -63,6 +63,7 @@ function pickToGame(pick: UserPick): Game {
     losses: pick.unitRecord.losses,
     pushes: pick.unitRecord.pushes,
     colorTheme: pick.pickedTeam.color || '#6366f1',
+    leaderboardRank: pick.leaderboardRank,
   };
 
   // Right capper is "opponent" - will show "Finding Opponent" overlay

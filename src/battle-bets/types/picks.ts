@@ -107,6 +107,9 @@ export interface UserPick {
   // Performance data (for sorting)
   unitRecord: TeamUnitRecord;
 
+  // Leaderboard data
+  leaderboardRank?: number;   // Capper's rank on the global leaderboard (1 = #1, 2 = #2, etc.)
+
   // Battle reference
   battleId?: string;          // Links to battle in multiGameStore
 }
