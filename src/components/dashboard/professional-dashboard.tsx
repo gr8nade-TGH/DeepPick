@@ -17,7 +17,8 @@ import {
   XCircle,
   ChevronRight,
   TrendingDown,
-  Star
+  Star,
+  LayoutGrid
 } from 'lucide-react'
 
 import { PickInsightModal } from '@/components/dashboard/pick-insight-modal'
@@ -579,7 +580,17 @@ export function ProfessionalDashboard() {
             <Card className="bg-slate-900/50 border-slate-800 h-auto lg:h-[550px] flex flex-col">
               <CardHeader className="pb-2 px-2 sm:px-3 pt-2.5 border-b border-slate-800 flex-shrink-0">
                 <div className="flex items-center justify-between flex-wrap gap-2">
-                  <CardTitle className="text-sm font-semibold text-white">Today's Elite Picks</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-sm font-semibold text-white">Today's Elite Picks</CardTitle>
+                    <Link
+                      href="/pick-grid"
+                      className="group relative p-1.5 rounded-lg bg-gradient-to-r from-cyan-500/20 to-purple-500/20 border border-cyan-500/30 hover:border-cyan-400 hover:from-cyan-500/30 hover:to-purple-500/30 transition-all duration-300"
+                      title="View Consensus Heat Map"
+                    >
+                      <LayoutGrid className="w-4 h-4 text-cyan-400 group-hover:text-cyan-300 transition-colors" />
+                      <div className="absolute inset-0 rounded-lg bg-cyan-500/20 blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    </Link>
+                  </div>
                   <Tabs value={sportFilter} onValueChange={setSportFilter}>
                     <TabsList className="bg-slate-800/50 border border-slate-700 h-7">
                       <TabsTrigger value="all" className="text-[11px] px-2 py-0.5">All</TabsTrigger>
