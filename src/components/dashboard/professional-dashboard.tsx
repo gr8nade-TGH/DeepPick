@@ -389,16 +389,16 @@ export function ProfessionalDashboard() {
           capperPickCount.set(capperId, currentCount + 1)
         }
 
-        // Stop once we have enough picks for Elite Picks display (5)
-        if (diversified.length >= 5) break
+        // Stop once we have enough picks for Elite Picks display (6)
+        if (diversified.length >= 6) break
       }
 
-      // If we don't have 5 picks yet (not enough cappers), fill with remaining picks
-      if (diversified.length < 5) {
+      // If we don't have 6 picks yet (not enough cappers), fill with remaining picks
+      if (diversified.length < 6) {
         for (const pick of sorted) {
           if (!diversified.includes(pick)) {
             diversified.push(pick)
-            if (diversified.length >= 5) break
+            if (diversified.length >= 6) break
           }
         }
       }
