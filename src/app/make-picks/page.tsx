@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { RefreshCw, Clock } from 'lucide-react'
 import { useBettingSlip, BetSelection } from '@/contexts/betting-slip-context'
 import { useAuth } from '@/contexts/auth-context'
+import { PickInsightModal } from '@/components/dashboard/pick-insight-modal'
 
 interface Game {
   id: string
@@ -44,10 +45,9 @@ function getCountdown(gameDate: string | undefined): string {
 }
 
 // Track existing picks by game_id and pick_type
-interface ExistingPick {
-  gameId: string
-  pickType: 'spread' | 'total' | 'moneyline'
+interface ExistingPickData {
   selection: string
+  pickId: string
 }
 
 export default function ManualPicksPage() {
@@ -55,10 +55,13 @@ export default function ManualPicksPage() {
   const { user } = useAuth()
   const [games, setGames] = useState<Game[]>([])
   const [loading, setLoading] = useState(true)
-  // Map of "gameId:pickType" -> selection string (e.g., "MEM +6.5")
-  const [existingPicks, setExistingPicks] = useState<Map<string, string>>(new Map())
+  // Map of "gameId:pickType" -> { selection, pickId }
+  const [existingPicks, setExistingPicks] = useState<Map<string, ExistingPickData>>(new Map())
   const [capperId, setCapperId] = useState<string | null>(null)
   const [currentTime, setCurrentTime] = useState(new Date())
+  // Insight modal state
+  const [showInsightModal, setShowInsightModal] = useState(false)
+  const [selectedPickId, setSelectedPickId] = useState<string | null>(null)
 
   // Helper to check if a specific bet type is already picked for a game
   const hasExistingPick = (gameId: string, pickType: 'spread' | 'total' | 'moneyline') => {
@@ -67,7 +70,21 @@ export default function ManualPicksPage() {
 
   // Get the selection for an existing pick
   const getExistingPickSelection = (gameId: string, pickType: 'spread' | 'total' | 'moneyline') => {
-    return existingPicks.get(`${gameId}:${pickType}`) || null
+    return existingPicks.get(`${gameId}:${pickType}`)?.selection || null
+  }
+
+  // Get the pick ID for an existing pick
+  const getExistingPickId = (gameId: string, pickType: 'spread' | 'total' | 'moneyline') => {
+    return existingPicks.get(`${gameId}:${pickType}`)?.pickId || null
+  }
+
+  // Open insight modal for an existing pick
+  const openInsightCard = (gameId: string, pickType: 'spread' | 'total' | 'moneyline') => {
+    const pickId = getExistingPickId(gameId, pickType)
+    if (pickId) {
+      setSelectedPickId(pickId)
+      setShowInsightModal(true)
+    }
   }
 
   // Memoize fetchExistingPicks for use in effect dependencies
@@ -77,10 +94,10 @@ export default function ManualPicksPage() {
       const response = await fetch(`/api/picks?capper=${capperId}&status=pending`)
       const data = await response.json()
       if (data.success) {
-        const picksMap = new Map<string, string>()
+        const picksMap = new Map<string, ExistingPickData>()
         data.picks.forEach((p: any) => {
           const key = `${p.game_id}:${p.pick_type}`
-          picksMap.set(key, p.selection)
+          picksMap.set(key, { selection: p.selection, pickId: p.id })
         })
         setExistingPicks(picksMap)
         console.log('[MakePicks] Existing picks loaded:', Array.from(picksMap.entries()))
@@ -355,11 +372,14 @@ export default function ManualPicksPage() {
                       </div>
                       {game.odds.spread ? (
                         hasSpreadPick ? (
-                          // Show locked state with the pick highlighted
-                          <div className="bg-gradient-to-br from-emerald-900/30 to-slate-900 border-2 border-emerald-500/50 rounded-lg p-4 text-center">
-                            <div className="text-emerald-400 font-bold text-lg mb-1">{spreadSelection}</div>
-                            <div className="text-slate-500 text-xs">Pick Locked</div>
-                          </div>
+                          // Show locked state with the pick highlighted - clickable to view insight card
+                          <button
+                            onClick={() => openInsightCard(game.id, 'spread')}
+                            className="w-full bg-gradient-to-br from-emerald-900/30 to-slate-900 border-2 border-emerald-500/50 hover:border-emerald-400 rounded-lg p-4 text-center transition-all hover:shadow-lg hover:shadow-emerald-500/20 cursor-pointer group"
+                          >
+                            <div className="text-emerald-400 font-bold text-lg mb-1 group-hover:text-emerald-300">{spreadSelection}</div>
+                            <div className="text-slate-500 text-xs group-hover:text-cyan-400">Click to view insight card</div>
+                          </button>
                         ) : (
                           <div className="space-y-2">
                             {/* Away Spread */}
@@ -412,11 +432,14 @@ export default function ManualPicksPage() {
                       </div>
                       {game.odds.total ? (
                         hasTotalPick ? (
-                          // Show locked state with the pick highlighted
-                          <div className="bg-gradient-to-br from-emerald-900/30 to-slate-900 border-2 border-emerald-500/50 rounded-lg p-4 text-center">
-                            <div className="text-emerald-400 font-bold text-lg mb-1">{totalSelection}</div>
-                            <div className="text-slate-500 text-xs">Pick Locked</div>
-                          </div>
+                          // Show locked state with the pick highlighted - clickable to view insight card
+                          <button
+                            onClick={() => openInsightCard(game.id, 'total')}
+                            className="w-full bg-gradient-to-br from-emerald-900/30 to-slate-900 border-2 border-emerald-500/50 hover:border-emerald-400 rounded-lg p-4 text-center transition-all hover:shadow-lg hover:shadow-emerald-500/20 cursor-pointer group"
+                          >
+                            <div className="text-emerald-400 font-bold text-lg mb-1 group-hover:text-emerald-300">{totalSelection}</div>
+                            <div className="text-slate-500 text-xs group-hover:text-cyan-400">Click to view insight card</div>
+                          </button>
                         ) : (
                           <div className="space-y-2">
                             {/* Over */}
@@ -460,6 +483,17 @@ export default function ManualPicksPage() {
       </div>
 
       {/* Betting Slip - Hidden, selections managed by global slip */}
+
+      {/* Insight Card Modal */}
+      {showInsightModal && selectedPickId && (
+        <PickInsightModal
+          pickId={selectedPickId}
+          onClose={() => {
+            setShowInsightModal(false)
+            setSelectedPickId(null)
+          }}
+        />
+      )}
     </div>
   )
 }

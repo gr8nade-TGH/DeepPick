@@ -487,12 +487,13 @@ export default function CapperPublicProfile() {
                   const gameTime = gameData?.game_start_timestamp
 
                   // Convert confidence to star rating using same logic as dashboard
+                  const confidence = pick.confidence ?? 0
                   let starCount = 0
-                  if (pick.confidence > 9.0) starCount = 5
-                  else if (pick.confidence > 8.0) starCount = 4
-                  else if (pick.confidence > 7.0) starCount = 3
-                  else if (pick.confidence > 6.0) starCount = 2
-                  else if (pick.confidence > 5.0) starCount = 1
+                  if (confidence > 9.0) starCount = 5
+                  else if (confidence > 8.0) starCount = 4
+                  else if (confidence > 7.0) starCount = 3
+                  else if (confidence > 6.0) starCount = 2
+                  else if (confidence > 5.0) starCount = 1
                   else starCount = 0
 
                   return (
@@ -550,7 +551,7 @@ export default function CapperPublicProfile() {
                             </div>
                             {/* Confidence score */}
                             <div className="text-xs font-bold text-slate-400">
-                              {pick.confidence.toFixed(1)}
+                              {confidence.toFixed(1)}
                             </div>
                           </div>
                         </div>
@@ -652,12 +653,13 @@ export default function CapperPublicProfile() {
                     const gameTime = gameData?.game_start_timestamp
 
                     // Convert confidence to star rating using same logic as dashboard
+                    const confidence = pick.confidence ?? 0
                     let starCount = 0
-                    if (pick.confidence > 9.0) starCount = 5
-                    else if (pick.confidence > 8.0) starCount = 4
-                    else if (pick.confidence > 7.0) starCount = 3
-                    else if (pick.confidence > 6.0) starCount = 2
-                    else if (pick.confidence > 5.0) starCount = 1
+                    if (confidence > 9.0) starCount = 5
+                    else if (confidence > 8.0) starCount = 4
+                    else if (confidence > 7.0) starCount = 3
+                    else if (confidence > 6.0) starCount = 2
+                    else if (confidence > 5.0) starCount = 1
                     else starCount = 0
 
                     return (
@@ -705,7 +707,7 @@ export default function CapperPublicProfile() {
                             <span>{'⭐'.repeat(starCount)}</span>
                             {/* Confidence score */}
                             <span className="font-medium text-slate-400">
-                              {pick.confidence.toFixed(1)}
+                              {confidence.toFixed(1)}
                             </span>
                           </div>
                           {/* Show game date instead of pick created date */}
