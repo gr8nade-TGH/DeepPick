@@ -1139,6 +1139,7 @@ export function ProfessionalDashboard() {
         showInsight && selectedPick && (
           <PickInsightModal
             pickId={selectedPick.id}
+            capper={selectedPick.capper}
             onClose={() => {
               setShowInsight(false)
               setSelectedPick(null)

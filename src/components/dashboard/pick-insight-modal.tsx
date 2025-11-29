@@ -5,10 +5,11 @@ import { X } from 'lucide-react'
 
 interface PickInsightModalProps {
   pickId: string
+  capper?: string  // Optional: route to correct API based on capper
   onClose: () => void
 }
 
-export function PickInsightModal({ pickId, onClose }: PickInsightModalProps) {
+export function PickInsightModal({ pickId, capper, onClose }: PickInsightModalProps) {
   const [insightData, setInsightData] = useState<InsightCardProps | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -18,23 +19,28 @@ export function PickInsightModal({ pickId, onClose }: PickInsightModalProps) {
       try {
         setLoading(true)
         setError(null)
-        
-        console.log('[PickInsightModal] Fetching insight card for pick:', pickId)
-        
-        const response = await fetch(`/api/shiva/insight-card/${pickId}`)
-        
+
+        console.log('[PickInsightModal] Fetching insight card for pick:', pickId, 'capper:', capper)
+
+        // Route to correct API based on capper
+        const apiPath = capper?.toLowerCase() === 'picksmith'
+          ? `/api/picksmith/insight-card/${pickId}`
+          : `/api/shiva/insight-card/${pickId}`
+
+        const response = await fetch(apiPath)
+
         if (!response.ok) {
           throw new Error(`Failed to fetch insight card: ${response.statusText}`)
         }
-        
+
         const result = await response.json()
-        
+
         if (!result.success || !result.data) {
           throw new Error('Invalid insight card data received')
         }
-        
+
         console.log('[PickInsightModal] Insight card data received:', result.data)
-        
+
         setInsightData(result.data)
       } catch (err) {
         console.error('[PickInsightModal] Error fetching insight card:', err)
