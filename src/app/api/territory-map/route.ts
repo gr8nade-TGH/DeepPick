@@ -73,35 +73,51 @@ export async function GET() {
 
     const systemCapperMap = new Map(SYSTEM_CAPPERS.map(c => [c.id, c.name]))
 
+    // Helper function to safely extract team abbreviation from game_snapshot
+    const extractTeamAbbr = (teamData: any): string | undefined => {
+      if (!teamData) return undefined
+      if (typeof teamData === 'string') {
+        try {
+          return JSON.parse(teamData).abbreviation
+        } catch {
+          return undefined
+        }
+      }
+      return teamData.abbreviation
+    }
+
+    // Helper function to parse game_snapshot (handles both string and object)
+    const parseGameSnapshot = (snapshot: any): any => {
+      if (!snapshot) return null
+      if (typeof snapshot === 'string') {
+        try {
+          return JSON.parse(snapshot)
+        } catch {
+          return null
+        }
+      }
+      return snapshot
+    }
+
     // For each team, calculate leaderboard and find the king
     const territories: TerritoryData[] = []
     const pickIdMap: Record<string, string> = {}
 
+    // Log first pick to debug
+    if (allPicks.length > 0) {
+      const samplePick = allPicks[0]
+      console.log('[Territory Map] Sample pick game_snapshot type:', typeof samplePick.game_snapshot)
+      console.log('[Territory Map] Sample pick home_team type:', typeof samplePick.game_snapshot?.home_team)
+    }
+
     for (const teamAbbr of allNBATeams) {
       // Filter picks for this team (home or away)
       const teamPicks = allPicks.filter(pick => {
-        if (!pick.game_snapshot) return false
+        const snapshot = parseGameSnapshot(pick.game_snapshot)
+        if (!snapshot) return false
 
-        // game_snapshot.home_team and away_team are JSON strings, need to parse
-        let homeTeam: string | undefined
-        let awayTeam: string | undefined
-
-        try {
-          if (typeof pick.game_snapshot.home_team === 'string') {
-            homeTeam = JSON.parse(pick.game_snapshot.home_team).abbreviation
-          } else {
-            homeTeam = pick.game_snapshot.home_team?.abbreviation
-          }
-
-          if (typeof pick.game_snapshot.away_team === 'string') {
-            awayTeam = JSON.parse(pick.game_snapshot.away_team).abbreviation
-          } else {
-            awayTeam = pick.game_snapshot.away_team?.abbreviation
-          }
-        } catch (e) {
-          console.error('[Territory Map] Error parsing team data:', e)
-          return false
-        }
+        const homeTeam = extractTeamAbbr(snapshot.home_team)
+        const awayTeam = extractTeamAbbr(snapshot.away_team)
 
         return homeTeam === teamAbbr || awayTeam === teamAbbr
       })
@@ -191,33 +207,16 @@ export async function GET() {
       const cappersWithPicks = new Map<string, { pickId: string, gameTime: string, gameStatus: string }>()
 
         ; (pendingPicks || []).forEach(pick => {
-          if (!pick.game_snapshot) return
+          const snapshot = parseGameSnapshot(pick.game_snapshot)
+          if (!snapshot) return
 
-          let homeTeam: string | undefined
-          let awayTeam: string | undefined
-          let gameTime: string | undefined
-          let gameStatus: string | undefined
+          const homeTeam = extractTeamAbbr(snapshot.home_team)
+          const awayTeam = extractTeamAbbr(snapshot.away_team)
 
-          try {
-            if (typeof pick.game_snapshot.home_team === 'string') {
-              homeTeam = JSON.parse(pick.game_snapshot.home_team).abbreviation
-            } else {
-              homeTeam = pick.game_snapshot.home_team?.abbreviation
-            }
-
-            if (typeof pick.game_snapshot.away_team === 'string') {
-              awayTeam = JSON.parse(pick.game_snapshot.away_team).abbreviation
-            } else {
-              awayTeam = pick.game_snapshot.away_team?.abbreviation
-            }
-
-            // Get game time and status from game_snapshot
-            gameTime = pick.game_snapshot.game_start_timestamp ||
-              `${pick.game_snapshot.game_date}T${pick.game_snapshot.game_time}`
-            gameStatus = pick.game_snapshot.status || 'scheduled'
-          } catch (e) {
-            return
-          }
+          // Get game time and status from game_snapshot
+          const gameTime = snapshot.game_start_timestamp ||
+            `${snapshot.game_date}T${snapshot.game_time}`
+          const gameStatus = snapshot.status || 'scheduled'
 
           // Check if this pick is for this team
           const isForThisTeam = homeTeam === teamAbbr || awayTeam === teamAbbr
@@ -319,45 +318,27 @@ export async function GET() {
     const activeMatchupsMap = new Map<string, { homeTeam: string, awayTeam: string, gameTime: string, status: string }>()
 
       ; (pendingPicks || []).forEach(pick => {
-        if (!pick.game_snapshot) return
+        const snapshot = parseGameSnapshot(pick.game_snapshot)
+        if (!snapshot) return
 
-        try {
-          let homeTeam: string | undefined
-          let awayTeam: string | undefined
-          let gameTime: string | undefined
-          let gameStatus: string | undefined
-          let gameId: string | undefined
+        const homeTeam = extractTeamAbbr(snapshot.home_team)
+        const awayTeam = extractTeamAbbr(snapshot.away_team)
 
-          if (typeof pick.game_snapshot.home_team === 'string') {
-            homeTeam = JSON.parse(pick.game_snapshot.home_team).abbreviation
-          } else {
-            homeTeam = pick.game_snapshot.home_team?.abbreviation
+        const gameTime = snapshot.game_start_timestamp ||
+          `${snapshot.game_date}T${snapshot.game_time}`
+        const gameStatus = snapshot.status || 'scheduled'
+        const gameId = snapshot.game_id || `${homeTeam}-${awayTeam}-${snapshot.game_date}`
+
+        if (homeTeam && awayTeam && gameId) {
+          // Use gameId as key to avoid duplicates
+          if (!activeMatchupsMap.has(gameId)) {
+            activeMatchupsMap.set(gameId, {
+              homeTeam,
+              awayTeam,
+              gameTime: gameTime || '',
+              status: gameStatus || 'scheduled'
+            })
           }
-
-          if (typeof pick.game_snapshot.away_team === 'string') {
-            awayTeam = JSON.parse(pick.game_snapshot.away_team).abbreviation
-          } else {
-            awayTeam = pick.game_snapshot.away_team?.abbreviation
-          }
-
-          gameTime = pick.game_snapshot.game_start_timestamp ||
-            `${pick.game_snapshot.game_date}T${pick.game_snapshot.game_time}`
-          gameStatus = pick.game_snapshot.status || 'scheduled'
-          gameId = pick.game_snapshot.game_id || `${homeTeam}-${awayTeam}-${pick.game_snapshot.game_date}`
-
-          if (homeTeam && awayTeam && gameId) {
-            // Use gameId as key to avoid duplicates
-            if (!activeMatchupsMap.has(gameId)) {
-              activeMatchupsMap.set(gameId, {
-                homeTeam,
-                awayTeam,
-                gameTime: gameTime || '',
-                status: gameStatus || 'scheduled'
-              })
-            }
-          }
-        } catch (e) {
-          console.error('[Territory Map] Error parsing game snapshot for matchup:', e)
         }
       })
 
