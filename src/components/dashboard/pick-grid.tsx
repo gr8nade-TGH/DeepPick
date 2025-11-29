@@ -1,11 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Activity, Flame, Users, TrendingUp, Clock, ChevronDown, ChevronUp } from 'lucide-react'
+import { Activity, Clock, Zap } from 'lucide-react'
 import { PickInsightModal } from '@/components/dashboard/pick-insight-modal'
-import { useAuth } from '@/contexts/auth-context'
 
 interface Pick {
     id: string
@@ -30,19 +27,39 @@ interface Pick {
     }
 }
 
-interface ConsensusPick {
-    key: string
-    selection: string
-    pick_type: string
-    matchup: string
-    gameTime: string
-    cappers: { name: string; units: number; confidence: number; pickId: string }[]
-    totalUnits: number
-    avgConfidence: number
-    heatLevel: number
-    representativePick: Pick
+// Capper badge colors and initials
+const CAPPER_CONFIG: Record<string, { color: string; initials: string }> = {
+    'SHIVA': { color: 'bg-purple-500', initials: 'SH' },
+    'IFRIT': { color: 'bg-orange-500', initials: 'IF' },
+    'TITAN': { color: 'bg-cyan-500', initials: 'TI' },
+    'THIEF': { color: 'bg-violet-500', initials: 'TH' },
+    'SENTINEL': { color: 'bg-blue-500', initials: 'SE' },
+    'PICKSMITH': { color: 'bg-amber-500', initials: 'PS' },
+    'NEXUS': { color: 'bg-pink-500', initials: 'NX' },
+    'CERBERUS': { color: 'bg-red-500', initials: 'CE' },
+    'ATLAS': { color: 'bg-teal-500', initials: 'AT' },
+    'ORACLE': { color: 'bg-emerald-500', initials: 'OR' },
 }
 
+interface GameRow {
+    gameKey: string
+    matchup: string
+    gameTime: string
+    homeTeam: string
+    awayTeam: string
+    spread: CellData | null
+    total: CellData | null
+    moneyline: CellData | null
+}
+
+interface CellData {
+    picks: { capper: string; selection: string; units: number; confidence: number; pickId: string }[]
+    consensus: string // The selection most cappers agree on
+    avgUnits: number
+    heatLevel: number // 0-5 based on capper count
+}
+
+// Get countdown string
 function getCountdown(gameDate: string | undefined): string {
     if (!gameDate) return ''
     const now = new Date()
@@ -51,119 +68,188 @@ function getCountdown(gameDate: string | undefined): string {
     if (diff < 0) return 'LIVE'
     const hours = Math.floor(diff / (1000 * 60 * 60))
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-    if (hours > 24) return `${Math.floor(hours / 24)}d ${hours % 24}h`
+    if (hours > 24) return `${Math.floor(hours / 24)}d`
     if (hours > 0) return `${hours}h ${minutes}m`
     return `${minutes}m`
 }
 
-function getCapperColor(capper: string): string {
-    const colors: Record<string, string> = {
-        'SHIVA': 'bg-purple-600',
-        'IFRIT': 'bg-orange-600',
-        'TITAN': 'bg-slate-500',
-        'THIEF': 'bg-violet-600',
-        'SENTINEL': 'bg-blue-600',
-        'PICKSMITH': 'bg-amber-500',
-        'NEXUS': 'bg-pink-600',
-        'CERBERUS': 'bg-red-600',
-    }
-    return colors[capper?.toUpperCase()] || 'bg-cyan-600'
+// Get capper initials and color
+function getCapperBadge(capper: string): { color: string; initials: string } {
+    const upper = capper?.toUpperCase() || ''
+    return CAPPER_CONFIG[upper] || { color: 'bg-slate-500', initials: capper?.slice(0, 2).toUpperCase() || '??' }
 }
 
-function normalizeSelection(selection: string, pickType: string): string {
-    if (pickType === 'TOTAL') {
-        const match = selection.match(/(OVER|UNDER)\s*([\d.]+)/i)
-        if (match) return `${match[1].toUpperCase()} ${match[2]}`
-    }
-    if (pickType === 'SPREAD') {
-        const match = selection.match(/([A-Z]{2,3}|[A-Za-z]+)\s*([+-][\d.]+)/i)
-        if (match) return `${match[1].toUpperCase()} ${match[2]}`
-    }
-    return selection.toUpperCase()
-}
-
-function groupPicksByConsensus(picks: Pick[]): ConsensusPick[] {
-    const groups = new Map<string, Pick[]>()
+// Build game rows from picks
+function buildGameRows(picks: Pick[]): GameRow[] {
+    const gameMap = new Map<string, { picks: Pick[]; gameTime: string; homeTeam: string; awayTeam: string }>()
 
     picks.forEach(pick => {
-        const homeTeam = pick.game_snapshot?.home_team?.abbreviation || pick.game_snapshot?.home_team?.name || ''
-        const awayTeam = pick.game_snapshot?.away_team?.abbreviation || pick.game_snapshot?.away_team?.name || ''
-        const matchupKey = `${awayTeam}_${homeTeam}`.toUpperCase()
-        const normalizedSelection = normalizeSelection(pick.selection, pick.pick_type)
-        const key = `${matchupKey}_${pick.pick_type}_${normalizedSelection}`
+        const home = pick.game_snapshot?.home_team?.abbreviation || pick.game_snapshot?.home_team?.name?.slice(0, 3) || 'HOM'
+        const away = pick.game_snapshot?.away_team?.abbreviation || pick.game_snapshot?.away_team?.name?.slice(0, 3) || 'AWY'
+        const gameKey = `${away}_${home}`.toUpperCase()
 
-        if (!groups.has(key)) groups.set(key, [])
-        groups.get(key)!.push(pick)
+        if (!gameMap.has(gameKey)) {
+            gameMap.set(gameKey, {
+                picks: [],
+                gameTime: pick.game_snapshot?.game_start_timestamp || pick.games?.game_start_timestamp || '',
+                homeTeam: home.toUpperCase(),
+                awayTeam: away.toUpperCase()
+            })
+        }
+        gameMap.get(gameKey)!.picks.push(pick)
     })
 
-    const consensusPicks: ConsensusPick[] = []
+    const rows: GameRow[] = []
 
-    groups.forEach((picks, key) => {
-        const firstPick = picks[0]
-        const homeTeam = firstPick.game_snapshot?.home_team
-        const awayTeam = firstPick.game_snapshot?.away_team
-        const matchup = `${awayTeam?.name || awayTeam?.abbreviation || 'Away'} @ ${homeTeam?.name || homeTeam?.abbreviation || 'Home'}`
-        const gameTime = firstPick.game_snapshot?.game_start_timestamp || firstPick.games?.game_start_timestamp || ''
+    gameMap.forEach((data, gameKey) => {
+        const spreadPicks = data.picks.filter(p => p.pick_type === 'SPREAD')
+        const totalPicks = data.picks.filter(p => p.pick_type === 'TOTAL')
+        const mlPicks = data.picks.filter(p => p.pick_type === 'MONEYLINE')
 
-        const cappers = picks.map(p => ({
-            name: p.capper || 'Unknown',
-            units: p.units,
-            confidence: p.confidence || 0,
-            pickId: p.id
-        }))
+        const buildCell = (cellPicks: Pick[]): CellData | null => {
+            if (cellPicks.length === 0) return null
+            const picks = cellPicks.map(p => ({
+                capper: p.capper || 'Unknown',
+                selection: p.selection,
+                units: p.units,
+                confidence: p.confidence || 0,
+                pickId: p.id
+            }))
+            const avgUnits = picks.reduce((s, p) => s + p.units, 0) / picks.length
+            return {
+                picks,
+                consensus: picks[0].selection,
+                avgUnits,
+                heatLevel: Math.min(5, picks.length)
+            }
+        }
 
-        const totalUnits = cappers.reduce((sum, c) => sum + c.units, 0)
-        const avgConfidence = cappers.reduce((sum, c) => sum + c.confidence, 0) / cappers.length
-        const heatLevel = Math.min(5, cappers.length)
-
-        consensusPicks.push({
-            key,
-            selection: firstPick.selection,
-            pick_type: firstPick.pick_type,
-            matchup,
-            gameTime,
-            cappers,
-            totalUnits,
-            avgConfidence,
-            heatLevel,
-            representativePick: firstPick
+        rows.push({
+            gameKey,
+            matchup: `${data.awayTeam} @ ${data.homeTeam}`,
+            gameTime: data.gameTime,
+            homeTeam: data.homeTeam,
+            awayTeam: data.awayTeam,
+            spread: buildCell(spreadPicks),
+            total: buildCell(totalPicks),
+            moneyline: buildCell(mlPicks)
         })
     })
 
-    return consensusPicks.sort((a, b) => {
-        if (b.heatLevel !== a.heatLevel) return b.heatLevel - a.heatLevel
-        return b.avgConfidence - a.avgConfidence
+    // Sort by game time, then by heat
+    return rows.sort((a, b) => {
+        const aHeat = Math.max(a.spread?.heatLevel || 0, a.total?.heatLevel || 0)
+        const bHeat = Math.max(b.spread?.heatLevel || 0, b.total?.heatLevel || 0)
+        if (bHeat !== aHeat) return bHeat - aHeat
+        return new Date(a.gameTime).getTime() - new Date(b.gameTime).getTime()
     })
 }
 
-function HeatFlames({ level }: { level: number }) {
+// Heat indicator dot component
+function HeatDot({ level }: { level: number }) {
+    if (level === 0) return <span className="w-2.5 h-2.5 rounded-full bg-slate-700" />
+    if (level === 1) return <span className="w-2.5 h-2.5 rounded-full bg-slate-500" />
+    if (level === 2) return <span className="w-2.5 h-2.5 rounded-full bg-yellow-500" />
+    if (level === 3) return <span className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse" />
+    return <span className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-lg shadow-green-500/50 animate-pulse" />
+}
+
+// Capper badge (circular with initials)
+function CapperBadge({ capper, size = 'sm' }: { capper: string; size?: 'sm' | 'md' }) {
+    const { color, initials } = getCapperBadge(capper)
+    const sizeClasses = size === 'md' ? 'w-8 h-8 text-xs' : 'w-6 h-6 text-[10px]'
     return (
-        <div className="flex gap-0.5">
-            {[1, 2, 3, 4, 5].map(i => (
-                <Flame
-                    key={i}
-                    className={`w-4 h-4 ${i <= level
-                        ? level >= 4 ? 'text-red-500 fill-red-500'
-                            : level >= 3 ? 'text-orange-500 fill-orange-500'
-                                : level >= 2 ? 'text-yellow-500 fill-yellow-500'
-                                    : 'text-slate-500 fill-slate-500'
-                        : 'text-slate-700'
-                        }`}
-                />
-            ))}
+        <span
+            className={`${sizeClasses} ${color} rounded-full flex items-center justify-center font-bold text-white shadow-md cursor-pointer hover:scale-110 transition-transform`}
+            title={capper}
+        >
+            {initials}
+        </span>
+    )
+}
+
+// Cell content component
+function PickCell({
+    cell,
+    picks,
+    onPickClick
+}: {
+    cell: CellData | null
+    picks: Pick[]
+    onPickClick: (pick: Pick) => void
+}) {
+    if (!cell) {
+        return (
+            <div className="flex items-center justify-center h-full">
+                <span className="text-slate-600">—</span>
+            </div>
+        )
+    }
+
+    // Format the selection nicely
+    const formatSelection = (sel: string) => {
+        // For totals: "Over 231.5" or "Under 223.5"
+        const totalMatch = sel.match(/(OVER|UNDER)\s*([\d.]+)/i)
+        if (totalMatch) {
+            return `${totalMatch[1].charAt(0).toUpperCase() + totalMatch[1].slice(1).toLowerCase()} ${totalMatch[2]}`
+        }
+        // For spreads: "LAL +3.5" or "BOS -4.5"
+        return sel
+    }
+
+    const avgUnitsStr = cell.avgUnits.toFixed(cell.avgUnits % 1 === 0 ? 0 : 2)
+
+    return (
+        <div className="relative group">
+            {/* Cell background with gradient based on heat */}
+            <div className={`
+                rounded-lg p-3 border transition-all duration-200
+                ${cell.heatLevel >= 4 ? 'bg-gradient-to-br from-green-900/40 to-green-800/20 border-green-500/40'
+                    : cell.heatLevel >= 3 ? 'bg-gradient-to-br from-orange-900/30 to-slate-800/50 border-orange-500/30'
+                        : cell.heatLevel >= 2 ? 'bg-gradient-to-br from-yellow-900/20 to-slate-800/50 border-yellow-500/20'
+                            : 'bg-slate-800/50 border-slate-700/50'}
+            `}>
+                {/* Capper badges row */}
+                <div className="flex items-center gap-1 mb-2 flex-wrap">
+                    {cell.picks.slice(0, 5).map((p, i) => (
+                        <div key={i} onClick={() => {
+                            const pick = picks.find(pk => pk.id === p.pickId)
+                            if (pick) onPickClick(pick)
+                        }}>
+                            <CapperBadge capper={p.capper} />
+                        </div>
+                    ))}
+                    {cell.picks.length > 5 && (
+                        <span className="text-[10px] text-slate-400 font-medium">+{cell.picks.length - 5}</span>
+                    )}
+                </div>
+
+                {/* Pick selection */}
+                <div className="text-sm font-semibold text-white leading-tight">
+                    {formatSelection(cell.consensus)}
+                </div>
+
+                {/* Units info */}
+                <div className="text-[11px] text-slate-400 mt-1">
+                    ({avgUnitsStr}u avg)
+                </div>
+            </div>
+
+            {/* Heat dot indicator (top right) */}
+            <div className="absolute -top-1 -right-1">
+                <HeatDot level={cell.heatLevel} />
+            </div>
         </div>
     )
 }
 
 
 export function PickGrid() {
-    const { user } = useAuth()
     const [picks, setPicks] = useState<Pick[]>([])
-    const [consensusPicks, setConsensusPicks] = useState<ConsensusPick[]>([])
+    const [gameRows, setGameRows] = useState<GameRow[]>([])
     const [loading, setLoading] = useState(true)
-    const [selectedPick, setSelectedPick] = useState<Pick | null>(null)
-    const [showInsight, setShowInsight] = useState(false)
-    const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set())
+    const [selectedPickId, setSelectedPickId] = useState<string | null>(null)
+    const [selectedCapper, setSelectedCapper] = useState<string | undefined>(undefined)
 
     useEffect(() => {
         fetchPicks()
@@ -187,7 +273,7 @@ export function PickGrid() {
                 })
 
                 setPicks(filtered)
-                setConsensusPicks(groupPicksByConsensus(filtered))
+                setGameRows(buildGameRows(filtered))
             }
         } catch (error) {
             console.error('Error fetching picks:', error)
@@ -196,218 +282,147 @@ export function PickGrid() {
         }
     }
 
-    const toggleExpand = (key: string) => {
-        setExpandedCards(prev => {
-            const next = new Set(prev)
-            if (next.has(key)) next.delete(key)
-            else next.add(key)
-            return next
-        })
+    const handlePickClick = (pick: Pick) => {
+        setSelectedPickId(pick.id)
+        setSelectedCapper(pick.capper)
     }
+
+    // Stats
+    const totalPicks = picks.length
+    const totalGames = gameRows.length
+    const hotGames = gameRows.filter(g =>
+        (g.spread?.heatLevel || 0) >= 3 || (g.total?.heatLevel || 0) >= 3
+    ).length
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
+            <div className="min-h-screen flex items-center justify-center bg-slate-950">
                 <Activity className="h-8 w-8 animate-spin text-cyan-500" />
             </div>
         )
     }
 
     return (
-        <div className="container mx-auto px-4 py-8">
+        <div className="min-h-screen bg-slate-950 pb-12">
             {/* Header */}
-            <div className="mb-8">
-                <h1 className="text-3xl font-black text-white mb-2">🔥 Consensus Heat Map</h1>
-                <p className="text-slate-400">
-                    Picks grouped by consensus. More flames = more cappers agree.
-                </p>
-                <div className="flex flex-wrap gap-4 mt-4 text-sm text-slate-500">
-                    <span className="flex items-center gap-1">
-                        <Flame className="w-4 h-4 text-slate-500" /> 1 capper
-                    </span>
-                    <span className="flex items-center gap-1">
-                        <Flame className="w-4 h-4 text-yellow-500 fill-yellow-500" /> 2 cappers
-                    </span>
-                    <span className="flex items-center gap-1">
-                        <Flame className="w-4 h-4 text-orange-500 fill-orange-500" /> 3+ cappers
-                    </span>
-                    <span className="flex items-center gap-1">
-                        <Flame className="w-4 h-4 text-red-500 fill-red-500" /> 4+ cappers
-                    </span>
+            <div className="bg-gradient-to-b from-slate-900 to-slate-950 border-b border-slate-800">
+                <div className="container mx-auto px-4 py-6">
+                    <div className="flex items-center gap-3 mb-2">
+                        <Zap className="w-8 h-8 text-cyan-400" />
+                        <h1 className="text-2xl font-black text-white">Pick Grid</h1>
+                    </div>
+                    <p className="text-slate-400 text-sm">
+                        Today's picks organized by game. More cappers = hotter consensus.
+                    </p>
+
+                    {/* Legend */}
+                    <div className="flex flex-wrap items-center gap-4 mt-4 text-xs text-slate-500">
+                        <span className="flex items-center gap-1.5">
+                            <HeatDot level={1} /> 1 capper
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                            <HeatDot level={2} /> 2 cappers
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                            <HeatDot level={3} /> 3 cappers
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                            <HeatDot level={4} /> 4+ cappers
+                        </span>
+                    </div>
+
+                    {/* Stats bar */}
+                    <div className="flex items-center gap-6 mt-4 text-sm">
+                        <span className="text-slate-400">
+                            <span className="text-white font-bold">{totalGames}</span> games
+                        </span>
+                        <span className="text-slate-400">
+                            <span className="text-cyan-400 font-bold">{totalPicks}</span> picks
+                        </span>
+                        <span className="text-slate-400">
+                            <span className="text-orange-400 font-bold">{hotGames}</span> hot consensus
+                        </span>
+                    </div>
                 </div>
             </div>
 
-            {/* Stats Summary */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                <Card className="bg-slate-900 border-slate-800">
-                    <CardContent className="p-4 text-center">
-                        <div className="text-2xl font-bold text-white">{picks.length}</div>
-                        <div className="text-xs text-slate-400">Total Picks</div>
-                    </CardContent>
-                </Card>
-                <Card className="bg-slate-900 border-slate-800">
-                    <CardContent className="p-4 text-center">
-                        <div className="text-2xl font-bold text-cyan-400">{consensusPicks.length}</div>
-                        <div className="text-xs text-slate-400">Unique Picks</div>
-                    </CardContent>
-                </Card>
-                <Card className="bg-slate-900 border-slate-800">
-                    <CardContent className="p-4 text-center">
-                        <div className="text-2xl font-bold text-orange-400">
-                            {consensusPicks.filter(p => p.heatLevel >= 3).length}
-                        </div>
-                        <div className="text-xs text-slate-400">Hot Consensus (3+)</div>
-                    </CardContent>
-                </Card>
-                <Card className="bg-slate-900 border-slate-800">
-                    <CardContent className="p-4 text-center">
-                        <div className="text-2xl font-bold text-red-400">
-                            {consensusPicks.filter(p => p.heatLevel >= 4).length}
-                        </div>
-                        <div className="text-xs text-slate-400">🔥 On Fire (4+)</div>
-                    </CardContent>
-                </Card>
-            </div>
-
-            {/* Consensus Pick Grid */}
-            {consensusPicks.length === 0 ? (
-                <div className="text-center py-20">
-                    <Activity className="h-12 w-12 text-slate-600 mx-auto mb-4" />
-                    <p className="text-slate-400">No picks available</p>
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {consensusPicks.map(cp => {
-                        const isExpanded = expandedCards.has(cp.key)
-                        const countdown = getCountdown(cp.gameTime)
-
-                        return (
-                            <Card
-                                key={cp.key}
-                                className={`bg-gradient-to-br from-slate-900 to-slate-800 border transition-all duration-200 hover:scale-[1.02] ${cp.heatLevel >= 4 ? 'border-red-500/50 shadow-lg shadow-red-500/20'
-                                    : cp.heatLevel >= 3 ? 'border-orange-500/50 shadow-lg shadow-orange-500/20'
-                                        : cp.heatLevel >= 2 ? 'border-yellow-500/30'
-                                            : 'border-slate-700'
-                                    }`}
-                            >
-                                <CardContent className="p-4">
-                                    {/* Top: Heat + Countdown */}
-                                    <div className="flex items-center justify-between mb-3">
-                                        <HeatFlames level={cp.heatLevel} />
-                                        {countdown && (
-                                            <span className={`text-xs font-medium px-2 py-0.5 rounded ${countdown === 'LIVE' ? 'bg-red-600 text-white animate-pulse' : 'bg-slate-700 text-slate-300'
-                                                }`}>
-                                                <Clock className="w-3 h-3 inline mr-1" />
-                                                {countdown}
-                                            </span>
-                                        )}
-                                    </div>
-
-                                    {/* Selection - HERO */}
-                                    <div className="text-xl font-black text-white mb-2 leading-tight">
-                                        {cp.selection}
-                                    </div>
-
-                                    {/* Matchup + Type */}
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <span className="text-sm text-slate-400">{cp.matchup}</span>
-                                        <Badge variant="outline" className="text-[10px] border-slate-600">
-                                            {cp.pick_type}
-                                        </Badge>
-                                    </div>
-
-                                    {/* Consensus Summary */}
-                                    <div className="flex items-center justify-between py-2 px-3 bg-slate-800/50 rounded-lg mb-3">
-                                        <div className="flex items-center gap-2">
-                                            <Users className="w-4 h-4 text-cyan-400" />
-                                            <span className="text-sm font-semibold text-white">
-                                                {cp.cappers.length} {cp.cappers.length === 1 ? 'Capper' : 'Cappers'}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center gap-3 text-xs">
-                                            <span className="text-slate-400">
-                                                Total: <span className="text-green-400 font-bold">{cp.totalUnits}u</span>
-                                            </span>
-                                            <span className="text-slate-400">
-                                                Avg: <span className="text-cyan-400 font-bold">{cp.avgConfidence.toFixed(1)}</span>
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    {/* Capper Pills */}
-                                    <div className="flex flex-wrap gap-1.5 mb-3">
-                                        {cp.cappers.slice(0, isExpanded ? undefined : 4).map((capper, i) => (
-                                            <span
-                                                key={i}
-                                                className={`px-2 py-0.5 rounded text-[10px] font-bold text-white ${getCapperColor(capper.name)}`}
-                                            >
-                                                {capper.name}
-                                            </span>
-                                        ))}
-                                        {!isExpanded && cp.cappers.length > 4 && (
-                                            <span className="px-2 py-0.5 rounded text-[10px] font-bold text-slate-400 bg-slate-700">
-                                                +{cp.cappers.length - 4} more
-                                            </span>
-                                        )}
-                                    </div>
-
-                                    {/* Expand/Collapse */}
-                                    {cp.cappers.length > 1 && (
-                                        <button
-                                            onClick={() => toggleExpand(cp.key)}
-                                            className="w-full text-xs text-slate-400 hover:text-white flex items-center justify-center gap-1 py-1"
-                                        >
-                                            {isExpanded ? (
-                                                <>Hide Details <ChevronUp className="w-3 h-3" /></>
-                                            ) : (
-                                                <>Show Details <ChevronDown className="w-3 h-3" /></>
-                                            )}
-                                        </button>
-                                    )}
-
-                                    {/* Expanded Details */}
-                                    {isExpanded && (
-                                        <div className="mt-3 pt-3 border-t border-slate-700 space-y-2">
-                                            {cp.cappers.map((capper, i) => (
-                                                <div
-                                                    key={i}
-                                                    className="flex items-center justify-between text-xs bg-slate-800/50 rounded px-2 py-1.5 cursor-pointer hover:bg-slate-700/50"
-                                                    onClick={() => {
-                                                        const pick = picks.find(p => p.id === capper.pickId)
-                                                        if (pick) {
-                                                            setSelectedPick(pick)
-                                                            setShowInsight(true)
-                                                        }
-                                                    }}
-                                                >
-                                                    <span className={`px-2 py-0.5 rounded font-bold text-white ${getCapperColor(capper.name)}`}>
-                                                        {capper.name}
-                                                    </span>
-                                                    <div className="flex items-center gap-3">
-                                                        <span className="text-green-400">{capper.units}u</span>
-                                                        <span className="text-cyan-400">{capper.confidence.toFixed(1)}</span>
-                                                        <TrendingUp className="w-3 h-3 text-slate-500" />
-                                                    </div>
+            {/* Grid Table */}
+            <div className="container mx-auto px-4 mt-6">
+                {gameRows.length === 0 ? (
+                    <div className="text-center py-20">
+                        <Activity className="h-12 w-12 text-slate-600 mx-auto mb-4" />
+                        <p className="text-slate-400">No picks available today</p>
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full border-collapse">
+                            <thead>
+                                <tr className="border-b border-slate-800">
+                                    <th className="text-left py-3 px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider w-[180px]">
+                                        Matchup
+                                    </th>
+                                    <th className="text-left py-3 px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                                        Spread
+                                    </th>
+                                    <th className="text-left py-3 px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                                        Total
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {gameRows.map((row) => {
+                                    const countdown = getCountdown(row.gameTime)
+                                    return (
+                                        <tr key={row.gameKey} className="border-b border-slate-800/50 hover:bg-slate-900/50">
+                                            {/* Matchup Cell */}
+                                            <td className="py-4 px-4">
+                                                <div className="font-bold text-white text-sm">
+                                                    {row.matchup}
                                                 </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        )
-                    })}
-                </div>
-            )}
+                                                {countdown && (
+                                                    <div className={`text-xs mt-1 flex items-center gap-1 ${countdown === 'LIVE' ? 'text-red-400' : 'text-slate-500'
+                                                        }`}>
+                                                        <Clock className="w-3 h-3" />
+                                                        {countdown}
+                                                    </div>
+                                                )}
+                                            </td>
+
+                                            {/* Spread Cell */}
+                                            <td className="py-4 px-4">
+                                                <PickCell
+                                                    cell={row.spread}
+                                                    picks={picks}
+                                                    onPickClick={handlePickClick}
+                                                />
+                                            </td>
+
+                                            {/* Total Cell */}
+                                            <td className="py-4 px-4">
+                                                <PickCell
+                                                    cell={row.total}
+                                                    picks={picks}
+                                                    onPickClick={handlePickClick}
+                                                />
+                                            </td>
+                                        </tr>
+                                    )
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
 
             {/* Insight Modal */}
-            {selectedPick && showInsight && (
+            {selectedPickId && (
                 <PickInsightModal
-                    pickId={selectedPick.id}
+                    pickId={selectedPickId}
                     onClose={() => {
-                        setShowInsight(false)
-                        setSelectedPick(null)
+                        setSelectedPickId(null)
+                        setSelectedCapper(undefined)
                     }}
-                    capper={selectedPick.capper}
+                    capper={selectedCapper}
                 />
             )}
         </div>
