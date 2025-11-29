@@ -295,6 +295,12 @@ export function InsightCard(props: InsightCardProps) {
     dominant: props.market?.dominant || 'side',
   }
 
+  // Extract team abbreviations for SPREAD factor labels
+  const awayTeam = props.matchup?.away
+  const homeTeam = props.matchup?.home
+  const awayAbbr = typeof awayTeam === 'object' ? (awayTeam?.abbreviation || 'AWAY') : 'AWAY'
+  const homeAbbr = typeof homeTeam === 'object' ? (homeTeam?.abbreviation || 'HOME') : 'HOME'
+
   const formatLocalDate = (isoString: string) => {
     try {
       return new Date(isoString).toLocaleDateString('en-US', {
@@ -634,11 +640,11 @@ export function InsightCard(props: InsightCardProps) {
                         </div>
                       </div>
 
-                      {/* Direction Label + Value - SPREAD shows AWAY/HOME, TOTAL shows OVER/UNDER */}
+                      {/* Direction Label + Value - SPREAD shows team abbr, TOTAL shows OVER/UNDER */}
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <span className={`text-xs font-bold uppercase w-14 text-right ${isOver ? 'text-green-400' : isUnder ? 'text-red-400' : 'text-slate-500'}`}>
                           {safePick.type === 'SPREAD'
-                            ? (isOver ? 'AWAY' : isUnder ? 'HOME' : 'NEUTRAL')
+                            ? (isOver ? awayAbbr : isUnder ? homeAbbr : 'NEUTRAL')
                             : (isOver ? 'OVER' : isUnder ? 'UNDER' : 'NEUTRAL')}
                         </span>
                         <span className={`text-sm font-mono font-bold w-10 ${isOver ? 'text-green-400' : isUnder ? 'text-red-400' : 'text-slate-500'}`}>
@@ -830,11 +836,11 @@ export function InsightCard(props: InsightCardProps) {
                           </div>
                         </div>
 
-                        {/* Direction Label + Value - SPREAD shows AWAY/HOME, TOTAL shows OVER/UNDER */}
+                        {/* Direction Label + Value - SPREAD shows team abbr, TOTAL shows OVER/UNDER */}
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <span className={`text-xs font-bold uppercase w-14 text-right ${isOver ? 'text-green-400' : isUnder ? 'text-red-400' : 'text-slate-500'}`}>
                             {safePick.type === 'SPREAD'
-                              ? (isOver ? 'AWAY' : isUnder ? 'HOME' : 'NEUTRAL')
+                              ? (isOver ? awayAbbr : isUnder ? homeAbbr : 'NEUTRAL')
                               : (isOver ? 'OVER' : isUnder ? 'UNDER' : 'NEUTRAL')}
                           </span>
                           <span className={`text-sm font-mono font-bold w-10 ${isOver ? 'text-green-400' : isUnder ? 'text-red-400' : 'text-slate-500'}`}>
