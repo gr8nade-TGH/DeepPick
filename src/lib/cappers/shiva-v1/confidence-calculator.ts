@@ -43,6 +43,8 @@ export interface ConfidenceOutput {
       signal: number
       points: number
     }
+    // Factor rationale/notes for insight cards
+    notes?: string | null
   }>
 }
 
@@ -126,6 +128,7 @@ export function calculateConfidence(input: ConfidenceInput): ConfidenceOutput {
           net: effectiveOverScore - effectiveUnderScore
         },
         weight_percentage: weightPct,
+        notes: factor.notes || null, // Propagate factor rationale for insight cards
         parsed_values_json: {
           overScore: rawOverScore,
           underScore: rawUnderScore,
@@ -158,6 +161,7 @@ export function calculateConfidence(input: ConfidenceInput): ConfidenceOutput {
           net: effectiveAwayScore - effectiveHomeScore
         },
         weight_percentage: weightPct,
+        notes: factor.notes || null, // Propagate factor rationale for insight cards
         // SPREAD: Use awayScore/homeScore (NOT overScore/underScore)
         parsed_values_json: {
           awayScore: rawAwayScore,

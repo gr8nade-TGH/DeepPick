@@ -147,11 +147,11 @@ export const NBA_SPREAD_FACTORS: FactorMeta[] = [
     defaultDataSource: 'mysportsfeeds'
   },
   {
-    key: 'paceMismatch',
-    name: 'Pace Mismatch',
-    shortName: 'PACE',
-    icon: '⚡',
-    description: 'Pace differential between teams - slower teams control tempo and often cover',
+    key: 'homeAwaySplits',
+    name: 'Home/Away Performance Splits',
+    shortName: 'H/A',
+    icon: '🏠',
+    description: 'Team performance in their current game context - away teams road record vs home teams home record',
     appliesTo: {
       sports: ['NBA'],
       betTypes: ['SPREAD'],

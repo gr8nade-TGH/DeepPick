@@ -189,6 +189,14 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
     let totalFGM = 0
     let total3PM = 0
 
+    // Home/Away splits tracking (for S4 factor)
+    let homeORtgTotal = 0
+    let homeDRtgTotal = 0
+    let homeGamesCount = 0
+    let awayORtgTotal = 0
+    let awayDRtgTotal = 0
+    let awayGamesCount = 0
+
     for (const gameLog of gameLogs) {
       const stats = gameLog.stats
       if (!stats) {
@@ -247,6 +255,21 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
       totalOppDefReb += oppDREB
       totalFGM += teamFGM
       total3PM += team3PM
+
+      // Track home/away splits
+      const game = gameLog.game
+      const team = gameLog.team
+      const isHomeGame = game?.homeTeam?.id === team?.id
+
+      if (isHomeGame) {
+        homeORtgTotal += ortg
+        homeDRtgTotal += drtg
+        homeGamesCount++
+      } else {
+        awayORtgTotal += ortg
+        awayDRtgTotal += drtg
+        awayGamesCount++
+      }
     }
 
     const gameCount = gameLogs.length
@@ -307,6 +330,21 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
     const avgOrebPct = (totalOffReb + totalOppDefReb) > 0 ? totalOffReb / (totalOffReb + totalOppDefReb) : 0
     const avgFtr = totalFGA > 0 ? totalFTA / totalFGA : 0
 
+    // Home/Away splits calculations (for S4)
+    const ortgHome = homeGamesCount > 0 ? homeORtgTotal / homeGamesCount : undefined
+    const ortgAway = awayGamesCount > 0 ? awayORtgTotal / awayGamesCount : undefined
+    const drtgHome = homeGamesCount > 0 ? homeDRtgTotal / homeGamesCount : undefined
+    const drtgAway = awayGamesCount > 0 ? awayDRtgTotal / awayGamesCount : undefined
+
+    console.log(`[MySportsFeeds Stats] Home/Away splits for ${teamAbbrev}:`, {
+      homeGames: homeGamesCount,
+      awayGames: awayGamesCount,
+      ortgHome: ortgHome?.toFixed(1),
+      ortgAway: ortgAway?.toFixed(1),
+      drtgHome: drtgHome?.toFixed(1),
+      drtgAway: drtgAway?.toFixed(1)
+    })
+
     const formData: TeamFormData = {
       team: teamAbbrev,
       pace: avgPace,
@@ -328,7 +366,15 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
       avgEfg,
       avgTovPct,
       avgOrebPct,
-      avgFtr
+      avgFtr,
+
+      // Home/Away splits (S4)
+      ortgHome,
+      ortgAway,
+      drtgHome,
+      drtgAway,
+      homeGames: homeGamesCount,
+      awayGames: awayGamesCount
     }
 
     console.log(`[MySportsFeeds Stats] Form data for ${teamAbbrev}:`, {

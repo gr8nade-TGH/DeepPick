@@ -7,7 +7,7 @@
  * - S1: Net Rating Differential (30% weight)
  * - S2: Turnover Differential (25% weight)
  * - S3: Shooting Efficiency + Momentum (20% weight)
- * - S4: Pace Mismatch (15% weight)
+ * - S4: Home/Away Performance Splits (15% weight) - REPLACED Pace Mismatch
  * - S5: Four Factors Differential (10% weight)
  * - S6: Key Injuries & Availability (10% weight)
  */
@@ -20,7 +20,7 @@ import { fetchNBAStatsBundle, summarizeAvailabilityWithLLM } from './data-fetche
 import { computeNetRatingDifferential } from './s1-net-rating-differential'
 import { computeTurnoverDifferential } from './s2-turnover-differential'
 import { computeShootingEfficiencyMomentum } from './s3-shooting-efficiency-momentum'
-import { computePaceMismatch } from './s4-pace-mismatch'
+import { computeHomeAwaySplits } from './s4-home-away-splits'
 import { computeFourFactorsDifferential } from './s5-four-factors-differential'
 import { computeInjuryAvailabilitySpread } from './s6-injury-availability'
 
@@ -39,11 +39,11 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
 
   const nbaStatsConditionCheck = {
     enabledFactorKeys,
-    shouldFetchNBAStats: enabledFactorKeys.some(key => ['netRatingDiff', 'turnoverDiff', 'shootingEfficiencyMomentum', 'paceMismatch', 'fourFactorsDiff'].includes(key)),
+    shouldFetchNBAStats: enabledFactorKeys.some(key => ['netRatingDiff', 'turnoverDiff', 'shootingEfficiencyMomentum', 'homeAwaySplits', 'paceMismatch', 'fourFactorsDiff'].includes(key)),
     netRatingDiff: enabledFactorKeys.includes('netRatingDiff'),
     turnoverDiff: enabledFactorKeys.includes('turnoverDiff'),
     shootingEfficiencyMomentum: enabledFactorKeys.includes('shootingEfficiencyMomentum'),
-    paceMismatch: enabledFactorKeys.includes('paceMismatch'),
+    homeAwaySplits: enabledFactorKeys.includes('homeAwaySplits') || enabledFactorKeys.includes('paceMismatch'),
     fourFactorsDiff: enabledFactorKeys.includes('fourFactorsDiff')
   }
   console.log('[SPREAD:NBA_STATS_CONDITION_CHECK]', nbaStatsConditionCheck)
@@ -147,10 +147,11 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
     factors.push(await computeShootingEfficiencyMomentum(bundle!, ctx))
   }
 
-  // S4: Pace Mismatch
-  if (enabledFactorKeys.includes('paceMismatch')) {
-    console.log('[SPREAD:S4] Computing Pace Mismatch...')
-    factors.push(computePaceMismatch(bundle!, ctx))
+  // S4: Home/Away Performance Splits (replaced Pace Mismatch)
+  // Also support legacy 'paceMismatch' key for backward compatibility
+  if (enabledFactorKeys.includes('homeAwaySplits') || enabledFactorKeys.includes('paceMismatch')) {
+    console.log('[SPREAD:S4] Computing Home/Away Performance Splits...')
+    factors.push(computeHomeAwaySplits(bundle!, ctx))
   }
 
   // S5: Four Factors Differential

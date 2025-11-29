@@ -595,11 +595,17 @@ async function generatePredictions(runId: string, step3Result: any, sport: strin
     }
   } else if (betType === 'SPREAD') {
     // SPREAD: Calculate predicted margin
-    // edgeRaw is the net confidence (awayScore - homeScore), typically in range [-10, +10]
-    // Positive edgeRaw = away team favored, negative = home team favored
-    // We scale by 1.5 to convert confidence points to margin points
-    // Example: edgeRaw = +5.0 → margin = +7.5 (away favored by 7.5)
-    const predictedMargin = confidenceResult.edgeRaw * 1.5
+    // Use the actual expectedMargin from S1 (Net Rating Differential) factor
+    // This is calculated as: netRatingDiff * (pace / 100)
+    // Example: +5 net rating diff at 100 pace = +5 point expected margin
+
+    // Find S1 Net Rating factor to extract expected margin
+    const netRatingFactor = step3Result.factors.find((f: any) => f.key === 'netRatingDiff')
+    const expectedMarginFromS1 = netRatingFactor?.raw_values_json?.expectedMargin || 0
+
+    // Use S1's expected margin as our predicted margin (this is the actual point prediction)
+    // If S1 is not enabled, fall back to edgeRaw * 1.5 (legacy behavior)
+    const predictedMargin = expectedMarginFromS1 !== 0 ? expectedMarginFromS1 : confidenceResult.edgeRaw * 1.5
 
     // Calculate predicted scores based on margin
     // Assume average NBA game total is ~220 points (only used for score distribution, NOT for total prediction)
@@ -613,10 +619,12 @@ async function generatePredictions(runId: string, step3Result: any, sport: strin
     console.log('[WizardOrchestrator:Step4] SPREAD Prediction calculation:', {
       baselineAvg,
       edgeRaw: confidenceResult.edgeRaw,
+      expectedMarginFromS1,
       predictedMargin,
       predictedAwayScore,
       predictedHomeScore,
-      winner
+      winner,
+      marginSource: expectedMarginFromS1 !== 0 ? 'S1_NetRating' : 'edgeRaw_scaled'
     })
 
     return {
