@@ -451,10 +451,22 @@ export async function GET(
       // Build professional analysis from capper stats
       const professionalAnalysis = buildManualPickAnalysis(pick, manualInsight)
 
-      // Build matchup text
-      const awayTeamName = snapshot.matchup?.away || gameSnapshot.away_team?.name || gameSnapshot.away_team || 'Away'
-      const homeTeamName = snapshot.matchup?.home || gameSnapshot.home_team?.name || gameSnapshot.home_team || 'Home'
+      // Build matchup text - carefully extract team names (can be object or string)
+      const awayTeamRaw = snapshot.matchup?.away || gameSnapshot.away_team
+      const homeTeamRaw = snapshot.matchup?.home || gameSnapshot.home_team
+      const awayTeamName = typeof awayTeamRaw === 'object' ? (awayTeamRaw?.name || awayTeamRaw?.abbreviation || 'Away') : (awayTeamRaw || 'Away')
+      const homeTeamName = typeof homeTeamRaw === 'object' ? (homeTeamRaw?.name || homeTeamRaw?.abbreviation || 'Home') : (homeTeamRaw || 'Home')
+      const awayTeamAbbr = typeof awayTeamRaw === 'object' ? (awayTeamRaw?.abbreviation || '') : ''
+      const homeTeamAbbr = typeof homeTeamRaw === 'object' ? (homeTeamRaw?.abbreviation || '') : ''
       const pickType = (snapshot.pick?.type || pick.pick_type?.toUpperCase()) as 'SPREAD' | 'MONEYLINE' | 'TOTAL'
+
+      // Build proper spreadText - use abbreviations for matchup if available
+      const spreadTextAway = awayTeamAbbr || awayTeamName
+      const spreadTextHome = homeTeamAbbr || homeTeamName
+      const spreadText = `${spreadTextAway} @ ${spreadTextHome}`
+
+      // Build proper totalText
+      const totalText = pickType === 'TOTAL' ? pick.selection : (pickType === 'SPREAD' ? pick.selection : '')
 
       const manualPickInsightCard = {
         capper: pick.capper || 'manual',
@@ -464,10 +476,10 @@ export async function GET(
         generatedAt: pick.created_at,
         is_system_pick: false,
         matchup: {
-          away: awayTeamName,
-          home: homeTeamName,
-          spreadText: `${awayTeamName} @ ${homeTeamName}`,
-          totalText: pickType === 'TOTAL' ? pick.selection : '',
+          away: { name: awayTeamName, abbreviation: awayTeamAbbr },
+          home: { name: homeTeamName, abbreviation: homeTeamAbbr },
+          spreadText,
+          totalText,
           gameDateLocal: snapshot.matchup?.game_date || gameSnapshot.game_date || ''
         },
         pick: {

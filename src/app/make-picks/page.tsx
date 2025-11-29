@@ -349,13 +349,13 @@ export default function ManualPicksPage() {
                         {/* Compact pick badges */}
                         <div className="flex gap-1 flex-shrink-0">
                           {hasSpreadPick && (
-                            <div className="bg-blue-600 text-white px-1.5 py-0.5 rounded text-[10px] font-bold">
-                              ✓ SPR
+                            <div className="bg-blue-600 text-white px-1.5 py-0.5 rounded text-[10px] font-bold whitespace-nowrap">
+                              ✓ {spreadSelection}
                             </div>
                           )}
                           {hasTotalPick && (
-                            <div className="bg-orange-600 text-white px-1.5 py-0.5 rounded text-[10px] font-bold">
-                              ✓ TOT
+                            <div className="bg-orange-600 text-white px-1.5 py-0.5 rounded text-[10px] font-bold whitespace-nowrap">
+                              ✓ {totalSelection}
                             </div>
                           )}
                         </div>
