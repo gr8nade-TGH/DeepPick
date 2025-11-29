@@ -112,9 +112,13 @@ const CAPPERS = [
   { id: 'all', name: 'All Cappers', color: 'from-neon-blue via-neon-purple to-neon-green', path: null },
   { id: 'deeppick', name: 'DeepPick', color: 'from-neon-blue to-neon-cyan', path: '/cappers/deeppick' },
   { id: 'nexus', name: 'Nexus', color: 'from-purple-500 to-pink-500', path: '/cappers/nexus' },
-  { id: 'shiva', name: 'Shiva', color: 'from-blue-500 to-cyan-500', path: '/cappers/shiva' },
+  { id: 'shiva', name: 'SHIVA', color: 'from-blue-500 to-cyan-500', path: '/cappers/shiva' },
   { id: 'cerberus', name: 'Cerberus', color: 'from-red-500 to-orange-500', path: '/cappers/cerberus' },
-  { id: 'ifrit', name: 'Ifrit', color: 'from-yellow-500 to-red-500', path: '/cappers/ifrit' },
+  { id: 'ifrit', name: 'IFRIT', color: 'from-yellow-500 to-red-500', path: '/cappers/ifrit' },
+  { id: 'titan', name: 'TITAN', color: 'from-slate-400 to-slate-600', path: null },
+  { id: 'thief', name: 'THIEF', color: 'from-emerald-500 to-teal-500', path: null },
+  { id: 'sentinel', name: 'SENTINEL', color: 'from-indigo-500 to-purple-500', path: null },
+  { id: 'picksmith', name: 'PICKSMITH', color: 'from-amber-400 to-yellow-500', path: null },
 ]
 
 export function RealDashboard() {
