@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
       if (!factors || !Array.isArray(factors)) continue
 
       const betType = run.bet_type as 'TOTAL' | 'SPREAD'
-      const matchup = run.metadata?.game?.matchup || 
+      const matchup = run.metadata?.game?.matchup ||
         `${run.metadata?.teams?.away || '???'} @ ${run.metadata?.teams?.home || '???'}`
 
       for (const factor of factors) {
@@ -115,12 +115,38 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Merge paceMismatch into homeAwaySplits BEFORE converting to array
+    // (they're the same factor, just renamed)
+    const paceMismatchStats = factorMap.get('SPREAD_paceMismatch')
+    const homeAwaySplitsStats = factorMap.get('SPREAD_homeAwaySplits')
+
+    if (paceMismatchStats && homeAwaySplitsStats) {
+      // Merge old paceMismatch data into homeAwaySplits
+      homeAwaySplitsStats.runs += paceMismatchStats.runs
+      homeAwaySplitsStats.signalSum += paceMismatchStats.signalSum
+      homeAwaySplitsStats.awayScoreSum += paceMismatchStats.awayScoreSum
+      homeAwaySplitsStats.homeScoreSum += paceMismatchStats.homeScoreSum
+      homeAwaySplitsStats.zeroCount += paceMismatchStats.zeroCount
+      if (paceMismatchStats.lastRun && (!homeAwaySplitsStats.lastRun || paceMismatchStats.lastRun > homeAwaySplitsStats.lastRun)) {
+        homeAwaySplitsStats.lastRun = paceMismatchStats.lastRun
+      }
+      homeAwaySplitsStats.samples.push(...paceMismatchStats.samples)
+      homeAwaySplitsStats.samples = homeAwaySplitsStats.samples.slice(0, 5)
+      factorMap.delete('SPREAD_paceMismatch')
+    } else if (paceMismatchStats && !homeAwaySplitsStats) {
+      // Rename paceMismatch to homeAwaySplits
+      paceMismatchStats.key = 'homeAwaySplits'
+      paceMismatchStats.name = 'Home/Away Performance Splits (legacy: Pace Mismatch)'
+      factorMap.set('SPREAD_homeAwaySplits', paceMismatchStats)
+      factorMap.delete('SPREAD_paceMismatch')
+    }
+
     // Convert to array and calculate health
     const now = Date.now()
     const factors: FactorStats[] = Array.from(factorMap.values()).map(stats => {
       const avgSignal = stats.runs > 0 ? stats.signalSum / stats.runs : 0
       const zeroRate = stats.runs > 0 ? stats.zeroCount / stats.runs : 1
-      const hoursSinceLastRun = stats.lastRun 
+      const hoursSinceLastRun = stats.lastRun
         ? (now - new Date(stats.lastRun).getTime()) / (1000 * 60 * 60)
         : Infinity
 
@@ -148,9 +174,9 @@ export async function GET(request: NextRequest) {
 
     // Sort: TOTAL first, then SPREAD, then by factor order
     const factorOrder = ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv', 'injuryAvailability',
-      'netRatingDiff', 'turnoverDiff', 'shootingEfficiencyMomentum', 'paceMismatch', 'homeAwaySplits', 
+      'netRatingDiff', 'turnoverDiff', 'shootingEfficiencyMomentum', 'homeAwaySplits',
       'fourFactorsDiff', 'injuryAvailabilitySpread', 'edgeVsMarket', 'edgeVsMarketSpread']
-    
+
     factors.sort((a, b) => {
       if (a.betType !== b.betType) return a.betType === 'TOTAL' ? -1 : 1
       return factorOrder.indexOf(a.key) - factorOrder.indexOf(b.key)
@@ -164,9 +190,9 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('[Factor Health API] Error:', error)
-    return NextResponse.json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+    return NextResponse.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 })
   }
 }
