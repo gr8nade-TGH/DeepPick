@@ -509,6 +509,11 @@ export function ProfessionalDashboard() {
         gradient: 'bg-gradient-to-r from-violet-900 to-purple-900',
         text: 'text-violet-200'
       }
+    } else if (capperUpper === 'PICKSMITH') {
+      return {
+        gradient: 'bg-gradient-to-r from-amber-900 to-yellow-900',
+        text: 'text-amber-200'
+      }
     } else {
       // Default for other cappers
       return {
