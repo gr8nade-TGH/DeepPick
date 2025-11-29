@@ -12,6 +12,10 @@ export function GlobalBettingSlipWrapper() {
   const isCapper = profile.role === 'capper' || profile.role === 'admin'
   if (!isCapper) return null
 
-  return <GlobalBettingSlip capperId={user.id} isCapper={isCapper} />
+  // Use full_name as capper ID (not user.id which is a UUID)
+  // Fall back to 'manual' if no name is set
+  const capperName = profile.full_name || 'manual'
+
+  return <GlobalBettingSlip capperId={capperName} isCapper={isCapper} />
 }
 

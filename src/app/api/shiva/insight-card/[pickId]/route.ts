@@ -101,6 +101,90 @@ function generateSpreadWriteup(
   return `${intro} ${edgeAnalysis} ${factorSummary} ${confidenceStatement}`
 }
 
+/**
+ * Build professional analysis text for manual picks using capper stats
+ */
+function buildManualPickAnalysis(pick: any, manualInsight: any): string {
+  if (!manualInsight || !manualInsight.betTypeRecord) {
+    return 'This is a manual pick placed by a human capper.'
+  }
+
+  const capper = pick.capper || 'This capper'
+  const pickType = manualInsight.pickType || pick.pick_type?.toUpperCase() || 'SPREAD'
+  const record = manualInsight.betTypeRecord
+  const streak = manualInsight.streak
+
+  const parts: string[] = []
+
+  // Overall record on this bet type
+  if (record.total > 0) {
+    parts.push(`${capper} has a ${record.wins}-${record.losses}${record.pushes > 0 ? `-${record.pushes}` : ''} record (${record.winPct}%) on ${pickType} picks${record.netUnits !== 0 ? `, netting ${record.netUnits > 0 ? '+' : ''}${record.netUnits.toFixed(1)} units` : ''}.`)
+  }
+
+  // Current streak
+  if (streak && streak.type !== 'none' && streak.count > 1) {
+    parts.push(`Currently on a ${streak.count}-game ${streak.type === 'W' ? 'winning' : 'losing'} streak.`)
+  }
+
+  // SPREAD-specific stats
+  if (pickType === 'SPREAD' && manualInsight.spread) {
+    const spread = manualInsight.spread
+
+    // Team record
+    if (spread.teamRecord?.total > 0) {
+      parts.push(`Record on this team: ${spread.teamRecord.wins}-${spread.teamRecord.losses} (${spread.teamRecord.winPct}%).`)
+    }
+
+    // Last pick on team
+    if (spread.lastTeamPick) {
+      const lp = spread.lastTeamPick
+      parts.push(`Last pick on this team: ${lp.selection} on ${lp.date} → ${lp.result.toUpperCase()}.`)
+    }
+
+    // Home vs Away
+    if (spread.homeRecord?.total > 0 && spread.awayRecord?.total > 0) {
+      parts.push(`Home picks: ${spread.homeRecord.wins}-${spread.homeRecord.losses} (${spread.homeRecord.winPct}%). Away picks: ${spread.awayRecord.wins}-${spread.awayRecord.losses} (${spread.awayRecord.winPct}%).`)
+    }
+
+    // Favorite vs Underdog
+    if (spread.favoriteRecord?.total > 0 && spread.underdogRecord?.total > 0) {
+      parts.push(`Favorites: ${spread.favoriteRecord.wins}-${spread.favoriteRecord.losses} (${spread.favoriteRecord.winPct}%). Underdogs: ${spread.underdogRecord.wins}-${spread.underdogRecord.losses} (${spread.underdogRecord.winPct}%).`)
+    }
+  }
+
+  // TOTAL-specific stats
+  if (pickType === 'TOTAL' && manualInsight.totals) {
+    const totals = manualInsight.totals
+
+    // Over vs Under
+    if (totals.overRecord?.total > 0 || totals.underRecord?.total > 0) {
+      parts.push(`Over picks: ${totals.overRecord.wins}-${totals.overRecord.losses} (${totals.overRecord.winPct}%). Under picks: ${totals.underRecord.wins}-${totals.underRecord.losses} (${totals.underRecord.winPct}%).`)
+    }
+
+    // Games involving team
+    if (totals.teamGamesRecord?.total > 0) {
+      parts.push(`Record on games involving these teams: ${totals.teamGamesRecord.wins}-${totals.teamGamesRecord.losses} (${totals.teamGamesRecord.winPct}%).`)
+    }
+
+    // Last pick on team's game
+    if (totals.lastTeamGamePick) {
+      const lp = totals.lastTeamGamePick
+      parts.push(`Last totals pick on this team's game: ${lp.selection} on ${lp.date} → ${lp.result.toUpperCase()}.`)
+    }
+  }
+
+  // Head-to-head matchup
+  if (manualInsight.matchupRecord?.total > 0) {
+    parts.push(`Head-to-head matchup record: ${manualInsight.matchupRecord.wins}-${manualInsight.matchupRecord.losses} (${manualInsight.matchupRecord.winPct}%).`)
+  }
+
+  if (parts.length === 0) {
+    return 'This is a manual pick placed by a human capper. No historical data available yet.'
+  }
+
+  return parts.join(' ')
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { pickId: string } }
@@ -359,78 +443,79 @@ export async function GET(
         isSystemPick: pick.is_system_pick
       })
 
-      // For manual picks, return a simplified insight card from the snapshot
-      if (pick.insight_card_snapshot) {
-        const snapshot = pick.insight_card_snapshot
-        const gameSnapshot = pick.game_snapshot || {}
+      // For manual picks, return insight card with capper stats from the snapshot
+      const snapshot = pick.insight_card_snapshot || {}
+      const gameSnapshot = pick.game_snapshot || {}
+      const manualInsight = snapshot.manual_insight || {}
 
-        // Build a minimal but valid insight card for manual picks
-        const manualPickInsightCard: InsightCardProps = {
-          capper: pick.capper || 'manual',
-          sport: (gameSnapshot.sport as 'NBA' | 'MLB' | 'NFL') || 'NBA',
-          gameId: pick.game_id || '',
-          pickId: pick.id,
-          generatedAt: pick.created_at,
-          is_system_pick: false,
-          matchup: {
-            away: snapshot.matchup?.away || gameSnapshot.away_team || 'Away',
-            home: snapshot.matchup?.home || gameSnapshot.home_team || 'Home',
-            spreadText: '',
-            totalText: '',
-            gameDateLocal: snapshot.matchup?.game_date || gameSnapshot.game_date || ''
-          },
-          pick: {
-            type: (snapshot.pick?.type || pick.pick_type?.toUpperCase()) as 'SPREAD' | 'MONEYLINE' | 'TOTAL',
-            selection: snapshot.pick?.selection || pick.selection || '',
-            units: Number(snapshot.pick?.units || pick.units || 1),
-            confidence: Number(snapshot.pick?.confidence || pick.confidence || 5),
-            edgeRaw: 0,
-            edgePct: 0,
-            confScore: Number(snapshot.pick?.confidence || pick.confidence || 5),
-            locked_odds: null,
-            locked_at: pick.created_at
-          },
-          predictedScore: {
-            away: 0,
-            home: 0,
-            winner: 'Manual Pick'
-          },
-          market: {
-            conf7: 0,
-            confAdj: 0,
-            confFinal: Number(snapshot.pick?.confidence || pick.confidence || 5),
-            dominant: 'Manual Pick'
-          },
-          factors: [],
-          boldPredictions: [],
-          professionalAnalysis: 'This is a manual pick placed by a human capper. No AI analysis was performed.',
-          results: {
-            status: pick.status === 'won' ? 'win'
-              : pick.status === 'lost' ? 'loss'
-                : pick.status === 'push' ? 'push'
-                  : 'pending',
-            finalScore: undefined,
-            postMortem: '',
-            factorAccuracy: [],
-            tuningSuggestions: [],
-            overallAccuracy: undefined
-          },
-          onClose: () => { }
+      // Build professional analysis from capper stats
+      const professionalAnalysis = buildManualPickAnalysis(pick, manualInsight)
+
+      // Build matchup text
+      const awayTeamName = snapshot.matchup?.away || gameSnapshot.away_team?.name || gameSnapshot.away_team || 'Away'
+      const homeTeamName = snapshot.matchup?.home || gameSnapshot.home_team?.name || gameSnapshot.home_team || 'Home'
+      const pickType = (snapshot.pick?.type || pick.pick_type?.toUpperCase()) as 'SPREAD' | 'MONEYLINE' | 'TOTAL'
+
+      const manualPickInsightCard = {
+        capper: pick.capper || 'manual',
+        sport: (gameSnapshot.sport as 'NBA' | 'MLB' | 'NFL') || 'NBA',
+        gameId: pick.game_id || '',
+        pickId: pick.id,
+        generatedAt: pick.created_at,
+        is_system_pick: false,
+        matchup: {
+          away: awayTeamName,
+          home: homeTeamName,
+          spreadText: `${awayTeamName} @ ${homeTeamName}`,
+          totalText: pickType === 'TOTAL' ? pick.selection : '',
+          gameDateLocal: snapshot.matchup?.game_date || gameSnapshot.game_date || ''
+        },
+        pick: {
+          type: pickType,
+          selection: snapshot.pick?.selection || pick.selection || '',
+          units: Number(snapshot.pick?.units || pick.units || 1),
+          confidence: Number(snapshot.pick?.confidence || pick.confidence || 5),
+          edgeRaw: 0,
+          edgePct: 0,
+          confScore: Number(snapshot.pick?.confidence || pick.confidence || 5),
+          locked_odds: null,
+          locked_at: pick.created_at
+        },
+        predictedScore: {
+          away: 0,
+          home: 0,
+          winner: 'Manual Pick'
+        },
+        writeups: {
+          prediction: professionalAnalysis,
+          gamePrediction: `Manual ${pickType} pick by ${pick.capper || 'capper'}`,
+          bold: null
+        },
+        market: {
+          conf7: 0,
+          confAdj: 0,
+          confFinal: Number(snapshot.pick?.confidence || pick.confidence || 5),
+          dominant: pickType === 'SPREAD' ? 'side' : 'total'
+        },
+        factors: [],
+        manual_insight: manualInsight,
+        results: {
+          status: pick.status === 'won' ? 'win'
+            : pick.status === 'lost' ? 'loss'
+              : pick.status === 'push' ? 'push'
+                : 'pending',
+          finalScore: undefined,
+          postMortem: '',
+          factorAccuracy: [],
+          tuningSuggestions: [],
+          overallAccuracy: undefined
         }
-
-        return NextResponse.json({
-          success: true,
-          data: manualPickInsightCard
-        })
       }
 
-      return NextResponse.json(
-        {
-          error: 'Pick has no insight card data',
-          details: 'This manual pick does not have an insight card snapshot.'
-        },
-        { status: 404 }
-      )
+      return NextResponse.json({
+        success: true,
+        data: manualPickInsightCard
+      })
     }
 
     // Step 2: Get the run using run_id

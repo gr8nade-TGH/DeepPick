@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { generateManualPickInsight } from '@/lib/capper-stats/manual-pick-insight'
 
 export async function POST(request: NextRequest) {
   try {
@@ -136,6 +137,58 @@ export async function POST(request: NextRequest) {
     const capperName = capper || profile.full_name || 'manual'
     console.log('[place-pick] Using capper name:', capperName)
 
+    // Extract team info for insight generation
+    const homeTeam = {
+      name: game.home_team?.name || game.home_team || 'Home',
+      abbreviation: game.home_team?.abbreviation || ''
+    }
+    const awayTeam = {
+      name: game.away_team?.name || game.away_team || 'Away',
+      abbreviation: game.away_team?.abbreviation || ''
+    }
+
+    // Generate manual pick insight data (for non-system picks)
+    let insightCardSnapshot = null
+    if (!is_system_pick) {
+      try {
+        console.log('[place-pick] Generating manual pick insight...')
+        const insightData = await generateManualPickInsight(
+          capperName,
+          pick_type as 'spread' | 'total',
+          selection,
+          units,
+          homeTeam,
+          awayTeam
+        )
+
+        // Build insight card snapshot in the expected format
+        insightCardSnapshot = {
+          matchup: {
+            away: awayTeam.name,
+            home: homeTeam.name,
+            game_date: game.game_date
+          },
+          pick: {
+            type: pick_type.toUpperCase(),
+            selection,
+            units,
+            confidence: confidence || 5
+          },
+          manual_insight: insightData,
+          factors: [], // Manual picks don't have AI factors
+          generated_at: new Date().toISOString()
+        }
+        console.log('[place-pick] Manual pick insight generated:', {
+          capper: insightData.capper,
+          betTypeRecord: insightData.betTypeRecord,
+          streak: insightData.streak
+        })
+      } catch (insightError) {
+        console.error('[place-pick] Error generating manual pick insight:', insightError)
+        // Continue without insight - don't fail the pick
+      }
+    }
+
     // Insert the pick with user_id
     const { data: pick, error: pickError } = await getSupabaseAdmin()
       .from('picks')
@@ -152,7 +205,9 @@ export async function POST(request: NextRequest) {
         reasoning,
         algorithm_version,
         status: 'pending',
-        user_id: user.id // Link pick to user
+        user_id: user.id,
+        insight_card_snapshot: insightCardSnapshot,
+        insight_card_locked_at: insightCardSnapshot ? new Date().toISOString() : null
       })
       .select()
       .single()
