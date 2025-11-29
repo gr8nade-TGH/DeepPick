@@ -18,7 +18,9 @@ import {
   ChevronUp,
   Gauge,
   Target,
-  Zap
+  Zap,
+  Copy,
+  Check
 } from 'lucide-react'
 
 interface FactorSample {
@@ -255,6 +257,47 @@ function FactorCard({
   getHealthBadge: (status: string) => string
   formatTime: (iso: string | null) => string
 }) {
+  const [copied, setCopied] = useState(false)
+
+  const copyDebugInfo = async () => {
+    const debugInfo = `
+## Factor Debug Info
+**Generated:** ${new Date().toISOString()}
+
+### Factor Details
+- **Name:** ${factor.name}
+- **Key:** ${factor.key}
+- **Bet Type:** ${factor.betType}
+- **Health Status:** ${factor.healthStatus}
+
+### Statistics (Last 7 Days)
+- **Total Runs:** ${factor.totalRuns}
+- **Last Run:** ${factor.lastRun || 'Never'}
+- **Avg Signal:** ${factor.avgSignal.toFixed(4)}
+- **Avg Away Score:** ${factor.avgAwayScore.toFixed(4)}
+- **Avg Home Score:** ${factor.avgHomeScore.toFixed(4)}
+- **Zero Count:** ${factor.zeroCount} (${factor.totalRuns > 0 ? Math.round(factor.zeroCount / factor.totalRuns * 100) : 0}%)
+
+### Recent Samples
+${factor.recentSamples.length > 0 ? factor.recentSamples.map((s, i) => `
+**Sample ${i + 1}:** ${s.matchup}
+- Run ID: ${s.runId}
+- Created: ${s.createdAt}
+- Signal: ${s.signal.toFixed(4)}
+- Away Score: ${s.awayScore.toFixed(4)}
+- Home Score: ${s.homeScore.toFixed(4)}
+`).join('\n') : 'No recent samples'}
+`.trim()
+
+    try {
+      await navigator.clipboard.writeText(debugInfo)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (err) {
+      console.error('Failed to copy:', err)
+    }
+  }
+
   return (
     <Card className="bg-slate-800/50 border-slate-700 hover:border-slate-600 transition-colors">
       <CardHeader className="pb-2">
@@ -263,9 +306,18 @@ function FactorCard({
             {getHealthIcon(factor.healthStatus)}
             <CardTitle className="text-lg text-white">{factor.name}</CardTitle>
           </div>
-          <Badge className={getHealthBadge(factor.healthStatus)}>
-            {factor.healthStatus}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={copyDebugInfo}
+              className="p-1.5 rounded bg-slate-700 hover:bg-slate-600 transition-colors text-slate-300 hover:text-white"
+              title="Copy Debug Info"
+            >
+              {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+            </button>
+            <Badge className={getHealthBadge(factor.healthStatus)}>
+              {factor.healthStatus}
+            </Badge>
+          </div>
         </div>
         <p className="text-xs text-slate-500 font-mono">{factor.key}</p>
       </CardHeader>
