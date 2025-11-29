@@ -17,10 +17,13 @@
 
 import type { PlayerInjuryData } from '@/lib/data-sources/types/player-injury'
 import { fetchTeamPlayerStats } from '@/lib/data-sources/mysportsfeeds-players'
+import { fetchPlayerInjuriesForTeams } from '@/lib/data-sources/mysportsfeeds-api'
+import { getTeamAbbrev } from '@/lib/data-sources/team-mappings'
 
 export interface InjuryAvailabilitySpreadInput {
   awayTeam: string
   homeTeam: string
+  gameDate?: string // YYYYMMDD format, defaults to today
 }
 
 export interface InjuryAvailabilitySpreadOutput {
@@ -143,21 +146,117 @@ function calculateTeamInjuryImpact(injuries: PlayerInjuryData[]): {
 }
 
 /**
+ * Helper to format today's date as YYYYMMDD
+ */
+function getTodayFormatted(): string {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}${month}${day}`
+}
+
+/**
+ * Merge fresh injury data with player stats for SPREAD factor
+ */
+async function fetchMergedInjuryData(
+  teamAbbrev: string,
+  gameDate: string
+): Promise<PlayerInjuryData[]> {
+  try {
+    // Fetch fresh injury data from player_injuries.json endpoint
+    const injuryData = await fetchPlayerInjuriesForTeams(gameDate, [teamAbbrev])
+
+    // Fetch player stats from player_stats_totals.json endpoint
+    const playerStats = await fetchTeamPlayerStats(teamAbbrev)
+
+    // Create a lookup map of player stats by player ID
+    const statsMap = new Map<number, PlayerInjuryData>()
+    for (const player of playerStats) {
+      statsMap.set(player.player.id, player)
+    }
+
+    // Merge: use fresh injury status from injuryData, but get stats from playerStats
+    const mergedPlayers: PlayerInjuryData[] = []
+
+    if (injuryData.players && injuryData.players.length > 0) {
+      for (const injuredPlayer of injuryData.players) {
+        if (!injuredPlayer.currentInjury) continue
+
+        const playerId = injuredPlayer.id
+        const playerWithStats = statsMap.get(playerId)
+
+        if (playerWithStats) {
+          mergedPlayers.push({
+            ...playerWithStats,
+            player: {
+              ...playerWithStats.player,
+              currentInjury: injuredPlayer.currentInjury
+            }
+          })
+
+          console.log(`[InjuryFactorSpread] Merged injury data for ${injuredPlayer.firstName} ${injuredPlayer.lastName}:`, {
+            team: teamAbbrev,
+            status: injuredPlayer.currentInjury?.playingProbability,
+            ppg: playerWithStats.averages.avgPoints,
+            mpg: playerWithStats.averages.avgMinutes
+          })
+        }
+      }
+    }
+
+    console.log(`[InjuryFactorSpread] Merged data for ${teamAbbrev}:`, {
+      gameDate,
+      freshInjuryCount: injuryData.players?.filter((p: any) => p.currentInjury)?.length || 0,
+      statsPlayerCount: playerStats.length,
+      mergedInjuredCount: mergedPlayers.length
+    })
+
+    return mergedPlayers
+
+  } catch (error) {
+    console.error(`[InjuryFactorSpread] Error fetching merged injury data for ${teamAbbrev}:`, error)
+    console.warn(`[InjuryFactorSpread] Falling back to player_stats_totals for ${teamAbbrev}`)
+    return await fetchTeamPlayerStats(teamAbbrev)
+  }
+}
+
+/**
  * Calculate injury availability factor points for SPREAD
  */
 export async function calculateInjuryAvailabilitySpreadPoints(
   input: InjuryAvailabilitySpreadInput
 ): Promise<InjuryAvailabilitySpreadOutput> {
-  const { awayTeam, homeTeam } = input
+  const { awayTeam, homeTeam, gameDate } = input
   const MAX_POINTS = 5.0
   const SCALE = 5.0 // Scaling factor for tanh (5 points = strong signal)
 
+  // Use provided date or default to today
+  const date = gameDate || getTodayFormatted()
+
+  // Get team abbreviations
+  const awayAbbrev = getTeamAbbrev(awayTeam)
+  const homeAbbrev = getTeamAbbrev(homeTeam)
+
   try {
-    // Fetch injury data for both teams
+    console.log('[InjuryFactorSpread] Fetching fresh injury data:', {
+      awayTeam,
+      homeTeam,
+      awayAbbrev,
+      homeAbbrev,
+      gameDate: date
+    })
+
+    // Fetch merged injury + stats data for both teams
     const [awayPlayers, homePlayers] = await Promise.all([
-      fetchTeamPlayerStats(awayTeam),
-      fetchTeamPlayerStats(homeTeam)
+      fetchMergedInjuryData(awayAbbrev, date),
+      fetchMergedInjuryData(homeAbbrev, date)
     ])
+
+    console.log('[InjuryFactorSpread] Fresh injury data fetched:', {
+      awayInjuredCount: awayPlayers.length,
+      homeInjuredCount: homePlayers.length
+    })
 
     // Calculate impact for each team
     const awayResult = calculateTeamInjuryImpact(awayPlayers)
