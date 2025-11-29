@@ -68,8 +68,9 @@ export async function GET(request: NextRequest) {
       if (!factors || !Array.isArray(factors)) continue
 
       const betType = run.bet_type as 'TOTAL' | 'SPREAD'
-      const matchup = run.metadata?.game?.matchup ||
-        `${run.metadata?.teams?.away || '???'} @ ${run.metadata?.teams?.home || '???'}`
+      const awayTeam = run.metadata?.game?.away_team || run.metadata?.teams?.away || '???'
+      const homeTeam = run.metadata?.game?.home_team || run.metadata?.teams?.home || '???'
+      const matchup = `${awayTeam} @ ${homeTeam}`
 
       for (const factor of factors) {
         const key = `${betType}_${factor.key}`
