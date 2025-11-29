@@ -389,16 +389,16 @@ export function ProfessionalDashboard() {
           capperPickCount.set(capperId, currentCount + 1)
         }
 
-        // Stop once we have enough picks for Elite Picks display (6)
-        if (diversified.length >= 6) break
+        // Stop once we have enough picks for Elite Picks display (20)
+        if (diversified.length >= 20) break
       }
 
-      // If we don't have 6 picks yet (not enough cappers), fill with remaining picks
-      if (diversified.length < 6) {
+      // If we don't have 20 picks yet (not enough cappers), fill with remaining picks
+      if (diversified.length < 20) {
         for (const pick of sorted) {
           if (!diversified.includes(pick)) {
             diversified.push(pick)
-            if (diversified.length >= 6) break
+            if (diversified.length >= 20) break
           }
         }
       }
@@ -591,7 +591,7 @@ export function ProfessionalDashboard() {
                 </div>
               </CardHeader>
 
-              <CardContent className="px-2 sm:px-3 py-2 flex-1 overflow-y-auto max-h-[600px] lg:max-h-none">
+              <CardContent className="px-2 sm:px-3 py-2 flex-1 overflow-y-auto max-h-[500px]">
                 {todaysPicks.length === 0 ? (
                   <div className="h-full flex items-center justify-center">
                     <div className="text-center">
@@ -601,9 +601,9 @@ export function ProfessionalDashboard() {
                     </div>
                   </div>
                 ) : (
-                  /* Card Grid Layout - 3 columns x 2 rows */
+                  /* Scrollable Card Grid - 3 columns, up to 20 picks */
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
-                    {todaysPicks.slice(0, 6).map((pick, index) => {
+                    {todaysPicks.slice(0, 20).map((pick, index) => {
                       const confidenceBadge = getConfidenceBadge(pick.confidence)
                       const gameStatus = getGameStatus(pick)
                       const homeTeam = pick.game_snapshot?.home_team
