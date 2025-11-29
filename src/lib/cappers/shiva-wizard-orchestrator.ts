@@ -563,10 +563,13 @@ async function generatePredictions(runId: string, step3Result: any, sport: strin
 
   if (betType === 'TOTAL') {
     // TOTALS: Calculate predicted total
-    // edgeRaw is the net confidence (overScore - underScore), typically in range [-10, +10]
-    // We scale by 2.0 to convert confidence points to total points adjustment
-    // Example: edgeRaw = +5.0 → adjustment = +10 points → predicted = 230 (if baseline = 220)
-    const factorAdjustment = confidenceResult.edgeRaw * 2.0
+    // Step 1: Start with baseline average (from recent games or league average)
+    // Step 2: Add factor adjustment (edgeRaw = overScore - underScore from F1-F5)
+    // Step 3: Edge vs Market is calculated AFTER this in Step 5
+    //
+    // Using 1.0x multiplier: factor points = game points adjustment
+    // Example: edgeRaw = +5.0 → adjustment = +5 points → predicted = 225 (if baseline = 220)
+    const factorAdjustment = confidenceResult.edgeRaw
     const predictedTotal = Math.max(180, Math.min(280, baselineAvg + factorAdjustment))
 
     console.log('[WizardOrchestrator:Step4] TOTALS Prediction calculation:', {
@@ -595,17 +598,23 @@ async function generatePredictions(runId: string, step3Result: any, sport: strin
     }
   } else if (betType === 'SPREAD') {
     // SPREAD: Calculate predicted margin
-    // Use the actual expectedMargin from S1 (Net Rating Differential) factor
-    // This is calculated as: netRatingDiff * (pace / 100)
-    // Example: +5 net rating diff at 100 pace = +5 point expected margin
+    // Step 1: S1 Net Rating gives baseline margin (netRatingDiff × pace/100)
+    // Step 2: Add factor adjustment (edgeRaw = awayScore - homeScore from S2-S6)
+    // Step 3: Edge vs Market is calculated AFTER this in Step 5
+    //
+    // Using 1.0x multiplier: factor points = game points adjustment
+    // Example: S1 baseline = +3.5, edgeRaw = +2.0 → predicted = +5.5 (away wins by 5.5)
 
-    // Find S1 Net Rating factor to extract expected margin
+    // Find S1 Net Rating factor to extract expected margin as baseline
     const netRatingFactor = step3Result.factors.find((f: any) => f.key === 'netRatingDiff')
-    const expectedMarginFromS1 = netRatingFactor?.raw_values_json?.expectedMargin || 0
+    const baselineMargin = netRatingFactor?.raw_values_json?.expectedMargin || 0
 
-    // Use S1's expected margin as our predicted margin (this is the actual point prediction)
-    // If S1 is not enabled, fall back to edgeRaw * 1.5 (legacy behavior)
-    const predictedMargin = expectedMarginFromS1 !== 0 ? expectedMarginFromS1 : confidenceResult.edgeRaw * 1.5
+    // Add factor adjustment from all factors (S1-S6 scores)
+    // edgeRaw = awayScoreTotal - homeScoreTotal (positive = away advantage)
+    const factorAdjustment = confidenceResult.edgeRaw
+
+    // Final predicted margin = baseline + factor adjustment
+    const predictedMargin = baselineMargin + factorAdjustment
 
     // Calculate predicted scores based on margin
     // Assume average NBA game total is ~220 points (only used for score distribution, NOT for total prediction)
@@ -617,14 +626,13 @@ async function generatePredictions(runId: string, step3Result: any, sport: strin
     const winner = predictedMargin > 0 ? awayTeamName : homeTeamName
 
     console.log('[WizardOrchestrator:Step4] SPREAD Prediction calculation:', {
-      baselineAvg,
+      baselineMargin,
       edgeRaw: confidenceResult.edgeRaw,
-      expectedMarginFromS1,
+      factorAdjustment,
       predictedMargin,
       predictedAwayScore,
       predictedHomeScore,
-      winner,
-      marginSource: expectedMarginFromS1 !== 0 ? 'S1_NetRating' : 'edgeRaw_scaled'
+      winner
     })
 
     return {

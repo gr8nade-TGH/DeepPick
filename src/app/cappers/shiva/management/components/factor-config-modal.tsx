@@ -310,35 +310,63 @@ export function FactorConfigModal({
           "Supported: NBA Spread predictions"
         ]
       },
-      paceMismatch: {
+      homeAwaySplits: {
         features: [
-          "⚡ Pace Mismatch: Fast vs slow tempo differential",
-          "📊 Formula: paceDiff = awayPace - homePace, impact = paceDiff × 0.3",
-          "⚖️ Smart Scaling: Uses tanh for smooth saturation, caps at ±14 pace differential",
-          "🎯 Directional Scoring: Slower team gets ATS edge",
+          "🏠 Home/Away Performance Splits: Contextual team performance",
+          "📊 Formula: awayRoadNetRtg vs homeHomeNetRtg, signal = tanh(contextAdvantage / 8)",
+          "⚖️ Smart Scaling: Uses tanh for smooth saturation, caps at ±16 net rating differential",
+          "🎯 Directional Scoring: Team with better contextual performance gets edge",
           "📈 Max Points: 5.0 (moderate ATS impact)"
         ],
         examples: [
-          "Scenario 1: Fast away vs slow home",
-          "• Away Pace: 105.0, Home Pace: 95.0",
-          "• Pace Diff: +10.0, Expected Impact: +3.0",
-          "• Signal: +0.76, Result: +3.80 Home Score (slower team edge)",
+          "Scenario 1: Strong road team vs weak home team",
+          "• Away Road NetRtg: +5.0, Home Home NetRtg: -2.0",
+          "• Context Advantage: +7.0 (away favored)",
+          "• Signal: +0.66, Result: +3.30 Away Score",
           "",
-          "Scenario 2: Slow away vs fast home",
-          "• Away Pace: 92.0, Home Pace: 106.0",
-          "• Pace Diff: -14.0, Expected Impact: -4.2",
-          "• Signal: -0.92, Result: +4.60 Away Score (slower team edge)",
+          "Scenario 2: Weak road team vs strong home team",
+          "• Away Road NetRtg: -4.0, Home Home NetRtg: +6.0",
+          "• Context Advantage: -10.0 (home favored)",
+          "• Signal: -0.85, Result: +4.25 Home Score",
           "",
-          "Scenario 3: Even pace",
-          "• Away Pace: 100.0, Home Pace: 100.0",
-          "• Pace Diff: 0.0, Expected Impact: 0.0",
+          "Scenario 3: Even contextual performance",
+          "• Away Road NetRtg: +2.0, Home Home NetRtg: +2.0",
+          "• Context Advantage: 0.0",
           "• Signal: 0.0, Result: 0.0 (Neutral)"
         ],
         registry: [
           "Weight: 15% (Default - Adjustable)",
           "Max Points: 5.0 (moderate ATS impact)",
           "Scope: NBA SPREAD only",
-          "Data Sources: MySportsFeeds (team_gamelogs, last 10 games)",
+          "Data Sources: MySportsFeeds (team_gamelogs, home vs away splits)",
+          "Supported: NBA Spread predictions"
+        ]
+      },
+      // Backward compatibility: map old paceMismatch to new homeAwaySplits
+      paceMismatch: {
+        features: [
+          "🏠 Home/Away Performance Splits: Contextual team performance",
+          "📊 Formula: awayRoadNetRtg vs homeHomeNetRtg, signal = tanh(contextAdvantage / 8)",
+          "⚖️ Smart Scaling: Uses tanh for smooth saturation, caps at ±16 net rating differential",
+          "🎯 Directional Scoring: Team with better contextual performance gets edge",
+          "📈 Max Points: 5.0 (moderate ATS impact)"
+        ],
+        examples: [
+          "Scenario 1: Strong road team vs weak home team",
+          "• Away Road NetRtg: +5.0, Home Home NetRtg: -2.0",
+          "• Context Advantage: +7.0 (away favored)",
+          "• Signal: +0.66, Result: +3.30 Away Score",
+          "",
+          "Scenario 2: Weak road team vs strong home team",
+          "• Away Road NetRtg: -4.0, Home Home NetRtg: +6.0",
+          "• Context Advantage: -10.0 (home favored)",
+          "• Signal: -0.85, Result: +4.25 Home Score"
+        ],
+        registry: [
+          "Weight: 15% (Default - Adjustable)",
+          "Max Points: 5.0 (moderate ATS impact)",
+          "Scope: NBA SPREAD only",
+          "Data Sources: MySportsFeeds (team_gamelogs, home vs away splits)",
           "Supported: NBA Spread predictions"
         ]
       }
@@ -787,35 +815,46 @@ export function FactorConfigModal({
           "*Formula: Efficiency 60% + Momentum 40%, tanh scaling for saturation*"
         ]
       },
-      paceMismatch: {
-        metric: "Pace differential between teams - slower teams control tempo and often cover",
-        formula: "paceDiff = awayPace - homePace, expectedImpact = paceDiff × 0.3, signal = tanh(expectedImpact/3), if signal > 0: homeScore = |signal| × 5.0, awayScore = 0; else: homeScore = 0, awayScore = |signal| × 5.0",
+      homeAwaySplits: {
+        metric: "Home/Away performance splits - how teams perform in their current game context",
+        formula: "awayRoadNetRtg = awayORtgAway - awayDRtgAway, homeHomeNetRtg = homeORtgHome - homeDRtgHome, contextAdvantage = awayRoadNetRtg - homeHomeNetRtg, signal = tanh(contextAdvantage / 8)",
         examples: [
-          "| Away Pace | Home Pace | Pace Diff | Expected Impact | Signal | Away Score | Home Score | Category | Example |",
-          "|-----------|-----------|-----------|-----------------|--------|------------|------------|----------|---------|",
-          "| 105.0     | 95.0      | +10.0     | +3.0            | +0.76  | 0.0        | +3.80      | Extreme  | Fast vs slow |",
-          "| 102.0     | 98.0      | +4.0      | +1.2            | +0.37  | 0.0        | +1.85      | Moderate | Slight mismatch |",
-          "| 100.0     | 100.0     | 0.0       | 0.0             | 0.0    | 0.0        | 0.0        | Minimal  | Even pace |",
-          "| 96.0      | 102.0     | -6.0      | -1.8            | -0.54  | +2.70      | 0.0        | High     | Home faster |",
-          "| 92.0      | 106.0     | -14.0     | -4.2            | -0.92  | +4.60      | 0.0        | Extreme  | Huge mismatch |",
+          "| Away Road NetRtg | Home Home NetRtg | Context Adv | Signal | Away Score | Home Score | Category |",
+          "|------------------|------------------|-------------|--------|------------|------------|----------|",
+          "| +5.0             | -2.0             | +7.0        | +0.66  | +3.30      | 0.0        | Strong road team |",
+          "| +2.0             | +2.0             | 0.0         | 0.0    | 0.0        | 0.0        | Even |",
+          "| -4.0             | +6.0             | -10.0       | -0.85  | 0.0        | +4.25      | Strong home team |",
           "",
-          "⚡ **Pace Mismatch Theory:**",
-          "• Slower teams force fast teams to play their tempo",
-          "• Pace control creates scoring variance",
-          "• When pace differential > 5 possessions, underdogs cover ~54% of time",
+          "🏠 **Home/Away Splits Theory:**",
+          "• Teams perform differently at home vs on the road",
+          "• Road NetRtg shows how well away team handles travel and hostile environments",
+          "• Home NetRtg shows home court advantage and crowd impact",
           "",
           "📊 **Calculation:**",
-          "• Positive paceDiff = Away plays faster (Home gets ATS edge)",
-          "• Negative paceDiff = Home plays faster (Away gets ATS edge)",
-          "• Each possession difference ≈ 0.3 points ATS edge for slower team",
+          "• Positive contextAdvantage = Away team plays better on road than Home plays at home",
+          "• Negative contextAdvantage = Home team plays better at home than Away plays on road",
           "",
-          "🎯 **Market Inefficiency:**",
-          "• Betting markets often overvalue fast-paced teams",
-          "• Slower teams control tempo and limit possessions",
-          "• Fewer possessions = lower variance = better for underdogs",
+          "🎯 **ATS Value:**",
+          "• Strong road teams often undervalued by markets",
+          "• Home teams with poor home splits may be overvalued",
           "",
-          "*Metric: Pace differential (possessions per 48 minutes) over last 10 games*",
-          "*Formula: paceDiff = awayPace - homePace, expectedImpact = paceDiff × 0.3, signal = tanh(expectedImpact/3), slower team gets ATS edge*"
+          "*Metric: Net Rating (ORtg - DRtg) split by home vs away games*",
+          "*Formula: contextAdvantage = awayRoadNetRtg - homeHomeNetRtg, signal = tanh(contextAdvantage / 8)*"
+        ]
+      },
+      // Backward compatibility alias
+      paceMismatch: {
+        metric: "Home/Away performance splits - how teams perform in their current game context",
+        formula: "awayRoadNetRtg = awayORtgAway - awayDRtgAway, homeHomeNetRtg = homeORtgHome - homeDRtgHome, contextAdvantage = awayRoadNetRtg - homeHomeNetRtg, signal = tanh(contextAdvantage / 8)",
+        examples: [
+          "| Away Road NetRtg | Home Home NetRtg | Context Adv | Signal | Away Score | Home Score |",
+          "|------------------|------------------|-------------|--------|------------|------------|",
+          "| +5.0             | -2.0             | +7.0        | +0.66  | +3.30      | 0.0        |",
+          "| -4.0             | +6.0             | -10.0       | -0.85  | 0.0        | +4.25      |",
+          "",
+          "🏠 **Home/Away Splits Theory:**",
+          "• Teams perform differently at home vs on the road",
+          "• Contextual performance is more predictive than overall stats"
         ]
       }
     }

@@ -110,12 +110,22 @@ const FACTOR_DETAILS = {
     defaultWeight: 30,
     color: 'red'
   },
+  homeAwaySplits: {
+    name: 'Home/Away Splits',
+    icon: Home,
+    description: 'How teams perform in their current game context (road vs home)',
+    importance: 'Road performance vs home performance reveals true ATS value.',
+    example: 'Strong road team (+5 NetRtg away) vs weak home team (-2 NetRtg home) → Road team gets ATS edge.',
+    defaultWeight: 20,
+    color: 'purple'
+  },
+  // Backward compatibility alias
   paceMismatch: {
-    name: 'Pace Mismatch',
-    icon: Wind,
-    description: 'Fast vs slow tempo differential between teams',
-    importance: 'Slower team typically gets ATS edge in pace mismatches.',
-    example: 'Fast team (105 pace) vs slow team (95 pace) → Slower team gets +3.8 ATS edge.',
+    name: 'Home/Away Splits',
+    icon: Home,
+    description: 'How teams perform in their current game context (road vs home)',
+    importance: 'Road performance vs home performance reveals true ATS value.',
+    example: 'Strong road team (+5 NetRtg away) vs weak home team (-2 NetRtg home) → Road team gets ATS edge.',
     defaultWeight: 20,
     color: 'purple'
   },
@@ -159,7 +169,7 @@ const FACTOR_DETAILS = {
 
 const AVAILABLE_FACTORS = {
   TOTAL: ['paceIndex', 'netRating', 'shooting', 'homeAwayDiff', 'restDays', 'injuryImpact'],
-  SPREAD: ['recentForm', 'paceMismatch', 'offDefBalance', 'homeCourtEdge', 'clutchPerformance', 'injuryImpact']
+  SPREAD: ['recentForm', 'homeAwaySplits', 'offDefBalance', 'homeCourtEdge', 'clutchPerformance', 'injuryImpact']
 }
 
 // Map user-friendly factor names to SHIVA v1 factor names used by the wizard
@@ -174,7 +184,8 @@ const FACTOR_NAME_MAPPING = {
   },
   SPREAD: {
     'recentForm': 'shootingMomentum',      // Maps to shootingMomentum
-    'paceMismatch': 'paceMismatch',        // Same
+    'homeAwaySplits': 'homeAwaySplits',    // New factor
+    'paceMismatch': 'homeAwaySplits',      // Legacy alias → maps to homeAwaySplits
     'offDefBalance': 'netRatingDiff',      // Maps to netRatingDiff
     'homeCourtEdge': 'turnoverDiff',       // Maps to turnoverDiff
     'clutchPerformance': 'fourFactorsDiff', // Maps to fourFactorsDiff
@@ -229,10 +240,10 @@ const PRESET_CONFIGS: PresetConfig[] = [
       }
     },
     spreadFactors: {
-      enabled: ['recentForm', 'paceMismatch', 'offDefBalance', 'homeCourtEdge', 'injuryImpact'],
+      enabled: ['recentForm', 'homeAwaySplits', 'offDefBalance', 'homeCourtEdge', 'injuryImpact'],
       weights: {
         recentForm: 50,
-        paceMismatch: 50,
+        homeAwaySplits: 50,
         offDefBalance: 50,
         homeCourtEdge: 50,
         injuryImpact: 50
@@ -256,9 +267,9 @@ const PRESET_CONFIGS: PresetConfig[] = [
       }
     },
     spreadFactors: {
-      enabled: ['paceMismatch', 'offDefBalance', 'recentForm', 'homeCourtEdge', 'clutchPerformance'],
+      enabled: ['homeAwaySplits', 'offDefBalance', 'recentForm', 'homeCourtEdge', 'clutchPerformance'],
       weights: {
-        paceMismatch: 80,
+        homeAwaySplits: 80,
         offDefBalance: 60,
         recentForm: 50,
         homeCourtEdge: 30,
@@ -313,10 +324,10 @@ const PRESET_CONFIGS: PresetConfig[] = [
       }
     },
     spreadFactors: {
-      enabled: ['recentForm', 'paceMismatch', 'offDefBalance', 'homeCourtEdge', 'clutchPerformance', 'injuryImpact'],
+      enabled: ['recentForm', 'homeAwaySplits', 'offDefBalance', 'homeCourtEdge', 'clutchPerformance', 'injuryImpact'],
       weights: {
         recentForm: 10,
-        paceMismatch: 50,
+        homeAwaySplits: 50,
         offDefBalance: 80,
         homeCourtEdge: 10,
         clutchPerformance: 80,
@@ -358,8 +369,8 @@ export default function CreateCapperPage() {
         weights: { paceIndex: 50, netRating: 50, shooting: 50, homeAwayDiff: 50, restDays: 50 }
       },
       SPREAD: {
-        enabled_factors: ['recentForm', 'paceMismatch', 'offDefBalance', 'homeCourtEdge', 'clutchPerformance'],
-        weights: { recentForm: 50, paceMismatch: 50, offDefBalance: 50, homeCourtEdge: 50, clutchPerformance: 50 }
+        enabled_factors: ['recentForm', 'homeAwaySplits', 'offDefBalance', 'homeCourtEdge', 'clutchPerformance'],
+        weights: { recentForm: 50, homeAwaySplits: 50, offDefBalance: 50, homeCourtEdge: 50, clutchPerformance: 50 }
       }
     },
     execution_interval_minutes: 15,

@@ -75,10 +75,18 @@ const FACTOR_DETAILS = {
     defaultWeight: 50,
     color: 'red'
   },
+  homeAwaySplits: {
+    name: 'Home/Away Splits',
+    icon: Home,
+    description: 'How teams perform in their current game context (road vs home)',
+    defaultWeight: 50,
+    color: 'purple'
+  },
+  // Backward compatibility alias
   paceMismatch: {
-    name: 'Pace Mismatch',
-    icon: Wind,
-    description: 'Fast vs slow tempo differential between teams',
+    name: 'Home/Away Splits',
+    icon: Home,
+    description: 'How teams perform in their current game context (road vs home)',
     defaultWeight: 50,
     color: 'purple'
   },
@@ -107,7 +115,7 @@ const FACTOR_DETAILS = {
 
 const AVAILABLE_FACTORS = {
   TOTAL: ['paceIndex', 'netRating', 'shooting', 'homeAwayDiff', 'restDays', 'injuryImpact'],
-  SPREAD: ['recentForm', 'paceMismatch', 'offDefBalance', 'homeCourtEdge', 'clutchPerformance', 'injuryImpact']
+  SPREAD: ['recentForm', 'homeAwaySplits', 'offDefBalance', 'homeCourtEdge', 'clutchPerformance', 'injuryImpact']
 }
 
 const PRESET_CONFIGS = [
@@ -137,8 +145,8 @@ const PRESET_CONFIGS = [
       weights: { paceIndex: 45, netRating: 50, shooting: 50, restDays: 50, injuryImpact: 55 }
     },
     spreadFactors: {
-      enabled: ['recentForm', 'paceMismatch', 'offDefBalance', 'homeCourtEdge', 'injuryImpact'],
-      weights: { recentForm: 50, paceMismatch: 50, offDefBalance: 50, homeCourtEdge: 50, injuryImpact: 50 }
+      enabled: ['recentForm', 'homeAwaySplits', 'offDefBalance', 'homeCourtEdge', 'injuryImpact'],
+      weights: { recentForm: 50, homeAwaySplits: 50, offDefBalance: 50, homeCourtEdge: 50, injuryImpact: 50 }
     }
   },
   {
@@ -152,8 +160,8 @@ const PRESET_CONFIGS = [
       weights: { paceIndex: 100, shooting: 70, netRating: 50, homeAwayDiff: 30 }
     },
     spreadFactors: {
-      enabled: ['paceMismatch', 'offDefBalance', 'recentForm', 'homeCourtEdge', 'clutchPerformance'],
-      weights: { paceMismatch: 80, offDefBalance: 60, recentForm: 50, homeCourtEdge: 30, clutchPerformance: 30 }
+      enabled: ['homeAwaySplits', 'offDefBalance', 'recentForm', 'homeCourtEdge', 'clutchPerformance'],
+      weights: { homeAwaySplits: 80, offDefBalance: 60, recentForm: 50, homeCourtEdge: 30, clutchPerformance: 30 }
     }
   },
   {
@@ -182,8 +190,8 @@ const PRESET_CONFIGS = [
       weights: { paceIndex: 50, netRating: 80, shooting: 60, homeAwayDiff: 20, restDays: 20, injuryImpact: 20 }
     },
     spreadFactors: {
-      enabled: ['recentForm', 'paceMismatch', 'offDefBalance', 'homeCourtEdge', 'clutchPerformance', 'injuryImpact'],
-      weights: { recentForm: 10, paceMismatch: 50, offDefBalance: 80, homeCourtEdge: 10, clutchPerformance: 80, injuryImpact: 20 }
+      enabled: ['recentForm', 'homeAwaySplits', 'offDefBalance', 'homeCourtEdge', 'clutchPerformance', 'injuryImpact'],
+      weights: { recentForm: 10, homeAwaySplits: 50, offDefBalance: 80, homeCourtEdge: 10, clutchPerformance: 80, injuryImpact: 20 }
     }
   }
 ]
@@ -346,8 +354,8 @@ export function FactorConfiguration({ capperId, betTypes, factorConfig, onUpdate
                     key={preset.id}
                     onClick={() => handlePresetSelect(preset)}
                     className={`p-3 border-2 rounded-lg transition-all text-left ${isSelected
-                        ? `border-${preset.color}-500 bg-${preset.color}-500/10 shadow-lg shadow-${preset.color}-500/20`
-                        : 'border-slate-700 bg-slate-800/50 hover:border-slate-600 hover:bg-slate-800'
+                      ? `border-${preset.color}-500 bg-${preset.color}-500/10 shadow-lg shadow-${preset.color}-500/20`
+                      : 'border-slate-700 bg-slate-800/50 hover:border-slate-600 hover:bg-slate-800'
                       }`}
                   >
                     <div className="flex items-start gap-2 mb-2">
