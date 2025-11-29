@@ -43,18 +43,6 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false })
       .limit(5000)
 
-    console.log('[TeamDominance] Fetched picks:', allPicks?.length || 0)
-
-    // Debug: log first few picks with full details
-    if (allPicks && allPicks.length > 0) {
-      console.log('[TeamDominance] First 3 picks raw:', allPicks.slice(0, 3).map(p => ({
-        capper: p.capper,
-        snapshotType: typeof p.game_snapshot,
-        snapshotKeys: p.game_snapshot ? Object.keys(p.game_snapshot as object) : [],
-        rawSnapshot: JSON.stringify(p.game_snapshot).substring(0, 200)
-      })))
-    }
-
     if (allPicksError) {
       console.error('[TeamDominance] Error fetching picks:', allPicksError)
       return NextResponse.json(
@@ -96,44 +84,17 @@ export async function GET(request: NextRequest) {
       return teamData.abbreviation
     }
 
-    // Debug counters
-    let processedCount = 0
-    let skippedNoSnapshot = 0
-    let skippedParseFailure = 0
-    let skippedNoTeams = 0
-
     // Process all picks
     allPicks?.forEach(pick => {
-      if (!pick.game_snapshot) {
-        skippedNoSnapshot++
-        return
-      }
+      if (!pick.game_snapshot) return
 
       const snapshot = parseGameSnapshot(pick.game_snapshot)
-      if (!snapshot) {
-        skippedParseFailure++
-        return
-      }
+      if (!snapshot) return
 
       const homeTeam = extractTeamAbbr(snapshot.home_team)
       const awayTeam = extractTeamAbbr(snapshot.away_team)
 
-      if (!homeTeam || !awayTeam) {
-        skippedNoTeams++
-        // Log why this is failing
-        if (processedCount < 3) {
-          console.log('[TeamDominance] Skip - no teams:', {
-            capper: pick.capper,
-            homeTeamRaw: snapshot.home_team,
-            awayTeamRaw: snapshot.away_team,
-            homeTeamExtracted: homeTeam,
-            awayTeamExtracted: awayTeam
-          })
-        }
-        return
-      }
-
-      processedCount++
+      if (!homeTeam || !awayTeam) return
 
         // Process for both teams involved in the game
         ;[homeTeam, awayTeam].forEach(team => {
@@ -185,16 +146,6 @@ export async function GET(request: NextRequest) {
       totalCappers: number
     }> = []
 
-    // Debug: check what cappers exist for first team with data
-    let debugCapperList: string[] = []
-    for (const team of allNBATeams) {
-      const capperMap = teamStats.get(team)!
-      if (capperMap.size > 0) {
-        debugCapperList = Array.from(capperMap.keys())
-        break
-      }
-    }
-
     allNBATeams.forEach(team => {
       const capperMap = teamStats.get(team)!
       const capperStats = capperMap.get(capperId.toLowerCase())
@@ -238,32 +189,12 @@ export async function GET(request: NextRequest) {
       includeAll
     })
 
-    // Include debug info if requested
-    const includeDebug = searchParams.get('debug') === '1'
-
     return NextResponse.json({
       success: true,
       capperId,
       topTeams: top3Teams,
       allTeams: includeAll ? sortedTeams : undefined, // Include all teams if requested
-      totalTeams: capperTeamData.length,
-      ...(includeDebug && {
-        debug: {
-          totalPicksFetched: allPicks?.length || 0,
-          processedCount,
-          skippedNoSnapshot,
-          skippedParseFailure,
-          skippedNoTeams,
-          requestedCapperId: capperId,
-          requestedCapperIdLower: capperId.toLowerCase(),
-          cappersInData: debugCapperList,
-          samplePick: allPicks?.[0] ? {
-            capper: allPicks[0].capper,
-            snapshotType: typeof allPicks[0].game_snapshot,
-            snapshotKeys: allPicks[0].game_snapshot ? Object.keys(allPicks[0].game_snapshot as object) : []
-          } : null
-        }
-      })
+      totalTeams: capperTeamData.length
     })
 
   } catch (error) {
