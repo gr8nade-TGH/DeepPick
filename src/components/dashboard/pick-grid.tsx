@@ -15,10 +15,16 @@ interface Pick {
     net_units?: number
     capper?: string
     game_snapshot?: {
-        home_team: any
-        away_team: any
+        home_team: { name?: string; abbreviation?: string } | string
+        away_team: { name?: string; abbreviation?: string } | string
         game_date: string
         game_time: string
+        game_start_timestamp?: string
+    }
+    game?: {
+        home_team: { name?: string; abbreviation?: string } | string
+        away_team: { name?: string; abbreviation?: string } | string
+        status: string
         game_start_timestamp?: string
     }
     games?: {
@@ -39,6 +45,7 @@ const CAPPER_CONFIG: Record<string, { color: string; initials: string }> = {
     'CERBERUS': { color: 'bg-red-500', initials: 'CE' },
     'ATLAS': { color: 'bg-teal-500', initials: 'AT' },
     'ORACLE': { color: 'bg-emerald-500', initials: 'OR' },
+    'GR8NADE': { color: 'bg-lime-500', initials: 'GR' },
 }
 
 interface GameRow {
@@ -79,21 +86,36 @@ function getCapperBadge(capper: string): { color: string; initials: string } {
     return CAPPER_CONFIG[upper] || { color: 'bg-slate-500', initials: capper?.slice(0, 2).toUpperCase() || '??' }
 }
 
+// Helper to extract team abbreviation from various formats
+function getTeamAbbrev(team: any): string {
+    if (!team) return ''
+    if (typeof team === 'string') return team.slice(0, 3).toUpperCase()
+    return team.abbreviation || team.name?.slice(0, 3) || ''
+}
+
 // Build game rows from picks
 function buildGameRows(picks: Pick[]): GameRow[] {
-    const gameMap = new Map<string, { picks: Pick[]; gameTime: string; homeTeam: string; awayTeam: string }>()
+    const gameMap = new Map<string, { picks: Pick[]; gameTime: string; homeTeam: string; awayTeam: string; isLive: boolean }>()
 
     picks.forEach(pick => {
-        const home = pick.game_snapshot?.home_team?.abbreviation || pick.game_snapshot?.home_team?.name?.slice(0, 3) || 'HOM'
-        const away = pick.game_snapshot?.away_team?.abbreviation || pick.game_snapshot?.away_team?.name?.slice(0, 3) || 'AWY'
+        // Try game_snapshot first, then game (from API transform), then games
+        const snapshot = pick.game_snapshot
+        const game = pick.game
+
+        const home = getTeamAbbrev(snapshot?.home_team) || getTeamAbbrev(game?.home_team) || 'HOM'
+        const away = getTeamAbbrev(snapshot?.away_team) || getTeamAbbrev(game?.away_team) || 'AWY'
         const gameKey = `${away}_${home}`.toUpperCase()
+
+        const gameTime = snapshot?.game_start_timestamp || game?.game_start_timestamp || pick.games?.game_start_timestamp || ''
+        const isLive = gameTime ? new Date(gameTime).getTime() < Date.now() : false
 
         if (!gameMap.has(gameKey)) {
             gameMap.set(gameKey, {
                 picks: [],
-                gameTime: pick.game_snapshot?.game_start_timestamp || pick.games?.game_start_timestamp || '',
+                gameTime,
                 homeTeam: home.toUpperCase(),
-                awayTeam: away.toUpperCase()
+                awayTeam: away.toUpperCase(),
+                isLive
             })
         }
         gameMap.get(gameKey)!.picks.push(pick)
@@ -102,9 +124,10 @@ function buildGameRows(picks: Pick[]): GameRow[] {
     const rows: GameRow[] = []
 
     gameMap.forEach((data, gameKey) => {
-        const spreadPicks = data.picks.filter(p => p.pick_type === 'SPREAD')
-        const totalPicks = data.picks.filter(p => p.pick_type === 'TOTAL')
-        const mlPicks = data.picks.filter(p => p.pick_type === 'MONEYLINE')
+        // Filter picks by type (case-insensitive)
+        const spreadPicks = data.picks.filter(p => p.pick_type?.toUpperCase() === 'SPREAD')
+        const totalPicks = data.picks.filter(p => p.pick_type?.toUpperCase() === 'TOTAL')
+        const mlPicks = data.picks.filter(p => p.pick_type?.toUpperCase() === 'MONEYLINE')
 
         const buildCell = (cellPicks: Pick[]): CellData | null => {
             if (cellPicks.length === 0) return null
@@ -136,12 +159,23 @@ function buildGameRows(picks: Pick[]): GameRow[] {
         })
     })
 
-    // Sort by game time, then by heat
+    // Sort: LIVE games at BOTTOM, then by game time (nearest first)
     return rows.sort((a, b) => {
-        const aHeat = Math.max(a.spread?.heatLevel || 0, a.total?.heatLevel || 0)
-        const bHeat = Math.max(b.spread?.heatLevel || 0, b.total?.heatLevel || 0)
-        if (bHeat !== aHeat) return bHeat - aHeat
-        return new Date(a.gameTime).getTime() - new Date(b.gameTime).getTime()
+        const now = Date.now()
+        const aTime = a.gameTime ? new Date(a.gameTime).getTime() : Infinity
+        const bTime = b.gameTime ? new Date(b.gameTime).getTime() : Infinity
+        const aIsLive = aTime < now
+        const bIsLive = bTime < now
+
+        // LIVE games go to bottom
+        if (aIsLive && !bIsLive) return 1
+        if (!aIsLive && bIsLive) return -1
+
+        // Within same category, sort by time (earliest first for upcoming, most recent first for live)
+        if (aIsLive && bIsLive) {
+            return bTime - aTime // Most recently started live games first
+        }
+        return aTime - bTime // Nearest upcoming games first
     })
 }
 
@@ -354,42 +388,59 @@ export function PickGrid() {
                         <p className="text-slate-400">No picks available today</p>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full border-collapse">
+                    <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/50">
+                        <table className="w-full border-collapse table-fixed">
                             <thead>
-                                <tr className="border-b border-slate-800">
-                                    <th className="text-left py-3 px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider w-[180px]">
+                                <tr className="border-b border-slate-700 bg-slate-800/50">
+                                    <th className="text-left py-4 px-5 text-xs font-bold text-slate-300 uppercase tracking-wider w-[180px]">
                                         Matchup
                                     </th>
-                                    <th className="text-left py-3 px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                                        Spread
+                                    <th className="text-center py-4 px-5 text-xs font-bold text-slate-300 uppercase tracking-wider w-[calc((100%-180px)/2)]">
+                                        <span className="flex items-center justify-center gap-2">
+                                            📊 Spread
+                                        </span>
                                     </th>
-                                    <th className="text-left py-3 px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                                        Total
+                                    <th className="text-center py-4 px-5 text-xs font-bold text-slate-300 uppercase tracking-wider w-[calc((100%-180px)/2)]">
+                                        <span className="flex items-center justify-center gap-2">
+                                            🎯 Total
+                                        </span>
                                     </th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {gameRows.map((row) => {
+                                {gameRows.map((row, idx) => {
                                     const countdown = getCountdown(row.gameTime)
+                                    const isLive = countdown === 'LIVE'
+                                    const hasSpread = !!row.spread
+                                    const hasTotal = !!row.total
+
                                     return (
-                                        <tr key={row.gameKey} className="border-b border-slate-800/50 hover:bg-slate-900/50">
+                                        <tr
+                                            key={row.gameKey}
+                                            className={`
+                                                border-b border-slate-800/50 transition-colors
+                                                ${isLive ? 'bg-red-950/20' : idx % 2 === 0 ? 'bg-slate-900/30' : 'bg-slate-900/10'}
+                                                hover:bg-slate-800/50
+                                            `}
+                                        >
                                             {/* Matchup Cell */}
-                                            <td className="py-4 px-4">
+                                            <td className="py-5 px-5 align-top">
                                                 <div className="font-bold text-white text-sm">
                                                     {row.matchup}
                                                 </div>
                                                 {countdown && (
-                                                    <div className={`text-xs mt-1 flex items-center gap-1 ${countdown === 'LIVE' ? 'text-red-400' : 'text-slate-500'
+                                                    <div className={`text-xs mt-1.5 flex items-center gap-1.5 font-medium ${isLive
+                                                        ? 'text-red-400 animate-pulse'
+                                                        : 'text-slate-500'
                                                         }`}>
                                                         <Clock className="w-3 h-3" />
-                                                        {countdown}
+                                                        {isLive ? '🔴 LIVE' : countdown}
                                                     </div>
                                                 )}
                                             </td>
 
                                             {/* Spread Cell */}
-                                            <td className="py-4 px-4">
+                                            <td className="py-5 px-4 align-top">
                                                 <PickCell
                                                     cell={row.spread}
                                                     picks={picks}
@@ -398,7 +449,7 @@ export function PickGrid() {
                                             </td>
 
                                             {/* Total Cell */}
-                                            <td className="py-4 px-4">
+                                            <td className="py-5 px-4 align-top">
                                                 <PickCell
                                                     cell={row.total}
                                                     picks={picks}
