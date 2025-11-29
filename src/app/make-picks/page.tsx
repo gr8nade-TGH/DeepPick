@@ -388,12 +388,9 @@ export default function ManualPicksPage() {
                                   <span className="text-white font-bold text-xs group-hover:text-blue-400">
                                     {game.away_team.abbreviation}
                                   </span>
-                                  <div className="text-right">
-                                    <span className="text-white font-bold text-xs">
-                                      {game.odds.spread.line > 0 ? '+' : ''}{game.odds.spread.line.toFixed(1)}
-                                    </span>
-                                    <span className="text-emerald-400 text-[10px] ml-1">{formatOdds(game.odds.spread.away_odds)}</span>
-                                  </div>
+                                  <span className="text-white font-bold text-xs">
+                                    {game.odds.spread.line > 0 ? '+' : ''}{game.odds.spread.line.toFixed(1)} <span className="text-emerald-400 text-[10px]">{formatOdds(game.odds.spread.away_odds)}</span>
+                                  </span>
                                 </div>
                               </button>
                               <button
@@ -404,12 +401,9 @@ export default function ManualPicksPage() {
                                   <span className="text-white font-bold text-xs group-hover:text-cyan-400">
                                     {game.home_team.abbreviation}
                                   </span>
-                                  <div className="text-right">
-                                    <span className="text-white font-bold text-xs">
-                                      {-game.odds.spread.line > 0 ? '+' : ''}{(-game.odds.spread.line).toFixed(1)}
-                                    </span>
-                                    <span className="text-emerald-400 text-[10px] ml-1">{formatOdds(game.odds.spread.home_odds)}</span>
-                                  </div>
+                                  <span className="text-white font-bold text-xs">
+                                    {-game.odds.spread.line > 0 ? '+' : ''}{(-game.odds.spread.line).toFixed(1)} <span className="text-emerald-400 text-[10px]">{formatOdds(game.odds.spread.home_odds)}</span>
+                                  </span>
                                 </div>
                               </button>
                             </div>
