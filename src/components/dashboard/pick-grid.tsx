@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Activity, Clock, Zap, Lock, Flame, Filter } from 'lucide-react'
+import { Activity, Clock, Zap, Flame, Filter } from 'lucide-react'
 import { PickInsightModal } from '@/components/dashboard/pick-insight-modal'
 
 interface Pick {
@@ -452,13 +452,12 @@ function CapperBadge({
     )
 }
 
-// LOCK badge for 4+ capper consensus
-function LockBadge({ capperCount, combinedRecord }: { capperCount: number; combinedRecord?: { wins: number; losses: number; netUnits: number } }) {
+// Heavy Agreement badge for 4+ capper consensus
+function HeavyAgreementBadge({ capperCount, combinedRecord }: { capperCount: number; combinedRecord?: { wins: number; losses: number; netUnits: number } }) {
     return (
         <div className="flex items-center gap-2 mb-2">
-            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-amber-500 to-yellow-500 rounded-full shadow-lg shadow-amber-500/30 animate-pulse">
-                <Lock className="w-3 h-3 text-amber-900" />
-                <span className="text-[10px] font-black text-amber-900 uppercase tracking-wide">Lock</span>
+            <div className="flex items-center gap-1.5 px-2 py-1 bg-gradient-to-r from-amber-500 to-yellow-500 rounded-full shadow-lg shadow-amber-500/30 animate-pulse">
+                <span className="text-[9px] font-black text-amber-900 uppercase tracking-wide">🔥 Heavy Agreement</span>
             </div>
             {combinedRecord && (
                 <div className="text-[10px] text-slate-400">
@@ -513,8 +512,8 @@ function PickCell({
     // If split, show both sides SIDE BY SIDE in one row
     if (cell.isSplit) {
         return (
-            <div className="relative">
-                <div className="flex gap-1 rounded-lg border border-amber-500/30 bg-gradient-to-br from-slate-800/60 to-slate-900/40 overflow-hidden">
+            <div className="relative min-h-[90px]">
+                <div className="flex gap-1 rounded-lg border border-amber-500/30 bg-gradient-to-br from-slate-800/60 to-slate-900/40 min-h-[90px]">
                     {cell.sides.slice(0, 2).map((side, idx) => {
                         const avgUnitsStr = side.avgUnits.toFixed(side.avgUnits % 1 === 0 ? 0 : 2)
                         const isWinning = idx === 0
@@ -524,9 +523,9 @@ function PickCell({
                                 ${idx === 0 ? 'border-r border-slate-700/50' : ''}
                                 ${isWinning ? 'bg-slate-800/40' : 'bg-slate-900/30 opacity-80'}
                             `}>
-                                <div className="flex items-center gap-0.5 mb-1.5 flex-wrap">
+                                <div className="flex items-center gap-0.5 mb-1.5 flex-wrap relative z-10">
                                     {side.picks.slice(0, 3).map((p, i) => (
-                                        <div key={i} onClick={() => {
+                                        <div key={i} className="relative z-20" onClick={() => {
                                             const pick = picks.find(pk => pk.id === p.pickId)
                                             if (pick) onPickClick(pick)
                                         }}>
@@ -578,8 +577,8 @@ function PickCell({
                             ? 'bg-gradient-to-br from-yellow-900/20 to-slate-800/50 border-yellow-500/20'
                             : 'bg-slate-800/50 border-slate-700/50'}
             `}>
-                {/* LOCK Badge for 4+ consensus */}
-                {isLock && <LockBadge capperCount={side.picks.length} combinedRecord={combinedRecord} />}
+                {/* Heavy Agreement Badge for 4+ consensus */}
+                {isLock && <HeavyAgreementBadge capperCount={side.picks.length} combinedRecord={combinedRecord} />}
 
                 {/* Capper badges row */}
                 <div className="flex items-center gap-1 mb-2 flex-wrap">
@@ -613,8 +612,8 @@ function PickCell({
             {/* Heat dot indicator (top right) */}
             <div className="absolute -top-1 -right-1">
                 {isLock ? (
-                    <div className="w-3 h-3 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 shadow-lg shadow-amber-500/50 animate-pulse flex items-center justify-center">
-                        <Lock className="w-2 h-2 text-amber-900" />
+                    <div className="w-3 h-3 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 shadow-lg shadow-amber-500/50 animate-pulse flex items-center justify-center text-[8px]">
+                        🔥
                     </div>
                 ) : (
                     <HeatDot level={side.heatLevel} />
@@ -764,10 +763,8 @@ export function PickGrid() {
                                 <HeatDot level={3} /> 3
                             </span>
                             <span className="flex items-center gap-1.5">
-                                <div className="w-3 h-3 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center">
-                                    <Lock className="w-2 h-2 text-amber-900" />
-                                </div>
-                                4+ Lock
+                                <span className="text-amber-400">🔥</span>
+                                4+ Agreement
                             </span>
                         </div>
                     </div>
@@ -776,7 +773,7 @@ export function PickGrid() {
                     <div className="flex items-center gap-2 mb-4">
                         {[
                             { id: 'all' as FilterType, label: 'All', count: totalGames, icon: Filter },
-                            { id: 'locks' as FilterType, label: 'Locks', count: lockCount, icon: Lock },
+                            { id: 'locks' as FilterType, label: 'Agreement', count: lockCount, icon: Flame },
                             { id: 'hot' as FilterType, label: 'Hot', count: hotGames, icon: Flame },
                             { id: 'splits' as FilterType, label: 'Splits', count: splitGames, icon: Zap },
                         ].map(tab => (
@@ -818,7 +815,7 @@ export function PickGrid() {
                         </span>
                         {lockCount > 0 && (
                             <span className="text-slate-400">
-                                <span className="text-amber-400 font-bold">{lockCount}</span> 🔒 locks
+                                <span className="text-amber-400 font-bold">{lockCount}</span> 🔥 agreement
                             </span>
                         )}
                         <span className="text-slate-400">
@@ -900,7 +897,7 @@ export function PickGrid() {
                                             <td className="py-5 px-5 align-top">
                                                 <div className="flex items-center gap-2">
                                                     {hasLock && (
-                                                        <span className="text-amber-400">🔒</span>
+                                                        <span className="text-amber-400">🔥</span>
                                                     )}
                                                     <div className="font-bold text-white text-sm">
                                                         {row.matchup}
