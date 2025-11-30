@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { Trophy, TrendingUp, Award, Medal, Crown, ExternalLink, Home, User } from 'lucide-react'
+import { Trophy, TrendingUp, Award, Medal, Crown, ExternalLink, Home, User, ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface CapperStats {
   id: string
@@ -21,6 +21,18 @@ interface CapperStats {
   winRate: number
   roi: number
   rank: number
+}
+
+interface Accomplishment {
+  type: 'hot_streak' | 'territory_king' | 'milestone' | 'top_performer'
+  title: string
+  description: string
+  capper: string
+  capperName: string
+  icon: string
+  color: string
+  value?: number
+  team?: string
 }
 
 const CAPPER_COLORS: Record<string, string> = {
@@ -93,10 +105,27 @@ export default function LeaderboardPage() {
   const [betTypeFilter, setBetTypeFilter] = useState<'all' | 'total' | 'spread'>('all')
   const [leaderboard, setLeaderboard] = useState<CapperStats[]>([])
   const [loading, setLoading] = useState(true)
+  const [accomplishments, setAccomplishments] = useState<Accomplishment[]>([])
 
   useEffect(() => {
     fetchLeaderboard()
   }, [timeframe, teamFilter, betTypeFilter])
+
+  // Fetch accomplishments once on mount
+  useEffect(() => {
+    const fetchAccomplishments = async () => {
+      try {
+        const res = await fetch('/api/accomplishments')
+        const data = await res.json()
+        if (data.success && data.accomplishments) {
+          setAccomplishments(data.accomplishments)
+        }
+      } catch (error) {
+        console.error('Error fetching accomplishments:', error)
+      }
+    }
+    fetchAccomplishments()
+  }, [])
 
   const fetchLeaderboard = async () => {
     setLoading(true)
@@ -161,6 +190,39 @@ export default function LeaderboardPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-4">
+        {/* Accomplishments Banner */}
+        {accomplishments.length > 0 && (
+          <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-4 shadow-xl">
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+              {accomplishments.map((acc, idx) => (
+                <Link
+                  key={`${acc.type}-${acc.capper}-${idx}`}
+                  href={`/cappers/${acc.capper}`}
+                  className="flex-shrink-0 group"
+                >
+                  <div
+                    className={`bg-gradient-to-br ${acc.color} p-[2px] rounded-xl hover:scale-105 transition-transform cursor-pointer`}
+                  >
+                    <div className="bg-slate-900/95 rounded-xl px-5 py-4 min-w-[220px] max-w-[260px]">
+                      <div className="flex items-start gap-2 mb-1">
+                        <span className="text-xl">{acc.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white font-bold text-sm truncate group-hover:text-yellow-400 transition-colors">
+                            {acc.title}
+                          </p>
+                          <p className="text-slate-300 text-xs font-medium truncate">
+                            {acc.description}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Filters */}
         <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6 shadow-xl">
           <div className="flex flex-col gap-6">
