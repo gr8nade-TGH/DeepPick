@@ -1,10 +1,65 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
-import { calculateTierGrade } from '@/lib/tier-grading'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
+
+// Inline tier calculation to avoid import issues with serverless
+type RarityTier = 'Common' | 'Uncommon' | 'Rare' | 'Epic' | 'Legendary' | 'Elite'
+
+interface TierGradeInput {
+  baseConfidence: number
+  unitsRisked: number
+  teamRecord?: { wins: number; losses: number; netUnits: number }
+  last7DaysRecord?: { wins: number; losses: number; netUnits: number }
+}
+
+interface TierGradeResult {
+  tier: RarityTier
+  tierScore: number
+  bonuses: { units: number; teamRecord: number; hotStreak: number }
+}
+
+function calculateTierGrade(input: TierGradeInput): TierGradeResult {
+  let tierScore = input.baseConfidence
+  const bonuses = { units: 0, teamRecord: 0, hotStreak: 0 }
+
+  // Units bonus
+  if (input.unitsRisked >= 6) bonuses.units = 20
+  else if (input.unitsRisked >= 5) bonuses.units = 16
+  else if (input.unitsRisked >= 4) bonuses.units = 12
+  else if (input.unitsRisked >= 3) bonuses.units = 8
+  else if (input.unitsRisked >= 2) bonuses.units = 4
+
+  // Team record bonus
+  if (input.teamRecord && (input.teamRecord.wins + input.teamRecord.losses) >= 3) {
+    if (input.teamRecord.netUnits > 10) bonuses.teamRecord = 10
+    else if (input.teamRecord.netUnits > 5) bonuses.teamRecord = 8
+    else if (input.teamRecord.netUnits > 0) bonuses.teamRecord = 5
+    else if (input.teamRecord.netUnits < 0) bonuses.teamRecord = -5
+  }
+
+  // 7-day hot streak bonus
+  if (input.last7DaysRecord && (input.last7DaysRecord.wins + input.last7DaysRecord.losses) >= 3) {
+    if (input.last7DaysRecord.netUnits > 5) bonuses.hotStreak = 10
+    else if (input.last7DaysRecord.netUnits > 0) bonuses.hotStreak = 5
+    else if (input.last7DaysRecord.netUnits < 0) bonuses.hotStreak = -3
+  }
+
+  tierScore += bonuses.units + bonuses.teamRecord + bonuses.hotStreak
+  const canBeElite = bonuses.hotStreak > 0 && input.unitsRisked >= 4
+
+  let tier: RarityTier
+  if (tierScore >= 80 && canBeElite) tier = 'Elite'
+  else if (tierScore >= 75) tier = 'Legendary'
+  else if (tierScore >= 68) tier = 'Epic'
+  else if (tierScore >= 60) tier = 'Rare'
+  else if (tierScore >= 50) tier = 'Uncommon'
+  else tier = 'Common'
+
+  return { tier, tierScore, bonuses }
+}
 
 /**
  * One-time backfill endpoint to add tier grades to existing picks
