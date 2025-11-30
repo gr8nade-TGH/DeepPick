@@ -917,6 +917,12 @@ function buildInsightCard({ pick, game, run, factorContributions, predictedTotal
       tuningSuggestions: tuningSuggestions || [],
       overallAccuracy: overallAccuracy
     },
+    // Pass stored tier grade if available (calculated at pick generation time)
+    computedTier: pick.game_snapshot?.tier_grade ? {
+      tier: pick.game_snapshot.tier_grade.tier,
+      tierScore: pick.game_snapshot.tier_grade.tierScore,
+      bonuses: pick.game_snapshot.tier_grade.bonuses
+    } : undefined,
     onClose: () => { }
   }
 }

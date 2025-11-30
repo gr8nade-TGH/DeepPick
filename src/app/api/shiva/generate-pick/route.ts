@@ -5,6 +5,65 @@ import { generateProfessionalAnalysis } from '@/lib/cappers/professional-analysi
 import { generateBoldPredictions } from '@/lib/cappers/bold-predictions-generator'
 import { validateSpreadDirection } from '@/lib/cappers/pick-validation'
 import { isSystemCapper } from '@/lib/cappers/system-cappers'
+import { calculateTierGrade, TierGradeInput, TierGradeResult } from '@/app/cappers/shiva/management/components/insight-card'
+
+/**
+ * Fetch capper's team-specific record and 7-day record for tier calculation
+ */
+async function fetchTierGradeInputs(
+  supabase: any,
+  capperId: string,
+  teamAbbr: string,
+  betType: string
+): Promise<{ teamRecord?: { wins: number; losses: number; netUnits: number }; last7DaysRecord?: { wins: number; losses: number; netUnits: number } }> {
+  const result: TierGradeInput = { baseConfidence: 0, unitsRisked: 0 }
+
+  try {
+    // Get team-specific record for this bet type
+    const { data: teamPicks } = await supabase
+      .from('picks')
+      .select('status, net_units, pick_type, game_snapshot')
+      .eq('capper', capperId)
+      .eq('pick_type', betType.toLowerCase())
+      .in('status', ['win', 'loss'])
+
+    if (teamPicks && teamPicks.length > 0) {
+      // Filter for picks on this team
+      const teamFilteredPicks = teamPicks.filter((p: any) => {
+        const homeAbbr = p.game_snapshot?.home_team?.abbreviation || p.game_snapshot?.home_team
+        const awayAbbr = p.game_snapshot?.away_team?.abbreviation || p.game_snapshot?.away_team
+        return homeAbbr === teamAbbr || awayAbbr === teamAbbr
+      })
+
+      if (teamFilteredPicks.length >= 3) {
+        const wins = teamFilteredPicks.filter((p: any) => p.status === 'win').length
+        const losses = teamFilteredPicks.filter((p: any) => p.status === 'loss').length
+        const netUnits = teamFilteredPicks.reduce((sum: number, p: any) => sum + (p.net_units || 0), 0)
+        result.teamRecord = { wins, losses, netUnits }
+      }
+    }
+
+    // Get 7-day record
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+    const { data: recentPicks } = await supabase
+      .from('picks')
+      .select('status, net_units, created_at')
+      .eq('capper', capperId)
+      .in('status', ['win', 'loss'])
+      .gte('created_at', sevenDaysAgo)
+
+    if (recentPicks && recentPicks.length >= 3) {
+      const wins = recentPicks.filter((p: any) => p.status === 'win').length
+      const losses = recentPicks.filter((p: any) => p.status === 'loss').length
+      const netUnits = recentPicks.reduce((sum: number, p: any) => sum + (p.net_units || 0), 0)
+      result.last7DaysRecord = { wins, losses, netUnits }
+    }
+  } catch (error) {
+    console.error('[SHIVA:GeneratePick] Error fetching tier grade inputs:', error)
+  }
+
+  return result
+}
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -729,6 +788,28 @@ export async function POST(request: Request) {
       userId = capperData?.user_id || null
     }
 
+    // ===== CALCULATE TIER GRADE =====
+    // Get the team abbreviation from the pick selection or game
+    const homeTeamAbbr = game.home_team?.abbreviation || game.home_team
+    const awayTeamAbbr = game.away_team?.abbreviation || game.away_team
+    // For TOTAL picks, use the home team; for SPREAD, use the team in selection
+    const relevantTeam = pick.pickType === 'SPREAD'
+      ? (pick.selection?.includes(homeTeamAbbr) ? homeTeamAbbr : awayTeamAbbr)
+      : homeTeamAbbr
+
+    // Fetch team record and 7-day record for tier calculation
+    const tierInputs = await fetchTierGradeInputs(supabase, capperId, relevantTeam, pick.pickType)
+
+    // Calculate the tier grade
+    const tierGrade = calculateTierGrade({
+      baseConfidence: pick.confidence,
+      unitsRisked: pick.units,
+      teamRecord: tierInputs.teamRecord,
+      last7DaysRecord: tierInputs.last7DaysRecord
+    })
+
+    console.log(`🏆 [SHIVA:GeneratePick] Tier calculated: ${tierGrade.tier} (score: ${tierGrade.tierScore}, bonuses: units=${tierGrade.bonuses.units}, team=${tierGrade.bonuses.teamRecord}, hot=${tierGrade.bonuses.hotStreak})`)
+
     // Save pick to database
     const pickInsert: any = {
       game_id: game.id,
@@ -749,7 +830,19 @@ export async function POST(request: Request) {
         game_start_timestamp: game.game_start_timestamp, // CRITICAL: Include full UTC timestamp
         total_line: game.total_line,
         spread_line: game.spread_line,
-        odds: game.odds
+        odds: game.odds,
+        // Store tier data in game_snapshot for historical accuracy
+        tier_grade: {
+          tier: tierGrade.tier,
+          tierScore: tierGrade.tierScore,
+          bonuses: tierGrade.bonuses,
+          inputs: {
+            baseConfidence: pick.confidence,
+            unitsRisked: pick.units,
+            teamRecord: tierInputs.teamRecord || null,
+            last7DaysRecord: tierInputs.last7DaysRecord || null
+          }
+        }
       },
       status: 'pending',
       is_system_pick: isSystemCapper,
