@@ -48,6 +48,27 @@ const CAPPER_CONFIG: Record<string, { color: string; initials: string }> = {
     'GR8NADE': { color: 'bg-lime-500', initials: 'GR' },
 }
 
+interface PickData {
+    capper: string
+    selection: string
+    units: number
+    confidence: number
+    pickId: string
+}
+
+interface SideData {
+    selection: string
+    picks: PickData[]
+    avgUnits: number
+    heatLevel: number
+}
+
+interface CellData {
+    sides: SideData[] // Multiple sides if cappers disagree
+    totalPicks: number
+    isSplit: boolean // true if cappers disagree
+}
+
 interface GameRow {
     gameKey: string
     matchup: string
@@ -57,13 +78,6 @@ interface GameRow {
     spread: CellData | null
     total: CellData | null
     moneyline: CellData | null
-}
-
-interface CellData {
-    picks: { capper: string; selection: string; units: number; confidence: number; pickId: string }[]
-    consensus: string // The selection most cappers agree on
-    avgUnits: number
-    heatLevel: number // 0-5 based on capper count
 }
 
 // Get countdown string
@@ -129,21 +143,45 @@ function buildGameRows(picks: Pick[]): GameRow[] {
         const totalPicks = data.picks.filter(p => p.pick_type?.toUpperCase() === 'TOTAL')
         const mlPicks = data.picks.filter(p => p.pick_type?.toUpperCase() === 'MONEYLINE')
 
+        // Normalize selection for grouping (handle case differences, extra spaces)
+        const normalizeSelection = (sel: string): string => {
+            return sel.trim().toUpperCase()
+        }
+
+        // Build cell with sides grouped by selection
         const buildCell = (cellPicks: Pick[]): CellData | null => {
             if (cellPicks.length === 0) return null
-            const picks = cellPicks.map(p => ({
-                capper: p.capper || 'Unknown',
-                selection: p.selection,
-                units: p.units,
-                confidence: p.confidence || 0,
-                pickId: p.id
-            }))
-            const avgUnits = picks.reduce((s, p) => s + p.units, 0) / picks.length
+
+            // Group picks by normalized selection
+            const sideMap = new Map<string, PickData[]>()
+            cellPicks.forEach(p => {
+                const key = normalizeSelection(p.selection)
+                if (!sideMap.has(key)) {
+                    sideMap.set(key, [])
+                }
+                sideMap.get(key)!.push({
+                    capper: p.capper || 'Unknown',
+                    selection: p.selection, // Keep original formatting
+                    units: p.units,
+                    confidence: p.confidence || 0,
+                    pickId: p.id
+                })
+            })
+
+            // Convert to sides array, sorted by count (most picks first)
+            const sides: SideData[] = Array.from(sideMap.entries())
+                .map(([key, picks]) => ({
+                    selection: picks[0].selection, // Use first pick's formatting
+                    picks,
+                    avgUnits: picks.reduce((s, p) => s + p.units, 0) / picks.length,
+                    heatLevel: Math.min(5, picks.length)
+                }))
+                .sort((a, b) => b.picks.length - a.picks.length)
+
             return {
-                picks,
-                consensus: picks[0].selection,
-                avgUnits,
-                heatLevel: Math.min(5, picks.length)
+                sides,
+                totalPicks: cellPicks.length,
+                isSplit: sides.length > 1
             }
         }
 
@@ -214,8 +252,8 @@ function PickCell({
 }) {
     if (!cell) {
         return (
-            <div className="flex items-center justify-center h-full">
-                <span className="text-slate-600">—</span>
+            <div className="flex items-center justify-center h-full min-h-[60px]">
+                <span className="text-slate-600 text-sm">—</span>
             </div>
         )
     }
@@ -231,21 +269,76 @@ function PickCell({
         return sel
     }
 
-    const avgUnitsStr = cell.avgUnits.toFixed(cell.avgUnits % 1 === 0 ? 0 : 2)
+    // If split, show both sides
+    if (cell.isSplit) {
+        return (
+            <div className="space-y-2">
+                {cell.sides.map((side, idx) => {
+                    const avgUnitsStr = side.avgUnits.toFixed(side.avgUnits % 1 === 0 ? 0 : 2)
+                    const isWinning = idx === 0 // First side has more cappers
+                    return (
+                        <div key={idx} className="relative">
+                            <div className={`
+                                rounded-lg p-2.5 border transition-all duration-200
+                                ${isWinning
+                                    ? 'bg-gradient-to-br from-slate-800/80 to-slate-900/50 border-slate-600/50'
+                                    : 'bg-slate-900/30 border-slate-800/30 opacity-75'
+                                }
+                            `}>
+                                {/* Capper badges */}
+                                <div className="flex items-center gap-1 mb-1.5 flex-wrap">
+                                    {side.picks.slice(0, 4).map((p, i) => (
+                                        <div key={i} onClick={() => {
+                                            const pick = picks.find(pk => pk.id === p.pickId)
+                                            if (pick) onPickClick(pick)
+                                        }}>
+                                            <CapperBadge capper={p.capper} />
+                                        </div>
+                                    ))}
+                                    {side.picks.length > 4 && (
+                                        <span className="text-[10px] text-slate-400">+{side.picks.length - 4}</span>
+                                    )}
+                                </div>
+                                {/* Selection */}
+                                <div className={`text-xs font-semibold leading-tight ${isWinning ? 'text-white' : 'text-slate-400'}`}>
+                                    {formatSelection(side.selection)}
+                                </div>
+                                <div className="text-[10px] text-slate-500 mt-0.5">
+                                    ({avgUnitsStr}u)
+                                </div>
+                            </div>
+                            {/* Heat dot for this side */}
+                            <div className="absolute -top-1 -right-1">
+                                <HeatDot level={side.heatLevel} />
+                            </div>
+                        </div>
+                    )
+                })}
+                {/* Split indicator */}
+                <div className="text-center">
+                    <span className="text-[9px] font-bold text-amber-500/80 uppercase tracking-wider">⚡ Split</span>
+                </div>
+            </div>
+        )
+    }
+
+    // Single consensus - all cappers agree
+    const side = cell.sides[0]
+    const avgUnitsStr = side.avgUnits.toFixed(side.avgUnits % 1 === 0 ? 0 : 2)
 
     return (
         <div className="relative group">
             {/* Cell background with gradient based on heat */}
             <div className={`
                 rounded-lg p-3 border transition-all duration-200
-                ${cell.heatLevel >= 4 ? 'bg-gradient-to-br from-green-900/40 to-green-800/20 border-green-500/40'
-                    : cell.heatLevel >= 3 ? 'bg-gradient-to-br from-orange-900/30 to-slate-800/50 border-orange-500/30'
-                        : cell.heatLevel >= 2 ? 'bg-gradient-to-br from-yellow-900/20 to-slate-800/50 border-yellow-500/20'
+                ${side.heatLevel >= 4 ? 'bg-gradient-to-br from-green-900/40 to-green-800/20 border-green-500/40'
+                    : side.heatLevel >= 3 ? 'bg-gradient-to-br from-orange-900/30 to-slate-800/50 border-orange-500/30'
+                        : side.heatLevel >= 2 ? 'bg-gradient-to-br from-yellow-900/20 to-slate-800/50 border-yellow-500/20'
                             : 'bg-slate-800/50 border-slate-700/50'}
             `}>
                 {/* Capper badges row */}
                 <div className="flex items-center gap-1 mb-2 flex-wrap">
-                    {cell.picks.slice(0, 5).map((p, i) => (
+                    {side.picks.slice(0, 5).map((p, i) => (
                         <div key={i} onClick={() => {
                             const pick = picks.find(pk => pk.id === p.pickId)
                             if (pick) onPickClick(pick)
@@ -253,14 +346,14 @@ function PickCell({
                             <CapperBadge capper={p.capper} />
                         </div>
                     ))}
-                    {cell.picks.length > 5 && (
-                        <span className="text-[10px] text-slate-400 font-medium">+{cell.picks.length - 5}</span>
+                    {side.picks.length > 5 && (
+                        <span className="text-[10px] text-slate-400 font-medium">+{side.picks.length - 5}</span>
                     )}
                 </div>
 
                 {/* Pick selection */}
                 <div className="text-sm font-semibold text-white leading-tight">
-                    {formatSelection(cell.consensus)}
+                    {formatSelection(side.selection)}
                 </div>
 
                 {/* Units info */}
@@ -271,7 +364,7 @@ function PickCell({
 
             {/* Heat dot indicator (top right) */}
             <div className="absolute -top-1 -right-1">
-                <HeatDot level={cell.heatLevel} />
+                <HeatDot level={side.heatLevel} />
             </div>
         </div>
     )
@@ -321,11 +414,20 @@ export function PickGrid() {
         setSelectedCapper(pick.capper)
     }
 
+    // Helper to get max heat level from a cell
+    const getMaxHeat = (cell: CellData | null) => {
+        if (!cell) return 0
+        return Math.max(...cell.sides.map(s => s.heatLevel))
+    }
+
     // Stats
     const totalPicks = picks.length
     const totalGames = gameRows.length
     const hotGames = gameRows.filter(g =>
-        (g.spread?.heatLevel || 0) >= 3 || (g.total?.heatLevel || 0) >= 3
+        getMaxHeat(g.spread) >= 3 || getMaxHeat(g.total) >= 3
+    ).length
+    const splitGames = gameRows.filter(g =>
+        g.spread?.isSplit || g.total?.isSplit
     ).length
 
     if (loading) {
@@ -374,8 +476,13 @@ export function PickGrid() {
                             <span className="text-cyan-400 font-bold">{totalPicks}</span> picks
                         </span>
                         <span className="text-slate-400">
-                            <span className="text-orange-400 font-bold">{hotGames}</span> hot consensus
+                            <span className="text-green-400 font-bold">{hotGames}</span> hot consensus
                         </span>
+                        {splitGames > 0 && (
+                            <span className="text-slate-400">
+                                <span className="text-amber-400 font-bold">{splitGames}</span> split decisions
+                            </span>
+                        )}
                     </div>
                 </div>
             </div>
