@@ -266,7 +266,7 @@ function getCapperBranding(capperName: string): { icon: string; color: string; g
   return colorPalettes[paletteIndex]
 }
 
-// Stat Block component for manual picks
+// Stat Block component for manual picks - PICKSMITH style
 function StatBlock({ label, value, subValue, positive, icon }: {
   label: string
   value: string
@@ -275,21 +275,23 @@ function StatBlock({ label, value, subValue, positive, icon }: {
   icon?: string
 }) {
   return (
-    <div className="bg-slate-800/60 rounded-lg p-3 border border-slate-700/50 text-center">
-      <div className="text-[10px] text-slate-400 uppercase tracking-wide mb-1 flex items-center justify-center gap-1">
+    <div className="bg-slate-800/80 rounded-xl p-4 border border-slate-700/50 text-center hover:border-slate-600 transition-all">
+      <div className="text-2xl font-black mb-1">
+        <span className={`${positive === true ? 'text-emerald-400' :
+          positive === false ? 'text-red-400' :
+            'text-white'
+          }`}>
+          {value}
+        </span>
+      </div>
+      <div className="text-xs text-slate-400 mt-1 flex items-center justify-center gap-1">
         {icon && <span>{icon}</span>}
         <span>{label}</span>
       </div>
-      <div className={`text-lg font-bold ${positive === true ? 'text-emerald-400' :
-        positive === false ? 'text-red-400' :
-          'text-white'
-        }`}>
-        {value}
-      </div>
       {subValue && (
-        <div className={`text-xs font-medium ${positive === true ? 'text-emerald-300' :
+        <div className={`text-[10px] font-medium mt-0.5 ${positive === true ? 'text-emerald-300' :
           positive === false ? 'text-red-300' :
-            'text-slate-400'
+            'text-slate-500'
           }`}>
           {subValue}
         </div>
@@ -760,18 +762,18 @@ export function InsightCard(props: InsightCardProps) {
           )}
         </div>
 
-        {/* ===== MANUAL PICK: CAPPER STATS SECTION ===== */}
+        {/* ===== MANUAL PICK: CAPPER STATS SECTION - PICKSMITH STYLE ===== */}
         {isManualPick ? (
-          <div className="p-4" style={{ background: 'rgba(15,15,25,0.9)', borderBottom: `1px solid ${rarity.borderColor}20` }}>
-            {/* Section Header - Diablo style */}
-            <div className="flex items-center gap-2 mb-4">
-              <span className={`text-sm ${rarity.textColor}`}>◆</span>
-              <h3 className={`text-xs font-bold ${rarity.textColor} uppercase tracking-wider`}>Capper Stats</h3>
+          <div className="p-5 bg-gradient-to-br from-slate-800 to-slate-900" style={{ borderBottom: `1px solid ${rarity.borderColor}20` }}>
+            {/* Section Header - PICKSMITH style */}
+            <div className={`text-xs font-bold ${rarity.textColor} uppercase mb-4 flex items-center gap-2`}>
+              <span>📊</span>
+              <span>Capper Stats</span>
             </div>
 
             {manualInsight?.betTypeRecord && manualInsight.betTypeRecord.total > 0 ? (
               <>
-                {/* Main Stats Grid */}
+                {/* Main Stats Grid - PICKSMITH style */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                   {/* Overall Record */}
                   <StatBlock
@@ -867,16 +869,19 @@ export function InsightCard(props: InsightCardProps) {
                   </div>
                 )}
 
-                {/* Last Pick on This Team */}
+                {/* Last Pick on This Team - PICKSMITH style */}
                 {(manualInsight.lastMatchupPick || manualInsight.totals?.lastTeamGamePick || manualInsight.spread?.lastTeamPick) && (
-                  <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-700/50">
-                    <div className="text-[10px] text-slate-400 uppercase mb-1">Last Pick on This Team</div>
+                  <div className="bg-slate-900/60 rounded-xl p-4 border border-slate-700/50">
+                    <div className={`text-[10px] font-bold ${rarity.textColor} uppercase mb-2 flex items-center gap-2`}>
+                      <span>📋</span>
+                      <span>Last Pick on This Team</span>
+                    </div>
                     {(() => {
                       const lastPick = manualInsight.lastMatchupPick || manualInsight.totals?.lastTeamGamePick || manualInsight.spread?.lastTeamPick
                       if (!lastPick) return null
                       return (
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-white font-medium">{lastPick.selection}</span>
+                        <div className="flex items-center justify-between bg-slate-800/50 rounded-lg px-3 py-2">
+                          <span className="text-sm text-white font-semibold">{lastPick.selection}</span>
                           <span className={`text-sm font-bold ${lastPick.result === 'won' ? 'text-emerald-400' : lastPick.result === 'lost' ? 'text-red-400' : 'text-yellow-400'}`}>
                             {lastPick.result === 'won' ? '✅ WON' : lastPick.result === 'lost' ? '❌ LOST' : '🤝 PUSH'}
                           </span>
@@ -946,24 +951,17 @@ export function InsightCard(props: InsightCardProps) {
           </div>
         )}
 
-        {/* ===== KEY FACTORS - TOP 3 ONLY (AI picks only) ===== */}
+        {/* ===== KEY FACTORS - PICKSMITH GRID STYLE (AI picks only) ===== */}
         {!isManualPick && (
-          <div className="p-4" style={{ background: 'rgba(15,15,25,0.9)', borderBottom: `1px solid ${rarity.borderColor}20` }}>
-            <div className="flex items-center justify-between mb-3">
-              <div className={`text-xs font-bold ${rarity.textColor} flex items-center gap-2 uppercase tracking-wider`}>
-                <span>◆</span>
-                <span>Key Factors</span>
-              </div>
-              {sortedFactors.length > 0 && (
-                <div className="text-[10px] px-2 py-1 bg-slate-800/80 text-slate-300 rounded border border-slate-600/50 font-semibold">
-                  🏆 {sortedFactors[0].label}
-                </div>
-              )}
+          <div className="p-5 bg-gradient-to-br from-slate-800 to-slate-900" style={{ borderBottom: `1px solid ${rarity.borderColor}20` }}>
+            <div className={`text-xs font-bold ${rarity.textColor} uppercase mb-4 flex items-center gap-2`}>
+              <span>🎯</span>
+              <span>Key Factors</span>
             </div>
 
-            {/* Top 3 Factors Only - Compact */}
-            <div className="space-y-2">
-              {sortedFactors.slice(0, 3).map((factor) => {
+            {/* Factors Grid - PICKSMITH style */}
+            <div className="grid grid-cols-2 gap-3">
+              {sortedFactors.slice(0, 4).map((factor, idx) => {
                 const factorMeta = getFactorMeta(factor.key)
                 const icon = factorMeta?.icon || 'ℹ️'
                 const shortName = factorMeta?.shortName || factor.label || factor.key
@@ -971,44 +969,51 @@ export function InsightCard(props: InsightCardProps) {
 
                 const isOver = factor.overScore > 0
                 const isUnder = factor.underScore > 0
+                const score = isOver ? factor.overScore : isUnder ? factor.underScore : 0
+                const direction = safePick.type === 'SPREAD'
+                  ? (isOver ? awayAbbr : isUnder ? homeAbbr : 'NEUTRAL')
+                  : (isOver ? 'OVER' : isUnder ? 'UNDER' : 'NEUTRAL')
 
                 return (
                   <div
                     key={factor.key}
-                    className="bg-slate-900/40 rounded-lg p-3 border border-slate-700/50 hover:border-slate-600 transition-all group"
+                    className="bg-gradient-to-br from-slate-700/80 to-slate-800/80 rounded-xl p-4 border border-slate-600/50 hover:border-slate-500/50 transition-all hover:scale-[1.02] relative"
                     onMouseEnter={() => setHoveredFactor(factor.key)}
                     onMouseLeave={() => setHoveredFactor(null)}
                   >
-                    <div className="flex items-center gap-3">
-                      {/* Icon */}
-                      <div className="text-xl flex-shrink-0 relative">
-                        <span title={tooltip}>{icon}</span>
-                        {hoveredFactor === factor.key && (
-                          <div className="absolute left-full ml-3 top-0 z-20 w-64 bg-slate-800 text-white text-xs p-3 rounded-lg shadow-xl border border-slate-600">
-                            {tooltip}
-                          </div>
-                        )}
+                    {/* Top driver badge */}
+                    {idx === 0 && (
+                      <div className="absolute -top-2 -right-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-amber-950">
+                        🏆 TOP
                       </div>
+                    )}
 
-                      {/* Factor Name */}
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-slate-600 to-slate-700 rounded-full flex items-center justify-center text-lg shadow-md border border-slate-500/50">
+                        {icon}
+                      </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-bold text-white">
-                          {shortName}
+                        <div className="font-bold text-white text-sm truncate">{shortName}</div>
+                        <div className={`text-xs ${isOver ? 'text-emerald-400' : isUnder ? 'text-red-400' : 'text-slate-400'}`}>
+                          {direction} {score > 0 ? `+${score.toFixed(1)}` : '0.0'}
                         </div>
                       </div>
-
-                      {/* Direction Label + Value - SPREAD shows team abbr, TOTAL shows OVER/UNDER */}
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className={`text-xs font-bold uppercase w-14 text-right ${isOver ? 'text-green-400' : isUnder ? 'text-red-400' : 'text-slate-500'}`}>
-                          {safePick.type === 'SPREAD'
-                            ? (isOver ? awayAbbr : isUnder ? homeAbbr : 'NEUTRAL')
-                            : (isOver ? 'OVER' : isUnder ? 'UNDER' : 'NEUTRAL')}
-                        </span>
-                        <span className={`text-sm font-mono font-bold w-10 ${isOver ? 'text-green-400' : isUnder ? 'text-red-400' : 'text-slate-500'}`}>
-                          {isOver ? `+${factor.overScore.toFixed(1)}` : isUnder ? `+${factor.underScore.toFixed(1)}` : '0.0'}
-                        </span>
-                      </div>
                     </div>
+
+                    {/* Score bar */}
+                    <div className="flex items-center justify-between bg-slate-900/50 rounded-lg px-3 py-2">
+                      <span className="text-slate-400 text-xs">Impact</span>
+                      <span className={`font-bold ${isOver ? 'text-emerald-400' : isUnder ? 'text-red-400' : 'text-slate-400'}`}>
+                        {score > 0 ? `+${score.toFixed(1)}` : '0.0'}
+                      </span>
+                    </div>
+
+                    {/* Tooltip on hover */}
+                    {hoveredFactor === factor.key && (
+                      <div className="absolute left-0 right-0 top-full mt-2 z-20 bg-slate-800 text-white text-xs p-3 rounded-lg shadow-xl border border-slate-600">
+                        {tooltip}
+                      </div>
+                    )}
                   </div>
                 )
               })}
