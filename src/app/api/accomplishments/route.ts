@@ -101,29 +101,53 @@ export async function GET(request: NextRequest) {
       })
     })
 
-    // 2. Fetch territory kings from territory-map API
-    const territoryRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/territory-map`)
-    if (territoryRes.ok) {
-      const territoryData = await territoryRes.json()
-      if (territoryData.success && territoryData.territories) {
-        territoryData.territories.forEach((t: any) => {
-          if (t.state === 'owned' && t.owner) {
-            const capper = t.owner.id?.toLowerCase() || t.owner.name?.toLowerCase()
-            const display = CAPPER_DISPLAY[capper] || { name: t.owner.name, icon: '🎯', color: 'from-gray-500 to-gray-600' }
-            const teamName = NBA_TEAM_NAMES[t.teamAbbr] || t.teamAbbr
-            accomplishments.push({
-              type: 'territory_king',
-              title: `${display.name} is the King`,
-              description: `of ${teamName} Territory`,
-              capper,
-              capperName: display.name,
-              icon: '👑',
-              color: display.color,
-              team: t.teamAbbr
-            })
-          }
-        })
-      }
+    // 2. Fetch territory kings - query directly instead of internal API call
+    try {
+      const { data: teamDominance } = await admin
+        .from('capper_team_stats')
+        .select('capper, team, wins, losses, pushes, net_units')
+        .gte('wins', 2) // At least 2 wins to own territory
+        .order('net_units', { ascending: false })
+
+      // Group by team, find best capper for each team (highest net_units with 2+ wins)
+      const teamOwners = new Map<string, { capper: string; wins: number; losses: number; netUnits: number }>()
+
+      teamDominance?.forEach((stat) => {
+        const team = stat.team?.toUpperCase()
+        if (!team) return
+
+        // Only take first (best) capper for each team
+        if (!teamOwners.has(team)) {
+          teamOwners.set(team, {
+            capper: stat.capper?.toLowerCase() || '',
+            wins: stat.wins || 0,
+            losses: stat.losses || 0,
+            netUnits: stat.net_units || 0
+          })
+        }
+      })
+
+      // Add territory king accomplishments
+      teamOwners.forEach((owner, team) => {
+        // Only show if they have a positive record
+        if (owner.wins > owner.losses && owner.netUnits > 0) {
+          const display = CAPPER_DISPLAY[owner.capper] || { name: owner.capper, icon: '🎯', color: 'from-gray-500 to-gray-600' }
+          const teamName = NBA_TEAM_NAMES[team] || team
+          accomplishments.push({
+            type: 'territory_king',
+            title: `${display.name} is the King`,
+            description: `of ${teamName} Territory`,
+            capper: owner.capper,
+            capperName: display.name,
+            icon: '👑',
+            color: display.color,
+            team: team
+          })
+        }
+      })
+    } catch (err) {
+      console.error('[Accomplishments] Failed to fetch territory data:', err)
+      // Continue without territory data
     }
 
     // 3. Check for milestone accomplishments (100+ units, 100+ picks, etc.)

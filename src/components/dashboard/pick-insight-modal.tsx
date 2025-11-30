@@ -1,7 +1,6 @@
 "use client"
 import { useEffect, useState } from 'react'
 import { InsightCard, InsightCardProps, getRarityFromConfidence } from '@/app/cappers/shiva/management/components/insight-card'
-import { X } from 'lucide-react'
 
 interface PickInsightModalProps {
   pickId: string
