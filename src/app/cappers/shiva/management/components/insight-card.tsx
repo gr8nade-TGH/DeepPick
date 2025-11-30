@@ -149,13 +149,25 @@ export interface InsightCardProps {
     }>
     overallAccuracy?: number
   }
+  // NEW: Tier grading inputs (for comprehensive tier calculation)
+  tierGradeInputs?: {
+    teamRecord?: { wins: number; losses: number; netUnits: number }
+    last7DaysRecord?: { wins: number; losses: number; netUnits: number }
+  }
+  // NEW: Pre-calculated tier (if already computed and stored)
+  computedTier?: {
+    tier: RarityTier
+    tierScore: number
+    bonuses: { units: number; teamRecord: number; hotStreak: number }
+  }
   onClose: () => void
 }
 
 // =====================================================
-// RARITY TIER SYSTEM (Diablo-style, based on confidence)
+// COMPREHENSIVE TIER GRADING SYSTEM
+// Factors in: Units risked, Team-specific record, 7-day record, Base confidence
 // =====================================================
-export type RarityTier = 'Common' | 'Uncommon' | 'Rare' | 'Epic' | 'Legendary'
+export type RarityTier = 'Common' | 'Uncommon' | 'Rare' | 'Epic' | 'Legendary' | 'Elite'
 
 export interface RarityStyle {
   tier: RarityTier
@@ -167,58 +179,200 @@ export interface RarityStyle {
   icon: string
 }
 
-export function getRarityFromConfidence(confidence: number): RarityStyle {
-  // confidence is typically 0-100
-  if (confidence >= 85) {
-    return {
-      tier: 'Legendary',
-      borderColor: '#FFD700',
-      bgGradient: 'from-amber-950 via-yellow-950/50 to-amber-950',
-      glowColor: 'rgba(255, 215, 0, 0.4)',
-      textColor: 'text-amber-300',
-      badgeBg: 'bg-gradient-to-r from-amber-500 to-yellow-500',
-      icon: '⭐'
+export interface TierGradeInput {
+  baseConfidence: number         // 0-100 base model confidence
+  unitsRisked: number            // Units on this pick
+  teamRecord?: {                 // Capper's record for this team (bet type specific)
+    wins: number
+    losses: number
+    netUnits: number
+  }
+  last7DaysRecord?: {            // Capper's overall 7-day record
+    wins: number
+    losses: number
+    netUnits: number
+  }
+}
+
+export interface TierGradeResult {
+  tier: RarityTier
+  tierScore: number              // 0-100 final score
+  bonuses: {
+    units: number                // Bonus from units risked
+    teamRecord: number           // Bonus from team-specific record
+    hotStreak: number            // Bonus from 7-day positive record
+  }
+}
+
+/**
+ * Calculate the tier grade for a pick based on multiple factors
+ * This is the new comprehensive grading system
+ */
+export function calculateTierGrade(input: TierGradeInput): TierGradeResult {
+  let tierScore = input.baseConfidence
+  const bonuses = { units: 0, teamRecord: 0, hotStreak: 0 }
+
+  // ===== UNITS BONUS (max +15 points) =====
+  // 5+ units = +5 points
+  // 10+ units = +10 points
+  // 20+ units = +15 points
+  if (input.unitsRisked >= 20) {
+    bonuses.units = 15
+  } else if (input.unitsRisked >= 10) {
+    bonuses.units = 10
+  } else if (input.unitsRisked >= 5) {
+    bonuses.units = 5
+  } else if (input.unitsRisked >= 3) {
+    bonuses.units = 2
+  }
+
+  // ===== TEAM-SPECIFIC RECORD BONUS (max +10 points) =====
+  // Positive netUnits on this team = +5 points
+  // Positive netUnits > 5u = +8 points
+  // Positive netUnits > 10u = +10 points
+  // Negative record = -5 points (penalty)
+  if (input.teamRecord) {
+    const { wins, losses, netUnits } = input.teamRecord
+    const totalPicks = wins + losses
+    if (totalPicks >= 3) { // Only count if they have 3+ picks on this team
+      if (netUnits > 10) {
+        bonuses.teamRecord = 10
+      } else if (netUnits > 5) {
+        bonuses.teamRecord = 8
+      } else if (netUnits > 0) {
+        bonuses.teamRecord = 5
+      } else if (netUnits < -5) {
+        bonuses.teamRecord = -5 // Penalty for bad record
+      }
     }
-  } else if (confidence >= 75) {
-    return {
-      tier: 'Epic',
-      borderColor: '#A855F7',
-      bgGradient: 'from-purple-950 via-violet-950/50 to-purple-950',
-      glowColor: 'rgba(168, 85, 247, 0.4)',
-      textColor: 'text-purple-300',
-      badgeBg: 'bg-gradient-to-r from-purple-500 to-violet-500',
-      icon: '💎'
+  }
+
+  // ===== 7-DAY HOT STREAK BONUS (max +10 points, REQUIRED for Elite) =====
+  // Positive 7-day netUnits = +5 points
+  // Positive 7-day netUnits > 5u = +10 points
+  if (input.last7DaysRecord) {
+    const { wins, losses, netUnits } = input.last7DaysRecord
+    const totalPicks = wins + losses
+    if (totalPicks >= 3) { // Only count if they have 3+ picks in last 7 days
+      if (netUnits > 5) {
+        bonuses.hotStreak = 10
+      } else if (netUnits > 0) {
+        bonuses.hotStreak = 5
+      } else if (netUnits < 0) {
+        bonuses.hotStreak = -3 // Small penalty for cold streak
+      }
     }
-  } else if (confidence >= 65) {
-    return {
-      tier: 'Rare',
-      borderColor: '#3B82F6',
-      bgGradient: 'from-blue-950 via-indigo-950/50 to-blue-950',
-      glowColor: 'rgba(59, 130, 246, 0.35)',
-      textColor: 'text-blue-300',
-      badgeBg: 'bg-gradient-to-r from-blue-500 to-indigo-500',
-      icon: '🔷'
-    }
-  } else if (confidence >= 55) {
-    return {
-      tier: 'Uncommon',
-      borderColor: '#22C55E',
-      bgGradient: 'from-green-950 via-emerald-950/50 to-green-950',
-      glowColor: 'rgba(34, 197, 94, 0.3)',
-      textColor: 'text-green-300',
-      badgeBg: 'bg-gradient-to-r from-green-500 to-emerald-500',
-      icon: '✦'
-    }
+  }
+
+  // Calculate final score (capped at 100)
+  tierScore = Math.min(100, Math.max(0, tierScore + bonuses.units + bonuses.teamRecord + bonuses.hotStreak))
+
+  // Determine tier based on final score
+  // ELITE requires: score >= 90 AND positive 7-day record AND units >= 5
+  const canBeElite = bonuses.hotStreak > 0 && input.unitsRisked >= 5
+
+  let tier: RarityTier
+  if (tierScore >= 90 && canBeElite) {
+    tier = 'Elite'
+  } else if (tierScore >= 85) {
+    tier = 'Legendary'
+  } else if (tierScore >= 75) {
+    tier = 'Epic'
+  } else if (tierScore >= 65) {
+    tier = 'Rare'
+  } else if (tierScore >= 55) {
+    tier = 'Uncommon'
   } else {
-    return {
-      tier: 'Common',
-      borderColor: '#6B7280',
-      bgGradient: 'from-slate-900 via-gray-900/50 to-slate-900',
-      glowColor: 'rgba(107, 114, 128, 0.2)',
-      textColor: 'text-slate-300',
-      badgeBg: 'bg-gradient-to-r from-slate-500 to-gray-500',
-      icon: '◆'
-    }
+    tier = 'Common'
+  }
+
+  return { tier, tierScore, bonuses }
+}
+
+/**
+ * Get the visual styling for a tier
+ */
+export function getRarityStyleFromTier(tier: RarityTier): RarityStyle {
+  switch (tier) {
+    case 'Elite':
+      return {
+        tier: 'Elite',
+        borderColor: '#FF4500', // Fiery orange-red
+        bgGradient: 'from-red-950 via-orange-950/50 to-red-950',
+        glowColor: 'rgba(255, 69, 0, 0.5)',
+        textColor: 'text-orange-300',
+        badgeBg: 'bg-gradient-to-r from-red-500 to-orange-500',
+        icon: '🔥'
+      }
+    case 'Legendary':
+      return {
+        tier: 'Legendary',
+        borderColor: '#FFD700',
+        bgGradient: 'from-amber-950 via-yellow-950/50 to-amber-950',
+        glowColor: 'rgba(255, 215, 0, 0.4)',
+        textColor: 'text-amber-300',
+        badgeBg: 'bg-gradient-to-r from-amber-500 to-yellow-500',
+        icon: '⭐'
+      }
+    case 'Epic':
+      return {
+        tier: 'Epic',
+        borderColor: '#A855F7',
+        bgGradient: 'from-purple-950 via-violet-950/50 to-purple-950',
+        glowColor: 'rgba(168, 85, 247, 0.4)',
+        textColor: 'text-purple-300',
+        badgeBg: 'bg-gradient-to-r from-purple-500 to-violet-500',
+        icon: '💎'
+      }
+    case 'Rare':
+      return {
+        tier: 'Rare',
+        borderColor: '#3B82F6',
+        bgGradient: 'from-blue-950 via-indigo-950/50 to-blue-950',
+        glowColor: 'rgba(59, 130, 246, 0.35)',
+        textColor: 'text-blue-300',
+        badgeBg: 'bg-gradient-to-r from-blue-500 to-indigo-500',
+        icon: '🔷'
+      }
+    case 'Uncommon':
+      return {
+        tier: 'Uncommon',
+        borderColor: '#22C55E',
+        bgGradient: 'from-green-950 via-emerald-950/50 to-green-950',
+        glowColor: 'rgba(34, 197, 94, 0.3)',
+        textColor: 'text-green-300',
+        badgeBg: 'bg-gradient-to-r from-green-500 to-emerald-500',
+        icon: '✦'
+      }
+    default:
+      return {
+        tier: 'Common',
+        borderColor: '#6B7280',
+        bgGradient: 'from-slate-900 via-gray-900/50 to-slate-900',
+        glowColor: 'rgba(107, 114, 128, 0.2)',
+        textColor: 'text-slate-300',
+        badgeBg: 'bg-gradient-to-r from-slate-500 to-gray-500',
+        icon: '◆'
+      }
+  }
+}
+
+/**
+ * Legacy function for backward compatibility
+ * Use calculateTierGrade() for new implementations
+ */
+export function getRarityFromConfidence(confidence: number): RarityStyle {
+  // Simple confidence-only grading (legacy)
+  if (confidence >= 85) {
+    return getRarityStyleFromTier('Legendary')
+  } else if (confidence >= 75) {
+    return getRarityStyleFromTier('Epic')
+  } else if (confidence >= 65) {
+    return getRarityStyleFromTier('Rare')
+  } else if (confidence >= 55) {
+    return getRarityStyleFromTier('Uncommon')
+  } else {
+    return getRarityStyleFromTier('Common')
   }
 }
 
@@ -608,8 +762,16 @@ export function InsightCard(props: InsightCardProps) {
     confidence: Number(props.pick?.confidence ?? 0),
   }
 
-  // Get rarity based on confidence (Diablo-style tiers)
-  const rarity = getRarityFromConfidence(safePick.confidence)
+  // Calculate comprehensive tier grade (or use pre-computed if available)
+  const tierGradeResult = props.computedTier || calculateTierGrade({
+    baseConfidence: safePick.confidence,
+    unitsRisked: safePick.units,
+    teamRecord: props.tierGradeInputs?.teamRecord,
+    last7DaysRecord: props.tierGradeInputs?.last7DaysRecord
+  })
+
+  // Get rarity styling from calculated tier
+  const rarity = getRarityStyleFromTier(tierGradeResult.tier)
 
   const safePredictedScore = {
     away: Number(props.predictedScore?.away ?? 0),
@@ -691,14 +853,25 @@ export function InsightCard(props: InsightCardProps) {
                     {capperName}
                   </h1>
                   <span className={`text-[9px] font-bold px-2 py-0.5 rounded ${rarity.badgeBg} text-white`}>
-                    {rarity.tier.toUpperCase()}
+                    {rarity.icon} {rarity.tier.toUpperCase()}
                   </span>
                 </div>
-                {/* Subtitle */}
-                <div className="text-slate-400 text-xs font-medium flex items-center gap-1">
+                {/* Subtitle with tier score breakdown */}
+                <div className="text-slate-400 text-xs font-medium flex items-center gap-1 flex-wrap">
                   <span>{isManualPick ? 'Human Capper' : 'AI Generated'}</span>
                   <span className="text-slate-600">•</span>
-                  <span className={rarity.textColor}>{rarity.icon} Sharp Score {safePick.confidence.toFixed(0)}</span>
+                  <span className={rarity.textColor}>Sharp Score {tierGradeResult.tierScore.toFixed(0)}</span>
+                  {/* Show bonuses if any */}
+                  {(tierGradeResult.bonuses.units > 0 || tierGradeResult.bonuses.teamRecord !== 0 || tierGradeResult.bonuses.hotStreak !== 0) && (
+                    <span className="text-slate-500 text-[10px]">
+                      ({safePick.confidence.toFixed(0)} base
+                      {tierGradeResult.bonuses.units > 0 && <span className="text-green-400"> +{tierGradeResult.bonuses.units}u</span>}
+                      {tierGradeResult.bonuses.teamRecord > 0 && <span className="text-blue-400"> +{tierGradeResult.bonuses.teamRecord}team</span>}
+                      {tierGradeResult.bonuses.teamRecord < 0 && <span className="text-red-400"> {tierGradeResult.bonuses.teamRecord}team</span>}
+                      {tierGradeResult.bonuses.hotStreak > 0 && <span className="text-amber-400"> +{tierGradeResult.bonuses.hotStreak}hot</span>}
+                      {tierGradeResult.bonuses.hotStreak < 0 && <span className="text-red-400"> {tierGradeResult.bonuses.hotStreak}cold</span>})
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -951,17 +1124,58 @@ export function InsightCard(props: InsightCardProps) {
           </div>
         )}
 
-        {/* ===== KEY FACTORS - PICKSMITH GRID STYLE (AI picks only) ===== */}
+        {/* ===== CONFIDENCE BREAKDOWN - Market Stats (AI picks only) ===== */}
+        {!isManualPick && (
+          <div className="p-4 bg-slate-800" style={{ borderBottom: `1px solid ${rarity.borderColor}20` }}>
+            <div className={`text-xs font-bold ${rarity.textColor} uppercase mb-3 flex items-center gap-2`}>
+              <span>📊</span>
+              <span>Confidence Breakdown</span>
+            </div>
+            <div className="grid grid-cols-4 gap-2 text-center">
+              <div className="bg-slate-900/60 rounded-lg p-2 border border-slate-700/50">
+                <div className="text-[10px] text-slate-400 uppercase mb-1 font-semibold">CONF7</div>
+                <div className="text-lg font-mono font-bold text-white">{safeMarket.conf7.toFixed(2)}</div>
+              </div>
+              <div className="bg-slate-900/60 rounded-lg p-2 border border-slate-700/50">
+                <div className="text-[10px] text-slate-400 uppercase mb-1 font-semibold">MARKET ADJ</div>
+                <div className={`text-lg font-mono font-bold ${safeMarket.confAdj > 0 ? 'text-green-400' : safeMarket.confAdj < 0 ? 'text-red-400' : 'text-slate-400'}`}>
+                  {safeMarket.confAdj > 0 ? '+' : ''}{safeMarket.confAdj.toFixed(2)}
+                </div>
+              </div>
+              <div className="rounded-lg p-2" style={{ background: `linear-gradient(135deg, ${rarity.borderColor}20, ${rarity.borderColor}10)`, border: `2px solid ${rarity.borderColor}60` }}>
+                <div className={`text-[10px] ${rarity.textColor} uppercase mb-1 font-bold`}>CONF FINAL</div>
+                <div className="text-lg font-mono font-bold text-white">
+                  {safeMarket.confFinal.toFixed(2)}
+                </div>
+              </div>
+              <div className="bg-slate-900/60 rounded-lg p-2 border border-slate-700/50">
+                <div className="text-[10px] text-slate-400 uppercase mb-1 font-semibold">DOMINANT</div>
+                <div className="text-sm font-bold text-white truncate">
+                  {safePick.selection}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===== ALL FACTORS - Complete List (AI picks only) ===== */}
         {!isManualPick && (
           <div className="p-5 bg-gradient-to-br from-slate-800 to-slate-900" style={{ borderBottom: `1px solid ${rarity.borderColor}20` }}>
-            <div className={`text-xs font-bold ${rarity.textColor} uppercase mb-4 flex items-center gap-2`}>
-              <span>🎯</span>
-              <span>Key Factors</span>
+            <div className="flex items-center justify-between mb-4">
+              <div className={`text-xs font-bold ${rarity.textColor} uppercase flex items-center gap-2`}>
+                <span>🎯</span>
+                <span>All Edge Factors ({sortedFactors.length})</span>
+              </div>
+              {sortedFactors.length > 0 && (
+                <div className="text-[10px] px-2 py-1 bg-amber-500/20 text-amber-400 rounded border border-amber-500/30 font-semibold">
+                  🏆 {sortedFactors[0].label}
+                </div>
+              )}
             </div>
 
-            {/* Factors Grid - PICKSMITH style */}
+            {/* All Factors Grid */}
             <div className="grid grid-cols-2 gap-3">
-              {sortedFactors.slice(0, 4).map((factor, idx) => {
+              {sortedFactors.map((factor, idx) => {
                 const factorMeta = getFactorMeta(factor.key)
                 const icon = factorMeta?.icon || 'ℹ️'
                 const shortName = factorMeta?.shortName || factor.label || factor.key
@@ -977,7 +1191,7 @@ export function InsightCard(props: InsightCardProps) {
                 return (
                   <div
                     key={factor.key}
-                    className="bg-gradient-to-br from-slate-700/80 to-slate-800/80 rounded-xl p-4 border border-slate-600/50 hover:border-slate-500/50 transition-all hover:scale-[1.02] relative"
+                    className="bg-gradient-to-br from-slate-700/80 to-slate-800/80 rounded-xl p-3 border border-slate-600/50 hover:border-slate-500/50 transition-all hover:scale-[1.02] relative"
                     onMouseEnter={() => setHoveredFactor(factor.key)}
                     onMouseLeave={() => setHoveredFactor(null)}
                   >
@@ -988,24 +1202,16 @@ export function InsightCard(props: InsightCardProps) {
                       </div>
                     )}
 
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-slate-600 to-slate-700 rounded-full flex items-center justify-center text-lg shadow-md border border-slate-500/50">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-gradient-to-br from-slate-600 to-slate-700 rounded-full flex items-center justify-center text-sm shadow-md border border-slate-500/50 flex-shrink-0">
                         {icon}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-bold text-white text-sm truncate">{shortName}</div>
-                        <div className={`text-xs ${isOver ? 'text-emerald-400' : isUnder ? 'text-red-400' : 'text-slate-400'}`}>
+                        <div className="font-bold text-white text-xs truncate">{shortName}</div>
+                        <div className={`text-[10px] ${isOver ? 'text-emerald-400' : isUnder ? 'text-red-400' : 'text-slate-400'}`}>
                           {direction} {score > 0 ? `+${score.toFixed(1)}` : '0.0'}
                         </div>
                       </div>
-                    </div>
-
-                    {/* Score bar */}
-                    <div className="flex items-center justify-between bg-slate-900/50 rounded-lg px-3 py-2">
-                      <span className="text-slate-400 text-xs">Impact</span>
-                      <span className={`font-bold ${isOver ? 'text-emerald-400' : isUnder ? 'text-red-400' : 'text-slate-400'}`}>
-                        {score > 0 ? `+${score.toFixed(1)}` : '0.0'}
-                      </span>
                     </div>
 
                     {/* Tooltip on hover */}
@@ -1150,103 +1356,6 @@ export function InsightCard(props: InsightCardProps) {
                 </div>
               </div>
             )}
-
-            {/* ALL Confidence Factors - Detailed */}
-            <div className="p-4" style={{ background: 'rgba(15,15,25,0.9)', borderBottom: `1px solid ${rarity.borderColor}15` }}>
-              <div className="flex items-center justify-between mb-4">
-                <div className={`text-xs font-bold ${rarity.textColor} flex items-center gap-2 uppercase tracking-wider`}>
-                  <span>◆</span>
-                  <span>All Edge Factors</span>
-                </div>
-                {sortedFactors.length > 0 && (
-                  <div className="text-[10px] px-2 py-1 bg-slate-800/80 text-slate-300 rounded border border-slate-600/50 font-semibold">
-                    🏆 {sortedFactors[0].label}
-                  </div>
-                )}
-              </div>
-
-              {/* Factor Rows - Compact */}
-              <div className="space-y-2">
-                {sortedFactors.map((factor) => {
-                  const factorMeta = getFactorMeta(factor.key)
-                  const icon = factorMeta?.icon || 'ℹ️'
-                  const shortName = factorMeta?.shortName || factor.label || factor.key
-                  const tooltip = factorMeta?.description || factor.rationale || 'Factor'
-
-                  const netContribution = (factor.overScore || 0) - (factor.underScore || 0)
-                  const isOver = factor.overScore > 0
-                  const isUnder = factor.underScore > 0
-
-                  return (
-                    <div
-                      key={factor.key}
-                      className="bg-slate-900/40 rounded-lg p-3 border border-slate-700/50 hover:border-slate-600 transition-all group"
-                      onMouseEnter={() => setHoveredFactor(factor.key)}
-                      onMouseLeave={() => setHoveredFactor(null)}
-                    >
-                      <div className="flex items-center gap-3">
-                        {/* Icon */}
-                        <div className="text-xl flex-shrink-0 relative">
-                          <span title={tooltip}>{icon}</span>
-                          {hoveredFactor === factor.key && (
-                            <div className="absolute left-full ml-3 top-0 z-20 w-64 bg-slate-800 text-white text-xs p-3 rounded-lg shadow-xl border border-slate-600">
-                              {tooltip}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Factor Name */}
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-bold text-white">
-                            {shortName}
-                          </div>
-                        </div>
-
-                        {/* Direction Label + Value - SPREAD shows team abbr, TOTAL shows OVER/UNDER */}
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <span className={`text-xs font-bold uppercase w-14 text-right ${isOver ? 'text-green-400' : isUnder ? 'text-red-400' : 'text-slate-500'}`}>
-                            {safePick.type === 'SPREAD'
-                              ? (isOver ? awayAbbr : isUnder ? homeAbbr : 'NEUTRAL')
-                              : (isOver ? 'OVER' : isUnder ? 'UNDER' : 'NEUTRAL')}
-                          </span>
-                          <span className={`text-sm font-mono font-bold w-10 ${isOver ? 'text-green-400' : isUnder ? 'text-red-400' : 'text-slate-500'}`}>
-                            {isOver ? `+${factor.overScore.toFixed(1)}` : isUnder ? `+${factor.underScore.toFixed(1)}` : '0.0'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* Market Summary - Compact */}
-            <div className="p-4 bg-slate-800 border-b border-slate-700">
-              <div className="grid grid-cols-4 gap-2 text-center">
-                <div className="bg-slate-900/60 rounded-lg p-2 border border-slate-700/50">
-                  <div className="text-[10px] text-slate-400 uppercase mb-1 font-semibold">CONF7</div>
-                  <div className="text-lg font-mono font-bold text-white">{safeMarket.conf7.toFixed(2)}</div>
-                </div>
-                <div className="bg-slate-900/60 rounded-lg p-2 border border-slate-700/50">
-                  <div className="text-[10px] text-slate-400 uppercase mb-1 font-semibold">MARKET ADJ</div>
-                  <div className={`text-lg font-mono font-bold ${safeMarket.confAdj > 0 ? 'text-green-400' : safeMarket.confAdj < 0 ? 'text-red-400' : 'text-slate-400'}`}>
-                    {safeMarket.confAdj > 0 ? '+' : ''}{safeMarket.confAdj.toFixed(2)}
-                  </div>
-                </div>
-                <div className="rounded-lg p-2" style={{ background: `linear-gradient(135deg, ${rarity.borderColor}20, ${rarity.borderColor}10)`, border: `2px solid ${rarity.borderColor}60` }}>
-                  <div className={`text-[10px] ${rarity.textColor} uppercase mb-1 font-bold`}>CONF FINAL</div>
-                  <div className="text-lg font-mono font-bold text-white">
-                    {safeMarket.confFinal.toFixed(2)}
-                  </div>
-                </div>
-                <div className="bg-slate-900/60 rounded-lg p-2 border border-slate-700/50">
-                  <div className="text-[10px] text-slate-400 uppercase mb-1 font-semibold">DOMINANT</div>
-                  <div className="text-sm font-bold text-white">
-                    {safePick.type === 'TOTAL' ? (safePick.selection?.includes('OVER') ? 'OVER' : 'UNDER') : safeMarket.dominant.toUpperCase()}
-                  </div>
-                </div>
-              </div>
-            </div>
 
             {/* Edge Bar - Compact */}
             {props.pick.edgeRaw !== undefined && props.pick.edgePct !== undefined && (
