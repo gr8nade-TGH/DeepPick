@@ -52,6 +52,41 @@ const FEATURED_CAPPERS: Record<string, { color: string; gradient: string; icon?:
     'PICKSMITH': { color: 'bg-amber-500', gradient: 'from-amber-500 to-orange-600', icon: '⚒️' },
 }
 
+// NBA Team name to abbreviation map (for normalizing selections)
+const NBA_TEAM_MAP: Record<string, string> = {
+    // Full names -> abbreviations
+    'ATLANTA HAWKS': 'ATL', 'HAWKS': 'ATL', 'ATLANTA': 'ATL',
+    'BOSTON CELTICS': 'BOS', 'CELTICS': 'BOS', 'BOSTON': 'BOS',
+    'BROOKLYN NETS': 'BKN', 'NETS': 'BKN', 'BROOKLYN': 'BKN',
+    'CHARLOTTE HORNETS': 'CHA', 'HORNETS': 'CHA', 'CHARLOTTE': 'CHA',
+    'CHICAGO BULLS': 'CHI', 'BULLS': 'CHI', 'CHICAGO': 'CHI',
+    'CLEVELAND CAVALIERS': 'CLE', 'CAVALIERS': 'CLE', 'CAVS': 'CLE', 'CLEVELAND': 'CLE',
+    'DALLAS MAVERICKS': 'DAL', 'MAVERICKS': 'DAL', 'MAVS': 'DAL', 'DALLAS': 'DAL',
+    'DENVER NUGGETS': 'DEN', 'NUGGETS': 'DEN', 'DENVER': 'DEN',
+    'DETROIT PISTONS': 'DET', 'PISTONS': 'DET', 'DETROIT': 'DET',
+    'GOLDEN STATE WARRIORS': 'GSW', 'WARRIORS': 'GSW', 'GOLDEN STATE': 'GSW',
+    'HOUSTON ROCKETS': 'HOU', 'ROCKETS': 'HOU', 'HOUSTON': 'HOU',
+    'INDIANA PACERS': 'IND', 'PACERS': 'IND', 'INDIANA': 'IND',
+    'LOS ANGELES CLIPPERS': 'LAC', 'CLIPPERS': 'LAC', 'LA CLIPPERS': 'LAC',
+    'LOS ANGELES LAKERS': 'LAL', 'LAKERS': 'LAL', 'LA LAKERS': 'LAL',
+    'MEMPHIS GRIZZLIES': 'MEM', 'GRIZZLIES': 'MEM', 'MEMPHIS': 'MEM',
+    'MIAMI HEAT': 'MIA', 'HEAT': 'MIA', 'MIAMI': 'MIA',
+    'MILWAUKEE BUCKS': 'MIL', 'BUCKS': 'MIL', 'MILWAUKEE': 'MIL',
+    'MINNESOTA TIMBERWOLVES': 'MIN', 'TIMBERWOLVES': 'MIN', 'WOLVES': 'MIN', 'MINNESOTA': 'MIN',
+    'NEW ORLEANS PELICANS': 'NOP', 'PELICANS': 'NOP', 'NEW ORLEANS': 'NOP',
+    'NEW YORK KNICKS': 'NYK', 'KNICKS': 'NYK', 'NEW YORK': 'NYK',
+    'OKLAHOMA CITY THUNDER': 'OKC', 'THUNDER': 'OKC', 'OKLAHOMA CITY': 'OKC', 'OKLAHOMA': 'OKC',
+    'ORLANDO MAGIC': 'ORL', 'MAGIC': 'ORL', 'ORLANDO': 'ORL',
+    'PHILADELPHIA 76ERS': 'PHI', '76ERS': 'PHI', 'SIXERS': 'PHI', 'PHILADELPHIA': 'PHI',
+    'PHOENIX SUNS': 'PHX', 'SUNS': 'PHX', 'PHOENIX': 'PHX',
+    'PORTLAND TRAIL BLAZERS': 'POR', 'TRAIL BLAZERS': 'POR', 'BLAZERS': 'POR', 'PORTLAND': 'POR',
+    'SACRAMENTO KINGS': 'SAC', 'KINGS': 'SAC', 'SACRAMENTO': 'SAC',
+    'SAN ANTONIO SPURS': 'SAS', 'SPURS': 'SAS', 'SAN ANTONIO': 'SAS',
+    'TORONTO RAPTORS': 'TOR', 'RAPTORS': 'TOR', 'TORONTO': 'TOR',
+    'UTAH JAZZ': 'UTA', 'JAZZ': 'UTA', 'UTAH': 'UTA',
+    'WASHINGTON WIZARDS': 'WAS', 'WIZARDS': 'WAS', 'WASHINGTON': 'WAS',
+}
+
 // Color palette for dynamic capper colors (vibrant, distinguishable)
 const COLOR_PALETTE = [
     { bg: 'bg-rose-500', gradient: 'from-rose-500 to-pink-600' },
@@ -219,9 +254,51 @@ function buildGameRows(picks: Pick[]): GameRow[] {
         const totalPicks = data.picks.filter(p => p.pick_type?.toUpperCase() === 'TOTAL')
         const mlPicks = data.picks.filter(p => p.pick_type?.toUpperCase() === 'MONEYLINE')
 
-        // Normalize selection for grouping (handle case differences, extra spaces)
+        // Normalize team name to 3-letter abbreviation
+        const normalizeTeamName = (name: string): string => {
+            const upper = name.toUpperCase().trim()
+            // Check if already an abbreviation (3 letters)
+            if (upper.length <= 3) return upper
+            // Look up in team map
+            return NBA_TEAM_MAP[upper] || upper
+        }
+
+        // Normalize selection for grouping (convert team names to abbreviations)
         const normalizeSelection = (sel: string): string => {
-            return sel.trim().toUpperCase()
+            const upper = sel.trim().toUpperCase()
+            // Handle OVER/UNDER totals - normalize direction
+            const totalMatch = upper.match(/^(OVER|UNDER|O|U)\s*([\d.]+)/i)
+            if (totalMatch) {
+                const dir = (totalMatch[1] === 'O' || totalMatch[1] === 'OVER') ? 'OVER' : 'UNDER'
+                return `${dir} ${totalMatch[2]}`
+            }
+            // Handle spreads like "DENVER +6.5" or "DEN +6.5"
+            const spreadMatch = upper.match(/^(.+?)\s*([-+][\d.]+)$/)
+            if (spreadMatch) {
+                const teamName = normalizeTeamName(spreadMatch[1])
+                return `${teamName} ${spreadMatch[2]}`
+            }
+            // Handle moneyline - just normalize team name
+            return normalizeTeamName(upper)
+        }
+
+        // Format selection for display (convert to abbreviations)
+        const formatSelectionForDisplay = (sel: string): string => {
+            const upper = sel.trim().toUpperCase()
+            // Handle OVER/UNDER totals
+            const totalMatch = upper.match(/^(OVER|UNDER|O|U)\s*([\d.]+)/i)
+            if (totalMatch) {
+                const dir = (totalMatch[1] === 'O' || totalMatch[1] === 'OVER') ? 'Over' : 'Under'
+                return `${dir} ${totalMatch[2]}`
+            }
+            // Handle spreads like "DENVER +6.5" or "DEN +6.5"
+            const spreadMatch = upper.match(/^(.+?)\s*([-+][\d.]+)$/)
+            if (spreadMatch) {
+                const teamName = normalizeTeamName(spreadMatch[1])
+                return `${teamName} ${spreadMatch[2]}`
+            }
+            // Handle moneyline - just normalize team name
+            return normalizeTeamName(upper)
         }
 
         // Build cell with sides grouped by selection
@@ -237,7 +314,7 @@ function buildGameRows(picks: Pick[]): GameRow[] {
                 }
                 sideMap.get(key)!.push({
                     capper: p.capper || 'Unknown',
-                    selection: p.selection, // Keep original formatting
+                    selection: formatSelectionForDisplay(p.selection), // Normalize for display
                     units: p.units,
                     confidence: p.confidence || 0,
                     pickId: p.id
@@ -247,7 +324,7 @@ function buildGameRows(picks: Pick[]): GameRow[] {
             // Convert to sides array, sorted by count (most picks first)
             const sides: SideData[] = Array.from(sideMap.entries())
                 .map(([key, picks]) => ({
-                    selection: picks[0].selection, // Use first pick's formatting
+                    selection: picks[0].selection, // Already formatted
                     picks,
                     avgUnits: picks.reduce((s, p) => s + p.units, 0) / picks.length,
                     heatLevel: Math.min(5, picks.length)
@@ -339,10 +416,12 @@ function CapperBadge({
                 {config.icon || config.initials}
             </span>
 
-            {/* Hover Card */}
+            {/* Hover Card - shows BELOW to prevent cutoff at top of cells */}
             {showHover && (
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover/badge:opacity-100 pointer-events-none z-50 transition-all duration-200 scale-95 group-hover/badge:scale-100">
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 opacity-0 group-hover/badge:opacity-100 pointer-events-none z-[100] transition-all duration-200 scale-95 group-hover/badge:scale-100">
                     <div className={`bg-gradient-to-br ${config.gradient} rounded-lg px-3 py-2 shadow-xl border border-white/20 min-w-[120px]`}>
+                        {/* Arrow pointing up */}
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-white/20"></div>
                         <div className="text-white font-bold text-xs mb-1 text-center truncate max-w-[100px]">{capper}</div>
                         {stats ? (
                             <div className="space-y-0.5">
@@ -364,10 +443,8 @@ function CapperBadge({
                                 </div>
                             </div>
                         ) : (
-                            <div className="text-[10px] text-white/60 text-center">Loading...</div>
+                            <div className="text-[10px] text-white/60 text-center">No stats</div>
                         )}
-                        {/* Arrow */}
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-white/20"></div>
                     </div>
                 </div>
             )}
@@ -416,17 +493,8 @@ function PickCell({
         )
     }
 
-    // Format the selection nicely
-    const formatSelection = (sel: string) => {
-        const totalMatch = sel.match(/^(OVER|UNDER|O|U)\s*([\d.]+)/i)
-        if (totalMatch) {
-            const direction = totalMatch[1].toUpperCase()
-            const number = totalMatch[2]
-            const fullDirection = (direction === 'O' || direction === 'OVER') ? 'Over' : 'Under'
-            return `${fullDirection} ${number}`
-        }
-        return sel
-    }
+    // Selection is already normalized in buildGameRows, just return it
+    const formatSelection = (sel: string) => sel
 
     // Calculate combined record for cappers on a side
     const getCombinedRecord = (sideCappers: PickData[]) => {
@@ -600,13 +668,25 @@ export function PickGrid() {
 
     async function fetchCapperStats() {
         try {
-            const response = await fetch('/api/leaderboard')
+            const response = await fetch('/api/leaderboard?period=all')
             const data = await response.json()
             if (data.success && data.data) {
                 const statsMap: Record<string, CapperStats> = {}
-                data.data.forEach((capper: CapperStats) => {
-                    statsMap[capper.capper.toUpperCase()] = capper
+                data.data.forEach((entry: any) => {
+                    // API returns 'id' and 'name', map to CapperStats format
+                    const capperId = (entry.id || entry.capper || '').toUpperCase()
+                    statsMap[capperId] = {
+                        capper: capperId,
+                        display_name: entry.name || entry.display_name || capperId,
+                        wins: entry.wins || 0,
+                        losses: entry.losses || 0,
+                        pushes: entry.pushes || 0,
+                        net_units: entry.netUnits ?? entry.net_units ?? 0,
+                        roi: entry.roi || 0,
+                        win_rate: entry.winRate ?? entry.win_rate ?? 0
+                    }
                 })
+                console.log('[PickGrid] Loaded capper stats:', Object.keys(statsMap))
                 setCapperStats(statsMap)
             }
         } catch (error) {
