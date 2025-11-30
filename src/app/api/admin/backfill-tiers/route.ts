@@ -69,7 +69,19 @@ function calculateTierGrade(input: TierGradeInput): TierGradeResult {
  * since we didn't capture that data at pick generation time.
  */
 export async function POST() {
-  const supabase = getSupabaseAdmin()
+  console.log('[Backfill] Starting backfill...')
+
+  let supabase
+  try {
+    supabase = getSupabaseAdmin()
+    console.log('[Backfill] Supabase client created')
+  } catch (err) {
+    console.error('[Backfill] Failed to create Supabase client:', err)
+    return NextResponse.json({
+      success: false,
+      error: `Supabase init failed: ${err instanceof Error ? err.message : String(err)}`
+    }, { status: 500 })
+  }
 
   // Get all picks that don't have tier_grade
   const { data: picks, error } = await supabase
@@ -182,7 +194,8 @@ export async function POST() {
     total: picksToBackfill.length,
     updated,
     failed,
-    firstError
+    firstError,
+    version: 'v2-inline'
   })
 }
 
