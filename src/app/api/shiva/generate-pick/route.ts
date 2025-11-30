@@ -5,7 +5,7 @@ import { generateProfessionalAnalysis } from '@/lib/cappers/professional-analysi
 import { generateBoldPredictions } from '@/lib/cappers/bold-predictions-generator'
 import { validateSpreadDirection } from '@/lib/cappers/pick-validation'
 import { isSystemCapper } from '@/lib/cappers/system-cappers'
-import { calculateTierGrade, TierGradeInput, TierGradeResult } from '@/app/cappers/shiva/management/components/insight-card'
+import { calculateTierGrade, TierGradeInput } from '@/lib/tier-grading'
 
 /**
  * Fetch capper's team-specific record and 7-day record for tier calculation

@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useState } from 'react'
-import { InsightCard, InsightCardProps, getRarityFromConfidence } from '@/app/cappers/shiva/management/components/insight-card'
+import { InsightCard, InsightCardProps } from '@/app/cappers/shiva/management/components/insight-card'
 
 interface PickInsightModalProps {
   pickId: string
@@ -51,9 +51,6 @@ export function PickInsightModal({ pickId, capper, onClose }: PickInsightModalPr
 
     fetchInsightCard()
   }, [pickId, capper])
-
-  // Get rarity for loading/error states (confidence is nested inside pick object)
-  const rarity = getRarityFromConfidence(insightData?.pick?.confidence || 65)
 
   return (
     <>

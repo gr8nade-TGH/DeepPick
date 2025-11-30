@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
-import { calculateTierGrade } from '@/app/cappers/shiva/management/components/insight-card'
+import { calculateTierGrade } from '@/lib/tier-grading'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
