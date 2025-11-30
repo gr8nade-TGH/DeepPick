@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useState } from 'react'
-import { InsightCard, InsightCardProps } from '@/app/cappers/shiva/management/components/insight-card'
+import { InsightCard, InsightCardProps, getRarityFromConfidence } from '@/app/cappers/shiva/management/components/insight-card'
 import { X } from 'lucide-react'
 
 interface PickInsightModalProps {
@@ -51,51 +51,59 @@ export function PickInsightModal({ pickId, capper, onClose }: PickInsightModalPr
     }
 
     fetchInsightCard()
-  }, [pickId])
+  }, [pickId, capper])
+
+  // Get rarity for loading/error states
+  const rarity = getRarityFromConfidence(insightData?.confidence || 65)
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-lg shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto relative">
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 z-50 bg-red-600 text-white p-2 rounded-full hover:bg-red-700 transition-colors shadow-lg"
-          title="Close"
-        >
-          <X className="w-6 h-6" />
-        </button>
-
-        {/* Loading State */}
-        {loading && (
-          <div className="p-12 text-center">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mb-4"></div>
-            <p className="text-gray-600 font-semibold">Loading insight card...</p>
+    <>
+      {/* Loading State - Diablo style */}
+      {loading && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div
+            className="rounded-lg p-8 text-center"
+            style={{
+              background: 'linear-gradient(135deg, rgba(15,15,25,0.98) 0%, rgba(10,10,18,0.99) 100%)',
+              border: '2px solid #3B82F6',
+              boxShadow: '0 0 30px rgba(59, 130, 246, 0.3)'
+            }}
+          >
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mb-4"></div>
+            <p className="text-slate-300 font-semibold">Loading insight card...</p>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Error State */}
-        {error && !loading && (
-          <div className="p-12 text-center">
-            <div className="text-red-600 text-6xl mb-4">⚠️</div>
-            <h3 className="text-xl font-bold text-gray-800 mb-2">Failed to Load Insight Card</h3>
-            <p className="text-gray-600 mb-4">{error}</p>
+      {/* Error State - Diablo style */}
+      {error && !loading && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div
+            className="rounded-lg p-8 text-center max-w-md"
+            style={{
+              background: 'linear-gradient(135deg, rgba(25,15,15,0.98) 0%, rgba(18,10,10,0.99) 100%)',
+              border: '2px solid #EF4444',
+              boxShadow: '0 0 30px rgba(239, 68, 68, 0.3)'
+            }}
+          >
+            <div className="text-5xl mb-4">⚠️</div>
+            <h3 className="text-xl font-bold text-red-400 mb-2">Failed to Load</h3>
+            <p className="text-slate-400 mb-4 text-sm">{error}</p>
             <button
               onClick={onClose}
-              className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-bold"
             >
               Close
             </button>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Insight Card */}
-        {insightData && !loading && !error && (
-          <div className="mt-16">
-            <InsightCard {...insightData} onClose={onClose} />
-          </div>
-        )}
-      </div>
-    </div>
+      {/* Insight Card - The InsightCard component handles its own modal backdrop */}
+      {insightData && !loading && !error && (
+        <InsightCard {...insightData} onClose={onClose} />
+      )}
+    </>
   )
 }
 

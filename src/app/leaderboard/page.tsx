@@ -106,6 +106,7 @@ export default function LeaderboardPage() {
   const [leaderboard, setLeaderboard] = useState<CapperStats[]>([])
   const [loading, setLoading] = useState(true)
   const [accomplishments, setAccomplishments] = useState<Accomplishment[]>([])
+  const [accomplishmentsLoading, setAccomplishmentsLoading] = useState(true)
 
   useEffect(() => {
     fetchLeaderboard()
@@ -114,6 +115,7 @@ export default function LeaderboardPage() {
   // Fetch accomplishments once on mount
   useEffect(() => {
     const fetchAccomplishments = async () => {
+      setAccomplishmentsLoading(true)
       try {
         const res = await fetch('/api/accomplishments')
         const data = await res.json()
@@ -122,6 +124,8 @@ export default function LeaderboardPage() {
         }
       } catch (error) {
         console.error('Error fetching accomplishments:', error)
+      } finally {
+        setAccomplishmentsLoading(false)
       }
     }
     fetchAccomplishments()
@@ -191,37 +195,75 @@ export default function LeaderboardPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-4">
         {/* Accomplishments Banner */}
-        {accomplishments.length > 0 && (
-          <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-4 shadow-xl">
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
-              {accomplishments.map((acc, idx) => (
-                <Link
-                  key={`${acc.type}-${acc.capper}-${idx}`}
-                  href={`/cappers/${acc.capper}`}
-                  className="flex-shrink-0 group"
-                >
-                  <div
-                    className={`bg-gradient-to-br ${acc.color} p-[2px] rounded-xl hover:scale-105 transition-transform cursor-pointer`}
+        <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-4 shadow-xl overflow-hidden">
+          {/* Loading skeleton */}
+          {accomplishmentsLoading && (
+            <div className="flex gap-3">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="flex-shrink-0 bg-slate-800/50 rounded-xl p-4 min-w-[220px] animate-pulse">
+                  <div className="flex items-start gap-2">
+                    <div className="w-8 h-8 bg-slate-700 rounded-full"></div>
+                    <div className="flex-1">
+                      <div className="h-4 bg-slate-700 rounded w-3/4 mb-2"></div>
+                      <div className="h-3 bg-slate-700/50 rounded w-full"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Accomplishments */}
+          {!accomplishmentsLoading && accomplishments.length > 0 && (
+            <div className="relative">
+              {/* Scroll fade indicators */}
+              <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-slate-900/90 to-transparent z-10 pointer-events-none hidden md:block"></div>
+              <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-slate-900/90 to-transparent z-10 pointer-events-none hidden md:block"></div>
+
+              <div className="flex gap-3 overflow-x-auto pb-2 px-1 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent scroll-smooth">
+                {accomplishments.map((acc, idx) => (
+                  <Link
+                    key={`${acc.type}-${acc.capper}-${idx}`}
+                    href={`/cappers/${acc.capper}`}
+                    className="flex-shrink-0 group"
                   >
-                    <div className="bg-slate-900/95 rounded-xl px-5 py-4 min-w-[220px] max-w-[260px]">
-                      <div className="flex items-start gap-2 mb-1">
-                        <span className="text-xl">{acc.icon}</span>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-white font-bold text-sm truncate group-hover:text-yellow-400 transition-colors">
-                            {acc.title}
-                          </p>
-                          <p className="text-slate-300 text-xs font-medium truncate">
-                            {acc.description}
-                          </p>
+                    <div
+                      className={`bg-gradient-to-br ${acc.color} p-[2px] rounded-xl hover:scale-[1.03] transition-all duration-200 cursor-pointer shadow-lg hover:shadow-xl`}
+                      style={{
+                        boxShadow: acc.type === 'hot_streak'
+                          ? '0 0 20px rgba(249, 115, 22, 0.3)'
+                          : acc.type === 'territory_king'
+                            ? '0 0 20px rgba(234, 179, 8, 0.3)'
+                            : '0 0 15px rgba(59, 130, 246, 0.2)'
+                      }}
+                    >
+                      <div className="bg-slate-900/95 rounded-xl px-5 py-4 min-w-[220px] max-w-[260px] h-full">
+                        <div className="flex items-start gap-3">
+                          <span className="text-2xl flex-shrink-0">{acc.icon}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white font-bold text-sm truncate group-hover:text-yellow-400 transition-colors">
+                              {acc.title}
+                            </p>
+                            <p className="text-slate-300 text-xs font-medium truncate mt-0.5">
+                              {acc.description}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+
+          {/* Empty state */}
+          {!accomplishmentsLoading && accomplishments.length === 0 && (
+            <div className="text-center py-4">
+              <p className="text-slate-500 text-sm">No recent accomplishments to display</p>
+            </div>
+          )}
+        </div>
 
         {/* Filters */}
         <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6 shadow-xl">
