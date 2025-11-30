@@ -391,16 +391,24 @@ function CapperBadge({
     capper,
     size = 'sm',
     stats,
+    teamStats,
+    team,
     showHover = true
 }: {
     capper: string
     size?: 'sm' | 'md'
     stats?: CapperStats
+    teamStats?: { wins: number; losses: number; netUnits: number } | null
+    team?: string | null
     showHover?: boolean
 }) {
     const config = getCapperConfig(capper)
     const sizeClasses = size === 'md' ? 'w-8 h-8 text-xs' : 'w-6 h-6 text-[10px]'
     const isFeatured = FEATURED_CAPPERS[capper?.toUpperCase()]
+
+    // Prefer team-specific stats if available
+    const displayStats = teamStats || (stats ? { wins: stats.wins, losses: stats.losses, netUnits: stats.net_units } : null)
+    const isTeamSpecific = !!teamStats
 
     return (
         <div className="relative group/badge">
@@ -419,26 +427,26 @@ function CapperBadge({
             {/* Hover Card - shows BELOW to prevent cutoff at top of cells */}
             {showHover && (
                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 opacity-0 group-hover/badge:opacity-100 pointer-events-none z-[100] transition-all duration-200 scale-95 group-hover/badge:scale-100">
-                    <div className={`bg-gradient-to-br ${config.gradient} rounded-lg px-3 py-2 shadow-xl border border-white/20 min-w-[120px]`}>
+                    <div className={`bg-gradient-to-br ${config.gradient} rounded-lg px-3 py-2 shadow-xl border border-white/20 min-w-[130px]`}>
                         {/* Arrow pointing up */}
                         <div className="absolute bottom-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-white/20"></div>
-                        <div className="text-white font-bold text-xs mb-1 text-center truncate max-w-[100px]">{capper}</div>
-                        {stats ? (
+                        <div className="text-white font-bold text-xs mb-1 text-center truncate max-w-[110px]">{capper}</div>
+                        {displayStats ? (
                             <div className="space-y-0.5">
+                                {/* Show team-specific label if available */}
+                                {isTeamSpecific && team && (
+                                    <div className="text-[9px] text-amber-300 text-center mb-1 font-medium">
+                                        📊 {team} picks
+                                    </div>
+                                )}
                                 <div className="flex justify-between text-[10px] gap-2">
                                     <span className="text-white/70">Record</span>
-                                    <span className="text-white font-semibold">{stats.wins}-{stats.losses}</span>
+                                    <span className="text-white font-semibold">{displayStats.wins}-{displayStats.losses}</span>
                                 </div>
                                 <div className="flex justify-between text-[10px] gap-2">
                                     <span className="text-white/70">Units</span>
-                                    <span className={`font-semibold ${stats.net_units >= 0 ? 'text-green-300' : 'text-red-300'}`}>
-                                        {stats.net_units >= 0 ? '+' : ''}{stats.net_units.toFixed(1)}u
-                                    </span>
-                                </div>
-                                <div className="flex justify-between text-[10px] gap-2">
-                                    <span className="text-white/70">ROI</span>
-                                    <span className={`font-semibold ${stats.roi >= 0 ? 'text-green-300' : 'text-red-300'}`}>
-                                        {stats.roi >= 0 ? '+' : ''}{stats.roi.toFixed(1)}%
+                                    <span className={`font-semibold ${displayStats.netUnits >= 0 ? 'text-green-300' : 'text-red-300'}`}>
+                                        {displayStats.netUnits >= 0 ? '+' : ''}{displayStats.netUnits.toFixed(1)}u
                                     </span>
                                 </div>
                             </div>
@@ -477,12 +485,16 @@ function PickCell({
     cell,
     picks,
     onPickClick,
-    capperStats
+    capperStats,
+    teamStats,
+    getTeamSpecificStats
 }: {
     cell: CellData | null
     picks: Pick[]
     onPickClick: (pick: Pick) => void
     capperStats: Record<string, CapperStats>
+    teamStats: TeamStatsMap
+    getTeamSpecificStats: (capper: string, team: string | null) => { wins: number; losses: number; netUnits: number } | null
 }) {
     if (!cell) {
         return (
@@ -494,6 +506,15 @@ function PickCell({
 
     // Selection is already normalized in buildGameRows, just return it
     const formatSelection = (sel: string) => sel
+
+    // Extract team from selection (e.g., "HOU -11.5" -> "HOU", "Over 235.5" -> null)
+    const extractTeamFromSel = (selection: string): string | null => {
+        if (!selection) return null
+        const upper = selection.trim().toUpperCase()
+        if (upper.startsWith('OVER') || upper.startsWith('UNDER')) return null
+        const match = upper.match(/^([A-Z]{2,3})\s/)
+        return match ? match[1] : null
+    }
 
     // Calculate combined record for cappers on a side
     const getCombinedRecord = (sideCappers: PickData[]) => {
@@ -524,17 +545,22 @@ function PickCell({
                                 ${isWinning ? 'bg-slate-800/40' : 'bg-slate-900/30 opacity-80'}
                             `}>
                                 <div className="flex items-center gap-0.5 mb-1.5 flex-wrap relative z-10">
-                                    {side.picks.slice(0, 3).map((p, i) => (
-                                        <div key={i} className="relative z-20" onClick={() => {
-                                            const pick = picks.find(pk => pk.id === p.pickId)
-                                            if (pick) onPickClick(pick)
-                                        }}>
-                                            <CapperBadge
-                                                capper={p.capper}
-                                                stats={capperStats[p.capper.toUpperCase()]}
-                                            />
-                                        </div>
-                                    ))}
+                                    {(() => {
+                                        const team = extractTeamFromSel(side.selection)
+                                        return side.picks.slice(0, 3).map((p, i) => (
+                                            <div key={i} className="relative z-20" onClick={() => {
+                                                const pick = picks.find(pk => pk.id === p.pickId)
+                                                if (pick) onPickClick(pick)
+                                            }}>
+                                                <CapperBadge
+                                                    capper={p.capper}
+                                                    stats={capperStats[p.capper.toUpperCase()]}
+                                                    teamStats={getTeamSpecificStats(p.capper, team)}
+                                                    team={team}
+                                                />
+                                            </div>
+                                        ))
+                                    })()}
                                     {side.picks.length > 3 && (
                                         <span className="text-[9px] text-slate-400">+{side.picks.length - 3}</span>
                                     )}
@@ -582,17 +608,22 @@ function PickCell({
 
                 {/* Capper badges row */}
                 <div className="flex items-center gap-1 mb-2 flex-wrap">
-                    {side.picks.slice(0, 6).map((p, i) => (
-                        <div key={i} onClick={() => {
-                            const pick = picks.find(pk => pk.id === p.pickId)
-                            if (pick) onPickClick(pick)
-                        }}>
-                            <CapperBadge
-                                capper={p.capper}
-                                stats={capperStats[p.capper.toUpperCase()]}
-                            />
-                        </div>
-                    ))}
+                    {(() => {
+                        const team = extractTeamFromSel(side.selection)
+                        return side.picks.slice(0, 6).map((p, i) => (
+                            <div key={i} onClick={() => {
+                                const pick = picks.find(pk => pk.id === p.pickId)
+                                if (pick) onPickClick(pick)
+                            }}>
+                                <CapperBadge
+                                    capper={p.capper}
+                                    stats={capperStats[p.capper.toUpperCase()]}
+                                    teamStats={getTeamSpecificStats(p.capper, team)}
+                                    team={team}
+                                />
+                            </div>
+                        ))
+                    })()}
                     {side.picks.length > 6 && (
                         <span className="text-[10px] text-slate-400 font-medium">+{side.picks.length - 6}</span>
                     )}
@@ -624,6 +655,9 @@ function PickCell({
 }
 
 
+// Type for team-specific stats: { [capperId]: { [team]: { wins, losses, netUnits } } }
+type TeamStatsMap = Record<string, Record<string, { wins: number; losses: number; netUnits: number }>>
+
 export function PickGrid() {
     const [picks, setPicks] = useState<Pick[]>([])
     const [gameRows, setGameRows] = useState<GameRow[]>([])
@@ -631,11 +665,13 @@ export function PickGrid() {
     const [selectedPickId, setSelectedPickId] = useState<string | null>(null)
     const [selectedCapper, setSelectedCapper] = useState<string | undefined>(undefined)
     const [capperStats, setCapperStats] = useState<Record<string, CapperStats>>({})
+    const [teamStats, setTeamStats] = useState<TeamStatsMap>({})
     const [activeFilter, setActiveFilter] = useState<FilterType>('all')
 
     useEffect(() => {
         fetchPicks()
         fetchCapperStats()
+        fetchTeamStats()
     }, [])
 
     async function fetchPicks() {
@@ -691,6 +727,38 @@ export function PickGrid() {
         } catch (error) {
             console.error('Error fetching capper stats:', error)
         }
+    }
+
+    async function fetchTeamStats() {
+        try {
+            const response = await fetch('/api/cappers/team-stats')
+            const data = await response.json()
+            if (data.success && data.data) {
+                setTeamStats(data.data)
+                console.log('[PickGrid] Loaded team-specific stats for cappers:', Object.keys(data.data).length)
+            }
+        } catch (error) {
+            console.error('Error fetching team stats:', error)
+        }
+    }
+
+    // Helper to get team-specific stats for a capper
+    const getTeamSpecificStats = (capper: string, team: string | null) => {
+        if (!team) return null
+        const capperTeams = teamStats[capper.toUpperCase()]
+        if (!capperTeams) return null
+        return capperTeams[team.toUpperCase()] || null
+    }
+
+    // Extract team from selection (e.g., "HOU -11.5" -> "HOU", "Over 235.5" -> null)
+    const extractTeamFromSelection = (selection: string): string | null => {
+        if (!selection) return null
+        const upper = selection.trim().toUpperCase()
+        // Check if it's a TOTAL (Over/Under) - no team
+        if (upper.startsWith('OVER') || upper.startsWith('UNDER')) return null
+        // Extract team abbreviation (first 2-3 letters before space)
+        const match = upper.match(/^([A-Z]{2,3})\s/)
+        return match ? match[1] : null
     }
 
     const handlePickClick = (pick: Pick) => {
@@ -931,6 +999,8 @@ export function PickGrid() {
                                                     picks={picks}
                                                     onPickClick={handlePickClick}
                                                     capperStats={capperStats}
+                                                    teamStats={teamStats}
+                                                    getTeamSpecificStats={getTeamSpecificStats}
                                                 />
                                             </td>
 
@@ -941,6 +1011,8 @@ export function PickGrid() {
                                                     picks={picks}
                                                     onPickClick={handlePickClick}
                                                     capperStats={capperStats}
+                                                    teamStats={teamStats}
+                                                    getTeamSpecificStats={getTeamSpecificStats}
                                                 />
                                             </td>
                                         </tr>
