@@ -207,23 +207,37 @@ export interface TierGradeResult {
 /**
  * Calculate the tier grade for a pick based on multiple factors
  * This is the new comprehensive grading system
+ *
+ * TIER DISTRIBUTION (adjusted for typical 60-80 base confidence):
+ * - Elite: 80+ with positive 7-day AND 4+ units (exclusive)
+ * - Legendary: 75-79 (high confidence picks)
+ * - Epic: 68-74 (strong picks)
+ * - Rare: 60-67 (solid picks)
+ * - Uncommon: 50-59 (average picks)
+ * - Common: <50 (low confidence)
  */
 export function calculateTierGrade(input: TierGradeInput): TierGradeResult {
   let tierScore = input.baseConfidence
   const bonuses = { units: 0, teamRecord: 0, hotStreak: 0 }
 
-  // ===== UNITS BONUS (max +15 points) =====
-  // 5+ units = +5 points
-  // 10+ units = +10 points
-  // 20+ units = +15 points
-  if (input.unitsRisked >= 20) {
-    bonuses.units = 15
-  } else if (input.unitsRisked >= 10) {
-    bonuses.units = 10
+  // ===== UNITS BONUS (max +20 points) =====
+  // Every unit matters - most picks are 1-5 units
+  // 1 unit = +0
+  // 2 units = +4
+  // 3 units = +8
+  // 4 units = +12
+  // 5 units = +16
+  // 6+ units = +20
+  if (input.unitsRisked >= 6) {
+    bonuses.units = 20
   } else if (input.unitsRisked >= 5) {
-    bonuses.units = 5
+    bonuses.units = 16
+  } else if (input.unitsRisked >= 4) {
+    bonuses.units = 12
   } else if (input.unitsRisked >= 3) {
-    bonuses.units = 2
+    bonuses.units = 8
+  } else if (input.unitsRisked >= 2) {
+    bonuses.units = 4
   }
 
   // ===== TEAM-SPECIFIC RECORD BONUS (max +10 points) =====
@@ -267,20 +281,20 @@ export function calculateTierGrade(input: TierGradeInput): TierGradeResult {
   // Calculate final score (capped at 100)
   tierScore = Math.min(100, Math.max(0, tierScore + bonuses.units + bonuses.teamRecord + bonuses.hotStreak))
 
-  // Determine tier based on final score
-  // ELITE requires: score >= 90 AND positive 7-day record AND units >= 5
-  const canBeElite = bonuses.hotStreak > 0 && input.unitsRisked >= 5
+  // Determine tier based on ADJUSTED thresholds
+  // ELITE requires: score >= 80 AND positive 7-day record AND units >= 4
+  const canBeElite = bonuses.hotStreak > 0 && input.unitsRisked >= 4
 
   let tier: RarityTier
-  if (tierScore >= 90 && canBeElite) {
+  if (tierScore >= 80 && canBeElite) {
     tier = 'Elite'
-  } else if (tierScore >= 85) {
-    tier = 'Legendary'
   } else if (tierScore >= 75) {
+    tier = 'Legendary'
+  } else if (tierScore >= 68) {
     tier = 'Epic'
-  } else if (tierScore >= 65) {
+  } else if (tierScore >= 60) {
     tier = 'Rare'
-  } else if (tierScore >= 55) {
+  } else if (tierScore >= 50) {
     tier = 'Uncommon'
   } else {
     tier = 'Common'
