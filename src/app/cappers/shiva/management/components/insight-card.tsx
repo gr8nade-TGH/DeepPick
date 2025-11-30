@@ -235,6 +235,245 @@ function formatRecord(record: { wins: number; losses: number; pushes?: number; n
   return { text, units }
 }
 
+// =====================================================
+// PICKSMITH CUSTOM INSIGHT CARD
+// =====================================================
+function PicksmithInsightCard({ props, consensus }: {
+  props: InsightCardProps
+  consensus?: {
+    contributingCappers: Array<{ id: string; name: string; units: number; netUnits: number }>
+    contributorPicks: Array<{ capper: string; selection: string; units: number; confidence: number }>
+    consensusType: 'STRONG' | 'STANDARD'
+  }
+}) {
+  const cappers = consensus?.contributingCappers || []
+  const totalUnits = cappers.reduce((sum, c) => sum + c.units, 0)
+  const avgUnits = cappers.length > 0 ? (totalUnits / cappers.length).toFixed(1) : '0'
+  const totalRecord = cappers.reduce((sum, c) => sum + c.netUnits, 0)
+  const consensusStrength = cappers.length >= 4 ? 'UNANIMOUS' : cappers.length >= 3 ? 'STRONG' : 'STANDARD'
+
+  // Format team names
+  const awayTeam = props.matchup?.away
+  const homeTeam = props.matchup?.home
+  const awayName = typeof awayTeam === 'object' ? awayTeam?.name : awayTeam
+  const homeName = typeof homeTeam === 'object' ? homeTeam?.name : homeTeam
+  const awayAbbr = typeof awayTeam === 'object' ? awayTeam?.abbreviation : awayTeam?.substring(0, 3)
+  const homeAbbr = typeof homeTeam === 'object' ? homeTeam?.abbreviation : homeTeam?.substring(0, 3)
+
+  const formatLocalDate = (isoString: string) => {
+    try {
+      return new Date(isoString).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      })
+    } catch {
+      return 'Unknown Date'
+    }
+  }
+
+  const formatLocalTime = (isoString: string) => {
+    try {
+      return new Date(isoString).toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      })
+    } catch {
+      return 'Unknown Time'
+    }
+  }
+
+  // Get result info
+  const status = props.results?.status || 'pending'
+  const finalScore = props.results?.finalScore
+
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-gradient-to-br from-slate-900 via-amber-950/20 to-slate-900 rounded-2xl shadow-2xl border-2 border-amber-500/40 max-w-lg w-full max-h-[90vh] overflow-y-auto">
+
+        {/* ===== PICKSMITH HEADER ===== */}
+        <div className="bg-gradient-to-r from-amber-900/60 via-amber-800/40 to-amber-900/60 p-5 rounded-t-2xl border-b-2 border-amber-500/40 relative overflow-hidden">
+          {/* Animated background pattern */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-400 via-transparent to-transparent"></div>
+          </div>
+
+          <div className="relative flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full flex items-center justify-center border-2 border-amber-400 shadow-lg shadow-amber-500/30">
+                <span className="text-3xl">⚒️</span>
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-xl font-black text-amber-100">PICKSMITH</h1>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-amber-950">
+                    CONSENSUS
+                  </span>
+                </div>
+                <div className="text-amber-300/80 text-xs font-medium">
+                  The Forge of Sharp Picks
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={props.onClose}
+              className="text-amber-300 hover:text-white transition-colors p-2 hover:bg-amber-500/20 rounded-lg"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+
+        {/* ===== THE PICK - Hero Section ===== */}
+        <div className="p-6 bg-gradient-to-b from-slate-800/80 to-slate-900/80 text-center border-b border-amber-500/20">
+          <div className="text-4xl font-black text-white mb-2">
+            {props.pick?.units || 0} UNITS on {props.pick?.selection}
+          </div>
+          <div className="text-amber-300 font-semibold text-sm mb-3">
+            {awayAbbr} @ {homeAbbr}
+          </div>
+          <div className="text-slate-400 text-xs">
+            📅 {formatLocalDate(props.matchup?.gameDateLocal || props.generatedAt)} • ⏰ {formatLocalTime(props.matchup?.gameDateLocal || props.generatedAt)}
+          </div>
+        </div>
+
+        {/* ===== CONSENSUS STRENGTH BADGE ===== */}
+        <div className="px-6 py-4 bg-gradient-to-r from-slate-800/50 via-amber-900/20 to-slate-800/50 border-b border-amber-500/20">
+          <div className="flex items-center justify-center gap-3">
+            <div className={`
+              px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2
+              ${consensusStrength === 'UNANIMOUS' ? 'bg-green-500/20 text-green-400 border border-green-500/40' :
+                consensusStrength === 'STRONG' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' :
+                  'bg-slate-500/20 text-slate-300 border border-slate-500/40'}
+            `}>
+              {consensusStrength === 'UNANIMOUS' ? '🔥' : consensusStrength === 'STRONG' ? '⚡' : '✓'}
+              <span>{consensusStrength} CONSENSUS</span>
+              <span className="text-xs opacity-75">({cappers.length}v0)</span>
+            </div>
+          </div>
+        </div>
+
+        {/* ===== CONTRIBUTING CAPPERS GRID ===== */}
+        <div className="p-5 bg-gradient-to-br from-slate-800 to-slate-900 border-b border-amber-500/20">
+          <div className="text-xs font-bold text-amber-400 uppercase mb-4 flex items-center gap-2">
+            <span>🎯</span>
+            <span>CONTRIBUTING CAPPERS</span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {cappers.map((capper, idx) => {
+              const capperBranding = KNOWN_CAPPER_BRANDING[capper.name] || getCapperBranding(capper.name)
+              return (
+                <div
+                  key={capper.id}
+                  className={`bg-gradient-to-br from-slate-700/80 to-slate-800/80 rounded-xl p-4 border border-slate-600/50 hover:border-${capperBranding.color}-500/50 transition-all hover:scale-[1.02]`}
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className={`w-10 h-10 bg-gradient-to-br ${capperBranding.gradient} rounded-full flex items-center justify-center text-lg shadow-md`}>
+                      {capperBranding.icon}
+                    </div>
+                    <div>
+                      <div className="font-bold text-white text-sm">{capper.name}</div>
+                      <div className={`text-xs ${capper.netUnits >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {capper.netUnits >= 0 ? '+' : ''}{capper.netUnits.toFixed(1)}u record
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between bg-slate-900/50 rounded-lg px-3 py-2">
+                    <span className="text-slate-400 text-xs">Bet Size</span>
+                    <span className="text-amber-400 font-bold">{capper.units}u</span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* ===== CONSENSUS STATS ===== */}
+        <div className="p-5 bg-gradient-to-br from-slate-800/60 to-slate-900/60 border-b border-amber-500/20">
+          <div className="text-xs font-bold text-amber-400 uppercase mb-4 flex items-center gap-2">
+            <span>📊</span>
+            <span>CONSENSUS STATS</span>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-slate-800/80 rounded-xl p-4 text-center border border-slate-700/50">
+              <div className="text-2xl font-black text-white">{cappers.length}</div>
+              <div className="text-xs text-slate-400 mt-1">Cappers Agree</div>
+            </div>
+            <div className="bg-slate-800/80 rounded-xl p-4 text-center border border-slate-700/50">
+              <div className="text-2xl font-black text-amber-400">{avgUnits}u</div>
+              <div className="text-xs text-slate-400 mt-1">Avg Bet Size</div>
+            </div>
+            <div className="bg-slate-800/80 rounded-xl p-4 text-center border border-slate-700/50">
+              <div className={`text-2xl font-black ${totalRecord >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                {totalRecord >= 0 ? '+' : ''}{totalRecord.toFixed(1)}u
+              </div>
+              <div className="text-xs text-slate-400 mt-1">Combined Record</div>
+            </div>
+          </div>
+        </div>
+
+        {/* ===== WHY THIS PICK ===== */}
+        <div className="p-5 bg-gradient-to-br from-slate-800/40 to-slate-900/40 border-b border-amber-500/20">
+          <div className="text-xs font-bold text-amber-400 uppercase mb-3 flex items-center gap-2">
+            <span>💡</span>
+            <span>WHY THIS PICK?</span>
+          </div>
+          <div className="bg-slate-900/60 rounded-xl p-4 border border-slate-700/50">
+            <p className="text-slate-300 text-sm leading-relaxed">
+              PICKSMITH identified <span className="text-amber-400 font-semibold">{consensusStrength.toLowerCase()} consensus</span> among {cappers.length} profitable system cappers.
+              When multiple independent AI models with proven track records arrive at the same conclusion, it signals a <span className="text-amber-400 font-semibold">high-value opportunity</span>.
+            </p>
+            <div className="mt-3 pt-3 border-t border-slate-700/50">
+              <p className="text-slate-400 text-xs">
+                Combined conviction: <span className="text-white font-semibold">{totalUnits}u</span> across all contributing cappers
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* ===== RESULT (if available) ===== */}
+        {status !== 'pending' && (
+          <div className={`p-5 ${status === 'win' ? 'bg-emerald-900/30' : status === 'loss' ? 'bg-red-900/30' : 'bg-yellow-900/30'} border-b border-amber-500/20`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`text-3xl ${status === 'win' ? 'text-emerald-400' : status === 'loss' ? 'text-red-400' : 'text-yellow-400'}`}>
+                  {status === 'win' ? '✅' : status === 'loss' ? '❌' : '🤝'}
+                </div>
+                <div>
+                  <div className={`text-lg font-black ${status === 'win' ? 'text-emerald-400' : status === 'loss' ? 'text-red-400' : 'text-yellow-400'}`}>
+                    {status.toUpperCase()}
+                  </div>
+                  {finalScore && (
+                    <div className="text-slate-400 text-sm">
+                      Final: {finalScore.away} - {finalScore.home}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===== FOOTER ===== */}
+        <div className="p-4 bg-slate-900/80 rounded-b-2xl flex items-center justify-between">
+          <div className="text-[10px] text-slate-500">
+            Pick Generated: {formatLocalDate(props.generatedAt)} at {formatLocalTime(props.generatedAt)}
+          </div>
+          <button
+            onClick={props.onClose}
+            className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-sm font-bold rounded-lg transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function InsightCard(props: InsightCardProps) {
   const [hoveredFactor, setHoveredFactor] = useState<string | null>(null)
   const [showAdvancedDetails, setShowAdvancedDetails] = useState(false)
@@ -249,6 +488,18 @@ export function InsightCard(props: InsightCardProps) {
   }
 
   console.debug('InsightCard props', { props })
+
+  // ===== PICKSMITH CUSTOM INSIGHT CARD =====
+  const isPicksmith = (props.capper || '').toUpperCase() === 'PICKSMITH'
+  const consensus = (props as any).consensus as {
+    contributingCappers: Array<{ id: string; name: string; units: number; netUnits: number }>
+    contributorPicks: Array<{ capper: string; selection: string; units: number; confidence: number }>
+    consensusType: 'STRONG' | 'STANDARD'
+  } | undefined
+
+  if (isPicksmith) {
+    return <PicksmithInsightCard props={props} consensus={consensus} />
+  }
 
   // Check if this is a manual pick
   const isManualPick = props.is_system_pick === false
