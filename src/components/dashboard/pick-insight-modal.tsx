@@ -53,8 +53,8 @@ export function PickInsightModal({ pickId, capper, onClose }: PickInsightModalPr
     fetchInsightCard()
   }, [pickId, capper])
 
-  // Get rarity for loading/error states
-  const rarity = getRarityFromConfidence(insightData?.confidence || 65)
+  // Get rarity for loading/error states (confidence is nested inside pick object)
+  const rarity = getRarityFromConfidence(insightData?.pick?.confidence || 65)
 
   return (
     <>
