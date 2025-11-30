@@ -108,8 +108,15 @@ export default function LeaderboardPage() {
       if (betTypeFilter !== 'all') {
         params.append('bet_type', betTypeFilter)
       }
-      const response = await fetch(`/api/leaderboard?${params.toString()}`)
+      // Add cache-busting timestamp
+      params.append('_t', Date.now().toString())
+      const response = await fetch(`/api/leaderboard?${params.toString()}`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' }
+      })
       const data = await response.json()
+
+      console.log('[Leaderboard Page] Fetched data:', data.data?.length, 'cappers')
 
       if (data.success && data.data) {
         setLeaderboard(data.data)

@@ -822,19 +822,6 @@ export function PickGrid() {
                             </p>
                         </div>
 
-                        {/* Legend - moved to right */}
-                        <div className="hidden md:flex items-center gap-3 text-xs text-slate-500">
-                            <span className="flex items-center gap-1.5">
-                                <HeatDot level={2} /> 2
-                            </span>
-                            <span className="flex items-center gap-1.5">
-                                <HeatDot level={3} /> 3
-                            </span>
-                            <span className="flex items-center gap-1.5">
-                                <span className="text-amber-400">🔥</span>
-                                4+ Agreement
-                            </span>
-                        </div>
                     </div>
 
                     {/* Filter Tabs */}

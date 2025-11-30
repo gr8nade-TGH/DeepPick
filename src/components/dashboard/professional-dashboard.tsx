@@ -293,10 +293,16 @@ export function ProfessionalDashboard() {
   const fetchTopCappers = async () => {
     try {
       // Use the leaderboard API which includes ALL cappers (system + user)
-      const leaderboardResponse = await fetch('/api/leaderboard?period=all')
+      // Add cache-busting timestamp to prevent stale data
+      const leaderboardResponse = await fetch(`/api/leaderboard?period=all&_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' }
+      })
       const leaderboardData = await leaderboardResponse.json()
 
       console.log('[Dashboard] Fetched cappers from leaderboard:', leaderboardData)
+      console.log('[Dashboard] Number of cappers returned:', leaderboardData.data?.length)
+      console.log('[Dashboard] Capper IDs:', leaderboardData.data?.map((c: any) => c.id))
 
       if (!leaderboardData.success || !leaderboardData.data || leaderboardData.data.length === 0) {
         console.error('[Dashboard] Failed to fetch cappers or no cappers found')
