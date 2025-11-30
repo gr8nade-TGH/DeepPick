@@ -56,13 +56,20 @@ export async function GET(request: NextRequest) {
         rank: index + 1
       })) || []
 
-      return NextResponse.json({
+      // Log all cappers for debugging
+      console.log('[Leaderboard] All cappers:', leaderboard.map(c => ({ id: c.id, name: c.name, type: c.type })))
+
+      const response = NextResponse.json({
         success: true,
         data: leaderboard,
         count: leaderboard.length,
         period,
         source: 'materialized_view'
       })
+
+      // Prevent caching
+      response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate')
+      return response
     }
 
     // For filtered queries (period, team, bet_type), calculate from picks
@@ -235,13 +242,17 @@ export async function GET(request: NextRequest) {
         rank: index + 1
       }))
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: leaderboard,
       count: leaderboard.length,
       period,
       source: 'picks_calculation'
     })
+
+    // Prevent caching
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate')
+    return response
 
   } catch (error) {
     console.error('[Leaderboard] Error:', error)
