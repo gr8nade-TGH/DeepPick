@@ -262,34 +262,37 @@ function PickCell({
 
     // Format the selection nicely
     const formatSelection = (sel: string) => {
-        // For totals: "Over 231.5" or "Under 223.5"
-        const totalMatch = sel.match(/(OVER|UNDER)\s*([\d.]+)/i)
+        // For totals: Handle various formats: "Over 231.5", "UNDER 223.5", "U 235.5", "O 231.5"
+        const totalMatch = sel.match(/^(OVER|UNDER|O|U)\s*([\d.]+)/i)
         if (totalMatch) {
-            return `${totalMatch[1].charAt(0).toUpperCase() + totalMatch[1].slice(1).toLowerCase()} ${totalMatch[2]}`
+            const direction = totalMatch[1].toUpperCase()
+            const number = totalMatch[2]
+            // Normalize "O" to "Over" and "U" to "Under"
+            const fullDirection = (direction === 'O' || direction === 'OVER') ? 'Over' : 'Under'
+            return `${fullDirection} ${number}`
         }
         // For spreads: "LAL +3.5" or "BOS -4.5"
         return sel
     }
 
-    // If split, show both sides
+    // If split, show both sides SIDE BY SIDE in one row
     if (cell.isSplit) {
         return (
-            <div className="space-y-2">
-                {cell.sides.map((side, idx) => {
-                    const avgUnitsStr = side.avgUnits.toFixed(side.avgUnits % 1 === 0 ? 0 : 2)
-                    const isWinning = idx === 0 // First side has more cappers
-                    return (
-                        <div key={idx} className="relative">
-                            <div className={`
-                                rounded-lg p-2.5 border transition-all duration-200
-                                ${isWinning
-                                    ? 'bg-gradient-to-br from-slate-800/80 to-slate-900/50 border-slate-600/50'
-                                    : 'bg-slate-900/30 border-slate-800/30 opacity-75'
-                                }
+            <div className="relative">
+                {/* Split cell container - horizontal layout */}
+                <div className="flex gap-1 rounded-lg border border-amber-500/30 bg-gradient-to-br from-slate-800/60 to-slate-900/40 overflow-hidden">
+                    {cell.sides.slice(0, 2).map((side, idx) => {
+                        const avgUnitsStr = side.avgUnits.toFixed(side.avgUnits % 1 === 0 ? 0 : 2)
+                        const isWinning = idx === 0 // First side has more cappers
+                        return (
+                            <div key={idx} className={`
+                                flex-1 p-2.5 relative
+                                ${idx === 0 ? 'border-r border-slate-700/50' : ''}
+                                ${isWinning ? 'bg-slate-800/40' : 'bg-slate-900/30 opacity-80'}
                             `}>
                                 {/* Capper badges */}
-                                <div className="flex items-center gap-1 mb-1.5 flex-wrap">
-                                    {side.picks.slice(0, 4).map((p, i) => (
+                                <div className="flex items-center gap-0.5 mb-1.5 flex-wrap">
+                                    {side.picks.slice(0, 3).map((p, i) => (
                                         <div key={i} onClick={() => {
                                             const pick = picks.find(pk => pk.id === p.pickId)
                                             if (pick) onPickClick(pick)
@@ -297,8 +300,8 @@ function PickCell({
                                             <CapperBadge capper={p.capper} />
                                         </div>
                                     ))}
-                                    {side.picks.length > 4 && (
-                                        <span className="text-[10px] text-slate-400">+{side.picks.length - 4}</span>
+                                    {side.picks.length > 3 && (
+                                        <span className="text-[9px] text-slate-400">+{side.picks.length - 3}</span>
                                     )}
                                 </div>
                                 {/* Selection */}
@@ -308,17 +311,17 @@ function PickCell({
                                 <div className="text-[10px] text-slate-500 mt-0.5">
                                     ({avgUnitsStr}u)
                                 </div>
+                                {/* Heat dot for this side */}
+                                <div className="absolute -top-1 -right-1">
+                                    <HeatDot level={side.heatLevel} />
+                                </div>
                             </div>
-                            {/* Heat dot for this side */}
-                            <div className="absolute -top-1 -right-1">
-                                <HeatDot level={side.heatLevel} />
-                            </div>
-                        </div>
-                    )
-                })}
-                {/* Split indicator */}
-                <div className="text-center">
-                    <span className="text-[9px] font-bold text-amber-500/80 uppercase tracking-wider">⚡ Split</span>
+                        )
+                    })}
+                </div>
+                {/* Split indicator badge */}
+                <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2">
+                    <span className="text-[8px] font-bold text-amber-400 bg-slate-900 px-1.5 py-0.5 rounded border border-amber-500/40 uppercase tracking-wider">⚡ Split</span>
                 </div>
             </div>
         )
