@@ -265,97 +265,89 @@ export default function LeaderboardPage() {
           )}
         </div>
 
-        {/* Filters */}
-        <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6 shadow-xl">
-          <div className="flex flex-col gap-6">
-            {/* Timeframe */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-              <span className="text-slate-400 font-semibold min-w-[100px]">Timeframe:</span>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  onClick={() => setTimeframe('7d')}
-                  size="sm"
-                  className={timeframe === '7d'
-                    ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold shadow-lg'
-                    : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600'
-                  }
-                >
-                  Last 7 Days
-                </Button>
-                <Button
-                  onClick={() => setTimeframe('30d')}
-                  size="sm"
-                  className={timeframe === '30d'
-                    ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold shadow-lg'
-                    : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600'
-                  }
-                >
-                  Last 30 Days
-                </Button>
-                <Button
-                  onClick={() => setTimeframe('all')}
-                  size="sm"
-                  className={timeframe === 'all'
-                    ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold shadow-lg'
-                    : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600'
-                  }
-                >
-                  All Time
-                </Button>
-              </div>
-            </div>
-
-            {/* Team Filter */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-              <span className="text-slate-400 font-semibold min-w-[100px]">Team:</span>
-              <select
-                value={teamFilter}
-                onChange={(e) => setTeamFilter(e.target.value)}
-                className="px-4 py-2 rounded-lg bg-slate-800 border border-slate-600 text-white font-semibold hover:border-yellow-500 transition-all focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 cursor-pointer"
+        {/* Filters - Single horizontal row */}
+        <div className="flex flex-wrap items-center gap-6 py-4">
+          {/* Bet Type Filter */}
+          <div className="flex items-center gap-2">
+            <span className="text-slate-400 text-sm font-medium">Bet Type:</span>
+            <div className="flex gap-1">
+              <button
+                onClick={() => setBetTypeFilter('all')}
+                className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-all ${betTypeFilter === 'all'
+                    ? 'bg-emerald-500 text-white'
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                  }`}
               >
-                {NBA_TEAMS.map(team => (
-                  <option key={team.abbreviation} value={team.abbreviation}>
-                    {team.name}
-                  </option>
-                ))}
-              </select>
+                All
+              </button>
+              <button
+                onClick={() => setBetTypeFilter('total')}
+                className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-all ${betTypeFilter === 'total'
+                    ? 'bg-emerald-500 text-white'
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                  }`}
+              >
+                Total
+              </button>
+              <button
+                onClick={() => setBetTypeFilter('spread')}
+                className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-all ${betTypeFilter === 'spread'
+                    ? 'bg-emerald-500 text-white'
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                  }`}
+              >
+                Spread
+              </button>
             </div>
+          </div>
 
-            {/* Bet Type Filter */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-              <span className="text-slate-400 font-semibold min-w-[100px]">Bet Type:</span>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  onClick={() => setBetTypeFilter('all')}
-                  size="sm"
-                  className={betTypeFilter === 'all'
-                    ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold shadow-lg'
-                    : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600'
-                  }
-                >
-                  All
-                </Button>
-                <Button
-                  onClick={() => setBetTypeFilter('total')}
-                  size="sm"
-                  className={betTypeFilter === 'total'
-                    ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold shadow-lg'
-                    : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600'
-                  }
-                >
-                  Total
-                </Button>
-                <Button
-                  onClick={() => setBetTypeFilter('spread')}
-                  size="sm"
-                  className={betTypeFilter === 'spread'
-                    ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold shadow-lg'
-                    : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600'
-                  }
-                >
-                  Spread
-                </Button>
-              </div>
+          {/* Team Filter */}
+          <div className="flex items-center gap-2">
+            <span className="text-slate-400 text-sm font-medium">Team:</span>
+            <select
+              value={teamFilter}
+              onChange={(e) => setTeamFilter(e.target.value)}
+              className="px-3 py-1.5 text-sm rounded-md bg-slate-700 border border-slate-600 text-white font-medium hover:border-slate-500 transition-all focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+            >
+              {NBA_TEAMS.map(team => (
+                <option key={team.abbreviation} value={team.abbreviation}>
+                  {team.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Timeframe Filter */}
+          <div className="flex items-center gap-2">
+            <span className="text-slate-400 text-sm font-medium">Timeframe:</span>
+            <div className="flex gap-1">
+              <button
+                onClick={() => setTimeframe('7d')}
+                className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-all ${timeframe === '7d'
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                  }`}
+              >
+                Last 7 Days
+              </button>
+              <button
+                onClick={() => setTimeframe('30d')}
+                className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-all ${timeframe === '30d'
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                  }`}
+              >
+                Last 30 Days
+              </button>
+              <button
+                onClick={() => setTimeframe('all')}
+                className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-all ${timeframe === 'all'
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                  }`}
+              >
+                All Time
+              </button>
             </div>
           </div>
         </div>
