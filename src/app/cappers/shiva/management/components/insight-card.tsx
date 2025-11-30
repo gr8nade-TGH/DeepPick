@@ -152,6 +152,76 @@ export interface InsightCardProps {
   onClose: () => void
 }
 
+// =====================================================
+// RARITY TIER SYSTEM (Diablo-style, based on confidence)
+// =====================================================
+export type RarityTier = 'Common' | 'Uncommon' | 'Rare' | 'Epic' | 'Legendary'
+
+export interface RarityStyle {
+  tier: RarityTier
+  borderColor: string
+  bgGradient: string
+  glowColor: string
+  textColor: string
+  badgeBg: string
+  icon: string
+}
+
+export function getRarityFromConfidence(confidence: number): RarityStyle {
+  // confidence is typically 0-100
+  if (confidence >= 85) {
+    return {
+      tier: 'Legendary',
+      borderColor: '#FFD700',
+      bgGradient: 'from-amber-950 via-yellow-950/50 to-amber-950',
+      glowColor: 'rgba(255, 215, 0, 0.4)',
+      textColor: 'text-amber-300',
+      badgeBg: 'bg-gradient-to-r from-amber-500 to-yellow-500',
+      icon: '⭐'
+    }
+  } else if (confidence >= 75) {
+    return {
+      tier: 'Epic',
+      borderColor: '#A855F7',
+      bgGradient: 'from-purple-950 via-violet-950/50 to-purple-950',
+      glowColor: 'rgba(168, 85, 247, 0.4)',
+      textColor: 'text-purple-300',
+      badgeBg: 'bg-gradient-to-r from-purple-500 to-violet-500',
+      icon: '💎'
+    }
+  } else if (confidence >= 65) {
+    return {
+      tier: 'Rare',
+      borderColor: '#3B82F6',
+      bgGradient: 'from-blue-950 via-indigo-950/50 to-blue-950',
+      glowColor: 'rgba(59, 130, 246, 0.35)',
+      textColor: 'text-blue-300',
+      badgeBg: 'bg-gradient-to-r from-blue-500 to-indigo-500',
+      icon: '🔷'
+    }
+  } else if (confidence >= 55) {
+    return {
+      tier: 'Uncommon',
+      borderColor: '#22C55E',
+      bgGradient: 'from-green-950 via-emerald-950/50 to-green-950',
+      glowColor: 'rgba(34, 197, 94, 0.3)',
+      textColor: 'text-green-300',
+      badgeBg: 'bg-gradient-to-r from-green-500 to-emerald-500',
+      icon: '✦'
+    }
+  } else {
+    return {
+      tier: 'Common',
+      borderColor: '#6B7280',
+      bgGradient: 'from-slate-900 via-gray-900/50 to-slate-900',
+      glowColor: 'rgba(107, 114, 128, 0.2)',
+      textColor: 'text-slate-300',
+      badgeBg: 'bg-gradient-to-r from-slate-500 to-gray-500',
+      icon: '◆'
+    }
+  }
+}
+
 // Capper branding configuration - Known cappers with custom branding
 const KNOWN_CAPPER_BRANDING: Record<string, { icon: string; color: string; gradient: string }> = {
   'SHIVA': { icon: '🔱', color: 'cyan', gradient: 'from-blue-600 to-cyan-700' },
@@ -536,6 +606,9 @@ export function InsightCard(props: InsightCardProps) {
     confidence: Number(props.pick?.confidence ?? 0),
   }
 
+  // Get rarity based on confidence (Diablo-style tiers)
+  const rarity = getRarityFromConfidence(safePick.confidence)
+
   const safePredictedScore = {
     away: Number(props.predictedScore?.away ?? 0),
     home: Number(props.predictedScore?.home ?? 0),
@@ -581,92 +654,119 @@ export function InsightCard(props: InsightCardProps) {
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className={`bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl shadow-2xl border-2 border-${branding.color}-500/30 max-w-4xl w-full max-h-[90vh] overflow-y-auto`}>
+      {/* DIABLO-STYLE CARD WITH RARITY BORDER */}
+      <div
+        className={`bg-gradient-to-br ${rarity.bgGradient} rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto`}
+        style={{
+          border: `2px solid ${rarity.borderColor}`,
+          boxShadow: `0 0 30px ${rarity.glowColor}, inset 0 0 60px rgba(0,0,0,0.5)`
+        }}
+      >
+        {/* ===== ORNATE HEADER ===== */}
+        <div
+          className="p-5 rounded-t-lg relative overflow-hidden"
+          style={{
+            background: `linear-gradient(180deg, rgba(26,26,36,0.95) 0%, rgba(13,13,20,0.98) 100%)`,
+            borderBottom: `1px solid ${rarity.borderColor}40`
+          }}
+        >
+          {/* Animated glow effect */}
+          <div className="absolute inset-0 opacity-20" style={{ background: `radial-gradient(ellipse at center, ${rarity.borderColor}40, transparent 70%)` }}></div>
 
-        {/* ===== COMPACT HEADER ===== */}
-        <div className={`bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 p-4 rounded-t-2xl border-b-2 border-${branding.color}-500/40`}>
-          <div className="flex items-center justify-between">
+          <div className="relative flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className={`w-12 h-12 bg-gradient-to-br ${branding.gradient} rounded-full flex items-center justify-center border-2 border-${branding.color}-400 shadow-lg`}>
+              {/* Capper Icon */}
+              <div
+                className={`w-14 h-14 bg-gradient-to-br ${branding.gradient} rounded-full flex items-center justify-center shadow-lg`}
+                style={{ border: `2px solid ${rarity.borderColor}` }}
+              >
                 <span className="text-2xl">{isManualPick ? '👤' : branding.icon}</span>
               </div>
               <div>
+                {/* Capper Name with Rarity Color */}
                 <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-black text-white">{capperName}'S PICK</h1>
-                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${isManualPick
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-blue-600 text-white'
-                    }`}>
-                    {isManualPick ? 'HUMAN CAPPER' : 'AI GENERATED'}
+                  <h1 className={`text-xl font-black ${rarity.textColor}`} style={{ textShadow: `0 0 10px ${rarity.glowColor}` }}>
+                    {capperName}
+                  </h1>
+                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded ${rarity.badgeBg} text-white`}>
+                    {rarity.tier.toUpperCase()}
                   </span>
                 </div>
-                <div className="text-slate-400 text-xs font-medium">
-                  {isManualPick ? 'Manual Selection' : 'Professional Sports Analytics'}
+                {/* Subtitle */}
+                <div className="text-slate-400 text-xs font-medium flex items-center gap-1">
+                  <span>{isManualPick ? 'Human Capper' : 'AI Generated'}</span>
+                  <span className="text-slate-600">•</span>
+                  <span className={rarity.textColor}>{rarity.icon} Sharp Score {safePick.confidence.toFixed(0)}</span>
                 </div>
               </div>
             </div>
             <button
               onClick={props.onClose}
-              className={`text-slate-400 hover:text-${branding.color}-400 text-2xl font-bold transition-colors`}
+              className="text-slate-400 hover:text-white text-xl font-bold transition-colors p-2 hover:bg-white/10 rounded-lg"
             >
-              ×
+              ✕
             </button>
           </div>
         </div>
 
         {/* ===== THE PICK - HERO SECTION ===== */}
-        <div className={`p-6 bg-gradient-to-r ${isManualPick ? 'from-emerald-900 via-teal-900 to-emerald-900 border-b-2 border-emerald-400/50' : 'from-cyan-900 via-blue-900 to-cyan-900 border-b-2 border-cyan-400/50'} shadow-xl relative overflow-hidden`}>
-          <div className={`absolute inset-0 bg-gradient-to-r from-transparent ${isManualPick ? 'via-emerald-400/5' : 'via-cyan-400/5'} to-transparent animate-pulse`}></div>
-
-          <div className="text-center relative z-10">
-            {/* THE PICK */}
-            <div className={`text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r ${isManualPick ? 'from-emerald-300 to-teal-300' : 'from-cyan-300 to-blue-300'} mb-2 drop-shadow-lg tracking-tight`}>
-              {safePick.units} {safePick.units === 1 ? 'UNIT' : 'UNITS'} on {safePick.selection}
-            </div>
-
-            {/* Matchup - properly extract team names */}
-            {(() => {
-              const away = props.matchup?.away
-              const home = props.matchup?.home
-              const awayName = typeof away === 'object' ? (away?.abbreviation || away?.name || 'Away') : (away || 'Away')
-              const homeName = typeof home === 'object' ? (home?.abbreviation || home?.name || 'Home') : (home || 'Home')
-              return (
-                <div className="text-lg font-bold text-white mb-1">
-                  {awayName} @ {homeName}
-                </div>
-              )
-            })()}
-
-            {/* Game Date & Time */}
-            <div className={`flex items-center justify-center gap-3 ${isManualPick ? 'text-emerald-200' : 'text-cyan-200'} text-sm font-semibold`}>
-              <span>🗓️ {formatLocalDate(props.matchup?.gameDateLocal || props.generatedAt)}</span>
-              <span>•</span>
-              <span>🕐 {formatLocalTime(props.matchup?.gameDateLocal || props.generatedAt)}</span>
-            </div>
-
-            {/* Show locked line based on pick type - only for AI picks */}
-            {!isManualPick && safePick.type === 'TOTAL' && (safePick as any).locked_odds?.total_line && (
-              <div className="text-cyan-200 text-sm font-semibold flex items-center justify-center gap-2 mt-2">
-                <span className="text-lg">🔒</span>
-                <span>Locked O/U {(safePick as any).locked_odds.total_line}</span>
-              </div>
-            )}
-            {!isManualPick && safePick.type === 'SPREAD' && (safePick as any).locked_odds?.spread_line && (
-              <div className="text-cyan-200 text-sm font-semibold flex items-center justify-center gap-2 mt-2">
-                <span className="text-lg">🔒</span>
-                <span>Locked ATS {(safePick as any).locked_odds.spread_line > 0 ? '+' : ''}{(safePick as any).locked_odds.spread_line}</span>
-              </div>
-            )}
+        <div
+          className="p-6 text-center relative"
+          style={{
+            background: 'linear-gradient(180deg, rgba(15,15,25,0.9) 0%, rgba(10,10,18,0.95) 100%)',
+            borderBottom: `1px solid ${rarity.borderColor}30`
+          }}
+        >
+          {/* THE PICK - Large and prominent */}
+          <div
+            className="text-4xl font-black text-white mb-2"
+            style={{ textShadow: `0 0 20px ${rarity.glowColor}` }}
+          >
+            {safePick.units} {safePick.units === 1 ? 'UNIT' : 'UNITS'} on {safePick.selection}
           </div>
+
+          {/* Matchup */}
+          {(() => {
+            const away = props.matchup?.away
+            const home = props.matchup?.home
+            const awayName = typeof away === 'object' ? (away?.abbreviation || away?.name || 'Away') : (away || 'Away')
+            const homeName = typeof home === 'object' ? (home?.abbreviation || home?.name || 'Home') : (home || 'Home')
+            return (
+              <div className={`text-base font-semibold ${rarity.textColor} mb-2`}>
+                {awayName} @ {homeName}
+              </div>
+            )
+          })()}
+
+          {/* Game Date & Time */}
+          <div className="text-slate-400 text-xs flex items-center justify-center gap-2">
+            <span>📅 {formatLocalDate(props.matchup?.gameDateLocal || props.generatedAt)}</span>
+            <span>•</span>
+            <span>⏰ {formatLocalTime(props.matchup?.gameDateLocal || props.generatedAt)}</span>
+          </div>
+
+          {/* Locked line info (AI picks only) */}
+          {!isManualPick && safePick.type === 'TOTAL' && (safePick as any).locked_odds?.total_line && (
+            <div className={`${rarity.textColor} text-sm font-semibold flex items-center justify-center gap-2 mt-2`}>
+              <span>🔒</span>
+              <span>Locked O/U {(safePick as any).locked_odds.total_line}</span>
+            </div>
+          )}
+          {!isManualPick && safePick.type === 'SPREAD' && (safePick as any).locked_odds?.spread_line && (
+            <div className={`${rarity.textColor} text-sm font-semibold flex items-center justify-center gap-2 mt-2`}>
+              <span>🔒</span>
+              <span>Locked ATS {(safePick as any).locked_odds.spread_line > 0 ? '+' : ''}{(safePick as any).locked_odds.spread_line}</span>
+            </div>
+          )}
         </div>
 
         {/* ===== MANUAL PICK: CAPPER STATS SECTION ===== */}
         {isManualPick ? (
-          <div className="p-4 bg-gradient-to-br from-slate-800 to-slate-700 border-b border-emerald-500/20">
-            {/* Section Header */}
+          <div className="p-4" style={{ background: 'rgba(15,15,25,0.9)', borderBottom: `1px solid ${rarity.borderColor}20` }}>
+            {/* Section Header - Diablo style */}
             <div className="flex items-center gap-2 mb-4">
-              <span className="text-lg">📊</span>
-              <h3 className="text-sm font-bold text-emerald-300 uppercase tracking-wide">Capper Stats</h3>
+              <span className={`text-sm ${rarity.textColor}`}>◆</span>
+              <h3 className={`text-xs font-bold ${rarity.textColor} uppercase tracking-wider`}>Capper Stats</h3>
             </div>
 
             {manualInsight?.betTypeRecord && manualInsight.betTypeRecord.total > 0 ? (
@@ -796,17 +896,20 @@ export function InsightCard(props: InsightCardProps) {
           </div>
         ) : (
           /* ===== AI PICK: EDGE SCORE - COMPACT ===== */
-          <div className="p-4 bg-gradient-to-r from-slate-800 to-slate-700 border-b border-cyan-500/20">
+          <div className="p-4" style={{ background: 'rgba(15,15,25,0.9)', borderBottom: `1px solid ${rarity.borderColor}20` }}>
             <div className="text-center">
-              <div className="text-xs text-cyan-300 font-semibold mb-2">Edge Score: {Math.min(safeMarket.confFinal, 10).toFixed(1)} / 10.0</div>
+              <div className={`text-xs ${rarity.textColor} font-semibold mb-2`}>Edge Score: {Math.min(safeMarket.confFinal, 10).toFixed(1)} / 10.0</div>
 
               {/* Edge Score Bar with Unit Markers */}
               <div className="relative mx-auto max-w-md">
                 {/* Background bar */}
-                <div className="relative h-4 bg-slate-900/50 rounded-full overflow-hidden border border-cyan-500/30">
+                <div className="relative h-4 bg-slate-900/50 rounded-full overflow-hidden" style={{ border: `1px solid ${rarity.borderColor}40` }}>
                   <div
-                    className="h-full bg-gradient-to-r from-red-500 via-yellow-400 to-cyan-400 transition-all duration-500 shadow-lg"
-                    style={{ width: `${Math.min((safeMarket.confFinal / 10) * 100, 100)}%` }}
+                    className="h-full transition-all duration-500 shadow-lg"
+                    style={{
+                      width: `${Math.min((safeMarket.confFinal / 10) * 100, 100)}%`,
+                      background: `linear-gradient(90deg, #ef4444 0%, #eab308 50%, ${rarity.borderColor} 100%)`
+                    }}
                   />
                 </div>
 
@@ -823,7 +926,7 @@ export function InsightCard(props: InsightCardProps) {
                         className="absolute transform -translate-x-1/2"
                         style={{ left: `${position}%` }}
                       >
-                        <div className={`text-[10px] font-bold ${isActive ? 'text-cyan-400' : 'text-slate-600'}`}>
+                        <div className={`text-[10px] font-bold`} style={{ color: isActive ? rarity.borderColor : '#475569' }}>
                           {units}U
                         </div>
                       </div>
@@ -832,7 +935,7 @@ export function InsightCard(props: InsightCardProps) {
                 </div>
               </div>
 
-              <div className="text-xs text-cyan-200 mt-2 font-medium">
+              <div className={`text-xs ${rarity.textColor} mt-2 font-medium`}>
                 {safeMarket.confFinal >= 9 ? '🔥🔥 MAXIMUM EDGE (5 Units)' :
                   safeMarket.confFinal >= 8 ? '🔥 HIGH EDGE (4 Units)' :
                     safeMarket.confFinal >= 7 ? '⚡ STRONG EDGE (3 Units)' :
@@ -845,15 +948,15 @@ export function InsightCard(props: InsightCardProps) {
 
         {/* ===== KEY FACTORS - TOP 3 ONLY (AI picks only) ===== */}
         {!isManualPick && (
-          <div className="p-4 bg-gradient-to-br from-slate-800 to-slate-700 border-b border-cyan-500/20">
+          <div className="p-4" style={{ background: 'rgba(15,15,25,0.9)', borderBottom: `1px solid ${rarity.borderColor}20` }}>
             <div className="flex items-center justify-between mb-3">
-              <div className="text-sm font-bold text-cyan-300 flex items-center gap-2">
-                <span className="text-lg">📈</span>
-                <span>KEY FACTORS</span>
+              <div className={`text-xs font-bold ${rarity.textColor} flex items-center gap-2 uppercase tracking-wider`}>
+                <span>◆</span>
+                <span>Key Factors</span>
               </div>
               {sortedFactors.length > 0 && (
-                <div className="text-[10px] px-2 py-1 bg-cyan-500/10 text-cyan-300 rounded border border-cyan-500/30 font-semibold">
-                  🏆 Dominant: {sortedFactors[0].label}
+                <div className="text-[10px] px-2 py-1 bg-slate-800/80 text-slate-300 rounded border border-slate-600/50 font-semibold">
+                  🏆 {sortedFactors[0].label}
                 </div>
               )}
             </div>
@@ -915,19 +1018,19 @@ export function InsightCard(props: InsightCardProps) {
 
         {/* ===== QUICK SUMMARY - Game Prediction (AI picks only) ===== */}
         {!isManualPick && props.writeups && props.writeups.gamePrediction && (
-          <div className="p-4 bg-gradient-to-br from-slate-800 to-slate-700 border-b border-cyan-500/20">
-            <div className="bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-lg p-4 border border-cyan-500/20">
-              <div className="text-[10px] font-bold text-cyan-400 uppercase mb-2 flex items-center gap-2">
-                <span>🎯</span>
+          <div className="p-4" style={{ background: 'rgba(15,15,25,0.9)', borderBottom: `1px solid ${rarity.borderColor}20` }}>
+            <div className="bg-slate-900/60 rounded-lg p-4" style={{ border: `1px solid ${rarity.borderColor}20` }}>
+              <div className={`text-[10px] font-bold ${rarity.textColor} uppercase mb-2 flex items-center gap-2`}>
+                <span>◆</span>
                 <span>{safePick.type === 'SPREAD' ? 'Spread Projection' : 'Score Projection'}</span>
               </div>
-              <p className="text-cyan-100 text-sm font-medium">{props.writeups.gamePrediction}</p>
+              <p className="text-slate-200 text-sm font-medium">{props.writeups.gamePrediction}</p>
               {/* ONLY show predicted score for TOTAL picks */}
               {safePick.type === 'TOTAL' && (
-                <div className="bg-gradient-to-r from-slate-800 to-slate-700 rounded-lg p-3 mt-2 border border-cyan-500/30">
+                <div className="bg-slate-800/60 rounded-lg p-3 mt-2" style={{ border: `1px solid ${rarity.borderColor}30` }}>
                   <div className="text-center">
-                    <div className="text-[10px] text-cyan-300 font-semibold mb-1">PREDICTED FINAL SCORE</div>
-                    <div className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-blue-300">
+                    <div className={`text-[10px] ${rarity.textColor} font-semibold mb-1`}>PREDICTED FINAL SCORE</div>
+                    <div className="text-xl font-black text-white">
                       {typeof props.matchup?.away === 'object' ? props.matchup.away.name : props.matchup?.away || 'Away'} {safePredictedScore.away} - {safePredictedScore.home} {typeof props.matchup?.home === 'object' ? props.matchup.home.name : props.matchup?.home || 'Home'}
                     </div>
                   </div>
@@ -939,22 +1042,26 @@ export function InsightCard(props: InsightCardProps) {
 
         {/* ===== COLLAPSIBLE ADVANCED DETAILS BUTTON (AI picks only) ===== */}
         {!isManualPick && (
-          <div className="p-4 bg-slate-800 border-b border-slate-700">
+          <div className="p-4" style={{ background: 'rgba(15,15,25,0.9)', borderBottom: `1px solid ${rarity.borderColor}20` }}>
             <button
               onClick={() => setShowAdvancedDetails(!showAdvancedDetails)}
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-lg transition-all duration-200 text-sm"
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 text-white font-bold rounded-lg transition-all duration-200 text-sm hover:scale-[1.02]"
+              style={{
+                background: `linear-gradient(180deg, ${rarity.borderColor}40 0%, ${rarity.borderColor}20 100%)`,
+                border: `1px solid ${rarity.borderColor}60`
+              }}
             >
               {showAdvancedDetails ? (
                 <>
-                  <ChevronUp className="w-5 h-5" />
-                  <span>HIDE ADVANCED DETAILS</span>
-                  <ChevronUp className="w-5 h-5" />
+                  <ChevronUp className="w-4 h-4" />
+                  <span>Hide Advanced Details</span>
+                  <ChevronUp className="w-4 h-4" />
                 </>
               ) : (
                 <>
-                  <ChevronDown className="w-5 h-5" />
-                  <span>SHOW ADVANCED DETAILS</span>
-                  <ChevronDown className="w-5 h-5" />
+                  <ChevronDown className="w-4 h-4" />
+                  <span>Show Advanced Details</span>
+                  <ChevronDown className="w-4 h-4" />
                 </>
               )}
             </button>
@@ -963,15 +1070,15 @@ export function InsightCard(props: InsightCardProps) {
 
         {/* ===== ADVANCED DETAILS SECTION (COLLAPSIBLE - AI picks only) ===== */}
         {!isManualPick && showAdvancedDetails && (
-          <div className="border-b border-slate-700">
+          <div style={{ borderBottom: `1px solid ${rarity.borderColor}20` }}>
             {/* AI Writeups - Bold Predictions */}
             {props.bold_predictions && props.bold_predictions.predictions && props.bold_predictions.predictions.length > 0 && (
-              <div className="p-4 bg-gradient-to-br from-slate-800 to-slate-700 border-b border-cyan-500/20">
+              <div className="p-4" style={{ background: 'rgba(15,15,25,0.9)', borderBottom: `1px solid ${rarity.borderColor}15` }}>
                 <div className="space-y-3">
                   {/* Section Header */}
-                  <div className="flex items-center gap-2 pb-2 border-b border-slate-700">
-                    <span className="text-base">🎯</span>
-                    <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wide">Bold Picks</h3>
+                  <div className="flex items-center gap-2 pb-2" style={{ borderBottom: '1px solid rgba(100,100,120,0.3)' }}>
+                    <span className={`text-sm ${rarity.textColor}`}>◆</span>
+                    <h3 className={`text-xs font-bold ${rarity.textColor} uppercase tracking-wider`}>Bold Picks</h3>
                   </div>
 
                   {/* Summary */}
@@ -1002,7 +1109,7 @@ export function InsightCard(props: InsightCardProps) {
                         </div>
 
                         {/* The Prediction - HERO */}
-                        <div className="text-sm font-bold text-cyan-300 mb-1">
+                        <div className={`text-sm font-bold ${rarity.textColor} mb-1`}>
                           {pred.prediction}
                         </div>
 
@@ -1019,18 +1126,18 @@ export function InsightCard(props: InsightCardProps) {
 
             {/* Injury Summary */}
             {props.injury_summary && (
-              <div className="p-4 bg-gradient-to-br from-slate-800 to-slate-700 border-b border-cyan-500/20">
-                <div className="text-sm font-bold text-cyan-300 mb-3 flex items-center gap-2">
-                  <span>🏥</span>
-                  <span>INJURY SUMMARY</span>
+              <div className="p-4" style={{ background: 'rgba(15,15,25,0.9)', borderBottom: `1px solid ${rarity.borderColor}15` }}>
+                <div className={`text-xs font-bold ${rarity.textColor} mb-3 flex items-center gap-2 uppercase tracking-wider`}>
+                  <span>◆</span>
+                  <span>Injury Summary</span>
                 </div>
-                <div className="bg-gradient-to-br from-slate-900/60 to-slate-800/60 rounded-lg p-3 border border-cyan-500/20">
+                <div className="bg-slate-900/60 rounded-lg p-3" style={{ border: `1px solid ${rarity.borderColor}20` }}>
                   <p className="text-white text-sm leading-relaxed">{props.injury_summary.summary}</p>
                   {props.injury_summary.findings && props.injury_summary.findings.length > 0 && (
                     <div className="mt-2 space-y-2">
                       {props.injury_summary.findings.map((finding, index) => (
-                        <div key={index} className="text-xs text-cyan-200 bg-slate-800/50 rounded px-2 py-1.5">
-                          <span className="font-semibold">{finding.team}:</span> {finding.player} - {finding.status} <span className="text-cyan-400">(Impact: {finding.impact})</span>
+                        <div key={index} className="text-xs text-slate-300 bg-slate-800/50 rounded px-2 py-1.5">
+                          <span className="font-semibold">{finding.team}:</span> {finding.player} - {finding.status} <span className={rarity.textColor}>(Impact: {finding.impact})</span>
                         </div>
                       ))}
                     </div>
@@ -1040,15 +1147,15 @@ export function InsightCard(props: InsightCardProps) {
             )}
 
             {/* ALL Confidence Factors - Detailed */}
-            <div className="p-4 bg-gradient-to-br from-slate-800 to-slate-700 border-b border-cyan-500/20">
+            <div className="p-4" style={{ background: 'rgba(15,15,25,0.9)', borderBottom: `1px solid ${rarity.borderColor}15` }}>
               <div className="flex items-center justify-between mb-4">
-                <div className="text-sm font-bold text-cyan-300 flex items-center gap-2">
-                  <span className="text-lg">📈</span>
-                  <span>ALL EDGE FACTORS</span>
+                <div className={`text-xs font-bold ${rarity.textColor} flex items-center gap-2 uppercase tracking-wider`}>
+                  <span>◆</span>
+                  <span>All Edge Factors</span>
                 </div>
                 {sortedFactors.length > 0 && (
-                  <div className="text-[10px] px-2 py-1 bg-cyan-500/10 text-cyan-300 rounded border border-cyan-500/30 font-semibold">
-                    🏆 Dominant: {sortedFactors[0].label}
+                  <div className="text-[10px] px-2 py-1 bg-slate-800/80 text-slate-300 rounded border border-slate-600/50 font-semibold">
+                    🏆 {sortedFactors[0].label}
                   </div>
                 )}
               </div>
@@ -1121,8 +1228,8 @@ export function InsightCard(props: InsightCardProps) {
                     {safeMarket.confAdj > 0 ? '+' : ''}{safeMarket.confAdj.toFixed(2)}
                   </div>
                 </div>
-                <div className="bg-gradient-to-br from-cyan-900/40 to-blue-900/40 rounded-lg p-2 border-2 border-cyan-500/40">
-                  <div className="text-[10px] text-cyan-300 uppercase mb-1 font-bold">CONF FINAL</div>
+                <div className="rounded-lg p-2" style={{ background: `linear-gradient(135deg, ${rarity.borderColor}20, ${rarity.borderColor}10)`, border: `2px solid ${rarity.borderColor}60` }}>
+                  <div className={`text-[10px] ${rarity.textColor} uppercase mb-1 font-bold`}>CONF FINAL</div>
                   <div className="text-lg font-mono font-bold text-white">
                     {safeMarket.confFinal.toFixed(2)}
                   </div>
@@ -1166,10 +1273,10 @@ export function InsightCard(props: InsightCardProps) {
 
             {/* Professional Analysis - Compact */}
             {props.writeups && props.writeups.prediction && (
-              <div className="p-4 bg-gradient-to-br from-slate-800 to-slate-700 border-b border-cyan-500/20">
-                <div className="bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-lg p-4 border border-cyan-500/20">
-                  <div className="text-[10px] font-bold text-cyan-400 uppercase mb-2 flex items-center gap-2">
-                    <span>📊</span>
+              <div className="p-4" style={{ background: 'rgba(15,15,25,0.9)', borderBottom: `1px solid ${rarity.borderColor}15` }}>
+                <div className="bg-slate-900/60 rounded-lg p-4" style={{ border: `1px solid ${rarity.borderColor}20` }}>
+                  <div className={`text-[10px] font-bold ${rarity.textColor} uppercase mb-2 flex items-center gap-2 tracking-wider`}>
+                    <span>◆</span>
                     <span>Professional Analysis</span>
                   </div>
                   <div className="text-white text-sm leading-relaxed font-medium whitespace-pre-wrap">{props.writeups.prediction}</div>
@@ -1180,7 +1287,7 @@ export function InsightCard(props: InsightCardProps) {
         )}
 
         {/* RESULTS Section - Compact */}
-        <div className="p-4 bg-gradient-to-br from-slate-900 to-slate-800 border-t border-cyan-500/20">
+        <div className="p-4" style={{ background: 'rgba(15,15,25,0.9)', borderTop: `1px solid ${rarity.borderColor}20` }}>
           {props.results && props.results.status !== 'pending' ? (
             <div className="space-y-4">
               {/* Result Header - Compact */}
@@ -1212,10 +1319,10 @@ export function InsightCard(props: InsightCardProps) {
 
               {/* AI Post-Mortem Analysis - Compact */}
               {props.results.postMortem && (
-                <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/50">
+                <div className="bg-slate-800/50 rounded-lg p-4" style={{ border: `1px solid ${rarity.borderColor}20` }}>
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-base">🧠</span>
-                    <h3 className="text-xs font-bold text-cyan-300 uppercase tracking-wide">AI Post-Mortem Analysis</h3>
+                    <span className={`text-sm ${rarity.textColor}`}>◆</span>
+                    <h3 className={`text-xs font-bold ${rarity.textColor} uppercase tracking-wider`}>AI Post-Mortem Analysis</h3>
                   </div>
                   <div className="text-sm text-slate-200 leading-relaxed whitespace-pre-line">
                     {props.results.postMortem}
@@ -1225,10 +1332,10 @@ export function InsightCard(props: InsightCardProps) {
 
               {/* Factor Accuracy Breakdown */}
               {props.results.factorAccuracy && props.results.factorAccuracy.length > 0 && (
-                <div className="bg-slate-800/50 rounded-lg p-5 border border-slate-700/50">
+                <div className="bg-slate-800/50 rounded-lg p-5" style={{ border: `1px solid ${rarity.borderColor}20` }}>
                   <div className="flex items-center gap-2 mb-4">
-                    <span className="text-lg">📊</span>
-                    <h3 className="text-sm font-bold text-cyan-300 uppercase tracking-wide">Factor Accuracy</h3>
+                    <span className={`text-sm ${rarity.textColor}`}>◆</span>
+                    <h3 className={`text-xs font-bold ${rarity.textColor} uppercase tracking-wider`}>Factor Accuracy</h3>
                   </div>
                   <div className="space-y-3">
                     {props.results.factorAccuracy.map((factor, index) => (
@@ -1329,56 +1436,45 @@ export function InsightCard(props: InsightCardProps) {
           )}
         </div>
 
-        {/* Footer - Compact */}
-        <div className="p-3 bg-slate-900 border-t border-slate-700">
-          {/* Metadata - Moved to small footer */}
-          <div className="text-center text-slate-500 text-[9px] mb-2">
+        {/* Footer - Diablo style */}
+        <div
+          className="p-4 rounded-b-lg"
+          style={{
+            background: 'linear-gradient(180deg, rgba(15,15,25,0.95) 0%, rgba(10,10,18,1) 100%)',
+            borderTop: `1px solid ${rarity.borderColor}30`
+          }}
+        >
+          {/* Metadata */}
+          <div className="text-center text-slate-500 text-[10px] mb-3">
             <div className="flex items-center justify-center gap-2">
               {isManualPick ? (
                 <>
                   <span>👤 {capperName}</span>
-                  <span>•</span>
+                  <span className="text-slate-600">•</span>
                   <span>Pick Placed: {formatLocalTime(props.generatedAt)}</span>
                 </>
               ) : (
                 <>
-                  <span>{safePick.type === 'SPREAD' ? '🎯 NBA Spread Model v1' : '🎯 NBA Totals Model v1'}</span>
-                  <span>•</span>
-                  <span>Pick Generated: {formatLocalTime(props.generatedAt)}</span>
+                  <span>{safePick.type === 'SPREAD' ? '🎯 NBA Spread Model' : '🎯 NBA Totals Model'}</span>
+                  <span className="text-slate-600">•</span>
+                  <span>Generated: {formatLocalTime(props.generatedAt)}</span>
                 </>
               )}
             </div>
           </div>
 
-          {/* Buttons - Compact */}
-          <div className="flex justify-center gap-3">
+          {/* Close Button - styled with rarity */}
+          <div className="flex justify-center">
             <button
               onClick={props.onClose}
-              className="px-5 py-1.5 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 transition-colors"
+              className="px-6 py-2 text-white rounded-lg text-sm font-bold transition-all hover:scale-105"
+              style={{
+                background: `linear-gradient(180deg, ${rarity.borderColor}80 0%, ${rarity.borderColor}60 100%)`,
+                border: `1px solid ${rarity.borderColor}`,
+                boxShadow: `0 0 10px ${rarity.glowColor}`
+              }}
             >
               Close
-            </button>
-            <button
-              onClick={() => {
-                const cardData = {
-                  capper: props.capper,
-                  sport: props.sport,
-                  gameId: props.gameId,
-                  generatedAt: props.generatedAt,
-                  matchup: props.matchup,
-                  pick: props.pick,
-                  predictedScore: props.predictedScore,
-                  writeups: props.writeups,
-                  factors: props.factors,
-                  market: props.market,
-                  results: props.results,
-                }
-                navigator.clipboard.writeText(JSON.stringify(cardData, null, 2))
-                alert('Insight Card JSON copied to clipboard!')
-              }}
-              className="px-5 py-1.5 bg-slate-600 text-white rounded-lg text-sm font-semibold hover:bg-slate-700 transition-colors"
-            >
-              📋 Copy JSON
             </button>
           </div>
         </div>

@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 
 import { PickInsightModal } from '@/components/dashboard/pick-insight-modal'
+import { getRarityFromConfidence } from '@/app/cappers/shiva/management/components/insight-card'
 import Link from 'next/link'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
 import { useAuth } from '@/contexts/auth-context'
@@ -641,13 +642,21 @@ export function ProfessionalDashboard() {
                         pick.game_snapshot?.game_date
                       const countdown = getCountdown(gameTime)
 
+                      // Get rarity based on confidence for Diablo-style card styling
+                      const rarity = getRarityFromConfidence(pick.confidence || 50)
+
                       return (
                         <div
                           key={pick.id}
-                          className={`relative rounded-xl transition-all duration-200 cursor-pointer group overflow-hidden ${isLocked
-                            ? 'bg-slate-900/80 border border-slate-700/50'
-                            : 'bg-gradient-to-br from-slate-800/90 via-slate-800/70 to-slate-900/90 border border-cyan-500/30 hover:border-cyan-400 hover:shadow-xl hover:shadow-cyan-500/20 hover:scale-[1.02]'
-                            }`}
+                          className={`relative rounded-lg transition-all duration-200 cursor-pointer group overflow-hidden ${isLocked ? 'opacity-60' : 'hover:scale-[1.02]'}`}
+                          style={isLocked ? {
+                            background: 'rgba(15,15,25,0.9)',
+                            border: '1px solid rgba(100,100,120,0.3)'
+                          } : {
+                            background: `linear-gradient(135deg, rgba(15,15,25,0.95) 0%, rgba(10,10,18,0.98) 100%)`,
+                            border: `2px solid ${rarity.borderColor}`,
+                            boxShadow: `0 0 15px ${rarity.glowColor}, inset 0 0 30px rgba(0,0,0,0.4)`
+                          }}
                           onClick={() => {
                             if (!isLocked) {
                               setSelectedPick(pick)
@@ -657,12 +666,12 @@ export function ProfessionalDashboard() {
                         >
                           {/* Locked Overlay */}
                           {isLocked && (
-                            <div className="absolute inset-0 z-10 bg-slate-900/95 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center gap-2 p-4">
-                              <div className="bg-gradient-to-br from-cyan-500/20 to-blue-500/20 p-2 rounded-full border border-cyan-500/30">
-                                <Lock className="h-4 w-4 text-cyan-400" />
+                            <div className="absolute inset-0 z-10 bg-slate-900/95 backdrop-blur-sm rounded-lg flex flex-col items-center justify-center gap-2 p-4">
+                              <div className="bg-gradient-to-br from-slate-700/50 to-slate-800/50 p-2 rounded-full border border-slate-600/50">
+                                <Lock className="h-4 w-4 text-slate-400" />
                               </div>
                               <p className="text-xs font-bold text-white">Premium</p>
-                              <Link href="/signup" className="text-[10px] text-cyan-400 hover:text-cyan-300 underline">
+                              <Link href="/signup" className="text-[10px] text-slate-400 hover:text-white underline">
                                 Unlock
                               </Link>
                             </div>
@@ -670,21 +679,25 @@ export function ProfessionalDashboard() {
 
                           {/* Card Content */}
                           <div className={`p-3 h-full flex flex-col ${isLocked ? 'blur-sm' : ''}`}>
-                            {/* Top Row: Capper Badge + Units */}
+                            {/* Top Row: Capper Badge + Rarity Badge */}
                             <div className="flex items-center justify-between mb-2">
                               <div className={`px-2 py-0.5 rounded text-[8px] sm:text-[9px] font-bold ${capperBadge.gradient} ${capperBadge.text} uppercase tracking-wide`}>
                                 {pick.capper || 'DeepPick'}
                               </div>
-                              <div className="flex items-center gap-1.5">
-                                {/* Stars - compact */}
-                                <div className="flex gap-0.5">
-                                  {renderConfidenceStars(pick.confidence)}
-                                </div>
+                              {/* Rarity Badge */}
+                              <div
+                                className="px-1.5 py-0.5 rounded text-[8px] font-bold text-white"
+                                style={{ background: `linear-gradient(135deg, ${rarity.borderColor}80, ${rarity.borderColor}60)` }}
+                              >
+                                {rarity.icon} {rarity.tier}
                               </div>
                             </div>
 
                             {/* Pick Selection - HERO */}
-                            <div className="text-sm sm:text-base font-black text-white group-hover:text-cyan-400 transition-colors leading-tight mb-2 line-clamp-2">
+                            <div
+                              className="text-sm sm:text-base font-black text-white transition-colors leading-tight mb-2 line-clamp-2"
+                              style={{ textShadow: `0 0 10px ${rarity.glowColor}` }}
+                            >
                               {pick.selection}
                             </div>
 
