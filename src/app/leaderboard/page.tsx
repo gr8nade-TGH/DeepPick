@@ -33,6 +33,9 @@ const CAPPER_COLORS: Record<string, string> = {
   'thief': 'from-violet-600 to-purple-700',
   'cerberus': 'from-red-500 to-orange-500',
   'deeppick': 'from-blue-500 to-cyan-500',
+  'picksmith': 'from-amber-500 to-orange-600',
+  'gr8nade': 'from-lime-500 to-green-600',
+  'marshal-harris': 'from-emerald-500 to-teal-600',
 }
 
 const CAPPER_ICONS: Record<string, string> = {
@@ -45,6 +48,9 @@ const CAPPER_ICONS: Record<string, string> = {
   'thief': '🎭',
   'cerberus': '🐺',
   'deeppick': '🎯',
+  'picksmith': '⚒️',
+  'gr8nade': '💎',
+  'marshal-harris': '🎖️',
 }
 
 const NBA_TEAMS = [

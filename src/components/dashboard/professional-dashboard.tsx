@@ -316,7 +316,9 @@ export function ProfessionalDashboard() {
         'thief': '🎭',
         'cerberus': '🐺',
         'deeppick': '🎯',
-        'gr8nade': '💎'
+        'gr8nade': '💎',
+        'picksmith': '⚒️',
+        'marshal-harris': '🎖️'
       }
 
       // Convert leaderboard data to Capper format

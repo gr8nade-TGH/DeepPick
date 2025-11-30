@@ -46,6 +46,8 @@ const CAPPER_CONFIG: Record<string, { color: string; initials: string }> = {
     'ATLAS': { color: 'bg-teal-500', initials: 'AT' },
     'ORACLE': { color: 'bg-emerald-500', initials: 'OR' },
     'GR8NADE': { color: 'bg-lime-500', initials: 'GR' },
+    'BLITZ': { color: 'bg-yellow-500', initials: 'BL' },
+    'MARSHAL-HARRIS': { color: 'bg-emerald-600', initials: 'MH' },
 }
 
 interface PickData {

@@ -162,7 +162,10 @@ const KNOWN_CAPPER_BRANDING: Record<string, { icon: string; color: string; gradi
   'TITAN': { icon: '🏔️', color: 'gray', gradient: 'from-gray-600 to-slate-700' },
   'THIEF': { icon: '🎭', color: 'violet', gradient: 'from-violet-600 to-purple-700' },
   'CERBERUS': { icon: '🐺', color: 'red', gradient: 'from-red-600 to-orange-700' },
-  'DEEPPICK': { icon: '🎯', color: 'blue', gradient: 'from-blue-600 to-cyan-700' }
+  'DEEPPICK': { icon: '🎯', color: 'blue', gradient: 'from-blue-600 to-cyan-700' },
+  'PICKSMITH': { icon: '⚒️', color: 'amber', gradient: 'from-amber-500 to-orange-600' },
+  'GR8NADE': { icon: '💎', color: 'lime', gradient: 'from-lime-500 to-green-600' },
+  'MARSHAL-HARRIS': { icon: '🎖️', color: 'emerald', gradient: 'from-emerald-500 to-teal-600' }
 }
 
 // Dynamic branding generator for new/unknown cappers
