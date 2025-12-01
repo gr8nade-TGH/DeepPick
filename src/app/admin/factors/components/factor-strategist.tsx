@@ -133,8 +133,8 @@ export function FactorStrategist({ open, onClose }: FactorStrategistProps) {
       text += `**${f.name}** - ${f.logic}\n`
     })
 
-    text += `\n## AVAILABLE STATS (From MySportsFeeds API)\n`
-    text += `Stats marked 🔓 are NOT yet used and available for new factors:\n\n`
+    text += `\n## ALL AVAILABLE STATS (From MySportsFeeds API)\n`
+    text += `You can use ANY of these stats. Stats marked 🔓 are not yet used in any factor.\n\n`
 
     const allStats = [
       ...FACTOR_INFO.availableStats.paceAndTempo,
@@ -149,17 +149,8 @@ export function FactorStrategist({ open, onClose }: FactorStrategistProps) {
       ...FACTOR_INFO.availableStats.splits,
     ]
 
-    const availableOnly = allStats.filter(s => !s.inUse)
-    const inUseStats = allStats.filter(s => s.inUse)
-
-    text += `### 🔓 AVAILABLE (Use these for new factors)\n`
-    availableOnly.forEach(s => {
-      text += `- ${s.stat}: ${s.desc}\n`
-    })
-
-    text += `\n### ✅ Already in use (for reference only)\n`
-    inUseStats.forEach(s => {
-      text += `- ${s.stat}: ${s.desc}\n`
+    allStats.forEach(s => {
+      text += `- ${s.stat}: ${s.desc} ${s.inUse ? '' : '🔓'}\n`
     })
 
     text += `\n## HOW FACTORS WORK\n`
@@ -188,9 +179,9 @@ export function FactorStrategist({ open, onClose }: FactorStrategistProps) {
     text += `6. **Confidence**: High/Medium/Low - how strong is the predictive logic?\n\n`
 
     text += `## CONSTRAINTS\n`
-    text += `- ONLY use stats from the 🔓 AVAILABLE list\n`
-    text += `- Do NOT duplicate logic already covered by existing factors\n`
-    text += `- Each factor should measure something DIFFERENT\n`
+    text += `- Use any stats from the list above (prioritize 🔓 unused ones where possible)\n`
+    text += `- Do NOT duplicate the existing factors listed above\n`
+    text += `- Each new factor should measure something DIFFERENT from the others\n`
     text += `- Prefer factors with clear, logical betting thesis over complex formulas\n`
     text += `- Think like a sharp bettor: what edges does the market miss?\n`
 
