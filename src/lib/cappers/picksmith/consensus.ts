@@ -1,6 +1,6 @@
 /**
  * PICKSMITH Consensus Module
- * 
+ *
  * Groups picks by game/type/side and detects consensus vs conflicts.
  * Core logic for determining when PICKSMITH should generate a pick.
  */
@@ -14,6 +14,25 @@ import type {
   EligibleCapper,
   GameConsensusOpportunity
 } from './types'
+
+// Map alternate abbreviations to standard ones
+const ABBREV_NORMALIZE: Record<string, string> = {
+  'BRK': 'BKN', // Brooklyn Nets
+  'CHO': 'CHA', // Charlotte Hornets
+  'GS': 'GSW',  // Golden State Warriors
+  'LOS': 'LAC', // Los Angeles Clippers (city-based)
+  'NOR': 'NOP', // New Orleans Pelicans
+  'NO': 'NOP',  // New Orleans Pelicans
+  'NY': 'NYK',  // New York Knicks
+  'PHO': 'PHX', // Phoenix Suns
+  'SAN': 'SAS', // San Antonio Spurs
+  'SA': 'SAS',  // San Antonio Spurs
+}
+
+function normalizeTeamAbbrev(abbrev: string): string {
+  const upper = abbrev.toUpperCase()
+  return ABBREV_NORMALIZE[upper] || upper
+}
 
 /**
  * Parse a pick selection to extract the "side"
@@ -37,7 +56,8 @@ export function parseSide(selection: string, pickType: string): { side: string; 
   } else if (pickType === 'spread') {
     // Parse spreads: "LAL -4.5" or "MEM +4.5"
     const parts = selection.split(/\s+/)
-    const teamAbbrev = parts[0]?.toUpperCase() || 'UNKNOWN'
+    const rawAbbrev = parts[0]?.toUpperCase() || 'UNKNOWN'
+    const teamAbbrev = normalizeTeamAbbrev(rawAbbrev)
     const lineMatch = selection.match(/([+-]?\d+\.?\d*)$/)
     const line = lineMatch ? parseFloat(lineMatch[1]) : undefined
 
@@ -46,8 +66,9 @@ export function parseSide(selection: string, pickType: string): { side: string; 
       line
     }
   } else if (pickType === 'moneyline') {
-    // Moneyline: Just the team name
-    return { side: selection.toUpperCase() }
+    // Moneyline: Just the team name (normalized)
+    const rawAbbrev = selection.toUpperCase()
+    return { side: normalizeTeamAbbrev(rawAbbrev) }
   }
 
   return { side: 'UNKNOWN' }

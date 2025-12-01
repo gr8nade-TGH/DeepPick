@@ -13,7 +13,9 @@ export const NBA_TEAMS: Record<string, TeamInfo> = {
   'ATL': { full: 'Atlanta Hawks', abbrev: 'ATL', city: 'Atlanta' },
   'BOS': { full: 'Boston Celtics', abbrev: 'BOS', city: 'Boston' },
   'BKN': { full: 'Brooklyn Nets', abbrev: 'BKN', city: 'Brooklyn' },
+  'BRK': { full: 'Brooklyn Nets', abbrev: 'BKN', city: 'Brooklyn' }, // MySportsFeeds alternate
   'CHA': { full: 'Charlotte Hornets', abbrev: 'CHA', city: 'Charlotte' },
+  'CHO': { full: 'Charlotte Hornets', abbrev: 'CHA', city: 'Charlotte' }, // MySportsFeeds alternate
   'CHI': { full: 'Chicago Bulls', abbrev: 'CHI', city: 'Chicago' },
   'CLE': { full: 'Cleveland Cavaliers', abbrev: 'CLE', city: 'Cleveland' },
   'DAL': { full: 'Dallas Mavericks', abbrev: 'DAL', city: 'Dallas' },
@@ -24,6 +26,7 @@ export const NBA_TEAMS: Record<string, TeamInfo> = {
   'HOU': { full: 'Houston Rockets', abbrev: 'HOU', city: 'Houston' },
   'IND': { full: 'Indiana Pacers', abbrev: 'IND', city: 'Indiana' },
   'LAC': { full: 'Los Angeles Clippers', abbrev: 'LAC', city: 'Los Angeles' },
+  'LOS': { full: 'Los Angeles Clippers', abbrev: 'LAC', city: 'Los Angeles' }, // MySportsFeeds alternate (city-based)
   'LAL': { full: 'Los Angeles Lakers', abbrev: 'LAL', city: 'Los Angeles' },
   'MEM': { full: 'Memphis Grizzlies', abbrev: 'MEM', city: 'Memphis' },
   'MIA': { full: 'Miami Heat', abbrev: 'MIA', city: 'Miami' },
@@ -31,16 +34,19 @@ export const NBA_TEAMS: Record<string, TeamInfo> = {
   'MIN': { full: 'Minnesota Timberwolves', abbrev: 'MIN', city: 'Minnesota' },
   'NOP': { full: 'New Orleans Pelicans', abbrev: 'NOP', city: 'New Orleans' },
   'NO': { full: 'New Orleans Pelicans', abbrev: 'NOP', city: 'New Orleans' }, // Alternate
+  'NOR': { full: 'New Orleans Pelicans', abbrev: 'NOP', city: 'New Orleans' }, // MySportsFeeds alternate
   'NYK': { full: 'New York Knicks', abbrev: 'NYK', city: 'New York' },
   'NY': { full: 'New York Knicks', abbrev: 'NYK', city: 'New York' }, // Alternate
   'OKC': { full: 'Oklahoma City Thunder', abbrev: 'OKC', city: 'Oklahoma City' },
   'ORL': { full: 'Orlando Magic', abbrev: 'ORL', city: 'Orlando' },
   'PHI': { full: 'Philadelphia 76ers', abbrev: 'PHI', city: 'Philadelphia' },
   'PHX': { full: 'Phoenix Suns', abbrev: 'PHX', city: 'Phoenix' },
+  'PHO': { full: 'Phoenix Suns', abbrev: 'PHX', city: 'Phoenix' }, // MySportsFeeds alternate
   'POR': { full: 'Portland Trail Blazers', abbrev: 'POR', city: 'Portland' },
   'SAC': { full: 'Sacramento Kings', abbrev: 'SAC', city: 'Sacramento' },
   'SAS': { full: 'San Antonio Spurs', abbrev: 'SAS', city: 'San Antonio' },
   'SA': { full: 'San Antonio Spurs', abbrev: 'SAS', city: 'San Antonio' }, // Alternate
+  'SAN': { full: 'San Antonio Spurs', abbrev: 'SAS', city: 'San Antonio' }, // MySportsFeeds alternate
   'TOR': { full: 'Toronto Raptors', abbrev: 'TOR', city: 'Toronto' },
   'UTA': { full: 'Utah Jazz', abbrev: 'UTA', city: 'Utah' },
   'WAS': { full: 'Washington Wizards', abbrev: 'WAS', city: 'Washington' }
@@ -60,15 +66,15 @@ export function resolveTeamName(input: string): TeamInfo {
   if (NBA_TEAMS[upper]) {
     return NBA_TEAMS[upper]
   }
-  
+
   // Try full name lookup (case-insensitive)
-  const entry = Object.values(NBA_TEAMS).find(t => 
+  const entry = Object.values(NBA_TEAMS).find(t =>
     t.full.toLowerCase() === input.toLowerCase().trim()
   )
   if (entry) {
     return entry
   }
-  
+
   // Try partial match on city or team name
   const partialMatch = Object.values(NBA_TEAMS).find(t =>
     t.full.toLowerCase().includes(input.toLowerCase().trim()) ||
@@ -77,7 +83,7 @@ export function resolveTeamName(input: string): TeamInfo {
   if (partialMatch) {
     return partialMatch
   }
-  
+
   // If no match found, throw error instead of returning fallback
   throw new Error(`Unknown NBA team: "${input}". Please use a valid team abbreviation or full name.`)
 }
