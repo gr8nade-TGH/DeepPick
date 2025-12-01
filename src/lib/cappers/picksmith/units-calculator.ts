@@ -38,21 +38,21 @@ function calculateWeightedUnits(
   agreeing: Array<{ units: number; capperNetUnits: number }>
 ): number {
   if (agreeing.length === 0) return 1
-  
+
   // Calculate total weight (sum of net units)
   const totalWeight = agreeing.reduce((sum, p) => sum + Math.max(p.capperNetUnits, 0.1), 0)
-  
+
   if (totalWeight === 0) {
     // Fallback to simple average if no weight
     return agreeing.reduce((sum, p) => sum + p.units, 0) / agreeing.length
   }
-  
+
   // Weighted average: sum(units * weight) / totalWeight
   const weightedSum = agreeing.reduce((sum, p) => {
     const weight = Math.max(p.capperNetUnits, 0.1)
     return sum + (p.units * weight)
   }, 0)
-  
+
   return weightedSum / totalWeight
 }
 
@@ -63,18 +63,18 @@ function calculateWeightedConfidence(
   agreeing: Array<{ confidence: number; capperNetUnits: number }>
 ): number {
   if (agreeing.length === 0) return 5.0
-  
+
   const totalWeight = agreeing.reduce((sum, p) => sum + Math.max(p.capperNetUnits, 0.1), 0)
-  
+
   if (totalWeight === 0) {
     return agreeing.reduce((sum, p) => sum + p.confidence, 0) / agreeing.length
   }
-  
+
   const weightedSum = agreeing.reduce((sum, p) => {
     const weight = Math.max(p.capperNetUnits, 0.1)
     return sum + (p.confidence * weight)
   }, 0)
-  
+
   return weightedSum / totalWeight
 }
 
@@ -83,7 +83,7 @@ function calculateWeightedConfidence(
  */
 export function calculatePicksmithUnits(group: ConsensusGroup): PicksmithDecision {
   const conflict = analyzeConflict(group)
-  
+
   // If can't generate pick, return early
   if (!conflict.canGeneratePick) {
     return {
@@ -95,21 +95,21 @@ export function calculatePicksmithUnits(group: ConsensusGroup): PicksmithDecisio
       contributingCappers: []
     }
   }
-  
+
   // Calculate base units (weighted average of agreeing cappers)
   const baseUnits = calculateWeightedUnits(group.agreeing)
-  
+
   // Apply consensus multiplier
   const multiplier = getConsensusMultiplier(group.agreeing.length)
   const multipliedUnits = baseUnits * multiplier
-  
+
   // Apply conflict penalty
   const penalty = getConflictPenalty(group.disagreeing.length)
   const finalUnits = Math.max(1, Math.min(5, Math.round(multipliedUnits - penalty)))
-  
+
   // Calculate confidence (weighted average)
   const confidence = calculateWeightedConfidence(group.agreeing)
-  
+
   // Build contributing cappers list
   const contributingCappers = group.agreeing.map(p => ({
     id: p.capperId,
@@ -117,13 +117,13 @@ export function calculatePicksmithUnits(group: ConsensusGroup): PicksmithDecisio
     units: p.units,
     netUnits: p.capperNetUnits
   }))
-  
+
   // Build reason string
   const capperNames = group.agreeing.map(p => p.capperName).join(', ')
   const reason = conflict.hasConflict
     ? `${group.agreeing.length}v${group.disagreeing.length} consensus from ${capperNames} (penalty applied)`
     : `Clean ${group.agreeing.length}v0 consensus from ${capperNames}`
-  
+
   return {
     shouldGenerate: true,
     reason,
@@ -137,21 +137,50 @@ export function calculatePicksmithUnits(group: ConsensusGroup): PicksmithDecisio
 /**
  * Format the selection string for PICKSMITH pick
  * Uses the most common line among agreeing cappers
+ *
+ * @param group - The consensus group
+ * @param gameContext - Optional game context with correct team abbreviations
  */
-export function formatSelection(group: ConsensusGroup): string {
+export function formatSelection(
+  group: ConsensusGroup,
+  gameContext?: { homeTeam: string; awayTeam: string }
+): string {
   // For totals
   if (group.pickType === 'total' || group.pickType.startsWith('total_')) {
     const line = group.line || group.agreeing[0]?.line || 220
     return `${group.side} ${line}`
   }
-  
-  // For spreads
+
+  // For spreads - use correct team abbreviation from game context if available
   if (group.pickType === 'spread') {
     const line = group.line || group.agreeing[0]?.line || 0
     const sign = line >= 0 ? '+' : ''
-    return `${group.side} ${sign}${line}`
+
+    // Determine correct team abbreviation
+    let teamAbbrev = group.side.toUpperCase()
+    if (gameContext) {
+      // Match against home/away teams (handle various formats)
+      const sideUpper = group.side.toUpperCase()
+      const homeUpper = gameContext.homeTeam.toUpperCase()
+      const awayUpper = gameContext.awayTeam.toUpperCase()
+
+      // Check if side matches home team (directly or starts with same letters)
+      if (sideUpper === homeUpper ||
+        homeUpper.startsWith(sideUpper.slice(0, 3)) ||
+        sideUpper.startsWith(homeUpper.slice(0, 3))) {
+        teamAbbrev = gameContext.homeTeam
+      }
+      // Check if side matches away team
+      else if (sideUpper === awayUpper ||
+        awayUpper.startsWith(sideUpper.slice(0, 3)) ||
+        sideUpper.startsWith(awayUpper.slice(0, 3))) {
+        teamAbbrev = gameContext.awayTeam
+      }
+    }
+
+    return `${teamAbbrev} ${sign}${line}`
   }
-  
+
   // Moneyline or unknown
   return group.side
 }

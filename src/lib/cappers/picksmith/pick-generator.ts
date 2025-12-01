@@ -236,7 +236,8 @@ export async function generatePicksmithPicks(): Promise<{
       const decision = calculatePicksmithUnits(group)
 
       if (decision.shouldGenerate) {
-        const selection = formatSelection(group)
+        // Pass game context to get correct team abbreviations
+        const selection = formatSelection(group, { homeTeam: game.homeTeam, awayTeam: game.awayTeam })
         const result: PicksmithResult = {
           gameId: game.id,
           pickType: 'spread',
