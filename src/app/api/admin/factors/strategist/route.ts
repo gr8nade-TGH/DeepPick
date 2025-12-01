@@ -1,69 +1,64 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 
-// All available stats for the AI to work with
-const AVAILABLE_STATS = {
-  // Pace & Tempo
-  pace: { name: 'Pace', desc: 'Possessions per game', unit: 'poss/game', inUse: true },
-  paceDelta: { name: 'Pace vs League', desc: 'Team pace minus league average', unit: 'delta', inUse: false },
-  paceVariance: { name: 'Pace Variance', desc: 'Std dev of pace over last 10 games', unit: 'stdev', inUse: false },
+// ACTUAL stats available in NBAStatsBundle - these are what we can use in formulas
+// Each stat exists for BOTH teams with away/home prefixes
+const STATS_BUNDLE_REFERENCE = `
+## NBAStatsBundle - Available Stats (from MySportsFeeds API)
 
-  // Offense
-  ortg: { name: 'Offensive Rating', desc: 'Points per 100 possessions', unit: 'pts/100', inUse: true },
-  ppg: { name: 'Points Per Game', desc: 'Average points scored', unit: 'pts', inUse: false },
-  fgPct: { name: 'Field Goal %', desc: 'Field goal percentage', unit: '%', inUse: false },
-  avgEfg: { name: 'Effective FG%', desc: '(FGM + 0.5*3PM) / FGA', unit: '%', inUse: true },
-  threeP_pct: { name: '3-Point %', desc: '3-point percentage', unit: '%', inUse: true },
-  threeP_rate: { name: '3-Point Rate', desc: '3PA as % of total FGA', unit: '%', inUse: true },
-  fg3PtMade: { name: '3-Pointers Made', desc: '3PM per game', unit: '3pm', inUse: false },
-  ft_rate: { name: 'Free Throw Rate', desc: 'FTA per FGA', unit: 'ratio', inUse: true },
-  ftPct: { name: 'Free Throw %', desc: 'FT percentage', unit: '%', inUse: false },
-  assists: { name: 'Assists Per Game', desc: 'Avg assists', unit: 'ast', inUse: false },
-  astTovRatio: { name: 'AST/TOV Ratio', desc: 'Assists per turnover', unit: 'ratio', inUse: false },
+Every game has TWO teams: away team and home team. Stats are prefixed accordingly.
+For TOTALS, we typically combine both teams: (awayStat + homeStat) / 2 - leagueAvg
 
-  // Defense
-  drtg: { name: 'Defensive Rating', desc: 'Opp points per 100 poss', unit: 'pts/100', inUse: true },
-  oppPpg: { name: 'Opp Points Per Game', desc: 'Points allowed', unit: 'pts', inUse: false },
-  steals: { name: 'Steals Per Game', desc: 'Avg steals', unit: 'stl', inUse: false },
-  blocks: { name: 'Blocks Per Game', desc: 'Avg blocks', unit: 'blk', inUse: false },
-  oppFgPct: { name: 'Opp FG%', desc: 'Opponent FG% allowed', unit: '%', inUse: false },
-  oppThreePct: { name: 'Opp 3P%', desc: 'Opponent 3P% allowed', unit: '%', inUse: false },
+### Pace & Tempo
+- awayPaceSeason / homePaceSeason: Season pace (possessions per game)
+- awayPaceLast10 / homePaceLast10: Last 10 games pace
+- leaguePace: League average pace (~100.1)
 
-  // Ball Control
-  avgTurnovers: { name: 'Turnovers Per Game', desc: 'Avg turnovers', unit: 'tov', inUse: true },
-  avgTovPct: { name: 'Turnover %', desc: 'TOV per 100 poss', unit: '%', inUse: true },
-  oppTov: { name: 'Opp Turnovers', desc: 'Turnovers forced', unit: 'tov', inUse: false },
-  tovDiff: { name: 'Turnover Diff', desc: 'Forced minus committed', unit: 'diff', inUse: false },
+### Scoring
+- awayPointsPerGame / homePointsPerGame: Average PPG (last 5 games)
 
-  // Rebounding
-  avgOffReb: { name: 'Offensive Rebounds', desc: 'OREB per game', unit: 'oreb', inUse: true },
-  avgDefReb: { name: 'Defensive Rebounds', desc: 'DREB per game', unit: 'dreb', inUse: true },
-  totalReb: { name: 'Total Rebounds', desc: 'Total REB per game', unit: 'reb', inUse: false },
-  avgOrebPct: { name: 'OREB%', desc: 'Offensive rebound %', unit: '%', inUse: true },
-  rebDiff: { name: 'Rebound Differential', desc: 'REB minus opp REB', unit: 'diff', inUse: false },
+### Offensive Efficiency
+- awayORtgLast10 / homeORtgLast10: Offensive rating (pts per 100 poss)
+- leagueORtg: League average ORtg (~114.5)
 
-  // Splits
-  ortgHome: { name: 'Home ORtg', desc: 'ORtg in home games', unit: 'pts/100', inUse: true },
-  ortgAway: { name: 'Away ORtg', desc: 'ORtg in away games', unit: 'pts/100', inUse: true },
-  drtgHome: { name: 'Home DRtg', desc: 'DRtg in home games', unit: 'pts/100', inUse: true },
-  drtgAway: { name: 'Away DRtg', desc: 'DRtg in away games', unit: 'pts/100', inUse: true },
+### Defensive Efficiency
+- awayDRtgSeason / homeDRtgSeason: Defensive rating (opp pts per 100 poss)
+- leagueDRtg: League average DRtg (~114.5)
 
-  // Standings
-  winPct: { name: 'Win %', desc: 'Overall win percentage', unit: '%', inUse: false },
-  confRank: { name: 'Conference Rank', desc: 'Ranking in conference', unit: 'rank', inUse: false },
-  streak: { name: 'Win/Loss Streak', desc: 'Current streak', unit: 'games', inUse: false },
-  last10: { name: 'Last 10 Record', desc: 'Wins in last 10', unit: 'wins', inUse: false },
-  netRtg: { name: 'Net Rating', desc: 'ORtg minus DRtg', unit: 'pts/100', inUse: false },
+### 3-Point Environment
+- away3PAR / home3PAR: 3-point attempt rate (3PA / FGA)
+- awayOpp3PAR / homeOpp3PAR: Opponent 3PA rate allowed
+- away3Pct / home3Pct: Season 3-point percentage
+- away3PctLast10 / home3PctLast10: Last 10 games 3P%
+- league3PAR: League average 3PA rate (~0.39)
+- league3Pct: League average 3P% (~0.36)
 
-  // Situational
-  restDays: { name: 'Rest Days', desc: 'Days since last game', unit: 'days', inUse: true },
-  b2bGame: { name: 'Back-to-Back', desc: 'Is this a B2B game?', unit: 'bool', inUse: false },
-  q4Diff: { name: 'Q4 Scoring Diff', desc: '4th quarter scoring margin', unit: 'pts', inUse: false },
+### Free Throw Environment
+- awayFTr / homeFTr: Free throw rate (FTA / FGA)
+- awayOppFTr / homeOppFTr: Opponent FT rate allowed
+- leagueFTr: League average FT rate (~0.22)
 
-  // Misc
-  fouls: { name: 'Fouls Per Game', desc: 'Personal fouls', unit: 'pf', inUse: false },
-  plusMinus: { name: 'Plus/Minus', desc: 'Point differential', unit: '+/-', inUse: false },
-}
+### Turnovers
+- awayTOVLast10 / homeTOVLast10: Turnovers per game (last 10)
+
+### Rebounding
+- awayOffReb / homeOffReb: Offensive rebounds per game
+- awayDefReb / homeDefReb: Defensive rebounds per game
+- awayOppOffReb / homeOppOffReb: Opponent OREB allowed
+- awayOppDefReb / homeOppDefReb: Opponent DREB allowed
+
+### Four Factors (Dean Oliver)
+- awayEfg / homeEfg: Effective FG% = (FGM + 0.5*3PM) / FGA
+- awayTovPct / homeTovPct: Turnover percentage
+- awayOrebPct / homeOrebPct: Offensive rebound percentage
+- awayFtr / homeFtr: Free throw rate
+
+### Home/Away Splits
+- awayORtgHome / awayORtgAway: Away team's ORtg at home vs road
+- homeORtgHome / homeORtgAway: Home team's ORtg at home vs road
+- awayDRtgHome / awayDRtgAway: Away team's DRtg at home vs road
+- homeDRtgHome / homeDRtgAway: Home team's DRtg at home vs road
+`
 
 interface FactorProposal {
   name: string
@@ -91,11 +86,6 @@ export async function POST(request: NextRequest) {
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
-    // Build the expert prompt
-    const statsDescription = Object.entries(AVAILABLE_STATS)
-      .map(([key, stat]) => `- ${key}: ${stat.name} (${stat.desc}) [${stat.unit}] ${stat.inUse ? '⚡IN USE' : ''}`)
-      .join('\n')
-
     const systemPrompt = `You are an elite NBA sports bettor with 20+ years of profitable experience. You understand:
 - Market inefficiencies and where the public consistently gets it wrong
 - The mathematics behind totals and spreads betting
@@ -112,88 +102,94 @@ You think like a professional handicapper, not a casual fan. You know that:
 - Back-to-backs affect defense more than offense`
 
     const userPrompt = betType === 'TOTALS'
-      ? `TASK: Design ${count} NEW factors for NBA TOTALS betting (over/under predictions).
+      ? `TASK: Design ${count} NEW factor CONCEPTS for NBA TOTALS betting (over/under predictions).
 
-AVAILABLE STATISTICS:
-${statsDescription}
+${STATS_BUNDLE_REFERENCE}
 
-CURRENT FACTORS ALREADY IN USE:
-- paceIndex: Uses pace (combined team tempos)
-- threeEnv: Uses threeP_pct, threeP_rate (3-point environment)
-- whistleEnv: Uses ft_rate (free throw environment)
-- defErosion: Uses drtg, restDays (defensive fatigue)
-- fourFactorsDiff: Uses avgEfg, avgTovPct, avgOrebPct (Dean Oliver's Four Factors)
-- homeAwaySplits: Uses ortgHome, ortgAway, drtgHome, drtgAway
+CURRENT FACTORS ALREADY IN USE (avoid overlap):
+- paceIndex: Combined team pace vs league average
+- offForm: Combined offensive rating vs league average
+- defErosion: Combined defensive rating + injury impact
+- threeEnv: 3-point attempt rate and shooting percentage
+- whistleEnv: Free throw rate environment
+
+FORMULA STRUCTURE - IMPORTANT:
+For TOTALS, we predict combined scoring of BOTH teams. Your formula should explain how to combine stats:
+
+GOOD FORMULA EXAMPLES:
+- "((awayOffReb + homeOffReb) / 2) - leagueAvg → Higher = more second chances = OVER"
+- "((awayTOVLast10 + homeTOVLast10) / 2) → Higher turnovers = fewer possessions = UNDER"
+- "(awayORtgLast10 + homeDRtgSeason) / 2 - leagueORtg → Matchup quality indicator"
+
+BAD FORMULAS (too vague):
+- "(pace + oppTov) / 2" ← Which team's pace? Who is the opponent?
+- "offReb * ortg" ← Need away/home prefixes
 
 REQUIREMENTS:
-1. Each factor should combine 2-4 stats in a MEANINGFUL way
-2. Avoid redundancy with existing factors
-3. Focus on factors that predict SCORING TOTALS (over/under)
-4. Each factor needs a clear betting thesis explaining WHY it works
-5. Specify direction: does higher value predict OVER or UNDER?
-6. Think contrarian - what edges does the public miss?
+1. Use EXACT stat names from NBAStatsBundle (with away/home prefixes)
+2. Explain how to combine both teams' stats for a TOTALS prediction
+3. Compare to league average when relevant
+4. Specify direction: higher value → OVER or UNDER
+5. Include a clear betting thesis explaining the edge
 
-FACTOR IDEAS TO CONSIDER:
-- Pace mismatch factors (fast vs slow team matchups)
-- Offensive rebounding creates second chances = more points
-- Teams that force turnovers create transition opportunities
-- Free throw variance (high FT teams = more consistent scoring)
-- Defensive matchup vulnerabilities
-
-Return a JSON object with this exact structure:
+Return JSON:
 {
   "factors": [
     {
       "name": "Human-readable name",
       "key": "camelCaseKey",
       "description": "What this factor measures",
-      "stats_used": ["stat1", "stat2"],
-      "formula": "How to calculate: (statA + statB) / 2 or similar",
+      "stats_used": ["awayStatName", "homeStatName", "leagueAvg"],
+      "formula": "Exact formula using away/home/league prefixes",
       "direction": "higher_over" or "higher_under",
-      "betting_thesis": "Why this predicts scoring totals - the betting edge",
-      "edge_explanation": "Why the market misses this / what inefficiency it exploits",
+      "betting_thesis": "Why this predicts OVER or UNDER",
+      "edge_explanation": "Why the market misses this",
       "confidence": "high" or "medium" or "low"
     }
   ]
 }`
-      : `TASK: Design ${count} NEW factors for NBA SPREAD betting (point spread/moneyline predictions).
+      : `TASK: Design ${count} NEW factor CONCEPTS for NBA SPREAD betting (point spread/ATS predictions).
 
-AVAILABLE STATISTICS:
-${statsDescription}
+${STATS_BUNDLE_REFERENCE}
 
-CURRENT FACTORS ALREADY IN USE:
-- netRatingDiff: Uses ortg, drtg (overall team quality gap)
-- homeAwaySplits: Uses ortgHome, ortgAway, drtgHome, drtgAway (location performance)
-- restAdvantage: Uses restDays (fatigue differential)
-- momentumFactor: Uses last10, streak (recent form)
+CURRENT FACTORS ALREADY IN USE (avoid overlap):
+- netRatingDiff: Away vs Home net rating (ORtg - DRtg)
+- paceMismatch: Pace differential and tempo control
+- homeAwaySplits: Location-based performance splits
+- fourFactorsDiff: Dean Oliver's Four Factors comparison
+
+FORMULA STRUCTURE - IMPORTANT:
+For SPREAD betting, we compare the TWO teams to predict who covers.
+Use "away" prefix for away team, "home" prefix for home team.
+Positive signal = AWAY team covers, Negative signal = HOME team covers.
+
+GOOD FORMULA EXAMPLES:
+- "(awayDRtgSeason - homeDRtgSeason) → Lower DRtg = better defense, negative = home covers"
+- "(awayEfg - homeEfg) → Positive = away is more efficient"
+- "(awayTOVLast10 - homeTOVLast10) → Higher turnovers = disadvantage"
+
+BAD FORMULAS (too vague):
+- "drtg - oppDrtg" ← Which team is which?
+- "pace * efficiency" ← Need away/home prefixes
 
 REQUIREMENTS:
-1. Each factor should combine 2-4 stats in a MEANINGFUL way
-2. Avoid redundancy with existing factors  
-3. Focus on factors that predict WHICH TEAM COVERS THE SPREAD
-4. Each factor needs a clear betting thesis explaining WHY it works
-5. Specify direction: does higher value favor FAVORITE or UNDERDOG covering?
-6. Think contrarian - what edges does the public miss?
+1. Use EXACT stat names from NBAStatsBundle (with away/home prefixes)
+2. Explain the comparison logic between the two teams
+3. Specify direction: positive signal favors AWAY or HOME covering
+4. Include a clear betting thesis explaining the ATS edge
 
-FACTOR IDEAS TO CONSIDER:
-- True quality gaps (the market overreacts to recent games)
-- Defensive consistency predicts spread coverage better than offense
-- Turnover differential = possession advantage = more chances
-- Road teams with elite defense often cover
-- Public fades: contrarian plays against popular teams
-
-Return a JSON object with this exact structure:
+Return JSON:
 {
   "factors": [
     {
       "name": "Human-readable name",
-      "key": "camelCaseKey", 
+      "key": "camelCaseKey",
       "description": "What this factor measures",
-      "stats_used": ["stat1", "stat2"],
-      "formula": "How to calculate: (statA - statB) or similar",
-      "direction": "higher_favorite" or "higher_underdog",
-      "betting_thesis": "Why this predicts spread coverage - the betting edge",
-      "edge_explanation": "Why the market misses this / what inefficiency it exploits",
+      "stats_used": ["awayStatName", "homeStatName"],
+      "formula": "Exact formula comparing away vs home team",
+      "direction": "higher_away" or "higher_home",
+      "betting_thesis": "Why this predicts spread coverage",
+      "edge_explanation": "Why the market misses this",
       "confidence": "high" or "medium" or "low"
     }
   ]
