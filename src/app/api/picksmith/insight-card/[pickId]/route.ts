@@ -130,7 +130,14 @@ export async function GET(
           : pick.status === 'lost' ? 'loss'
             : pick.status === 'push' ? 'push'
               : 'pending',
-        finalScore: game?.final_score,
+        // Try game.final_score first (from games table), then pick.result?.final_score (graded)
+        finalScore: game?.final_score ? {
+          away: game.final_score.away,
+          home: game.final_score.home
+        } : pick.result?.final_score ? {
+          away: pick.result.final_score.away,
+          home: pick.result.final_score.home
+        } : undefined,
         postMortem: null
       },
       // PICKSMITH-specific fields

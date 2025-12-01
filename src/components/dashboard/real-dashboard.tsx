@@ -753,6 +753,7 @@ export function RealDashboard() {
       {showBreakdown && selectedPick && (
         <PickInsightModal
           pickId={selectedPick.id}
+          capper={selectedPick.capper}
           onClose={() => setShowBreakdown(false)}
         />
       )}

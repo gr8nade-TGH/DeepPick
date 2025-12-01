@@ -519,7 +519,14 @@ export async function GET(
             : pick.status === 'lost' ? 'loss'
               : pick.status === 'push' ? 'push'
                 : 'pending',
-          finalScore: undefined,
+          // Try pick.games?.final_score first (joined), then pick.result?.final_score (graded)
+          finalScore: pick.games?.final_score ? {
+            away: pick.games.final_score.away,
+            home: pick.games.final_score.home
+          } : pick.result?.final_score ? {
+            away: pick.result.final_score.away,
+            home: pick.result.final_score.home
+          } : undefined,
           postMortem: '',
           factorAccuracy: [],
           tuningSuggestions: [],
