@@ -21,7 +21,11 @@ export interface TierGradeResult {
 
 /**
  * Calculate tier grade based on comprehensive inputs.
- * Thresholds (adjusted for better distribution):
+ *
+ * IMPORTANT: baseConfidence can be on 0-10 scale (SHIVA) or 0-100 scale (legacy)
+ * We normalize to 0-100 scale for consistent tier calculation.
+ *
+ * Thresholds (on 0-100 scale with bonuses):
  * - Elite: 80+ (requires positive 7-day AND 4+ units)
  * - Legendary: 75-79 (high confidence + bonuses)
  * - Epic: 68-74 (strong picks)
@@ -30,7 +34,9 @@ export interface TierGradeResult {
  * - Common: <50 (low confidence)
  */
 export function calculateTierGrade(input: TierGradeInput): TierGradeResult {
-  let tierScore = input.baseConfidence
+  // Normalize baseConfidence to 0-100 scale if it's on 0-10 scale
+  const normalizedBase = input.baseConfidence <= 10 ? input.baseConfidence * 10 : input.baseConfidence
+  let tierScore = normalizedBase
   const bonuses = { units: 0, teamRecord: 0, hotStreak: 0 }
 
   // ===== UNITS BONUS (max +20 points) =====
@@ -97,13 +103,27 @@ export function calculateTierGrade(input: TierGradeInput): TierGradeResult {
 
 /**
  * Simple fallback: get rarity tier from confidence only (for legacy picks)
+ *
+ * IMPORTANT: Confidence can be on 0-10 scale (SHIVA system) or 0-100 scale (legacy)
+ * We detect which scale and normalize accordingly.
+ *
+ * 0-10 scale thresholds (SHIVA confidence):
+ * - Elite: ≥8.5
+ * - Legendary: ≥7.8
+ * - Epic: ≥7.0
+ * - Rare: ≥6.2
+ * - Uncommon: ≥5.2
+ * - Common: <5.2
  */
 export function getRarityTierFromConfidence(confidence: number): RarityTier {
-  if (confidence >= 85) return 'Elite'
-  if (confidence >= 78) return 'Legendary'
-  if (confidence >= 70) return 'Epic'
-  if (confidence >= 62) return 'Rare'
-  if (confidence >= 52) return 'Uncommon'
+  // Normalize to 0-10 scale if value appears to be on 0-100 scale
+  const normalizedConf = confidence > 10 ? confidence / 10 : confidence
+
+  if (normalizedConf >= 8.5) return 'Elite'
+  if (normalizedConf >= 7.8) return 'Legendary'
+  if (normalizedConf >= 7.0) return 'Epic'
+  if (normalizedConf >= 6.2) return 'Rare'
+  if (normalizedConf >= 5.2) return 'Uncommon'
   return 'Common'
 }
 
