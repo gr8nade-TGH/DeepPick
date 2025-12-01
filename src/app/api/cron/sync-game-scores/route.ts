@@ -10,27 +10,24 @@ import { formatDateForAPI } from '@/lib/data-sources/season-utils'
  * Runs every 10 minutes to check for completed games and update final scores
  * This triggers automatic pick grading via database trigger
  *
- * What it does:
- * 1. Fetches NBA games scoreboard from MySportsFeeds (today + past 2 days)
- * 2. Identifies games with status 'COMPLETED' or 'COMPLETED_PENDING_REVIEW'
- * 3. Updates games table with final scores and status='final'
- * 4. Database trigger automatically grades all pending picks for completed games
- * 5. Handles postponed/cancelled games
+ * OPTIMIZED: Only checks today + past 2 days to stay within Vercel's 10s timeout
+ * For older games, use /api/admin/grade-stale-picks manually
  */
+
+// Set max duration for Vercel serverless (Pro plan allows up to 60s)
+export const maxDuration = 60
 
 export async function GET() {
   const executionTime = new Date().toISOString()
-  console.log(`\n${'='.repeat(80)}`)
-  console.log(`🏀 [GAME-SCORES-SYNC] EXECUTION START: ${executionTime}`)
-  console.log(`${'='.repeat(80)}\n`)
+  console.log(`🏀 [GAME-SCORES-SYNC] START: ${executionTime}`)
 
   try {
     const startTime = Date.now()
     const supabase = getSupabaseAdmin()
 
-    // Fetch scores for today + past 7 days (to catch late-finishing games and missed updates)
+    // OPTIMIZED: Only check today + past 2 days (not 7) to stay within timeout
     const datesToCheck: string[] = []
-    for (let i = 0; i <= 7; i++) {
+    for (let i = 0; i <= 2; i++) {
       const date = new Date()
       date.setDate(date.getDate() - i)
       datesToCheck.push(formatDateForAPI(date))
