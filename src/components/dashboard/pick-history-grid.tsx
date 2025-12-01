@@ -14,6 +14,7 @@ interface Pick {
   pick_type: string
   confidence?: number
   created_at: string
+  is_system_pick?: boolean
   game_snapshot?: {
     away_team?: { abbreviation?: string }
     home_team?: { abbreviation?: string }
@@ -88,6 +89,7 @@ interface PickHistoryGridProps {
 
 type TimeFilter = '24h' | '7d' | '30d' | 'all'
 type TierFilter = 'all' | 'Common' | 'Uncommon' | 'Rare' | 'Epic' | 'Legendary'
+type SourceFilter = 'all' | 'system' | 'manual'
 
 // Get tier from stored tier_grade or fallback to confidence calculation
 const getTierFromPick = (pick: Pick): RarityTier => {
@@ -105,6 +107,7 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
   const [loading, setLoading] = useState(true)
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('7d')
   const [tierFilter, setTierFilter] = useState<TierFilter>('all')
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all')
 
   useEffect(() => {
     fetchPicks()
@@ -127,7 +130,7 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
     }
   }
 
-  // Filter and sort picks based on timeFilter and tierFilter
+  // Filter and sort picks based on timeFilter, tierFilter, and sourceFilter
   const picks = (() => {
     const now = new Date()
     let cutoffDate: Date | null = null
@@ -148,6 +151,14 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
     // Filter by tier
     if (tierFilter !== 'all') {
       filtered = filtered.filter(p => getTierFromPick(p) === tierFilter)
+    }
+
+    // Filter by source (system vs manual)
+    if (sourceFilter !== 'all') {
+      filtered = filtered.filter(p => {
+        const isSystem = p.is_system_pick === true
+        return sourceFilter === 'system' ? isSystem : !isSystem
+      })
     }
 
     // Sort: LIVE (pending) first, then by date descending
@@ -292,7 +303,7 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
         </div>
       </div>
 
-      {/* Header Row 2: Tier Filters */}
+      {/* Header Row 2: Tier Filters + Source Filter */}
       <div className="flex items-center gap-1 mb-3 flex-wrap">
         <span className="text-xs text-slate-500 mr-1">Tier:</span>
         {tierFilters.map(t => {
@@ -320,6 +331,41 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
             </button>
           )
         })}
+
+        {/* Divider */}
+        <span className="text-slate-600 mx-2">|</span>
+
+        {/* Source Filter */}
+        <span className="text-xs text-slate-500 mr-1">Source:</span>
+        <button
+          onClick={() => setSourceFilter('all')}
+          className={`h-6 px-2 text-[10px] font-semibold rounded transition-all ${sourceFilter === 'all'
+            ? 'bg-slate-600 text-white ring-1 ring-white/30'
+            : 'bg-slate-800 text-slate-400 hover:text-white'
+            }`}
+        >
+          All
+        </button>
+        <button
+          onClick={() => setSourceFilter('system')}
+          className={`h-6 px-2 text-[10px] font-semibold rounded transition-all flex items-center gap-1 ${sourceFilter === 'system'
+            ? 'bg-cyan-600/40 text-cyan-300 ring-1 ring-cyan-400/50'
+            : 'bg-slate-800 text-slate-400 hover:text-cyan-300'
+            }`}
+        >
+          <span>🤖</span>
+          <span>AI</span>
+        </button>
+        <button
+          onClick={() => setSourceFilter('manual')}
+          className={`h-6 px-2 text-[10px] font-semibold rounded transition-all flex items-center gap-1 ${sourceFilter === 'manual'
+            ? 'bg-purple-600/40 text-purple-300 ring-1 ring-purple-400/50'
+            : 'bg-slate-800 text-slate-400 hover:text-purple-300'
+            }`}
+        >
+          <span>👤</span>
+          <span>Manual</span>
+        </button>
       </div>
 
       {/* Grid */}
@@ -348,12 +394,15 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
                       : liveStatus === 'stale' ? { text: 'STALE', icon: '⚠️', color: 'text-orange-400' }
                         : { text: 'SCHEDULED', icon: '📅', color: 'text-cyan-400' }
 
+              // Determine source (system vs manual)
+              const isSystemPick = pick.is_system_pick === true
+
               return (
                 <Tooltip key={pick.id}>
                   <TooltipTrigger asChild>
                     <button
                       onClick={() => onPickClick?.(pick)}
-                      className={`w-6 h-6 rounded cursor-pointer transition-all hover:scale-125 flex items-center justify-center ${liveStatus === 'live' ? 'animate-pulse' : ''}`}
+                      className={`w-6 h-6 rounded cursor-pointer transition-all hover:scale-125 flex items-center justify-center relative ${liveStatus === 'live' ? 'animate-pulse' : ''}`}
                       style={style}
                     >
                       {/* Subtle checkmark for wins, X for losses */}
@@ -396,6 +445,11 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
                           <line x1="5" y1="12" x2="19" y2="12" />
                         </svg>
                       )}
+                      {/* Source indicator - tiny dot in corner */}
+                      <span
+                        className={`absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full ${isSystemPick ? 'bg-cyan-400' : 'bg-purple-400'}`}
+                        style={{ boxShadow: isSystemPick ? '0 0 3px rgba(34,211,238,0.8)' : '0 0 3px rgba(192,132,252,0.8)' }}
+                      />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent
@@ -411,7 +465,7 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
                       }}
                     >
                       <div className="space-y-1.5">
-                        {/* Tier badge + Status */}
+                        {/* Tier badge + Status + Source */}
                         <div className="flex items-center gap-2">
                           <span
                             className="text-[9px] font-bold px-1.5 py-0.5 rounded"
@@ -425,6 +479,11 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
                           </span>
                           <span className={`text-[10px] font-bold ${statusDisplay.color}`}>
                             {statusDisplay.icon} {statusDisplay.text}
+                          </span>
+                          <span className={`text-[9px] px-1.5 py-0.5 rounded ${isSystemPick
+                            ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40'
+                            : 'bg-purple-500/20 text-purple-400 border border-purple-500/40'}`}>
+                            {isSystemPick ? '🤖 AI' : '👤 Manual'}
                           </span>
                         </div>
                         {/* Pick selection */}

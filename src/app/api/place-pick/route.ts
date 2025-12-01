@@ -3,6 +3,8 @@ import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { generateManualPickInsight } from '@/lib/capper-stats/manual-pick-insight'
+import { buildManualPickTierInput } from '@/lib/capper-tier-inputs'
+import { calculateTierGrade } from '@/lib/tier-grading'
 
 export async function POST(request: NextRequest) {
   try {
@@ -120,8 +122,47 @@ export async function POST(request: NextRequest) {
       }, { status: 404 })
     }
 
-    // Create game snapshot
-    const game_snapshot = {
+    // Use profile's full_name as capper if not specified
+    const capperName = capper || profile.full_name || 'manual'
+    console.log('[place-pick] Using capper name:', capperName)
+
+    // Extract team abbreviations for tier grading
+    const homeAbbrev = game.home_team?.abbreviation || ''
+    const awayAbbrev = game.away_team?.abbreviation || ''
+
+    // Calculate tier grade for manual picks (non-system picks)
+    let tierGradeData = null
+    if (!is_system_pick) {
+      try {
+        console.log('[place-pick] Calculating tier grade for manual pick...')
+        const tierInput = await buildManualPickTierInput(
+          capperName,
+          units,
+          homeAbbrev || awayAbbrev, // Use either team for team record
+          pick_type as 'total' | 'spread'
+        )
+        const tierGrade = calculateTierGrade(tierInput)
+        tierGradeData = {
+          tier: tierGrade.tier,
+          tierScore: tierGrade.tierScore,
+          breakdown: tierGrade.breakdown,
+          inputs: {
+            baseConfidence: tierInput.baseConfidence,
+            unitsRisked: tierInput.unitsRisked,
+            teamRecord: tierInput.teamRecord || null,
+            recentForm: tierInput.recentForm || null,
+            currentLosingStreak: tierInput.currentLosingStreak || 0
+          }
+        }
+        console.log('[place-pick] Tier grade calculated:', tierGradeData.tier, tierGradeData.tierScore)
+      } catch (tierError) {
+        console.error('[place-pick] Error calculating tier grade:', tierError)
+        // Continue without tier - don't fail the pick
+      }
+    }
+
+    // Create game snapshot (including tier_grade for manual picks)
+    const game_snapshot: any = {
       sport: game.sport,
       league: game.league,
       home_team: game.home_team,
@@ -133,9 +174,10 @@ export async function POST(request: NextRequest) {
       status: game.status
     }
 
-    // Use profile's full_name as capper if not specified
-    const capperName = capper || profile.full_name || 'manual'
-    console.log('[place-pick] Using capper name:', capperName)
+    // Add tier grade if calculated
+    if (tierGradeData) {
+      game_snapshot.tier_grade = tierGradeData
+    }
 
     // Extract team info for insight generation
     const homeTeam = {

@@ -12,6 +12,7 @@ import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { getEligibleCappers } from './eligibility'
 import { getPicksForGame, analyzeConsensus, analyzeConflict } from './consensus'
 import { calculatePicksmithUnits, formatSelection } from './units-calculator'
+import { buildPicksmithTierSnapshot, type PicksmithTierInput } from './tier-grading'
 import type { PicksmithResult, GameConsensusOpportunity } from './types'
 
 const HOURS_BEFORE_GAME = 4 // Only consider games within 4 hours
@@ -194,10 +195,24 @@ export async function generatePicksmithPicks(): Promise<{
           reasoning: `PICKSMITH consensus: ${decision.reason}. Contributing cappers: ${decision.contributingCappers.map(c => `${c.name}(${c.units}u, +${c.netUnits.toFixed(1)}u record)`).join(', ')}`
         }
 
+        // Calculate tier grade for Picksmith
+        const tierInput: PicksmithTierInput = {
+          contributingCappers: decision.contributingCappers.map(c => ({
+            name: c.name,
+            units: c.units,
+            netUnits: c.netUnits
+          })),
+          consensusUnits: decision.calculatedUnits,
+          teamAbbrev: game.homeTeam,
+          betType: 'total'
+        }
+        const tierGrade = await buildPicksmithTierSnapshot(tierInput)
+
         const gameSnapshot = {
           home_team: { abbreviation: game.homeTeam },
           away_team: { abbreviation: game.awayTeam },
-          game_start_timestamp: game.gameTime
+          game_start_timestamp: game.gameTime,
+          tier_grade: tierGrade
         }
 
         const inserted = await insertPick(game.id, result, gameSnapshot)
@@ -232,10 +247,24 @@ export async function generatePicksmithPicks(): Promise<{
           reasoning: `PICKSMITH consensus: ${decision.reason}. Contributing cappers: ${decision.contributingCappers.map(c => `${c.name}(${c.units}u, +${c.netUnits.toFixed(1)}u record)`).join(', ')}`
         }
 
+        // Calculate tier grade for Picksmith
+        const tierInput: PicksmithTierInput = {
+          contributingCappers: decision.contributingCappers.map(c => ({
+            name: c.name,
+            units: c.units,
+            netUnits: c.netUnits
+          })),
+          consensusUnits: decision.calculatedUnits,
+          teamAbbrev: game.homeTeam,
+          betType: 'spread'
+        }
+        const tierGrade = await buildPicksmithTierSnapshot(tierInput)
+
         const gameSnapshot = {
           home_team: { abbreviation: game.homeTeam },
           away_team: { abbreviation: game.awayTeam },
-          game_start_timestamp: game.gameTime
+          game_start_timestamp: game.gameTime,
+          tier_grade: tierGrade
         }
 
         const inserted = await insertPick(game.id, result, gameSnapshot)
