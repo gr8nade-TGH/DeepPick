@@ -29,7 +29,7 @@ interface PickHistoryGridProps {
 }
 
 type TimeFilter = '24h' | '7d' | '30d' | 'all'
-type TierFilter = 'all' | 'Common' | 'Uncommon' | 'Rare' | 'Epic' | 'Legendary' | 'Elite'
+type TierFilter = 'all' | 'Common' | 'Uncommon' | 'Rare' | 'Epic' | 'Legendary'
 
 // Get tier from confidence score
 const getTierFromPick = (pick: Pick): RarityTier => {
@@ -147,10 +147,9 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
     { key: 'all', label: 'All', icon: '◉', color: 'text-slate-300' },
     { key: 'Common', label: 'Common', icon: '◆', color: 'text-slate-400' },
     { key: 'Uncommon', label: 'Uncommon', icon: '✦', color: 'text-green-400' },
-    { key: 'Rare', label: 'Rare', icon: '🔷', color: 'text-blue-400' },
+    { key: 'Rare', label: 'Rare', icon: '💠', color: 'text-blue-400' },
     { key: 'Epic', label: 'Epic', icon: '💎', color: 'text-purple-400' },
-    { key: 'Legendary', label: 'Legend', icon: '⭐', color: 'text-amber-400' },
-    { key: 'Elite', label: 'Elite', icon: '🔥', color: 'text-orange-400' },
+    { key: 'Legendary', label: 'Legend', icon: '🏆', color: 'text-amber-400' },
   ]
 
   // Stats
@@ -271,7 +270,7 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
                       }}
                     >
                       <div className="space-y-1.5">
-                        {/* Tier badge */}
+                        {/* Tier badge + Status */}
                         <div className="flex items-center gap-2">
                           <span
                             className="text-[9px] font-bold px-1.5 py-0.5 rounded"
@@ -284,9 +283,9 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
                             {rarity.icon} {tier.toUpperCase()}
                           </span>
                           <span className={`text-[10px] font-bold ${pick.status === 'won' ? 'text-emerald-400' :
-                              pick.status === 'lost' ? 'text-red-400' :
-                                pick.status === 'push' ? 'text-slate-400' :
-                                  'text-amber-400'
+                            pick.status === 'lost' ? 'text-red-400' :
+                              pick.status === 'push' ? 'text-slate-400' :
+                                'text-amber-400'
                             }`}>
                             {pick.status === 'pending' ? '🔴 LIVE' : pick.status.toUpperCase()}
                           </span>
@@ -309,6 +308,18 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
                               Sharp: {pick.confidence.toFixed(1)}
                             </span>
                           )}
+                        </div>
+                        {/* Tier Formula Note */}
+                        <div className="pt-1.5 mt-1.5 border-t border-slate-700/50">
+                          <div className="text-[9px] text-slate-500">
+                            <div className="flex justify-between">
+                              <span>📊 Base Score:</span>
+                              <span className="text-slate-300">{((pick.confidence || 50) * 10).toFixed(0)}</span>
+                            </div>
+                            <div className="text-[8px] text-slate-600 mt-0.5 italic">
+                              Click for full tier breakdown →
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>

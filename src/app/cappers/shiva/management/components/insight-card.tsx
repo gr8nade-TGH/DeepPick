@@ -151,14 +151,25 @@ export interface InsightCardProps {
   }
   // NEW: Tier grading inputs (for comprehensive tier calculation)
   tierGradeInputs?: {
+    edgeVsMarket?: number  // |predicted - market|
     teamRecord?: { wins: number; losses: number; netUnits: number }
-    last7DaysRecord?: { wins: number; losses: number; netUnits: number }
+    recentForm?: { wins: number; losses: number; netUnits: number }  // Last 10 picks
+    currentLosingStreak?: number  // Consecutive losses
   }
   // NEW: Pre-calculated tier (if already computed and stored)
   computedTier?: {
     tier: RarityTier
     tierScore: number
-    bonuses: { units: number; teamRecord: number; hotStreak: number }
+    breakdown: {
+      sharpScore: number
+      edgeBonus: number
+      teamRecordBonus: number
+      recentFormBonus: number
+      losingStreakPenalty: number
+      rawScore: number
+      unitGateApplied: boolean
+      originalTier?: RarityTier
+    }
   }
   onClose: () => void
 }
@@ -172,10 +183,13 @@ import {
   getRarityFromConfidence,
   getRarityStyleFromTier,
   getRarityTierFromConfidence,
+  formatTierBreakdown,
+  getUnitRequirement,
   type RarityTier,
   type RarityStyle,
   type TierGradeInput,
-  type TierGradeResult
+  type TierGradeResult,
+  type TierBreakdown
 } from '@/lib/tier-grading'
 
 // Re-export for backwards compatibility
@@ -591,8 +605,10 @@ export function InsightCard(props: InsightCardProps) {
   const tierGradeResult = props.computedTier || calculateTierGrade({
     baseConfidence: safePick.confidence,
     unitsRisked: safePick.units,
+    edgeVsMarket: props.tierGradeInputs?.edgeVsMarket,
     teamRecord: props.tierGradeInputs?.teamRecord,
-    last7DaysRecord: props.tierGradeInputs?.last7DaysRecord
+    recentForm: props.tierGradeInputs?.recentForm,
+    currentLosingStreak: props.tierGradeInputs?.currentLosingStreak
   })
 
   // Get rarity styling from calculated tier
@@ -677,25 +693,75 @@ export function InsightCard(props: InsightCardProps) {
                   <h1 className={`text-xl font-black ${rarity.textColor}`} style={{ textShadow: `0 0 10px ${rarity.glowColor}` }}>
                     {capperName}
                   </h1>
-                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded ${rarity.badgeBg} text-white`}>
-                    {rarity.icon} {rarity.tier.toUpperCase()}
-                  </span>
+                  {/* Tier Badge with Tooltip */}
+                  <div className="relative group">
+                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded ${rarity.badgeBg} text-white cursor-help`}>
+                      {rarity.icon} {rarity.tier.toUpperCase()}
+                    </span>
+                    {/* Tier Breakdown Tooltip */}
+                    <div className="absolute left-0 top-full mt-2 z-50 hidden group-hover:block">
+                      <div className="bg-slate-900 border border-slate-600 rounded-lg p-3 shadow-xl min-w-[220px] text-xs">
+                        <div className="font-bold text-white mb-2 border-b border-slate-700 pb-1">
+                          {rarity.icon} {rarity.tier} Tier Breakdown
+                        </div>
+                        <div className="space-y-1 text-slate-300">
+                          <div className="flex justify-between">
+                            <span>📊 Sharp Score:</span>
+                            <span className="text-white">{tierGradeResult.breakdown.sharpScore.toFixed(1)}</span>
+                          </div>
+                          {tierGradeResult.breakdown.edgeBonus !== 0 && (
+                            <div className="flex justify-between">
+                              <span>📈 Edge vs Market:</span>
+                              <span className={tierGradeResult.breakdown.edgeBonus > 0 ? 'text-green-400' : 'text-red-400'}>
+                                {tierGradeResult.breakdown.edgeBonus > 0 ? '+' : ''}{tierGradeResult.breakdown.edgeBonus}
+                              </span>
+                            </div>
+                          )}
+                          {tierGradeResult.breakdown.teamRecordBonus !== 0 && (
+                            <div className="flex justify-between">
+                              <span>🎯 Team Record:</span>
+                              <span className={tierGradeResult.breakdown.teamRecordBonus > 0 ? 'text-green-400' : 'text-red-400'}>
+                                {tierGradeResult.breakdown.teamRecordBonus > 0 ? '+' : ''}{tierGradeResult.breakdown.teamRecordBonus}
+                              </span>
+                            </div>
+                          )}
+                          {tierGradeResult.breakdown.recentFormBonus !== 0 && (
+                            <div className="flex justify-between">
+                              <span>🔥 Recent Form:</span>
+                              <span className={tierGradeResult.breakdown.recentFormBonus > 0 ? 'text-green-400' : 'text-red-400'}>
+                                {tierGradeResult.breakdown.recentFormBonus > 0 ? '+' : ''}{tierGradeResult.breakdown.recentFormBonus}
+                              </span>
+                            </div>
+                          )}
+                          {tierGradeResult.breakdown.losingStreakPenalty !== 0 && (
+                            <div className="flex justify-between">
+                              <span>⚠️ Losing Streak:</span>
+                              <span className="text-red-400">{tierGradeResult.breakdown.losingStreakPenalty}</span>
+                            </div>
+                          )}
+                          <div className="border-t border-slate-700 pt-1 mt-1 flex justify-between font-semibold">
+                            <span>Total Score:</span>
+                            <span className={rarity.textColor}>{tierGradeResult.breakdown.rawScore.toFixed(1)}</span>
+                          </div>
+                          {tierGradeResult.breakdown.unitGateApplied && tierGradeResult.breakdown.originalTier && (
+                            <div className="mt-2 pt-2 border-t border-red-900/50 text-red-400 text-[10px]">
+                              ⛔ Demoted from {tierGradeResult.breakdown.originalTier}
+                              <br />
+                              (needed {getUnitRequirement(tierGradeResult.breakdown.originalTier)}+ units, had {safePick.units})
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                {/* Subtitle with tier score breakdown */}
+                {/* Subtitle with tier score */}
                 <div className="text-slate-400 text-xs font-medium flex items-center gap-1 flex-wrap">
                   <span>{isManualPick ? 'Human Capper' : 'AI Generated'}</span>
                   <span className="text-slate-600">•</span>
-                  <span className={rarity.textColor}>Sharp Score {tierGradeResult.tierScore.toFixed(0)}</span>
-                  {/* Show bonuses if any */}
-                  {(tierGradeResult.bonuses.units > 0 || tierGradeResult.bonuses.teamRecord !== 0 || tierGradeResult.bonuses.hotStreak !== 0) && (
-                    <span className="text-slate-500 text-[10px]">
-                      ({safePick.confidence.toFixed(0)} base
-                      {tierGradeResult.bonuses.units > 0 && <span className="text-green-400"> +{tierGradeResult.bonuses.units}u</span>}
-                      {tierGradeResult.bonuses.teamRecord > 0 && <span className="text-blue-400"> +{tierGradeResult.bonuses.teamRecord}team</span>}
-                      {tierGradeResult.bonuses.teamRecord < 0 && <span className="text-red-400"> {tierGradeResult.bonuses.teamRecord}team</span>}
-                      {tierGradeResult.bonuses.hotStreak > 0 && <span className="text-amber-400"> +{tierGradeResult.bonuses.hotStreak}hot</span>}
-                      {tierGradeResult.bonuses.hotStreak < 0 && <span className="text-red-400"> {tierGradeResult.bonuses.hotStreak}cold</span>})
-                    </span>
+                  <span className={rarity.textColor}>Score {tierGradeResult.tierScore.toFixed(0)}</span>
+                  {safePick.units > 0 && (
+                    <span className="text-slate-500">• {safePick.units}U</span>
                   )}
                 </div>
               </div>

@@ -460,10 +460,11 @@ export function ProfessionalDashboard() {
 
   const getConfidenceBadge = (confidence?: number) => {
     if (!confidence) return { text: 'N/A', color: 'bg-slate-600' }
-    if (confidence >= 80) return { text: 'ELITE', color: 'bg-emerald-600' }
-    if (confidence >= 70) return { text: 'HIGH', color: 'bg-blue-600' }
-    if (confidence >= 60) return { text: 'GOOD', color: 'bg-slate-600' }
-    return { text: 'FAIR', color: 'bg-slate-500' }
+    if (confidence >= 85) return { text: 'LEGENDARY', color: 'bg-amber-600' }
+    if (confidence >= 75) return { text: 'EPIC', color: 'bg-purple-600' }
+    if (confidence >= 65) return { text: 'RARE', color: 'bg-blue-600' }
+    if (confidence >= 55) return { text: 'UNCOMMON', color: 'bg-green-600' }
+    return { text: 'COMMON', color: 'bg-slate-500' }
   }
 
   const getCapperBadge = (capper: string) => {

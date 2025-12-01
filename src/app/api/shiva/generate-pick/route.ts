@@ -8,15 +8,23 @@ import { isSystemCapper } from '@/lib/cappers/system-cappers'
 import { calculateTierGrade, TierGradeInput } from '@/lib/tier-grading'
 
 /**
- * Fetch capper's team-specific record and 7-day record for tier calculation
+ * Fetch capper's team-specific record, recent form, and losing streak for tier calculation
  */
 async function fetchTierGradeInputs(
   supabase: any,
   capperId: string,
   teamAbbr: string,
   betType: string
-): Promise<{ teamRecord?: { wins: number; losses: number; netUnits: number }; last7DaysRecord?: { wins: number; losses: number; netUnits: number } }> {
-  const result: TierGradeInput = { baseConfidence: 0, unitsRisked: 0 }
+): Promise<{
+  teamRecord?: { wins: number; losses: number; netUnits: number }
+  recentForm?: { wins: number; losses: number; netUnits: number }
+  currentLosingStreak?: number
+}> {
+  const result: {
+    teamRecord?: { wins: number; losses: number; netUnits: number }
+    recentForm?: { wins: number; losses: number; netUnits: number }
+    currentLosingStreak?: number
+  } = {}
 
   try {
     // Get team-specific record for this bet type
@@ -25,7 +33,7 @@ async function fetchTierGradeInputs(
       .select('status, net_units, pick_type, game_snapshot')
       .eq('capper', capperId)
       .eq('pick_type', betType.toLowerCase())
-      .in('status', ['win', 'loss'])
+      .in('status', ['won', 'lost'])
 
     if (teamPicks && teamPicks.length > 0) {
       // Filter for picks on this team
@@ -36,27 +44,37 @@ async function fetchTierGradeInputs(
       })
 
       if (teamFilteredPicks.length >= 3) {
-        const wins = teamFilteredPicks.filter((p: any) => p.status === 'win').length
-        const losses = teamFilteredPicks.filter((p: any) => p.status === 'loss').length
+        const wins = teamFilteredPicks.filter((p: any) => p.status === 'won').length
+        const losses = teamFilteredPicks.filter((p: any) => p.status === 'lost').length
         const netUnits = teamFilteredPicks.reduce((sum: number, p: any) => sum + (p.net_units || 0), 0)
         result.teamRecord = { wins, losses, netUnits }
       }
     }
 
-    // Get 7-day record
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+    // Get recent form (last 10 picks) and calculate losing streak
     const { data: recentPicks } = await supabase
       .from('picks')
       .select('status, net_units, created_at')
       .eq('capper', capperId)
-      .in('status', ['win', 'loss'])
-      .gte('created_at', sevenDaysAgo)
+      .in('status', ['won', 'lost'])
+      .order('created_at', { ascending: false })
+      .limit(10)
 
-    if (recentPicks && recentPicks.length >= 3) {
-      const wins = recentPicks.filter((p: any) => p.status === 'win').length
-      const losses = recentPicks.filter((p: any) => p.status === 'loss').length
+    if (recentPicks && recentPicks.length >= 5) {
+      const wins = recentPicks.filter((p: any) => p.status === 'won').length
+      const losses = recentPicks.filter((p: any) => p.status === 'lost').length
       const netUnits = recentPicks.reduce((sum: number, p: any) => sum + (p.net_units || 0), 0)
-      result.last7DaysRecord = { wins, losses, netUnits }
+      result.recentForm = { wins, losses, netUnits }
+    }
+
+    // Calculate current losing streak
+    if (recentPicks && recentPicks.length > 0) {
+      let streak = 0
+      for (const p of recentPicks) {
+        if (p.status === 'lost') streak++
+        else break
+      }
+      result.currentLosingStreak = streak
     }
   } catch (error) {
     console.error('[SHIVA:GeneratePick] Error fetching tier grade inputs:', error)
@@ -799,7 +817,7 @@ export async function POST(request: Request) {
       ? (pick.selection?.includes(homeTeamAbbr) ? homeTeamAbbr : awayTeamAbbr)
       : homeTeamAbbr
 
-    // Fetch team record and 7-day record for tier calculation
+    // Fetch team record, recent form, and losing streak for tier calculation
     const tierInputs = await fetchTierGradeInputs(supabase, capperId, relevantTeam, pick.pickType)
 
     // Calculate the tier grade
@@ -807,10 +825,11 @@ export async function POST(request: Request) {
       baseConfidence: pick.confidence,
       unitsRisked: pick.units,
       teamRecord: tierInputs.teamRecord,
-      last7DaysRecord: tierInputs.last7DaysRecord
+      recentForm: tierInputs.recentForm,
+      currentLosingStreak: tierInputs.currentLosingStreak
     })
 
-    console.log(`🏆 [SHIVA:GeneratePick] Tier calculated: ${tierGrade.tier} (score: ${tierGrade.tierScore}, bonuses: units=${tierGrade.bonuses.units}, team=${tierGrade.bonuses.teamRecord}, hot=${tierGrade.bonuses.hotStreak})`)
+    console.log(`🏆 [SHIVA:GeneratePick] Tier calculated: ${tierGrade.tier} (score: ${tierGrade.tierScore}, breakdown: sharp=${tierGrade.breakdown.sharpScore}, edge=${tierGrade.breakdown.edgeBonus}, team=${tierGrade.breakdown.teamRecordBonus}, form=${tierGrade.breakdown.recentFormBonus}, streak=${tierGrade.breakdown.losingStreakPenalty})`)
 
     // Save pick to database
     const pickInsert: any = {
@@ -837,12 +856,13 @@ export async function POST(request: Request) {
         tier_grade: {
           tier: tierGrade.tier,
           tierScore: tierGrade.tierScore,
-          bonuses: tierGrade.bonuses,
+          breakdown: tierGrade.breakdown,
           inputs: {
             baseConfidence: pick.confidence,
             unitsRisked: pick.units,
             teamRecord: tierInputs.teamRecord || null,
-            last7DaysRecord: tierInputs.last7DaysRecord || null
+            recentForm: tierInputs.recentForm || null,
+            currentLosingStreak: tierInputs.currentLosingStreak || 0
           }
         }
       },

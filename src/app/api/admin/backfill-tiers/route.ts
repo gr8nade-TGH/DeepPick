@@ -5,61 +5,8 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
 
-// Inline tier calculation to avoid import issues with serverless
-type RarityTier = 'Common' | 'Uncommon' | 'Rare' | 'Epic' | 'Legendary' | 'Elite'
-
-interface TierGradeInput {
-  baseConfidence: number
-  unitsRisked: number
-  teamRecord?: { wins: number; losses: number; netUnits: number }
-  last7DaysRecord?: { wins: number; losses: number; netUnits: number }
-}
-
-interface TierGradeResult {
-  tier: RarityTier
-  tierScore: number
-  bonuses: { units: number; teamRecord: number; hotStreak: number }
-}
-
-function calculateTierGrade(input: TierGradeInput): TierGradeResult {
-  let tierScore = input.baseConfidence
-  const bonuses = { units: 0, teamRecord: 0, hotStreak: 0 }
-
-  // Units bonus
-  if (input.unitsRisked >= 6) bonuses.units = 20
-  else if (input.unitsRisked >= 5) bonuses.units = 16
-  else if (input.unitsRisked >= 4) bonuses.units = 12
-  else if (input.unitsRisked >= 3) bonuses.units = 8
-  else if (input.unitsRisked >= 2) bonuses.units = 4
-
-  // Team record bonus
-  if (input.teamRecord && (input.teamRecord.wins + input.teamRecord.losses) >= 3) {
-    if (input.teamRecord.netUnits > 10) bonuses.teamRecord = 10
-    else if (input.teamRecord.netUnits > 5) bonuses.teamRecord = 8
-    else if (input.teamRecord.netUnits > 0) bonuses.teamRecord = 5
-    else if (input.teamRecord.netUnits < 0) bonuses.teamRecord = -5
-  }
-
-  // 7-day hot streak bonus
-  if (input.last7DaysRecord && (input.last7DaysRecord.wins + input.last7DaysRecord.losses) >= 3) {
-    if (input.last7DaysRecord.netUnits > 5) bonuses.hotStreak = 10
-    else if (input.last7DaysRecord.netUnits > 0) bonuses.hotStreak = 5
-    else if (input.last7DaysRecord.netUnits < 0) bonuses.hotStreak = -3
-  }
-
-  tierScore += bonuses.units + bonuses.teamRecord + bonuses.hotStreak
-  const canBeElite = bonuses.hotStreak > 0 && input.unitsRisked >= 4
-
-  let tier: RarityTier
-  if (tierScore >= 80 && canBeElite) tier = 'Elite'
-  else if (tierScore >= 75) tier = 'Legendary'
-  else if (tierScore >= 68) tier = 'Epic'
-  else if (tierScore >= 60) tier = 'Rare'
-  else if (tierScore >= 50) tier = 'Uncommon'
-  else tier = 'Common'
-
-  return { tier, tierScore, bonuses }
-}
+// Import tier calculation from shared module
+import { calculateTierGrade, type RarityTier, type TierGradeInput } from '@/lib/tier-grading'
 
 /**
  * One-time backfill endpoint to add tier grades to existing picks
@@ -136,21 +83,30 @@ export async function POST() {
         }
       }
 
-      // Fetch 7-day record
-      let last7DaysRecord = undefined
-      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+      // Fetch recent form (last 10 picks)
+      let recentForm = undefined
       const { data: recentPicks } = await supabase
         .from('picks')
         .select('status, net_units')
         .eq('capper', pick.capper)
-        .in('status', ['win', 'loss'])
-        .gte('created_at', sevenDaysAgo)
+        .in('status', ['won', 'lost'])
+        .order('created_at', { ascending: false })
+        .limit(10)
 
-      if (recentPicks && recentPicks.length >= 3) {
-        last7DaysRecord = {
-          wins: recentPicks.filter((p: any) => p.status === 'win').length,
-          losses: recentPicks.filter((p: any) => p.status === 'loss').length,
+      if (recentPicks && recentPicks.length >= 5) {
+        recentForm = {
+          wins: recentPicks.filter((p: any) => p.status === 'won').length,
+          losses: recentPicks.filter((p: any) => p.status === 'lost').length,
           netUnits: recentPicks.reduce((s: number, p: any) => s + (p.net_units || 0), 0)
+        }
+      }
+
+      // Calculate losing streak
+      let currentLosingStreak = 0
+      if (recentPicks) {
+        for (const p of recentPicks) {
+          if (p.status === 'lost') currentLosingStreak++
+          else break
         }
       }
 
@@ -159,7 +115,8 @@ export async function POST() {
         baseConfidence: pick.confidence || 65,
         unitsRisked: pick.units || 1,
         teamRecord,
-        last7DaysRecord
+        recentForm,
+        currentLosingStreak
       })
 
       // Update pick
@@ -168,7 +125,7 @@ export async function POST() {
         tier_grade: {
           tier: tierGrade.tier,
           tierScore: tierGrade.tierScore,
-          bonuses: tierGrade.bonuses,
+          breakdown: tierGrade.breakdown,
           backfilled: true // Mark as backfilled (not original)
         }
       }

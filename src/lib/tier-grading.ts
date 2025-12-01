@@ -2,103 +2,185 @@
  * COMPREHENSIVE TIER GRADING SYSTEM
  * Shared utility for calculating pick tiers based on multiple factors.
  * This file is used by both server routes and client components.
+ *
+ * 5 Tiers (Legendary = Top):
+ * 🏆 Legendary (≥85, requires 4+ units)
+ * 💎 Epic (≥75, requires 3+ units)
+ * 💠 Rare (≥65, requires 2+ units)
+ * ✦ Uncommon (≥55)
+ * ◆ Common (<55)
  */
 
-export type RarityTier = 'Common' | 'Uncommon' | 'Rare' | 'Epic' | 'Legendary' | 'Elite'
+export type RarityTier = 'Common' | 'Uncommon' | 'Rare' | 'Epic' | 'Legendary'
 
 export interface TierGradeInput {
-  baseConfidence: number
-  unitsRisked: number
+  baseConfidence: number        // Sharp Score (0-10 or 0-100)
+  unitsRisked: number           // Units bet on this pick
+  edgeVsMarket?: number         // |predicted - market| as percentage or points
   teamRecord?: { wins: number; losses: number; netUnits: number }
-  last7DaysRecord?: { wins: number; losses: number; netUnits: number }
+  recentForm?: { wins: number; losses: number; netUnits: number } // Last 10 picks
+  currentLosingStreak?: number  // Consecutive losses (0 if none)
+}
+
+export interface TierBreakdown {
+  sharpScore: number            // Base confidence (0-100)
+  edgeBonus: number             // Edge vs market bonus (+0 to +15)
+  teamRecordBonus: number       // Team-specific record (-10 to +10)
+  recentFormBonus: number       // Last 10 picks (-5 to +5)
+  losingStreakPenalty: number   // Consecutive losses (0 to -10)
+  rawScore: number              // Sum before unit gates
+  unitGateApplied: boolean      // Was tier demoted due to insufficient units?
+  originalTier?: RarityTier     // Tier before unit gate (if demoted)
 }
 
 export interface TierGradeResult {
   tier: RarityTier
   tierScore: number
-  bonuses: { units: number; teamRecord: number; hotStreak: number }
+  breakdown: TierBreakdown
 }
 
 /**
  * Calculate tier grade based on comprehensive inputs.
  *
- * IMPORTANT: baseConfidence can be on 0-10 scale (SHIVA) or 0-100 scale (legacy)
- * We normalize to 0-100 scale for consistent tier calculation.
+ * Formula (0-100 scale):
+ * - Sharp Score: Base confidence normalized to 0-100
+ * - Edge vs Market: +0 to +15 (bigger edge = more bonus)
+ * - Team Record: -10 to +10 (W-L and net units on this team)
+ * - Recent Form: -5 to +5 (last 10 picks performance)
+ * - Losing Streak: 0 to -10 (consecutive losses penalty)
  *
- * Thresholds (on 0-100 scale with bonuses):
- * - Elite: 80+ (requires positive 7-day AND 4+ units)
- * - Legendary: 75-79 (high confidence + bonuses)
- * - Epic: 68-74 (strong picks)
- * - Rare: 60-67 (solid picks)
- * - Uncommon: 50-59 (average picks)
- * - Common: <50 (low confidence)
+ * Unit Gates (applied after score calculation):
+ * - Legendary requires 4+ units (else → Epic)
+ * - Epic requires 3+ units (else → Rare)
+ * - Rare requires 2+ units (else → Uncommon)
  */
 export function calculateTierGrade(input: TierGradeInput): TierGradeResult {
   // Normalize baseConfidence to 0-100 scale if it's on 0-10 scale
-  const normalizedBase = input.baseConfidence <= 10 ? input.baseConfidence * 10 : input.baseConfidence
-  let tierScore = normalizedBase
-  const bonuses = { units: 0, teamRecord: 0, hotStreak: 0 }
+  const sharpScore = input.baseConfidence <= 10 ? input.baseConfidence * 10 : input.baseConfidence
 
-  // ===== UNITS BONUS (max +20 points) =====
-  if (input.unitsRisked >= 6) {
-    bonuses.units = 20
-  } else if (input.unitsRisked >= 5) {
-    bonuses.units = 16
-  } else if (input.unitsRisked >= 4) {
-    bonuses.units = 12
-  } else if (input.unitsRisked >= 3) {
-    bonuses.units = 8
-  } else if (input.unitsRisked >= 2) {
-    bonuses.units = 4
+  // ===== EDGE VS MARKET BONUS (max +15 points) =====
+  // Edge is typically 0-5+ points difference from market
+  let edgeBonus = 0
+  if (input.edgeVsMarket !== undefined) {
+    const absEdge = Math.abs(input.edgeVsMarket)
+    if (absEdge >= 5) {
+      edgeBonus = 15
+    } else if (absEdge >= 4) {
+      edgeBonus = 12
+    } else if (absEdge >= 3) {
+      edgeBonus = 9
+    } else if (absEdge >= 2) {
+      edgeBonus = 6
+    } else if (absEdge >= 1) {
+      edgeBonus = 3
+    }
   }
 
-  // ===== TEAM RECORD BONUS (max +10 points, min -5) =====
+  // ===== TEAM RECORD BONUS (max +10 points, min -10) =====
+  let teamRecordBonus = 0
   if (input.teamRecord && (input.teamRecord.wins + input.teamRecord.losses) >= 3) {
-    if (input.teamRecord.netUnits > 10) {
-      bonuses.teamRecord = 10
-    } else if (input.teamRecord.netUnits > 5) {
-      bonuses.teamRecord = 8
-    } else if (input.teamRecord.netUnits > 0) {
-      bonuses.teamRecord = 5
-    } else if (input.teamRecord.netUnits < 0) {
-      bonuses.teamRecord = -5
+    const winRate = input.teamRecord.wins / (input.teamRecord.wins + input.teamRecord.losses)
+    const netUnits = input.teamRecord.netUnits
+
+    // Combine win rate and net units
+    if (winRate >= 0.65 && netUnits > 5) {
+      teamRecordBonus = 10
+    } else if (winRate >= 0.60 && netUnits > 3) {
+      teamRecordBonus = 7
+    } else if (winRate >= 0.55 && netUnits > 0) {
+      teamRecordBonus = 4
+    } else if (winRate >= 0.50 && netUnits >= 0) {
+      teamRecordBonus = 1
+    } else if (winRate < 0.45 || netUnits < -5) {
+      teamRecordBonus = -10
+    } else if (winRate < 0.50 || netUnits < 0) {
+      teamRecordBonus = -5
     }
   }
 
-  // ===== 7-DAY HOT STREAK BONUS (max +10 points, min -3) =====
-  if (input.last7DaysRecord && (input.last7DaysRecord.wins + input.last7DaysRecord.losses) >= 3) {
-    if (input.last7DaysRecord.netUnits > 5) {
-      bonuses.hotStreak = 10
-    } else if (input.last7DaysRecord.netUnits > 0) {
-      bonuses.hotStreak = 5
-    } else if (input.last7DaysRecord.netUnits < 0) {
-      bonuses.hotStreak = -3
+  // ===== RECENT FORM BONUS (max +5 points, min -5) =====
+  let recentFormBonus = 0
+  if (input.recentForm && (input.recentForm.wins + input.recentForm.losses) >= 5) {
+    const winRate = input.recentForm.wins / (input.recentForm.wins + input.recentForm.losses)
+    const netUnits = input.recentForm.netUnits
+
+    if (winRate >= 0.70 && netUnits > 3) {
+      recentFormBonus = 5
+    } else if (winRate >= 0.60 && netUnits > 1) {
+      recentFormBonus = 3
+    } else if (winRate >= 0.55 && netUnits > 0) {
+      recentFormBonus = 1
+    } else if (winRate < 0.40 || netUnits < -3) {
+      recentFormBonus = -5
+    } else if (winRate < 0.50 || netUnits < 0) {
+      recentFormBonus = -2
     }
   }
 
-  // Calculate final score
-  tierScore += bonuses.units + bonuses.teamRecord + bonuses.hotStreak
+  // ===== LOSING STREAK PENALTY (max -10 points) =====
+  let losingStreakPenalty = 0
+  if (input.currentLosingStreak !== undefined && input.currentLosingStreak >= 3) {
+    if (input.currentLosingStreak >= 6) {
+      losingStreakPenalty = -10
+    } else if (input.currentLosingStreak >= 5) {
+      losingStreakPenalty = -7
+    } else if (input.currentLosingStreak >= 4) {
+      losingStreakPenalty = -5
+    } else if (input.currentLosingStreak >= 3) {
+      losingStreakPenalty = -3
+    }
+  }
 
-  // Elite requires: positive 7-day streak AND 4+ units
-  const canBeElite = bonuses.hotStreak > 0 && input.unitsRisked >= 4
+  // Calculate raw score
+  const rawScore = sharpScore + edgeBonus + teamRecordBonus + recentFormBonus + losingStreakPenalty
 
-  // Determine tier
+  // Determine tier from raw score
   let tier: RarityTier
-  if (tierScore >= 80 && canBeElite) {
-    tier = 'Elite'
-  } else if (tierScore >= 75) {
+  if (rawScore >= 85) {
     tier = 'Legendary'
-  } else if (tierScore >= 68) {
+  } else if (rawScore >= 75) {
     tier = 'Epic'
-  } else if (tierScore >= 60) {
+  } else if (rawScore >= 65) {
     tier = 'Rare'
-  } else if (tierScore >= 50) {
+  } else if (rawScore >= 55) {
     tier = 'Uncommon'
   } else {
     tier = 'Common'
   }
 
-  return { tier, tierScore, bonuses }
+  // Store original tier before unit gates
+  const originalTier = tier
+  let unitGateApplied = false
+
+  // ===== UNIT GATES =====
+  // Legendary requires 4+ units, else demote to Epic
+  if (tier === 'Legendary' && input.unitsRisked < 4) {
+    tier = 'Epic'
+    unitGateApplied = true
+  }
+  // Epic requires 3+ units, else demote to Rare
+  if (tier === 'Epic' && input.unitsRisked < 3) {
+    tier = 'Rare'
+    unitGateApplied = true
+  }
+  // Rare requires 2+ units, else demote to Uncommon
+  if (tier === 'Rare' && input.unitsRisked < 2) {
+    tier = 'Uncommon'
+    unitGateApplied = true
+  }
+
+  const breakdown: TierBreakdown = {
+    sharpScore,
+    edgeBonus,
+    teamRecordBonus,
+    recentFormBonus,
+    losingStreakPenalty,
+    rawScore,
+    unitGateApplied,
+    originalTier: unitGateApplied ? originalTier : undefined
+  }
+
+  return { tier, tierScore: rawScore, breakdown }
 }
 
 /**
@@ -107,23 +189,21 @@ export function calculateTierGrade(input: TierGradeInput): TierGradeResult {
  * IMPORTANT: Confidence can be on 0-10 scale (SHIVA system) or 0-100 scale (legacy)
  * We detect which scale and normalize accordingly.
  *
- * 0-10 scale thresholds (SHIVA confidence):
- * - Elite: ≥8.5
- * - Legendary: ≥7.8
- * - Epic: ≥7.0
- * - Rare: ≥6.2
- * - Uncommon: ≥5.2
- * - Common: <5.2
+ * 5 Tiers (0-100 scale thresholds):
+ * - Legendary: ≥85 (8.5 on 0-10)
+ * - Epic: ≥75 (7.5 on 0-10)
+ * - Rare: ≥65 (6.5 on 0-10)
+ * - Uncommon: ≥55 (5.5 on 0-10)
+ * - Common: <55
  */
 export function getRarityTierFromConfidence(confidence: number): RarityTier {
-  // Normalize to 0-10 scale if value appears to be on 0-100 scale
-  const normalizedConf = confidence > 10 ? confidence / 10 : confidence
+  // Normalize to 0-100 scale if value appears to be on 0-10 scale
+  const normalizedConf = confidence <= 10 ? confidence * 10 : confidence
 
-  if (normalizedConf >= 8.5) return 'Elite'
-  if (normalizedConf >= 7.8) return 'Legendary'
-  if (normalizedConf >= 7.0) return 'Epic'
-  if (normalizedConf >= 6.2) return 'Rare'
-  if (normalizedConf >= 5.2) return 'Uncommon'
+  if (normalizedConf >= 85) return 'Legendary'
+  if (normalizedConf >= 75) return 'Epic'
+  if (normalizedConf >= 65) return 'Rare'
+  if (normalizedConf >= 55) return 'Uncommon'
   return 'Common'
 }
 
@@ -154,25 +234,15 @@ export function getRarityFromConfidence(confidence: number): RarityStyle {
  */
 export function getRarityStyleFromTier(tier: RarityTier): RarityStyle {
   switch (tier) {
-    case 'Elite':
-      return {
-        tier: 'Elite',
-        borderColor: '#FF4500',
-        bgGradient: 'from-red-950 via-orange-950/50 to-red-950',
-        glowColor: 'rgba(255, 69, 0, 0.5)',
-        textColor: 'text-orange-300',
-        badgeBg: 'bg-gradient-to-r from-red-500 to-orange-500',
-        icon: '🔥'
-      }
     case 'Legendary':
       return {
         tier: 'Legendary',
         borderColor: '#FFD700',
         bgGradient: 'from-amber-950 via-yellow-950/50 to-amber-950',
-        glowColor: 'rgba(255, 215, 0, 0.4)',
+        glowColor: 'rgba(255, 215, 0, 0.5)',
         textColor: 'text-amber-300',
         badgeBg: 'bg-gradient-to-r from-amber-500 to-yellow-500',
-        icon: '⭐'
+        icon: '🏆'
       }
     case 'Epic':
       return {
@@ -192,7 +262,7 @@ export function getRarityStyleFromTier(tier: RarityTier): RarityStyle {
         glowColor: 'rgba(59, 130, 246, 0.35)',
         textColor: 'text-blue-300',
         badgeBg: 'bg-gradient-to-r from-blue-500 to-indigo-500',
-        icon: '🔷'
+        icon: '💠'
       }
     case 'Uncommon':
       return {
@@ -214,6 +284,54 @@ export function getRarityStyleFromTier(tier: RarityTier): RarityStyle {
         badgeBg: 'bg-gradient-to-r from-slate-500 to-gray-500',
         icon: '◆'
       }
+  }
+}
+
+/**
+ * Format tier breakdown for tooltip display
+ */
+export function formatTierBreakdown(breakdown: TierBreakdown, units: number): string {
+  const lines: string[] = []
+
+  lines.push(`📊 Sharp Score: ${breakdown.sharpScore.toFixed(1)}`)
+
+  if (breakdown.edgeBonus !== 0) {
+    lines.push(`📈 Edge vs Market: ${breakdown.edgeBonus > 0 ? '+' : ''}${breakdown.edgeBonus}`)
+  }
+
+  if (breakdown.teamRecordBonus !== 0) {
+    lines.push(`🎯 Team Record: ${breakdown.teamRecordBonus > 0 ? '+' : ''}${breakdown.teamRecordBonus}`)
+  }
+
+  if (breakdown.recentFormBonus !== 0) {
+    lines.push(`🔥 Recent Form: ${breakdown.recentFormBonus > 0 ? '+' : ''}${breakdown.recentFormBonus}`)
+  }
+
+  if (breakdown.losingStreakPenalty !== 0) {
+    lines.push(`⚠️ Losing Streak: ${breakdown.losingStreakPenalty}`)
+  }
+
+  lines.push(`───────────────`)
+  lines.push(`Total Score: ${breakdown.rawScore.toFixed(1)}`)
+
+  if (breakdown.unitGateApplied && breakdown.originalTier) {
+    lines.push(``)
+    lines.push(`⛔ Demoted from ${breakdown.originalTier}`)
+    lines.push(`   (needed ${getUnitRequirement(breakdown.originalTier)}+ units, had ${units})`)
+  }
+
+  return lines.join('\n')
+}
+
+/**
+ * Get unit requirement for a tier
+ */
+export function getUnitRequirement(tier: RarityTier): number {
+  switch (tier) {
+    case 'Legendary': return 4
+    case 'Epic': return 3
+    case 'Rare': return 2
+    default: return 0
   }
 }
 
