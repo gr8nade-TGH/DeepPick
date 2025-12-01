@@ -29,38 +29,23 @@ interface PickHistoryGridProps {
 type TimeFilter = '24h' | '7d' | '30d' | 'all'
 
 export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
-  const [picks, setPicks] = useState<Pick[]>([])
+  const [allPicks, setAllPicks] = useState<Pick[]>([])
   const [loading, setLoading] = useState(true)
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('7d')
 
   useEffect(() => {
     fetchPicks()
-  }, [timeFilter])
+  }, [])
 
   const fetchPicks = async () => {
     setLoading(true)
     try {
-      // Calculate date filter
-      let since = ''
-      const now = new Date()
-      if (timeFilter === '24h') {
-        since = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString()
-      } else if (timeFilter === '7d') {
-        since = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
-      } else if (timeFilter === '30d') {
-        since = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()
-      }
-
-      const url = `/api/picks?limit=200${since ? `&since=${since}` : ''}`
-      const response = await fetch(url)
+      // Fetch all picks (we'll filter client-side for responsiveness)
+      const response = await fetch('/api/picks?limit=500')
       const data = await response.json()
 
       if (data.success) {
-        // Sort by date descending
-        const sorted = (data.data || []).sort((a: Pick, b: Pick) => 
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        )
-        setPicks(sorted)
+        setAllPicks(data.data || [])
       }
     } catch (error) {
       console.error('Error fetching picks:', error)
@@ -68,6 +53,35 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
       setLoading(false)
     }
   }
+
+  // Filter and sort picks based on timeFilter
+  const picks = (() => {
+    const now = new Date()
+    let cutoffDate: Date | null = null
+
+    if (timeFilter === '24h') {
+      cutoffDate = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+    } else if (timeFilter === '7d') {
+      cutoffDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+    } else if (timeFilter === '30d') {
+      cutoffDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+    }
+
+    // Filter by date
+    const filtered = cutoffDate
+      ? allPicks.filter(p => new Date(p.created_at) >= cutoffDate!)
+      : allPicks
+
+    // Sort: LIVE (pending) first, then by date descending
+    return filtered.sort((a, b) => {
+      // Pending picks always come first
+      if (a.status === 'pending' && b.status !== 'pending') return -1
+      if (b.status === 'pending' && a.status !== 'pending') return 1
+
+      // Both pending or both not pending - sort by date descending
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    })
+  })()
 
   const getPickColor = (status: string) => {
     switch (status) {
@@ -122,11 +136,10 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
               size="sm"
               variant={timeFilter === f.key ? 'default' : 'ghost'}
               onClick={() => setTimeFilter(f.key)}
-              className={`h-7 px-2 text-xs ${
-                timeFilter === f.key 
-                  ? 'bg-cyan-600 hover:bg-cyan-700' 
+              className={`h-7 px-2 text-xs ${timeFilter === f.key
+                  ? 'bg-cyan-600 hover:bg-cyan-700'
                   : 'text-slate-400 hover:text-white'
-              }`}
+                }`}
             >
               {f.icon}
               <span className="ml-1">{f.label}</span>
