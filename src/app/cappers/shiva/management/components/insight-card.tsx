@@ -705,38 +705,44 @@ export function InsightCard(props: InsightCardProps) {
                           {rarity.icon} {rarity.tier} Tier Breakdown
                         </div>
                         <div className="space-y-1 text-slate-300">
-                          <div className="flex justify-between">
+                          <div className="flex justify-between items-center">
                             <span>📊 Sharp Score:</span>
                             <span className="text-white">{tierGradeResult.breakdown.sharpScore.toFixed(1)}</span>
                           </div>
                           {tierGradeResult.breakdown.edgeBonus !== 0 && (
-                            <div className="flex justify-between">
+                            <div className="flex justify-between items-center">
                               <span>📈 Edge vs Market:</span>
-                              <span className={tierGradeResult.breakdown.edgeBonus > 0 ? 'text-green-400' : 'text-red-400'}>
+                              <span className={`flex items-center gap-1 ${tierGradeResult.breakdown.edgeBonus > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                <span className="opacity-60 text-[10px]">{tierGradeResult.breakdown.edgeBonus > 0 ? '✓' : '✗'}</span>
                                 {tierGradeResult.breakdown.edgeBonus > 0 ? '+' : ''}{tierGradeResult.breakdown.edgeBonus}
                               </span>
                             </div>
                           )}
                           {tierGradeResult.breakdown.teamRecordBonus !== 0 && (
-                            <div className="flex justify-between">
+                            <div className="flex justify-between items-center">
                               <span>🎯 Team Record:</span>
-                              <span className={tierGradeResult.breakdown.teamRecordBonus > 0 ? 'text-green-400' : 'text-red-400'}>
+                              <span className={`flex items-center gap-1 ${tierGradeResult.breakdown.teamRecordBonus > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                <span className="opacity-60 text-[10px]">{tierGradeResult.breakdown.teamRecordBonus > 0 ? '✓' : '✗'}</span>
                                 {tierGradeResult.breakdown.teamRecordBonus > 0 ? '+' : ''}{tierGradeResult.breakdown.teamRecordBonus}
                               </span>
                             </div>
                           )}
                           {tierGradeResult.breakdown.recentFormBonus !== 0 && (
-                            <div className="flex justify-between">
+                            <div className="flex justify-between items-center">
                               <span>🔥 Recent Form:</span>
-                              <span className={tierGradeResult.breakdown.recentFormBonus > 0 ? 'text-green-400' : 'text-red-400'}>
+                              <span className={`flex items-center gap-1 ${tierGradeResult.breakdown.recentFormBonus > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                <span className="opacity-60 text-[10px]">{tierGradeResult.breakdown.recentFormBonus > 0 ? '✓' : '✗'}</span>
                                 {tierGradeResult.breakdown.recentFormBonus > 0 ? '+' : ''}{tierGradeResult.breakdown.recentFormBonus}
                               </span>
                             </div>
                           )}
                           {tierGradeResult.breakdown.losingStreakPenalty !== 0 && (
-                            <div className="flex justify-between">
+                            <div className="flex justify-between items-center">
                               <span>⚠️ Losing Streak:</span>
-                              <span className="text-red-400">{tierGradeResult.breakdown.losingStreakPenalty}</span>
+                              <span className="flex items-center gap-1 text-red-400">
+                                <span className="opacity-60 text-[10px]">✗</span>
+                                {tierGradeResult.breakdown.losingStreakPenalty}
+                              </span>
                             </div>
                           )}
                           <div className="border-t border-slate-700 pt-1 mt-1 flex justify-between font-semibold">
