@@ -18,9 +18,37 @@ interface Pick {
     away_team?: { abbreviation?: string }
     home_team?: { abbreviation?: string }
     game_date?: string
+    game_start_timestamp?: string
+  }
+  games?: {
+    status?: string
+    game_start_timestamp?: string
   }
   result?: {
     final_score?: { home: number; away: number }
+  }
+}
+
+// Determine if a pending pick's game is LIVE, SCHEDULED, or STALE
+const getGameLiveStatus = (pick: Pick): 'live' | 'scheduled' | 'stale' => {
+  if (pick.status !== 'pending') return 'scheduled' // Not pending, doesn't matter
+
+  const gameTimestamp = pick.games?.game_start_timestamp || pick.game_snapshot?.game_start_timestamp
+  if (!gameTimestamp) return 'scheduled' // No timestamp, assume scheduled
+
+  const now = new Date()
+  const gameStart = new Date(gameTimestamp)
+  const hoursSinceStart = (now.getTime() - gameStart.getTime()) / (1000 * 60 * 60)
+
+  if (hoursSinceStart < 0) {
+    // Game hasn't started yet
+    return 'scheduled'
+  } else if (hoursSinceStart < 4) {
+    // Game started within last 4 hours - likely still live or just finished
+    return 'live'
+  } else {
+    // Game started more than 4 hours ago but pick still pending = STALE (should have been graded)
+    return 'stale'
   }
 }
 
@@ -127,11 +155,30 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
         boxShadow: `0 0 8px ${rarity.glowColor}`
       }
     } else {
-      // Pending/Live
-      return {
-        background: `linear-gradient(135deg, rgba(245, 158, 11, 0.9), rgba(217, 119, 6, 0.9))`,
-        border: `2px solid ${borderColor}`,
-        boxShadow: `0 0 12px ${rarity.glowColor}, 0 0 20px rgba(245, 158, 11, 0.4)`
+      // Pending - distinguish between LIVE, SCHEDULED, and STALE
+      const liveStatus = getGameLiveStatus(pick)
+
+      if (liveStatus === 'live') {
+        // LIVE - Bright amber/yellow with pulsing glow
+        return {
+          background: `linear-gradient(135deg, rgba(245, 158, 11, 0.95), rgba(217, 119, 6, 0.95))`,
+          border: `2px solid ${borderColor}`,
+          boxShadow: `0 0 12px ${rarity.glowColor}, 0 0 20px rgba(245, 158, 11, 0.5)`
+        }
+      } else if (liveStatus === 'stale') {
+        // STALE - Orange/red tint to indicate problem (should have been graded)
+        return {
+          background: `linear-gradient(135deg, rgba(249, 115, 22, 0.9), rgba(194, 65, 12, 0.9))`,
+          border: `2px solid ${borderColor}`,
+          boxShadow: `0 0 8px ${rarity.glowColor}, 0 0 10px rgba(249, 115, 22, 0.4)`
+        }
+      } else {
+        // SCHEDULED - Cyan/blue tint (upcoming, not started)
+        return {
+          background: `linear-gradient(135deg, rgba(34, 211, 238, 0.85), rgba(6, 182, 212, 0.85))`,
+          border: `2px solid ${borderColor}`,
+          boxShadow: `0 0 8px ${rarity.glowColor}, 0 0 12px rgba(34, 211, 238, 0.3)`
+        }
       }
     }
   }
@@ -152,10 +199,13 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
     { key: 'Legendary', label: 'Legend', icon: '🏆', color: 'text-amber-400' },
   ]
 
-  // Stats
+  // Stats - separate pending into live, scheduled, and stale
   const wins = picks.filter(p => p.status === 'won').length
   const losses = picks.filter(p => p.status === 'lost').length
-  const pending = picks.filter(p => p.status === 'pending').length
+  const pendingPicks = picks.filter(p => p.status === 'pending')
+  const livePicks = pendingPicks.filter(p => getGameLiveStatus(p) === 'live').length
+  const scheduledPicks = pendingPicks.filter(p => getGameLiveStatus(p) === 'scheduled').length
+  const stalePicks = pendingPicks.filter(p => getGameLiveStatus(p) === 'stale').length
   const pushes = picks.filter(p => p.status === 'push').length
   const winRate = wins + losses > 0 ? ((wins / (wins + losses)) * 100).toFixed(1) : '0'
 
@@ -175,8 +225,14 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
             </>}
             <span className="text-slate-500">|</span>
             <span className="text-cyan-400">{winRate}%</span>
-            {pending > 0 && (
-              <span className="text-amber-400 ml-2">({pending} live)</span>
+            {livePicks > 0 && (
+              <span className="text-amber-400 ml-2">({livePicks} live)</span>
+            )}
+            {scheduledPicks > 0 && (
+              <span className="text-cyan-400 ml-1">({scheduledPicks} scheduled)</span>
+            )}
+            {stalePicks > 0 && (
+              <span className="text-orange-400 ml-1">({stalePicks} stale)</span>
             )}
           </div>
         </div>
@@ -248,12 +304,21 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
               const rarity = getRarityStyleFromTier(tier)
               const style = getPickStyle(pick)
 
+              // Get live status for pending picks
+              const liveStatus = pick.status === 'pending' ? getGameLiveStatus(pick) : null
+              const statusDisplay = pick.status === 'won' ? { text: 'WON', icon: '✓', color: 'text-emerald-400' }
+                : pick.status === 'lost' ? { text: 'LOST', icon: '✗', color: 'text-red-400' }
+                  : pick.status === 'push' ? { text: 'PUSH', icon: '—', color: 'text-slate-400' }
+                    : liveStatus === 'live' ? { text: 'LIVE', icon: '🔴', color: 'text-amber-400' }
+                      : liveStatus === 'stale' ? { text: 'STALE', icon: '⚠️', color: 'text-orange-400' }
+                        : { text: 'SCHEDULED', icon: '📅', color: 'text-cyan-400' }
+
               return (
                 <Tooltip key={pick.id}>
                   <TooltipTrigger asChild>
                     <button
                       onClick={() => onPickClick?.(pick)}
-                      className={`w-6 h-6 rounded cursor-pointer transition-all hover:scale-125 ${pick.status === 'pending' ? 'animate-pulse' : ''}`}
+                      className={`w-6 h-6 rounded cursor-pointer transition-all hover:scale-125 ${liveStatus === 'live' ? 'animate-pulse' : ''}`}
                       style={style}
                     />
                   </TooltipTrigger>
@@ -282,12 +347,8 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
                           >
                             {rarity.icon} {tier.toUpperCase()}
                           </span>
-                          <span className={`text-[10px] font-bold ${pick.status === 'won' ? 'text-emerald-400' :
-                            pick.status === 'lost' ? 'text-red-400' :
-                              pick.status === 'push' ? 'text-slate-400' :
-                                'text-amber-400'
-                            }`}>
-                            {pick.status === 'pending' ? '🔴 LIVE' : pick.status.toUpperCase()}
+                          <span className={`text-[10px] font-bold ${statusDisplay.color}`}>
+                            {statusDisplay.icon} {statusDisplay.text}
                           </span>
                         </div>
                         {/* Pick selection */}
