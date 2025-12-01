@@ -51,6 +51,41 @@ export function FactorStrategist({ open, onClose, onCreateFactor }: FactorStrate
   const [proposals, setProposals] = useState<FactorProposal[]>([])
   const [expandedFactors, setExpandedFactors] = useState<Set<string>>(new Set())
   const [generatedAt, setGeneratedAt] = useState<string | null>(null)
+  const [savingFactor, setSavingFactor] = useState<string | null>(null)
+  const [savedFactors, setSavedFactors] = useState<Set<string>>(new Set())
+
+  const savePendingFactor = async (factor: FactorProposal) => {
+    setSavingFactor(factor.key)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/admin/factors/pending', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...factor,
+          bet_type: betType,
+          ai_model: 'gpt-4o'
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to save factor')
+      }
+
+      // Mark as saved
+      setSavedFactors(prev => new Set([...prev, factor.key]))
+
+      // Call parent callback if provided
+      onCreateFactor?.(factor, betType)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save factor')
+    } finally {
+      setSavingFactor(null)
+    }
+  }
 
   const generateFactors = async () => {
     setLoading(true)
@@ -298,17 +333,38 @@ export function FactorStrategist({ open, onClose, onCreateFactor }: FactorStrate
 
                         {/* Create Button */}
                         <div className="flex justify-end pt-2">
-                          <Button
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              onCreateFactor?.(factor, betType)
-                            }}
-                            className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700"
-                          >
-                            <Plus className="w-4 h-4 mr-1" />
-                            Create This Factor
-                          </Button>
+                          {savedFactors.has(factor.key) ? (
+                            <Button
+                              size="sm"
+                              disabled
+                              className="bg-green-600/50 cursor-not-allowed"
+                            >
+                              <CheckCircle2 className="w-4 h-4 mr-1" />
+                              Saved as Pending
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                savePendingFactor(factor)
+                              }}
+                              disabled={savingFactor === factor.key}
+                              className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700"
+                            >
+                              {savingFactor === factor.key ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                                  Saving...
+                                </>
+                              ) : (
+                                <>
+                                  <Plus className="w-4 h-4 mr-1" />
+                                  Save as Pending Factor
+                                </>
+                              )}
+                            </Button>
+                          )}
                         </div>
                       </div>
                     )}

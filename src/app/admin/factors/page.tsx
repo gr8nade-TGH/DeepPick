@@ -26,6 +26,7 @@ import {
 } from 'lucide-react'
 import { StatBrowser } from './components/stat-browser'
 import { FactorStrategist } from './components/factor-strategist'
+import { PendingFactorsPanel } from './components/pending-factors-panel'
 
 interface FactorSample {
   runId: string
@@ -72,8 +73,9 @@ export default function FactorDashboardPage() {
   }
 
   const handleCreateFactorFromAI = (factor: any, betType: string) => {
-    console.log('Creating factor from AI proposal:', factor, 'for', betType)
-    alert(`Coming soon: Implement "${factor.name}" factor\n\nFormula: ${factor.formula}\n\nStats used: ${factor.stats_used.join(', ')}\n\nThis will add the factor to the registry.`)
+    console.log('Factor saved as pending:', factor.key, 'for', betType)
+    // Factor is now saved to pending_factors table - no alert needed
+    // The FactorStrategist component handles the UI state
   }
 
   const fetchData = async () => {
@@ -232,6 +234,11 @@ export default function FactorDashboardPage() {
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Pending Factors Panel */}
+        <div className="mb-8">
+          <PendingFactorsPanel />
         </div>
 
         {/* TOTALS Factors */}
