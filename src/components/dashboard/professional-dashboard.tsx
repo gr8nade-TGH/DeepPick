@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 
 import { PickInsightModal } from '@/components/dashboard/pick-insight-modal'
+import { PickHistoryGrid } from '@/components/dashboard/pick-history-grid'
 import { getRarityFromConfidence } from '@/app/cappers/shiva/management/components/insight-card'
 import Link from 'next/link'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
@@ -154,7 +155,6 @@ export function ProfessionalDashboard() {
   const { user, profile } = useAuth()
   const [todaysPicks, setTodaysPicks] = useState<Pick[]>([])
   const [topCappers, setTopCappers] = useState<Capper[]>([])
-  const [recentActivity, setRecentActivity] = useState<Pick[]>([])
   const [performance, setPerformance] = useState<PerformanceMetrics | null>(null)
   const [chartData, setChartData] = useState<ChartDataPoint[]>([])
   const [loading, setLoading] = useState(true)
@@ -188,15 +188,13 @@ export function ProfessionalDashboard() {
       const now = new Date()
       const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000) // 24 hours ago
 
-      const [picksResponse, activityResponse, perfResponse] = await Promise.all([
+      const [picksResponse, perfResponse] = await Promise.all([
         fetch('/api/picks?status=pending&limit=50&sort=confidence'), // Fetch more to sort client-side
-        fetch('/api/picks?status=completed&limit=20&sort=created_at'),
         fetch('/api/performance?period=30d')
       ])
 
-      const [picksData, activityData, perfData] = await Promise.all([
+      const [picksData, perfData] = await Promise.all([
         picksResponse.json(),
-        activityResponse.json(),
         perfResponse.json()
       ])
 
@@ -223,25 +221,13 @@ export function ProfessionalDashboard() {
 
         setTodaysPicks(filteredPicks)
       }
-      if (activityData.success) {
-        console.log('[Dashboard] Recent activity data:', activityData.data)
-        console.log('[Dashboard] Recent activity count:', activityData.data?.length)
-        setRecentActivity(activityData.data)
-      } else {
-        console.error('[Dashboard] Failed to fetch recent activity:', activityData)
-      }
       if (perfData.success) {
         console.log('[Dashboard] Performance data:', perfData.data)
         setPerformance(perfData.data.metrics)
-        // Use chart data from performance API (more complete than activity picks)
+        // Use chart data from performance API
         if (perfData.data.chartData && perfData.data.chartData.length > 0) {
           console.log('[Dashboard] Setting chart data from API:', perfData.data.chartData)
-          console.log('[Dashboard] Chart data details:', JSON.stringify(perfData.data.chartData, null, 2))
           setChartData(perfData.data.chartData)
-        } else {
-          console.log('[Dashboard] No chart data from API, calculating from activity')
-          // Fallback to calculating from activity if no chart data
-          calculateChartData(activityData.data)
         }
       }
 
@@ -1038,137 +1024,13 @@ export function ProfessionalDashboard() {
           </div >
         </div >
 
-        {/* PICK HISTORY - FULL WIDTH AT BOTTOM */}
-        < Card className="bg-slate-900/50 border-slate-800 h-[250px] flex flex-col" >
-          <CardHeader className="pb-2 px-3 pt-2.5 border-b border-slate-800 flex-shrink-0">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-white flex items-center gap-1.5">
-                <BarChart3 className="h-3.5 w-3.5 text-blue-500" />
-                Pick History
-              </CardTitle>
-              <Link href="/history">
-                <Button variant="ghost" size="sm" className="text-[11px] h-6 px-2 text-slate-400 hover:text-white">
-                  View All
-                </Button>
-              </Link>
-            </div>
-          </CardHeader>
-
-          <CardContent className="px-3 py-2 flex-1 overflow-y-auto">
-            {recentActivity.length === 0 ? (
-              <div className="h-full flex items-center justify-center">
-                <div className="text-center">
-                  <BarChart3 className="h-12 w-12 text-slate-600 mx-auto mb-3" />
-                  <p className="text-sm text-slate-400 font-medium">No pick history yet</p>
-                  <p className="text-xs text-slate-600 mt-1">Your completed picks will appear here</p>
-                </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-2.5">
-                {recentActivity.map((pick) => {
-                  const isWin = pick.status === 'won'
-                  const isLoss = pick.status === 'lost'
-                  const isPending = pick.status === 'pending'
-                  const netUnits = pick.net_units || 0
-                  const homeTeam = pick.game_snapshot?.home_team
-                  const awayTeam = pick.game_snapshot?.away_team
-                  const gameDate = pick.game_snapshot?.game_date
-                  const gameStatus = getGameStatus(pick)
-
-                  return (
-                    <div
-                      key={pick.id}
-                      className={`px-2.5 py-2 rounded-lg border transition-all cursor-pointer hover:border-slate-600 ${isWin ? 'bg-emerald-500/5 border-emerald-500/20' :
-                        isLoss ? 'bg-red-500/5 border-red-500/20' :
-                          'bg-slate-800/20 border-slate-700/30'
-                        }`}
-                      onClick={() => {
-                        setSelectedPick(pick)
-                        setShowInsight(true)
-                      }}
-                    >
-                      <div className="flex items-start gap-2">
-                        <div className="flex-shrink-0 mt-0.5">
-                          {isWin ? (
-                            <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                              <CheckCircle className="h-3 w-3 text-emerald-400" />
-                            </div>
-                          ) : isLoss ? (
-                            <div className="w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center">
-                              <XCircle className="h-3 w-3 text-red-400" />
-                            </div>
-                          ) : (
-                            <div className="w-5 h-5 rounded-full bg-slate-500/20 flex items-center justify-center">
-                              <Clock className="h-3 w-3 text-slate-400" />
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5 mb-0.5">
-                            <span className="text-[11px] font-semibold text-white truncate">
-                              {pick.selection}
-                            </span>
-                            <Badge variant="outline" className="text-[9px] px-1 py-0 border-slate-600">
-                              {pick.pick_type?.toUpperCase()}
-                            </Badge>
-                          </div>
-                          <div className="text-[10px] text-slate-500 mb-1">
-                            {awayTeam?.name || 'Away'} @ {homeTeam?.name || 'Home'}
-                          </div>
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            {/* Capper Badge */}
-                            {(() => {
-                              const capperBadge = getCapperBadge(pick.capper || 'DeepPick')
-                              return (
-                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${capperBadge.gradient} ${capperBadge.text} uppercase tracking-wide`}>
-                                  {pick.capper || 'DeepPick'}
-                                </span>
-                              )
-                            })()}
-                            <span className="text-[10px] text-slate-500">{pick.units}U</span>
-                            {pick.confidence && (
-                              <>
-                                <span className="text-slate-600">•</span>
-                                <span className="text-[10px] text-slate-500">{pick.confidence.toFixed(1)}/10</span>
-                              </>
-                            )}
-                            <span className="text-slate-600">•</span>
-                            <Badge className={`${gameStatus.color} text-[9px] px-1.5 py-0.5 font-semibold`}>
-                              {gameStatus.icon} {gameStatus.text}
-                            </Badge>
-                            <span className="text-slate-600">•</span>
-                            <span className="text-[10px] text-slate-400">
-                              {gameDate ? new Date(gameDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'TBD'}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="text-right flex-shrink-0">
-                          {isWin && (
-                            <div className="text-xs font-bold text-emerald-400">
-                              +{netUnits.toFixed(1)}u
-                            </div>
-                          )}
-                          {isLoss && (
-                            <div className="text-xs font-bold text-red-400">
-                              {netUnits.toFixed(1)}u
-                            </div>
-                          )}
-                          {isPending && (
-                            <div className="text-[10px] text-slate-500">
-                              Pending
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card >
+        {/* PICK HISTORY GRID - FULL WIDTH AT BOTTOM */}
+        <PickHistoryGrid
+          onPickClick={(pick) => {
+            setSelectedPick(pick as Pick)
+            setShowInsight(true)
+          }}
+        />
       </div >
 
       {/* Insight Modal */}
