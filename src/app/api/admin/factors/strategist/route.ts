@@ -1,5 +1,3 @@
-'use server'
-
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 
@@ -9,7 +7,7 @@ const AVAILABLE_STATS = {
   pace: { name: 'Pace', desc: 'Possessions per game', unit: 'poss/game', inUse: true },
   paceDelta: { name: 'Pace vs League', desc: 'Team pace minus league average', unit: 'delta', inUse: false },
   paceVariance: { name: 'Pace Variance', desc: 'Std dev of pace over last 10 games', unit: 'stdev', inUse: false },
-  
+
   // Offense
   ortg: { name: 'Offensive Rating', desc: 'Points per 100 possessions', unit: 'pts/100', inUse: true },
   ppg: { name: 'Points Per Game', desc: 'Average points scored', unit: 'pts', inUse: false },
@@ -22,7 +20,7 @@ const AVAILABLE_STATS = {
   ftPct: { name: 'Free Throw %', desc: 'FT percentage', unit: '%', inUse: false },
   assists: { name: 'Assists Per Game', desc: 'Avg assists', unit: 'ast', inUse: false },
   astTovRatio: { name: 'AST/TOV Ratio', desc: 'Assists per turnover', unit: 'ratio', inUse: false },
-  
+
   // Defense
   drtg: { name: 'Defensive Rating', desc: 'Opp points per 100 poss', unit: 'pts/100', inUse: true },
   oppPpg: { name: 'Opp Points Per Game', desc: 'Points allowed', unit: 'pts', inUse: false },
@@ -30,38 +28,38 @@ const AVAILABLE_STATS = {
   blocks: { name: 'Blocks Per Game', desc: 'Avg blocks', unit: 'blk', inUse: false },
   oppFgPct: { name: 'Opp FG%', desc: 'Opponent FG% allowed', unit: '%', inUse: false },
   oppThreePct: { name: 'Opp 3P%', desc: 'Opponent 3P% allowed', unit: '%', inUse: false },
-  
+
   // Ball Control
   avgTurnovers: { name: 'Turnovers Per Game', desc: 'Avg turnovers', unit: 'tov', inUse: true },
   avgTovPct: { name: 'Turnover %', desc: 'TOV per 100 poss', unit: '%', inUse: true },
   oppTov: { name: 'Opp Turnovers', desc: 'Turnovers forced', unit: 'tov', inUse: false },
   tovDiff: { name: 'Turnover Diff', desc: 'Forced minus committed', unit: 'diff', inUse: false },
-  
+
   // Rebounding
   avgOffReb: { name: 'Offensive Rebounds', desc: 'OREB per game', unit: 'oreb', inUse: true },
   avgDefReb: { name: 'Defensive Rebounds', desc: 'DREB per game', unit: 'dreb', inUse: true },
   totalReb: { name: 'Total Rebounds', desc: 'Total REB per game', unit: 'reb', inUse: false },
   avgOrebPct: { name: 'OREB%', desc: 'Offensive rebound %', unit: '%', inUse: true },
   rebDiff: { name: 'Rebound Differential', desc: 'REB minus opp REB', unit: 'diff', inUse: false },
-  
+
   // Splits
   ortgHome: { name: 'Home ORtg', desc: 'ORtg in home games', unit: 'pts/100', inUse: true },
   ortgAway: { name: 'Away ORtg', desc: 'ORtg in away games', unit: 'pts/100', inUse: true },
   drtgHome: { name: 'Home DRtg', desc: 'DRtg in home games', unit: 'pts/100', inUse: true },
   drtgAway: { name: 'Away DRtg', desc: 'DRtg in away games', unit: 'pts/100', inUse: true },
-  
+
   // Standings
   winPct: { name: 'Win %', desc: 'Overall win percentage', unit: '%', inUse: false },
   confRank: { name: 'Conference Rank', desc: 'Ranking in conference', unit: 'rank', inUse: false },
   streak: { name: 'Win/Loss Streak', desc: 'Current streak', unit: 'games', inUse: false },
   last10: { name: 'Last 10 Record', desc: 'Wins in last 10', unit: 'wins', inUse: false },
   netRtg: { name: 'Net Rating', desc: 'ORtg minus DRtg', unit: 'pts/100', inUse: false },
-  
+
   // Situational
   restDays: { name: 'Rest Days', desc: 'Days since last game', unit: 'days', inUse: true },
   b2bGame: { name: 'Back-to-Back', desc: 'Is this a B2B game?', unit: 'bool', inUse: false },
   q4Diff: { name: 'Q4 Scoring Diff', desc: '4th quarter scoring margin', unit: 'pts', inUse: false },
-  
+
   // Misc
   fouls: { name: 'Fouls Per Game', desc: 'Personal fouls', unit: 'pf', inUse: false },
   plusMinus: { name: 'Plus/Minus', desc: 'Point differential', unit: '+/-', inUse: false },
@@ -82,7 +80,7 @@ interface FactorProposal {
 export async function POST(request: NextRequest) {
   try {
     const { betType, count = 8 } = await request.json()
-    
+
     if (!betType || !['TOTALS', 'SPREAD'].includes(betType)) {
       return NextResponse.json({ error: 'Invalid bet type' }, { status: 400 })
     }
@@ -113,7 +111,7 @@ You think like a professional handicapper, not a casual fan. You know that:
 - Home court advantage varies significantly by team
 - Back-to-backs affect defense more than offense`
 
-    const userPrompt = betType === 'TOTALS' 
+    const userPrompt = betType === 'TOTALS'
       ? `TASK: Design ${count} NEW factors for NBA TOTALS betting (over/under predictions).
 
 AVAILABLE STATISTICS:
@@ -220,7 +218,7 @@ Return a JSON object with this exact structure:
     }
 
     const parsed = JSON.parse(content) as { factors: FactorProposal[] }
-    
+
     console.log(`[Factor Strategist] Generated ${parsed.factors.length} factor proposals`)
 
     return NextResponse.json({
