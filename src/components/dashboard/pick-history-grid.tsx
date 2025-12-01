@@ -337,9 +337,50 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
                   <TooltipTrigger asChild>
                     <button
                       onClick={() => onPickClick?.(pick)}
-                      className={`w-6 h-6 rounded cursor-pointer transition-all hover:scale-125 ${liveStatus === 'live' ? 'animate-pulse' : ''}`}
+                      className={`w-6 h-6 rounded cursor-pointer transition-all hover:scale-125 flex items-center justify-center ${liveStatus === 'live' ? 'animate-pulse' : ''}`}
                       style={style}
-                    />
+                    >
+                      {/* Subtle checkmark for wins, X for losses */}
+                      {pick.status === 'won' && (
+                        <svg
+                          className="w-3.5 h-3.5 opacity-70"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="rgba(255,255,255,0.9)"
+                          strokeWidth="3.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      )}
+                      {pick.status === 'lost' && (
+                        <svg
+                          className="w-3 h-3 opacity-70"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="rgba(255,255,255,0.9)"
+                          strokeWidth="3.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <line x1="18" y1="6" x2="6" y2="18" />
+                          <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                      )}
+                      {pick.status === 'push' && (
+                        <svg
+                          className="w-3 h-3 opacity-70"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="rgba(255,255,255,0.9)"
+                          strokeWidth="3.5"
+                          strokeLinecap="round"
+                        >
+                          <line x1="5" y1="12" x2="19" y2="12" />
+                        </svg>
+                      )}
+                    </button>
                   </TooltipTrigger>
                   <TooltipContent
                     side="top"
