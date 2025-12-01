@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Clock, Calendar, CalendarDays, History } from 'lucide-react'
+import { Clock, Calendar, CalendarDays, History, HelpCircle } from 'lucide-react'
 import { getRarityTierFromConfidence, getRarityStyleFromTier, type RarityTier } from '@/lib/tier-grading'
 
 interface Pick {
@@ -311,7 +312,159 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
 
       {/* Header Row 2: Tier Filters + Source Filter */}
       <div className="flex items-center gap-1 mb-3 flex-wrap">
-        <span className="text-xs text-slate-500 mr-1">Tier:</span>
+        <div className="flex items-center gap-1 mr-1">
+          <span className="text-xs text-slate-500">Tier:</span>
+          <Dialog>
+            <DialogTrigger asChild>
+              <button className="text-slate-500 hover:text-slate-300 transition-colors">
+                <HelpCircle className="w-3.5 h-3.5" />
+              </button>
+            </DialogTrigger>
+            <DialogContent className="max-w-[480px] p-0 bg-slate-900 border border-slate-700 shadow-2xl">
+              <div className="p-4 space-y-4 max-h-[80vh] overflow-y-auto text-sm">
+                <div className="text-center border-b border-slate-700 pb-3">
+                  <h3 className="text-lg font-bold bg-gradient-to-r from-amber-400 via-purple-400 to-blue-400 text-transparent bg-clip-text">
+                    🏆 How Tiers Are Calculated
+                  </h3>
+                  <p className="text-[10px] text-slate-500 mt-1">Quality-based tier system inspired by gaming loot</p>
+                </div>
+
+                {/* Tier Thresholds */}
+                <div className="bg-slate-800/50 rounded-lg p-3 space-y-1.5">
+                  <div className="text-xs font-semibold text-slate-300 mb-2">📊 Tier Thresholds (0-100 Score)</div>
+                  <div className="grid grid-cols-5 gap-1.5 text-[10px]">
+                    <div className="text-center p-1.5 rounded bg-amber-500/20 border border-amber-500/40">
+                      <div className="text-amber-400 font-bold">🏆 Legendary</div>
+                      <div className="text-amber-300">≥85</div>
+                    </div>
+                    <div className="text-center p-1.5 rounded bg-purple-500/20 border border-purple-500/40">
+                      <div className="text-purple-400 font-bold">💎 Epic</div>
+                      <div className="text-purple-300">≥75</div>
+                    </div>
+                    <div className="text-center p-1.5 rounded bg-blue-500/20 border border-blue-500/40">
+                      <div className="text-blue-400 font-bold">💠 Rare</div>
+                      <div className="text-blue-300">≥65</div>
+                    </div>
+                    <div className="text-center p-1.5 rounded bg-green-500/20 border border-green-500/40">
+                      <div className="text-green-400 font-bold">✦ Uncommon</div>
+                      <div className="text-green-300">≥55</div>
+                    </div>
+                    <div className="text-center p-1.5 rounded bg-slate-500/20 border border-slate-500/40">
+                      <div className="text-slate-400 font-bold">◆ Common</div>
+                      <div className="text-slate-300">&lt;55</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* AI System Picks */}
+                <div className="bg-cyan-950/30 rounded-lg p-3 border border-cyan-800/30">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-cyan-600/40 text-cyan-300">🤖 SYSTEM</span>
+                    <span className="text-xs font-semibold text-slate-200">AI-Generated Picks (SHIVA, IFRIT, etc.)</span>
+                  </div>
+                  <div className="text-[11px] text-slate-300 space-y-1.5">
+                    <div className="flex items-start gap-2">
+                      <span className="text-cyan-400 font-mono min-w-[100px]">Sharp Score</span>
+                      <span>AI confidence × 10 (typically 50-80 base)</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-cyan-400 font-mono min-w-[100px]">+ Edge Bonus</span>
+                      <span>+3 to +15 based on predicted vs market line difference</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-cyan-400 font-mono min-w-[100px]">+ Team Record</span>
+                      <span>-10 to +10 based on capper&apos;s history picking this team</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-cyan-400 font-mono min-w-[100px]">+ Recent Form</span>
+                      <span>-5 to +5 based on last 10 picks performance</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-cyan-400 font-mono min-w-[100px]">- Streak Penalty</span>
+                      <span>-3 to -10 if on 3+ game losing streak</span>
+                    </div>
+                    <div className="mt-2 p-2 bg-cyan-900/20 rounded text-[10px]">
+                      <span className="text-cyan-400 font-semibold">Example:</span> SHIVA picks OVER 225.5 with 70 Sharp Score, +9 edge (3+ points), +4 team record, +3 hot streak = <span className="text-amber-400 font-bold">86 → Legendary</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Manual Picks */}
+                <div className="bg-amber-950/30 rounded-lg p-3 border border-amber-800/30">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-amber-600/40 text-amber-300">👤 MANUAL</span>
+                    <span className="text-xs font-semibold text-slate-200">Human Capper Picks</span>
+                  </div>
+                  <div className="text-[11px] text-slate-300 space-y-1.5">
+                    <div className="flex items-start gap-2">
+                      <span className="text-amber-400 font-mono min-w-[100px]">Base Score</span>
+                      <span>40 + (Units × 8) → 1U=48, 3U=64, 5U=80</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-amber-400 font-mono min-w-[100px]">+ Team Record</span>
+                      <span>-10 to +10 based on capper&apos;s history with this team</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-amber-400 font-mono min-w-[100px]">+ Recent Form</span>
+                      <span>-5 to +5 based on last 10 picks win rate</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-amber-400 font-mono min-w-[100px]">- Streak Penalty</span>
+                      <span>-3 to -10 if currently on losing streak</span>
+                    </div>
+                    <div className="mt-2 p-2 bg-amber-900/20 rounded text-[10px]">
+                      <span className="text-amber-400 font-semibold">Example:</span> gr8nade bets 4U on LAL spread with 65% team record, on 2-game win streak = 72 + 7 + 3 = <span className="text-purple-400 font-bold">82 → Epic</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Picksmith */}
+                <div className="bg-violet-950/30 rounded-lg p-3 border border-violet-800/30">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-violet-600/40 text-violet-300">🎯 PICKSMITH</span>
+                    <span className="text-xs font-semibold text-slate-200">Consensus Picks</span>
+                  </div>
+                  <div className="text-[11px] text-slate-300 space-y-1.5">
+                    <div className="flex items-start gap-2">
+                      <span className="text-violet-400 font-mono min-w-[100px]">Base Score</span>
+                      <span>45 (minimum for any consensus of 2+ cappers)</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-violet-400 font-mono min-w-[100px]">+ Capper Count</span>
+                      <span>+8 per extra capper beyond 2 (max +16 for 4+)</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-violet-400 font-mono min-w-[100px]">+ Capper Quality</span>
+                      <span>+4 per 10 avg net units among contributing cappers</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-violet-400 font-mono min-w-[100px]">+ Bet Size</span>
+                      <span>+4 per 2 units of consensus bet (max +12)</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-violet-400 font-mono min-w-[100px]">+ Form/Record</span>
+                      <span>Same bonuses as other picks based on PICKSMITH history</span>
+                    </div>
+                    <div className="mt-2 p-2 bg-violet-900/20 rounded text-[10px]">
+                      <span className="text-violet-400 font-semibold">Example:</span> 4 cappers agree (avg +25 units), 4U bet = 45 + 16 + 8 + 8 = <span className="text-purple-400 font-bold">77 → Epic</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Unit Gates */}
+                <div className="bg-red-950/30 rounded-lg p-3 border border-red-800/30">
+                  <div className="text-xs font-semibold text-red-300 mb-2">⛔ Unit Gates (Demotion Rules)</div>
+                  <div className="text-[11px] text-slate-300 space-y-1">
+                    <div>• <span className="text-amber-400">Legendary</span> requires <span className="font-bold">4+ units</span> (else demoted to Epic)</div>
+                    <div>• <span className="text-purple-400">Epic</span> requires <span className="font-bold">3+ units</span> (else demoted to Rare)</div>
+                    <div>• <span className="text-blue-400">Rare</span> requires <span className="font-bold">2+ units</span> (else demoted to Uncommon)</div>
+                    <div className="text-[10px] text-slate-500 mt-1 italic">High scores mean nothing if you don&apos;t back it with units!</div>
+                  </div>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
         {tierFilters.map(t => {
           const rarity = t.key !== 'all' ? getRarityStyleFromTier(t.key) : null
           return (
