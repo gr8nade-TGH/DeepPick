@@ -1,14 +1,16 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
+import { fetchScoreboard } from '@/lib/data-sources/mysportsfeeds-api'
+import { formatDateForAPI } from '@/lib/data-sources/season-utils'
 
 /**
  * ADMIN ENDPOINT: Manually grade stale picks
- * 
+ *
  * This endpoint finds all picks for games that should be completed
  * (game_start_timestamp > 3 hours ago) but are still marked as "pending",
- * then attempts to fetch the final score and grade them.
- * 
- * This is a one-time cleanup tool for picks that weren't graded automatically.
+ * then attempts to fetch the final score from MySportsFeeds and grade them.
+ *
+ * KEY FIX: Now fetches scores from MySportsFeeds for games not yet marked as final
  */
 export async function POST(request: Request) {
   const executionTime = new Date().toISOString()
@@ -92,38 +94,96 @@ export async function POST(request: Request) {
         console.log(`   Pick: ${pick.pick_type} - ${pick.selection}`)
         console.log(`   Game Status: ${game.status}`)
 
-        // If game is already final, just grade the pick
-        if (game.status === 'final' && game.home_score !== null && game.away_score !== null) {
-          console.log(`   ✅ Game is final: ${game.away_score} - ${game.home_score}`)
-          
-          if (!dryRun) {
-            // Call the grading API
-            const gradeResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/picks/grade`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ pick_id: pick.id })
-            })
+        // If game is NOT final, fetch score from MySportsFeeds first
+        if (game.status !== 'final' || game.home_score === null || game.away_score === null) {
+          console.log(`   ⚠️  Game not final (status: ${game.status}), fetching from MySportsFeeds...`)
 
-            if (gradeResponse.ok) {
-              graded++
-              console.log(`   ✅ Pick graded successfully`)
+          // Extract game date from game_start_timestamp
+          const gameDate = new Date(game.game_start_timestamp)
+          const dateStr = formatDateForAPI(gameDate)
+
+          try {
+            const scoreboardData = await fetchScoreboard(dateStr)
+            const msfGameId = game.api_event_id?.replace('msf_', '')
+
+            // Find this game in the scoreboard
+            const msfGame = scoreboardData.games?.find((g: any) =>
+              g.schedule?.id?.toString() === msfGameId
+            )
+
+            if (msfGame) {
+              const playedStatus = msfGame.schedule?.playedStatus
+              const homeScore = msfGame.score?.homeScoreTotal
+              const awayScore = msfGame.score?.awayScoreTotal
+
+              console.log(`   📡 MySportsFeeds status: ${playedStatus}, Score: ${awayScore}-${homeScore}`)
+
+              if ((playedStatus === 'COMPLETED' || playedStatus === 'COMPLETED_PENDING_REVIEW') &&
+                homeScore !== undefined && awayScore !== undefined) {
+                // Update the game in database
+                if (!dryRun) {
+                  const { error: updateError } = await supabase
+                    .from('games')
+                    .update({
+                      status: 'final',
+                      final_score: { home: homeScore, away: awayScore, winner: homeScore > awayScore ? 'home' : 'away' },
+                      home_score: homeScore,
+                      away_score: awayScore,
+                      updated_at: new Date().toISOString()
+                    })
+                    .eq('id', game.id)
+
+                  if (updateError) {
+                    errors.push(`Pick ${pick.id}: Failed to update game - ${updateError.message}`)
+                    failed++
+                    continue
+                  }
+                  console.log(`   ✅ Game updated to final: ${awayScore}-${homeScore}`)
+                }
+                // Update local game object for grading
+                game.status = 'final'
+                game.home_score = homeScore
+                game.away_score = awayScore
+              } else {
+                errors.push(`Pick ${pick.id}: Game not completed in MySportsFeeds (status: ${playedStatus})`)
+                failed++
+                continue
+              }
             } else {
-              const errorData = await gradeResponse.json()
-              errors.push(`Pick ${pick.id}: ${errorData.error || 'Grading failed'}`)
+              errors.push(`Pick ${pick.id}: Game ${msfGameId} not found in MySportsFeeds for ${dateStr}`)
               failed++
-              console.log(`   ❌ Grading failed: ${errorData.error}`)
+              continue
             }
-          } else {
+          } catch (apiError) {
+            errors.push(`Pick ${pick.id}: MySportsFeeds API error - ${apiError instanceof Error ? apiError.message : String(apiError)}`)
+            failed++
+            continue
+          }
+        }
+
+        // Now game should be final, grade the pick
+        console.log(`   ✅ Game is final: ${game.away_score} - ${game.home_score}`)
+
+        if (!dryRun) {
+          // Call the grading API
+          const gradeResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/picks/grade`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pick_id: pick.id })
+          })
+
+          if (gradeResponse.ok) {
             graded++
-            console.log(`   🔍 [DRY RUN] Would grade this pick`)
+            console.log(`   ✅ Pick graded successfully`)
+          } else {
+            const errorData = await gradeResponse.json()
+            errors.push(`Pick ${pick.id}: ${errorData.error || 'Grading failed'}`)
+            failed++
+            console.log(`   ❌ Grading failed: ${errorData.error}`)
           }
         } else {
-          // Game is not final yet - try to fetch the score from MySportsFeeds
-          console.log(`   ⚠️  Game not final, attempting to fetch score...`)
-          
-          // For now, just log it - we'll need to implement MySportsFeeds lookup
-          errors.push(`Pick ${pick.id}: Game ${game.id} not marked as final (status: ${game.status})`)
-          failed++
+          graded++
+          console.log(`   🔍 [DRY RUN] Would grade this pick`)
         }
       } catch (error) {
         errors.push(`Pick ${pick.id}: ${error instanceof Error ? error.message : String(error)}`)
