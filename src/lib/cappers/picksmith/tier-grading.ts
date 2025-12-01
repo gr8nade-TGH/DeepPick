@@ -25,42 +25,47 @@ export interface PicksmithTierInput {
 
 /**
  * Calculate Picksmith base confidence from consensus factors
- * 
- * Formula:
- * - Base: 30 (minimum for any consensus)
- * - +10 per additional capper beyond 2 (cap at +20 for 4+ cappers)
- * - +5 for every +10 net units average among cappers (cap at +15)
- * - +5 for every 2 units of consensus bet size (cap at +15)
- * 
- * Max base: 30 + 20 + 15 + 15 = 80
+ *
+ * RECALIBRATED to match AI pick distribution (avg ~65-75):
+ * - Base: 45 (minimum for any consensus)
+ * - +8 per additional capper beyond 2 (cap at +16 for 4+ cappers)
+ * - +4 for every +10 net units average among cappers (cap at +12)
+ * - +4 for every 2 units of consensus bet size (cap at +12)
+ *
+ * Max base: 45 + 16 + 12 + 12 = 85 (just barely Legendary with perfect consensus)
+ *
+ * Expected distributions:
+ * - Weak consensus (2 cappers, 2U): 45 + 0 + 4 + 4 = 53 → Uncommon
+ * - Medium consensus (3 cappers, 3U): 45 + 8 + 8 + 6 = 67 → Rare
+ * - Strong consensus (4+ cappers, 4U): 45 + 16 + 12 + 8 = 81 → Epic
  */
 export function calculatePicksmithBaseConfidence(input: PicksmithTierInput): number {
   const capperCount = input.contributingCappers.length
-  
+
   // Base confidence for any consensus
-  let confidence = 30
-  
-  // Bonus for more cappers agreeing (max +20)
+  let confidence = 45
+
+  // Bonus for more cappers agreeing (max +16)
   const extraCappers = Math.max(0, capperCount - 2)
-  confidence += Math.min(extraCappers * 10, 20)
-  
+  confidence += Math.min(extraCappers * 8, 16)
+
   // Bonus for high-quality cappers (average net units)
   const avgNetUnits = input.contributingCappers.reduce((sum, c) => sum + c.netUnits, 0) / capperCount
-  const qualityBonus = Math.min(Math.floor(avgNetUnits / 10) * 5, 15)
+  const qualityBonus = Math.min(Math.floor(avgNetUnits / 10) * 4, 12)
   confidence += Math.max(0, qualityBonus) // Only add if positive
-  
+
   // Bonus for strong bet sizing
-  const betSizeBonus = Math.min(Math.floor(input.consensusUnits / 2) * 5, 15)
+  const betSizeBonus = Math.min(Math.floor(input.consensusUnits / 2) * 4, 12)
   confidence += betSizeBonus
-  
+
   console.log(`[PicksmithTier] Base confidence: ${confidence}`, {
     capperCount,
-    extraCapperBonus: Math.min(extraCappers * 10, 20),
+    extraCapperBonus: Math.min(extraCappers * 8, 16),
     avgNetUnits: avgNetUnits.toFixed(1),
     qualityBonus,
     betSizeBonus
   })
-  
+
   return confidence
 }
 
@@ -76,10 +81,10 @@ export async function calculatePicksmithTierGrade(
     input.teamAbbrev,
     input.betType
   )
-  
+
   // Calculate base confidence from consensus factors
   const baseConfidence = calculatePicksmithBaseConfidence(input)
-  
+
   // Build tier grade input
   const tierInput: TierGradeInput = {
     baseConfidence: baseConfidence / 10, // Scale to 0-10 for tier-grading.ts
@@ -93,7 +98,7 @@ export async function calculatePicksmithTierGrade(
     // Use Picksmith's current streak
     currentLosingStreak: picksmithInputs.currentLosingStreak
   }
-  
+
   console.log(`[PicksmithTier] Tier input:`, {
     baseConfidence,
     units: input.consensusUnits,
@@ -101,7 +106,7 @@ export async function calculatePicksmithTierGrade(
     recentForm: picksmithInputs.recentForm,
     losingStreak: picksmithInputs.currentLosingStreak
   })
-  
+
   return calculateTierGrade(tierInput)
 }
 
@@ -117,7 +122,7 @@ export async function buildPicksmithTierSnapshot(
   inputs: any
 }> {
   const tierGrade = await calculatePicksmithTierGrade(input)
-  
+
   return {
     tier: tierGrade.tier,
     tierScore: tierGrade.tierScore,

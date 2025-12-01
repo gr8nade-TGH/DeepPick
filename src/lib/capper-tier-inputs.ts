@@ -27,7 +27,7 @@ export async function getCapperTierInputs(
   betType?: 'total' | 'spread'
 ): Promise<CapperTierInputs> {
   const admin = getSupabaseAdmin()
-  
+
   // Build base query for graded picks
   let query = admin
     .from('picks')
@@ -35,14 +35,14 @@ export async function getCapperTierInputs(
     .eq('capper', capperId.toLowerCase())
     .in('status', ['won', 'lost', 'push'])
     .order('created_at', { ascending: false })
-  
+
   // Filter by bet type if specified
   if (betType) {
     query = query.eq('pick_type', betType)
   }
-  
+
   const { data: picks, error } = await query.limit(100)
-  
+
   if (error || !picks || picks.length === 0) {
     console.log(`[CapperTierInputs] No graded picks found for ${capperId}`)
     return {
@@ -51,11 +51,11 @@ export async function getCapperTierInputs(
       currentLosingStreak: 0
     }
   }
-  
+
   // Calculate recent form (last 10 picks)
   const last10 = picks.slice(0, 10)
   const recentForm = calculateRecord(last10)
-  
+
   // Calculate team-specific record if team provided
   let teamRecord: CapperTierInputs['teamRecord'] = null
   if (teamAbbrev) {
@@ -65,12 +65,12 @@ export async function getCapperTierInputs(
       const awayAbbr = snapshot?.away_team?.abbreviation || ''
       return homeAbbr === teamAbbrev || awayAbbr === teamAbbrev
     })
-    
+
     if (teamPicks.length >= 3) {
       teamRecord = calculateRecord(teamPicks)
     }
   }
-  
+
   // Calculate current losing streak
   let currentLosingStreak = 0
   for (const pick of picks) {
@@ -81,7 +81,7 @@ export async function getCapperTierInputs(
     }
     // pushes don't break streaks
   }
-  
+
   return {
     teamRecord,
     recentForm,
@@ -96,7 +96,7 @@ function calculateRecord(picks: any[]): { wins: number; losses: number; netUnits
   let wins = 0
   let losses = 0
   let netUnits = 0
-  
+
   for (const pick of picks) {
     if (pick.status === 'won') {
       wins++
@@ -107,20 +107,23 @@ function calculateRecord(picks: any[]): { wins: number; losses: number; netUnits
     }
     // pushes don't count toward W-L
   }
-  
+
   return { wins, losses, netUnits: Math.round(netUnits * 10) / 10 }
 }
 
 /**
  * Calculate base confidence from units for manual picks
- * 
- * Formula: units × 12, capped at 60
- * This means even 5U picks need bonuses to reach Legendary (85)
- * 
- * 1U = 12, 2U = 24, 3U = 36, 4U = 48, 5U = 60
+ *
+ * Formula: 40 + (units × 8) - similar range to AI picks (50-80)
+ * 1U = 48, 2U = 56, 3U = 64, 4U = 72, 5U = 80
+ *
+ * This makes the distribution similar to AI picks:
+ * - AI typically generates 50-80 base confidence
+ * - 5U manual pick = 80 (needs bonuses for Legendary 85+)
+ * - Average 3U pick = 64 (Rare territory, same as average AI pick)
  */
 export function getManualPickBaseConfidence(units: number): number {
-  return Math.min(units * 12, 60)
+  return 40 + (units * 8)
 }
 
 /**
@@ -133,7 +136,7 @@ export async function buildManualPickTierInput(
   betType?: 'total' | 'spread'
 ): Promise<TierGradeInput> {
   const capperInputs = await getCapperTierInputs(capperId, teamAbbrev, betType)
-  
+
   return {
     baseConfidence: getManualPickBaseConfidence(units) / 10, // Scale to 0-10 for tier-grading.ts
     unitsRisked: units,

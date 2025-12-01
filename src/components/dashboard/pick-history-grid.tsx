@@ -14,10 +14,11 @@ interface Pick {
   pick_type: string
   confidence?: number
   created_at: string
+  units?: number
   is_system_pick?: boolean
   game_snapshot?: {
-    away_team?: { abbreviation?: string }
-    home_team?: { abbreviation?: string }
+    away_team?: { abbreviation?: string; name?: string }
+    home_team?: { abbreviation?: string; name?: string }
     game_date?: string
     game_start_timestamp?: string
     tier_grade?: {
@@ -54,9 +55,13 @@ interface Pick {
   games?: {
     status?: string
     game_start_timestamp?: string
+    final_score?: { home: number; away: number; winner?: string }
+    home_score?: number
+    away_score?: number
   }
   result?: {
-    final_score?: { home: number; away: number }
+    final_score?: { home: number; away: number; winner?: string }
+    outcome?: string
   }
 }
 
@@ -486,14 +491,50 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
                             {isSystemPick ? '🤖 AI' : '👤 Manual'}
                           </span>
                         </div>
+
+                        {/* Capper name */}
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-semibold text-amber-400 uppercase">
+                            {pick.capper}
+                          </span>
+                          {pick.units && (
+                            <span className="text-[9px] text-slate-500">
+                              {pick.units}U
+                            </span>
+                          )}
+                        </div>
+
                         {/* Pick selection */}
                         <div className="font-bold text-white text-sm" style={{ textShadow: `0 0 10px ${rarity.glowColor}` }}>
                           {pick.selection}
                         </div>
-                        {/* Matchup */}
-                        <div className="text-slate-400 text-xs">
-                          {pick.game_snapshot?.away_team?.abbreviation} @ {pick.game_snapshot?.home_team?.abbreviation}
-                        </div>
+
+                        {/* Matchup with Score for graded picks */}
+                        {(() => {
+                          const awayAbbr = pick.game_snapshot?.away_team?.abbreviation || '???'
+                          const homeAbbr = pick.game_snapshot?.home_team?.abbreviation || '???'
+                          const finalScore = pick.result?.final_score || pick.games?.final_score
+
+                          if (pick.status !== 'pending' && finalScore) {
+                            // Show result with scores
+                            const resultColor = pick.status === 'won' ? 'text-emerald-400'
+                              : pick.status === 'lost' ? 'text-red-400'
+                                : 'text-slate-400'
+                            return (
+                              <div className={`text-xs font-semibold ${resultColor}`}>
+                                {pick.status.toUpperCase()}: {awayAbbr} {finalScore.away} - {homeAbbr} {finalScore.home}
+                              </div>
+                            )
+                          } else {
+                            // Pending - just show matchup
+                            return (
+                              <div className="text-slate-400 text-xs">
+                                {awayAbbr} @ {homeAbbr}
+                              </div>
+                            )
+                          }
+                        })()}
+
                         {/* Date + Confidence */}
                         <div className="flex items-center justify-between text-[10px]">
                           <span className="text-slate-500">
