@@ -19,6 +19,20 @@ interface Pick {
     home_team?: { abbreviation?: string }
     game_date?: string
     game_start_timestamp?: string
+    tier_grade?: {
+      tier: string
+      tierScore: number
+      breakdown?: {
+        sharpScore: number
+        edgeBonus: number
+        teamRecordBonus: number
+        recentFormBonus: number
+        losingStreakPenalty: number
+        rawScore: number
+        unitGateApplied?: boolean
+        originalTier?: string
+      }
+    }
   }
   games?: {
     status?: string
@@ -59,8 +73,13 @@ interface PickHistoryGridProps {
 type TimeFilter = '24h' | '7d' | '30d' | 'all'
 type TierFilter = 'all' | 'Common' | 'Uncommon' | 'Rare' | 'Epic' | 'Legendary'
 
-// Get tier from confidence score
+// Get tier from stored tier_grade or fallback to confidence calculation
 const getTierFromPick = (pick: Pick): RarityTier => {
+  // Prefer stored tier from tier_grade (accurate)
+  if (pick.game_snapshot?.tier_grade?.tier) {
+    return pick.game_snapshot.tier_grade.tier as RarityTier
+  }
+  // Fallback to confidence-based calculation for legacy picks
   const confidence = pick.confidence || 50
   return getRarityTierFromConfidence(confidence)
 }
@@ -370,16 +389,73 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
                             </span>
                           )}
                         </div>
-                        {/* Tier Formula Note */}
+                        {/* Tier Formula Breakdown */}
                         <div className="pt-1.5 mt-1.5 border-t border-slate-700/50">
-                          <div className="text-[9px] text-slate-500">
-                            <div className="flex justify-between">
-                              <span>📊 Base Score:</span>
-                              <span className="text-slate-300">{((pick.confidence || 50) * 10).toFixed(0)}</span>
-                            </div>
-                            <div className="text-[8px] text-slate-600 mt-0.5 italic">
-                              Click for full tier breakdown →
-                            </div>
+                          <div className="text-[9px] text-slate-500 space-y-0.5">
+                            {/* Show full breakdown if available */}
+                            {pick.game_snapshot?.tier_grade?.breakdown ? (
+                              <>
+                                <div className="flex justify-between">
+                                  <span>📊 Sharp Score:</span>
+                                  <span className="text-slate-300">{pick.game_snapshot.tier_grade.breakdown.sharpScore.toFixed(1)}</span>
+                                </div>
+                                {pick.game_snapshot.tier_grade.breakdown.edgeBonus !== 0 && (
+                                  <div className="flex justify-between">
+                                    <span>📈 Edge Bonus:</span>
+                                    <span className={pick.game_snapshot.tier_grade.breakdown.edgeBonus > 0 ? 'text-green-400' : 'text-red-400'}>
+                                      <span className="opacity-60 text-[8px] mr-0.5">{pick.game_snapshot.tier_grade.breakdown.edgeBonus > 0 ? '✓' : '✗'}</span>
+                                      {pick.game_snapshot.tier_grade.breakdown.edgeBonus > 0 ? '+' : ''}{pick.game_snapshot.tier_grade.breakdown.edgeBonus}
+                                    </span>
+                                  </div>
+                                )}
+                                {pick.game_snapshot.tier_grade.breakdown.teamRecordBonus !== 0 && (
+                                  <div className="flex justify-between">
+                                    <span>🎯 Team Record:</span>
+                                    <span className={pick.game_snapshot.tier_grade.breakdown.teamRecordBonus > 0 ? 'text-green-400' : 'text-red-400'}>
+                                      <span className="opacity-60 text-[8px] mr-0.5">{pick.game_snapshot.tier_grade.breakdown.teamRecordBonus > 0 ? '✓' : '✗'}</span>
+                                      {pick.game_snapshot.tier_grade.breakdown.teamRecordBonus > 0 ? '+' : ''}{pick.game_snapshot.tier_grade.breakdown.teamRecordBonus}
+                                    </span>
+                                  </div>
+                                )}
+                                {pick.game_snapshot.tier_grade.breakdown.recentFormBonus !== 0 && (
+                                  <div className="flex justify-between">
+                                    <span>🔥 Recent Form:</span>
+                                    <span className={pick.game_snapshot.tier_grade.breakdown.recentFormBonus > 0 ? 'text-green-400' : 'text-red-400'}>
+                                      <span className="opacity-60 text-[8px] mr-0.5">{pick.game_snapshot.tier_grade.breakdown.recentFormBonus > 0 ? '✓' : '✗'}</span>
+                                      {pick.game_snapshot.tier_grade.breakdown.recentFormBonus > 0 ? '+' : ''}{pick.game_snapshot.tier_grade.breakdown.recentFormBonus}
+                                    </span>
+                                  </div>
+                                )}
+                                {pick.game_snapshot.tier_grade.breakdown.losingStreakPenalty !== 0 && (
+                                  <div className="flex justify-between">
+                                    <span>⚠️ Streak Penalty:</span>
+                                    <span className="text-red-400">
+                                      <span className="opacity-60 text-[8px] mr-0.5">✗</span>
+                                      {pick.game_snapshot.tier_grade.breakdown.losingStreakPenalty}
+                                    </span>
+                                  </div>
+                                )}
+                                <div className="flex justify-between border-t border-slate-700/50 pt-0.5 mt-0.5 font-semibold">
+                                  <span>🏆 Tier Score:</span>
+                                  <span style={{ color: rarity.borderColor }}>{pick.game_snapshot.tier_grade.tierScore.toFixed(0)}</span>
+                                </div>
+                                {pick.game_snapshot.tier_grade.breakdown.unitGateApplied && pick.game_snapshot.tier_grade.breakdown.originalTier && (
+                                  <div className="text-[8px] text-red-400 mt-0.5">
+                                    ⛔ Demoted from {pick.game_snapshot.tier_grade.breakdown.originalTier}
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                <div className="flex justify-between">
+                                  <span>📊 Base Score:</span>
+                                  <span className="text-slate-300">{((pick.confidence || 50) * 10).toFixed(0)}</span>
+                                </div>
+                                <div className="text-[8px] text-slate-600 mt-0.5 italic">
+                                  Click for full tier breakdown →
+                                </div>
+                              </>
+                            )}
                           </div>
                         </div>
                       </div>
