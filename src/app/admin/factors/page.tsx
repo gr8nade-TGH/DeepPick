@@ -21,9 +21,11 @@ import {
   Copy,
   Check,
   Sparkles,
-  Plus
+  Plus,
+  Brain
 } from 'lucide-react'
 import { StatBrowser } from './components/stat-browser'
+import { FactorStrategist } from './components/factor-strategist'
 
 interface FactorSample {
   runId: string
@@ -61,11 +63,17 @@ export default function FactorDashboardPage() {
   const [error, setError] = useState<string | null>(null)
   const [expandedFactors, setExpandedFactors] = useState<Set<string>>(new Set())
   const [statBrowserOpen, setStatBrowserOpen] = useState(false)
+  const [strategistOpen, setStrategistOpen] = useState(false)
 
   const handleSelectStat = (stat: any, category: string) => {
     console.log('Selected stat for new factor:', stat, 'from category:', category)
     // For now, just log - we'll implement factor creation in the next phase
     alert(`Coming soon: Create factor from "${stat.name}" stat\n\nThis will add the stat to the factor registry and make it available for all cappers.`)
+  }
+
+  const handleCreateFactorFromAI = (factor: any, betType: string) => {
+    console.log('Creating factor from AI proposal:', factor, 'for', betType)
+    alert(`Coming soon: Implement "${factor.name}" factor\n\nFormula: ${factor.formula}\n\nStats used: ${factor.stats_used.join(', ')}\n\nThis will add the factor to the registry.`)
   }
 
   const fetchData = async () => {
@@ -143,6 +151,13 @@ export default function FactorDashboardPage() {
           </div>
           <div className="flex items-center gap-3">
             <Button
+              onClick={() => setStrategistOpen(true)}
+              className="gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500"
+            >
+              <Brain className="w-4 h-4" />
+              AI Strategist
+            </Button>
+            <Button
               onClick={() => setStatBrowserOpen(true)}
               className="gap-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500"
             >
@@ -161,6 +176,13 @@ export default function FactorDashboardPage() {
           open={statBrowserOpen}
           onClose={() => setStatBrowserOpen(false)}
           onSelectStat={handleSelectStat}
+        />
+
+        {/* AI Factor Strategist Modal */}
+        <FactorStrategist
+          open={strategistOpen}
+          onClose={() => setStrategistOpen(false)}
+          onCreateFactor={handleCreateFactorFromAI}
         />
 
         {error && (
