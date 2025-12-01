@@ -117,62 +117,82 @@ export function FactorStrategist({ open, onClose }: FactorStrategistProps) {
 
   const generateCopyText = () => {
     const info = betType === 'TOTALS' ? FACTOR_INFO.totals : FACTOR_INFO.spread
+    const isTotals = betType === 'TOTALS'
 
-    let text = `# ${info.title} - Factor Design Request\n\n`
-    text += `## Current Factors Already In Use\n\n`
+    let text = `You are a professional NBA sports bettor and quantitative analyst. I'm building an AI prediction system for NBA ${betType} betting.\n\n`
+
+    text += `## THE GOAL\n`
+    if (isTotals) {
+      text += `Predict whether NBA games will go OVER or UNDER the Vegas total line. Each "factor" analyzes a specific statistical angle and contributes to the final prediction.\n\n`
+    } else {
+      text += `Predict whether the AWAY or HOME team will cover the spread. Each "factor" analyzes a specific statistical angle and contributes to the final prediction.\n\n`
+    }
+
+    text += `## CURRENT FACTORS (Already Implemented - DO NOT Duplicate)\n\n`
     info.currentFactors.forEach(f => {
-      text += `- **${f.name}** (${f.key})\n`
-      text += `  Stats: ${f.stats.join(', ')}\n`
-      text += `  Logic: ${f.logic}\n\n`
+      text += `**${f.name}** - ${f.logic}\n`
     })
 
-    text += `## Available Stats from MySportsFeeds API\n\n`
-    text += `### Pace & Tempo\n`
-    FACTOR_INFO.availableStats.paceAndTempo.forEach(s => {
-      text += `- ${s.stat}: ${s.desc} ${s.inUse ? '✅ IN USE' : '🔓 AVAILABLE'}\n`
-    })
-    text += `\n### Scoring\n`
-    FACTOR_INFO.availableStats.scoring.forEach(s => {
-      text += `- ${s.stat}: ${s.desc} ${s.inUse ? '✅ IN USE' : '🔓 AVAILABLE'}\n`
-    })
-    text += `\n### Offensive Efficiency\n`
-    FACTOR_INFO.availableStats.offense.forEach(s => {
-      text += `- ${s.stat}: ${s.desc} ${s.inUse ? '✅ IN USE' : '🔓 AVAILABLE'}\n`
-    })
-    text += `\n### Defensive Efficiency\n`
-    FACTOR_INFO.availableStats.defense.forEach(s => {
-      text += `- ${s.stat}: ${s.desc} ${s.inUse ? '✅ IN USE' : '🔓 AVAILABLE'}\n`
-    })
-    text += `\n### 3-Point Environment\n`
-    FACTOR_INFO.availableStats.threePoint.forEach(s => {
-      text += `- ${s.stat}: ${s.desc} ${s.inUse ? '✅ IN USE' : '🔓 AVAILABLE'}\n`
-    })
-    text += `\n### Free Throw Environment\n`
-    FACTOR_INFO.availableStats.freeThrow.forEach(s => {
-      text += `- ${s.stat}: ${s.desc} ${s.inUse ? '✅ IN USE' : '🔓 AVAILABLE'}\n`
-    })
-    text += `\n### Turnovers\n`
-    FACTOR_INFO.availableStats.turnovers.forEach(s => {
-      text += `- ${s.stat}: ${s.desc} ${s.inUse ? '✅ IN USE' : '🔓 AVAILABLE'}\n`
-    })
-    text += `\n### Rebounding\n`
-    FACTOR_INFO.availableStats.rebounding.forEach(s => {
-      text += `- ${s.stat}: ${s.desc} ${s.inUse ? '✅ IN USE' : '🔓 AVAILABLE'}\n`
-    })
-    text += `\n### Four Factors (Dean Oliver)\n`
-    FACTOR_INFO.availableStats.fourFactors.forEach(s => {
-      text += `- ${s.stat}: ${s.desc} ${s.inUse ? '✅ IN USE' : '🔓 AVAILABLE'}\n`
-    })
-    text += `\n### Home/Away Splits\n`
-    FACTOR_INFO.availableStats.splits.forEach(s => {
-      text += `- ${s.stat}: ${s.desc} ${s.inUse ? '✅ IN USE' : '🔓 AVAILABLE'}\n`
+    text += `\n## AVAILABLE STATS (From MySportsFeeds API)\n`
+    text += `Stats marked 🔓 are NOT yet used and available for new factors:\n\n`
+
+    const allStats = [
+      ...FACTOR_INFO.availableStats.paceAndTempo,
+      ...FACTOR_INFO.availableStats.scoring,
+      ...FACTOR_INFO.availableStats.offense,
+      ...FACTOR_INFO.availableStats.defense,
+      ...FACTOR_INFO.availableStats.threePoint,
+      ...FACTOR_INFO.availableStats.freeThrow,
+      ...FACTOR_INFO.availableStats.turnovers,
+      ...FACTOR_INFO.availableStats.rebounding,
+      ...FACTOR_INFO.availableStats.fourFactors,
+      ...FACTOR_INFO.availableStats.splits,
+    ]
+
+    const availableOnly = allStats.filter(s => !s.inUse)
+    const inUseStats = allStats.filter(s => s.inUse)
+
+    text += `### 🔓 AVAILABLE (Use these for new factors)\n`
+    availableOnly.forEach(s => {
+      text += `- ${s.stat}: ${s.desc}\n`
     })
 
-    text += `\n## Formula Pattern\n\`\`\`${FACTOR_INFO.formulaPattern}\`\`\`\n`
+    text += `\n### ✅ Already in use (for reference only)\n`
+    inUseStats.forEach(s => {
+      text += `- ${s.stat}: ${s.desc}\n`
+    })
 
-    text += `\n## What I Need\n`
-    text += `Propose 3-5 NEW factors using the 🔓 AVAILABLE stats that don't duplicate existing factors.\n`
-    text += `For each factor provide: Name, Stats Used, Formula, Direction (OVER/UNDER or Away/Home covers), and Betting Thesis.\n`
+    text += `\n## HOW FACTORS WORK\n`
+    if (isTotals) {
+      text += `\`\`\`
+1. Combine both teams: (awayStat + homeStat) / 2
+2. Compare to league average: combined - leagueAvg
+3. Result: Positive = leans OVER, Negative = leans UNDER
+\`\`\`\n\n`
+    } else {
+      text += `\`\`\`
+1. Compare teams: awayStat - homeStat
+2. Result: Positive = Away team advantage, Negative = Home team advantage
+\`\`\`\n\n`
+    }
+
+    text += `## YOUR TASK\n`
+    text += `Propose 3-5 NEW factors using ONLY the 🔓 AVAILABLE stats listed above.\n\n`
+
+    text += `For each factor, provide:\n`
+    text += `1. **Name**: Short descriptive name\n`
+    text += `2. **Stats Used**: Which stats from the AVAILABLE list\n`
+    text += `3. **Formula**: How to combine the stats (use exact stat names)\n`
+    text += `4. **Direction**: ${isTotals ? 'Higher value = OVER or UNDER?' : 'Positive value = Away covers or Home covers?'}\n`
+    text += `5. **Betting Thesis**: Why this factor predicts ${isTotals ? 'scoring' : 'spread outcomes'} (2-3 sentences max)\n`
+    text += `6. **Confidence**: High/Medium/Low - how strong is the predictive logic?\n\n`
+
+    text += `## CONSTRAINTS\n`
+    text += `- ONLY use stats from the 🔓 AVAILABLE list\n`
+    text += `- Do NOT duplicate logic already covered by existing factors\n`
+    text += `- Each factor should measure something DIFFERENT\n`
+    text += `- Prefer factors with clear, logical betting thesis over complex formulas\n`
+    text += `- Think like a sharp bettor: what edges does the market miss?\n`
 
     return text
   }
