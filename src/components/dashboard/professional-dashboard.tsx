@@ -24,6 +24,7 @@ import {
 import { PickInsightModal } from '@/components/dashboard/pick-insight-modal'
 import { PickHistoryGrid } from '@/components/dashboard/pick-history-grid'
 import { getRarityFromConfidence } from '@/app/cappers/shiva/management/components/insight-card'
+import { getRarityTierFromConfidence, type RarityTier } from '@/lib/tier-grading'
 import Link from 'next/link'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
 import { useAuth } from '@/contexts/auth-context'
@@ -341,71 +342,74 @@ export function ProfessionalDashboard() {
   }
 
   const sortPicksByQuality = (cappers: Capper[]) => {
+    // Tier priority map (Legendary = highest priority)
+    const tierPriority: Record<RarityTier, number> = {
+      'Legendary': 5,
+      'Epic': 4,
+      'Rare': 3,
+      'Uncommon': 2,
+      'Common': 1
+    }
+
     // Create a map of capper -> performance score
     const capperScoreMap = new Map<string, number>()
     cappers.forEach(capper => {
-      // Performance score = ROI * win_rate (both as decimals)
-      // This gives higher weight to cappers with both high ROI and high win rate
       const performanceScore = (capper.roi / 100) * (capper.win_rate / 100)
       capperScoreMap.set(capper.id.toLowerCase(), performanceScore)
     })
 
-    // Sort picks by: (capper performance * confidence)
     setTodaysPicks(prev => {
+      // Sort by: 1) Tier (Legendary first), 2) Capper performance * confidence
       const sorted = [...prev].sort((a, b) => {
+        // Get tiers
+        const tierA = getRarityTierFromConfidence(a.confidence || 0)
+        const tierB = getRarityTierFromConfidence(b.confidence || 0)
+        const tierPriorityA = tierPriority[tierA] || 0
+        const tierPriorityB = tierPriority[tierB] || 0
+
+        // First sort by tier
+        if (tierPriorityA !== tierPriorityB) {
+          return tierPriorityB - tierPriorityA // Higher tier first
+        }
+
+        // Within same tier, sort by capper performance * confidence
         const capperA = a.capper?.toLowerCase() || 'deeppick'
         const capperB = b.capper?.toLowerCase() || 'deeppick'
-
         const perfA = capperScoreMap.get(capperA) || 0
         const perfB = capperScoreMap.get(capperB) || 0
+        const scoreA = perfA * (a.confidence || 0)
+        const scoreB = perfB * (b.confidence || 0)
 
-        const confA = a.confidence || 0
-        const confB = b.confidence || 0
-
-        // Combined score: capper performance (0-1) * confidence (0-10)
-        const scoreA = perfA * confA
-        const scoreB = perfB * confB
-
-        return scoreB - scoreA // Descending order (best first)
+        return scoreB - scoreA
       })
 
-      // Apply diversity: limit to max 2 picks per capper in top 5
-      // This ensures variety and prevents one capper from dominating Elite Picks
-      const diversified: Pick[] = []
-      const capperPickCount = new Map<string, number>()
-      const MAX_PICKS_PER_CAPPER = 2
+      // De-duplicate: only keep 1 pick per unique selection (show highest tier)
+      // Selection key = selection string (e.g., "OVER 232.5" or "Bulls -4.5")
+      const uniquePicks: Pick[] = []
+      const seenSelections = new Set<string>()
 
       for (const pick of sorted) {
-        const capperId = pick.capper?.toLowerCase() || 'deeppick'
-        const currentCount = capperPickCount.get(capperId) || 0
+        // Normalize selection for comparison (uppercase, trim)
+        const selectionKey = pick.selection?.toUpperCase().trim() || ''
 
-        // If we haven't hit the limit for this capper, add the pick
-        if (currentCount < MAX_PICKS_PER_CAPPER) {
-          diversified.push(pick)
-          capperPickCount.set(capperId, currentCount + 1)
+        // Only add if we haven't seen this selection before
+        if (!seenSelections.has(selectionKey)) {
+          uniquePicks.push(pick)
+          seenSelections.add(selectionKey)
         }
 
-        // Stop once we have enough picks for Elite Picks display (20)
-        if (diversified.length >= 20) break
+        // Stop once we have enough picks for display (20)
+        if (uniquePicks.length >= 20) break
       }
 
-      // If we don't have 20 picks yet (not enough cappers), fill with remaining picks
-      if (diversified.length < 20) {
-        for (const pick of sorted) {
-          if (!diversified.includes(pick)) {
-            diversified.push(pick)
-            if (diversified.length >= 20) break
-          }
-        }
-      }
-
-      console.log('[Dashboard] Sorted picks by quality (with diversity):', diversified.map(p => ({
+      console.log('[Dashboard] Sorted picks by tier (de-duplicated):', uniquePicks.map(p => ({
         capper: p.capper,
+        tier: getRarityTierFromConfidence(p.confidence || 0),
         confidence: p.confidence,
         selection: p.selection
       })))
 
-      return diversified
+      return uniquePicks
     })
   }
 
@@ -572,12 +576,12 @@ export function ProfessionalDashboard() {
 
           {/* LEFT COLUMN - TODAY'S PICKS - Full width on mobile, 60% on desktop */}
           <div className="lg:col-span-7">
-            {/* Today's Elite Picks - Responsive Height */}
+            {/* Today's Top Featured Picks - Responsive Height */}
             <Card className="bg-slate-900/50 border-slate-800 h-auto lg:h-[550px] flex flex-col">
               <CardHeader className="pb-2 px-2 sm:px-3 pt-2.5 border-b border-slate-800 flex-shrink-0">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-2">
-                    <CardTitle className="text-sm font-semibold text-white">Today's Elite Picks</CardTitle>
+                    <CardTitle className="text-sm font-semibold text-white">Today's Top Featured Picks</CardTitle>
                     <Link
                       href="/pick-grid"
                       className="group relative p-1.5 rounded-lg bg-gradient-to-r from-cyan-500/20 to-purple-500/20 border border-cyan-500/30 hover:border-cyan-400 hover:from-cyan-500/30 hover:to-purple-500/30 transition-all duration-300"
@@ -604,7 +608,7 @@ export function ProfessionalDashboard() {
                     <div className="text-center">
                       <Activity className="h-12 w-12 text-slate-600 mx-auto mb-3" />
                       <p className="text-sm text-slate-400 font-medium">No picks available</p>
-                      <p className="text-xs text-slate-600 mt-1">Check back later for today's elite picks</p>
+                      <p className="text-xs text-slate-600 mt-1">Check back later for today's top featured picks</p>
                     </div>
                   </div>
                 ) : (
