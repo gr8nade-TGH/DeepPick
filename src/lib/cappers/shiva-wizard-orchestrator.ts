@@ -112,8 +112,15 @@ export async function executeWizardPipeline(input: WizardOrchestratorInput): Pro
     console.log('[WizardOrchestrator] Step 3: Factors computed:', steps.step3.factors?.length || 0, 'factors')
 
     // Step 4: Score Predictions
-    console.log('[WizardOrchestrator] Step 4: Generating predictions...')
-    steps.step4 = await generatePredictions(runId, steps.step3, sport, betType, game)
+    // IMPORTANT: Use Vegas market line as baseline instead of calculated team stats
+    // This ensures all cappers start from the same anchor (market consensus)
+    // Factor adjustments then move the prediction away from market
+    const marketBaseline = betType === 'TOTAL'
+      ? (steps.step2.snapshot?.total?.line || 220)
+      : (steps.step2.snapshot?.spread?.away_spread || 0)
+
+    console.log('[WizardOrchestrator] Step 4: Generating predictions with Vegas baseline:', { marketBaseline, betType })
+    steps.step4 = await generatePredictions(runId, steps.step3, sport, betType, game, marketBaseline)
     console.log('[WizardOrchestrator] Step 4: Predictions generated')
 
     // Step 5: Market Edge Adjustment
@@ -536,8 +543,12 @@ async function computeFactors(
 
 /**
  * Step 4: Generate predictions
+ *
+ * IMPORTANT: We use the Vegas market line as our baseline (not calculated team stats).
+ * This ensures all cappers start from the same anchor point (market consensus).
+ * Factor adjustments then represent how much we think the market is off.
  */
-async function generatePredictions(runId: string, step3Result: any, sport: string, betType: string, game?: any) {
+async function generatePredictions(runId: string, step3Result: any, sport: string, betType: string, game?: any, marketBaseline?: number) {
   const { calculateConfidence } = await import('@/lib/cappers/shiva-v1/confidence-calculator')
 
   if (!step3Result?.factors || step3Result.factors.length === 0) {
@@ -552,10 +563,11 @@ async function generatePredictions(runId: string, step3Result: any, sport: strin
     confSource
   })
 
-  // baseline_avg comes from Step 3 factor computation
-  // TOTALS: awayPPG + homePPG (e.g., 220)
-  // SPREAD: 0 (no inherent advantage)
-  const baselineAvg = step3Result.baseline_avg || (betType === 'TOTAL' ? 220 : 0)
+  // USE VEGAS MARKET LINE AS BASELINE
+  // TOTALS: Vegas total line (e.g., 223.5)
+  // SPREAD: Vegas away spread (e.g., +4.5 means away is underdog by 4.5)
+  // Fallback to defaults only if market data is missing
+  const baselineAvg = marketBaseline ?? (betType === 'TOTAL' ? 220 : 0)
 
   // Extract team names for winner field
   const awayTeamName = game ? (typeof game.away_team === 'string' ? game.away_team : game.away_team?.name) : 'AWAY'
@@ -563,20 +575,21 @@ async function generatePredictions(runId: string, step3Result: any, sport: strin
 
   if (betType === 'TOTAL') {
     // TOTALS: Calculate predicted total
-    // Step 1: Start with baseline average (from recent games or league average)
+    // Step 1: Start with VEGAS MARKET LINE as baseline (not team PPG)
     // Step 2: Add factor adjustment (edgeRaw = overScore - underScore from F1-F5)
     // Step 3: Edge vs Market is calculated AFTER this in Step 5
     //
     // Using 1.0x multiplier: factor points = game points adjustment
-    // Example: edgeRaw = +5.0 → adjustment = +5 points → predicted = 225 (if baseline = 220)
+    // Example: Vegas line = 223, edgeRaw = +3.0 → predicted = 226 (OVER by 3)
     const factorAdjustment = confidenceResult.edgeRaw
     const predictedTotal = Math.max(180, Math.min(280, baselineAvg + factorAdjustment))
 
     console.log('[WizardOrchestrator:Step4] TOTALS Prediction calculation:', {
-      baselineAvg,
+      vegasBaseline: baselineAvg,
       edgeRaw: confidenceResult.edgeRaw,
       factorAdjustment,
-      predictedTotal
+      predictedTotal,
+      note: 'Using Vegas market line as baseline'
     })
 
     return {
@@ -598,41 +611,46 @@ async function generatePredictions(runId: string, step3Result: any, sport: strin
     }
   } else if (betType === 'SPREAD') {
     // SPREAD: Calculate predicted margin
-    // Step 1: S1 Net Rating gives baseline margin (netRatingDiff × pace/100)
-    // Step 2: Add factor adjustment (edgeRaw = awayScore - homeScore from S2-S6)
+    // Step 1: Start with VEGAS SPREAD as baseline (not calculated net rating)
+    //         baselineAvg = away spread (e.g., +4.5 means away is 4.5 pt underdog)
+    // Step 2: Add factor adjustment (edgeRaw = awayScore - homeScore from S1-S6)
     // Step 3: Edge vs Market is calculated AFTER this in Step 5
     //
     // Using 1.0x multiplier: factor points = game points adjustment
-    // Example: S1 baseline = +3.5, edgeRaw = +2.0 → predicted = +5.5 (away wins by 5.5)
+    // Example: Vegas spread = +4.5 (away), edgeRaw = -2.0 → predicted = +2.5 (away closer to winning)
 
-    // Find S1 Net Rating factor to extract expected margin as baseline
-    const netRatingFactor = step3Result.factors.find((f: any) => f.key === 'netRatingDiff')
-    const baselineMargin = netRatingFactor?.raw_values_json?.expectedMargin || 0
+    // USE VEGAS SPREAD AS BASELINE
+    // baselineAvg is the away team's spread from Vegas (positive = underdog, negative = favorite)
+    const vegasSpread = baselineAvg // This is the away team's spread
 
     // Add factor adjustment from all factors (S1-S6 scores)
     // edgeRaw = awayScoreTotal - homeScoreTotal (positive = away advantage)
     const factorAdjustment = confidenceResult.edgeRaw
 
-    // Final predicted margin = baseline + factor adjustment
-    const predictedMargin = baselineMargin + factorAdjustment
+    // Final predicted margin = Vegas spread + factor adjustment
+    // If vegasSpread = +4.5 and factorAdjustment = -2.0, predictedMargin = +2.5
+    // Negative predictedMargin = away wins, Positive = home wins (from away's perspective as underdog)
+    const predictedMargin = vegasSpread + factorAdjustment
 
     // Calculate predicted scores based on margin
     // Assume average NBA game total is ~220 points (only used for score distribution, NOT for total prediction)
     const avgGameTotal = 220
-    const predictedAwayScore = (avgGameTotal / 2) + (predictedMargin / 2)
-    const predictedHomeScore = (avgGameTotal / 2) - (predictedMargin / 2)
+    const predictedAwayScore = (avgGameTotal / 2) - (predictedMargin / 2)
+    const predictedHomeScore = (avgGameTotal / 2) + (predictedMargin / 2)
 
     // Determine winner based on margin - use actual team name, not 'AWAY'/'HOME'
-    const winner = predictedMargin > 0 ? awayTeamName : homeTeamName
+    // If predictedMargin < 0, away team wins outright
+    const winner = predictedMargin < 0 ? awayTeamName : homeTeamName
 
     console.log('[WizardOrchestrator:Step4] SPREAD Prediction calculation:', {
-      baselineMargin,
+      vegasSpread: baselineAvg,
       edgeRaw: confidenceResult.edgeRaw,
       factorAdjustment,
       predictedMargin,
       predictedAwayScore,
       predictedHomeScore,
-      winner
+      winner,
+      note: 'Using Vegas spread as baseline'
     })
 
     return {

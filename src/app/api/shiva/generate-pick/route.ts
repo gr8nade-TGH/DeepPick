@@ -261,24 +261,26 @@ export async function POST(request: Request) {
     // Store all extra data in metadata JSONB column
 
     // Get market line and predicted value based on bet type
+    // NOTE: baseline_avg is now the VEGAS MARKET LINE (not calculated team stats)
+    // This anchors all cappers to the same starting point
     let marketLine: number
     let predictedValue: number
     let baselineAvg: number
 
     if (betType === 'TOTAL') {
-      // TOTALS: Use total line and predicted total
+      // TOTALS: Vegas total line is our baseline
       marketLine = result.steps?.step2?.snapshot?.total?.line ||
         result.pick?.lockedOdds?.total?.line ||
         220
       predictedValue = result.log?.finalPrediction?.total || 220
-      baselineAvg = result.steps?.step3?.baseline_avg || 220 // Sum of away PPG + home PPG
+      baselineAvg = marketLine // Vegas total line IS the baseline now
     } else if (betType === 'SPREAD') {
-      // SPREAD: Use spread line and predicted margin
+      // SPREAD: Vegas spread is our baseline
       marketLine = result.steps?.step2?.snapshot?.spread?.line ||
         result.pick?.lockedOdds?.spread?.line ||
         0
       predictedValue = result.steps?.step4?.predictions?.spread_pred_points || 0
-      baselineAvg = 0 // Baseline margin is 0 (no inherent advantage)
+      baselineAvg = result.steps?.step2?.snapshot?.spread?.away_spread || 0 // Vegas away spread
     } else {
       // Fallback for unknown bet types
       marketLine = 0
@@ -296,7 +298,7 @@ export async function POST(request: Request) {
       selection: result.pick?.selection || 'PASS',
       factor_contributions: result.log?.factors || [], // Now contains F1-F5 or S1-S5 factors!
       predicted_total: predictedValue, // For TOTAL: predicted total, For SPREAD: predicted margin
-      baseline_avg: baselineAvg, // For TOTAL: sum of PPG, For SPREAD: 0
+      baseline_avg: baselineAvg, // Vegas market line (TOTAL) or Vegas spread (SPREAD) - used as anchor
       market_total: marketLine, // For TOTAL: market total line, For SPREAD: market spread line
       predicted_home_score: result.log?.finalPrediction?.home || 0,
       predicted_away_score: result.log?.finalPrediction?.away || 0,
