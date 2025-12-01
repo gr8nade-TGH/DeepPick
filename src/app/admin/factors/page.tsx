@@ -19,8 +19,11 @@ import {
   Target,
   Zap,
   Copy,
-  Check
+  Check,
+  Sparkles,
+  Plus
 } from 'lucide-react'
+import { StatBrowser } from './components/stat-browser'
 
 interface FactorSample {
   runId: string
@@ -57,6 +60,13 @@ export default function FactorDashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [expandedFactors, setExpandedFactors] = useState<Set<string>>(new Set())
+  const [statBrowserOpen, setStatBrowserOpen] = useState(false)
+
+  const handleSelectStat = (stat: any, category: string) => {
+    console.log('Selected stat for new factor:', stat, 'from category:', category)
+    // For now, just log - we'll implement factor creation in the next phase
+    alert(`Coming soon: Create factor from "${stat.name}" stat\n\nThis will add the stat to the factor registry and make it available for all cappers.`)
+  }
 
   const fetchData = async () => {
     setLoading(true)
@@ -131,11 +141,27 @@ export default function FactorDashboardPage() {
             </h1>
             <p className="text-slate-400 mt-1">Monitor factor health and performance</p>
           </div>
-          <Button onClick={fetchData} disabled={loading} variant="outline" className="gap-2">
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={() => setStatBrowserOpen(true)}
+              className="gap-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500"
+            >
+              <Sparkles className="w-4 h-4" />
+              Factor Maker
+            </Button>
+            <Button onClick={fetchData} disabled={loading} variant="outline" className="gap-2">
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         </div>
+
+        {/* Stat Browser Modal */}
+        <StatBrowser
+          open={statBrowserOpen}
+          onClose={() => setStatBrowserOpen(false)}
+          onSelectStat={handleSelectStat}
+        />
 
         {error && (
           <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-6 text-red-400">

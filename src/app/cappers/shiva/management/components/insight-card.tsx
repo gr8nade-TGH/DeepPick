@@ -167,89 +167,20 @@ export interface InsightCardProps {
 // COMPREHENSIVE TIER GRADING SYSTEM
 // Re-export from shared lib for backwards compatibility
 // =====================================================
-export { calculateTierGrade, getRarityFromConfidence } from '@/lib/tier-grading'
-export type { RarityTier, TierGradeInput, TierGradeResult } from '@/lib/tier-grading'
+import {
+  calculateTierGrade,
+  getRarityFromConfidence,
+  getRarityStyleFromTier,
+  getRarityTierFromConfidence,
+  type RarityTier,
+  type RarityStyle,
+  type TierGradeInput,
+  type TierGradeResult
+} from '@/lib/tier-grading'
 
-export interface RarityStyle {
-  tier: RarityTier
-  borderColor: string
-  bgGradient: string
-  glowColor: string
-  textColor: string
-  badgeBg: string
-  icon: string
-}
-
-// Import RarityTier for local use
-import type { RarityTier } from '@/lib/tier-grading'
-
-/**
- * Get the visual styling for a tier
- */
-export function getRarityStyleFromTier(tier: RarityTier): RarityStyle {
-  switch (tier) {
-    case 'Elite':
-      return {
-        tier: 'Elite',
-        borderColor: '#FF4500', // Fiery orange-red
-        bgGradient: 'from-red-950 via-orange-950/50 to-red-950',
-        glowColor: 'rgba(255, 69, 0, 0.5)',
-        textColor: 'text-orange-300',
-        badgeBg: 'bg-gradient-to-r from-red-500 to-orange-500',
-        icon: '🔥'
-      }
-    case 'Legendary':
-      return {
-        tier: 'Legendary',
-        borderColor: '#FFD700',
-        bgGradient: 'from-amber-950 via-yellow-950/50 to-amber-950',
-        glowColor: 'rgba(255, 215, 0, 0.4)',
-        textColor: 'text-amber-300',
-        badgeBg: 'bg-gradient-to-r from-amber-500 to-yellow-500',
-        icon: '⭐'
-      }
-    case 'Epic':
-      return {
-        tier: 'Epic',
-        borderColor: '#A855F7',
-        bgGradient: 'from-purple-950 via-violet-950/50 to-purple-950',
-        glowColor: 'rgba(168, 85, 247, 0.4)',
-        textColor: 'text-purple-300',
-        badgeBg: 'bg-gradient-to-r from-purple-500 to-violet-500',
-        icon: '💎'
-      }
-    case 'Rare':
-      return {
-        tier: 'Rare',
-        borderColor: '#3B82F6',
-        bgGradient: 'from-blue-950 via-indigo-950/50 to-blue-950',
-        glowColor: 'rgba(59, 130, 246, 0.35)',
-        textColor: 'text-blue-300',
-        badgeBg: 'bg-gradient-to-r from-blue-500 to-indigo-500',
-        icon: '🔷'
-      }
-    case 'Uncommon':
-      return {
-        tier: 'Uncommon',
-        borderColor: '#22C55E',
-        bgGradient: 'from-green-950 via-emerald-950/50 to-green-950',
-        glowColor: 'rgba(34, 197, 94, 0.3)',
-        textColor: 'text-green-300',
-        badgeBg: 'bg-gradient-to-r from-green-500 to-emerald-500',
-        icon: '✦'
-      }
-    default:
-      return {
-        tier: 'Common',
-        borderColor: '#6B7280',
-        bgGradient: 'from-slate-900 via-gray-900/50 to-slate-900',
-        glowColor: 'rgba(107, 114, 128, 0.2)',
-        textColor: 'text-slate-300',
-        badgeBg: 'bg-gradient-to-r from-slate-500 to-gray-500',
-        icon: '◆'
-      }
-  }
-}
+// Re-export for backwards compatibility
+export { calculateTierGrade, getRarityFromConfidence, getRarityStyleFromTier, getRarityTierFromConfidence }
+export type { RarityTier, RarityStyle, TierGradeInput, TierGradeResult }
 
 /**
  * Legacy function for backward compatibility - returns RarityStyle for display

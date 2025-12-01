@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
 export const dynamic = 'force-dynamic'
+
+function getSupabaseClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 interface FactorStats {
   key: string
@@ -31,6 +33,8 @@ interface FactorStats {
 
 export async function GET(request: NextRequest) {
   try {
+    const supabase = getSupabaseClient()
+
     // Get runs with factor_contributions from last 7 days
     const { data: runs, error } = await supabase
       .from('runs')

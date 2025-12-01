@@ -96,14 +96,104 @@ export function calculateTierGrade(input: TierGradeInput): TierGradeResult {
 }
 
 /**
- * Simple fallback: get rarity from confidence only (for legacy picks)
+ * Simple fallback: get rarity tier from confidence only (for legacy picks)
  */
-export function getRarityFromConfidence(confidence: number): RarityTier {
+export function getRarityTierFromConfidence(confidence: number): RarityTier {
   if (confidence >= 85) return 'Elite'
   if (confidence >= 78) return 'Legendary'
   if (confidence >= 70) return 'Epic'
   if (confidence >= 62) return 'Rare'
   if (confidence >= 52) return 'Uncommon'
   return 'Common'
+}
+
+/**
+ * Rarity style interface for visual styling
+ */
+export interface RarityStyle {
+  tier: RarityTier
+  borderColor: string
+  bgGradient: string
+  glowColor: string
+  textColor: string
+  badgeBg: string
+  icon: string
+}
+
+/**
+ * Get full rarity styling from confidence (for backwards compatibility)
+ * Returns full style object with colors, gradients, etc.
+ */
+export function getRarityFromConfidence(confidence: number): RarityStyle {
+  const tier = getRarityTierFromConfidence(confidence)
+  return getRarityStyleFromTier(tier)
+}
+
+/**
+ * Get visual styling for a tier
+ */
+export function getRarityStyleFromTier(tier: RarityTier): RarityStyle {
+  switch (tier) {
+    case 'Elite':
+      return {
+        tier: 'Elite',
+        borderColor: '#FF4500',
+        bgGradient: 'from-red-950 via-orange-950/50 to-red-950',
+        glowColor: 'rgba(255, 69, 0, 0.5)',
+        textColor: 'text-orange-300',
+        badgeBg: 'bg-gradient-to-r from-red-500 to-orange-500',
+        icon: '🔥'
+      }
+    case 'Legendary':
+      return {
+        tier: 'Legendary',
+        borderColor: '#FFD700',
+        bgGradient: 'from-amber-950 via-yellow-950/50 to-amber-950',
+        glowColor: 'rgba(255, 215, 0, 0.4)',
+        textColor: 'text-amber-300',
+        badgeBg: 'bg-gradient-to-r from-amber-500 to-yellow-500',
+        icon: '⭐'
+      }
+    case 'Epic':
+      return {
+        tier: 'Epic',
+        borderColor: '#A855F7',
+        bgGradient: 'from-purple-950 via-violet-950/50 to-purple-950',
+        glowColor: 'rgba(168, 85, 247, 0.4)',
+        textColor: 'text-purple-300',
+        badgeBg: 'bg-gradient-to-r from-purple-500 to-violet-500',
+        icon: '💎'
+      }
+    case 'Rare':
+      return {
+        tier: 'Rare',
+        borderColor: '#3B82F6',
+        bgGradient: 'from-blue-950 via-indigo-950/50 to-blue-950',
+        glowColor: 'rgba(59, 130, 246, 0.35)',
+        textColor: 'text-blue-300',
+        badgeBg: 'bg-gradient-to-r from-blue-500 to-indigo-500',
+        icon: '🔷'
+      }
+    case 'Uncommon':
+      return {
+        tier: 'Uncommon',
+        borderColor: '#22C55E',
+        bgGradient: 'from-green-950 via-emerald-950/50 to-green-950',
+        glowColor: 'rgba(34, 197, 94, 0.3)',
+        textColor: 'text-green-300',
+        badgeBg: 'bg-gradient-to-r from-green-500 to-emerald-500',
+        icon: '✦'
+      }
+    default:
+      return {
+        tier: 'Common',
+        borderColor: '#6B7280',
+        bgGradient: 'from-slate-900 via-gray-900/50 to-slate-900',
+        glowColor: 'rgba(107, 114, 128, 0.2)',
+        textColor: 'text-slate-300',
+        badgeBg: 'bg-gradient-to-r from-slate-500 to-gray-500',
+        icon: '◆'
+      }
+  }
 }
 
