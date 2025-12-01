@@ -1125,41 +1125,45 @@ export function InsightCard(props: InsightCardProps) {
                       </div>
                     </div>
 
-                    {/* Enhanced Tooltip on hover - positioned above to avoid overlap */}
+                    {/* Enhanced Tooltip on hover - fixed position with portal-like behavior */}
                     {hoveredFactor === factor.key && (
                       <div
-                        className="fixed z-[9999] bg-slate-900 text-white text-xs rounded-lg shadow-2xl border border-slate-500 max-w-[280px]"
+                        className="fixed bg-slate-900 text-white text-sm rounded-xl shadow-2xl border-2 border-slate-400"
                         style={{
                           left: '50%',
                           top: '50%',
                           transform: 'translate(-50%, -50%)',
-                          pointerEvents: 'none'
+                          pointerEvents: 'none',
+                          zIndex: 99999,
+                          width: '340px',
+                          maxWidth: '90vw',
+                          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 0, 0, 0.5)'
                         }}
                       >
                         {/* Header */}
-                        <div className="px-3 py-2 border-b border-slate-700 bg-slate-800/50 rounded-t-lg">
-                          <div className="flex items-center gap-2">
-                            <span className="text-lg">{icon}</span>
-                            <span className="font-bold text-white">{fullName}</span>
+                        <div className="px-4 py-3 border-b border-slate-600 bg-gradient-to-r from-slate-800 to-slate-700 rounded-t-xl">
+                          <div className="flex items-center gap-3">
+                            <span className="text-xl">{icon}</span>
+                            <span className="font-bold text-white text-base">{fullName}</span>
                           </div>
                         </div>
 
                         {/* Content */}
-                        <div className="p-3 space-y-2">
+                        <div className="p-4 space-y-3 bg-slate-900">
                           {/* Description */}
-                          <p className="text-slate-300 leading-relaxed">{description}</p>
+                          <p className="text-slate-200 leading-relaxed">{description}</p>
 
                           {/* Contribution */}
-                          <div className={`p-2 rounded-md ${isOver ? 'bg-emerald-900/30 border border-emerald-700/50' : isUnder ? 'bg-red-900/30 border border-red-700/50' : 'bg-slate-800/50 border border-slate-700/50'}`}>
-                            <div className="text-[10px] uppercase font-bold text-slate-400 mb-1">Contribution</div>
-                            <div className={`font-semibold ${isOver ? 'text-emerald-400' : isUnder ? 'text-red-400' : 'text-slate-400'}`}>
+                          <div className={`p-3 rounded-lg ${isOver ? 'bg-emerald-900/40 border border-emerald-600/60' : isUnder ? 'bg-red-900/40 border border-red-600/60' : 'bg-slate-800/60 border border-slate-600/60'}`}>
+                            <div className="text-[11px] uppercase font-bold text-slate-400 mb-1">Contribution</div>
+                            <div className={`font-semibold text-sm ${isOver ? 'text-emerald-400' : isUnder ? 'text-red-400' : 'text-slate-400'}`}>
                               {contributionText}
                             </div>
                           </div>
 
                           {/* Factor rationale if available */}
                           {factor.rationale && (
-                            <div className="text-slate-400 text-[10px] italic border-t border-slate-700 pt-2 mt-2">
+                            <div className="text-slate-400 text-xs italic border-t border-slate-700 pt-3 mt-3">
                               "{factor.rationale}"
                             </div>
                           )}
