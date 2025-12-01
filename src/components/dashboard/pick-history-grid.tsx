@@ -9,7 +9,7 @@ import { getRarityTierFromConfidence, getRarityStyleFromTier, type RarityTier } 
 interface Pick {
   id: string
   selection: string
-  status: 'pending' | 'won' | 'lost' | 'push'
+  status: 'pending' | 'won' | 'lost' | 'push' | 'cancelled'
   capper: string
   pick_type: string
   confidence?: number
@@ -199,7 +199,8 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
         border: `2px solid ${borderColor}`,
         boxShadow: `0 0 8px ${rarity.glowColor}, inset 0 0 6px rgba(239, 68, 68, 0.3)`
       }
-    } else if (status === 'push') {
+    } else if (status === 'push' || status === 'cancelled') {
+      // Push or Cancelled - muted gray styling
       return {
         background: `linear-gradient(135deg, rgba(100, 116, 139, 0.9), rgba(71, 85, 105, 0.9))`,
         border: `2px solid ${borderColor}`,
@@ -395,9 +396,10 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
               const statusDisplay = pick.status === 'won' ? { text: 'WON', icon: '✓', color: 'text-emerald-400' }
                 : pick.status === 'lost' ? { text: 'LOST', icon: '✗', color: 'text-red-400' }
                   : pick.status === 'push' ? { text: 'PUSH', icon: '—', color: 'text-slate-400' }
-                    : liveStatus === 'live' ? { text: 'LIVE', icon: '🔴', color: 'text-amber-400' }
-                      : liveStatus === 'stale' ? { text: 'STALE', icon: '⚠️', color: 'text-orange-400' }
-                        : { text: 'SCHEDULED', icon: '📅', color: 'text-cyan-400' }
+                    : pick.status === 'cancelled' ? { text: 'VOID', icon: '⊘', color: 'text-slate-500' }
+                      : liveStatus === 'live' ? { text: 'LIVE', icon: '🔴', color: 'text-amber-400' }
+                        : liveStatus === 'stale' ? { text: 'STALE', icon: '⚠️', color: 'text-orange-400' }
+                          : { text: 'SCHEDULED', icon: '📅', color: 'text-cyan-400' }
 
               // Determine source (system vs manual)
               const isSystemPick = pick.is_system_pick === true
