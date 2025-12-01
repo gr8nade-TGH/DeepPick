@@ -17,6 +17,79 @@ function TooltipPortal({ children }: { children: React.ReactNode }) {
   return createPortal(children, document.body)
 }
 
+/**
+ * Calculate margin text for won/lost picks
+ * @param status - 'win' | 'loss' | 'push' | 'pending'
+ * @param pickType - 'TOTAL' | 'SPREAD' | etc
+ * @param selection - e.g., "UNDER 243.5" or "Lakers -4.5"
+ * @param finalScore - { away: number, home: number }
+ * @param lockedOdds - { total_line?: number, spread_line?: number, spread_team?: string }
+ * @param matchup - { away: string | { name, abbreviation }, home: string | { name, abbreviation } }
+ */
+function calculateMarginText(
+  status: string,
+  pickType: string,
+  selection: string,
+  finalScore: { away: number; home: number } | undefined,
+  lockedOdds?: { total_line?: number; spread_line?: number; spread_team?: string } | null,
+  matchup?: { away: string | { name: string; abbreviation: string }; home: string | { name: string; abbreviation: string } }
+): string {
+  if (!finalScore || (status !== 'win' && status !== 'loss')) return ''
+
+  const actualTotal = (finalScore.away || 0) + (finalScore.home || 0)
+  const scoreDiff = (finalScore.away || 0) - (finalScore.home || 0) // positive = away won
+
+  // Try to get line from locked_odds first (most accurate), then parse from selection
+  let line: number | null = null
+
+  if (pickType === 'TOTAL' || selection.toUpperCase().includes('OVER') || selection.toUpperCase().includes('UNDER')) {
+    // TOTALS
+    line = lockedOdds?.total_line ?? null
+    if (line === null) {
+      const lineMatch = selection.match(/([+-]?\d+\.?\d*)/g)
+      line = lineMatch ? parseFloat(lineMatch[lineMatch.length - 1]) : null
+    }
+    if (line !== null) {
+      const margin = Math.abs(line - actualTotal)
+      return status === 'win' ? `Won by ${margin.toFixed(1)} pts` : `Lost by ${margin.toFixed(1)} pts`
+    }
+  } else if (pickType === 'SPREAD') {
+    // SPREAD
+    line = lockedOdds?.spread_line ?? null
+    if (line === null) {
+      const lineMatch = selection.match(/([+-]?\d+\.?\d*)/g)
+      line = lineMatch ? parseFloat(lineMatch[lineMatch.length - 1]) : null
+    }
+
+    if (line !== null && matchup) {
+      const sel = selection.toUpperCase()
+      const getTeamName = (team: string | { name: string; abbreviation: string }) =>
+        typeof team === 'string' ? team.toUpperCase() : team.name.toUpperCase()
+      const getTeamAbbr = (team: string | { name: string; abbreviation: string }) =>
+        typeof team === 'string' ? '' : team.abbreviation.toUpperCase()
+
+      const awayName = getTeamName(matchup.away)
+      const homeName = getTeamName(matchup.home)
+      const awayAbbr = getTeamAbbr(matchup.away)
+      const homeAbbr = getTeamAbbr(matchup.home)
+
+      const pickedAway = sel.includes(awayName) || (awayAbbr && sel.includes(awayAbbr))
+      const pickedHome = sel.includes(homeName) || (homeAbbr && sel.includes(homeAbbr))
+
+      if (pickedAway || pickedHome) {
+        // Spread calculation: result > 0 means cover
+        const result = pickedAway
+          ? scoreDiff + line  // away team cover
+          : -scoreDiff + line // home team cover
+        const margin = Math.abs(result)
+        return status === 'win' ? `Won by ${margin.toFixed(1)} pts` : `Lost by ${margin.toFixed(1)} pts`
+      }
+    }
+  }
+
+  return ''
+}
+
 // Manual pick insight data structure
 interface ManualInsight {
   capper?: string
@@ -533,6 +606,21 @@ function PicksmithInsightCard({ props, consensus }: {
                       Final: {finalScore.away} - {finalScore.home}
                     </div>
                   )}
+                  {(() => {
+                    const marginText = calculateMarginText(
+                      status,
+                      props.pick?.type || '',
+                      props.pick?.selection || '',
+                      finalScore,
+                      props.pick?.locked_odds,
+                      props.matchup
+                    )
+                    return marginText ? (
+                      <div className={`text-sm font-bold mt-1 ${status === 'win' ? 'text-emerald-300' : 'text-red-300'}`}>
+                        {marginText}
+                      </div>
+                    ) : null
+                  })()}
                 </div>
               </div>
             </div>
@@ -616,6 +704,7 @@ export function InsightCard(props: InsightCardProps) {
     selection: props.pick?.selection || 'N/A',
     units: Number(props.pick?.units ?? 0),
     confidence: Number(props.pick?.confidence ?? 0),
+    locked_odds: props.pick?.locked_odds,
   }
 
   // Calculate comprehensive tier grade (or use pre-computed if available)
@@ -1408,11 +1497,28 @@ export function InsightCard(props: InsightCardProps) {
                     {props.results.status === 'win' ? '✅ WIN' :
                       props.results.status === 'loss' ? '❌ LOSS' : '🤝 PUSH'}
                   </div>
-                  {props.results.finalScore && (
-                    <div className="text-base text-slate-300 font-semibold">
-                      {props.results.finalScore.away} - {props.results.finalScore.home}
-                    </div>
-                  )}
+                  <div>
+                    {props.results.finalScore && (
+                      <div className="text-base text-slate-300 font-semibold">
+                        {props.results.finalScore.away} - {props.results.finalScore.home}
+                      </div>
+                    )}
+                    {(() => {
+                      const marginText = calculateMarginText(
+                        props.results.status,
+                        safePick.type,
+                        safePick.selection,
+                        props.results.finalScore,
+                        safePick.locked_odds,
+                        props.matchup
+                      )
+                      return marginText ? (
+                        <div className={`text-sm font-bold ${props.results.status === 'win' ? 'text-green-300' : 'text-red-300'}`}>
+                          {marginText}
+                        </div>
+                      ) : null
+                    })()}
+                  </div>
                 </div>
                 {props.results.overallAccuracy !== undefined && (
                   <div className="text-right">

@@ -671,13 +671,64 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
                           const finalScore = pick.result?.final_score || pick.games?.final_score
 
                           if (pick.status !== 'pending' && finalScore) {
+                            // Calculate margin for won/lost picks
+                            let marginText = ''
+                            if (pick.status === 'won' || pick.status === 'lost') {
+                              const actualTotal = (finalScore.away || 0) + (finalScore.home || 0)
+                              const scoreDiff = (finalScore.away || 0) - (finalScore.home || 0) // away - home (negative means home won)
+
+                              // Parse line from selection (e.g., "UNDER 243.5", "Lakers -4.5", "+3.5 LAL")
+                              const lineMatch = pick.selection.match(/([+-]?\d+\.?\d*)/g)
+                              const line = lineMatch ? parseFloat(lineMatch[lineMatch.length - 1]) : null
+
+                              if (line !== null) {
+                                if (pick.pick_type === 'total' || pick.selection.toUpperCase().includes('OVER') || pick.selection.toUpperCase().includes('UNDER')) {
+                                  // TOTALS: margin = |line - actualTotal|
+                                  const margin = Math.abs(line - actualTotal)
+                                  marginText = pick.status === 'won'
+                                    ? `Won by ${margin.toFixed(1)} pts`
+                                    : `Lost by ${margin.toFixed(1)} pts`
+                                } else if (pick.pick_type === 'spread' || line !== 0) {
+                                  // SPREAD: Need to determine which team was picked
+                                  const sel = pick.selection.toUpperCase()
+                                  const awayName = (pick.game_snapshot?.away_team?.name || '').toUpperCase()
+                                  const homeName = (pick.game_snapshot?.home_team?.name || '').toUpperCase()
+                                  const awayAbbr = (pick.game_snapshot?.away_team?.abbreviation || '').toUpperCase()
+                                  const homeAbbr = (pick.game_snapshot?.home_team?.abbreviation || '').toUpperCase()
+
+                                  const pickedAway = sel.includes(awayName) || sel.includes(awayAbbr)
+                                  const pickedHome = sel.includes(homeName) || sel.includes(homeAbbr)
+
+                                  if (pickedAway || pickedHome) {
+                                    // Spread is from picked team's perspective
+                                    // If picked away: result = scoreDiff + line (away wins if > 0)
+                                    // If picked home: result = -scoreDiff + line (home wins if > 0)
+                                    const result = pickedAway
+                                      ? scoreDiff + line  // away team cover
+                                      : -scoreDiff + line // home team cover
+                                    const margin = Math.abs(result)
+                                    marginText = pick.status === 'won'
+                                      ? `Won by ${margin.toFixed(1)} pts`
+                                      : `Lost by ${margin.toFixed(1)} pts`
+                                  }
+                                }
+                              }
+                            }
+
                             // Show result with scores
                             const resultColor = pick.status === 'won' ? 'text-emerald-400'
                               : pick.status === 'lost' ? 'text-red-400'
                                 : 'text-slate-400'
                             return (
-                              <div className={`text-xs font-semibold ${resultColor}`}>
-                                {pick.status.toUpperCase()}: {awayAbbr} {finalScore.away} - {homeAbbr} {finalScore.home}
+                              <div>
+                                <div className={`text-xs font-semibold ${resultColor}`}>
+                                  {pick.status.toUpperCase()}: {awayAbbr} {finalScore.away} - {homeAbbr} {finalScore.home}
+                                </div>
+                                {marginText && (
+                                  <div className={`text-[10px] font-bold ${pick.status === 'won' ? 'text-emerald-300' : 'text-red-300'}`}>
+                                    {marginText}
+                                  </div>
+                                )}
                               </div>
                             )
                           } else {
