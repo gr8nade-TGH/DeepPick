@@ -1004,7 +1004,8 @@ export function InsightCard(props: InsightCardProps) {
                 const factorMeta = getFactorMeta(factor.key)
                 const icon = factorMeta?.icon || 'ℹ️'
                 const shortName = factorMeta?.shortName || factor.label || factor.key
-                const tooltip = factorMeta?.description || factor.rationale || 'Factor'
+                const fullName = factorMeta?.name || factor.label || factor.key
+                const description = factorMeta?.description || 'Factor analysis'
 
                 const isOver = factor.overScore > 0
                 const isUnder = factor.underScore > 0
@@ -1012,6 +1013,19 @@ export function InsightCard(props: InsightCardProps) {
                 const direction = safePick.type === 'SPREAD'
                   ? (isOver ? awayAbbr : isUnder ? homeAbbr : 'NEUTRAL')
                   : (isOver ? 'OVER' : isUnder ? 'UNDER' : 'NEUTRAL')
+
+                // Build detailed contribution explanation
+                const contributionText = safePick.type === 'SPREAD'
+                  ? isOver
+                    ? `Favors ${awayAbbr} covering the spread (+${score.toFixed(2)} pts)`
+                    : isUnder
+                      ? `Favors ${homeAbbr} covering the spread (+${score.toFixed(2)} pts)`
+                      : 'Neutral - no directional impact'
+                  : isOver
+                    ? `Pushing OVER the total (+${score.toFixed(2)} pts)`
+                    : isUnder
+                      ? `Pushing UNDER the total (+${score.toFixed(2)} pts)`
+                      : 'Neutral - no directional impact'
 
                 return (
                   <div
@@ -1039,10 +1053,45 @@ export function InsightCard(props: InsightCardProps) {
                       </div>
                     </div>
 
-                    {/* Tooltip on hover */}
+                    {/* Enhanced Tooltip on hover - positioned above to avoid overlap */}
                     {hoveredFactor === factor.key && (
-                      <div className="absolute left-0 right-0 top-full mt-2 z-20 bg-slate-800 text-white text-xs p-3 rounded-lg shadow-xl border border-slate-600">
-                        {tooltip}
+                      <div
+                        className="fixed z-[9999] bg-slate-900 text-white text-xs rounded-lg shadow-2xl border border-slate-500 max-w-[280px]"
+                        style={{
+                          left: '50%',
+                          top: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          pointerEvents: 'none'
+                        }}
+                      >
+                        {/* Header */}
+                        <div className="px-3 py-2 border-b border-slate-700 bg-slate-800/50 rounded-t-lg">
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg">{icon}</span>
+                            <span className="font-bold text-white">{fullName}</span>
+                          </div>
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-3 space-y-2">
+                          {/* Description */}
+                          <p className="text-slate-300 leading-relaxed">{description}</p>
+
+                          {/* Contribution */}
+                          <div className={`p-2 rounded-md ${isOver ? 'bg-emerald-900/30 border border-emerald-700/50' : isUnder ? 'bg-red-900/30 border border-red-700/50' : 'bg-slate-800/50 border border-slate-700/50'}`}>
+                            <div className="text-[10px] uppercase font-bold text-slate-400 mb-1">Contribution</div>
+                            <div className={`font-semibold ${isOver ? 'text-emerald-400' : isUnder ? 'text-red-400' : 'text-slate-400'}`}>
+                              {contributionText}
+                            </div>
+                          </div>
+
+                          {/* Factor rationale if available */}
+                          {factor.rationale && (
+                            <div className="text-slate-400 text-[10px] italic border-t border-slate-700 pt-2 mt-2">
+                              "{factor.rationale}"
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
