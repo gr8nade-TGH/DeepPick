@@ -72,11 +72,7 @@ export default function FactorDashboardPage() {
     alert(`Coming soon: Create factor from "${stat.name}" stat\n\nThis will add the stat to the factor registry and make it available for all cappers.`)
   }
 
-  const handleCreateFactorFromAI = (factor: any, betType: string) => {
-    console.log('Factor saved as pending:', factor.key, 'for', betType)
-    // Factor is now saved to pending_factors table - no alert needed
-    // The FactorStrategist component handles the UI state
-  }
+
 
   const fetchData = async () => {
     setLoading(true)
@@ -184,7 +180,6 @@ export default function FactorDashboardPage() {
         <FactorStrategist
           open={strategistOpen}
           onClose={() => setStrategistOpen(false)}
-          onCreateFactor={handleCreateFactorFromAI}
         />
 
         {error && (
