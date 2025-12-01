@@ -1,7 +1,21 @@
 "use client"
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { getFactorMeta } from '@/lib/cappers/shiva-v1/factor-registry'
+
+// Portal component for tooltips - renders outside of overflow containers
+function TooltipPortal({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+    return () => setMounted(false)
+  }, [])
+
+  if (!mounted) return null
+  return createPortal(children, document.body)
+}
 
 // Manual pick insight data structure
 interface ManualInsight {
@@ -545,6 +559,9 @@ function PicksmithInsightCard({ props, consensus }: {
 export function InsightCard(props: InsightCardProps) {
   const [hoveredFactor, setHoveredFactor] = useState<string | null>(null)
   const [showAdvancedDetails, setShowAdvancedDetails] = useState(false)
+  const [showTierTooltip, setShowTierTooltip] = useState(false)
+  const tierBadgeRef = useRef<HTMLSpanElement>(null)
+  const [tierTooltipPos, setTierTooltipPos] = useState({ top: 0, left: 0 })
 
   // Early return if no data
   if (!props || !props.factors) {
@@ -694,71 +711,96 @@ export function InsightCard(props: InsightCardProps) {
                     {capperName}
                   </h1>
                   {/* Tier Badge with Tooltip */}
-                  <div className="relative group">
-                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded ${rarity.badgeBg} text-white cursor-help`}>
+                  <div className="relative">
+                    <span
+                      ref={tierBadgeRef}
+                      className={`text-[9px] font-bold px-2 py-0.5 rounded ${rarity.badgeBg} text-white cursor-help`}
+                      onMouseEnter={() => {
+                        if (tierBadgeRef.current) {
+                          const rect = tierBadgeRef.current.getBoundingClientRect()
+                          setTierTooltipPos({
+                            top: rect.bottom + 8,
+                            left: Math.max(10, rect.left) // Keep at least 10px from left edge
+                          })
+                        }
+                        setShowTierTooltip(true)
+                      }}
+                      onMouseLeave={() => setShowTierTooltip(false)}
+                    >
                       {rarity.icon} {rarity.tier.toUpperCase()}
                     </span>
-                    {/* Tier Breakdown Tooltip */}
-                    <div className="absolute left-0 top-full mt-2 z-50 hidden group-hover:block">
-                      <div className="bg-slate-900 border border-slate-600 rounded-lg p-3 shadow-xl min-w-[220px] text-xs">
-                        <div className="font-bold text-white mb-2 border-b border-slate-700 pb-1">
-                          {rarity.icon} {rarity.tier} Tier Breakdown
-                        </div>
-                        <div className="space-y-1 text-slate-300">
-                          <div className="flex justify-between items-center">
-                            <span>📊 Sharp Score:</span>
-                            <span className="text-white">{tierGradeResult.breakdown.sharpScore.toFixed(1)}</span>
+                    {/* Tier Breakdown Tooltip - via Portal */}
+                    {showTierTooltip && (
+                      <TooltipPortal>
+                        <div
+                          className="bg-slate-900 border border-slate-600 rounded-lg p-3 shadow-2xl min-w-[220px] text-xs"
+                          style={{
+                            position: 'fixed',
+                            top: tierTooltipPos.top,
+                            left: tierTooltipPos.left,
+                            zIndex: 99999,
+                            pointerEvents: 'none'
+                          }}
+                        >
+                          <div className="font-bold text-white mb-2 border-b border-slate-700 pb-1">
+                            {rarity.icon} {rarity.tier} Tier Breakdown
                           </div>
-                          {tierGradeResult.breakdown.edgeBonus !== 0 && (
+                          <div className="space-y-1 text-slate-300">
                             <div className="flex justify-between items-center">
-                              <span>📈 Edge vs Market:</span>
-                              <span className={`flex items-center gap-1 ${tierGradeResult.breakdown.edgeBonus > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                <span className="opacity-60 text-[10px]">{tierGradeResult.breakdown.edgeBonus > 0 ? '✓' : '✗'}</span>
-                                {tierGradeResult.breakdown.edgeBonus > 0 ? '+' : ''}{tierGradeResult.breakdown.edgeBonus}
-                              </span>
+                              <span>📊 Sharp Score:</span>
+                              <span className="text-white">{tierGradeResult.breakdown.sharpScore.toFixed(1)}</span>
                             </div>
-                          )}
-                          {tierGradeResult.breakdown.teamRecordBonus !== 0 && (
-                            <div className="flex justify-between items-center">
-                              <span>🎯 Team Record:</span>
-                              <span className={`flex items-center gap-1 ${tierGradeResult.breakdown.teamRecordBonus > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                <span className="opacity-60 text-[10px]">{tierGradeResult.breakdown.teamRecordBonus > 0 ? '✓' : '✗'}</span>
-                                {tierGradeResult.breakdown.teamRecordBonus > 0 ? '+' : ''}{tierGradeResult.breakdown.teamRecordBonus}
-                              </span>
+                            {tierGradeResult.breakdown.edgeBonus !== 0 && (
+                              <div className="flex justify-between items-center">
+                                <span>📈 Edge vs Market:</span>
+                                <span className={`flex items-center gap-1 ${tierGradeResult.breakdown.edgeBonus > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                  <span className="opacity-60 text-[10px]">{tierGradeResult.breakdown.edgeBonus > 0 ? '✓' : '✗'}</span>
+                                  {tierGradeResult.breakdown.edgeBonus > 0 ? '+' : ''}{tierGradeResult.breakdown.edgeBonus}
+                                </span>
+                              </div>
+                            )}
+                            {tierGradeResult.breakdown.teamRecordBonus !== 0 && (
+                              <div className="flex justify-between items-center">
+                                <span>🎯 Team Record:</span>
+                                <span className={`flex items-center gap-1 ${tierGradeResult.breakdown.teamRecordBonus > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                  <span className="opacity-60 text-[10px]">{tierGradeResult.breakdown.teamRecordBonus > 0 ? '✓' : '✗'}</span>
+                                  {tierGradeResult.breakdown.teamRecordBonus > 0 ? '+' : ''}{tierGradeResult.breakdown.teamRecordBonus}
+                                </span>
+                              </div>
+                            )}
+                            {tierGradeResult.breakdown.recentFormBonus !== 0 && (
+                              <div className="flex justify-between items-center">
+                                <span>🔥 Recent Form:</span>
+                                <span className={`flex items-center gap-1 ${tierGradeResult.breakdown.recentFormBonus > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                  <span className="opacity-60 text-[10px]">{tierGradeResult.breakdown.recentFormBonus > 0 ? '✓' : '✗'}</span>
+                                  {tierGradeResult.breakdown.recentFormBonus > 0 ? '+' : ''}{tierGradeResult.breakdown.recentFormBonus}
+                                </span>
+                              </div>
+                            )}
+                            {tierGradeResult.breakdown.losingStreakPenalty !== 0 && (
+                              <div className="flex justify-between items-center">
+                                <span>⚠️ Losing Streak:</span>
+                                <span className="flex items-center gap-1 text-red-400">
+                                  <span className="opacity-60 text-[10px]">✗</span>
+                                  {tierGradeResult.breakdown.losingStreakPenalty}
+                                </span>
+                              </div>
+                            )}
+                            <div className="border-t border-slate-700 pt-1 mt-1 flex justify-between font-semibold">
+                              <span>Total Score:</span>
+                              <span className={rarity.textColor}>{tierGradeResult.breakdown.rawScore.toFixed(1)}</span>
                             </div>
-                          )}
-                          {tierGradeResult.breakdown.recentFormBonus !== 0 && (
-                            <div className="flex justify-between items-center">
-                              <span>🔥 Recent Form:</span>
-                              <span className={`flex items-center gap-1 ${tierGradeResult.breakdown.recentFormBonus > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                <span className="opacity-60 text-[10px]">{tierGradeResult.breakdown.recentFormBonus > 0 ? '✓' : '✗'}</span>
-                                {tierGradeResult.breakdown.recentFormBonus > 0 ? '+' : ''}{tierGradeResult.breakdown.recentFormBonus}
-                              </span>
-                            </div>
-                          )}
-                          {tierGradeResult.breakdown.losingStreakPenalty !== 0 && (
-                            <div className="flex justify-between items-center">
-                              <span>⚠️ Losing Streak:</span>
-                              <span className="flex items-center gap-1 text-red-400">
-                                <span className="opacity-60 text-[10px]">✗</span>
-                                {tierGradeResult.breakdown.losingStreakPenalty}
-                              </span>
-                            </div>
-                          )}
-                          <div className="border-t border-slate-700 pt-1 mt-1 flex justify-between font-semibold">
-                            <span>Total Score:</span>
-                            <span className={rarity.textColor}>{tierGradeResult.breakdown.rawScore.toFixed(1)}</span>
+                            {tierGradeResult.breakdown.unitGateApplied && tierGradeResult.breakdown.originalTier && (
+                              <div className="mt-2 pt-2 border-t border-red-900/50 text-red-400 text-[10px]">
+                                ⛔ Demoted from {tierGradeResult.breakdown.originalTier}
+                                <br />
+                                (needed {getUnitRequirement(tierGradeResult.breakdown.originalTier)}+ units, had {safePick.units})
+                              </div>
+                            )}
                           </div>
-                          {tierGradeResult.breakdown.unitGateApplied && tierGradeResult.breakdown.originalTier && (
-                            <div className="mt-2 pt-2 border-t border-red-900/50 text-red-400 text-[10px]">
-                              ⛔ Demoted from {tierGradeResult.breakdown.originalTier}
-                              <br />
-                              (needed {getUnitRequirement(tierGradeResult.breakdown.originalTier)}+ units, had {safePick.units})
-                            </div>
-                          )}
                         </div>
-                      </div>
-                    </div>
+                      </TooltipPortal>
+                    )}
                   </div>
                 </div>
                 {/* Subtitle with tier score */}
@@ -1125,50 +1167,53 @@ export function InsightCard(props: InsightCardProps) {
                       </div>
                     </div>
 
-                    {/* Enhanced Tooltip on hover - fixed position with portal-like behavior */}
+                    {/* Enhanced Tooltip on hover - rendered via Portal to escape overflow clipping */}
                     {hoveredFactor === factor.key && (
-                      <div
-                        className="fixed bg-slate-900 text-white text-sm rounded-xl shadow-2xl border-2 border-slate-400"
-                        style={{
-                          left: '50%',
-                          top: '50%',
-                          transform: 'translate(-50%, -50%)',
-                          pointerEvents: 'none',
-                          zIndex: 99999,
-                          width: '340px',
-                          maxWidth: '90vw',
-                          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 0, 0, 0.5)'
-                        }}
-                      >
-                        {/* Header */}
-                        <div className="px-4 py-3 border-b border-slate-600 bg-gradient-to-r from-slate-800 to-slate-700 rounded-t-xl">
-                          <div className="flex items-center gap-3">
-                            <span className="text-xl">{icon}</span>
-                            <span className="font-bold text-white text-base">{fullName}</span>
-                          </div>
-                        </div>
-
-                        {/* Content */}
-                        <div className="p-4 space-y-3 bg-slate-900">
-                          {/* Description */}
-                          <p className="text-slate-200 leading-relaxed">{description}</p>
-
-                          {/* Contribution */}
-                          <div className={`p-3 rounded-lg ${isOver ? 'bg-emerald-900/40 border border-emerald-600/60' : isUnder ? 'bg-red-900/40 border border-red-600/60' : 'bg-slate-800/60 border border-slate-600/60'}`}>
-                            <div className="text-[11px] uppercase font-bold text-slate-400 mb-1">Contribution</div>
-                            <div className={`font-semibold text-sm ${isOver ? 'text-emerald-400' : isUnder ? 'text-red-400' : 'text-slate-400'}`}>
-                              {contributionText}
+                      <TooltipPortal>
+                        <div
+                          className="bg-slate-900 text-white text-sm rounded-xl shadow-2xl border-2 border-slate-400"
+                          style={{
+                            position: 'fixed',
+                            left: '50%',
+                            top: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            pointerEvents: 'none',
+                            zIndex: 99999,
+                            width: '340px',
+                            maxWidth: '90vw',
+                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 0, 0, 0.5)'
+                          }}
+                        >
+                          {/* Header */}
+                          <div className="px-4 py-3 border-b border-slate-600 bg-gradient-to-r from-slate-800 to-slate-700 rounded-t-xl">
+                            <div className="flex items-center gap-3">
+                              <span className="text-xl">{icon}</span>
+                              <span className="font-bold text-white text-base">{fullName}</span>
                             </div>
                           </div>
 
-                          {/* Factor rationale if available */}
-                          {factor.rationale && (
-                            <div className="text-slate-400 text-xs italic border-t border-slate-700 pt-3 mt-3">
-                              "{factor.rationale}"
+                          {/* Content */}
+                          <div className="p-4 space-y-3 bg-slate-900 rounded-b-xl">
+                            {/* Description */}
+                            <p className="text-slate-200 leading-relaxed">{description}</p>
+
+                            {/* Contribution */}
+                            <div className={`p-3 rounded-lg ${isOver ? 'bg-emerald-900/40 border border-emerald-600/60' : isUnder ? 'bg-red-900/40 border border-red-600/60' : 'bg-slate-800/60 border border-slate-600/60'}`}>
+                              <div className="text-[11px] uppercase font-bold text-slate-400 mb-1">Contribution</div>
+                              <div className={`font-semibold text-sm ${isOver ? 'text-emerald-400' : isUnder ? 'text-red-400' : 'text-slate-400'}`}>
+                                {contributionText}
+                              </div>
                             </div>
-                          )}
+
+                            {/* Factor rationale if available */}
+                            {factor.rationale && (
+                              <div className="text-slate-400 text-xs italic border-t border-slate-700 pt-3 mt-3">
+                                "{factor.rationale}"
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
+                      </TooltipPortal>
                     )}
                   </div>
                 )
