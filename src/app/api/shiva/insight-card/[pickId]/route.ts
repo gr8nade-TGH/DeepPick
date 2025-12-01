@@ -918,10 +918,22 @@ function buildInsightCard({ pick, game, run, factorContributions, predictedTotal
       overallAccuracy: overallAccuracy
     },
     // Pass stored tier grade if available (calculated at pick generation time)
+    // Map from stored structure (bonuses) to expected structure (breakdown)
     computedTier: pick.game_snapshot?.tier_grade ? {
       tier: pick.game_snapshot.tier_grade.tier,
       tierScore: pick.game_snapshot.tier_grade.tierScore,
-      bonuses: pick.game_snapshot.tier_grade.bonuses
+      breakdown: {
+        // Base sharp score = baseConfidence * 10 (normalized to 0-100 scale)
+        sharpScore: (pick.game_snapshot.tier_grade.inputs?.baseConfidence || pick.confidence || 5) * 10,
+        // Map legacy bonuses to new breakdown format
+        edgeBonus: pick.game_snapshot.tier_grade.bonuses?.edge || 0,
+        teamRecordBonus: pick.game_snapshot.tier_grade.bonuses?.teamRecord || 0,
+        recentFormBonus: pick.game_snapshot.tier_grade.bonuses?.hotStreak || 0,
+        losingStreakPenalty: 0,  // Not tracked in legacy structure
+        rawScore: pick.game_snapshot.tier_grade.tierScore || 0,
+        unitGateApplied: pick.game_snapshot.tier_grade.bonuses?.unitGateApplied || false,
+        originalTier: pick.game_snapshot.tier_grade.bonuses?.originalTier
+      }
     } : undefined,
     onClose: () => { }
   }

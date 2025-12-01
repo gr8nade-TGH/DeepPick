@@ -22,6 +22,7 @@ interface Pick {
     tier_grade?: {
       tier: string
       tierScore: number
+      // New structure
       breakdown?: {
         sharpScore: number
         edgeBonus: number
@@ -29,6 +30,21 @@ interface Pick {
         recentFormBonus: number
         losingStreakPenalty: number
         rawScore: number
+        unitGateApplied?: boolean
+        originalTier?: string
+      }
+      // Legacy structure
+      inputs?: {
+        baseConfidence: number
+        unitsRisked: number
+        teamRecord?: any
+        last7DaysRecord?: any
+      }
+      bonuses?: {
+        units: number
+        hotStreak: number
+        teamRecord: number
+        edge?: number
         unitGateApplied?: boolean
         originalTier?: string
       }
@@ -157,9 +173,9 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
     // Status determines the inner color
     if (status === 'won') {
       return {
-        background: `linear-gradient(135deg, rgba(16, 185, 129, 0.9), rgba(5, 150, 105, 0.9))`,
+        background: `linear-gradient(135deg, rgba(34, 197, 94, 0.95), rgba(22, 163, 74, 0.95))`,  // Brighter green
         border: `2px solid ${borderColor}`,
-        boxShadow: `0 0 8px ${rarity.glowColor}, inset 0 0 6px rgba(16, 185, 129, 0.3)`
+        boxShadow: `0 0 10px ${rarity.glowColor}, inset 0 0 8px rgba(34, 197, 94, 0.4)`
       }
     } else if (status === 'lost') {
       return {
@@ -433,60 +449,72 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
                         {/* Tier Formula Breakdown */}
                         <div className="pt-1.5 mt-1.5 border-t border-slate-700/50">
                           <div className="text-[9px] text-slate-500 space-y-0.5">
-                            {/* Show full breakdown if available */}
-                            {pick.game_snapshot?.tier_grade?.breakdown ? (
-                              <>
-                                <div className="flex justify-between">
-                                  <span>📊 Sharp Score:</span>
-                                  <span className="text-slate-300">{pick.game_snapshot.tier_grade.breakdown.sharpScore.toFixed(1)}</span>
-                                </div>
-                                {pick.game_snapshot.tier_grade.breakdown.edgeBonus !== 0 && (
+                            {/* Show tier breakdown if available - handles both legacy (bonuses) and new (breakdown) structures */}
+                            {pick.game_snapshot?.tier_grade ? (() => {
+                              const tg = pick.game_snapshot.tier_grade
+                              // Map legacy structure to normalized breakdown
+                              const sharpScore = tg.breakdown?.sharpScore ?? (tg.inputs?.baseConfidence ? tg.inputs.baseConfidence * 10 : (pick.confidence || 5) * 10)
+                              const edgeBonus = tg.breakdown?.edgeBonus ?? tg.bonuses?.edge ?? 0
+                              const teamRecordBonus = tg.breakdown?.teamRecordBonus ?? tg.bonuses?.teamRecord ?? 0
+                              const recentFormBonus = tg.breakdown?.recentFormBonus ?? tg.bonuses?.hotStreak ?? 0
+                              const losingStreakPenalty = tg.breakdown?.losingStreakPenalty ?? 0
+                              const unitGateApplied = tg.breakdown?.unitGateApplied ?? tg.bonuses?.unitGateApplied ?? false
+                              const originalTier = tg.breakdown?.originalTier ?? tg.bonuses?.originalTier
+
+                              return (
+                                <>
                                   <div className="flex justify-between">
-                                    <span>📈 Edge Bonus:</span>
-                                    <span className={pick.game_snapshot.tier_grade.breakdown.edgeBonus > 0 ? 'text-green-400' : 'text-red-400'}>
-                                      <span className="opacity-60 text-[8px] mr-0.5">{pick.game_snapshot.tier_grade.breakdown.edgeBonus > 0 ? '✓' : '✗'}</span>
-                                      {pick.game_snapshot.tier_grade.breakdown.edgeBonus > 0 ? '+' : ''}{pick.game_snapshot.tier_grade.breakdown.edgeBonus}
-                                    </span>
+                                    <span>📊 Sharp Score:</span>
+                                    <span className="text-slate-300">{sharpScore.toFixed(1)}</span>
                                   </div>
-                                )}
-                                {pick.game_snapshot.tier_grade.breakdown.teamRecordBonus !== 0 && (
-                                  <div className="flex justify-between">
-                                    <span>🎯 Team Record:</span>
-                                    <span className={pick.game_snapshot.tier_grade.breakdown.teamRecordBonus > 0 ? 'text-green-400' : 'text-red-400'}>
-                                      <span className="opacity-60 text-[8px] mr-0.5">{pick.game_snapshot.tier_grade.breakdown.teamRecordBonus > 0 ? '✓' : '✗'}</span>
-                                      {pick.game_snapshot.tier_grade.breakdown.teamRecordBonus > 0 ? '+' : ''}{pick.game_snapshot.tier_grade.breakdown.teamRecordBonus}
-                                    </span>
+                                  {edgeBonus !== 0 && (
+                                    <div className="flex justify-between">
+                                      <span>📈 Edge Bonus:</span>
+                                      <span className={edgeBonus > 0 ? 'text-green-400' : 'text-red-400'}>
+                                        <span className="opacity-60 text-[8px] mr-0.5">{edgeBonus > 0 ? '✓' : '✗'}</span>
+                                        {edgeBonus > 0 ? '+' : ''}{edgeBonus}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {teamRecordBonus !== 0 && (
+                                    <div className="flex justify-between">
+                                      <span>🎯 Team Record:</span>
+                                      <span className={teamRecordBonus > 0 ? 'text-green-400' : 'text-red-400'}>
+                                        <span className="opacity-60 text-[8px] mr-0.5">{teamRecordBonus > 0 ? '✓' : '✗'}</span>
+                                        {teamRecordBonus > 0 ? '+' : ''}{teamRecordBonus}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {recentFormBonus !== 0 && (
+                                    <div className="flex justify-between">
+                                      <span>🔥 Recent Form:</span>
+                                      <span className={recentFormBonus > 0 ? 'text-green-400' : 'text-red-400'}>
+                                        <span className="opacity-60 text-[8px] mr-0.5">{recentFormBonus > 0 ? '✓' : '✗'}</span>
+                                        {recentFormBonus > 0 ? '+' : ''}{recentFormBonus}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {losingStreakPenalty !== 0 && (
+                                    <div className="flex justify-between">
+                                      <span>⚠️ Streak Penalty:</span>
+                                      <span className="text-red-400">
+                                        <span className="opacity-60 text-[8px] mr-0.5">✗</span>
+                                        {losingStreakPenalty}
+                                      </span>
+                                    </div>
+                                  )}
+                                  <div className="flex justify-between border-t border-slate-700/50 pt-0.5 mt-0.5 font-semibold">
+                                    <span>🏆 Tier Score:</span>
+                                    <span style={{ color: rarity.borderColor }}>{tg.tierScore.toFixed(0)}</span>
                                   </div>
-                                )}
-                                {pick.game_snapshot.tier_grade.breakdown.recentFormBonus !== 0 && (
-                                  <div className="flex justify-between">
-                                    <span>🔥 Recent Form:</span>
-                                    <span className={pick.game_snapshot.tier_grade.breakdown.recentFormBonus > 0 ? 'text-green-400' : 'text-red-400'}>
-                                      <span className="opacity-60 text-[8px] mr-0.5">{pick.game_snapshot.tier_grade.breakdown.recentFormBonus > 0 ? '✓' : '✗'}</span>
-                                      {pick.game_snapshot.tier_grade.breakdown.recentFormBonus > 0 ? '+' : ''}{pick.game_snapshot.tier_grade.breakdown.recentFormBonus}
-                                    </span>
-                                  </div>
-                                )}
-                                {pick.game_snapshot.tier_grade.breakdown.losingStreakPenalty !== 0 && (
-                                  <div className="flex justify-between">
-                                    <span>⚠️ Streak Penalty:</span>
-                                    <span className="text-red-400">
-                                      <span className="opacity-60 text-[8px] mr-0.5">✗</span>
-                                      {pick.game_snapshot.tier_grade.breakdown.losingStreakPenalty}
-                                    </span>
-                                  </div>
-                                )}
-                                <div className="flex justify-between border-t border-slate-700/50 pt-0.5 mt-0.5 font-semibold">
-                                  <span>🏆 Tier Score:</span>
-                                  <span style={{ color: rarity.borderColor }}>{pick.game_snapshot.tier_grade.tierScore.toFixed(0)}</span>
-                                </div>
-                                {pick.game_snapshot.tier_grade.breakdown.unitGateApplied && pick.game_snapshot.tier_grade.breakdown.originalTier && (
-                                  <div className="text-[8px] text-red-400 mt-0.5">
-                                    ⛔ Demoted from {pick.game_snapshot.tier_grade.breakdown.originalTier}
-                                  </div>
-                                )}
-                              </>
-                            ) : (
+                                  {unitGateApplied && originalTier && (
+                                    <div className="text-[8px] text-red-400 mt-0.5">
+                                      ⛔ Demoted from {originalTier}
+                                    </div>
+                                  )}
+                                </>
+                              )
+                            })() : (
                               <>
                                 <div className="flex justify-between">
                                   <span>📊 Base Score:</span>
