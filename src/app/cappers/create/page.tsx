@@ -208,149 +208,152 @@ const FACTOR_NAME_MAPPING = {
   }
 }
 
-const PRESET_CONFIGS: PresetConfig[] = [
+// ============================================
+// TOTALS ARCHETYPES - Designed for O/U betting
+// Key differentiators: pace vs efficiency vs situational
+// ============================================
+const TOTALS_ARCHETYPES: PresetConfig[] = [
   {
-    id: 'conservative',
-    name: 'The Conservative',
-    description: 'Low-risk, high-confidence plays. Focus on proven, stable factors.',
-    icon: Anchor,
-    color: 'blue',
-    philosophy: 'Risk-averse strategy emphasizing stable fundamentals. Avoids volatile factors like shooting streaks. Targets 58-62% win rate with selective picks.',
+    id: 'pace-prophet',
+    name: 'The Pace Prophet',
+    description: 'Game tempo is everything. Fast pace = points.',
+    icon: Rocket,
+    color: 'cyan',
+    philosophy: 'Pace is the #1 predictor of totals. Fast-paced games create more possessions = more points. Ignores shooting variance, trusts volume.',
     totalFactors: {
-      enabled: ['netRating', 'restDays', 'injuryImpact', 'homeAwayDiff', 'paceIndex'],
-      weights: {
-        netRating: 70,
-        restDays: 60,
-        injuryImpact: 60,
-        homeAwayDiff: 40,
-        paceIndex: 20
-      }
+      enabled: ['paceIndex', 'netRating', 'restDays'],
+      weights: { paceIndex: 100, netRating: 80, restDays: 70 }
     },
-    spreadFactors: {
-      enabled: ['offDefBalance', 'homeCourtEdge', 'injuryImpact', 'clutchPerformance', 'recentForm'],
-      weights: {
-        offDefBalance: 70,
-        homeCourtEdge: 60,
-        injuryImpact: 50,
-        clutchPerformance: 40,
-        recentForm: 30
-      }
-    }
+    spreadFactors: { enabled: [], weights: {} }
   },
   {
-    id: 'balanced',
-    name: 'The Balanced Sharp',
-    description: 'Well-rounded, data-driven approach. Trust the model, not gut feelings.',
+    id: 'efficiency-expert',
+    name: 'The Efficiency Expert',
+    description: 'Quality over quantity. Elite offense + weak defense = points.',
+    icon: BarChart3,
+    color: 'green',
+    philosophy: 'Offensive and defensive ratings tell the real story. A +10 offense vs -8 defense is a goldmine regardless of pace.',
+    totalFactors: {
+      enabled: ['netRating', 'injuryImpact', 'homeAwayDiff', 'paceIndex'],
+      weights: { netRating: 100, injuryImpact: 70, homeAwayDiff: 50, paceIndex: 30 }
+    },
+    spreadFactors: { enabled: [], weights: {} }
+  },
+  {
+    id: 'hot-hand-hunter',
+    name: 'The Hot Hand Hunter',
+    description: 'Ride the streaks. Hot shooting = easy overs.',
+    icon: Flame,
+    color: 'orange',
+    philosophy: 'Shooting streaks are real. Teams hitting 40%+ from 3 don\'t cool off overnight. Chase the heat, fade the cold.',
+    totalFactors: {
+      enabled: ['shooting', 'netRating', 'paceIndex', 'homeAwayDiff'],
+      weights: { shooting: 100, netRating: 60, paceIndex: 50, homeAwayDiff: 40 }
+    },
+    spreadFactors: { enabled: [], weights: {} }
+  },
+  {
+    id: 'rest-detective',
+    name: 'The Rest Detective',
+    description: 'Fatigue kills. Back-to-backs and travel matter.',
+    icon: Battery,
+    color: 'yellow',
+    philosophy: 'Tired legs = poor shooting = lower totals. Fresh teams with rest advantage dominate. Schedule spots are undervalued by the public.',
+    totalFactors: {
+      enabled: ['restDays', 'injuryImpact', 'homeAwayDiff', 'netRating'],
+      weights: { restDays: 100, injuryImpact: 80, homeAwayDiff: 40, netRating: 30 }
+    },
+    spreadFactors: { enabled: [], weights: {} }
+  },
+  {
+    id: 'totals-balanced',
+    name: 'The Sharp Scholar',
+    description: 'Trust the math. Every factor has value.',
     icon: Scale,
     color: 'slate',
-    philosophy: 'Even distribution across all factors. Proven strategy for consistent results. Targets 55-58% win rate.',
+    philosophy: 'No single factor dominates. Balanced weighting across all variables produces consistent, grindable edge over the long run.',
     totalFactors: {
-      enabled: ['paceIndex', 'netRating', 'shooting', 'restDays', 'injuryImpact'],
-      weights: {
-        paceIndex: 45,
-        netRating: 50,
-        shooting: 50,
-        restDays: 50,
-        injuryImpact: 55
-      }
+      enabled: ['paceIndex', 'netRating', 'shooting', 'homeAwayDiff', 'restDays'],
+      weights: { paceIndex: 50, netRating: 50, shooting: 50, homeAwayDiff: 50, restDays: 50 }
     },
+    spreadFactors: { enabled: [], weights: {} }
+  }
+]
+
+// ============================================
+// SPREAD ARCHETYPES - Designed for ATS betting
+// Key differentiators: form vs matchups vs situational
+// ============================================
+const SPREAD_ARCHETYPES: PresetConfig[] = [
+  {
+    id: 'form-rider',
+    name: 'The Form Rider',
+    description: 'ATS streaks are real. Ride the winners.',
+    icon: TrendingUp,
+    color: 'red',
+    philosophy: 'Teams covering spreads have confidence and momentum. A team 8-2 ATS in last 10 keeps covering. Public overreacts to bad beats.',
+    totalFactors: { enabled: [], weights: {} },
     spreadFactors: {
-      enabled: ['recentForm', 'homeAwaySplits', 'offDefBalance', 'homeCourtEdge', 'injuryImpact'],
-      weights: {
-        recentForm: 50,
-        homeAwaySplits: 50,
-        offDefBalance: 50,
-        homeCourtEdge: 50,
-        injuryImpact: 50
-      }
+      enabled: ['recentForm', 'clutchPerformance', 'homeAwaySplits'],
+      weights: { recentForm: 100, clutchPerformance: 80, homeAwaySplits: 70 }
     }
   },
   {
-    id: 'pace-demon',
-    name: 'The Pace Demon',
-    description: 'High-scoring, fast-paced games. Overs specialist.',
-    icon: Rocket,
-    color: 'orange',
-    philosophy: 'All-in on pace and offensive firepower. Maximizes pace factors to find high-scoring games. Targets 53-56% win rate with higher variance.',
-    totalFactors: {
-      enabled: ['paceIndex', 'shooting', 'netRating', 'homeAwayDiff'],
-      weights: {
-        paceIndex: 100,
-        shooting: 70,
-        netRating: 50,
-        homeAwayDiff: 30
-      }
-    },
+    id: 'matchup-master',
+    name: 'The Matchup Master',
+    description: 'It\'s all about the matchup. Offense vs defense.',
+    icon: Swords,
+    color: 'indigo',
+    philosophy: 'Ignore records, focus on how teams match up. Elite offense vs weak defense = cover. Strong defense vs weak offense = cover.',
+    totalFactors: { enabled: [], weights: {} },
     spreadFactors: {
-      enabled: ['homeAwaySplits', 'offDefBalance', 'recentForm', 'homeCourtEdge', 'clutchPerformance'],
-      weights: {
-        homeAwaySplits: 80,
-        offDefBalance: 60,
-        recentForm: 50,
-        homeCourtEdge: 30,
-        clutchPerformance: 30
-      }
+      enabled: ['offDefBalance', 'homeAwaySplits', 'injuryImpact', 'recentForm'],
+      weights: { offDefBalance: 100, homeAwaySplits: 70, injuryImpact: 50, recentForm: 30 }
     }
   },
   {
-    id: 'grind-it-out',
-    name: 'The Grind-It-Out',
-    description: 'Defense wins championships. Unders and home favorites.',
-    icon: Castle,
+    id: 'home-court-hero',
+    name: 'The Home Court Hero',
+    description: 'Home court is undervalued. Back the home teams.',
+    icon: Home,
     color: 'emerald',
-    philosophy: 'Emphasizes defensive efficiency, slow pace, and home court advantage. Targets low-scoring games and home favorites. Targets 56-59% win rate.',
-    totalFactors: {
-      enabled: ['netRating', 'restDays', 'homeAwayDiff', 'injuryImpact', 'paceIndex'],
-      weights: {
-        netRating: 80,
-        restDays: 70,
-        homeAwayDiff: 50,
-        injuryImpact: 35,
-        paceIndex: 15
-      }
-    },
+    philosophy: 'Vegas still underweights home court advantage. Strong home teams with good home splits are money. Road favorites are traps.',
+    totalFactors: { enabled: [], weights: {} },
     spreadFactors: {
-      enabled: ['offDefBalance', 'homeCourtEdge', 'clutchPerformance', 'recentForm', 'injuryImpact'],
-      weights: {
-        offDefBalance: 80,
-        homeCourtEdge: 70,
-        clutchPerformance: 40,
-        recentForm: 30,
-        injuryImpact: 30
-      }
+      enabled: ['homeCourtEdge', 'homeAwaySplits', 'offDefBalance', 'recentForm'],
+      weights: { homeCourtEdge: 100, homeAwaySplits: 80, offDefBalance: 40, recentForm: 30 }
     }
   },
   {
-    id: 'contrarian',
-    name: 'The Contrarian',
-    description: 'Fade the public, find value in overreactions.',
-    icon: TrendingDown,
-    color: 'purple',
-    philosophy: 'Ignores public-driven factors (recent form, home court, injuries). Emphasizes underlying metrics the public overlooks. Targets 54-57% win rate.',
-    totalFactors: {
-      enabled: ['paceIndex', 'netRating', 'shooting', 'homeAwayDiff', 'restDays', 'injuryImpact'],
-      weights: {
-        paceIndex: 50,
-        netRating: 80,
-        shooting: 60,
-        homeAwayDiff: 20,
-        restDays: 20,
-        injuryImpact: 20
-      }
-    },
+    id: 'closer',
+    name: 'The Closer',
+    description: 'Clutch performance wins spreads. Who closes games?',
+    icon: Trophy,
+    color: 'amber',
+    philosophy: 'Games are won in the 4th quarter. Teams with clutch DNA cover in tight games. Closers beat pretenders when it matters.',
+    totalFactors: { enabled: [], weights: {} },
     spreadFactors: {
-      enabled: ['recentForm', 'homeAwaySplits', 'offDefBalance', 'homeCourtEdge', 'clutchPerformance', 'injuryImpact'],
-      weights: {
-        recentForm: 10,
-        homeAwaySplits: 50,
-        offDefBalance: 80,
-        homeCourtEdge: 10,
-        clutchPerformance: 80,
-        injuryImpact: 20
-      }
+      enabled: ['clutchPerformance', 'recentForm', 'offDefBalance', 'homeCourtEdge'],
+      weights: { clutchPerformance: 100, recentForm: 60, offDefBalance: 50, homeCourtEdge: 40 }
+    }
+  },
+  {
+    id: 'injury-hawk',
+    name: 'The Injury Hawk',
+    description: 'Lines move slow. Injuries create value.',
+    icon: UserX,
+    color: 'purple',
+    philosophy: 'Vegas adjusts lines, but not enough. A star out = 4-7 point swing. Beat the book before lines fully adjust to injury news.',
+    totalFactors: { enabled: [], weights: {} },
+    spreadFactors: {
+      enabled: ['injuryImpact', 'offDefBalance', 'homeAwaySplits', 'recentForm'],
+      weights: { injuryImpact: 100, offDefBalance: 60, homeAwaySplits: 50, recentForm: 40 }
     }
   }
 ]
+
+// Combined for backwards compatibility where needed
+const PRESET_CONFIGS: PresetConfig[] = [...TOTALS_ARCHETYPES, ...SPREAD_ARCHETYPES]
 
 const NBA_TEAMS = [
   'ATL', 'BOS', 'BKN', 'CHA', 'CHI', 'CLE', 'DAL', 'DEN', 'DET', 'GSW',
@@ -945,12 +948,15 @@ export default function CreateCapperPage() {
                     <div>
                       <div className="flex items-center gap-3 mb-3">
                         <h3 className="text-sm font-semibold text-slate-400 uppercase">Choose Your Archetype</h3>
-                        {/* Bet Type Toggle for Archetypes */}
+                        {/* Unified Bet Type Toggle - syncs archetypes AND factors */}
                         <div className="flex gap-1 bg-slate-900/80 p-0.5 rounded-lg border border-slate-700/50">
                           {(['TOTAL', 'SPREAD'] as const).map(bt => (
                             <button
                               key={bt}
-                              onClick={() => setArchetypeBetType(bt)}
+                              onClick={() => {
+                                setArchetypeBetType(bt)
+                                setFactorBetType(bt)
+                              }}
                               className={`py-1 px-2.5 rounded-md font-semibold text-xs transition-all ${archetypeBetType === bt
                                 ? bt === 'TOTAL' ? 'bg-cyan-500/30 text-cyan-400' : 'bg-purple-500/30 text-purple-400'
                                 : 'text-slate-500 hover:text-slate-300'
@@ -962,63 +968,70 @@ export default function CreateCapperPage() {
                         </div>
                       </div>
 
-                      {/* Archetype Cards - 3+2 layout */}
-                      <div className="grid grid-cols-3 gap-2 mb-2">
-                        {PRESET_CONFIGS.slice(0, 3).map(preset => {
-                          const Icon = preset.icon
-                          const isSelected = selectedPresets[archetypeBetType] === preset.id
-                          return (
-                            <button
-                              key={preset.id}
-                              onClick={() => handlePresetSelect(preset)}
-                              className={`group p-3 rounded-xl border-2 transition-all text-left ${isSelected
-                                ? 'border-amber-500 bg-gradient-to-br from-amber-500/20 to-orange-500/10 shadow-lg shadow-amber-500/20'
-                                : 'border-slate-600 hover:border-slate-500 bg-slate-700/30 hover:bg-slate-700/50'
-                                }`}
-                            >
-                              <div className="flex items-start gap-2">
-                                <div className={`p-1.5 rounded-lg transition-all flex-shrink-0 ${isSelected ? 'bg-amber-500/30' : 'bg-slate-600 group-hover:bg-slate-500'}`}>
-                                  <Icon className={`w-4 h-4 ${isSelected ? 'text-amber-400' : 'text-slate-300'}`} />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <h4 className={`font-bold text-xs truncate ${isSelected ? 'text-amber-400' : 'text-white'}`}>
-                                    {preset.name}
-                                  </h4>
-                                  <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-2">{preset.description}</p>
-                                </div>
-                              </div>
-                            </button>
-                          )
-                        })}
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        {PRESET_CONFIGS.slice(3).map(preset => {
-                          const Icon = preset.icon
-                          const isSelected = selectedPresets[archetypeBetType] === preset.id
-                          return (
-                            <button
-                              key={preset.id}
-                              onClick={() => handlePresetSelect(preset)}
-                              className={`group p-3 rounded-xl border-2 transition-all text-left ${isSelected
-                                ? 'border-amber-500 bg-gradient-to-br from-amber-500/20 to-orange-500/10 shadow-lg shadow-amber-500/20'
-                                : 'border-slate-600 hover:border-slate-500 bg-slate-700/30 hover:bg-slate-700/50'
-                                }`}
-                            >
-                              <div className="flex items-start gap-2">
-                                <div className={`p-1.5 rounded-lg transition-all flex-shrink-0 ${isSelected ? 'bg-amber-500/30' : 'bg-slate-600 group-hover:bg-slate-500'}`}>
-                                  <Icon className={`w-4 h-4 ${isSelected ? 'text-amber-400' : 'text-slate-300'}`} />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <h4 className={`font-bold text-xs truncate ${isSelected ? 'text-amber-400' : 'text-white'}`}>
-                                    {preset.name}
-                                  </h4>
-                                  <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-2">{preset.description}</p>
-                                </div>
-                              </div>
-                            </button>
-                          )
-                        })}
-                      </div>
+                      {/* Archetype Cards - Use bet-type specific archetypes */}
+                      {(() => {
+                        const archetypes = archetypeBetType === 'TOTAL' ? TOTALS_ARCHETYPES : SPREAD_ARCHETYPES
+                        return (
+                          <>
+                            <div className="grid grid-cols-3 gap-2 mb-2">
+                              {archetypes.slice(0, 3).map(preset => {
+                                const Icon = preset.icon
+                                const isSelected = selectedPresets[archetypeBetType] === preset.id
+                                return (
+                                  <button
+                                    key={preset.id}
+                                    onClick={() => handlePresetSelect(preset)}
+                                    className={`group p-3 rounded-xl border-2 transition-all text-left ${isSelected
+                                      ? `border-${preset.color}-500 bg-gradient-to-br from-${preset.color}-500/20 to-${preset.color}-600/10 shadow-lg shadow-${preset.color}-500/20`
+                                      : 'border-slate-600 hover:border-slate-500 bg-slate-700/30 hover:bg-slate-700/50'
+                                      }`}
+                                  >
+                                    <div className="flex items-start gap-2">
+                                      <div className={`p-1.5 rounded-lg transition-all flex-shrink-0 ${isSelected ? `bg-${preset.color}-500/30` : 'bg-slate-600 group-hover:bg-slate-500'}`}>
+                                        <Icon className={`w-4 h-4 ${isSelected ? `text-${preset.color}-400` : 'text-slate-300'}`} />
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <h4 className={`font-bold text-xs truncate ${isSelected ? `text-${preset.color}-400` : 'text-white'}`}>
+                                          {preset.name}
+                                        </h4>
+                                        <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-2">{preset.description}</p>
+                                      </div>
+                                    </div>
+                                  </button>
+                                )
+                              })}
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              {archetypes.slice(3).map(preset => {
+                                const Icon = preset.icon
+                                const isSelected = selectedPresets[archetypeBetType] === preset.id
+                                return (
+                                  <button
+                                    key={preset.id}
+                                    onClick={() => handlePresetSelect(preset)}
+                                    className={`group p-3 rounded-xl border-2 transition-all text-left ${isSelected
+                                      ? `border-${preset.color}-500 bg-gradient-to-br from-${preset.color}-500/20 to-${preset.color}-600/10 shadow-lg shadow-${preset.color}-500/20`
+                                      : 'border-slate-600 hover:border-slate-500 bg-slate-700/30 hover:bg-slate-700/50'
+                                      }`}
+                                  >
+                                    <div className="flex items-start gap-2">
+                                      <div className={`p-1.5 rounded-lg transition-all flex-shrink-0 ${isSelected ? `bg-${preset.color}-500/30` : 'bg-slate-600 group-hover:bg-slate-500'}`}>
+                                        <Icon className={`w-4 h-4 ${isSelected ? `text-${preset.color}-400` : 'text-slate-300'}`} />
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <h4 className={`font-bold text-xs truncate ${isSelected ? `text-${preset.color}-400` : 'text-white'}`}>
+                                          {preset.name}
+                                        </h4>
+                                        <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-2">{preset.description}</p>
+                                      </div>
+                                    </div>
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </>
+                        )
+                      })()}
                     </div>
                   )}
 
@@ -1052,21 +1065,10 @@ export default function CreateCapperPage() {
 
                       {/* Right: Factor Weights Panel */}
                       <div className="col-span-7 bg-slate-900/50 border border-slate-700/50 rounded-xl p-3">
-                        {/* Header with toggle and budget */}
+                        {/* Header with bet type label and budget */}
                         <div className="flex items-center justify-between mb-3">
-                          <div className="flex gap-1 bg-slate-800/80 p-0.5 rounded-lg border border-slate-700/50">
-                            {(['TOTAL', 'SPREAD'] as const).map(bt => (
-                              <button
-                                key={bt}
-                                onClick={() => setFactorBetType(bt)}
-                                className={`py-1 px-2.5 rounded-md font-semibold text-xs transition-all ${factorBetType === bt
-                                  ? bt === 'TOTAL' ? 'bg-cyan-500/30 text-cyan-400' : 'bg-purple-500/30 text-purple-400'
-                                  : 'text-slate-500 hover:text-slate-300'
-                                  }`}
-                              >
-                                {bt}
-                              </button>
-                            ))}
+                          <div className={`py-1 px-3 rounded-md font-semibold text-xs ${factorBetType === 'TOTAL' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'bg-purple-500/20 text-purple-400 border border-purple-500/30'}`}>
+                            {factorBetType} Factors
                           </div>
                           {/* Weight Budget */}
                           {(() => {
