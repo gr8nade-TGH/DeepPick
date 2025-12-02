@@ -697,11 +697,11 @@ export default function CreateCapperPage() {
 
       {/* Main Content - Two Column Layout */}
       <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-140px)]">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:h-[calc(100vh-140px)]">
 
-          {/* LEFT PANEL - Character Preview */}
-          <div className="lg:col-span-4 flex flex-col">
-            <div className="bg-gradient-to-b from-slate-800/80 to-slate-900/80 border border-slate-700/50 rounded-xl p-6 flex-1 flex flex-col">
+          {/* LEFT PANEL - Character Preview (Sticky) */}
+          <div className="lg:col-span-4 lg:sticky lg:top-24 lg:self-start">
+            <div className="bg-gradient-to-b from-slate-800/80 to-slate-900/80 border border-slate-700/50 rounded-xl p-6 flex flex-col">
               {/* Avatar/Icon */}
               <div className="flex-1 flex flex-col items-center justify-center">
                 <div className={`w-32 h-32 rounded-full flex items-center justify-center mb-4 transition-all duration-500 ${currentPreset
@@ -826,8 +826,8 @@ export default function CreateCapperPage() {
             </div>
           </div>
 
-          {/* RIGHT PANEL - Configuration */}
-          <div className="lg:col-span-8 flex flex-col">
+          {/* RIGHT PANEL - Configuration (Scrollable) */}
+          <div className="lg:col-span-8 flex flex-col lg:overflow-y-auto lg:max-h-[calc(100vh-140px)]">
             {/* Tab Navigation */}
             <div className="flex gap-1 mb-4 bg-slate-800/50 p-1 rounded-lg border border-slate-700/50">
               {[
@@ -945,54 +945,47 @@ export default function CreateCapperPage() {
                 </div>
               )}
 
-              {/* STATS TAB */}
+              {/* STATS TAB - Compact Design */}
               {activeTab === 'stats' && config.pick_mode !== 'manual' && (
-                <div className="space-y-5">
-                  {/* Bet Type Toggle */}
-                  <div className="flex gap-2 mb-4">
-                    {(['TOTAL', 'SPREAD'] as const).map(bt => (
-                      <button
-                        key={bt}
-                        onClick={() => setActiveBetType(bt)}
-                        className={`flex-1 py-2 px-4 rounded-lg font-semibold text-sm transition-all ${activeBetType === bt
-                          ? bt === 'TOTAL' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50' : 'bg-purple-500/20 text-purple-400 border border-purple-500/50'
-                          : 'bg-slate-700/50 text-slate-400 border border-slate-600 hover:bg-slate-700'
-                          }`}
-                      >
-                        {bt} Factors
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Weight Budget Bar */}
-                  {(() => {
-                    const totalW = calculateTotalWeight(activeBetType)
-                    const remaining = 250 - totalW
-                    const isValid = isWeightValid(activeBetType)
-                    return (
-                      <div className={`p-3 rounded-xl border ${isValid ? 'bg-green-500/10 border-green-500/30' : remaining > 0 ? 'bg-amber-500/10 border-amber-500/30' : 'bg-red-500/10 border-red-500/30'
-                        }`}>
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm font-medium text-white">Weight Budget</span>
-                          <span className={`text-lg font-bold ${isValid ? 'text-green-400' : remaining > 0 ? 'text-amber-400' : 'text-red-400'}`}>
-                            {totalW}% / 250%
+                <div className="space-y-3">
+                  {/* Bet Type Toggle + Budget in one row */}
+                  <div className="flex items-center gap-3">
+                    <div className="flex gap-1 bg-slate-800/80 p-1 rounded-lg border border-slate-700/50">
+                      {(['TOTAL', 'SPREAD'] as const).map(bt => (
+                        <button
+                          key={bt}
+                          onClick={() => setActiveBetType(bt)}
+                          className={`py-1.5 px-3 rounded-md font-semibold text-xs transition-all ${activeBetType === bt
+                            ? bt === 'TOTAL' ? 'bg-cyan-500/30 text-cyan-400' : 'bg-purple-500/30 text-purple-400'
+                            : 'text-slate-400 hover:text-white'
+                            }`}
+                        >
+                          {bt}
+                        </button>
+                      ))}
+                    </div>
+                    {/* Compact Weight Budget */}
+                    {(() => {
+                      const totalW = calculateTotalWeight(activeBetType)
+                      const isValid = isWeightValid(activeBetType)
+                      return (
+                        <div className={`flex-1 flex items-center gap-2 px-3 py-1.5 rounded-lg border ${isValid ? 'bg-green-500/10 border-green-500/30' : 'bg-amber-500/10 border-amber-500/30'}`}>
+                          <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full transition-all duration-300 ${isValid ? 'bg-green-500' : 'bg-amber-500'}`}
+                              style={{ width: `${Math.min((totalW / 250) * 100, 100)}%` }}
+                            />
+                          </div>
+                          <span className={`text-xs font-bold whitespace-nowrap ${isValid ? 'text-green-400' : 'text-amber-400'}`}>
+                            {totalW}%/250%
                           </span>
                         </div>
-                        <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full transition-all duration-300 ${isValid ? 'bg-green-500' : remaining > 0 ? 'bg-amber-500' : 'bg-red-500'}`}
-                            style={{ width: `${Math.min((totalW / 250) * 100, 100)}%` }}
-                          />
-                        </div>
-                        <p className={`text-xs mt-2 ${isValid ? 'text-green-400' : remaining > 0 ? 'text-amber-400' : 'text-red-400'}`}>
-                          {isValid ? '✓ Perfect allocation!' : remaining > 0 ? `${remaining}% remaining` : `Over by ${Math.abs(remaining)}%`}
-                        </p>
-                      </div>
-                    )
-                  })()}
+                      )
+                    })()}
+                  </div>
 
-                  {/* Factor Cards */}
-                  <div className="space-y-3">
+                  {/* Compact Factor List */}
+                  <div className="space-y-1.5">
                     {AVAILABLE_FACTORS[activeBetType]?.map(factor => {
                       const isEnabled = config.factor_config[activeBetType]?.enabled_factors.includes(factor)
                       const weight = config.factor_config[activeBetType]?.weights[factor] || 50
@@ -1002,60 +995,51 @@ export default function CreateCapperPage() {
                       return (
                         <div
                           key={factor}
-                          className={`p-4 rounded-xl border transition-all ${isEnabled ? 'border-amber-500/50 bg-slate-800/80' : 'border-slate-600 bg-slate-800/30'
+                          className={`flex items-center gap-2 p-2 rounded-lg border transition-all ${isEnabled ? 'border-amber-500/30 bg-slate-800/60' : 'border-slate-700/50 bg-slate-800/30'
                             }`}
                         >
-                          <div className="flex items-center gap-3">
-                            <button
-                              onClick={() => handleFactorToggle(activeBetType, factor)}
-                              className={`p-2 rounded-lg transition-all ${isEnabled ? 'bg-amber-500/20' : 'bg-slate-700 hover:bg-slate-600'}`}
-                            >
-                              <Icon className={`w-5 h-5 ${isEnabled ? 'text-amber-400' : 'text-slate-400'}`} />
-                            </button>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className={`font-semibold text-sm ${isEnabled ? 'text-white' : 'text-slate-400'}`}>
-                                  {details?.name}
-                                </span>
-                                <Checkbox
-                                  checked={isEnabled}
-                                  onCheckedChange={() => handleFactorToggle(activeBetType, factor)}
-                                  className="ml-auto"
-                                />
-                              </div>
-                              <p className="text-xs text-slate-500 truncate">{details?.description}</p>
-                            </div>
-                            {isEnabled && (
-                              <div className="text-right min-w-[60px]">
-                                <span className="text-lg font-bold text-amber-400">{weight}%</span>
-                              </div>
-                            )}
-                          </div>
+                          {/* Toggle Button */}
+                          <button
+                            onClick={() => handleFactorToggle(activeBetType, factor)}
+                            className={`w-10 h-5 rounded-full transition flex-shrink-0 ${isEnabled ? 'bg-amber-500' : 'bg-slate-600'}`}
+                          >
+                            <div className={`w-4 h-4 bg-white rounded-full transition-transform mt-0.5 ${isEnabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                          </button>
 
-                          {isEnabled && (
-                            <div className="mt-3 pt-3 border-t border-slate-700">
+                          {/* Icon + Name */}
+                          <Icon className={`w-4 h-4 flex-shrink-0 ${isEnabled ? 'text-amber-400' : 'text-slate-500'}`} />
+                          <span className={`text-xs font-medium flex-shrink-0 w-24 truncate ${isEnabled ? 'text-white' : 'text-slate-400'}`}>
+                            {details?.name}
+                          </span>
+
+                          {/* Slider (inline when enabled) */}
+                          {isEnabled ? (
+                            <div className="flex-1 flex items-center gap-2 min-w-0">
                               <input
                                 type="range"
                                 min="0"
                                 max="100"
                                 value={weight}
                                 onChange={e => handleWeightChange(activeBetType, factor, parseInt(e.target.value))}
-                                className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-slate-700"
+                                className="flex-1 h-1.5 rounded-full appearance-none cursor-pointer bg-slate-700"
                                 style={{
                                   background: `linear-gradient(to right, rgb(251 191 36) 0%, rgb(251 191 36) ${weight}%, rgb(51 65 85) ${weight}%, rgb(51 65 85) 100%)`
                                 }}
                               />
-                              <div className="flex justify-between text-xs text-slate-500 mt-1">
-                                <span>0%</span>
-                                <span>50%</span>
-                                <span>100%</span>
-                              </div>
+                              <span className="text-sm font-bold text-amber-400 w-10 text-right">{weight}%</span>
                             </div>
+                          ) : (
+                            <span className="flex-1 text-xs text-slate-500 truncate">{details?.description}</span>
                           )}
                         </div>
                       )
                     })}
                   </div>
+
+                  {/* Quick tip */}
+                  <p className="text-[10px] text-slate-500 text-center pt-1">
+                    💡 Toggle factors on/off, then adjust weights to total 250%
+                  </p>
                 </div>
               )}
 
