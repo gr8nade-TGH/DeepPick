@@ -1,21 +1,14 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Slider } from '@/components/ui/slider'
-import { ArrowLeft, ArrowRight, CheckCircle, Sparkles, Zap, Hand, GitMerge, Clock, Ban, Gauge, TrendingUp, Target, Home, Battery, Wind, BarChart3, Shield, Trophy, Flame, UserX, Anchor, Scale, Rocket, Castle, TrendingDown, ExternalLink, Eye, Loader2, AlertCircle, Share2, Globe } from 'lucide-react'
+import { Sparkles, Zap, Hand, Ban, Gauge, TrendingUp, Target, Home, Battery, BarChart3, Shield, Trophy, Flame, UserX, Anchor, Scale, Rocket, Castle, TrendingDown, Loader2, AlertCircle, Swords, Crown, Star, ChevronRight } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import Link from 'next/link'
 
-type Step = 1 | 2 | 3
+type ConfigTab = 'archetype' | 'stats' | 'options'
 
 interface PresetConfig {
   id: string
@@ -347,11 +340,11 @@ export default function CreateCapperPage() {
   const router = useRouter()
   const { profile, loading: authLoading, refreshProfile } = useAuth()
   const { toast } = useToast()
-  const [step, setStep] = useState<Step>(1)
+  const [activeTab, setActiveTab] = useState<ConfigTab>('archetype')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null)
-  const pageTopRef = useRef<HTMLDivElement>(null)
+  const [activeBetType, setActiveBetType] = useState<'TOTAL' | 'SPREAD'>('TOTAL')
 
   const [config, setConfig] = useState<CapperConfig>({
     capper_id: '',
@@ -359,11 +352,10 @@ export default function CreateCapperPage() {
     description: '',
     color_theme: 'blue',
     sport: 'NBA',
-    bet_types: ['TOTAL', 'SPREAD'], // Pre-selected, can't be changed
-    pick_mode: 'auto',
+    bet_types: ['TOTAL', 'SPREAD'],
+    pick_mode: 'hybrid',
     excluded_teams: [],
     factor_config: {
-      // Initialize with default weights for both bet types (50% each = 250% total)
       TOTAL: {
         enabled_factors: ['paceIndex', 'netRating', 'shooting', 'homeAwayDiff', 'restDays'],
         weights: { paceIndex: 50, netRating: 50, shooting: 50, homeAwayDiff: 50, restDays: 50 }
@@ -377,13 +369,6 @@ export default function CreateCapperPage() {
     execution_priority: 5
   })
 
-  const [socialLinks, setSocialLinks] = useState({
-    twitter: '',
-    instagram: '',
-    youtube: '',
-    website: ''
-  })
-
   // Auto-populate display name from user profile
   useEffect(() => {
     if (profile && !config.display_name) {
@@ -393,19 +378,9 @@ export default function CreateCapperPage() {
         .replace(/[^a-z0-9\s-]/g, '')
         .replace(/\s+/g, '-')
         .substring(0, 30)
-
-      setConfig(prev => ({
-        ...prev,
-        display_name: displayName,
-        capper_id: capperId
-      }))
+      setConfig(prev => ({ ...prev, display_name: displayName, capper_id: capperId }))
     }
   }, [profile])
-
-  // Scroll to top when step changes
-  useEffect(() => {
-    pageTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }, [step])
 
   const updateConfig = (updates: Partial<CapperConfig>) => {
     setConfig(prev => ({ ...prev, ...updates }))
@@ -491,36 +466,16 @@ export default function CreateCapperPage() {
     updateConfig({ factor_config: newFactorConfig })
   }
 
-  const canProceed = () => {
-    switch (step) {
-      case 1:
-        // Pick mode must be selected
-        return config.pick_mode !== null
-      case 2:
-        // If manual mode, skip factor config - always can proceed
-        if (config.pick_mode === 'manual') return true
-        // Otherwise, ensure all bet types have valid weight allocation (250%)
-        return config.bet_types.every(bt => isWeightValid(bt))
-      case 3:
-        // Review step - always can proceed
-        return true
-      default:
-        return false
-    }
+  const canSubmit = () => {
+    if (config.pick_mode === 'manual') return true
+    return config.bet_types.every(bt => isWeightValid(bt))
   }
-
-  // Determine if we should skip step 2 (factor config) for manual mode
-  const shouldSkipFactorConfig = config.pick_mode === 'manual'
 
   const handleSubmit = async () => {
     setIsSubmitting(true)
     setError(null)
 
     try {
-      // Filter out empty social links
-      const filteredSocialLinks = Object.fromEntries(
-        Object.entries(socialLinks).filter(([_, value]) => value.trim() !== '')
-      )
 
       // Map user-friendly factor names to SHIVA v1 factor names
       const mappedFactorConfig: typeof config.factor_config = {}
@@ -552,8 +507,7 @@ export default function CreateCapperPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...config,
-          factor_config: mappedFactorConfig, // Use mapped factor config
-          social_links: filteredSocialLinks
+          factor_config: mappedFactorConfig
         })
       })
 
@@ -609,646 +563,427 @@ export default function CreateCapperPage() {
     return null
   }
 
+  // Get current preset details
+  const currentPreset = PRESET_CONFIGS.find(p => p.id === selectedPreset)
+  const PresetIcon = currentPreset?.icon || Swords
+
+  // Calculate power level based on config
+  const totalWeight = calculateTotalWeight('TOTAL')
+  const spreadWeight = calculateTotalWeight('SPREAD')
+  const powerLevel = Math.round(((totalWeight + spreadWeight) / 500) * 100)
+
   return (
-    <div ref={pageTopRef} className="container mx-auto py-8 px-4 max-w-4xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <Sparkles className="w-8 h-8 text-yellow-500" />
-          Become a Capper
-        </h1>
-        <p className="text-muted-foreground mt-2">
-          Build your own automated sports betting AI with custom factor configurations
-        </p>
-      </div>
-
-      {/* Progress Steps */}
-      <div className="flex items-center justify-between mb-8 max-w-2xl mx-auto">
-        {[1, 2, 3].map((s) => (
-          <div key={s} className="flex items-center flex-1">
-            <div className="flex flex-col items-center flex-1">
-              <div className={`w-14 h-14 rounded-full flex items-center justify-center font-bold transition-all ${s === step
-                ? 'bg-blue-600 text-white scale-110 ring-4 ring-blue-500/30'
-                : s < step
-                  ? 'bg-green-500 text-white'
-                  : 'bg-slate-700 text-slate-400'
-                }`}>
-                {s < step ? <CheckCircle className="w-7 h-7" /> : <span className="text-lg">{s}</span>}
-              </div>
-              <p className={`text-sm mt-2 font-semibold ${s === step
-                ? 'text-blue-400'
-                : s < step
-                  ? 'text-green-400'
-                  : 'text-slate-500'
-                }`}>
-                {s === 1 && 'Pick Strategy'}
-                {s === 2 && (shouldSkipFactorConfig ? 'Skipped' : 'Factors')}
-                {s === 3 && 'Review'}
-              </p>
-            </div>
-            {s < 3 && <div className={`h-1 w-full mx-4 transition-all ${s < step ? 'bg-green-500' : 'bg-slate-700'}`} />}
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
+      {/* Top Header Bar */}
+      <div className="bg-slate-900/80 border-b border-amber-500/20 backdrop-blur-sm sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Crown className="w-6 h-6 text-amber-400" />
+            <h1 className="text-xl font-bold text-white">Create Your Capper</h1>
           </div>
-        ))}
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-slate-400">
+              <span className="text-amber-400 font-semibold">{config.display_name || 'New Capper'}</span>
+            </div>
+            <Button
+              onClick={handleSubmit}
+              disabled={!canSubmit() || isSubmitting}
+              className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-bold px-6"
+            >
+              {isSubmitting ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Creating...</>
+              ) : (
+                <><Sparkles className="w-4 h-4 mr-2" /> Launch Capper</>
+              )}
+            </Button>
+          </div>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            {step === 1 && 'Choose Your Pick Strategy'}
-            {step === 2 && 'Configure Factor Weights'}
-            {step === 3 && 'Review & Launch'}
-          </CardTitle>
-          <CardDescription>
-            {step === 1 && 'How do you want to make your picks?'}
-            {step === 2 && 'Customize which factors influence your AI predictions (250% total allocation)'}
-            {step === 3 && 'Review your configuration and activate your capper'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Step 1: Pick Strategy */}
-          {step === 1 && (
-            <>
-              {/* Welcome Banner */}
-              <div className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 border-2 border-blue-500/30 rounded-lg px-6 py-4">
-                <p className="font-bold text-lg flex items-center gap-2 text-blue-400 mb-2">
-                  <Sparkles className="w-5 h-5" />
-                  Welcome to Capper Creation!
-                </p>
-                <p className="text-sm text-slate-300">
-                  You're about to create your own AI-powered sports betting capper. This 3-step wizard will help you configure your pick generation strategy, factor weights, and launch your capper in minutes.
-                </p>
+      {error && (
+        <div className="max-w-7xl mx-auto px-4 pt-4">
+          <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg flex items-center gap-2">
+            <AlertCircle className="w-5 h-5" />
+            <span>{error}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content - Two Column Layout */}
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-140px)]">
+
+          {/* LEFT PANEL - Character Preview */}
+          <div className="lg:col-span-4 flex flex-col">
+            <div className="bg-gradient-to-b from-slate-800/80 to-slate-900/80 border border-slate-700/50 rounded-xl p-6 flex-1 flex flex-col">
+              {/* Avatar/Icon */}
+              <div className="flex-1 flex flex-col items-center justify-center">
+                <div className={`w-32 h-32 rounded-full flex items-center justify-center mb-4 transition-all duration-500 ${currentPreset
+                  ? `bg-gradient-to-br from-${currentPreset.color}-500/30 to-${currentPreset.color}-600/10 border-2 border-${currentPreset.color}-500/50 shadow-lg shadow-${currentPreset.color}-500/20`
+                  : 'bg-slate-700/50 border-2 border-slate-600'
+                  }`}>
+                  <PresetIcon className={`w-16 h-16 transition-all duration-500 ${currentPreset ? `text-${currentPreset.color}-400` : 'text-slate-500'}`} />
+                </div>
+
+                {/* Name */}
+                <h2 className="text-2xl font-bold text-white mb-1">{config.display_name || 'New Capper'}</h2>
+                <p className="text-sm text-slate-400 mb-4">@{config.capper_id || 'capper-id'}</p>
+
+                {/* Archetype Badge */}
+                {currentPreset ? (
+                  <div className={`px-4 py-2 rounded-full bg-${currentPreset.color}-500/20 border border-${currentPreset.color}-500/50 mb-4`}>
+                    <span className={`text-sm font-bold text-${currentPreset.color}-400`}>{currentPreset.name}</span>
+                  </div>
+                ) : (
+                  <div className="px-4 py-2 rounded-full bg-slate-700/50 border border-slate-600 mb-4">
+                    <span className="text-sm text-slate-400">Select an Archetype</span>
+                  </div>
+                )}
+
+                {/* Mode Badge */}
+                <div className="flex items-center gap-2 mb-6">
+                  {config.pick_mode === 'manual' ? (
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-500/20 border border-blue-500/30">
+                      <Hand className="w-4 h-4 text-blue-400" />
+                      <span className="text-sm font-medium text-blue-400">Manual Mode</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/30">
+                      <Zap className="w-4 h-4 text-amber-400" />
+                      <span className="text-sm font-medium text-amber-400">AI + Manual</span>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* User Info Display */}
-              <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+              {/* Stats Summary */}
+              <div className="space-y-3 pt-4 border-t border-slate-700/50">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-muted-foreground text-xs">Capper Name</Label>
-                    <p className="font-bold text-lg">{config.display_name || 'Loading...'}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      ID: <code className="bg-muted px-1.5 py-0.5 rounded">{config.capper_id || 'generating...'}</code>
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <Label className="text-muted-foreground text-xs">Bet Types</Label>
-                    <p className="font-semibold">NBA - TOTAL & SPREAD</p>
-                    <p className="text-xs text-green-500 mt-0.5">✓ Pre-configured</p>
-                  </div>
+                  <span className="text-xs text-slate-500 uppercase">Power Level</span>
+                  <span className="text-sm font-bold text-amber-400">{powerLevel}%</span>
                 </div>
-              </div>
-
-              {/* Pick Mode Selection */}
-              <div className="space-y-4">
-                <Label className="text-base font-semibold">Pick Mode *</Label>
-
-                {/* Manual Only */}
-                <button
-                  onClick={() => updateConfig({ pick_mode: 'manual' })}
-                  className={`w-full p-6 rounded-lg border-2 transition-all text-left ${config.pick_mode === 'manual'
-                    ? 'border-primary bg-primary/10 scale-[1.02]'
-                    : 'border-muted hover:border-primary/50'
-                    }`}
-                >
-                  <div className="flex items-start gap-4">
-                    <Hand className="w-8 h-8 text-blue-500 flex-shrink-0 mt-1" />
-                    <div className="flex-1">
-                      <h3 className="font-bold text-lg mb-1">Manual Only</h3>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        You make all picks yourself. No automation.
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded">Full Control</span>
-                        <span className="text-xs bg-slate-700 text-slate-300 px-2 py-1 rounded">No AI</span>
-                      </div>
-                    </div>
-                  </div>
-                </button>
-
-                {/* Sharp Auto-Generated + Manual Picks */}
-                <button
-                  onClick={() => updateConfig({ pick_mode: 'hybrid' })}
-                  className={`w-full p-6 rounded-lg border-2 transition-all text-left ${config.pick_mode === 'hybrid'
-                    ? 'border-primary bg-primary/10 scale-[1.02]'
-                    : 'border-muted hover:border-primary/50'
-                    }`}
-                >
-                  <div className="flex items-start gap-4">
-                    <Zap className="w-8 h-8 text-yellow-500 flex-shrink-0 mt-1" />
-                    <div className="flex-1">
-                      <h3 className="font-bold text-lg mb-1">Sharp Auto-Generated + Manual Picks <span className="text-xs text-green-500">(Recommended)</span></h3>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        AI generates sharp picks automatically based on your custom factor weights, plus you can add manual picks anytime.
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded">Automated + Manual</span>
-                        <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">Recommended</span>
-                      </div>
-                    </div>
-                  </div>
-                </button>
-              </div>
-
-              {/* Auto/Hybrid Settings */}
-              {(config.pick_mode === 'auto' || config.pick_mode === 'hybrid') && (
-                <div className="space-y-4 pt-4 border-t border-slate-700">
-                  <h3 className="font-semibold flex items-center gap-2">
-                    <Clock className="w-5 h-5 text-cyan-500" />
-                    Auto-Generation Settings
-                  </h3>
-
-                  {/* Auto-Generation Info */}
-                  <div className="p-3 bg-cyan-500/10 border border-cyan-500/30 rounded-lg">
-                    <p className="text-sm text-cyan-400">
-                      ⚡ Picks are automatically generated throughout the day as games approach. The system checks for new games every few minutes and generates picks when conditions are optimal.
-                    </p>
-                  </div>
-
-                  {/* Team Exclusions */}
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                      <Ban className="w-4 h-4 text-red-500" />
-                      Exclude Teams (Optional)
-                    </Label>
-                    <p className="text-xs text-muted-foreground mb-3">
-                      Select teams you want to pick manually. AI won't generate picks for these teams.
-                    </p>
-                    <div className="grid grid-cols-5 gap-2 max-h-48 overflow-y-auto p-2 bg-slate-900/50 rounded-lg border border-slate-700">
-                      {NBA_TEAMS.map(team => (
-                        <button
-                          key={team}
-                          onClick={() => handleTeamToggle(team)}
-                          className={`px-3 py-2 rounded text-xs font-semibold transition-all ${config.excluded_teams.includes(team)
-                            ? 'bg-red-500 text-white'
-                            : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                            }`}
-                        >
-                          {team}
-                        </button>
-                      ))}
-                    </div>
-                    {config.excluded_teams.length > 0 && (
-                      <p className="text-xs text-red-400">
-                        ✓ {config.excluded_teams.length} team(s) excluded from auto-generation
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Social Links (Optional) */}
-              <div className="space-y-4 pt-4 border-t border-slate-700">
-                <h3 className="font-semibold flex items-center gap-2">
-                  <Share2 className="w-5 h-5 text-purple-500" />
-                  Social Links (Optional)
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  Add your social media links to showcase on your public capper profile. These are completely optional.
-                </p>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Twitter */}
-                  <div className="space-y-2">
-                    <Label className="text-sm flex items-center gap-2">
-                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                      </svg>
-                      Twitter / X
-                    </Label>
-                    <input
-                      type="url"
-                      placeholder="https://twitter.com/username"
-                      value={socialLinks.twitter}
-                      onChange={(e) => setSocialLinks(prev => ({ ...prev, twitter: e.target.value }))}
-                      className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
-
-                  {/* Instagram */}
-                  <div className="space-y-2">
-                    <Label className="text-sm flex items-center gap-2">
-                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
-                      </svg>
-                      Instagram
-                    </Label>
-                    <input
-                      type="url"
-                      placeholder="https://instagram.com/username"
-                      value={socialLinks.instagram}
-                      onChange={(e) => setSocialLinks(prev => ({ ...prev, instagram: e.target.value }))}
-                      className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
-
-                  {/* YouTube */}
-                  <div className="space-y-2">
-                    <Label className="text-sm flex items-center gap-2">
-                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
-                      </svg>
-                      YouTube
-                    </Label>
-                    <input
-                      type="url"
-                      placeholder="https://youtube.com/@username"
-                      value={socialLinks.youtube}
-                      onChange={(e) => setSocialLinks(prev => ({ ...prev, youtube: e.target.value }))}
-                      className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
-
-                  {/* Website */}
-                  <div className="space-y-2">
-                    <Label className="text-sm flex items-center gap-2">
-                      <Globe className="w-4 h-4" />
-                      Website
-                    </Label>
-                    <input
-                      type="url"
-                      placeholder="https://yourwebsite.com"
-                      value={socialLinks.website}
-                      onChange={(e) => setSocialLinks(prev => ({ ...prev, website: e.target.value }))}
-                      className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* Step 2: Factor Configuration (only shown if auto or hybrid mode) */}
-          {step === 2 && (
-            <div className="space-y-6">
-              {/* Preset Configuration Selection */}
-              <div className="space-y-4">
-                <div>
-                  <h3 className="font-semibold text-lg mb-2">Quick Start Presets (Optional)</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Choose a recommended configuration or customize your own below. Click a preset again to deselect it.
-                  </p>
+                <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-500"
+                    style={{ width: `${powerLevel}%` }}
+                  />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {PRESET_CONFIGS.map(preset => {
-                    const PresetIcon = preset.icon
-                    const isSelected = selectedPreset === preset.id
-
-                    return (
-                      <button
-                        key={preset.id}
-                        onClick={() => handlePresetSelect(preset)}
-                        className={`p-4 border-2 rounded-lg transition-all text-left ${isSelected
-                          ? `border-${preset.color}-500 bg-${preset.color}-500/10 shadow-lg shadow-${preset.color}-500/20`
-                          : 'border-slate-700 bg-slate-800/50 hover:border-slate-600 hover:bg-slate-800'
-                          }`}
-                      >
-                        <div className="flex items-start gap-3 mb-2">
-                          <div className={`p-2 rounded-lg ${isSelected ? `bg-${preset.color}-500/20` : 'bg-slate-700'}`}>
-                            <PresetIcon className={`w-5 h-5 ${isSelected ? `text-${preset.color}-400` : 'text-slate-400'}`} />
-                          </div>
-                          <div className="flex-1">
-                            <h4 className="font-semibold text-sm">{preset.name}</h4>
-                            {isSelected && (
-                              <span className="text-xs text-green-400">✓ Selected</span>
-                            )}
-                          </div>
-                        </div>
-                        <p className="text-xs text-muted-foreground mb-2">
-                          {preset.description}
-                        </p>
-                        <p className="text-xs text-slate-400 italic">
-                          {preset.philosophy}
-                        </p>
-                      </button>
-                    )
-                  })}
-                </div>
-
-                <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-                  <p className="text-xs text-blue-400">
-                    💡 <strong>Tip:</strong> Presets auto-configure all factors and weights. You can still customize individual factors below after selecting a preset.
-                  </p>
-                </div>
-              </div>
-
-              {/* Factor Configuration by Bet Type */}
-              {config.bet_types.map(betType => {
-                const totalWeight = calculateTotalWeight(betType)
-                const remainingWeight = 250 - totalWeight
-                const isValid = isWeightValid(betType)
-
-                return (
-                  <div key={betType} className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold text-lg">{betType} Factors</h3>
-                    </div>
-
-                    {/* Weight Budget Display */}
-                    <div className={`p-3 rounded border ${isValid
-                      ? 'bg-green-500/10 border-green-500/30'
-                      : remainingWeight > 0
-                        ? 'bg-blue-500/10 border-blue-500/30'
-                        : 'bg-red-500/10 border-red-500/30'
-                      }`}>
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <div className="text-sm font-medium text-white">
-                            Weight Budget: {totalWeight.toFixed(0)}% / 250%
-                          </div>
-                          <div className={`text-xs mt-1 ${isValid
-                            ? 'text-green-400'
-                            : remainingWeight > 0
-                              ? 'text-blue-400'
-                              : 'text-red-400'
-                            }`}>
-                            {isValid
-                              ? '✓ Perfect! All weight allocated.'
-                              : remainingWeight > 0
-                                ? `${remainingWeight.toFixed(0)}% remaining to allocate`
-                                : `Over budget by ${Math.abs(remainingWeight).toFixed(0)}%`
-                            }
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <p className="text-xs text-muted-foreground">
-                      💡 Distribute <strong>250% total weight</strong> across all factors. Higher weights = more influence on predictions.
-                    </p>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {AVAILABLE_FACTORS[betType as keyof typeof AVAILABLE_FACTORS]?.map(factor => {
-                        const isEnabled = config.factor_config[betType]?.enabled_factors.includes(factor)
-                        const weight = config.factor_config[betType]?.weights[factor] || 50
-                        const details = FACTOR_DETAILS[factor as keyof typeof FACTOR_DETAILS]
-                        const Icon = details?.icon || Target
-                        const colorClass = details?.color || 'blue'
-
-                        return (
-                          <div
-                            key={factor}
-                            className={`relative border-2 rounded-xl p-4 transition-all cursor-pointer ${isEnabled
-                              ? `border-${colorClass}-500 bg-${colorClass}-500/5 shadow-lg shadow-${colorClass}-500/20`
-                              : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
-                              }`}
-                            onClick={() => !isEnabled && handleFactorToggle(betType, factor)}
-                          >
-                            {/* Header */}
-                            <div className="flex items-start gap-3 mb-3">
-                              <div className={`p-2 rounded-lg ${isEnabled ? `bg-${colorClass}-500/20` : 'bg-slate-700'}`}>
-                                <Icon className={`w-5 h-5 ${isEnabled ? `text-${colorClass}-400` : 'text-slate-400'}`} />
-                              </div>
-                              <div className="flex-1">
-                                <div className="flex items-center justify-between">
-                                  <Label htmlFor={`${betType}-${factor}`} className="cursor-pointer font-semibold text-sm">
-                                    {details?.name}
-                                  </Label>
-                                  <Checkbox
-                                    id={`${betType}-${factor}`}
-                                    checked={isEnabled}
-                                    onCheckedChange={() => handleFactorToggle(betType, factor)}
-                                    onClick={(e) => e.stopPropagation()}
-                                  />
-                                </div>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  {details?.description}
-                                </p>
-                              </div>
-                            </div>
-
-                            {/* Weight Slider (only when enabled) */}
-                            {isEnabled && (
-                              <div className="space-y-2 pt-3 border-t border-slate-700">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-xs font-medium text-muted-foreground">Weight</span>
-                                  <span className={`text-lg font-bold text-${colorClass}-400`}>{weight}%</span>
-                                </div>
-                                <input
-                                  type="range"
-                                  min="0"
-                                  max="100"
-                                  value={weight}
-                                  onChange={e => handleWeightChange(betType, factor, parseInt(e.target.value))}
-                                  onClick={(e) => e.stopPropagation()}
-                                  className={`w-full h-2 rounded-lg appearance-none cursor-pointer bg-slate-700 accent-${colorClass}-500`}
-                                  style={{
-                                    background: `linear-gradient(to right, rgb(var(--${colorClass}-500)) 0%, rgb(var(--${colorClass}-500)) ${weight}%, rgb(51 65 85) ${weight}%, rgb(51 65 85) 100%)`
-                                  }}
-                                />
-                                <div className="flex justify-between text-xs text-muted-foreground">
-                                  <span>0%</span>
-                                  <span>50%</span>
-                                  <span>100%</span>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )
-                      })}
-                    </div>
+                <div className="grid grid-cols-2 gap-3 mt-4">
+                  <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+                    <div className="text-lg font-bold text-cyan-400">{calculateTotalWeight('TOTAL')}</div>
+                    <div className="text-[10px] text-slate-500 uppercase">Totals Weight</div>
                   </div>
-                )
-              })}
-            </div>
-          )}
-
-          {/* Step 3: Review & Launch */}
-          {step === 3 && (
-            <div className="space-y-6">
-              {/* Summary Card */}
-              <div className="bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-primary/30 rounded-lg p-6">
-                <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                  <Sparkles className="w-6 h-6 text-yellow-500" />
-                  Capper Configuration Summary
-                </h3>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-muted-foreground text-xs">Capper Name</Label>
-                    <p className="font-bold text-lg">{config.display_name}</p>
-                  </div>
-                  <div>
-                    <Label className="text-muted-foreground text-xs">Capper ID</Label>
-                    <p className="font-mono text-sm">{config.capper_id}</p>
-                  </div>
-                  <div>
-                    <Label className="text-muted-foreground text-xs">Sport & Bet Types</Label>
-                    <p className="font-medium">{config.sport} - {config.bet_types.join(' & ')}</p>
-                  </div>
-                  <div>
-                    <Label className="text-muted-foreground text-xs">Pick Mode</Label>
-                    <p className="font-medium capitalize flex items-center gap-2">
-                      {config.pick_mode === 'manual' && <><Hand className="w-4 h-4" /> Manual Only</>}
-                      {config.pick_mode === 'auto' && <><Zap className="w-4 h-4 text-yellow-500" /> Auto-Generated</>}
-                      {config.pick_mode === 'hybrid' && <><GitMerge className="w-4 h-4 text-purple-500" /> Hybrid</>}
-                    </p>
+                  <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+                    <div className="text-lg font-bold text-purple-400">{calculateTotalWeight('SPREAD')}</div>
+                    <div className="text-[10px] text-slate-500 uppercase">Spread Weight</div>
                   </div>
                 </div>
 
-                {/* Auto/Hybrid Settings */}
-                {(config.pick_mode === 'auto' || config.pick_mode === 'hybrid') && config.excluded_teams.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-slate-700">
-                    <Label className="text-muted-foreground text-xs">Excluded Teams</Label>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Ban className="w-4 h-4 text-red-500" />
-                      <span className="text-sm">{config.excluded_teams.length} team(s) excluded from auto-generation</span>
-                    </div>
-                    <div className="mt-2">
-                      <div className="flex flex-wrap gap-1">
-                        {config.excluded_teams.map(team => (
-                          <span key={team} className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded">
-                            {team}
-                          </span>
-                        ))}
-                      </div>
+                {config.excluded_teams.length > 0 && (
+                  <div className="mt-3 p-2 bg-red-500/10 border border-red-500/20 rounded-lg">
+                    <div className="text-xs text-red-400 flex items-center gap-1">
+                      <Ban className="w-3 h-3" />
+                      {config.excluded_teams.length} teams excluded
                     </div>
                   </div>
                 )}
               </div>
+            </div>
+          </div>
 
-              {/* Factor Configuration (only if auto/hybrid) */}
-              {config.pick_mode !== 'manual' && (
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <Label className="text-base font-semibold">Factor Configuration</Label>
-                    {selectedPreset && (
-                      <span className="text-sm text-muted-foreground">
-                        Using preset: <span className="text-primary font-semibold">{PRESET_CONFIGS.find(p => p.id === selectedPreset)?.name}</span>
-                      </span>
-                    )}
+          {/* RIGHT PANEL - Configuration */}
+          <div className="lg:col-span-8 flex flex-col">
+            {/* Tab Navigation */}
+            <div className="flex gap-1 mb-4 bg-slate-800/50 p-1 rounded-lg border border-slate-700/50">
+              {[
+                { id: 'archetype' as const, label: 'Archetype', icon: Swords },
+                { id: 'stats' as const, label: 'Stats', icon: BarChart3 },
+                { id: 'options' as const, label: 'Options', icon: Ban },
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-semibold text-sm transition-all ${activeTab === tab.id
+                    ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-400 border border-amber-500/30'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                    }`}
+                >
+                  <tab.icon className="w-4 h-4" />
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Tab Content */}
+            <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-5 flex-1 overflow-y-auto">
+
+              {/* ARCHETYPE TAB */}
+              {activeTab === 'archetype' && (
+                <div className="space-y-6">
+                  {/* Pick Mode Toggle */}
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-400 uppercase mb-3">Pick Mode</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        onClick={() => updateConfig({ pick_mode: 'hybrid' })}
+                        className={`p-4 rounded-xl border-2 transition-all text-left ${config.pick_mode === 'hybrid'
+                          ? 'border-amber-500 bg-amber-500/10 shadow-lg shadow-amber-500/20'
+                          : 'border-slate-600 hover:border-slate-500 bg-slate-700/30'
+                          }`}
+                      >
+                        <div className="flex items-center gap-3 mb-2">
+                          <Zap className={`w-6 h-6 ${config.pick_mode === 'hybrid' ? 'text-amber-400' : 'text-slate-400'}`} />
+                          <span className={`font-bold ${config.pick_mode === 'hybrid' ? 'text-amber-400' : 'text-white'}`}>AI + Manual</span>
+                          {config.pick_mode === 'hybrid' && <Star className="w-4 h-4 text-green-400 ml-auto" />}
+                        </div>
+                        <p className="text-xs text-slate-400">AI generates picks automatically + add your own</p>
+                      </button>
+
+                      <button
+                        onClick={() => updateConfig({ pick_mode: 'manual' })}
+                        className={`p-4 rounded-xl border-2 transition-all text-left ${config.pick_mode === 'manual'
+                          ? 'border-blue-500 bg-blue-500/10 shadow-lg shadow-blue-500/20'
+                          : 'border-slate-600 hover:border-slate-500 bg-slate-700/30'
+                          }`}
+                      >
+                        <div className="flex items-center gap-3 mb-2">
+                          <Hand className={`w-6 h-6 ${config.pick_mode === 'manual' ? 'text-blue-400' : 'text-slate-400'}`} />
+                          <span className={`font-bold ${config.pick_mode === 'manual' ? 'text-blue-400' : 'text-white'}`}>Manual Only</span>
+                        </div>
+                        <p className="text-xs text-slate-400">Full control - you make all picks yourself</p>
+                      </button>
+                    </div>
                   </div>
-                  {config.bet_types.map(betType => (
-                    <div key={betType} className="mb-4 bg-slate-800/50 border border-slate-700 rounded-lg p-4">
-                      <p className="font-semibold mb-3 text-primary">{betType} Factors:</p>
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        {config.factor_config[betType]?.enabled_factors.map(factor => {
-                          const details = FACTOR_DETAILS[factor as keyof typeof FACTOR_DETAILS]
+
+                  {/* Archetype Selection */}
+                  {config.pick_mode !== 'manual' && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-400 uppercase mb-3">Choose Your Archetype</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {PRESET_CONFIGS.map(preset => {
+                          const Icon = preset.icon
+                          const isSelected = selectedPreset === preset.id
                           return (
-                            <div key={factor} className="flex justify-between bg-slate-900/50 px-3 py-2 rounded border border-slate-700">
-                              <span className="font-medium">{factor}: {details?.name}</span>
-                              <span className="text-primary font-bold">
-                                {config.factor_config[betType].weights[factor].toFixed(1)}x
-                              </span>
-                            </div>
+                            <button
+                              key={preset.id}
+                              onClick={() => handlePresetSelect(preset)}
+                              className={`group p-4 rounded-xl border-2 transition-all text-left ${isSelected
+                                ? 'border-amber-500 bg-gradient-to-br from-amber-500/20 to-orange-500/10 shadow-lg shadow-amber-500/20 scale-[1.02]'
+                                : 'border-slate-600 hover:border-slate-500 bg-slate-700/30 hover:bg-slate-700/50'
+                                }`}
+                            >
+                              <div className="flex items-start gap-3">
+                                <div className={`p-2 rounded-lg transition-all ${isSelected ? 'bg-amber-500/30' : 'bg-slate-600 group-hover:bg-slate-500'}`}>
+                                  <Icon className={`w-5 h-5 ${isSelected ? 'text-amber-400' : 'text-slate-300'}`} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <h4 className={`font-bold text-sm truncate ${isSelected ? 'text-amber-400' : 'text-white'}`}>
+                                      {preset.name}
+                                    </h4>
+                                    {isSelected && <ChevronRight className="w-4 h-4 text-amber-400" />}
+                                  </div>
+                                  <p className="text-xs text-slate-400 mt-1 line-clamp-2">{preset.description}</p>
+                                </div>
+                              </div>
+                            </button>
                           )
                         })}
                       </div>
+
+                      {currentPreset && (
+                        <div className="mt-4 p-4 bg-slate-900/50 border border-slate-700 rounded-xl">
+                          <p className="text-sm text-slate-300 italic">&ldquo;{currentPreset.philosophy}&rdquo;</p>
+                        </div>
+                      )}
                     </div>
-                  ))}
+                  )}
+
+                  {config.pick_mode === 'manual' && (
+                    <div className="p-6 bg-blue-500/10 border border-blue-500/30 rounded-xl text-center">
+                      <Hand className="w-12 h-12 text-blue-400 mx-auto mb-3" />
+                      <h3 className="text-lg font-bold text-white mb-2">Manual Mode Selected</h3>
+                      <p className="text-sm text-slate-400">You'll make all picks yourself. No AI configuration needed.</p>
+                      <p className="text-sm text-blue-400 mt-3">Click &ldquo;Launch Capper&rdquo; when ready!</p>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Ready to Launch */}
-              <div className="bg-gradient-to-r from-green-900/30 to-blue-900/30 border-2 border-green-500/30 rounded-lg px-6 py-5">
-                <p className="font-bold text-xl flex items-center gap-2 text-green-400 mb-3">
-                  <CheckCircle className="w-6 h-6" />
-                  Ready to Launch!
-                </p>
-                <div className="space-y-3">
-                  <p className="text-sm text-slate-300">
-                    {config.pick_mode === 'manual'
-                      ? 'Your capper will be created and ready for manual picks.'
-                      : 'Your capper will be created and start auto-generating picks throughout the day as games approach.'
-                    }
-                  </p>
+              {/* STATS TAB */}
+              {activeTab === 'stats' && config.pick_mode !== 'manual' && (
+                <div className="space-y-5">
+                  {/* Bet Type Toggle */}
+                  <div className="flex gap-2 mb-4">
+                    {(['TOTAL', 'SPREAD'] as const).map(bt => (
+                      <button
+                        key={bt}
+                        onClick={() => setActiveBetType(bt)}
+                        className={`flex-1 py-2 px-4 rounded-lg font-semibold text-sm transition-all ${activeBetType === bt
+                          ? bt === 'TOTAL' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50' : 'bg-purple-500/20 text-purple-400 border border-purple-500/50'
+                          : 'bg-slate-700/50 text-slate-400 border border-slate-600 hover:bg-slate-700'
+                          }`}
+                      >
+                        {bt} Factors
+                      </button>
+                    ))}
+                  </div>
 
-                  <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 space-y-2">
-                    <p className="text-sm font-semibold text-white flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-yellow-400" />
-                      What happens next:
-                    </p>
-                    <ul className="text-sm text-slate-300 space-y-1.5 ml-6">
-                      <li className="flex items-start gap-2">
-                        <span className="text-green-400 mt-0.5">✓</span>
-                        <span>You'll be redirected to your <strong>Capper Dashboard</strong></span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-green-400 mt-0.5">✓</span>
-                        <span>
-                          {config.pick_mode === 'manual'
-                            ? 'Start making manual picks for upcoming games'
-                            : 'Picks will auto-generate within 15 minutes and appear on your dashboard'
-                          }
-                        </span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-green-400 mt-0.5">✓</span>
-                        <span>View your public profile to see how others see your picks</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-green-400 mt-0.5">✓</span>
-                        <span>Track performance, win rate, and ROI in real-time</span>
-                      </li>
-                    </ul>
+                  {/* Weight Budget Bar */}
+                  {(() => {
+                    const totalW = calculateTotalWeight(activeBetType)
+                    const remaining = 250 - totalW
+                    const isValid = isWeightValid(activeBetType)
+                    return (
+                      <div className={`p-3 rounded-xl border ${isValid ? 'bg-green-500/10 border-green-500/30' : remaining > 0 ? 'bg-amber-500/10 border-amber-500/30' : 'bg-red-500/10 border-red-500/30'
+                        }`}>
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm font-medium text-white">Weight Budget</span>
+                          <span className={`text-lg font-bold ${isValid ? 'text-green-400' : remaining > 0 ? 'text-amber-400' : 'text-red-400'}`}>
+                            {totalW}% / 250%
+                          </span>
+                        </div>
+                        <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full transition-all duration-300 ${isValid ? 'bg-green-500' : remaining > 0 ? 'bg-amber-500' : 'bg-red-500'}`}
+                            style={{ width: `${Math.min((totalW / 250) * 100, 100)}%` }}
+                          />
+                        </div>
+                        <p className={`text-xs mt-2 ${isValid ? 'text-green-400' : remaining > 0 ? 'text-amber-400' : 'text-red-400'}`}>
+                          {isValid ? '✓ Perfect allocation!' : remaining > 0 ? `${remaining}% remaining` : `Over by ${Math.abs(remaining)}%`}
+                        </p>
+                      </div>
+                    )
+                  })()}
+
+                  {/* Factor Cards */}
+                  <div className="space-y-3">
+                    {AVAILABLE_FACTORS[activeBetType]?.map(factor => {
+                      const isEnabled = config.factor_config[activeBetType]?.enabled_factors.includes(factor)
+                      const weight = config.factor_config[activeBetType]?.weights[factor] || 50
+                      const details = FACTOR_DETAILS[factor as keyof typeof FACTOR_DETAILS]
+                      const Icon = details?.icon || Target
+
+                      return (
+                        <div
+                          key={factor}
+                          className={`p-4 rounded-xl border transition-all ${isEnabled ? 'border-amber-500/50 bg-slate-800/80' : 'border-slate-600 bg-slate-800/30'
+                            }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() => handleFactorToggle(activeBetType, factor)}
+                              className={`p-2 rounded-lg transition-all ${isEnabled ? 'bg-amber-500/20' : 'bg-slate-700 hover:bg-slate-600'}`}
+                            >
+                              <Icon className={`w-5 h-5 ${isEnabled ? 'text-amber-400' : 'text-slate-400'}`} />
+                            </button>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className={`font-semibold text-sm ${isEnabled ? 'text-white' : 'text-slate-400'}`}>
+                                  {details?.name}
+                                </span>
+                                <Checkbox
+                                  checked={isEnabled}
+                                  onCheckedChange={() => handleFactorToggle(activeBetType, factor)}
+                                  className="ml-auto"
+                                />
+                              </div>
+                              <p className="text-xs text-slate-500 truncate">{details?.description}</p>
+                            </div>
+                            {isEnabled && (
+                              <div className="text-right min-w-[60px]">
+                                <span className="text-lg font-bold text-amber-400">{weight}%</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {isEnabled && (
+                            <div className="mt-3 pt-3 border-t border-slate-700">
+                              <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                value={weight}
+                                onChange={e => handleWeightChange(activeBetType, factor, parseInt(e.target.value))}
+                                className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-slate-700"
+                                style={{
+                                  background: `linear-gradient(to right, rgb(251 191 36) 0%, rgb(251 191 36) ${weight}%, rgb(51 65 85) ${weight}%, rgb(51 65 85) 100%)`
+                                }}
+                              />
+                              <div className="flex justify-between text-xs text-slate-500 mt-1">
+                                <span>0%</span>
+                                <span>50%</span>
+                                <span>100%</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
-              </div>
+              )}
+
+              {activeTab === 'stats' && config.pick_mode === 'manual' && (
+                <div className="flex flex-col items-center justify-center h-64 text-center">
+                  <Hand className="w-16 h-16 text-blue-400 mb-4" />
+                  <h3 className="text-lg font-bold text-white mb-2">Manual Mode</h3>
+                  <p className="text-slate-400 text-sm">No AI stats to configure in manual mode.</p>
+                  <p className="text-blue-400 text-sm mt-2">Switch to AI + Manual mode to customize factors.</p>
+                </div>
+              )}
+
+              {/* OPTIONS TAB */}
+              {activeTab === 'options' && (
+                <div className="space-y-6">
+                  {/* Team Exclusions */}
+                  {config.pick_mode !== 'manual' && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-400 uppercase mb-3 flex items-center gap-2">
+                        <Ban className="w-4 h-4 text-red-400" />
+                        Exclude Teams (Optional)
+                      </h3>
+                      <p className="text-xs text-slate-500 mb-3">
+                        AI won&apos;t generate picks for these teams. Click to toggle.
+                      </p>
+                      <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-10 gap-2 p-3 bg-slate-900/50 rounded-xl border border-slate-700">
+                        {NBA_TEAMS.map(team => (
+                          <button
+                            key={team}
+                            onClick={() => handleTeamToggle(team)}
+                            className={`px-2 py-2 rounded-lg text-xs font-bold transition-all ${config.excluded_teams.includes(team)
+                              ? 'bg-red-500 text-white shadow-lg shadow-red-500/30'
+                              : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
+                              }`}
+                          >
+                            {team}
+                          </button>
+                        ))}
+                      </div>
+                      {config.excluded_teams.length > 0 && (
+                        <p className="text-xs text-red-400 mt-2 flex items-center gap-1">
+                          <Ban className="w-3 h-3" />
+                          {config.excluded_teams.length} team(s) excluded
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {config.pick_mode === 'manual' && (
+                    <div className="p-6 bg-blue-500/10 border border-blue-500/30 rounded-xl text-center">
+                      <Hand className="w-12 h-12 text-blue-400 mx-auto mb-3" />
+                      <h3 className="text-lg font-bold text-white mb-2">Manual Mode</h3>
+                      <p className="text-sm text-slate-400">No additional options for manual mode.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
             </div>
-          )}
-
-          {error && (
-            <div className="bg-red-500/10 border-2 border-red-500/50 text-red-400 px-4 py-3 rounded-lg flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 flex-shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          {/* Navigation Buttons */}
-          <div className="flex justify-between pt-4">
-            <Button
-              variant="outline"
-              onClick={() => {
-                if (step === 1) {
-                  router.push('/admin/system-health')
-                } else if (step === 3 && shouldSkipFactorConfig) {
-                  // If on review and skipped factor config, go back to step 1
-                  setStep(1)
-                } else {
-                  setStep((step - 1) as Step)
-                }
-              }}
-              disabled={isSubmitting}
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              {step === 1 ? 'Cancel' : 'Back'}
-            </Button>
-
-            {step < 3 ? (
-              <Button
-                onClick={() => {
-                  // If on step 1 and manual mode, skip to step 3 (review)
-                  if (step === 1 && shouldSkipFactorConfig) {
-                    setStep(3)
-                  } else {
-                    setStep((step + 1) as Step)
-                  }
-                }}
-                disabled={!canProceed()}
-              >
-                Next
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            ) : (
-              <Button
-                onClick={handleSubmit}
-                disabled={!canProceed() || isSubmitting}
-                className="min-w-[200px]"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Creating Capper...
-                  </>
-                ) : (
-                  <>
-                    Become a Capper
-                    <Sparkles className="w-4 h-4 ml-2" />
-                  </>
-                )}
-              </Button>
-            )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   )
 }
