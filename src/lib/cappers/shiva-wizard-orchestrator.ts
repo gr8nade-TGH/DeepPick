@@ -479,13 +479,18 @@ async function computeFactors(
 
     // Convert factors array to weights object
     // factors is an array like: [{ key: 'paceIndex', enabled: true, weight: 50 }, ...]
+    console.log('[WizardOrchestrator] Raw profile factors from DB:', JSON.stringify(profileData.factors))
+
     for (const factor of profileData.factors) {
+      console.log('[WizardOrchestrator] Processing factor:', { key: factor.key, enabled: factor.enabled, weight: factor.weight })
       if (factor.enabled && factor.key !== 'edgeVsMarket' && factor.key !== 'edgeVsMarketSpread') {
         factorWeights[factor.key] = factor.weight
+        console.log('[WizardOrchestrator] Added to factorWeights:', factor.key, '=', factor.weight)
       }
     }
 
-    console.log('[WizardOrchestrator] Loaded factor weights from capper_profiles:', factorWeights)
+    console.log('[WizardOrchestrator] Final factorWeights object:', JSON.stringify(factorWeights))
+    console.log('[WizardOrchestrator] Enabled factor count:', Object.keys(factorWeights).length)
   }
 
   // Validate that we have weights

@@ -197,24 +197,74 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
     console.log('[TOTALS:SKIPPING_INJURY_DATA]', 'Defensive Erosion disabled, skipping injury data fetch')
   }
 
-  // Compute only enabled factors
+  // Compute only enabled factors - with individual error handling
   const factors: any[] = []
+  const factorErrors: string[] = []
+
+  console.log('[TOTALS:COMPUTING_FACTORS]', {
+    enabledFactorKeys,
+    bundleAvailable: !!bundle,
+    bundleKeys: bundle ? Object.keys(bundle) : []
+  })
 
   if (enabledFactorKeys.includes('paceIndex')) {
-    factors.push(computePaceIndex(bundle!, ctx))
+    try {
+      console.log('[TOTALS:COMPUTING] paceIndex...')
+      factors.push(computePaceIndex(bundle!, ctx))
+      console.log('[TOTALS:SUCCESS] paceIndex computed')
+    } catch (error) {
+      console.error('[TOTALS:ERROR] paceIndex failed:', error)
+      factorErrors.push(`paceIndex: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
   }
   if (enabledFactorKeys.includes('offForm')) {
-    factors.push(computeOffensiveForm(bundle!, ctx))
+    try {
+      console.log('[TOTALS:COMPUTING] offForm...')
+      factors.push(computeOffensiveForm(bundle!, ctx))
+      console.log('[TOTALS:SUCCESS] offForm computed')
+    } catch (error) {
+      console.error('[TOTALS:ERROR] offForm failed:', error)
+      factorErrors.push(`offForm: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
   }
   if (enabledFactorKeys.includes('defErosion')) {
-    factors.push(computeDefensiveErosion(bundle!, ctx))
+    try {
+      console.log('[TOTALS:COMPUTING] defErosion...')
+      factors.push(computeDefensiveErosion(bundle!, ctx))
+      console.log('[TOTALS:SUCCESS] defErosion computed')
+    } catch (error) {
+      console.error('[TOTALS:ERROR] defErosion failed:', error)
+      factorErrors.push(`defErosion: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
   }
   if (enabledFactorKeys.includes('threeEnv')) {
-    factors.push(computeThreePointEnv(bundle!, ctx))
+    try {
+      console.log('[TOTALS:COMPUTING] threeEnv...')
+      factors.push(computeThreePointEnv(bundle!, ctx))
+      console.log('[TOTALS:SUCCESS] threeEnv computed')
+    } catch (error) {
+      console.error('[TOTALS:ERROR] threeEnv failed:', error)
+      factorErrors.push(`threeEnv: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
   }
   if (enabledFactorKeys.includes('whistleEnv')) {
-    factors.push(computeWhistleEnv(bundle!, ctx))
+    try {
+      console.log('[TOTALS:COMPUTING] whistleEnv...')
+      factors.push(computeWhistleEnv(bundle!, ctx))
+      console.log('[TOTALS:SUCCESS] whistleEnv computed')
+    } catch (error) {
+      console.error('[TOTALS:ERROR] whistleEnv failed:', error)
+      factorErrors.push(`whistleEnv: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
   }
+
+  // Log summary of factor computation
+  console.log('[TOTALS:FACTOR_SUMMARY]', {
+    enabledCount: enabledFactorKeys.length,
+    computedCount: factors.length,
+    errorCount: factorErrors.length,
+    errors: factorErrors
+  })
 
   // Handle deterministic injury factor (async)
   // NOTE: Capper profiles use 'injuryAvailability' key, not 'injuryImpact'

@@ -126,39 +126,84 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
     nbaStatsDebugInfo.api_calls_made = true
   }
 
-  // Compute only enabled factors
+  // Compute only enabled factors - with individual error handling
   const factors: any[] = []
+  const factorErrors: string[] = []
+
+  console.log('[SPREAD:COMPUTING_FACTORS]', {
+    enabledFactorKeys,
+    bundleAvailable: !!bundle,
+    bundleKeys: bundle ? Object.keys(bundle) : []
+  })
 
   // S1: Net Rating Differential
   if (enabledFactorKeys.includes('netRatingDiff')) {
-    console.log('[SPREAD:S1] Computing Net Rating Differential...')
-    factors.push(computeNetRatingDifferential(bundle!, ctx))
+    try {
+      console.log('[SPREAD:S1] Computing Net Rating Differential...')
+      factors.push(computeNetRatingDifferential(bundle!, ctx))
+      console.log('[SPREAD:S1] Success')
+    } catch (error) {
+      console.error('[SPREAD:S1:ERROR]', error)
+      factorErrors.push(`netRatingDiff: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
   }
 
   // S2: Turnover Differential
   if (enabledFactorKeys.includes('turnoverDiff')) {
-    console.log('[SPREAD:S2] Computing Turnover Differential...')
-    factors.push(computeTurnoverDifferential(bundle!, ctx))
+    try {
+      console.log('[SPREAD:S2] Computing Turnover Differential...')
+      factors.push(computeTurnoverDifferential(bundle!, ctx))
+      console.log('[SPREAD:S2] Success')
+    } catch (error) {
+      console.error('[SPREAD:S2:ERROR]', error)
+      factorErrors.push(`turnoverDiff: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
   }
 
   // S3: Shooting Efficiency + Momentum
   if (enabledFactorKeys.includes('shootingEfficiencyMomentum')) {
-    console.log('[SPREAD:S3] Computing Shooting Efficiency + Momentum...')
-    factors.push(await computeShootingEfficiencyMomentum(bundle!, ctx))
+    try {
+      console.log('[SPREAD:S3] Computing Shooting Efficiency + Momentum...')
+      factors.push(await computeShootingEfficiencyMomentum(bundle!, ctx))
+      console.log('[SPREAD:S3] Success')
+    } catch (error) {
+      console.error('[SPREAD:S3:ERROR]', error)
+      factorErrors.push(`shootingEfficiencyMomentum: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
   }
 
   // S4: Home/Away Performance Splits (replaced Pace Mismatch)
   // Also support legacy 'paceMismatch' key for backward compatibility
   if (enabledFactorKeys.includes('homeAwaySplits') || enabledFactorKeys.includes('paceMismatch')) {
-    console.log('[SPREAD:S4] Computing Home/Away Performance Splits...')
-    factors.push(computeHomeAwaySplits(bundle!, ctx))
+    try {
+      console.log('[SPREAD:S4] Computing Home/Away Performance Splits...')
+      factors.push(computeHomeAwaySplits(bundle!, ctx))
+      console.log('[SPREAD:S4] Success')
+    } catch (error) {
+      console.error('[SPREAD:S4:ERROR]', error)
+      factorErrors.push(`homeAwaySplits: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
   }
 
   // S5: Four Factors Differential
   if (enabledFactorKeys.includes('fourFactorsDiff')) {
-    console.log('[SPREAD:S5] Computing Four Factors Differential...')
-    factors.push(computeFourFactorsDifferential(bundle!, ctx))
+    try {
+      console.log('[SPREAD:S5] Computing Four Factors Differential...')
+      factors.push(computeFourFactorsDifferential(bundle!, ctx))
+      console.log('[SPREAD:S5] Success')
+    } catch (error) {
+      console.error('[SPREAD:S5:ERROR]', error)
+      factorErrors.push(`fourFactorsDiff: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
   }
+
+  // Log summary of factor computation
+  console.log('[SPREAD:FACTOR_SUMMARY]', {
+    enabledCount: enabledFactorKeys.length,
+    computedCount: factors.length,
+    errorCount: factorErrors.length,
+    errors: factorErrors
+  })
 
   // S6: Injury Availability (deterministic)
   // NOTE: Capper profiles use 'injuryAvailability' key for SPREAD too (same as TOTALS)
