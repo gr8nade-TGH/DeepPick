@@ -712,7 +712,11 @@ export default function CreateCapperPage() {
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Crown className="w-6 h-6 text-amber-400" />
-            <h1 className="text-xl font-bold text-white">Create Your Capper</h1>
+            <h1 className="text-xl font-bold text-white">
+              {config.pick_mode === 'manual'
+                ? 'Become a Sharp Sports Analyst'
+                : 'Become an Advanced AI Sports Predicting Robot'}
+            </h1>
           </div>
           <div className="flex items-center gap-4">
             <div className="text-sm text-slate-400">
@@ -1105,11 +1109,21 @@ export default function CreateCapperPage() {
                                   <div className={`w-3 h-3 bg-white rounded-full transition-transform mt-0.5 ${isEnabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
                                 </button>
 
-                                {/* Icon + Name */}
+                                {/* Icon + Name + Tooltip */}
                                 <Icon className={`w-4 h-4 flex-shrink-0 ${isEnabled ? 'text-amber-400' : 'text-slate-500'}`} />
                                 <span className={`text-xs font-medium flex-shrink-0 w-20 truncate ${isEnabled ? 'text-white' : 'text-slate-400'}`}>
                                   {details?.name?.split(' ').slice(0, 2).join(' ')}
                                 </span>
+                                {/* Info Tooltip */}
+                                <div className="relative group/tooltip flex-shrink-0">
+                                  <HelpCircle className={`w-3.5 h-3.5 cursor-help ${isEnabled ? 'text-slate-400 hover:text-amber-400' : 'text-slate-600'}`} />
+                                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-slate-900 border border-amber-500/30 rounded-lg shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none">
+                                    <div className="text-xs font-bold text-amber-400 mb-1">{details?.name}</div>
+                                    <div className="text-[10px] text-slate-300 mb-2">{details?.description}</div>
+                                    <div className="text-[10px] text-slate-400 italic">{details?.importance}</div>
+                                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full border-4 border-transparent border-t-slate-900" />
+                                  </div>
+                                </div>
 
                                 {/* Slider */}
                                 {isEnabled ? (
