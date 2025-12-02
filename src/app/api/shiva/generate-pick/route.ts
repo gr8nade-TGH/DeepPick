@@ -52,10 +52,12 @@ async function fetchTierGradeInputs(
     }
 
     // Get recent form (last 10 picks) and calculate losing streak
+    // CRITICAL: Filter by bet type so TOTAL picks only consider TOTAL history
     const { data: recentPicks } = await supabase
       .from('picks')
       .select('status, net_units, created_at')
       .eq('capper', capperId)
+      .eq('pick_type', betType.toLowerCase()) // Filter by bet type!
       .in('status', ['won', 'lost'])
       .order('created_at', { ascending: false })
       .limit(10)
@@ -65,9 +67,10 @@ async function fetchTierGradeInputs(
       const losses = recentPicks.filter((p: any) => p.status === 'lost').length
       const netUnits = recentPicks.reduce((sum: number, p: any) => sum + (p.net_units || 0), 0)
       result.recentForm = { wins, losses, netUnits }
+      console.log(`[SHIVA:TierInputs] Recent ${betType} form: ${wins}W-${losses}L (${netUnits.toFixed(1)} units)`)
     }
 
-    // Calculate current losing streak
+    // Calculate current losing streak (also filtered by bet type)
     if (recentPicks && recentPicks.length > 0) {
       let streak = 0
       for (const p of recentPicks) {
@@ -75,6 +78,9 @@ async function fetchTierGradeInputs(
         else break
       }
       result.currentLosingStreak = streak
+      if (streak > 0) {
+        console.log(`[SHIVA:TierInputs] Current ${betType} losing streak: ${streak}`)
+      }
     }
   } catch (error) {
     console.error('[SHIVA:GeneratePick] Error fetching tier grade inputs:', error)
@@ -818,12 +824,20 @@ export async function POST(request: Request) {
       : homeTeamAbbr
 
     // Fetch team record, recent form, and losing streak for tier calculation
+    // Pass betType to filter records by bet type (TOTAL vs SPREAD)
     const tierInputs = await fetchTierGradeInputs(supabase, capperId, relevantTeam, pick.pickType)
 
-    // Calculate the tier grade
+    // Calculate Edge vs Market from run metadata
+    // For TOTAL: predicted_total vs market_total (points difference)
+    // For SPREAD: predicted_margin vs market_spread (points difference)
+    const edgeVsMarket = Math.abs(predictedValue - marketLine)
+    console.log(`📊 [SHIVA:GeneratePick] Edge vs Market: |${predictedValue.toFixed(1)} - ${marketLine.toFixed(1)}| = ${edgeVsMarket.toFixed(1)} points`)
+
+    // Calculate the tier grade with all components
     const tierGrade = calculateTierGrade({
       baseConfidence: pick.confidence,
       unitsRisked: pick.units,
+      edgeVsMarket: edgeVsMarket, // NEW: Pass edge for bonus calculation
       teamRecord: tierInputs.teamRecord,
       recentForm: tierInputs.recentForm,
       currentLosingStreak: tierInputs.currentLosingStreak
@@ -860,6 +874,7 @@ export async function POST(request: Request) {
           inputs: {
             baseConfidence: pick.confidence,
             unitsRisked: pick.units,
+            edgeVsMarket: edgeVsMarket, // Store edge for display in insight card
             teamRecord: tierInputs.teamRecord || null,
             recentForm: tierInputs.recentForm || null,
             currentLosingStreak: tierInputs.currentLosingStreak || 0
