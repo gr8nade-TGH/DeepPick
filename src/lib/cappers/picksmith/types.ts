@@ -67,10 +67,18 @@ export interface PicksmithResult {
   reasoning: string
 }
 
+export interface TeamData {
+  name?: string
+  abbreviation?: string
+  city?: string
+}
+
 export interface GameConsensusOpportunity {
   gameId: string
-  homeTeam: string
-  awayTeam: string
+  homeTeam: string        // Abbreviation (for selection formatting)
+  awayTeam: string        // Abbreviation (for selection formatting)
+  homeTeamFull: TeamData  // Full team data (for game_snapshot)
+  awayTeamFull: TeamData  // Full team data (for game_snapshot)
   gameTime: string
   hoursUntilStart: number
   totals?: {

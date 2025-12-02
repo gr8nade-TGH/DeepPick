@@ -619,7 +619,10 @@ export function ProfessionalDashboard() {
                       const gameStatus = getGameStatus(pick)
                       const homeTeam = pick.game_snapshot?.home_team
                       const awayTeam = pick.game_snapshot?.away_team
-                      const matchup = `${awayTeam?.name || 'Away'} @ ${homeTeam?.name || 'Home'}`
+                      // Fallback: use abbreviation if name is missing
+                      const awayDisplay = awayTeam?.name || awayTeam?.abbreviation || 'Away'
+                      const homeDisplay = homeTeam?.name || homeTeam?.abbreviation || 'Home'
+                      const matchup = `${awayDisplay} @ ${homeDisplay}`
                       const boldPredictionsKey = `${matchup}_${pick.capper}`
                       const boldPredictions = boldPredictionsMap.get(boldPredictionsKey)
                       const isExpanded = expandedPicks.has(pick.id)

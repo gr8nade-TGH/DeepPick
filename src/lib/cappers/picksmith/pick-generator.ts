@@ -24,6 +24,8 @@ export async function getUpcomingGames(): Promise<Array<{
   id: string
   homeTeam: string
   awayTeam: string
+  homeTeamFull: { name?: string; abbreviation?: string }
+  awayTeamFull: { name?: string; abbreviation?: string }
   gameTime: string
   hoursUntilStart: number
 }>> {
@@ -50,17 +52,24 @@ export async function getUpcomingGames(): Promise<Array<{
     const hoursUntilStart = (gameTime.getTime() - now.getTime()) / (1000 * 60 * 60)
 
     // Handle both object and string formats for team data
-    const homeTeam = typeof game.home_team === 'object'
+    // Extract abbreviation for selection formatting
+    const homeTeamAbbr = typeof game.home_team === 'object'
       ? game.home_team?.abbreviation || game.home_team?.name || 'HOME'
       : game.home_team || 'HOME'
-    const awayTeam = typeof game.away_team === 'object'
+    const awayTeamAbbr = typeof game.away_team === 'object'
       ? game.away_team?.abbreviation || game.away_team?.name || 'AWAY'
       : game.away_team || 'AWAY'
 
+    // Store full team objects for game_snapshot (needed for matchup display)
+    const homeTeamFull = typeof game.home_team === 'object' ? game.home_team : { name: game.home_team, abbreviation: game.home_team }
+    const awayTeamFull = typeof game.away_team === 'object' ? game.away_team : { name: game.away_team, abbreviation: game.away_team }
+
     return {
       id: game.id,
-      homeTeam,
-      awayTeam,
+      homeTeam: homeTeamAbbr,
+      awayTeam: awayTeamAbbr,
+      homeTeamFull,
+      awayTeamFull,
       gameTime: game.game_start_timestamp,
       hoursUntilStart: Math.round(hoursUntilStart * 10) / 10
     }
@@ -209,8 +218,8 @@ export async function generatePicksmithPicks(): Promise<{
         const tierGrade = await buildPicksmithTierSnapshot(tierInput)
 
         const gameSnapshot = {
-          home_team: { abbreviation: game.homeTeam },
-          away_team: { abbreviation: game.awayTeam },
+          home_team: game.homeTeamFull,
+          away_team: game.awayTeamFull,
           game_start_timestamp: game.gameTime,
           tier_grade: tierGrade
         }
@@ -262,8 +271,8 @@ export async function generatePicksmithPicks(): Promise<{
         const tierGrade = await buildPicksmithTierSnapshot(tierInput)
 
         const gameSnapshot = {
-          home_team: { abbreviation: game.homeTeam },
-          away_team: { abbreviation: game.awayTeam },
+          home_team: game.homeTeamFull,
+          away_team: game.awayTeamFull,
           game_start_timestamp: game.gameTime,
           tier_grade: tierGrade
         }
