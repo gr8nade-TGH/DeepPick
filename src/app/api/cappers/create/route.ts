@@ -173,15 +173,18 @@ export async function POST(request: Request) {
       }, { status: 500 })
     }
 
-    // Upgrade user's role to 'capper' if they're currently 'free'
-    const { error: roleUpdateError } = await supabase
+    // Upgrade user's role to 'capper' and update their profile name
+    const { error: profileUpdateError } = await supabase
       .from('profiles')
-      .update({ role: 'capper' })
+      .update({
+        role: 'capper',
+        full_name: body.display_name // Set profile name to capper display name
+      })
       .eq('id', user.id)
-      .eq('role', 'free') // Only update if currently 'free' (don't downgrade admins)
+      .in('role', ['free', 'capper']) // Update free or existing capper, don't downgrade admins
 
-    if (roleUpdateError) {
-      console.error('[CreateCapper] Role update error:', roleUpdateError)
+    if (profileUpdateError) {
+      console.error('[CreateCapper] Profile update error:', profileUpdateError)
       // Don't fail the request, just log the error
     }
 

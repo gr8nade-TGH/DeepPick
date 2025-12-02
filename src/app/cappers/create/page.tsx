@@ -5,8 +5,10 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Sparkles, Zap, Hand, Ban, Gauge, TrendingUp, Target, Home, Battery, BarChart3, Shield, Trophy, Flame, UserX, Anchor, Scale, Rocket, Castle, TrendingDown, Loader2, AlertCircle, Swords, Crown, Star, ChevronRight } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Sparkles, Zap, Hand, Ban, Gauge, TrendingUp, Target, Home, Battery, BarChart3, Shield, Trophy, Flame, UserX, Anchor, Scale, Rocket, Castle, TrendingDown, Loader2, AlertCircle, Swords, Crown, Star, ChevronRight, Pencil, Check, X } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { useCallback } from 'react'
 
 type ConfigTab = 'archetype' | 'stats' | 'options'
 
@@ -346,6 +348,12 @@ export default function CreateCapperPage() {
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null)
   const [activeBetType, setActiveBetType] = useState<'TOTAL' | 'SPREAD'>('TOTAL')
 
+  // Name editing state
+  const [isEditingName, setIsEditingName] = useState(false)
+  const [tempName, setTempName] = useState('')
+  const [nameError, setNameError] = useState<string | null>(null)
+  const [isCheckingName, setIsCheckingName] = useState(false)
+
   const [config, setConfig] = useState<CapperConfig>({
     capper_id: '',
     display_name: '',
@@ -384,6 +392,78 @@ export default function CreateCapperPage() {
 
   const updateConfig = (updates: Partial<CapperConfig>) => {
     setConfig(prev => ({ ...prev, ...updates }))
+  }
+
+  // Check if a capper name already exists
+  const checkNameExists = useCallback(async (name: string): Promise<boolean> => {
+    if (!name.trim()) return false
+    try {
+      const response = await fetch(`/api/cappers/check-name?name=${encodeURIComponent(name.trim())}`)
+      const data = await response.json()
+      return data.exists === true
+    } catch {
+      return false // Assume it doesn't exist if check fails
+    }
+  }, [])
+
+  // Handle name edit start
+  const startEditingName = () => {
+    setTempName(config.display_name)
+    setNameError(null)
+    setIsEditingName(true)
+  }
+
+  // Handle name save
+  const saveNameEdit = async () => {
+    const trimmedName = tempName.trim()
+
+    if (!trimmedName) {
+      setNameError('Name is required')
+      return
+    }
+
+    if (trimmedName.length < 2) {
+      setNameError('Name must be at least 2 characters')
+      return
+    }
+
+    if (trimmedName.length > 30) {
+      setNameError('Name must be 30 characters or less')
+      return
+    }
+
+    // Check if name is unchanged
+    if (trimmedName === config.display_name) {
+      setIsEditingName(false)
+      return
+    }
+
+    setIsCheckingName(true)
+    const exists = await checkNameExists(trimmedName)
+    setIsCheckingName(false)
+
+    if (exists) {
+      setNameError('This name is already taken')
+      return
+    }
+
+    // Generate new capper_id from name
+    const capperId = trimmedName
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .substring(0, 30)
+
+    updateConfig({ display_name: trimmedName, capper_id: capperId })
+    setNameError(null)
+    setIsEditingName(false)
+  }
+
+  // Handle name edit cancel
+  const cancelNameEdit = () => {
+    setTempName('')
+    setNameError(null)
+    setIsEditingName(false)
   }
 
   // Calculate total weight allocation for a bet type (must equal 250%)
@@ -467,7 +547,13 @@ export default function CreateCapperPage() {
   }
 
   const canSubmit = () => {
+    // Name is required
+    if (!config.display_name.trim() || config.display_name.trim().length < 2) return false
+    // If editing name, can't submit
+    if (isEditingName) return false
+    // For manual mode, just need a name
     if (config.pick_mode === 'manual') return true
+    // For auto/hybrid, also need valid weights
     return config.bet_types.every(bt => isWeightValid(bt))
   }
 
@@ -625,9 +711,57 @@ export default function CreateCapperPage() {
                   <PresetIcon className={`w-16 h-16 transition-all duration-500 ${currentPreset ? `text-${currentPreset.color}-400` : 'text-slate-500'}`} />
                 </div>
 
-                {/* Name */}
-                <h2 className="text-2xl font-bold text-white mb-1">{config.display_name || 'New Capper'}</h2>
-                <p className="text-sm text-slate-400 mb-4">@{config.capper_id || 'capper-id'}</p>
+                {/* Name - Editable */}
+                {isEditingName ? (
+                  <div className="w-full max-w-[200px] space-y-2 mb-2">
+                    <div className="flex items-center gap-1">
+                      <Input
+                        value={tempName}
+                        onChange={(e) => {
+                          setTempName(e.target.value)
+                          setNameError(null)
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveNameEdit()
+                          if (e.key === 'Escape') cancelNameEdit()
+                        }}
+                        placeholder="Enter your name"
+                        className="text-center text-lg font-bold bg-slate-700 border-amber-500/50 focus:border-amber-500"
+                        maxLength={30}
+                        autoFocus
+                      />
+                      <button
+                        onClick={saveNameEdit}
+                        disabled={isCheckingName}
+                        className="p-2 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 transition-colors"
+                      >
+                        {isCheckingName ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                      </button>
+                      <button
+                        onClick={cancelNameEdit}
+                        className="p-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    {nameError && (
+                      <p className="text-xs text-red-400 text-center">{nameError}</p>
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    onClick={startEditingName}
+                    className="group flex items-center gap-2 mb-1 hover:bg-slate-700/50 px-3 py-1 rounded-lg transition-colors"
+                  >
+                    <h2 className="text-2xl font-bold text-white">{config.display_name || 'Click to set name'}</h2>
+                    <Pencil className="w-4 h-4 text-slate-500 group-hover:text-amber-400 transition-colors" />
+                  </button>
+                )}
+                <p className="text-sm text-slate-400 mb-1">@{config.capper_id || 'capper-id'}</p>
+                {!config.display_name.trim() && (
+                  <p className="text-xs text-amber-400 mb-2">⚠️ Name is required</p>
+                )}
+                <p className="text-[10px] text-slate-500 mb-4">Once created, name cannot be changed</p>
 
                 {/* Archetype Badge */}
                 {currentPreset ? (
