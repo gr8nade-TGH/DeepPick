@@ -925,18 +925,27 @@ function buildInsightCard({ pick, game, run, factorContributions, predictedTotal
       overallAccuracy: overallAccuracy
     },
     // Pass stored tier grade if available (calculated at pick generation time)
-    // Map from stored structure (bonuses) to expected structure (breakdown)
+    // Support both new format (breakdown object) and legacy format (bonuses object)
     computedTier: pick.game_snapshot?.tier_grade ? {
       tier: pick.game_snapshot.tier_grade.tier,
       tierScore: pick.game_snapshot.tier_grade.tierScore,
-      breakdown: {
-        // Base sharp score = baseConfidence * 10 (normalized to 0-100 scale)
+      breakdown: pick.game_snapshot.tier_grade.breakdown ? {
+        // NEW FORMAT: breakdown is already stored correctly
+        sharpScore: pick.game_snapshot.tier_grade.breakdown.sharpScore,
+        edgeBonus: pick.game_snapshot.tier_grade.breakdown.edgeBonus || 0,
+        teamRecordBonus: pick.game_snapshot.tier_grade.breakdown.teamRecordBonus || 0,
+        recentFormBonus: pick.game_snapshot.tier_grade.breakdown.recentFormBonus || 0,
+        losingStreakPenalty: pick.game_snapshot.tier_grade.breakdown.losingStreakPenalty || 0,
+        rawScore: pick.game_snapshot.tier_grade.breakdown.rawScore || pick.game_snapshot.tier_grade.tierScore || 0,
+        unitGateApplied: pick.game_snapshot.tier_grade.breakdown.unitGateApplied || false,
+        originalTier: pick.game_snapshot.tier_grade.breakdown.originalTier
+      } : {
+        // LEGACY FORMAT: Map from bonuses to breakdown
         sharpScore: (pick.game_snapshot.tier_grade.inputs?.baseConfidence || pick.confidence || 5) * 10,
-        // Map legacy bonuses to new breakdown format
         edgeBonus: pick.game_snapshot.tier_grade.bonuses?.edge || 0,
         teamRecordBonus: pick.game_snapshot.tier_grade.bonuses?.teamRecord || 0,
         recentFormBonus: pick.game_snapshot.tier_grade.bonuses?.hotStreak || 0,
-        losingStreakPenalty: 0,  // Not tracked in legacy structure
+        losingStreakPenalty: 0,
         rawScore: pick.game_snapshot.tier_grade.tierScore || 0,
         unitGateApplied: pick.game_snapshot.tier_grade.bonuses?.unitGateApplied || false,
         originalTier: pick.game_snapshot.tier_grade.bonuses?.originalTier
