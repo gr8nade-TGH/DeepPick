@@ -7,6 +7,64 @@ import { Button } from '@/components/ui/button'
 import { Clock, Calendar, CalendarDays, History, HelpCircle } from 'lucide-react'
 import { getRarityTierFromConfidence, getRarityStyleFromTier, type RarityTier } from '@/lib/tier-grading'
 
+// NBA Team name to abbreviation map
+const NBA_TEAM_MAP: Record<string, string> = {
+  'ATLANTA HAWKS': 'ATL', 'HAWKS': 'ATL', 'ATLANTA': 'ATL',
+  'BOSTON CELTICS': 'BOS', 'CELTICS': 'BOS', 'BOSTON': 'BOS',
+  'BROOKLYN NETS': 'BKN', 'NETS': 'BKN', 'BROOKLYN': 'BKN',
+  'CHARLOTTE HORNETS': 'CHA', 'HORNETS': 'CHA', 'CHARLOTTE': 'CHA',
+  'CHICAGO BULLS': 'CHI', 'BULLS': 'CHI', 'CHICAGO': 'CHI',
+  'CLEVELAND CAVALIERS': 'CLE', 'CAVALIERS': 'CLE', 'CAVS': 'CLE', 'CLEVELAND': 'CLE',
+  'DALLAS MAVERICKS': 'DAL', 'MAVERICKS': 'DAL', 'MAVS': 'DAL', 'DALLAS': 'DAL',
+  'DENVER NUGGETS': 'DEN', 'NUGGETS': 'DEN', 'DENVER': 'DEN',
+  'DETROIT PISTONS': 'DET', 'PISTONS': 'DET', 'DETROIT': 'DET',
+  'GOLDEN STATE WARRIORS': 'GSW', 'WARRIORS': 'GSW', 'GOLDEN STATE': 'GSW',
+  'HOUSTON ROCKETS': 'HOU', 'ROCKETS': 'HOU', 'HOUSTON': 'HOU',
+  'INDIANA PACERS': 'IND', 'PACERS': 'IND', 'INDIANA': 'IND',
+  'LA CLIPPERS': 'LAC', 'LOS ANGELES CLIPPERS': 'LAC', 'CLIPPERS': 'LAC',
+  'LOS ANGELES LAKERS': 'LAL', 'LAKERS': 'LAL',
+  'MEMPHIS GRIZZLIES': 'MEM', 'GRIZZLIES': 'MEM', 'MEMPHIS': 'MEM',
+  'MIAMI HEAT': 'MIA', 'HEAT': 'MIA', 'MIAMI': 'MIA',
+  'MILWAUKEE BUCKS': 'MIL', 'BUCKS': 'MIL', 'MILWAUKEE': 'MIL',
+  'MINNESOTA TIMBERWOLVES': 'MIN', 'TIMBERWOLVES': 'MIN', 'WOLVES': 'MIN', 'MINNESOTA': 'MIN',
+  'NEW ORLEANS PELICANS': 'NOP', 'PELICANS': 'NOP', 'NEW ORLEANS': 'NOP',
+  'NEW YORK KNICKS': 'NYK', 'KNICKS': 'NYK', 'NEW YORK': 'NYK',
+  'OKLAHOMA CITY THUNDER': 'OKC', 'THUNDER': 'OKC', 'OKLAHOMA CITY': 'OKC', 'OKC THUNDER': 'OKC',
+  'ORLANDO MAGIC': 'ORL', 'MAGIC': 'ORL', 'ORLANDO': 'ORL',
+  'PHILADELPHIA 76ERS': 'PHI', '76ERS': 'PHI', 'SIXERS': 'PHI', 'PHILADELPHIA': 'PHI',
+  'PHOENIX SUNS': 'PHX', 'SUNS': 'PHX', 'PHOENIX': 'PHX',
+  'PORTLAND TRAIL BLAZERS': 'POR', 'TRAIL BLAZERS': 'POR', 'BLAZERS': 'POR', 'PORTLAND': 'POR',
+  'SACRAMENTO KINGS': 'SAC', 'KINGS': 'SAC', 'SACRAMENTO': 'SAC',
+  'SAN ANTONIO SPURS': 'SAS', 'SPURS': 'SAS', 'SAN ANTONIO': 'SAS',
+  'TORONTO RAPTORS': 'TOR', 'RAPTORS': 'TOR', 'TORONTO': 'TOR',
+  'UTAH JAZZ': 'UTA', 'JAZZ': 'UTA', 'UTAH': 'UTA',
+  'WASHINGTON WIZARDS': 'WAS', 'WIZARDS': 'WAS', 'WASHINGTON': 'WAS',
+}
+
+// Format selection to use abbreviations
+function formatSelectionAbbrev(selection: string): string {
+  if (!selection) return ''
+  const upper = selection.trim().toUpperCase()
+
+  // Handle OVER/UNDER totals
+  const totalMatch = upper.match(/^(OVER|UNDER|O|U)\s*([\d.]+)/i)
+  if (totalMatch) {
+    const dir = (totalMatch[1] === 'O' || totalMatch[1] === 'OVER') ? 'OVER' : 'UNDER'
+    return `${dir} ${totalMatch[2]}`
+  }
+
+  // Handle spreads like "San Antonio Spurs -5.5"
+  const spreadMatch = upper.match(/^(.+?)\s*([-+][\d.]+)$/)
+  if (spreadMatch) {
+    const teamPart = spreadMatch[1].trim()
+    const spread = spreadMatch[2]
+    const abbrev = NBA_TEAM_MAP[teamPart] || (teamPart.length <= 3 ? teamPart : teamPart)
+    return `${abbrev} ${spread}`
+  }
+
+  return NBA_TEAM_MAP[upper] || selection
+}
+
 interface Pick {
   id: string
   selection: string
@@ -661,7 +719,7 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
 
                         {/* Pick selection */}
                         <div className="font-bold text-white text-sm" style={{ textShadow: `0 0 10px ${rarity.glowColor}` }}>
-                          {pick.selection}
+                          {formatSelectionAbbrev(pick.selection)}
                         </div>
 
                         {/* Matchup with Score for graded picks */}

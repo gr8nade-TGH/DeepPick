@@ -4,6 +4,64 @@ import { createPortal } from 'react-dom'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { getFactorMeta } from '@/lib/cappers/shiva-v1/factor-registry'
 
+// NBA Team name to abbreviation map
+const NBA_TEAM_MAP: Record<string, string> = {
+  'ATLANTA HAWKS': 'ATL', 'HAWKS': 'ATL', 'ATLANTA': 'ATL',
+  'BOSTON CELTICS': 'BOS', 'CELTICS': 'BOS', 'BOSTON': 'BOS',
+  'BROOKLYN NETS': 'BKN', 'NETS': 'BKN', 'BROOKLYN': 'BKN',
+  'CHARLOTTE HORNETS': 'CHA', 'HORNETS': 'CHA', 'CHARLOTTE': 'CHA',
+  'CHICAGO BULLS': 'CHI', 'BULLS': 'CHI', 'CHICAGO': 'CHI',
+  'CLEVELAND CAVALIERS': 'CLE', 'CAVALIERS': 'CLE', 'CAVS': 'CLE', 'CLEVELAND': 'CLE',
+  'DALLAS MAVERICKS': 'DAL', 'MAVERICKS': 'DAL', 'MAVS': 'DAL', 'DALLAS': 'DAL',
+  'DENVER NUGGETS': 'DEN', 'NUGGETS': 'DEN', 'DENVER': 'DEN',
+  'DETROIT PISTONS': 'DET', 'PISTONS': 'DET', 'DETROIT': 'DET',
+  'GOLDEN STATE WARRIORS': 'GSW', 'WARRIORS': 'GSW', 'GOLDEN STATE': 'GSW',
+  'HOUSTON ROCKETS': 'HOU', 'ROCKETS': 'HOU', 'HOUSTON': 'HOU',
+  'INDIANA PACERS': 'IND', 'PACERS': 'IND', 'INDIANA': 'IND',
+  'LA CLIPPERS': 'LAC', 'LOS ANGELES CLIPPERS': 'LAC', 'CLIPPERS': 'LAC',
+  'LOS ANGELES LAKERS': 'LAL', 'LAKERS': 'LAL',
+  'MEMPHIS GRIZZLIES': 'MEM', 'GRIZZLIES': 'MEM', 'MEMPHIS': 'MEM',
+  'MIAMI HEAT': 'MIA', 'HEAT': 'MIA', 'MIAMI': 'MIA',
+  'MILWAUKEE BUCKS': 'MIL', 'BUCKS': 'MIL', 'MILWAUKEE': 'MIL',
+  'MINNESOTA TIMBERWOLVES': 'MIN', 'TIMBERWOLVES': 'MIN', 'WOLVES': 'MIN', 'MINNESOTA': 'MIN',
+  'NEW ORLEANS PELICANS': 'NOP', 'PELICANS': 'NOP', 'NEW ORLEANS': 'NOP',
+  'NEW YORK KNICKS': 'NYK', 'KNICKS': 'NYK', 'NEW YORK': 'NYK',
+  'OKLAHOMA CITY THUNDER': 'OKC', 'THUNDER': 'OKC', 'OKLAHOMA CITY': 'OKC', 'OKC THUNDER': 'OKC',
+  'ORLANDO MAGIC': 'ORL', 'MAGIC': 'ORL', 'ORLANDO': 'ORL',
+  'PHILADELPHIA 76ERS': 'PHI', '76ERS': 'PHI', 'SIXERS': 'PHI', 'PHILADELPHIA': 'PHI',
+  'PHOENIX SUNS': 'PHX', 'SUNS': 'PHX', 'PHOENIX': 'PHX',
+  'PORTLAND TRAIL BLAZERS': 'POR', 'TRAIL BLAZERS': 'POR', 'BLAZERS': 'POR', 'PORTLAND': 'POR',
+  'SACRAMENTO KINGS': 'SAC', 'KINGS': 'SAC', 'SACRAMENTO': 'SAC',
+  'SAN ANTONIO SPURS': 'SAS', 'SPURS': 'SAS', 'SAN ANTONIO': 'SAS',
+  'TORONTO RAPTORS': 'TOR', 'RAPTORS': 'TOR', 'TORONTO': 'TOR',
+  'UTAH JAZZ': 'UTA', 'JAZZ': 'UTA', 'UTAH': 'UTA',
+  'WASHINGTON WIZARDS': 'WAS', 'WIZARDS': 'WAS', 'WASHINGTON': 'WAS',
+}
+
+// Format selection to use abbreviations (e.g., "San Antonio Spurs -5.5" -> "SAS -5.5")
+function formatSelectionAbbrev(selection: string): string {
+  if (!selection) return ''
+  const upper = selection.trim().toUpperCase()
+
+  // Handle OVER/UNDER totals - keep as is
+  const totalMatch = upper.match(/^(OVER|UNDER|O|U)\s*([\d.]+)/i)
+  if (totalMatch) {
+    const dir = (totalMatch[1] === 'O' || totalMatch[1] === 'OVER') ? 'OVER' : 'UNDER'
+    return `${dir} ${totalMatch[2]}`
+  }
+
+  // Handle spreads like "San Antonio Spurs -5.5" or "SAS -5.5"
+  const spreadMatch = upper.match(/^(.+?)\s*([-+][\d.]+)$/)
+  if (spreadMatch) {
+    const teamPart = spreadMatch[1].trim()
+    const spread = spreadMatch[2]
+    const abbrev = NBA_TEAM_MAP[teamPart] || (teamPart.length <= 3 ? teamPart : teamPart)
+    return `${abbrev} ${spread}`
+  }
+
+  return NBA_TEAM_MAP[upper] || selection
+}
+
 // Portal component for tooltips - renders outside of overflow containers
 function TooltipPortal({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false)
@@ -483,7 +541,7 @@ function PicksmithInsightCard({ props, consensus }: {
         {/* ===== THE PICK - Hero Section ===== */}
         <div className="p-6 bg-gradient-to-b from-slate-800/80 to-slate-900/80 text-center border-b border-amber-500/20">
           <div className="text-4xl font-black text-white mb-2">
-            {props.pick?.units || 0} UNITS on {props.pick?.selection}
+            {props.pick?.units || 0} UNITS on {formatSelectionAbbrev(props.pick?.selection || '')}
           </div>
           <div className="text-amber-300 font-semibold text-sm mb-3">
             {awayAbbr} @ {homeAbbr}
@@ -925,7 +983,7 @@ export function InsightCard(props: InsightCardProps) {
             className="text-4xl font-black text-white mb-2"
             style={{ textShadow: `0 0 20px ${rarity.glowColor}` }}
           >
-            {safePick.units} {safePick.units === 1 ? 'UNIT' : 'UNITS'} on {safePick.selection}
+            {safePick.units} {safePick.units === 1 ? 'UNIT' : 'UNITS'} on {formatSelectionAbbrev(safePick.selection)}
           </div>
 
           {/* Matchup */}
@@ -1179,7 +1237,7 @@ export function InsightCard(props: InsightCardProps) {
               <div className="bg-slate-900/60 rounded-lg p-2 border border-slate-700/50">
                 <div className="text-[10px] text-slate-400 uppercase mb-1 font-semibold">DOMINANT</div>
                 <div className="text-sm font-bold text-white truncate">
-                  {safePick.selection}
+                  {formatSelectionAbbrev(safePick.selection)}
                 </div>
               </div>
             </div>
