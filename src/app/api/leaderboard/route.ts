@@ -3,6 +3,8 @@ import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { getSystemCapperMap } from '@/lib/cappers/system-cappers'
 
 export const dynamic = 'force-dynamic'
+export const revalidate = 0 // Disable caching completely
+export const runtime = 'nodejs'
 
 /**
  * GET /api/leaderboard
@@ -67,8 +69,12 @@ export async function GET(request: NextRequest) {
         source: 'materialized_view'
       })
 
-      // Prevent caching
-      response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate')
+      // Prevent ALL caching (browser, CDN, Vercel edge)
+      response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0, s-maxage=0')
+      response.headers.set('CDN-Cache-Control', 'no-store')
+      response.headers.set('Vercel-CDN-Cache-Control', 'no-store')
+      response.headers.set('Pragma', 'no-cache')
+      response.headers.set('Expires', '0')
       return response
     }
 
@@ -250,8 +256,12 @@ export async function GET(request: NextRequest) {
       source: 'picks_calculation'
     })
 
-    // Prevent caching
-    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate')
+    // Prevent ALL caching (browser, CDN, Vercel edge)
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0, s-maxage=0')
+    response.headers.set('CDN-Cache-Control', 'no-store')
+    response.headers.set('Vercel-CDN-Cache-Control', 'no-store')
+    response.headers.set('Pragma', 'no-cache')
+    response.headers.set('Expires', '0')
     return response
 
   } catch (error) {
