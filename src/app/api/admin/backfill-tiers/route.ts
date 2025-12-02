@@ -83,12 +83,13 @@ export async function POST() {
         }
       }
 
-      // Fetch recent form (last 10 picks)
+      // Fetch recent form (last 10 picks) - FILTER BY BET TYPE
       let recentForm = undefined
       const { data: recentPicks } = await supabase
         .from('picks')
         .select('status, net_units')
         .eq('capper', pick.capper)
+        .eq('pick_type', pick.pick_type) // Filter by bet type (TOTAL vs SPREAD)
         .in('status', ['won', 'lost'])
         .order('created_at', { ascending: false })
         .limit(10)
