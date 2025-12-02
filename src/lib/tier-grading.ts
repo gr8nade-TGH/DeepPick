@@ -161,9 +161,10 @@ export function calculateTierGrade(input: TierGradeInput): TierGradeResult {
   let unitGateApplied = false
 
   // ===== INSUFFICIENT HISTORY GATE =====
-  // If missing team record or recent form, auto-grade as Common
-  if (insufficientHistory && tier !== 'Common') {
-    tier = 'Common'
+  // If missing team record or recent form, cap at Uncommon (not Common)
+  // This allows new cappers to still earn Uncommon tier while building history
+  if (insufficientHistory && tier !== 'Common' && tier !== 'Uncommon') {
+    tier = 'Uncommon'
   }
 
   // ===== UNIT GATES ===== (only apply if not already demoted to Common)
@@ -344,10 +345,10 @@ export function formatTierBreakdown(breakdown: TierBreakdown, units: number, bet
   lines.push(`───────────────`)
   lines.push(`Total Score: ${breakdown.rawScore.toFixed(1)}`)
 
-  // Show insufficient history demotion
-  if (breakdown.insufficientHistory && breakdown.originalTier && breakdown.originalTier !== 'Common') {
+  // Show insufficient history demotion (capped at Uncommon)
+  if (breakdown.insufficientHistory && breakdown.originalTier && breakdown.originalTier !== 'Common' && breakdown.originalTier !== 'Uncommon') {
     lines.push(``)
-    lines.push(`📉 Demoted to Common`)
+    lines.push(`📉 Capped at Uncommon`)
     const missing: string[] = []
     if (breakdown.missingTeamRecord) missing.push('team record')
     if (breakdown.missingRecentForm) missing.push('recent form')

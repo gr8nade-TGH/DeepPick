@@ -24,8 +24,25 @@ import {
 import { PickInsightModal } from '@/components/dashboard/pick-insight-modal'
 import { PickHistoryGrid } from '@/components/dashboard/pick-history-grid'
 import { getRarityFromConfidence } from '@/app/cappers/shiva/management/components/insight-card'
-import { getRarityTierFromConfidence, type RarityTier } from '@/lib/tier-grading'
+import { getRarityTierFromConfidence, getRarityStyleFromTier, type RarityTier } from '@/lib/tier-grading'
 import Link from 'next/link'
+
+// Get tier from stored tier_grade or fallback to confidence calculation
+const getTierFromPick = (pick: any): RarityTier => {
+  // Prefer stored tier from tier_grade (accurate with all gates applied)
+  if (pick.game_snapshot?.tier_grade?.tier) {
+    return pick.game_snapshot.tier_grade.tier as RarityTier
+  }
+  // Fallback to confidence-based calculation for legacy picks
+  const confidence = pick.confidence || 50
+  return getRarityTierFromConfidence(confidence)
+}
+
+// Get rarity style from pick (uses stored tier if available)
+const getRarityFromPick = (pick: any) => {
+  const tier = getTierFromPick(pick)
+  return getRarityStyleFromTier(tier)
+}
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
 import { useAuth } from '@/contexts/auth-context'
 import { Lock } from 'lucide-react'
@@ -421,9 +438,9 @@ export function ProfessionalDashboard() {
     setTodaysPicks(prev => {
       // Sort by: 1) Tier (Legendary first), 2) Capper performance * confidence
       const sorted = [...prev].sort((a, b) => {
-        // Get tiers
-        const tierA = getRarityTierFromConfidence(a.confidence || 0)
-        const tierB = getRarityTierFromConfidence(b.confidence || 0)
+        // Get tiers - use stored tier_grade if available (accurate with gates applied)
+        const tierA = getTierFromPick(a)
+        const tierB = getTierFromPick(b)
         const tierPriorityA = tierPriority[tierA] || 0
         const tierPriorityB = tierPriority[tierB] || 0
 
@@ -696,8 +713,8 @@ export function ProfessionalDashboard() {
                         pick.game_snapshot?.game_date
                       const countdown = getCountdown(gameTime)
 
-                      // Get rarity based on confidence for Diablo-style card styling
-                      const rarity = getRarityFromConfidence(pick.confidence || 50)
+                      // Get rarity from stored tier_grade (accurate) or fallback to confidence
+                      const rarity = getRarityFromPick(pick)
 
                       return (
                         <div

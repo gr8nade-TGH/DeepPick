@@ -950,10 +950,10 @@ export function InsightCard(props: InsightCardProps) {
                               <span>Total Score:</span>
                               <span className={rarity.textColor}>{tierGradeResult.breakdown.rawScore.toFixed(1)}</span>
                             </div>
-                            {/* Insufficient History Demotion */}
-                            {tierGradeResult.breakdown.insufficientHistory && tierGradeResult.breakdown.originalTier && tierGradeResult.breakdown.originalTier !== 'Common' && (
+                            {/* Insufficient History - Capped at Uncommon */}
+                            {tierGradeResult.breakdown.insufficientHistory && tierGradeResult.breakdown.originalTier && tierGradeResult.breakdown.originalTier !== 'Common' && tierGradeResult.breakdown.originalTier !== 'Uncommon' && (
                               <div className="mt-2 pt-2 border-t border-amber-900/50 text-amber-400 text-[10px]">
-                                📉 Demoted to Common
+                                📉 Capped at Uncommon
                                 <br />
                                 (missing {[
                                   tierGradeResult.breakdown.missingTeamRecord && 'team record',
