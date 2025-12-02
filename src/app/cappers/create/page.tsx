@@ -600,7 +600,9 @@ export default function CreateCapperPage() {
     if (isEditingName) return false
     // For manual mode, just need a name
     if (config.pick_mode === 'manual') return true
-    // For auto/hybrid, also need valid weights
+    // For auto/hybrid mode: require BOTH TOTAL and SPREAD archetypes selected
+    if (!selectedPresets.TOTAL || !selectedPresets.SPREAD) return false
+    // Also need valid weights
     return config.bet_types.every(bt => isWeightValid(bt))
   }
 
@@ -756,14 +758,63 @@ export default function CreateCapperPage() {
           {/* LEFT PANEL - Character Preview (Sticky) */}
           <div className="lg:col-span-4 lg:sticky lg:top-24 lg:self-start">
             <div className="bg-gradient-to-b from-slate-800/80 to-slate-900/80 border border-slate-700/50 rounded-xl p-6 flex flex-col">
-              {/* Avatar/Icon */}
+              {/* Merged Avatar - Shows both archetypes */}
               <div className="flex-1 flex flex-col items-center justify-center">
-                <div className={`w-32 h-32 rounded-full flex items-center justify-center mb-4 transition-all duration-500 ${displayPreset
-                  ? `bg-gradient-to-br from-${displayPreset.color}-500/30 to-${displayPreset.color}-600/10 border-2 border-${displayPreset.color}-500/50 shadow-lg shadow-${displayPreset.color}-500/20`
-                  : 'bg-slate-700/50 border-2 border-slate-600'
-                  }`}>
-                  <PresetIcon className={`w-16 h-16 transition-all duration-500 ${displayPreset ? `text-${displayPreset.color}-400` : 'text-slate-500'}`} />
-                </div>
+                {(() => {
+                  const totalsPreset = TOTALS_ARCHETYPES.find(p => p.id === selectedPresets.TOTAL)
+                  const spreadPreset = SPREAD_ARCHETYPES.find(p => p.id === selectedPresets.SPREAD)
+                  const hasBoth = totalsPreset && spreadPreset
+                  const hasAny = totalsPreset || spreadPreset
+                  const TotalsIcon = totalsPreset?.icon || Swords
+                  const SpreadIcon = spreadPreset?.icon || Swords
+
+                  return (
+                    <div className="relative w-32 h-32 mb-4">
+                      {/* Background glow ring - blends both colors */}
+                      <div className={`absolute inset-0 rounded-full transition-all duration-500 ${hasBoth
+                          ? 'bg-gradient-to-br from-cyan-500/20 via-purple-500/20 to-red-500/20 border-2 border-amber-500/60 shadow-lg shadow-amber-500/30'
+                          : totalsPreset
+                            ? `bg-gradient-to-br from-${totalsPreset.color}-500/30 to-${totalsPreset.color}-600/10 border-2 border-${totalsPreset.color}-500/50 shadow-lg shadow-${totalsPreset.color}-500/20`
+                            : spreadPreset
+                              ? `bg-gradient-to-br from-${spreadPreset.color}-500/30 to-${spreadPreset.color}-600/10 border-2 border-${spreadPreset.color}-500/50 shadow-lg shadow-${spreadPreset.color}-500/20`
+                              : 'bg-slate-700/50 border-2 border-slate-600'
+                        }`} />
+
+                      {hasBoth ? (
+                        <>
+                          {/* Dual icon display - split avatar */}
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="relative w-full h-full">
+                              {/* Left icon (TOTALS) */}
+                              <div className="absolute left-2 top-1/2 -translate-y-1/2">
+                                <TotalsIcon className={`w-10 h-10 text-${totalsPreset.color}-400 transition-all duration-300`} />
+                              </div>
+                              {/* Center divider */}
+                              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-0.5 h-12 bg-gradient-to-b from-transparent via-amber-500/50 to-transparent" />
+                              {/* Right icon (SPREAD) */}
+                              <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                                <SpreadIcon className={`w-10 h-10 text-${spreadPreset.color}-400 transition-all duration-300`} />
+                              </div>
+                            </div>
+                          </div>
+                          {/* Fusion badge */}
+                          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-gradient-to-r from-cyan-500 to-purple-500 text-[8px] font-bold text-white uppercase tracking-wider shadow-lg">
+                            Fusion
+                          </div>
+                        </>
+                      ) : hasAny ? (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          {totalsPreset && <TotalsIcon className={`w-16 h-16 text-${totalsPreset.color}-400 transition-all duration-500`} />}
+                          {spreadPreset && <SpreadIcon className={`w-16 h-16 text-${spreadPreset.color}-400 transition-all duration-500`} />}
+                        </div>
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Swords className="w-16 h-16 text-slate-500 transition-all duration-500" />
+                        </div>
+                      )}
+                    </div>
+                  )
+                })()}
 
                 {/* Name - Editable */}
                 {isEditingName ? (
@@ -817,16 +868,56 @@ export default function CreateCapperPage() {
                 )}
                 <p className="text-[10px] text-slate-500 mb-4">Once created, name cannot be changed</p>
 
-                {/* Archetype Badge */}
-                {displayPreset ? (
-                  <div className={`px-4 py-2 rounded-full bg-${displayPreset.color}-500/20 border border-${displayPreset.color}-500/50 mb-4`}>
-                    <span className={`text-sm font-bold text-${displayPreset.color}-400`}>{displayPreset.name}</span>
+                {/* Archetype List - Shows all bet types */}
+                <div className="w-full space-y-2 mb-4">
+                  {/* NBA TOTALS */}
+                  {(() => {
+                    const totalsPreset = TOTALS_ARCHETYPES.find(p => p.id === selectedPresets.TOTAL)
+                    return (
+                      <div className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${totalsPreset
+                          ? `bg-${totalsPreset.color}-500/10 border border-${totalsPreset.color}-500/30`
+                          : 'bg-slate-800/50 border border-slate-700/50'
+                        }`}>
+                        <span className="text-[10px] font-bold text-cyan-400 uppercase w-20">NBA Totals:</span>
+                        {totalsPreset ? (
+                          <span className={`text-xs font-semibold text-${totalsPreset.color}-400`}>{totalsPreset.name}</span>
+                        ) : (
+                          <span className="text-xs text-amber-400/80">⚠️ Select archetype</span>
+                        )}
+                      </div>
+                    )
+                  })()}
+
+                  {/* NBA SPREAD */}
+                  {(() => {
+                    const spreadPreset = SPREAD_ARCHETYPES.find(p => p.id === selectedPresets.SPREAD)
+                    return (
+                      <div className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${spreadPreset
+                          ? `bg-${spreadPreset.color}-500/10 border border-${spreadPreset.color}-500/30`
+                          : 'bg-slate-800/50 border border-slate-700/50'
+                        }`}>
+                        <span className="text-[10px] font-bold text-purple-400 uppercase w-20">NBA Spread:</span>
+                        {spreadPreset ? (
+                          <span className={`text-xs font-semibold text-${spreadPreset.color}-400`}>{spreadPreset.name}</span>
+                        ) : (
+                          <span className="text-xs text-amber-400/80">⚠️ Select archetype</span>
+                        )}
+                      </div>
+                    )
+                  })()}
+
+                  {/* NFL TOTALS - Coming Soon */}
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/30 border border-slate-700/30 opacity-50">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase w-20">NFL Totals:</span>
+                    <span className="text-xs text-slate-500 italic">(coming soon)</span>
                   </div>
-                ) : (
-                  <div className="px-4 py-2 rounded-full bg-slate-700/50 border border-slate-600 mb-4">
-                    <span className="text-sm text-slate-400">Select an Archetype</span>
+
+                  {/* NFL SPREAD - Coming Soon */}
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/30 border border-slate-700/30 opacity-50">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase w-20">NFL Spread:</span>
+                    <span className="text-xs text-slate-500 italic">(coming soon)</span>
                   </div>
-                )}
+                </div>
 
                 {/* Mode Badge */}
                 <div className="flex items-center gap-2 mb-6">
