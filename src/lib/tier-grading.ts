@@ -31,6 +31,9 @@ export interface TierBreakdown {
   rawScore: number              // Sum before unit gates
   unitGateApplied: boolean      // Was tier demoted due to insufficient units?
   originalTier?: RarityTier     // Tier before unit gate (if demoted)
+  insufficientHistory: boolean  // Missing team record or recent form data
+  missingTeamRecord: boolean    // No team-specific pick history
+  missingRecentForm: boolean    // No recent form data (less than 5 picks)
 }
 
 export interface TierGradeResult {
@@ -134,6 +137,11 @@ export function calculateTierGrade(input: TierGradeInput): TierGradeResult {
   // Calculate raw score
   const rawScore = sharpScore + edgeBonus + teamRecordBonus + recentFormBonus + losingStreakPenalty
 
+  // Check for insufficient history (missing team record OR recent form)
+  const missingTeamRecord = !input.teamRecord
+  const missingRecentForm = !input.recentForm
+  const insufficientHistory = missingTeamRecord || missingRecentForm
+
   // Determine tier from raw score
   let tier: RarityTier
   if (rawScore >= 85) {
@@ -148,25 +156,33 @@ export function calculateTierGrade(input: TierGradeInput): TierGradeResult {
     tier = 'Common'
   }
 
-  // Store original tier before unit gates
+  // Store original tier before gates
   const originalTier = tier
   let unitGateApplied = false
 
-  // ===== UNIT GATES =====
-  // Legendary requires 4+ units, else demote to Epic
-  if (tier === 'Legendary' && input.unitsRisked < 4) {
-    tier = 'Epic'
-    unitGateApplied = true
+  // ===== INSUFFICIENT HISTORY GATE =====
+  // If missing team record or recent form, auto-grade as Common
+  if (insufficientHistory && tier !== 'Common') {
+    tier = 'Common'
   }
-  // Epic requires 3+ units, else demote to Rare
-  if (tier === 'Epic' && input.unitsRisked < 3) {
-    tier = 'Rare'
-    unitGateApplied = true
-  }
-  // Rare requires 2+ units, else demote to Uncommon
-  if (tier === 'Rare' && input.unitsRisked < 2) {
-    tier = 'Uncommon'
-    unitGateApplied = true
+
+  // ===== UNIT GATES ===== (only apply if not already demoted to Common)
+  if (!insufficientHistory) {
+    // Legendary requires 4+ units, else demote to Epic
+    if (tier === 'Legendary' && input.unitsRisked < 4) {
+      tier = 'Epic'
+      unitGateApplied = true
+    }
+    // Epic requires 3+ units, else demote to Rare
+    if (tier === 'Epic' && input.unitsRisked < 3) {
+      tier = 'Rare'
+      unitGateApplied = true
+    }
+    // Rare requires 2+ units, else demote to Uncommon
+    if (tier === 'Rare' && input.unitsRisked < 2) {
+      tier = 'Uncommon'
+      unitGateApplied = true
+    }
   }
 
   const breakdown: TierBreakdown = {
@@ -177,7 +193,10 @@ export function calculateTierGrade(input: TierGradeInput): TierGradeResult {
     losingStreakPenalty,
     rawScore,
     unitGateApplied,
-    originalTier: unitGateApplied ? originalTier : undefined
+    originalTier: (unitGateApplied || insufficientHistory) ? originalTier : undefined,
+    insufficientHistory,
+    missingTeamRecord,
+    missingRecentForm
   }
 
   return { tier, tierScore: rawScore, breakdown }
@@ -290,8 +309,9 @@ export function getRarityStyleFromTier(tier: RarityTier): RarityStyle {
 /**
  * Format tier breakdown for tooltip display
  */
-export function formatTierBreakdown(breakdown: TierBreakdown, units: number): string {
+export function formatTierBreakdown(breakdown: TierBreakdown, units: number, betType?: string): string {
   const lines: string[] = []
+  const betTypeLabel = betType ? betType.toUpperCase() : 'pick'
 
   lines.push(`📊 Sharp Score: ${breakdown.sharpScore.toFixed(1)}`)
 
@@ -299,12 +319,22 @@ export function formatTierBreakdown(breakdown: TierBreakdown, units: number): st
     lines.push(`📈 Edge vs Market: ${breakdown.edgeBonus > 0 ? '+' : ''}${breakdown.edgeBonus}`)
   }
 
-  if (breakdown.teamRecordBonus !== 0) {
+  // Show team record status
+  if (breakdown.missingTeamRecord) {
+    lines.push(`🎯 Team Record: ⚠️ No ${betTypeLabel} history`)
+  } else if (breakdown.teamRecordBonus !== 0) {
     lines.push(`🎯 Team Record: ${breakdown.teamRecordBonus > 0 ? '+' : ''}${breakdown.teamRecordBonus}`)
+  } else {
+    lines.push(`🎯 Team Record: +0 (neutral)`)
   }
 
-  if (breakdown.recentFormBonus !== 0) {
+  // Show recent form status
+  if (breakdown.missingRecentForm) {
+    lines.push(`🔥 Recent Form: ⚠️ <5 ${betTypeLabel} picks`)
+  } else if (breakdown.recentFormBonus !== 0) {
     lines.push(`🔥 Recent Form: ${breakdown.recentFormBonus > 0 ? '+' : ''}${breakdown.recentFormBonus}`)
+  } else {
+    lines.push(`🔥 Recent Form: +0 (neutral)`)
   }
 
   if (breakdown.losingStreakPenalty !== 0) {
@@ -314,7 +344,16 @@ export function formatTierBreakdown(breakdown: TierBreakdown, units: number): st
   lines.push(`───────────────`)
   lines.push(`Total Score: ${breakdown.rawScore.toFixed(1)}`)
 
-  if (breakdown.unitGateApplied && breakdown.originalTier) {
+  // Show insufficient history demotion
+  if (breakdown.insufficientHistory && breakdown.originalTier && breakdown.originalTier !== 'Common') {
+    lines.push(``)
+    lines.push(`📉 Demoted to Common`)
+    const missing: string[] = []
+    if (breakdown.missingTeamRecord) missing.push('team record')
+    if (breakdown.missingRecentForm) missing.push('recent form')
+    lines.push(`   (missing ${missing.join(' & ')})`)
+    lines.push(`   Build ${betTypeLabel} history to unlock higher tiers!`)
+  } else if (breakdown.unitGateApplied && breakdown.originalTier) {
     lines.push(``)
     lines.push(`⛔ Demoted from ${breakdown.originalTier}`)
     lines.push(`   (needed ${getUnitRequirement(breakdown.originalTier)}+ units, had ${units})`)

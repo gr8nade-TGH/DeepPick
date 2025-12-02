@@ -314,6 +314,9 @@ export interface InsightCardProps {
       rawScore: number
       unitGateApplied: boolean
       originalTier?: RarityTier
+      insufficientHistory?: boolean
+      missingTeamRecord?: boolean
+      missingRecentForm?: boolean
     }
   }
   onClose: () => void
@@ -906,24 +909,34 @@ export function InsightCard(props: InsightCardProps) {
                                 </span>
                               </div>
                             )}
-                            {tierGradeResult.breakdown.teamRecordBonus !== 0 && (
-                              <div className="flex justify-between items-center">
-                                <span>🎯 Team Record:</span>
+                            {/* Team Record - show warning if missing */}
+                            <div className="flex justify-between items-center">
+                              <span>🎯 Team Record:</span>
+                              {tierGradeResult.breakdown.missingTeamRecord ? (
+                                <span className="text-amber-400 text-[10px]">⚠️ No {safePick.type} history</span>
+                              ) : tierGradeResult.breakdown.teamRecordBonus !== 0 ? (
                                 <span className={`flex items-center gap-1 ${tierGradeResult.breakdown.teamRecordBonus > 0 ? 'text-green-400' : 'text-red-400'}`}>
                                   <span className="opacity-60 text-[10px]">{tierGradeResult.breakdown.teamRecordBonus > 0 ? '✓' : '✗'}</span>
                                   {tierGradeResult.breakdown.teamRecordBonus > 0 ? '+' : ''}{tierGradeResult.breakdown.teamRecordBonus}
                                 </span>
-                              </div>
-                            )}
-                            {tierGradeResult.breakdown.recentFormBonus !== 0 && (
-                              <div className="flex justify-between items-center">
-                                <span>🔥 Recent Form:</span>
+                              ) : (
+                                <span className="text-slate-500">+0</span>
+                              )}
+                            </div>
+                            {/* Recent Form - show warning if missing */}
+                            <div className="flex justify-between items-center">
+                              <span>🔥 Recent Form:</span>
+                              {tierGradeResult.breakdown.missingRecentForm ? (
+                                <span className="text-amber-400 text-[10px]">⚠️ &lt;5 {safePick.type} picks</span>
+                              ) : tierGradeResult.breakdown.recentFormBonus !== 0 ? (
                                 <span className={`flex items-center gap-1 ${tierGradeResult.breakdown.recentFormBonus > 0 ? 'text-green-400' : 'text-red-400'}`}>
                                   <span className="opacity-60 text-[10px]">{tierGradeResult.breakdown.recentFormBonus > 0 ? '✓' : '✗'}</span>
                                   {tierGradeResult.breakdown.recentFormBonus > 0 ? '+' : ''}{tierGradeResult.breakdown.recentFormBonus}
                                 </span>
-                              </div>
-                            )}
+                              ) : (
+                                <span className="text-slate-500">+0</span>
+                              )}
+                            </div>
                             {tierGradeResult.breakdown.losingStreakPenalty !== 0 && (
                               <div className="flex justify-between items-center">
                                 <span>⚠️ Losing Streak:</span>
@@ -937,7 +950,21 @@ export function InsightCard(props: InsightCardProps) {
                               <span>Total Score:</span>
                               <span className={rarity.textColor}>{tierGradeResult.breakdown.rawScore.toFixed(1)}</span>
                             </div>
-                            {tierGradeResult.breakdown.unitGateApplied && tierGradeResult.breakdown.originalTier && (
+                            {/* Insufficient History Demotion */}
+                            {tierGradeResult.breakdown.insufficientHistory && tierGradeResult.breakdown.originalTier && tierGradeResult.breakdown.originalTier !== 'Common' && (
+                              <div className="mt-2 pt-2 border-t border-amber-900/50 text-amber-400 text-[10px]">
+                                📉 Demoted to Common
+                                <br />
+                                (missing {[
+                                  tierGradeResult.breakdown.missingTeamRecord && 'team record',
+                                  tierGradeResult.breakdown.missingRecentForm && 'recent form'
+                                ].filter(Boolean).join(' & ')})
+                                <br />
+                                <span className="text-slate-500">Build {safePick.type} history to unlock higher tiers!</span>
+                              </div>
+                            )}
+                            {/* Unit Gate Demotion (only show if not already demoted for insufficient history) */}
+                            {!tierGradeResult.breakdown.insufficientHistory && tierGradeResult.breakdown.unitGateApplied && tierGradeResult.breakdown.originalTier && (
                               <div className="mt-2 pt-2 border-t border-red-900/50 text-red-400 text-[10px]">
                                 ⛔ Demoted from {tierGradeResult.breakdown.originalTier}
                                 <br />
