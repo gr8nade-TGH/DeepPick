@@ -373,6 +373,33 @@ export async function GET(
         }
       }
 
+      // Build computedTier from game_snapshot.tier_grade if available
+      const tierGrade = pick.game_snapshot?.tier_grade
+      const computedTier = tierGrade ? {
+        tier: tierGrade.tier,
+        tierScore: tierGrade.tierScore,
+        breakdown: tierGrade.breakdown ? {
+          sharpScore: tierGrade.breakdown.sharpScore,
+          edgeBonus: tierGrade.breakdown.edgeBonus || 0,
+          teamRecordBonus: tierGrade.breakdown.teamRecordBonus || 0,
+          recentFormBonus: tierGrade.breakdown.recentFormBonus || 0,
+          losingStreakPenalty: tierGrade.breakdown.losingStreakPenalty || 0,
+          rawScore: tierGrade.breakdown.rawScore || tierGrade.tierScore || 0,
+          unitGateApplied: tierGrade.breakdown.unitGateApplied || false,
+          originalTier: tierGrade.breakdown.originalTier
+        } : {
+          // Fallback: use tierScore as both sharpScore and rawScore
+          sharpScore: tierGrade.tierScore || (pick.confidence || 5) * 10,
+          edgeBonus: 0,
+          teamRecordBonus: 0,
+          recentFormBonus: 0,
+          losingStreakPenalty: 0,
+          rawScore: tierGrade.tierScore || (pick.confidence || 5) * 10,
+          unitGateApplied: false,
+          originalTier: undefined
+        }
+      } : undefined
+
       // Build the insight card data from the locked snapshot
       const lockedInsightCard = {
         capper: (pick.capper || 'SHIVA').toUpperCase(),
@@ -424,7 +451,8 @@ export async function GET(
           ...snapshot.metadata,
           isLocked: true,
           lockedAt: pick.insight_card_locked_at
-        }
+        },
+        computedTier
       }
 
       return NextResponse.json({
@@ -470,6 +498,32 @@ export async function GET(
 
       // Build proper totalText
       const totalText = pickType === 'TOTAL' ? pick.selection : (pickType === 'SPREAD' ? pick.selection : '')
+
+      // Build computedTier from game_snapshot.tier_grade if available (for manual picks too)
+      const manualTierGrade = gameSnapshot?.tier_grade
+      const manualComputedTier = manualTierGrade ? {
+        tier: manualTierGrade.tier,
+        tierScore: manualTierGrade.tierScore,
+        breakdown: manualTierGrade.breakdown ? {
+          sharpScore: manualTierGrade.breakdown.sharpScore,
+          edgeBonus: manualTierGrade.breakdown.edgeBonus || 0,
+          teamRecordBonus: manualTierGrade.breakdown.teamRecordBonus || 0,
+          recentFormBonus: manualTierGrade.breakdown.recentFormBonus || 0,
+          losingStreakPenalty: manualTierGrade.breakdown.losingStreakPenalty || 0,
+          rawScore: manualTierGrade.breakdown.rawScore || manualTierGrade.tierScore || 0,
+          unitGateApplied: manualTierGrade.breakdown.unitGateApplied || false,
+          originalTier: manualTierGrade.breakdown.originalTier
+        } : {
+          sharpScore: manualTierGrade.tierScore || (pick.confidence || 5) * 10,
+          edgeBonus: 0,
+          teamRecordBonus: 0,
+          recentFormBonus: 0,
+          losingStreakPenalty: 0,
+          rawScore: manualTierGrade.tierScore || (pick.confidence || 5) * 10,
+          unitGateApplied: false,
+          originalTier: undefined
+        }
+      } : undefined
 
       const manualPickInsightCard = {
         capper: pick.capper || 'manual',
@@ -531,7 +585,8 @@ export async function GET(
           factorAccuracy: [],
           tuningSuggestions: [],
           overallAccuracy: undefined
-        }
+        },
+        computedTier: manualComputedTier
       }
 
       return NextResponse.json({
