@@ -96,12 +96,17 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
     api_calls_made: false
   }
 
+  // All factors that require NBA stats bundle
+  const factorsRequiringBundle = ['netRatingDiff', 'turnoverDiff', 'shootingEfficiencyMomentum', 'homeAwaySplits', 'paceMismatch', 'fourFactorsDiff']
+  const needsBundle = enabledFactorKeys.some(key => factorsRequiringBundle.includes(key))
+
   console.log('[SPREAD:CONDITION_CHECK]', {
     enabledFactorKeys,
-    conditionCheck: enabledFactorKeys.some(key => ['netRatingDiff', 'turnoverDiff', 'shootingEfficiencyMomentum', 'paceMismatch', 'fourFactorsDiff'].includes(key))
+    factorsRequiringBundle,
+    needsBundle
   })
 
-  if (enabledFactorKeys.some(key => ['netRatingDiff', 'turnoverDiff', 'shootingEfficiencyMomentum', 'paceMismatch', 'fourFactorsDiff'].includes(key))) {
+  if (needsBundle) {
     console.log('[SPREAD:ABOUT_TO_FETCH_NBA_STATS]', 'Starting NBA Stats API fetch...')
     bundle = await fetchNBAStatsBundle(ctx)
 
