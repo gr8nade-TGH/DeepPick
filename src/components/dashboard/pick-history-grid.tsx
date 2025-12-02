@@ -509,6 +509,17 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
                   </div>
                 </div>
 
+                {/* History Gate - NEW */}
+                <div className="bg-amber-950/30 rounded-lg p-3 border border-amber-800/30">
+                  <div className="text-xs font-semibold text-amber-300 mb-2">📉 Insufficient History Gate</div>
+                  <div className="text-[11px] text-slate-300 space-y-1">
+                    <div>• Missing <span className="text-cyan-400">Team Record</span> OR <span className="text-cyan-400">Recent Form</span> → <span className="text-green-400 font-bold">Capped at Uncommon</span></div>
+                    <div>• Team Record = capper&apos;s history picking this specific team for this <span className="text-purple-400">bet type</span></div>
+                    <div>• Recent Form = last 10 graded picks of this <span className="text-purple-400">bet type</span> (TOTAL or SPREAD)</div>
+                    <div className="text-[10px] text-amber-400/80 mt-1 italic">Build your TOTAL and SPREAD history separately to unlock higher tiers!</div>
+                  </div>
+                </div>
+
                 {/* Unit Gates */}
                 <div className="bg-red-950/30 rounded-lg p-3 border border-red-800/30">
                   <div className="text-xs font-semibold text-red-300 mb-2">⛔ Unit Gates (Demotion Rules)</div>
@@ -517,6 +528,13 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
                     <div>• <span className="text-purple-400">Epic</span> requires <span className="font-bold">3+ units</span> (else demoted to Rare)</div>
                     <div>• <span className="text-blue-400">Rare</span> requires <span className="font-bold">2+ units</span> (else demoted to Uncommon)</div>
                     <div className="text-[10px] text-slate-500 mt-1 italic">High scores mean nothing if you don&apos;t back it with units!</div>
+                  </div>
+                </div>
+
+                {/* Bet Type Specific Note */}
+                <div className="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50">
+                  <div className="text-[10px] text-slate-400 text-center">
+                    💡 <span className="text-purple-400">TOTAL</span> and <span className="text-cyan-400">SPREAD</span> picks are graded separately — your TOTAL history doesn&apos;t affect SPREAD tier grades and vice versa.
                   </div>
                 </div>
               </div>
