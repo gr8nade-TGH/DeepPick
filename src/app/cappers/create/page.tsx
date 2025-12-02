@@ -6,11 +6,11 @@ import { useAuth } from '@/contexts/auth-context'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
-import { Sparkles, Zap, Hand, Ban, Gauge, TrendingUp, Target, Home, Battery, BarChart3, Shield, Trophy, Flame, UserX, Anchor, Scale, Rocket, Castle, TrendingDown, Loader2, AlertCircle, Swords, Crown, Star, ChevronRight, Pencil, Check, X } from 'lucide-react'
+import { Sparkles, Zap, Hand, Ban, Gauge, TrendingUp, Target, Home, Battery, BarChart3, Shield, Trophy, Flame, UserX, Anchor, Scale, Rocket, Castle, TrendingDown, Loader2, AlertCircle, Swords, Crown, Star, ChevronRight, Pencil, Check, X, ChevronDown, Activity, Crosshair, Repeat, RotateCcw, MapPin, Award, Shuffle, HelpCircle } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useCallback } from 'react'
 
-type ConfigTab = 'archetype' | 'stats' | 'options'
+type ConfigTab = 'archetype' | 'options'
 
 interface PresetConfig {
   id: string
@@ -165,6 +165,26 @@ const FACTOR_DETAILS = {
 const AVAILABLE_FACTORS = {
   TOTAL: ['paceIndex', 'netRating', 'shooting', 'homeAwayDiff', 'restDays', 'injuryImpact'],
   SPREAD: ['recentForm', 'homeAwaySplits', 'offDefBalance', 'homeCourtEdge', 'clutchPerformance', 'injuryImpact']
+}
+
+// Factor groups for organized display - each group can contain multiple factors
+const FACTOR_GROUPS = {
+  TOTAL: [
+    { id: 'pace', name: 'Pace & Tempo', icon: Activity, factors: ['paceIndex'], color: 'cyan' },
+    { id: 'offense', name: 'Offense', icon: TrendingUp, factors: ['netRating'], color: 'green' },
+    { id: 'shooting', name: 'Shooting', icon: Crosshair, factors: ['shooting'], color: 'orange' },
+    { id: 'homeAway', name: 'Home/Away Splits', icon: Home, factors: ['homeAwayDiff'], color: 'blue' },
+    { id: 'situational', name: 'Situational', icon: Battery, factors: ['restDays'], color: 'yellow' },
+    { id: 'injuries', name: 'Injuries', icon: UserX, factors: ['injuryImpact'], color: 'red' },
+  ],
+  SPREAD: [
+    { id: 'form', name: 'Recent Form', icon: Flame, factors: ['recentForm'], color: 'red' },
+    { id: 'homeAway', name: 'Home/Away Splits', icon: Home, factors: ['homeAwaySplits'], color: 'purple' },
+    { id: 'efficiency', name: 'Efficiency', icon: BarChart3, factors: ['offDefBalance'], color: 'indigo' },
+    { id: 'homeAdvantage', name: 'Home Court', icon: Shield, factors: ['homeCourtEdge'], color: 'emerald' },
+    { id: 'clutch', name: 'Clutch', icon: Trophy, factors: ['clutchPerformance'], color: 'amber' },
+    { id: 'injuries', name: 'Injuries', icon: UserX, factors: ['injuryImpact'], color: 'red' },
+  ]
 }
 
 // Map user-friendly factor names to SHIVA v1 factor names used by the wizard
@@ -345,8 +365,21 @@ export default function CreateCapperPage() {
   const [activeTab, setActiveTab] = useState<ConfigTab>('archetype')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [selectedPreset, setSelectedPreset] = useState<string | null>(null)
-  const [activeBetType, setActiveBetType] = useState<'TOTAL' | 'SPREAD'>('TOTAL')
+
+  // Archetype per bet type - allows different archetypes for TOTAL vs SPREAD
+  const [selectedPresets, setSelectedPresets] = useState<{ TOTAL: string | null; SPREAD: string | null }>({
+    TOTAL: null,
+    SPREAD: null
+  })
+  const [archetypeBetType, setArchetypeBetType] = useState<'TOTAL' | 'SPREAD'>('TOTAL')
+  const [factorBetType, setFactorBetType] = useState<'TOTAL' | 'SPREAD'>('TOTAL')
+
+  // For backwards compatibility
+  const selectedPreset = selectedPresets[archetypeBetType]
+  const activeBetType = factorBetType
+
+  // Expanded factor groups
+  const [expandedGroups, setExpandedGroups] = useState<string[]>(['pace', 'form'])
 
   // Name editing state
   const [isEditingName, setIsEditingName] = useState(false)
@@ -523,27 +556,38 @@ export default function CreateCapperPage() {
   }
 
   const handlePresetSelect = (preset: PresetConfig) => {
-    // If clicking the same preset, deselect it
-    if (selectedPreset === preset.id) {
-      setSelectedPreset(null)
+    const currentBetType = archetypeBetType
+
+    // If clicking the same preset for this bet type, deselect it
+    if (selectedPresets[currentBetType] === preset.id) {
+      setSelectedPresets(prev => ({ ...prev, [currentBetType]: null }))
       return
     }
 
-    setSelectedPreset(preset.id)
+    // Update the preset for the current bet type only
+    setSelectedPresets(prev => ({ ...prev, [currentBetType]: preset.id }))
 
-    // Apply preset configuration
+    // Apply preset configuration ONLY for the current bet type
+    const factorsForBetType = currentBetType === 'TOTAL' ? preset.totalFactors : preset.spreadFactors
+
     const newFactorConfig = {
-      TOTAL: {
-        enabled_factors: preset.totalFactors.enabled,
-        weights: preset.totalFactors.weights
-      },
-      SPREAD: {
-        enabled_factors: preset.spreadFactors.enabled,
-        weights: preset.spreadFactors.weights
+      ...config.factor_config,
+      [currentBetType]: {
+        enabled_factors: factorsForBetType.enabled,
+        weights: factorsForBetType.weights
       }
     }
 
     updateConfig({ factor_config: newFactorConfig })
+  }
+
+  // Toggle factor group expansion
+  const toggleGroupExpanded = (groupId: string) => {
+    setExpandedGroups(prev =>
+      prev.includes(groupId)
+        ? prev.filter(g => g !== groupId)
+        : [...prev, groupId]
+    )
   }
 
   const canSubmit = () => {
@@ -649,9 +693,12 @@ export default function CreateCapperPage() {
     return null
   }
 
-  // Get current preset details
-  const currentPreset = PRESET_CONFIGS.find(p => p.id === selectedPreset)
-  const PresetIcon = currentPreset?.icon || Swords
+  // Get current preset details - show the preset for the currently viewed archetype bet type
+  const currentPreset = PRESET_CONFIGS.find(p => p.id === selectedPresets[archetypeBetType])
+  // For the left panel, show any selected preset (prefer TOTAL, fallback to SPREAD)
+  const displayPreset = PRESET_CONFIGS.find(p => p.id === selectedPresets.TOTAL) ||
+    PRESET_CONFIGS.find(p => p.id === selectedPresets.SPREAD)
+  const PresetIcon = displayPreset?.icon || Swords
 
   // Calculate power level based on config
   const totalWeight = calculateTotalWeight('TOTAL')
@@ -704,11 +751,11 @@ export default function CreateCapperPage() {
             <div className="bg-gradient-to-b from-slate-800/80 to-slate-900/80 border border-slate-700/50 rounded-xl p-6 flex flex-col">
               {/* Avatar/Icon */}
               <div className="flex-1 flex flex-col items-center justify-center">
-                <div className={`w-32 h-32 rounded-full flex items-center justify-center mb-4 transition-all duration-500 ${currentPreset
-                  ? `bg-gradient-to-br from-${currentPreset.color}-500/30 to-${currentPreset.color}-600/10 border-2 border-${currentPreset.color}-500/50 shadow-lg shadow-${currentPreset.color}-500/20`
+                <div className={`w-32 h-32 rounded-full flex items-center justify-center mb-4 transition-all duration-500 ${displayPreset
+                  ? `bg-gradient-to-br from-${displayPreset.color}-500/30 to-${displayPreset.color}-600/10 border-2 border-${displayPreset.color}-500/50 shadow-lg shadow-${displayPreset.color}-500/20`
                   : 'bg-slate-700/50 border-2 border-slate-600'
                   }`}>
-                  <PresetIcon className={`w-16 h-16 transition-all duration-500 ${currentPreset ? `text-${currentPreset.color}-400` : 'text-slate-500'}`} />
+                  <PresetIcon className={`w-16 h-16 transition-all duration-500 ${displayPreset ? `text-${displayPreset.color}-400` : 'text-slate-500'}`} />
                 </div>
 
                 {/* Name - Editable */}
@@ -764,9 +811,9 @@ export default function CreateCapperPage() {
                 <p className="text-[10px] text-slate-500 mb-4">Once created, name cannot be changed</p>
 
                 {/* Archetype Badge */}
-                {currentPreset ? (
-                  <div className={`px-4 py-2 rounded-full bg-${currentPreset.color}-500/20 border border-${currentPreset.color}-500/50 mb-4`}>
-                    <span className={`text-sm font-bold text-${currentPreset.color}-400`}>{currentPreset.name}</span>
+                {displayPreset ? (
+                  <div className={`px-4 py-2 rounded-full bg-${displayPreset.color}-500/20 border border-${displayPreset.color}-500/50 mb-4`}>
+                    <span className={`text-sm font-bold text-${displayPreset.color}-400`}>{displayPreset.name}</span>
                   </div>
                 ) : (
                   <div className="px-4 py-2 rounded-full bg-slate-700/50 border border-slate-600 mb-4">
@@ -828,11 +875,10 @@ export default function CreateCapperPage() {
 
           {/* RIGHT PANEL - Configuration (Scrollable) */}
           <div className="lg:col-span-8 flex flex-col lg:overflow-y-auto lg:max-h-[calc(100vh-140px)]">
-            {/* Tab Navigation */}
+            {/* Tab Navigation - Only Archetype and Options */}
             <div className="flex gap-1 mb-4 bg-slate-800/50 p-1 rounded-lg border border-slate-700/50">
               {[
                 { id: 'archetype' as const, label: 'Archetype', icon: Swords },
-                { id: 'stats' as const, label: 'Stats', icon: BarChart3 },
                 { id: 'options' as const, label: 'Options', icon: Ban },
               ].map(tab => (
                 <button
@@ -854,7 +900,7 @@ export default function CreateCapperPage() {
 
               {/* ARCHETYPE TAB */}
               {activeTab === 'archetype' && (
-                <div className="space-y-6">
+                <div className="space-y-5">
                   {/* Pick Mode Toggle */}
                   <div>
                     <h3 className="text-sm font-semibold text-slate-400 uppercase mb-3">Pick Mode</h3>
@@ -890,47 +936,209 @@ export default function CreateCapperPage() {
                     </div>
                   </div>
 
-                  {/* Archetype Selection */}
+                  {/* Archetype Selection with TOTAL/SPREAD toggle */}
                   {config.pick_mode !== 'manual' && (
                     <div>
-                      <h3 className="text-sm font-semibold text-slate-400 uppercase mb-3">Choose Your Archetype</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {PRESET_CONFIGS.map(preset => {
+                      <div className="flex items-center gap-3 mb-3">
+                        <h3 className="text-sm font-semibold text-slate-400 uppercase">Choose Your Archetype</h3>
+                        {/* Bet Type Toggle for Archetypes */}
+                        <div className="flex gap-1 bg-slate-900/80 p-0.5 rounded-lg border border-slate-700/50">
+                          {(['TOTAL', 'SPREAD'] as const).map(bt => (
+                            <button
+                              key={bt}
+                              onClick={() => setArchetypeBetType(bt)}
+                              className={`py-1 px-2.5 rounded-md font-semibold text-xs transition-all ${archetypeBetType === bt
+                                ? bt === 'TOTAL' ? 'bg-cyan-500/30 text-cyan-400' : 'bg-purple-500/30 text-purple-400'
+                                : 'text-slate-500 hover:text-slate-300'
+                                }`}
+                            >
+                              {bt}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Archetype Cards - 3+2 layout */}
+                      <div className="grid grid-cols-3 gap-2 mb-2">
+                        {PRESET_CONFIGS.slice(0, 3).map(preset => {
                           const Icon = preset.icon
-                          const isSelected = selectedPreset === preset.id
+                          const isSelected = selectedPresets[archetypeBetType] === preset.id
                           return (
                             <button
                               key={preset.id}
                               onClick={() => handlePresetSelect(preset)}
-                              className={`group p-4 rounded-xl border-2 transition-all text-left ${isSelected
-                                ? 'border-amber-500 bg-gradient-to-br from-amber-500/20 to-orange-500/10 shadow-lg shadow-amber-500/20 scale-[1.02]'
+                              className={`group p-3 rounded-xl border-2 transition-all text-left ${isSelected
+                                ? 'border-amber-500 bg-gradient-to-br from-amber-500/20 to-orange-500/10 shadow-lg shadow-amber-500/20'
                                 : 'border-slate-600 hover:border-slate-500 bg-slate-700/30 hover:bg-slate-700/50'
                                 }`}
                             >
-                              <div className="flex items-start gap-3">
-                                <div className={`p-2 rounded-lg transition-all ${isSelected ? 'bg-amber-500/30' : 'bg-slate-600 group-hover:bg-slate-500'}`}>
-                                  <Icon className={`w-5 h-5 ${isSelected ? 'text-amber-400' : 'text-slate-300'}`} />
+                              <div className="flex items-start gap-2">
+                                <div className={`p-1.5 rounded-lg transition-all flex-shrink-0 ${isSelected ? 'bg-amber-500/30' : 'bg-slate-600 group-hover:bg-slate-500'}`}>
+                                  <Icon className={`w-4 h-4 ${isSelected ? 'text-amber-400' : 'text-slate-300'}`} />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2">
-                                    <h4 className={`font-bold text-sm truncate ${isSelected ? 'text-amber-400' : 'text-white'}`}>
-                                      {preset.name}
-                                    </h4>
-                                    {isSelected && <ChevronRight className="w-4 h-4 text-amber-400" />}
-                                  </div>
-                                  <p className="text-xs text-slate-400 mt-1 line-clamp-2">{preset.description}</p>
+                                  <h4 className={`font-bold text-xs truncate ${isSelected ? 'text-amber-400' : 'text-white'}`}>
+                                    {preset.name}
+                                  </h4>
+                                  <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-2">{preset.description}</p>
                                 </div>
                               </div>
                             </button>
                           )
                         })}
                       </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {PRESET_CONFIGS.slice(3).map(preset => {
+                          const Icon = preset.icon
+                          const isSelected = selectedPresets[archetypeBetType] === preset.id
+                          return (
+                            <button
+                              key={preset.id}
+                              onClick={() => handlePresetSelect(preset)}
+                              className={`group p-3 rounded-xl border-2 transition-all text-left ${isSelected
+                                ? 'border-amber-500 bg-gradient-to-br from-amber-500/20 to-orange-500/10 shadow-lg shadow-amber-500/20'
+                                : 'border-slate-600 hover:border-slate-500 bg-slate-700/30 hover:bg-slate-700/50'
+                                }`}
+                            >
+                              <div className="flex items-start gap-2">
+                                <div className={`p-1.5 rounded-lg transition-all flex-shrink-0 ${isSelected ? 'bg-amber-500/30' : 'bg-slate-600 group-hover:bg-slate-500'}`}>
+                                  <Icon className={`w-4 h-4 ${isSelected ? 'text-amber-400' : 'text-slate-300'}`} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h4 className={`font-bold text-xs truncate ${isSelected ? 'text-amber-400' : 'text-white'}`}>
+                                    {preset.name}
+                                  </h4>
+                                  <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-2">{preset.description}</p>
+                                </div>
+                              </div>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
 
-                      {currentPreset && (
-                        <div className="mt-4 p-4 bg-slate-900/50 border border-slate-700 rounded-xl">
-                          <p className="text-sm text-slate-300 italic">&ldquo;{currentPreset.philosophy}&rdquo;</p>
+                  {/* Factor Configuration - Two Column Layout */}
+                  {config.pick_mode !== 'manual' && (
+                    <div className="grid grid-cols-12 gap-4">
+                      {/* Left: Factor Groups */}
+                      <div className="col-span-5 space-y-1">
+                        {FACTOR_GROUPS[factorBetType].map(group => {
+                          const GroupIcon = group.icon
+                          const enabledCount = group.factors.filter(f =>
+                            config.factor_config[factorBetType]?.enabled_factors.includes(f)
+                          ).length
+
+                          return (
+                            <button
+                              key={group.id}
+                              onClick={() => toggleGroupExpanded(group.id)}
+                              className={`w-full flex items-center gap-2 p-2.5 rounded-lg border transition-all text-left ${expandedGroups.includes(group.id)
+                                ? `border-${group.color}-500/50 bg-${group.color}-500/10`
+                                : 'border-slate-700/50 bg-slate-800/50 hover:bg-slate-700/50'
+                                }`}
+                            >
+                              <GroupIcon className={`w-4 h-4 text-${group.color}-400 flex-shrink-0`} />
+                              <span className="text-sm font-medium text-white flex-1">{group.name}</span>
+                              <span className={`text-xs font-bold text-${group.color}-400`}>+{enabledCount}</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+
+                      {/* Right: Factor Weights Panel */}
+                      <div className="col-span-7 bg-slate-900/50 border border-slate-700/50 rounded-xl p-3">
+                        {/* Header with toggle and budget */}
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex gap-1 bg-slate-800/80 p-0.5 rounded-lg border border-slate-700/50">
+                            {(['TOTAL', 'SPREAD'] as const).map(bt => (
+                              <button
+                                key={bt}
+                                onClick={() => setFactorBetType(bt)}
+                                className={`py-1 px-2.5 rounded-md font-semibold text-xs transition-all ${factorBetType === bt
+                                  ? bt === 'TOTAL' ? 'bg-cyan-500/30 text-cyan-400' : 'bg-purple-500/30 text-purple-400'
+                                  : 'text-slate-500 hover:text-slate-300'
+                                  }`}
+                              >
+                                {bt}
+                              </button>
+                            ))}
+                          </div>
+                          {/* Weight Budget */}
+                          {(() => {
+                            const totalW = calculateTotalWeight(factorBetType)
+                            const isValid = isWeightValid(factorBetType)
+                            return (
+                              <div className={`flex items-center gap-2 px-2 py-1 rounded-lg ${isValid ? 'bg-green-500/10' : 'bg-amber-500/10'}`}>
+                                <div className="w-16 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                                  <div
+                                    className={`h-full transition-all duration-300 ${isValid ? 'bg-green-500' : 'bg-amber-500'}`}
+                                    style={{ width: `${Math.min((totalW / 250) * 100, 100)}%` }}
+                                  />
+                                </div>
+                                <span className={`text-xs font-bold ${isValid ? 'text-green-400' : 'text-amber-400'}`}>
+                                  {totalW}%/250%
+                                </span>
+                              </div>
+                            )
+                          })()}
                         </div>
-                      )}
+
+                        {/* Factor Sliders */}
+                        <div className="space-y-2">
+                          {AVAILABLE_FACTORS[factorBetType]?.map(factor => {
+                            const isEnabled = config.factor_config[factorBetType]?.enabled_factors.includes(factor)
+                            const weight = config.factor_config[factorBetType]?.weights[factor] || 50
+                            const details = FACTOR_DETAILS[factor as keyof typeof FACTOR_DETAILS]
+                            const Icon = details?.icon || Target
+
+                            return (
+                              <div
+                                key={factor}
+                                className={`flex items-center gap-2 p-2 rounded-lg border transition-all ${isEnabled ? 'border-amber-500/30 bg-slate-800/60' : 'border-slate-700/30 bg-slate-800/20'}`}
+                              >
+                                {/* Toggle */}
+                                <button
+                                  onClick={() => handleFactorToggle(factorBetType, factor)}
+                                  className={`w-8 h-4 rounded-full transition flex-shrink-0 ${isEnabled ? 'bg-amber-500' : 'bg-slate-600'}`}
+                                >
+                                  <div className={`w-3 h-3 bg-white rounded-full transition-transform mt-0.5 ${isEnabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                                </button>
+
+                                {/* Icon + Name */}
+                                <Icon className={`w-4 h-4 flex-shrink-0 ${isEnabled ? 'text-amber-400' : 'text-slate-500'}`} />
+                                <span className={`text-xs font-medium flex-shrink-0 w-20 truncate ${isEnabled ? 'text-white' : 'text-slate-400'}`}>
+                                  {details?.name?.split(' ').slice(0, 2).join(' ')}
+                                </span>
+
+                                {/* Slider */}
+                                {isEnabled ? (
+                                  <div className="flex-1 flex items-center gap-2 min-w-0">
+                                    <input
+                                      type="range"
+                                      min="0"
+                                      max="100"
+                                      value={weight}
+                                      onChange={e => handleWeightChange(factorBetType, factor, parseInt(e.target.value))}
+                                      className="flex-1 h-1.5 rounded-full appearance-none cursor-pointer bg-slate-700"
+                                      style={{
+                                        background: `linear-gradient(to right, rgb(34 197 94) 0%, rgb(34 197 94) ${weight}%, rgb(51 65 85) ${weight}%, rgb(51 65 85) 100%)`
+                                      }}
+                                    />
+                                    <span className="text-sm font-bold text-green-400 w-10 text-right">{weight}%</span>
+                                  </div>
+                                ) : (
+                                  <div className="flex-1 h-1.5 bg-slate-700/50 rounded-full" />
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+
+                        <p className="text-[10px] text-slate-500 text-center pt-2 mt-2 border-t border-slate-700/50">
+                          💡 Toggle factors on/off, then adjust weights to total 250%
+                        </p>
+                      </div>
                     </div>
                   )}
 
@@ -942,113 +1150,6 @@ export default function CreateCapperPage() {
                       <p className="text-sm text-blue-400 mt-3">Click &ldquo;Launch Capper&rdquo; when ready!</p>
                     </div>
                   )}
-                </div>
-              )}
-
-              {/* STATS TAB - Compact Design */}
-              {activeTab === 'stats' && config.pick_mode !== 'manual' && (
-                <div className="space-y-3">
-                  {/* Bet Type Toggle + Budget in one row */}
-                  <div className="flex items-center gap-3">
-                    <div className="flex gap-1 bg-slate-800/80 p-1 rounded-lg border border-slate-700/50">
-                      {(['TOTAL', 'SPREAD'] as const).map(bt => (
-                        <button
-                          key={bt}
-                          onClick={() => setActiveBetType(bt)}
-                          className={`py-1.5 px-3 rounded-md font-semibold text-xs transition-all ${activeBetType === bt
-                            ? bt === 'TOTAL' ? 'bg-cyan-500/30 text-cyan-400' : 'bg-purple-500/30 text-purple-400'
-                            : 'text-slate-400 hover:text-white'
-                            }`}
-                        >
-                          {bt}
-                        </button>
-                      ))}
-                    </div>
-                    {/* Compact Weight Budget */}
-                    {(() => {
-                      const totalW = calculateTotalWeight(activeBetType)
-                      const isValid = isWeightValid(activeBetType)
-                      return (
-                        <div className={`flex-1 flex items-center gap-2 px-3 py-1.5 rounded-lg border ${isValid ? 'bg-green-500/10 border-green-500/30' : 'bg-amber-500/10 border-amber-500/30'}`}>
-                          <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full transition-all duration-300 ${isValid ? 'bg-green-500' : 'bg-amber-500'}`}
-                              style={{ width: `${Math.min((totalW / 250) * 100, 100)}%` }}
-                            />
-                          </div>
-                          <span className={`text-xs font-bold whitespace-nowrap ${isValid ? 'text-green-400' : 'text-amber-400'}`}>
-                            {totalW}%/250%
-                          </span>
-                        </div>
-                      )
-                    })()}
-                  </div>
-
-                  {/* Compact Factor List */}
-                  <div className="space-y-1.5">
-                    {AVAILABLE_FACTORS[activeBetType]?.map(factor => {
-                      const isEnabled = config.factor_config[activeBetType]?.enabled_factors.includes(factor)
-                      const weight = config.factor_config[activeBetType]?.weights[factor] || 50
-                      const details = FACTOR_DETAILS[factor as keyof typeof FACTOR_DETAILS]
-                      const Icon = details?.icon || Target
-
-                      return (
-                        <div
-                          key={factor}
-                          className={`flex items-center gap-2 p-2 rounded-lg border transition-all ${isEnabled ? 'border-amber-500/30 bg-slate-800/60' : 'border-slate-700/50 bg-slate-800/30'
-                            }`}
-                        >
-                          {/* Toggle Button */}
-                          <button
-                            onClick={() => handleFactorToggle(activeBetType, factor)}
-                            className={`w-10 h-5 rounded-full transition flex-shrink-0 ${isEnabled ? 'bg-amber-500' : 'bg-slate-600'}`}
-                          >
-                            <div className={`w-4 h-4 bg-white rounded-full transition-transform mt-0.5 ${isEnabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
-                          </button>
-
-                          {/* Icon + Name */}
-                          <Icon className={`w-4 h-4 flex-shrink-0 ${isEnabled ? 'text-amber-400' : 'text-slate-500'}`} />
-                          <span className={`text-xs font-medium flex-shrink-0 w-24 truncate ${isEnabled ? 'text-white' : 'text-slate-400'}`}>
-                            {details?.name}
-                          </span>
-
-                          {/* Slider (inline when enabled) */}
-                          {isEnabled ? (
-                            <div className="flex-1 flex items-center gap-2 min-w-0">
-                              <input
-                                type="range"
-                                min="0"
-                                max="100"
-                                value={weight}
-                                onChange={e => handleWeightChange(activeBetType, factor, parseInt(e.target.value))}
-                                className="flex-1 h-1.5 rounded-full appearance-none cursor-pointer bg-slate-700"
-                                style={{
-                                  background: `linear-gradient(to right, rgb(251 191 36) 0%, rgb(251 191 36) ${weight}%, rgb(51 65 85) ${weight}%, rgb(51 65 85) 100%)`
-                                }}
-                              />
-                              <span className="text-sm font-bold text-amber-400 w-10 text-right">{weight}%</span>
-                            </div>
-                          ) : (
-                            <span className="flex-1 text-xs text-slate-500 truncate">{details?.description}</span>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-
-                  {/* Quick tip */}
-                  <p className="text-[10px] text-slate-500 text-center pt-1">
-                    💡 Toggle factors on/off, then adjust weights to total 250%
-                  </p>
-                </div>
-              )}
-
-              {activeTab === 'stats' && config.pick_mode === 'manual' && (
-                <div className="flex flex-col items-center justify-center h-64 text-center">
-                  <Hand className="w-16 h-16 text-blue-400 mb-4" />
-                  <h3 className="text-lg font-bold text-white mb-2">Manual Mode</h3>
-                  <p className="text-slate-400 text-sm">No AI stats to configure in manual mode.</p>
-                  <p className="text-blue-400 text-sm mt-2">Switch to AI + Manual mode to customize factors.</p>
                 </div>
               )}
 
