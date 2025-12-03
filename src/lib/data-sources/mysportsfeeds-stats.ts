@@ -172,6 +172,10 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
     // DIAGNOSTIC: Log first game to see what data we're getting
     if (gameLogs.length > 0) {
       const firstGame = gameLogs[0]
+      // Check both possible API structures for home/away teams
+      const resolvedHomeTeam = firstGame.game?.homeTeam || firstGame.game?.schedule?.homeTeam
+      const resolvedAwayTeam = firstGame.game?.awayTeam || firstGame.game?.schedule?.awayTeam
+
       console.log(`[MySportsFeeds Stats] DIAGNOSTIC - First game for ${teamAbbrev}:`, {
         gameId: firstGame.game?.id,
         startTime: firstGame.game?.startTime,
@@ -182,12 +186,15 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
         offense: firstGame.stats?.offense,
         defense: firstGame.stats?.defense,
         rebounds: firstGame.stats?.rebounds,
-        // Home/Away detection fields
+        // Home/Away detection fields - check both possible locations
         gameKeys: firstGame.game ? Object.keys(firstGame.game) : [],
         teamId: firstGame.team?.id,
-        homeTeam: firstGame.game?.homeTeam,
-        awayTeam: firstGame.game?.awayTeam,
-        schedule: firstGame.game?.schedule // Check if it's nested under schedule
+        directHomeTeam: firstGame.game?.homeTeam,
+        directAwayTeam: firstGame.game?.awayTeam,
+        scheduleHomeTeam: firstGame.game?.schedule?.homeTeam,
+        scheduleAwayTeam: firstGame.game?.schedule?.awayTeam,
+        resolvedHomeTeam,
+        resolvedAwayTeam
       })
     }
 
@@ -282,20 +289,31 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
       const game = gameLog.game
       const team = gameLog.team
 
+      // MySportsFeeds API can have homeTeam/awayTeam at different levels:
+      // - game.homeTeam / game.awayTeam (direct)
+      // - game.schedule.homeTeam / game.schedule.awayTeam (nested under schedule)
+      const homeTeam = game?.homeTeam || game?.schedule?.homeTeam
+      const awayTeam = game?.awayTeam || game?.schedule?.awayTeam
+
       // Debug: Log game structure for first game only
       if (gameLogs.indexOf(gameLog) === 0) {
         console.log(`[MySportsFeeds Stats] Home/Away detection debug for ${teamAbbrev}:`, {
           gameId: game?.id,
           teamId: team?.id,
           teamAbbrev: team?.abbreviation,
-          homeTeamId: game?.homeTeam?.id,
-          homeTeamAbbrev: game?.homeTeam?.abbreviation,
-          awayTeamId: game?.awayTeam?.id,
-          awayTeamAbbrev: game?.awayTeam?.abbreviation
+          // Check both possible locations
+          directHomeTeam: game?.homeTeam,
+          directAwayTeam: game?.awayTeam,
+          scheduleHomeTeam: game?.schedule?.homeTeam,
+          scheduleAwayTeam: game?.schedule?.awayTeam,
+          // Resolved values
+          resolvedHomeTeamId: homeTeam?.id,
+          resolvedAwayTeamId: awayTeam?.id,
+          gameKeys: game ? Object.keys(game) : []
         })
       }
 
-      const isHomeGame = game?.homeTeam?.id === team?.id
+      const isHomeGame = homeTeam?.id === team?.id
 
       if (isHomeGame) {
         homeORtgTotal += ortg
@@ -488,9 +506,11 @@ function parseGameLogs(data: any, teamAbbrev: string): GameLogEntry[] {
       continue
     }
 
-    // Determine opponent
-    const isHomeGame = game.homeTeam.id === team.id
-    const opponentAbbrev = isHomeGame ? game.awayTeam.abbreviation : game.homeTeam.abbreviation
+    // Determine opponent - check both possible API structures
+    const homeTeam = game.homeTeam || game.schedule?.homeTeam
+    const awayTeam = game.awayTeam || game.schedule?.awayTeam
+    const isHomeGame = homeTeam?.id === team.id
+    const opponentAbbrev = isHomeGame ? awayTeam?.abbreviation : homeTeam?.abbreviation
 
     // Extract stats we need
     const entry: GameLogEntry = {
