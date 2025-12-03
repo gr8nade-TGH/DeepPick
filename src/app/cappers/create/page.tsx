@@ -231,15 +231,15 @@ const TOTALS_ARCHETYPES: PresetConfig[] = [
     spreadFactors: { enabled: [], weights: {} }
   },
   {
-    id: 'rest-detective',
-    name: 'The Rest Detective',
-    description: 'Fatigue kills. Injuries and defensive erosion matter.',
-    icon: Battery,
+    id: 'free-throw-fiend',
+    name: 'The Whistle Hunter',
+    description: 'Refs run the game. Free throws decide totals.',
+    icon: AlertTriangle,
     color: 'yellow',
-    philosophy: 'Tired legs and missing players = defensive breakdowns = higher totals. Fresh teams with full rosters dominate. Availability is undervalued.',
+    philosophy: 'Free throws are free points. High-foul games inflate totals. Aggressive drivers + whistle-happy refs = easy overs. The line never adjusts for ref tendencies.',
     totalFactors: {
-      enabled: ['defErosion', 'injuryAvailability', 'offForm', 'paceIndex'],
-      weights: { defErosion: 35, injuryAvailability: 30, offForm: 20, paceIndex: 15 }
+      enabled: ['whistleEnv', 'offForm', 'defErosion'],
+      weights: { whistleEnv: 55, offForm: 25, defErosion: 20 }
     },
     spreadFactors: { enabled: [], weights: {} }
   },
