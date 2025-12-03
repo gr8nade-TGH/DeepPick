@@ -265,12 +265,12 @@ const TOTALS_ARCHETYPES: PresetConfig[] = [
 // ============================================
 const SPREAD_ARCHETYPES: PresetConfig[] = [
   {
-    id: 'form-rider',
-    name: 'The Form Rider',
-    description: 'ATS streaks are real. Ride the winners.',
+    id: 'hot-hand',
+    name: 'The Hot Hand',
+    description: 'Shooting streaks are real. Ride the hot teams.',
     icon: TrendingUp,
     color: 'red',
-    philosophy: 'Teams covering spreads have confidence and momentum. A team 8-2 ATS in last 10 keeps covering. Public overreacts to bad beats.',
+    philosophy: 'Recent shooting momentum predicts near-term performance. Teams shooting hot from 3 and the field carry that confidence. Fade cold shooters.',
     totalFactors: { enabled: [], weights: {} },
     spreadFactors: {
       enabled: ['shootingEfficiencyMomentum', 'netRatingDiff', 'homeAwaySplits'],
