@@ -376,15 +376,26 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
     const winStreak = streakCount
 
     // Calculate rest days (days since most recent game)
-    // gameDates[0] is the most recent game
+    // Sort gameDates descending (newest first) to get the most recent game
     let restDays = 1 // Default to 1 day rest
     let isBackToBack = false
     if (gameDates.length > 0) {
+      // Sort by date descending to ensure we get the most recent game
+      gameDates.sort((a, b) => b.getTime() - a.getTime())
       const today = new Date()
       const mostRecentGame = gameDates[0]
       const daysSinceLastGame = Math.floor((today.getTime() - mostRecentGame.getTime()) / (1000 * 60 * 60 * 24))
       restDays = daysSinceLastGame
-      isBackToBack = daysSinceLastGame === 0 // Playing same day or next day
+      // B2B = 0 days rest (playing next day after a game) or 1 day (same day game, rare)
+      isBackToBack = daysSinceLastGame <= 1
+
+      console.log(`[MySportsFeeds Stats] Rest calculation for ${teamAbbrev}:`, {
+        mostRecentGame: mostRecentGame.toISOString(),
+        today: today.toISOString(),
+        daysSinceLastGame,
+        restDays,
+        isBackToBack
+      })
     }
 
     const gameCount = gameLogs.length

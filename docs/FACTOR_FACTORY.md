@@ -131,6 +131,14 @@ WHERE capper_id IN ('shiva', 'nexus', ...);
 
 ## Capper Diagnostics
 
+### Visual Tools
+
+| Tool | URL | Purpose |
+|------|-----|---------|
+| **Pick Grid** | `/pick-grid` | Visual grid of all pending picks by game. Shows which cappers picked which side. Great for seeing capper activity at a glance. |
+| **SHIVA Management** | `/cappers/shiva/management` | Trigger pick generation, view run logs, factor configs |
+| **System Health** | `/admin/system-health` | Recent runs, success/failure rates, execution times |
+
 ### Quick Status Check (SQL)
 
 Run this query to see all cappers and their pick generation status:
