@@ -124,10 +124,108 @@ SET factor_config = jsonb_set(
 WHERE capper_id IN ('shiva', 'nexus', ...);
 ```
 
-## Data Flow
+## ⚠️ CRITICAL: Gotchas & Common Bugs
 
+### Bug #1: Factor Shows as NULL in Picks (Most Common!)
+
+**Symptom:** New factor appears as `null` with `weight: 0` in `insight_card_snapshot.factors`
+
+**Cause:** Factor computation function returns simplified object instead of full structure.
+
+**WRONG (will cause null):**
+```typescript
+return {
+  signal,
+  awayScore,
+  homeScore,
+  meta: { raw_values_json, parsed_values_json }
+}
+```
+
+**CORRECT (required structure):**
+```typescript
+return {
+  factor_no: 10,           // Required!
+  key: 'myFactor',         // Required! Must match the factor key
+  name: 'My Factor Name',  // Required!
+  normalized_value: signal,// Required!
+  raw_values_json: {...},  // Required!
+  parsed_values_json: {...},// Required!
+  caps_applied: false,     // Required!
+  cap_reason: null,        // Required!
+  notes: 'Human readable'  // Required!
+}
+```
+
+**Fix:** Always copy an existing working factor (like `s8-defensive-pressure.ts`) as a template.
+
+**Verify:** Query picks to check:
+```sql
+SELECT jsonb_array_elements(insight_card_snapshot->'factors')->>'key'
+FROM picks WHERE capper = 'xxx';
+-- If any key is null, the factor return structure is wrong
+```
 
 ---
+
+### Bug #2: Factor Fails Silently (Data Not Available)
+
+**Symptom:** Factor throws error but picks still generate, factor just missing.
+
+**Cause:** Trying to use data that MySportsFeeds doesn't provide (e.g., home/away splits).
+
+**Prevention:**
+1. Check `mysportsfeeds-stats.ts` for available data fields BEFORE designing factor
+2. Check `data-fetcher.ts` to see what's in `NBAStatsBundle`
+3. Use the Stat Browser at `/admin/factors` to verify data availability
+
+**When This Happens:**
+- DON'T spend hours trying to add missing data
+- DO disable the broken factor and create a NEW factor using available data
+- Example: S4 homeAwaySplits was broken → replaced with S4 reboundingDiff
+
+---
+
+### Bug #3: Factor Works Locally but Not in Production
+
+**Symptom:** Factor computes in dev but shows null in Vercel deployment.
+
+**Causes:**
+1. Build failed silently (check Vercel deployment logs)
+2. DB migration not run (factor not in capper's enabled_factors)
+3. Capper config cached from before migration
+
+**Fix:**
+1. Verify Vercel deployment succeeded
+2. Query user_cappers to verify factor_config updated
+3. Clear picks and let crons regenerate
+
+---
+
+### Bug #4: Old Picks Still Show Old Factors
+
+**Cause:** Picks snapshot their factors at creation time. DB updates don't affect existing picks.
+
+**Fix:** Delete old picks, let system regenerate with new factor configs.
+
+---
+
+## Best Practices Checklist
+
+When adding a new factor:
+
+- [ ] Check MySportsFeeds provides the data you need
+- [ ] Copy an existing working factor as template (e.g., `s8-defensive-pressure.ts`)
+- [ ] Return the FULL factor object structure (factor_no, key, name, etc.)
+- [ ] Add factor to orchestrator's enabled list
+- [ ] Update `NBAStatsBundle` type if new data fields needed
+- [ ] Run DB migration to add to capper configs
+- [ ] Clear picks and verify factor appears with correct key in new picks
+- [ ] Check logs for any computation errors
+
+---
+
+## Data Flow
 
 ## Capper Diagnostics
 
@@ -300,17 +398,22 @@ is_system_pick: isSystemCapperCheck,  // ✅ CORRECT - boolean result
 | F6 | `injuryAvailability` | Injury Availability | MySportsFeeds |
 | F7 | `restAdvantage` | Rest Advantage | MySportsFeeds |
 
-### NBA SPREAD (7 Factors)
+### NBA SPREAD (12 Factors)
 
 | # | Key | Name | Data Source |
 |---|-----|------|-------------|
 | S1 | `netRatingDiff` | Net Rating Differential | MySportsFeeds |
 | S2 | `turnoverDiff` | Turnover Differential | MySportsFeeds |
 | S3 | `shootingEfficiencyMomentum` | Shooting Efficiency Momentum | MySportsFeeds |
-| S4 | `homeAwaySplits` | Home/Away Splits | MySportsFeeds |
+| S4 | `reboundingDiff` | Rebounding Differential | MySportsFeeds |
 | S5 | `fourFactorsDiff` | Four Factors Differential | MySportsFeeds |
 | S6 | `spreadInjuryAvailability` | Injury Availability (Spread) | MySportsFeeds |
 | S7 | `momentumIndex` | Momentum Index | MySportsFeeds |
+| S8 | `defensivePressure` | Defensive Pressure (STL/BLK) | MySportsFeeds |
+| S9 | `assistEfficiency` | Assist Efficiency (AST/TOV) | MySportsFeeds |
+| S10 | `clutchShooting` | Clutch Shooting (FT%/FG%) | MySportsFeeds |
+| S11 | `scoringMargin` | Scoring Margin (PPG Diff) | MySportsFeeds |
+| S12 | `perimeterDefense` | Perimeter Defense (Opp 3P%) | MySportsFeeds |
 
 ---
 
