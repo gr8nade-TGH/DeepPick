@@ -175,12 +175,39 @@ export async function executeWizardPipeline(input: WizardOrchestratorInput): Pro
       const predictedMargin = steps.step4.predictions?.spread_pred_points || 0
       baseConfidence = steps.step4.predictions?.conf7_score || 0
 
-      // Determine pick direction based on predicted margin
-      // Positive margin = away team favored, negative = home team favored
+      // Determine pick direction based on WHO COVERS THE SPREAD (not who wins outright)
+      // predictedMargin: positive = home wins by X, negative = away wins by |X|
+      // marketSpread: negative = home favored (e.g., -6.5), positive = away favored
       const awayTeam = typeof game.away_team === 'string' ? game.away_team : game.away_team.name
       const homeTeam = typeof game.home_team === 'string' ? game.home_team : game.home_team.name
-      isAwayPick = predictedMargin > 0 // Assign to outer scope variable
+
+      // For SPREAD betting: Pick based on who COVERS, not who wins
+      // If away wins outright (predictedMargin < 0), away DEFINITELY covers as underdog
+      // If home wins (predictedMargin > 0), check if they cover their spread
+      const homeSpreadAbs = Math.abs(marketSpread) // e.g., 6.5
+      if (predictedMargin < 0) {
+        // Away wins outright - always covers as underdog
+        isAwayPick = true
+      } else {
+        // Home wins, but by how much vs the spread?
+        // Home covers only if they win by MORE than their spread
+        // e.g., if spread is -6.5 and we predict home wins by 2.6, home does NOT cover
+        isAwayPick = predictedMargin < homeSpreadAbs
+      }
       pickDirection = isAwayPick ? awayTeam : homeTeam
+
+      console.log('[WizardOrchestrator] SPREAD pick direction:', {
+        predictedMargin,
+        marketSpread,
+        homeSpreadAbs,
+        isAwayPick,
+        pickDirection,
+        reason: predictedMargin < 0
+          ? 'Away wins outright - covers as underdog'
+          : (predictedMargin < homeSpreadAbs
+            ? `Home wins by ${predictedMargin.toFixed(1)} but spread is ${homeSpreadAbs} - away covers`
+            : `Home wins by ${predictedMargin.toFixed(1)} and covers spread of ${homeSpreadAbs}`)
+      })
 
       // Calculate edge: predicted margin vs market spread
       // marketSpread is from home perspective (negative = home favored, positive = away favored)
@@ -632,10 +659,14 @@ async function generatePredictions(runId: string, step3Result: any, sport: strin
     // edgeRaw = awayScoreTotal - homeScoreTotal (positive = away advantage)
     const factorAdjustment = confidenceResult.edgeRaw
 
-    // Final predicted margin = Vegas spread + factor adjustment
-    // If vegasSpread = +4.5 and factorAdjustment = -2.0, predictedMargin = +2.5
-    // Negative predictedMargin = away wins, Positive = home wins (from away's perspective as underdog)
-    const predictedMargin = vegasSpread + factorAdjustment
+    // Final predicted margin = Vegas spread - factor adjustment
+    // vegasSpread is the away team's spread (positive = underdog, e.g., +6.5)
+    // factorAdjustment: positive = factors favor away, negative = factors favor home
+    // If factors favor away (+3.9), they should REDUCE the spread (away not as big an underdog)
+    // Example: vegasSpread = +6.5, factorAdjustment = +3.9 → predictedMargin = +2.6 (home wins by 2.6)
+    // Example: vegasSpread = +6.5, factorAdjustment = +8.0 → predictedMargin = -1.5 (away wins by 1.5)
+    // Positive predictedMargin = home wins by X, Negative = away wins by |X|
+    const predictedMargin = vegasSpread - factorAdjustment
 
     // Calculate predicted scores based on margin
     // Assume average NBA game total is ~220 points (only used for score distribution, NOT for total prediction)
