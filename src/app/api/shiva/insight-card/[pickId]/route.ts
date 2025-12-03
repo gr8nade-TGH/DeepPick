@@ -374,21 +374,37 @@ export async function GET(
       }
 
       // Build computedTier from game_snapshot.tier_grade if available
+      // Supports both new confluence format and legacy format
       const tierGrade = pick.game_snapshot?.tier_grade
       const computedTier = tierGrade ? {
         tier: tierGrade.tier,
-        tierScore: tierGrade.tierScore,
+        // Use confluenceScore if available (new format), otherwise tierScore (legacy)
+        confluenceScore: tierGrade.confluenceScore,
+        tierScore: tierGrade.confluenceScore || tierGrade.tierScore,
+        // New confluence breakdown format
         breakdown: tierGrade.breakdown ? {
+          // New confluence fields
+          edgePoints: tierGrade.breakdown.edgePoints,
+          specPoints: tierGrade.breakdown.specPoints,
+          streakPoints: tierGrade.breakdown.streakPoints,
+          alignmentPoints: tierGrade.breakdown.alignmentPoints,
+          alignmentPct: tierGrade.breakdown.alignmentPct,
+          // Legacy fields (for backwards compatibility with old picks)
           sharpScore: tierGrade.breakdown.sharpScore,
           edgeBonus: tierGrade.breakdown.edgeBonus || 0,
           teamRecordBonus: tierGrade.breakdown.teamRecordBonus || 0,
           recentFormBonus: tierGrade.breakdown.recentFormBonus || 0,
           losingStreakPenalty: tierGrade.breakdown.losingStreakPenalty || 0,
-          rawScore: tierGrade.breakdown.rawScore || tierGrade.tierScore || 0,
+          rawScore: tierGrade.breakdown.rawScore || tierGrade.confluenceScore || tierGrade.tierScore || 0,
           unitGateApplied: tierGrade.breakdown.unitGateApplied || false,
           originalTier: tierGrade.breakdown.originalTier
         } : {
-          // Fallback: use tierScore as both sharpScore and rawScore
+          // Fallback for picks without breakdown
+          edgePoints: 0,
+          specPoints: 0,
+          streakPoints: 0,
+          alignmentPoints: 0,
+          alignmentPct: 0,
           sharpScore: tierGrade.tierScore || (pick.confidence || 5) * 10,
           edgeBonus: 0,
           teamRecordBonus: 0,
@@ -397,7 +413,9 @@ export async function GET(
           rawScore: tierGrade.tierScore || (pick.confidence || 5) * 10,
           unitGateApplied: false,
           originalTier: undefined
-        }
+        },
+        // Store inputs for tooltip display
+        inputs: tierGrade.inputs
       } : undefined
 
       // Build the insight card data from the locked snapshot

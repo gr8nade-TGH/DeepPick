@@ -3,8 +3,7 @@ import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { generateManualPickInsight } from '@/lib/capper-stats/manual-pick-insight'
-import { buildManualPickTierInput } from '@/lib/capper-tier-inputs'
-import { calculateTierGrade } from '@/lib/tier-grading'
+import { calculateManualConfluence } from '@/lib/manual-pick-confluence'
 
 export async function POST(request: NextRequest) {
   try {
@@ -126,37 +125,30 @@ export async function POST(request: NextRequest) {
     const capperName = capper || profile.full_name || 'manual'
     console.log('[place-pick] Using capper name:', capperName)
 
-    // Extract team abbreviations for tier grading
-    const homeAbbrev = game.home_team?.abbreviation || ''
-    const awayAbbrev = game.away_team?.abbreviation || ''
-
-    // Calculate tier grade for manual picks (non-system picks)
+    // Calculate tier grade for manual picks using confluence system (non-system picks)
     let tierGradeData = null
     if (!is_system_pick) {
       try {
-        console.log('[place-pick] Calculating tier grade for manual pick...')
-        const tierInput = await buildManualPickTierInput(
-          capperName,
+        console.log('[place-pick] Calculating confluence tier for manual pick...')
+        const confluenceResult = await calculateManualConfluence({
+          capperId: capperName,
           units,
-          homeAbbrev || awayAbbrev, // Use either team for team record
-          pick_type as 'total' | 'spread'
-        )
-        const tierGrade = calculateTierGrade(tierInput)
+          betType: pick_type as 'total' | 'spread'
+        })
         tierGradeData = {
-          tier: tierGrade.tier,
-          tierScore: tierGrade.tierScore,
-          breakdown: tierGrade.breakdown,
+          tier: confluenceResult.tier,
+          tierScore: confluenceResult.confluenceScore,
+          breakdown: confluenceResult.breakdown,
           inputs: {
-            baseConfidence: tierInput.baseConfidence,
-            unitsRisked: tierInput.unitsRisked,
-            teamRecord: tierInput.teamRecord || null,
-            recentForm: tierInput.recentForm || null,
-            currentLosingStreak: tierInput.currentLosingStreak || 0
-          }
+            capperId: capperName,
+            units,
+            betType: pick_type
+          },
+          format: 'confluence'
         }
-        console.log('[place-pick] Tier grade calculated:', tierGradeData.tier, tierGradeData.tierScore)
+        console.log('[place-pick] Confluence tier calculated:', tierGradeData.tier, tierGradeData.tierScore)
       } catch (tierError) {
-        console.error('[place-pick] Error calculating tier grade:', tierError)
+        console.error('[place-pick] Error calculating confluence tier:', tierError)
         // Continue without tier - don't fail the pick
       }
     }

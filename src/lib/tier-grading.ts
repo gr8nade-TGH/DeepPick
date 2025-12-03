@@ -1,17 +1,22 @@
 /**
- * COMPREHENSIVE TIER GRADING SYSTEM
- * Shared utility for calculating pick tiers based on multiple factors.
- * This file is used by both server routes and client components.
+ * COMPREHENSIVE TIER GRADING SYSTEM (LEGACY)
  *
- * 5 Tiers (Legendary = Top):
+ * NOTE: This is the legacy 0-100 scale tier grading system.
+ * For new picks, we use the confluence-based system (0-8 scale) in:
+ * - src/lib/confluence-scoring.ts (SHIVA/AI picks)
+ * - src/lib/manual-pick-confluence.ts (Manual picks)
+ * - src/lib/cappers/picksmith/tier-grading.ts (PICKSMITH picks)
+ *
+ * Legacy 5 Tiers (Legendary = Top):
  * 🏆 Legendary (≥85, requires 4+ units)
- * 💎 Epic (≥75, requires 3+ units)
+ * 💎 Elite/Epic (≥75, requires 3+ units)
  * 💠 Rare (≥65, requires 2+ units)
  * ✦ Uncommon (≥55)
  * ◆ Common (<55)
  */
 
-export type RarityTier = 'Common' | 'Uncommon' | 'Rare' | 'Epic' | 'Legendary'
+// Support both 'Elite' (new) and 'Epic' (legacy) tier names
+export type RarityTier = 'Common' | 'Uncommon' | 'Rare' | 'Elite' | 'Epic' | 'Legendary'
 
 export interface TierGradeInput {
   baseConfidence: number        // Sharp Score (0-10 or 0-100)
@@ -251,8 +256,9 @@ export function getRarityFromConfidence(confidence: number): RarityStyle {
 
 /**
  * Get visual styling for a tier
+ * Handles both 'Elite' (new confluence system) and 'Epic' (legacy) tier names
  */
-export function getRarityStyleFromTier(tier: RarityTier): RarityStyle {
+export function getRarityStyleFromTier(tier: RarityTier | string): RarityStyle {
   switch (tier) {
     case 'Legendary':
       return {
@@ -264,9 +270,10 @@ export function getRarityStyleFromTier(tier: RarityTier): RarityStyle {
         badgeBg: 'bg-gradient-to-r from-amber-500 to-yellow-500',
         icon: '🏆'
       }
+    case 'Elite':
     case 'Epic':
       return {
-        tier: 'Epic',
+        tier: 'Elite',  // Normalize to 'Elite' for display
         borderColor: '#A855F7',
         bgGradient: 'from-purple-950 via-violet-950/50 to-purple-950',
         glowColor: 'rgba(168, 85, 247, 0.4)',

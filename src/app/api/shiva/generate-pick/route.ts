@@ -5,89 +5,8 @@ import { generateProfessionalAnalysis } from '@/lib/cappers/professional-analysi
 import { generateBoldPredictions } from '@/lib/cappers/bold-predictions-generator'
 import { validateSpreadDirection } from '@/lib/cappers/pick-validation'
 import { isSystemCapper } from '@/lib/cappers/system-cappers'
-import { calculateTierGrade, TierGradeInput } from '@/lib/tier-grading'
-
-/**
- * Fetch capper's team-specific record, recent form, and losing streak for tier calculation
- */
-async function fetchTierGradeInputs(
-  supabase: any,
-  capperId: string,
-  teamAbbr: string,
-  betType: string
-): Promise<{
-  teamRecord?: { wins: number; losses: number; netUnits: number }
-  recentForm?: { wins: number; losses: number; netUnits: number }
-  currentLosingStreak?: number
-}> {
-  const result: {
-    teamRecord?: { wins: number; losses: number; netUnits: number }
-    recentForm?: { wins: number; losses: number; netUnits: number }
-    currentLosingStreak?: number
-  } = {}
-
-  try {
-    // Get team-specific record for this bet type
-    const { data: teamPicks } = await supabase
-      .from('picks')
-      .select('status, net_units, pick_type, game_snapshot')
-      .eq('capper', capperId)
-      .eq('pick_type', betType.toLowerCase())
-      .in('status', ['won', 'lost'])
-
-    if (teamPicks && teamPicks.length > 0) {
-      // Filter for picks on this team
-      const teamFilteredPicks = teamPicks.filter((p: any) => {
-        const homeAbbr = p.game_snapshot?.home_team?.abbreviation || p.game_snapshot?.home_team
-        const awayAbbr = p.game_snapshot?.away_team?.abbreviation || p.game_snapshot?.away_team
-        return homeAbbr === teamAbbr || awayAbbr === teamAbbr
-      })
-
-      if (teamFilteredPicks.length >= 3) {
-        const wins = teamFilteredPicks.filter((p: any) => p.status === 'won').length
-        const losses = teamFilteredPicks.filter((p: any) => p.status === 'lost').length
-        const netUnits = teamFilteredPicks.reduce((sum: number, p: any) => sum + (p.net_units || 0), 0)
-        result.teamRecord = { wins, losses, netUnits }
-      }
-    }
-
-    // Get recent form (last 10 picks) and calculate losing streak
-    // CRITICAL: Filter by bet type so TOTAL picks only consider TOTAL history
-    const { data: recentPicks } = await supabase
-      .from('picks')
-      .select('status, net_units, created_at')
-      .eq('capper', capperId)
-      .eq('pick_type', betType.toLowerCase()) // Filter by bet type!
-      .in('status', ['won', 'lost'])
-      .order('created_at', { ascending: false })
-      .limit(10)
-
-    if (recentPicks && recentPicks.length >= 5) {
-      const wins = recentPicks.filter((p: any) => p.status === 'won').length
-      const losses = recentPicks.filter((p: any) => p.status === 'lost').length
-      const netUnits = recentPicks.reduce((sum: number, p: any) => sum + (p.net_units || 0), 0)
-      result.recentForm = { wins, losses, netUnits }
-      console.log(`[SHIVA:TierInputs] Recent ${betType} form: ${wins}W-${losses}L (${netUnits.toFixed(1)} units)`)
-    }
-
-    // Calculate current losing streak (also filtered by bet type)
-    if (recentPicks && recentPicks.length > 0) {
-      let streak = 0
-      for (const p of recentPicks) {
-        if (p.status === 'lost') streak++
-        else break
-      }
-      result.currentLosingStreak = streak
-      if (streak > 0) {
-        console.log(`[SHIVA:TierInputs] Current ${betType} losing streak: ${streak}`)
-      }
-    }
-  } catch (error) {
-    console.error('[SHIVA:GeneratePick] Error fetching tier grade inputs:', error)
-  }
-
-  return result
-}
+import { calculateConfluenceScore, calculateFactorAlignment, ConfluenceInput } from '@/lib/confluence-scoring'
+import { getConfluenceInputs } from '@/lib/capper-tier-inputs'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -814,36 +733,53 @@ export async function POST(request: Request) {
       userId = capperData?.user_id || null
     }
 
-    // ===== CALCULATE TIER GRADE =====
-    // Get the team abbreviation from the pick selection or game
-    const homeTeamAbbr = game.home_team?.abbreviation || game.home_team
-    const awayTeamAbbr = game.away_team?.abbreviation || game.away_team
-    // For TOTAL picks, use the home team; for SPREAD, use the team in selection
-    const relevantTeam = pick.pickType === 'SPREAD'
-      ? (pick.selection?.includes(homeTeamAbbr) ? homeTeamAbbr : awayTeamAbbr)
-      : homeTeamAbbr
+    // ===== CALCULATE CONFLUENCE TIER GRADE =====
+    // New confluence-based tier system that uses 4 signals:
+    // 1. Edge Strength (edgeScore/confidence 0-10 scale)
+    // 2. Specialization Record (win rate for this bet type)
+    // 3. Win Streak (current consecutive wins for this bet type)
+    // 4. Factor Alignment (% of factors agreeing with pick)
 
-    // Fetch team record, recent form, and losing streak for tier calculation
-    // Pass betType to filter records by bet type (TOTAL vs SPREAD)
-    const tierInputs = await fetchTierGradeInputs(supabase, capperId, relevantTeam, pick.pickType)
+    // Get factor contributions for alignment calculation
+    const factorContributions = result.log?.factors || []
 
-    // Calculate Edge vs Market from run metadata
-    // For TOTAL: predicted_total vs market_total (points difference)
-    // For SPREAD: predicted_margin vs market_spread (points difference)
-    const edgeVsMarket = Math.abs(predictedValue - marketLine)
-    console.log(`📊 [SHIVA:GeneratePick] Edge vs Market: |${predictedValue.toFixed(1)} - ${marketLine.toFixed(1)}| = ${edgeVsMarket.toFixed(1)} points`)
+    // Determine pick direction for factor alignment
+    const pickDirection = pick.selection?.includes('OVER') ? 'OVER'
+      : pick.selection?.includes('UNDER') ? 'UNDER'
+        : pick.selection?.includes(game.away_team?.abbreviation || game.away_team) ? 'AWAY'
+          : 'HOME'
 
-    // Calculate the tier grade with all components
-    const tierGrade = calculateTierGrade({
-      baseConfidence: pick.confidence,
-      unitsRisked: pick.units,
-      edgeVsMarket: edgeVsMarket, // NEW: Pass edge for bonus calculation
-      teamRecord: tierInputs.teamRecord,
-      recentForm: tierInputs.recentForm,
-      currentLosingStreak: tierInputs.currentLosingStreak
+    // Calculate factor alignment (how many factors agree with the pick)
+    const { factorsOnSide, totalFactors } = calculateFactorAlignment(factorContributions, pickDirection)
+
+    // Get specialization record (win rate and streak for this bet type)
+    // Note: betTypeLower is already defined at line 74
+    const confluenceInputs = await getConfluenceInputs(capperId, betTypeLower as 'total' | 'spread')
+
+    // Build confluence input
+    const confluenceInput: ConfluenceInput = {
+      edgeScore: pick.confidence, // 0-10 scale
+      betType: betTypeLower as 'total' | 'spread',
+      specializationWinRate: confluenceInputs.specializationWinRate,
+      specializationSampleSize: confluenceInputs.specializationSampleSize,
+      currentWinStreak: confluenceInputs.currentWinStreak,
+      factorsOnPickSide: factorsOnSide,
+      totalFactors: totalFactors
+    }
+
+    // Calculate confluence score and tier
+    const confluenceResult = calculateConfluenceScore(confluenceInput)
+
+    console.log(`🏆 [SHIVA:GeneratePick] Confluence Tier: ${confluenceResult.tier} (score: ${confluenceResult.confluenceScore})`, {
+      breakdown: confluenceResult.breakdown,
+      inputs: {
+        edgeScore: pick.confidence,
+        winRate: confluenceInputs.specializationWinRate,
+        sampleSize: confluenceInputs.specializationSampleSize,
+        streak: confluenceInputs.currentWinStreak,
+        factorAlignment: `${factorsOnSide}/${totalFactors} (${confluenceResult.breakdown.alignmentPct}%)`
+      }
     })
-
-    console.log(`🏆 [SHIVA:GeneratePick] Tier calculated: ${tierGrade.tier} (score: ${tierGrade.tierScore}, breakdown: sharp=${tierGrade.breakdown.sharpScore}, edge=${tierGrade.breakdown.edgeBonus}, team=${tierGrade.breakdown.teamRecordBonus}, form=${tierGrade.breakdown.recentFormBonus}, streak=${tierGrade.breakdown.losingStreakPenalty})`)
 
     // Save pick to database
     const pickInsert: any = {
@@ -866,18 +802,19 @@ export async function POST(request: Request) {
         total_line: game.total_line,
         spread_line: game.spread_line,
         odds: game.odds,
-        // Store tier data in game_snapshot for historical accuracy
+        // Store confluence-based tier data in game_snapshot for historical accuracy
         tier_grade: {
-          tier: tierGrade.tier,
-          tierScore: tierGrade.tierScore,
-          breakdown: tierGrade.breakdown,
+          tier: confluenceResult.tier,
+          confluenceScore: confluenceResult.confluenceScore,
+          breakdown: confluenceResult.breakdown,
           inputs: {
-            baseConfidence: pick.confidence,
-            unitsRisked: pick.units,
-            edgeVsMarket: edgeVsMarket, // Store edge for display in insight card
-            teamRecord: tierInputs.teamRecord || null,
-            recentForm: tierInputs.recentForm || null,
-            currentLosingStreak: tierInputs.currentLosingStreak || 0
+            edgeScore: pick.confidence,
+            betType: betTypeLower,
+            specializationWinRate: confluenceInputs.specializationWinRate || null,
+            specializationSampleSize: confluenceInputs.specializationSampleSize || 0,
+            currentWinStreak: confluenceInputs.currentWinStreak,
+            factorsOnPickSide: factorsOnSide,
+            totalFactors: totalFactors
           }
         }
       },

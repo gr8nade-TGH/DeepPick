@@ -294,29 +294,53 @@ export interface InsightCardProps {
     }>
     overallAccuracy?: number
   }
-  // NEW: Tier grading inputs (for comprehensive tier calculation)
+  // NEW: Tier grading inputs (for comprehensive tier calculation) - LEGACY
   tierGradeInputs?: {
     edgeVsMarket?: number  // |predicted - market|
     teamRecord?: { wins: number; losses: number; netUnits: number }
     recentForm?: { wins: number; losses: number; netUnits: number }  // Last 10 picks
     currentLosingStreak?: number  // Consecutive losses
   }
-  // NEW: Pre-calculated tier (if already computed and stored)
+  // Pre-calculated tier (if already computed and stored)
+  // Supports both new confluence format and legacy format
   computedTier?: {
     tier: RarityTier
-    tierScore: number
+    confluenceScore?: number  // New confluence scoring (0-8 scale)
+    tierScore?: number        // Legacy (0-100 scale)
     breakdown: {
-      sharpScore: number
-      edgeBonus: number
-      teamRecordBonus: number
-      recentFormBonus: number
-      losingStreakPenalty: number
-      rawScore: number
-      unitGateApplied: boolean
+      // New Confluence fields (AI picks)
+      edgePoints?: number        // 0-3
+      specPoints?: number        // 0-2
+      streakPoints?: number      // 0-1
+      alignmentPoints?: number   // -0.5 to +2
+      alignmentPct?: number      // 0-100
+      // Manual pick confluence fields
+      convictionPoints?: number  // 0-3 (based on units)
+      qualityPoints?: number     // 0-2 (career net units)
+      // PICKSMITH confluence fields
+      consensusPoints?: number   // 0-3 (based on capper count)
+      capperCount?: number       // Number of cappers in consensus
+      // Legacy fields
+      sharpScore?: number
+      edgeBonus?: number
+      teamRecordBonus?: number
+      recentFormBonus?: number
+      losingStreakPenalty?: number
+      rawScore?: number
+      unitGateApplied?: boolean
       originalTier?: RarityTier
       insufficientHistory?: boolean
       missingTeamRecord?: boolean
       missingRecentForm?: boolean
+    }
+    inputs?: {
+      edgeScore?: number
+      betType?: string
+      specializationWinRate?: number | null
+      specializationSampleSize?: number
+      currentWinStreak?: number
+      factorsOnPickSide?: number
+      totalFactors?: number
     }
   }
   onClose: () => void
@@ -768,15 +792,26 @@ export function InsightCard(props: InsightCardProps) {
     locked_odds: props.pick?.locked_odds,
   }
 
-  // Calculate comprehensive tier grade (or use pre-computed if available)
-  const tierGradeResult = props.computedTier || calculateTierGrade({
-    baseConfidence: safePick.confidence,
-    unitsRisked: safePick.units,
-    edgeVsMarket: props.tierGradeInputs?.edgeVsMarket,
-    teamRecord: props.tierGradeInputs?.teamRecord,
-    recentForm: props.tierGradeInputs?.recentForm,
-    currentLosingStreak: props.tierGradeInputs?.currentLosingStreak
-  })
+  // Use pre-computed tier if available (from game_snapshot.tier_grade)
+  // For new picks, this will be confluence-based. For legacy picks, it may be the old format.
+  // Fallback to a basic tier based on confidence if no computed tier available
+  const tierGradeResult = props.computedTier || {
+    tier: safePick.confidence >= 8 ? 'Elite' as RarityTier :
+      safePick.confidence >= 6 ? 'Rare' as RarityTier :
+        safePick.confidence >= 4 ? 'Uncommon' as RarityTier : 'Common' as RarityTier,
+    confluenceScore: undefined,
+    tierScore: safePick.confidence * 10,
+    breakdown: {
+      edgePoints: undefined,
+      specPoints: undefined,
+      streakPoints: undefined,
+      alignmentPoints: undefined,
+      alignmentPct: undefined
+    }
+  }
+
+  // Check if this is new confluence format or legacy
+  const isConfluenceFormat = tierGradeResult.breakdown?.edgePoints !== undefined
 
   // Get rarity styling from calculated tier
   const rarity = getRarityStyleFromTier(tierGradeResult.tier)
@@ -883,7 +918,7 @@ export function InsightCard(props: InsightCardProps) {
                     {showTierTooltip && (
                       <TooltipPortal>
                         <div
-                          className="bg-slate-900 border border-slate-600 rounded-lg p-3 shadow-2xl min-w-[220px] text-xs"
+                          className="bg-slate-900 border border-slate-600 rounded-lg p-3 shadow-2xl min-w-[250px] text-xs"
                           style={{
                             position: 'fixed',
                             top: tierTooltipPos.top,
@@ -893,85 +928,133 @@ export function InsightCard(props: InsightCardProps) {
                           }}
                         >
                           <div className="font-bold text-white mb-2 border-b border-slate-700 pb-1">
-                            {rarity.icon} {rarity.tier} Tier Breakdown
+                            {rarity.icon} {rarity.tier} - Confluence Score
                           </div>
-                          <div className="space-y-1 text-slate-300">
-                            <div className="flex justify-between items-center">
-                              <span>📊 Sharp Score:</span>
-                              <span className="text-white">{tierGradeResult.breakdown.sharpScore.toFixed(1)}</span>
-                            </div>
-                            {tierGradeResult.breakdown.edgeBonus !== 0 && (
-                              <div className="flex justify-between items-center">
-                                <span>📈 Edge vs Market:</span>
-                                <span className={`flex items-center gap-1 ${tierGradeResult.breakdown.edgeBonus > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                  <span className="opacity-60 text-[10px]">{tierGradeResult.breakdown.edgeBonus > 0 ? '✓' : '✗'}</span>
-                                  {tierGradeResult.breakdown.edgeBonus > 0 ? '+' : ''}{tierGradeResult.breakdown.edgeBonus}
-                                </span>
-                              </div>
-                            )}
-                            {/* Team Record - show warning if missing */}
-                            <div className="flex justify-between items-center">
-                              <span>🎯 Team Record:</span>
-                              {tierGradeResult.breakdown.missingTeamRecord ? (
-                                <span className="text-amber-400 text-[10px]">⚠️ No {safePick.type} history</span>
-                              ) : tierGradeResult.breakdown.teamRecordBonus !== 0 ? (
-                                <span className={`flex items-center gap-1 ${tierGradeResult.breakdown.teamRecordBonus > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                  <span className="opacity-60 text-[10px]">{tierGradeResult.breakdown.teamRecordBonus > 0 ? '✓' : '✗'}</span>
-                                  {tierGradeResult.breakdown.teamRecordBonus > 0 ? '+' : ''}{tierGradeResult.breakdown.teamRecordBonus}
-                                </span>
+
+                          {/* Confluence Format - handles AI, Manual, and PICKSMITH picks */}
+                          {isConfluenceFormat ? (
+                            <div className="space-y-1.5 text-slate-300">
+                              {/* Detect pick type by breakdown fields */}
+                              {/* AI Pick: has edgePoints and alignmentPoints */}
+                              {tierGradeResult.breakdown.edgePoints !== undefined && tierGradeResult.breakdown.alignmentPoints !== undefined ? (
+                                <>
+                                  <div className="text-[10px] text-cyan-400 mb-1">🤖 AI Pick Signals</div>
+                                  <div className="flex justify-between items-center">
+                                    <span className="flex items-center gap-1"><span>⚡</span><span>Edge Strength:</span></span>
+                                    <span className={`font-medium ${(tierGradeResult.breakdown.edgePoints || 0) >= 2 ? 'text-green-400' : (tierGradeResult.breakdown.edgePoints || 0) >= 1 ? 'text-yellow-400' : 'text-slate-400'}`}>
+                                      +{tierGradeResult.breakdown.edgePoints?.toFixed(1) || '0'}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <span className="flex items-center gap-1"><span>🎯</span><span>{safePick.type} Win Rate:</span></span>
+                                    <span className={`font-medium ${(tierGradeResult.breakdown.specPoints || 0) >= 1 ? 'text-green-400' : 'text-slate-400'}`}>
+                                      +{tierGradeResult.breakdown.specPoints?.toFixed(1) || '0'}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <span className="flex items-center gap-1"><span>🔥</span><span>Win Streak:</span></span>
+                                    <span className={`font-medium ${(tierGradeResult.breakdown.streakPoints || 0) > 0 ? 'text-green-400' : 'text-slate-400'}`}>
+                                      +{tierGradeResult.breakdown.streakPoints?.toFixed(1) || '0'}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <span className="flex items-center gap-1"><span>🧩</span><span>Factor Alignment:</span></span>
+                                    <span className={`font-medium ${(tierGradeResult.breakdown.alignmentPoints || 0) >= 1 ? 'text-green-400' : (tierGradeResult.breakdown.alignmentPoints || 0) < 0 ? 'text-red-400' : 'text-yellow-400'}`}>
+                                      {(tierGradeResult.breakdown.alignmentPoints || 0) >= 0 ? '+' : ''}{tierGradeResult.breakdown.alignmentPoints?.toFixed(1) || '0'}
+                                      <span className="text-slate-500 text-[10px] ml-1">({tierGradeResult.breakdown.alignmentPct || 0}%)</span>
+                                    </span>
+                                  </div>
+                                </>
+                              ) : tierGradeResult.breakdown.consensusPoints !== undefined ? (
+                                /* PICKSMITH Pick: has consensusPoints */
+                                <>
+                                  <div className="text-[10px] text-purple-400 mb-1">🔮 PICKSMITH Consensus Signals</div>
+                                  <div className="flex justify-between items-center">
+                                    <span className="flex items-center gap-1"><span>🤝</span><span>Consensus ({tierGradeResult.breakdown.capperCount || 0} cappers):</span></span>
+                                    <span className={`font-medium ${(tierGradeResult.breakdown.consensusPoints || 0) >= 2 ? 'text-green-400' : 'text-yellow-400'}`}>
+                                      +{tierGradeResult.breakdown.consensusPoints?.toFixed(1) || '0'}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <span className="flex items-center gap-1"><span>🎯</span><span>{safePick.type} Win Rate:</span></span>
+                                    <span className={`font-medium ${(tierGradeResult.breakdown.specPoints || 0) >= 1 ? 'text-green-400' : 'text-slate-400'}`}>
+                                      +{tierGradeResult.breakdown.specPoints?.toFixed(1) || '0'}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <span className="flex items-center gap-1"><span>🔥</span><span>Win Streak:</span></span>
+                                    <span className={`font-medium ${(tierGradeResult.breakdown.streakPoints || 0) > 0 ? 'text-green-400' : 'text-slate-400'}`}>
+                                      +{tierGradeResult.breakdown.streakPoints?.toFixed(1) || '0'}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <span className="flex items-center gap-1"><span>💰</span><span>Capper Quality:</span></span>
+                                    <span className={`font-medium ${(tierGradeResult.breakdown.qualityPoints || 0) >= 1 ? 'text-green-400' : 'text-slate-400'}`}>
+                                      +{tierGradeResult.breakdown.qualityPoints?.toFixed(1) || '0'}
+                                    </span>
+                                  </div>
+                                </>
+                              ) : tierGradeResult.breakdown.convictionPoints !== undefined ? (
+                                /* Manual Pick: has convictionPoints */
+                                <>
+                                  <div className="text-[10px] text-green-400 mb-1">👤 Manual Pick Signals</div>
+                                  <div className="flex justify-between items-center">
+                                    <span className="flex items-center gap-1"><span>💪</span><span>Bet Conviction:</span></span>
+                                    <span className={`font-medium ${(tierGradeResult.breakdown.convictionPoints || 0) >= 2 ? 'text-green-400' : 'text-yellow-400'}`}>
+                                      +{tierGradeResult.breakdown.convictionPoints?.toFixed(1) || '0'}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <span className="flex items-center gap-1"><span>🎯</span><span>{safePick.type} Win Rate:</span></span>
+                                    <span className={`font-medium ${(tierGradeResult.breakdown.specPoints || 0) >= 1 ? 'text-green-400' : 'text-slate-400'}`}>
+                                      +{tierGradeResult.breakdown.specPoints?.toFixed(1) || '0'}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <span className="flex items-center gap-1"><span>🔥</span><span>Win Streak:</span></span>
+                                    <span className={`font-medium ${(tierGradeResult.breakdown.streakPoints || 0) > 0 ? 'text-green-400' : 'text-slate-400'}`}>
+                                      +{tierGradeResult.breakdown.streakPoints?.toFixed(1) || '0'}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <span className="flex items-center gap-1"><span>💰</span><span>Career Net Units:</span></span>
+                                    <span className={`font-medium ${(tierGradeResult.breakdown.qualityPoints || 0) >= 1 ? 'text-green-400' : 'text-slate-400'}`}>
+                                      +{tierGradeResult.breakdown.qualityPoints?.toFixed(1) || '0'}
+                                    </span>
+                                  </div>
+                                </>
                               ) : (
-                                <span className="text-slate-500">+0</span>
+                                /* Fallback generic display */
+                                <div className="text-slate-400 text-[10px]">Confluence format detected</div>
                               )}
+
+                              {/* Total - common for all */}
+                              <div className="border-t border-slate-700 pt-1.5 mt-1.5 flex justify-between font-bold">
+                                <span>Confluence Score:</span>
+                                <span className={rarity.textColor}>{tierGradeResult.confluenceScore?.toFixed(1) || tierGradeResult.tierScore?.toFixed(1) || '0'}</span>
+                              </div>
+
+                              {/* Tier thresholds hint */}
+                              <div className="text-[10px] text-slate-500 pt-1 border-t border-slate-700/50">
+                                Legendary ≥7 • Elite ≥6 • Rare ≥5 • Uncommon ≥4 • Common &lt;4
+                              </div>
                             </div>
-                            {/* Recent Form - show warning if missing */}
-                            <div className="flex justify-between items-center">
-                              <span>🔥 Recent Form:</span>
-                              {tierGradeResult.breakdown.missingRecentForm ? (
-                                <span className="text-amber-400 text-[10px]">⚠️ &lt;5 {safePick.type} picks</span>
-                              ) : tierGradeResult.breakdown.recentFormBonus !== 0 ? (
-                                <span className={`flex items-center gap-1 ${tierGradeResult.breakdown.recentFormBonus > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                  <span className="opacity-60 text-[10px]">{tierGradeResult.breakdown.recentFormBonus > 0 ? '✓' : '✗'}</span>
-                                  {tierGradeResult.breakdown.recentFormBonus > 0 ? '+' : ''}{tierGradeResult.breakdown.recentFormBonus}
-                                </span>
-                              ) : (
-                                <span className="text-slate-500">+0</span>
-                              )}
-                            </div>
-                            {tierGradeResult.breakdown.losingStreakPenalty !== 0 && (
+                          ) : (
+                            /* Legacy Format Fallback */
+                            <div className="space-y-1 text-slate-300">
+                              <div className="text-amber-400 text-[10px] mb-2">
+                                ⚠️ Legacy format - new picks use Confluence scoring
+                              </div>
                               <div className="flex justify-between items-center">
-                                <span>⚠️ Losing Streak:</span>
-                                <span className="flex items-center gap-1 text-red-400">
-                                  <span className="opacity-60 text-[10px]">✗</span>
-                                  {tierGradeResult.breakdown.losingStreakPenalty}
-                                </span>
+                                <span>📊 Sharp Score:</span>
+                                <span className="text-white">{tierGradeResult.breakdown.sharpScore?.toFixed(1) || 'N/A'}</span>
                               </div>
-                            )}
-                            <div className="border-t border-slate-700 pt-1 mt-1 flex justify-between font-semibold">
-                              <span>Total Score:</span>
-                              <span className={rarity.textColor}>{tierGradeResult.breakdown.rawScore.toFixed(1)}</span>
+                              <div className="border-t border-slate-700 pt-1 mt-1 flex justify-between font-semibold">
+                                <span>Total Score:</span>
+                                <span className={rarity.textColor}>{tierGradeResult.breakdown.rawScore?.toFixed(1) || tierGradeResult.tierScore?.toFixed(1) || 'N/A'}</span>
+                              </div>
                             </div>
-                            {/* Insufficient History - Capped at Uncommon */}
-                            {tierGradeResult.breakdown.insufficientHistory && tierGradeResult.breakdown.originalTier && tierGradeResult.breakdown.originalTier !== 'Common' && tierGradeResult.breakdown.originalTier !== 'Uncommon' && (
-                              <div className="mt-2 pt-2 border-t border-amber-900/50 text-amber-400 text-[10px]">
-                                📉 Capped at Uncommon
-                                <br />
-                                (missing {[
-                                  tierGradeResult.breakdown.missingTeamRecord && 'team record',
-                                  tierGradeResult.breakdown.missingRecentForm && 'recent form'
-                                ].filter(Boolean).join(' & ')})
-                                <br />
-                                <span className="text-slate-500">Build {safePick.type} history to unlock higher tiers!</span>
-                              </div>
-                            )}
-                            {/* Unit Gate Demotion (only show if not already demoted for insufficient history) */}
-                            {!tierGradeResult.breakdown.insufficientHistory && tierGradeResult.breakdown.unitGateApplied && tierGradeResult.breakdown.originalTier && (
-                              <div className="mt-2 pt-2 border-t border-red-900/50 text-red-400 text-[10px]">
-                                ⛔ Demoted from {tierGradeResult.breakdown.originalTier}
-                                <br />
-                                (needed {getUnitRequirement(tierGradeResult.breakdown.originalTier)}+ units, had {safePick.units})
-                              </div>
-                            )}
-                          </div>
+                          )}
                         </div>
                       </TooltipPortal>
                     )}
@@ -981,7 +1064,7 @@ export function InsightCard(props: InsightCardProps) {
                 <div className="text-slate-400 text-xs font-medium flex items-center gap-1 flex-wrap">
                   <span>{isManualPick ? 'Human Capper' : 'AI Generated'}</span>
                   <span className="text-slate-600">•</span>
-                  <span className={rarity.textColor}>Score {tierGradeResult.tierScore.toFixed(0)}</span>
+                  <span className={rarity.textColor}>Score {(tierGradeResult.tierScore ?? tierGradeResult.confluenceScore ?? 0).toFixed(isConfluenceFormat ? 1 : 0)}</span>
                   {safePick.units > 0 && (
                     <span className="text-slate-500">• {safePick.units}U</span>
                   )}

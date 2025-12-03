@@ -146,3 +146,70 @@ export async function buildManualPickTierInput(
   }
 }
 
+// ========================================
+// CONFLUENCE SCORING INPUTS
+// ========================================
+
+export interface ConfluenceInputs {
+  specializationWinRate?: number  // 0-100 percentage
+  specializationSampleSize?: number
+  currentWinStreak: number
+}
+
+/**
+ * Get confluence scoring inputs for a capper
+ *
+ * @param capperId - The capper's ID
+ * @param betType - Bet type filter ('total' or 'spread') - REQUIRED for specialization
+ */
+export async function getConfluenceInputs(
+  capperId: string,
+  betType: 'total' | 'spread'
+): Promise<ConfluenceInputs> {
+  const admin = getSupabaseAdmin()
+
+  // Query graded picks for this bet type
+  const { data: picks, error } = await admin
+    .from('picks')
+    .select('status, units, net_units, created_at')
+    .eq('capper', capperId.toLowerCase())
+    .eq('pick_type', betType)
+    .in('status', ['won', 'lost', 'push'])
+    .order('created_at', { ascending: false })
+    .limit(100)
+
+  if (error || !picks || picks.length === 0) {
+    console.log(`[ConfluenceInputs] No graded ${betType} picks found for ${capperId}`)
+    return {
+      specializationWinRate: undefined,
+      specializationSampleSize: 0,
+      currentWinStreak: 0
+    }
+  }
+
+  // Calculate specialization win rate
+  const gradedPicks = picks.filter(p => p.status === 'won' || p.status === 'lost')
+  const wins = gradedPicks.filter(p => p.status === 'won').length
+  const sampleSize = gradedPicks.length
+  const winRate = sampleSize > 0 ? Math.round((wins / sampleSize) * 100) : undefined
+
+  // Calculate current win streak
+  let currentWinStreak = 0
+  for (const pick of picks) {
+    if (pick.status === 'won') {
+      currentWinStreak++
+    } else if (pick.status === 'lost') {
+      break // Streak broken by loss
+    }
+    // pushes don't break streaks but don't add to them either
+  }
+
+  console.log(`[ConfluenceInputs] ${capperId} ${betType}: ${wins}W/${sampleSize - wins}L (${winRate}%), streak: ${currentWinStreak}`)
+
+  return {
+    specializationWinRate: sampleSize >= 10 ? winRate : undefined,
+    specializationSampleSize: sampleSize,
+    currentWinStreak
+  }
+}
+

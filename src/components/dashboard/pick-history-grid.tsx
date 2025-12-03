@@ -382,159 +382,115 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
               <div className="p-4 space-y-4 max-h-[80vh] overflow-y-auto text-sm">
                 <div className="text-center border-b border-slate-700 pb-3">
                   <h3 className="text-lg font-bold bg-gradient-to-r from-amber-400 via-purple-400 to-blue-400 text-transparent bg-clip-text">
-                    🏆 How Tiers Are Calculated
+                    🏆 Confluence Tier System
                   </h3>
-                  <p className="text-[10px] text-slate-500 mt-1">Quality-based tier system inspired by gaming loot</p>
+                  <p className="text-[10px] text-slate-500 mt-1">Quality-based tier system — units do NOT affect tier</p>
                 </div>
 
-                {/* Tier Thresholds */}
+                {/* Tier Thresholds - New Confluence Scale */}
                 <div className="bg-slate-800/50 rounded-lg p-3 space-y-1.5">
-                  <div className="text-xs font-semibold text-slate-300 mb-2">📊 Tier Thresholds (0-100 Score)</div>
+                  <div className="text-xs font-semibold text-slate-300 mb-2">📊 Tier Thresholds (0-8 Confluence Score)</div>
                   <div className="grid grid-cols-5 gap-1.5 text-[10px]">
                     <div className="text-center p-1.5 rounded bg-amber-500/20 border border-amber-500/40">
                       <div className="text-amber-400 font-bold">🏆 Legendary</div>
-                      <div className="text-amber-300">≥85</div>
+                      <div className="text-amber-300">≥7</div>
                     </div>
                     <div className="text-center p-1.5 rounded bg-purple-500/20 border border-purple-500/40">
-                      <div className="text-purple-400 font-bold">💎 Epic</div>
-                      <div className="text-purple-300">≥75</div>
+                      <div className="text-purple-400 font-bold">💎 Elite</div>
+                      <div className="text-purple-300">6-6.9</div>
                     </div>
                     <div className="text-center p-1.5 rounded bg-blue-500/20 border border-blue-500/40">
                       <div className="text-blue-400 font-bold">💠 Rare</div>
-                      <div className="text-blue-300">≥65</div>
+                      <div className="text-blue-300">5-5.9</div>
                     </div>
                     <div className="text-center p-1.5 rounded bg-green-500/20 border border-green-500/40">
                       <div className="text-green-400 font-bold">✦ Uncommon</div>
-                      <div className="text-green-300">≥55</div>
+                      <div className="text-green-300">4-4.9</div>
                     </div>
                     <div className="text-center p-1.5 rounded bg-slate-500/20 border border-slate-500/40">
                       <div className="text-slate-400 font-bold">◆ Common</div>
-                      <div className="text-slate-300">&lt;55</div>
+                      <div className="text-slate-300">&lt;4</div>
                     </div>
                   </div>
                 </div>
 
-                {/* AI System Picks */}
+                {/* AI Picks (SHIVA/IFRIT) Signals */}
                 <div className="bg-cyan-950/30 rounded-lg p-3 border border-cyan-800/30">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs px-1.5 py-0.5 rounded bg-cyan-600/40 text-cyan-300">🤖 SYSTEM</span>
-                    <span className="text-xs font-semibold text-slate-200">AI-Generated Picks (SHIVA, IFRIT, etc.)</span>
-                  </div>
-                  <div className="text-[11px] text-slate-300 space-y-1.5">
-                    <div className="flex items-start gap-2">
-                      <span className="text-cyan-400 font-mono min-w-[100px]">Sharp Score</span>
-                      <span>AI confidence × 10 (typically 50-80 base)</span>
+                  <div className="text-xs font-semibold text-cyan-300 mb-2">🤖 AI Picks (SHIVA/IFRIT) — 4 Signals</div>
+                  <div className="text-[10px] text-slate-300 space-y-1.5">
+                    <div className="flex justify-between items-center bg-slate-800/40 px-2 py-1 rounded">
+                      <span>⚡ Edge Strength (confidence score)</span>
+                      <span className="text-slate-400">0-3 pts</span>
                     </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-cyan-400 font-mono min-w-[100px]">+ Edge Bonus</span>
-                      <span>+3 to +15 based on predicted vs market line difference</span>
+                    <div className="flex justify-between items-center bg-slate-800/40 px-2 py-1 rounded">
+                      <span>🎯 Specialization Record (bet-type win rate)</span>
+                      <span className="text-slate-400">0-2 pts</span>
                     </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-cyan-400 font-mono min-w-[100px]">+ Team Record</span>
-                      <span>-10 to +10 based on capper&apos;s history picking this team</span>
+                    <div className="flex justify-between items-center bg-slate-800/40 px-2 py-1 rounded">
+                      <span>🔥 Win Streak (consecutive wins)</span>
+                      <span className="text-slate-400">0-1 pts</span>
                     </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-cyan-400 font-mono min-w-[100px]">+ Recent Form</span>
-                      <span>-5 to +5 based on last 10 picks performance</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-cyan-400 font-mono min-w-[100px]">- Streak Penalty</span>
-                      <span>-3 to -10 if on 3+ game losing streak</span>
-                    </div>
-                    <div className="mt-2 p-2 bg-cyan-900/20 rounded text-[10px]">
-                      <span className="text-cyan-400 font-semibold">Example:</span> SHIVA picks OVER 225.5 with 70 Sharp Score, +9 edge (3+ points), +4 team record, +3 hot streak = <span className="text-amber-400 font-bold">86 → Legendary</span>
+                    <div className="flex justify-between items-center bg-slate-800/40 px-2 py-1 rounded">
+                      <span>🧩 Factor Alignment (% factors agree)</span>
+                      <span className="text-slate-400">-0.5 to +2 pts</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Manual Picks */}
-                <div className="bg-amber-950/30 rounded-lg p-3 border border-amber-800/30">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs px-1.5 py-0.5 rounded bg-amber-600/40 text-amber-300">👤 MANUAL</span>
-                    <span className="text-xs font-semibold text-slate-200">Human Capper Picks</span>
-                  </div>
-                  <div className="text-[11px] text-slate-300 space-y-1.5">
-                    <div className="flex items-start gap-2">
-                      <span className="text-amber-400 font-mono min-w-[100px]">Base Score</span>
-                      <span>40 + (Units × 8) → 1U=48, 3U=64, 5U=80</span>
+                {/* Manual Picks Signals */}
+                <div className="bg-green-950/30 rounded-lg p-3 border border-green-800/30">
+                  <div className="text-xs font-semibold text-green-300 mb-2">👤 Manual/Human Picks — 4 Signals</div>
+                  <div className="text-[10px] text-slate-300 space-y-1.5">
+                    <div className="flex justify-between items-center bg-slate-800/40 px-2 py-1 rounded">
+                      <span>💪 Bet Conviction (units risked)</span>
+                      <span className="text-slate-400">0-3 pts</span>
                     </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-amber-400 font-mono min-w-[100px]">+ Team Record</span>
-                      <span>-10 to +10 based on capper&apos;s history with this team</span>
+                    <div className="flex justify-between items-center bg-slate-800/40 px-2 py-1 rounded">
+                      <span>🎯 Specialization Record (bet-type win rate)</span>
+                      <span className="text-slate-400">0-2 pts</span>
                     </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-amber-400 font-mono min-w-[100px]">+ Recent Form</span>
-                      <span>-5 to +5 based on last 10 picks win rate</span>
+                    <div className="flex justify-between items-center bg-slate-800/40 px-2 py-1 rounded">
+                      <span>🔥 Win Streak (consecutive wins)</span>
+                      <span className="text-slate-400">0-1 pts</span>
                     </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-amber-400 font-mono min-w-[100px]">- Streak Penalty</span>
-                      <span>-3 to -10 if currently on losing streak</span>
-                    </div>
-                    <div className="mt-2 p-2 bg-amber-900/20 rounded text-[10px]">
-                      <span className="text-amber-400 font-semibold">Example:</span> gr8nade bets 4U on LAL spread with 65% team record, on 2-game win streak = 72 + 7 + 3 = <span className="text-purple-400 font-bold">82 → Epic</span>
+                    <div className="flex justify-between items-center bg-slate-800/40 px-2 py-1 rounded">
+                      <span>💰 Quality Signal (career net units)</span>
+                      <span className="text-slate-400">0-2 pts</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Picksmith */}
-                <div className="bg-violet-950/30 rounded-lg p-3 border border-violet-800/30">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs px-1.5 py-0.5 rounded bg-violet-600/40 text-violet-300">🎯 PICKSMITH</span>
-                    <span className="text-xs font-semibold text-slate-200">Consensus Picks</span>
-                  </div>
-                  <div className="text-[11px] text-slate-300 space-y-1.5">
-                    <div className="flex items-start gap-2">
-                      <span className="text-violet-400 font-mono min-w-[100px]">Base Score</span>
-                      <span>45 (minimum for any consensus of 2+ cappers)</span>
+                {/* PICKSMITH Signals */}
+                <div className="bg-purple-950/30 rounded-lg p-3 border border-purple-800/30">
+                  <div className="text-xs font-semibold text-purple-300 mb-2">🔮 PICKSMITH Consensus — 4 Signals</div>
+                  <div className="text-[10px] text-slate-300 space-y-1.5">
+                    <div className="flex justify-between items-center bg-slate-800/40 px-2 py-1 rounded">
+                      <span>🤝 Consensus Strength (# cappers agree)</span>
+                      <span className="text-slate-400">0-3 pts</span>
                     </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-violet-400 font-mono min-w-[100px]">+ Capper Count</span>
-                      <span>+8 per extra capper beyond 2 (max +16 for 4+)</span>
+                    <div className="flex justify-between items-center bg-slate-800/40 px-2 py-1 rounded">
+                      <span>🎯 Specialization Record (PICKSMITH win rate)</span>
+                      <span className="text-slate-400">0-2 pts</span>
                     </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-violet-400 font-mono min-w-[100px]">+ Capper Quality</span>
-                      <span>+4 per 10 avg net units among contributing cappers</span>
+                    <div className="flex justify-between items-center bg-slate-800/40 px-2 py-1 rounded">
+                      <span>🔥 Win Streak (PICKSMITH streak)</span>
+                      <span className="text-slate-400">0-1 pts</span>
                     </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-violet-400 font-mono min-w-[100px]">+ Bet Size</span>
-                      <span>+4 per 2 units of consensus bet (max +12)</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-violet-400 font-mono min-w-[100px]">+ Form/Record</span>
-                      <span>Same bonuses as other picks based on PICKSMITH history</span>
-                    </div>
-                    <div className="mt-2 p-2 bg-violet-900/20 rounded text-[10px]">
-                      <span className="text-violet-400 font-semibold">Example:</span> 4 cappers agree (avg +25 units), 4U bet = 45 + 16 + 8 + 8 = <span className="text-purple-400 font-bold">77 → Epic</span>
+                    <div className="flex justify-between items-center bg-slate-800/40 px-2 py-1 rounded">
+                      <span>💰 Quality Signal (avg capper net units)</span>
+                      <span className="text-slate-400">0-2 pts</span>
                     </div>
                   </div>
                 </div>
 
-                {/* History Gate - NEW */}
-                <div className="bg-amber-950/30 rounded-lg p-3 border border-amber-800/30">
-                  <div className="text-xs font-semibold text-amber-300 mb-2">📉 Insufficient History Gate</div>
-                  <div className="text-[11px] text-slate-300 space-y-1">
-                    <div>• Missing <span className="text-cyan-400">Team Record</span> OR <span className="text-cyan-400">Recent Form</span> → <span className="text-green-400 font-bold">Capped at Uncommon</span></div>
-                    <div>• Team Record = capper&apos;s history picking this specific team for this <span className="text-purple-400">bet type</span></div>
-                    <div>• Recent Form = last 10 graded picks of this <span className="text-purple-400">bet type</span> (TOTAL or SPREAD)</div>
-                    <div className="text-[10px] text-amber-400/80 mt-1 italic">Build your TOTAL and SPREAD history separately to unlock higher tiers!</div>
-                  </div>
-                </div>
-
-                {/* Unit Gates */}
-                <div className="bg-red-950/30 rounded-lg p-3 border border-red-800/30">
-                  <div className="text-xs font-semibold text-red-300 mb-2">⛔ Unit Gates (Demotion Rules)</div>
-                  <div className="text-[11px] text-slate-300 space-y-1">
-                    <div>• <span className="text-amber-400">Legendary</span> requires <span className="font-bold">4+ units</span> (else demoted to Epic)</div>
-                    <div>• <span className="text-purple-400">Epic</span> requires <span className="font-bold">3+ units</span> (else demoted to Rare)</div>
-                    <div>• <span className="text-blue-400">Rare</span> requires <span className="font-bold">2+ units</span> (else demoted to Uncommon)</div>
-                    <div className="text-[10px] text-slate-500 mt-1 italic">High scores mean nothing if you don&apos;t back it with units!</div>
-                  </div>
-                </div>
-
-                {/* Bet Type Specific Note */}
+                {/* Key Principles */}
                 <div className="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50">
-                  <div className="text-[10px] text-slate-400 text-center">
-                    💡 <span className="text-purple-400">TOTAL</span> and <span className="text-cyan-400">SPREAD</span> picks are graded separately — your TOTAL history doesn&apos;t affect SPREAD tier grades and vice versa.
+                  <div className="text-[10px] text-slate-400 space-y-1">
+                    <div className="text-center font-semibold text-slate-300 mb-1">✨ Key Principles</div>
+                    <div>• <span className="text-green-400">Units do NOT affect tier</span> — tier = quality, units = bet size</div>
+                    <div>• <span className="text-purple-400">TOTAL</span> and <span className="text-cyan-400">SPREAD</span> records tracked separately</div>
+                    <div>• All pick types use 0-8 scale with same tier thresholds</div>
+                    <div>• Legendary picks are genuinely rare and sharp</div>
                   </div>
                 </div>
               </div>
@@ -828,74 +784,70 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
                             </span>
                           )}
                         </div>
-                        {/* Tier Formula Breakdown */}
+                        {/* Tier Formula Breakdown - Confluence Scoring */}
                         <div className="pt-1.5 mt-1.5 border-t border-slate-700/50">
                           <div className="text-[9px] text-slate-500 space-y-0.5">
-                            {/* Show tier breakdown if available - handles both legacy (bonuses) and new (breakdown) structures */}
+                            {/* Show tier breakdown - handles both confluence and legacy formats */}
                             {pick.game_snapshot?.tier_grade ? (() => {
-                              const tg = pick.game_snapshot.tier_grade
-                              // Map legacy structure to normalized breakdown
-                              const sharpScore = tg.breakdown?.sharpScore ?? (tg.inputs?.baseConfidence ? tg.inputs.baseConfidence * 10 : (pick.confidence || 5) * 10)
-                              const edgeBonus = tg.breakdown?.edgeBonus ?? tg.bonuses?.edge ?? 0
-                              const teamRecordBonus = tg.breakdown?.teamRecordBonus ?? tg.bonuses?.teamRecord ?? 0
-                              const recentFormBonus = tg.breakdown?.recentFormBonus ?? tg.bonuses?.hotStreak ?? 0
-                              const losingStreakPenalty = tg.breakdown?.losingStreakPenalty ?? 0
-                              const unitGateApplied = tg.breakdown?.unitGateApplied ?? tg.bonuses?.unitGateApplied ?? false
-                              const originalTier = tg.breakdown?.originalTier ?? tg.bonuses?.originalTier
+                              const tg = pick.game_snapshot.tier_grade as any
+                              // Check if this is new confluence format (has edgePoints in breakdown)
+                              const isConfluence = tg.breakdown?.edgePoints !== undefined
 
-                              return (
-                                <>
-                                  <div className="flex justify-between">
-                                    <span>📊 Sharp Score:</span>
-                                    <span className="text-slate-300">{sharpScore.toFixed(1)}</span>
-                                  </div>
-                                  {edgeBonus !== 0 && (
+                              if (isConfluence) {
+                                // New Confluence Format
+                                const { edgePoints = 0, specPoints = 0, streakPoints = 0, alignmentPoints = 0, alignmentPct = 0 } = tg.breakdown || {}
+                                const confluenceScore = tg.confluenceScore ?? (edgePoints + specPoints + streakPoints + alignmentPoints)
+
+                                return (
+                                  <>
                                     <div className="flex justify-between">
-                                      <span>📈 Edge Bonus:</span>
-                                      <span className={edgeBonus > 0 ? 'text-green-400' : 'text-red-400'}>
-                                        <span className="opacity-60 text-[8px] mr-0.5">{edgeBonus > 0 ? '✓' : '✗'}</span>
-                                        {edgeBonus > 0 ? '+' : ''}{edgeBonus}
+                                      <span>⚡ Edge Strength:</span>
+                                      <span className={edgePoints >= 2 ? 'text-green-400' : edgePoints >= 1 ? 'text-yellow-400' : 'text-slate-400'}>
+                                        +{edgePoints.toFixed(1)}
                                       </span>
                                     </div>
-                                  )}
-                                  {teamRecordBonus !== 0 && (
                                     <div className="flex justify-between">
-                                      <span>🎯 Team Record:</span>
-                                      <span className={teamRecordBonus > 0 ? 'text-green-400' : 'text-red-400'}>
-                                        <span className="opacity-60 text-[8px] mr-0.5">{teamRecordBonus > 0 ? '✓' : '✗'}</span>
-                                        {teamRecordBonus > 0 ? '+' : ''}{teamRecordBonus}
+                                      <span>🎯 {pick.pick_type?.toUpperCase() || 'BET'} Win Rate:</span>
+                                      <span className={specPoints >= 1 ? 'text-green-400' : 'text-slate-400'}>
+                                        +{specPoints.toFixed(1)}
                                       </span>
                                     </div>
-                                  )}
-                                  {recentFormBonus !== 0 && (
                                     <div className="flex justify-between">
-                                      <span>🔥 Recent Form:</span>
-                                      <span className={recentFormBonus > 0 ? 'text-green-400' : 'text-red-400'}>
-                                        <span className="opacity-60 text-[8px] mr-0.5">{recentFormBonus > 0 ? '✓' : '✗'}</span>
-                                        {recentFormBonus > 0 ? '+' : ''}{recentFormBonus}
+                                      <span>🔥 Win Streak:</span>
+                                      <span className={streakPoints > 0 ? 'text-green-400' : 'text-slate-400'}>
+                                        +{streakPoints.toFixed(1)}
                                       </span>
                                     </div>
-                                  )}
-                                  {losingStreakPenalty !== 0 && (
                                     <div className="flex justify-between">
-                                      <span>⚠️ Streak Penalty:</span>
-                                      <span className="text-red-400">
-                                        <span className="opacity-60 text-[8px] mr-0.5">✗</span>
-                                        {losingStreakPenalty}
+                                      <span>🧩 Factor Alignment:</span>
+                                      <span className={alignmentPoints >= 1 ? 'text-green-400' : alignmentPoints < 0 ? 'text-red-400' : 'text-yellow-400'}>
+                                        {alignmentPoints >= 0 ? '+' : ''}{alignmentPoints.toFixed(1)}
+                                        <span className="text-slate-600 ml-0.5">({alignmentPct}%)</span>
                                       </span>
                                     </div>
-                                  )}
-                                  <div className="flex justify-between border-t border-slate-700/50 pt-0.5 mt-0.5 font-semibold">
-                                    <span>🏆 Tier Score:</span>
-                                    <span style={{ color: rarity.borderColor }}>{tg.tierScore.toFixed(0)}</span>
-                                  </div>
-                                  {unitGateApplied && originalTier && (
-                                    <div className="text-[8px] text-red-400 mt-0.5">
-                                      ⛔ Demoted from {originalTier}
+                                    <div className="flex justify-between border-t border-slate-700/50 pt-0.5 mt-0.5 font-semibold">
+                                      <span>🏆 Confluence:</span>
+                                      <span style={{ color: rarity.borderColor }}>{confluenceScore.toFixed(1)}</span>
                                     </div>
-                                  )}
-                                </>
-                              )
+                                  </>
+                                )
+                              } else {
+                                // Legacy Format
+                                const sharpScore = tg.breakdown?.sharpScore ?? (tg.inputs?.baseConfidence ? tg.inputs.baseConfidence * 10 : (pick.confidence || 5) * 10)
+                                return (
+                                  <>
+                                    <div className="text-[8px] text-amber-400/70 mb-0.5">Legacy format</div>
+                                    <div className="flex justify-between">
+                                      <span>📊 Sharp Score:</span>
+                                      <span className="text-slate-300">{sharpScore.toFixed(1)}</span>
+                                    </div>
+                                    <div className="flex justify-between border-t border-slate-700/50 pt-0.5 mt-0.5 font-semibold">
+                                      <span>🏆 Tier Score:</span>
+                                      <span style={{ color: rarity.borderColor }}>{(tg.tierScore || 0).toFixed(0)}</span>
+                                    </div>
+                                  </>
+                                )
+                              }
                             })() : (
                               <>
                                 <div className="flex justify-between">

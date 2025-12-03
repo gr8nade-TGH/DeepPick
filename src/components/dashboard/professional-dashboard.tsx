@@ -420,9 +420,11 @@ export function ProfessionalDashboard() {
 
   const sortPicksByQuality = (cappers: Capper[]) => {
     // Tier priority map (Legendary = highest priority)
+    // Includes both 'Elite' (new) and 'Epic' (legacy) tier names
     const tierPriority: Record<RarityTier, number> = {
       'Legendary': 5,
-      'Epic': 4,
+      'Elite': 4,
+      'Epic': 4,  // Legacy alias for Elite
       'Rare': 3,
       'Uncommon': 2,
       'Common': 1
