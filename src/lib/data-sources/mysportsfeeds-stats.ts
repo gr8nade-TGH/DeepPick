@@ -321,31 +321,50 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
           directAwayTeam: game?.awayTeam,
           scheduleHomeTeam: game?.schedule?.homeTeam,
           scheduleAwayTeam: game?.schedule?.awayTeam,
-          isHomeDirectField: gameLog?.isHome, // New: Check direct isHome field
+          venueAllegiance: game?.schedule?.venueAllegiance, // New: Check venue allegiance
+          isHomeDirectField: gameLog?.isHome, // Check direct isHome field
           // Resolved values
           resolvedHomeTeamId: homeTeam?.id,
+          resolvedHomeTeamAbbrev: homeTeam?.abbreviation,
           resolvedAwayTeamId: awayTeam?.id,
+          resolvedAwayTeamAbbrev: awayTeam?.abbreviation,
           gameKeys: game ? Object.keys(game) : [],
+          scheduleKeys: game?.schedule ? Object.keys(game.schedule) : [],
           gameLogKeys: gameLog ? Object.keys(gameLog) : []
         })
       }
 
       // Determine if this is a home game using multiple methods:
       // 1. Direct isHome field on gameLog (most reliable if present)
-      // 2. Compare homeTeam.id to team.id
-      // 3. Compare homeTeam.abbreviation to team.abbreviation
+      // 2. venueAllegiance field on game.schedule ('HOME' = this team is home, 'AWAY' = this team is away)
+      // 3. Compare homeTeam.id to team.id
+      // 4. Compare homeTeam.abbreviation to team.abbreviation
       let isHomeGame: boolean | null = null
 
       if (typeof gameLog?.isHome === 'boolean') {
         // Direct boolean field - most reliable
         isHomeGame = gameLog.isHome
+      } else if (game?.schedule?.venueAllegiance) {
+        // venueAllegiance tells us which side has home advantage
+        // But we need to know which side WE are - check if we're the home or away team
+        const venueAllegiance = game.schedule.venueAllegiance
+        if (venueAllegiance === 'HOME') {
+          // Home team has venue - are we the home team?
+          isHomeGame = homeTeam?.id === team?.id || homeTeam?.abbreviation === team?.abbreviation
+        } else if (venueAllegiance === 'AWAY') {
+          // Away team has venue (unusual) - are we the away team?
+          isHomeGame = !(awayTeam?.id === team?.id || awayTeam?.abbreviation === team?.abbreviation)
+        }
+        // If NEUTRAL, we can't determine
       } else if (homeTeam?.id && team?.id) {
         // Compare IDs
         isHomeGame = homeTeam.id === team.id
       } else if (homeTeam?.abbreviation && team?.abbreviation) {
         // Fallback: Compare abbreviations
         isHomeGame = homeTeam.abbreviation === team.abbreviation
-      } else {
+      }
+
+      if (isHomeGame === null) {
         // Can't determine - skip this game for home/away stats only
         console.warn(`[MySportsFeeds Stats] Cannot determine home/away for ${teamAbbrev} game ${game?.id} - skipping for venue splits`)
       }
