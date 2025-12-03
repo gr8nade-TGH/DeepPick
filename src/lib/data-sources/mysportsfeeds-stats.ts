@@ -116,7 +116,8 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
   const cached = await getSupabaseCachedTeamForm(cacheKey)
 
   // Validate cached data has all required fields (invalidate old cache entries)
-  if (cached &&
+  // Also require home/away splits to be present - we're 2+ months into season, all teams should have both
+  const hasRequiredFields = cached &&
     typeof cached.avgTurnovers === 'number' &&
     typeof cached.avgOffReb === 'number' &&
     typeof cached.avgDefReb === 'number' &&
@@ -125,11 +126,26 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
     typeof cached.avgEfg === 'number' &&
     typeof cached.avgTovPct === 'number' &&
     typeof cached.avgOrebPct === 'number' &&
-    typeof cached.avgFtr === 'number') {
-    console.log(`[MySportsFeeds Stats] Cache HIT for ${cacheKey} - using cached data`)
+    typeof cached.avgFtr === 'number'
+
+  // Check if home/away splits are properly populated (both should have at least 1 game)
+  const hasHomeAwaySplits = cached &&
+    typeof cached.homeGames === 'number' && cached.homeGames > 0 &&
+    typeof cached.awayGames === 'number' && cached.awayGames > 0 &&
+    typeof cached.ortgHome === 'number' &&
+    typeof cached.ortgAway === 'number'
+
+  if (hasRequiredFields && hasHomeAwaySplits) {
+    console.log(`[MySportsFeeds Stats] Cache HIT for ${cacheKey} - using cached data (home: ${cached.homeGames}, away: ${cached.awayGames} games)`)
     return cached
   } else if (cached) {
-    console.log(`[MySportsFeeds Stats] Cache INVALID for ${cacheKey} - missing new fields, refetching...`)
+    console.log(`[MySportsFeeds Stats] Cache INVALID for ${cacheKey} - missing home/away splits or required fields, refetching...`, {
+      hasRequiredFields,
+      homeGames: cached.homeGames,
+      awayGames: cached.awayGames,
+      ortgHome: cached.ortgHome,
+      ortgAway: cached.ortgAway
+    })
   }
 
   console.log(`[MySportsFeeds Stats] Cache MISS for ${cacheKey} - fetching from API...`)
@@ -165,7 +181,13 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
         freeThrows: firstGame.stats?.freeThrows,
         offense: firstGame.stats?.offense,
         defense: firstGame.stats?.defense,
-        rebounds: firstGame.stats?.rebounds
+        rebounds: firstGame.stats?.rebounds,
+        // Home/Away detection fields
+        gameKeys: firstGame.game ? Object.keys(firstGame.game) : [],
+        teamId: firstGame.team?.id,
+        homeTeam: firstGame.game?.homeTeam,
+        awayTeam: firstGame.game?.awayTeam,
+        schedule: firstGame.game?.schedule // Check if it's nested under schedule
       })
     }
 
@@ -259,6 +281,20 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
       // Track home/away splits
       const game = gameLog.game
       const team = gameLog.team
+
+      // Debug: Log game structure for first game only
+      if (gameLogs.indexOf(gameLog) === 0) {
+        console.log(`[MySportsFeeds Stats] Home/Away detection debug for ${teamAbbrev}:`, {
+          gameId: game?.id,
+          teamId: team?.id,
+          teamAbbrev: team?.abbreviation,
+          homeTeamId: game?.homeTeam?.id,
+          homeTeamAbbrev: game?.homeTeam?.abbreviation,
+          awayTeamId: game?.awayTeam?.id,
+          awayTeamAbbrev: game?.awayTeam?.abbreviation
+        })
+      }
+
       const isHomeGame = game?.homeTeam?.id === team?.id
 
       if (isHomeGame) {
