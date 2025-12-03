@@ -291,16 +291,16 @@ const SPREAD_ARCHETYPES: PresetConfig[] = [
     }
   },
   {
-    id: 'home-court-hero',
-    name: 'The Home Court Hero',
-    description: 'Home court is undervalued. Back the home teams.',
-    icon: Home,
+    id: 'disruptor',
+    name: 'The Disruptor',
+    description: 'Chaos wins. Force turnovers, control the game.',
+    icon: Shuffle,
     color: 'emerald',
-    philosophy: 'Vegas still underweights home court advantage. Strong home teams with good home splits are money. Road favorites are traps.',
+    philosophy: 'Turnovers are the great equalizer. Teams that force chaos and protect the rock control destiny. High-turnover games favor disciplined underdogs.',
     totalFactors: { enabled: [], weights: {} },
     spreadFactors: {
-      enabled: ['homeAwaySplits', 'fourFactorsDiff', 'netRatingDiff', 'turnoverDiff'],
-      weights: { homeAwaySplits: 40, fourFactorsDiff: 25, netRatingDiff: 20, turnoverDiff: 15 }
+      enabled: ['turnoverDiff', 'fourFactorsDiff', 'netRatingDiff'],
+      weights: { turnoverDiff: 50, fourFactorsDiff: 30, netRatingDiff: 20 }
     }
   },
   {
