@@ -270,6 +270,20 @@ is_system_pick: isSystemCapperCheck,  // ✅ CORRECT - boolean result
 
 **Symptom:** Notes showing "Both teams well rested (41d/41d)" for F7 factor.
 
+### Issue: H/A (Home/Away Splits) Always NEUTRAL 0.0 (Fixed Dec 2025)
+
+**Problem:** The S4 factor was always returning NEUTRAL 0.0 because home/away detection failed. MySportsFeeds `team_gamelogs` API doesn't always include `homeTeam`/`awayTeam` directly.
+
+**File:** `src/lib/data-sources/mysportsfeeds-stats.ts` lines 333-370
+
+**Fix:** Added multiple fallback methods for home/away detection:
+1. `gameLog.isHome` boolean field (most reliable if present)
+2. `game.schedule.venueAllegiance` ('HOME'/'AWAY'/'NEUTRAL')
+3. Compare `homeTeam.id === team.id`
+4. Compare `homeTeam.abbreviation === team.abbreviation`
+
+**Symptom:** All SPREAD picks showing `homeAwaySplits` with `signal: 0` and notes "Insufficient home/away split data".
+
 ---
 
 ## Current Factors
