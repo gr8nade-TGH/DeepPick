@@ -338,23 +338,48 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
         })
       }
 
-      // Determine if this is a home game using multiple methods:
-      // 1. Direct isHome field on gameLog (most reliable if present)
-      // 2. Parse game ID which is formatted as "{date}-{away}-{home}" (very reliable)
-      // 3. venueAllegiance field on game.schedule ('HOME' = this team is home)
-      // 4. Compare homeTeam.id to team.id
-      // 5. Compare homeTeam.abbreviation to team.abbreviation
+      // Determine if this is a home game using multiple methods
       let isHomeGame: boolean | null = null
 
+      // Method 1: Direct isHome field on gameLog (most reliable if present)
       if (typeof gameLog?.isHome === 'boolean') {
-        // Direct boolean field - most reliable
         isHomeGame = gameLog.isHome
-      } else if (game?.id && team?.abbreviation) {
-        // Parse game ID: format is "{date}-{away}-{home}" e.g., "20241201-BOS-LAL"
-        // MySportsFeeds uses this format consistently
-        const gameIdParts = (game.id as string).split('-')
+      }
+
+      // Method 2: Compare homeTeam/awayTeam references to our team
+      // game.schedule.homeTeam and game.schedule.awayTeam are short references with id and abbreviation
+      if (isHomeGame === null && team?.abbreviation) {
+        // Try comparing abbreviations (most reliable since we know our team abbrev)
+        const homeTeamAbbrev = homeTeam?.abbreviation?.toUpperCase() ||
+          game?.schedule?.homeTeam?.abbreviation?.toUpperCase()
+        const awayTeamAbbrev = awayTeam?.abbreviation?.toUpperCase() ||
+          game?.schedule?.awayTeam?.abbreviation?.toUpperCase()
+        const ourTeamAbbrev = team.abbreviation.toUpperCase()
+
+        if (homeTeamAbbrev && homeTeamAbbrev === ourTeamAbbrev) {
+          isHomeGame = true
+        } else if (awayTeamAbbrev && awayTeamAbbrev === ourTeamAbbrev) {
+          isHomeGame = false
+        }
+      }
+
+      // Method 3: Compare IDs
+      if (isHomeGame === null && team?.id) {
+        const homeTeamId = homeTeam?.id || game?.schedule?.homeTeam?.id
+        const awayTeamId = awayTeam?.id || game?.schedule?.awayTeam?.id
+
+        if (homeTeamId && homeTeamId === team.id) {
+          isHomeGame = true
+        } else if (awayTeamId && awayTeamId === team.id) {
+          isHomeGame = false
+        }
+      }
+
+      // Method 4: Parse game ID if format is "{date}-{away}-{home}"
+      if (isHomeGame === null && game?.id && team?.abbreviation) {
+        const gameIdStr = String(game.id)
+        const gameIdParts = gameIdStr.split('-')
         if (gameIdParts.length >= 3) {
-          // Last part is home team, second-to-last is away team
           const homeAbbrevFromId = gameIdParts[gameIdParts.length - 1].toUpperCase()
           const awayAbbrevFromId = gameIdParts[gameIdParts.length - 2].toUpperCase()
           const teamAbbrevUpper = team.abbreviation.toUpperCase()
@@ -367,26 +392,8 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
         }
       }
 
-      // Additional fallbacks if game ID parsing didn't work
-      if (isHomeGame === null && game?.schedule?.venueAllegiance) {
-        const venueAllegiance = game.schedule.venueAllegiance
-        if (venueAllegiance === 'HOME') {
-          isHomeGame = homeTeam?.id === team?.id || homeTeam?.abbreviation === team?.abbreviation
-        } else if (venueAllegiance === 'AWAY') {
-          isHomeGame = !(awayTeam?.id === team?.id || awayTeam?.abbreviation === team?.abbreviation)
-        }
-      }
-
-      if (isHomeGame === null && homeTeam?.id && team?.id) {
-        isHomeGame = homeTeam.id === team.id
-      }
-
-      if (isHomeGame === null && homeTeam?.abbreviation && team?.abbreviation) {
-        isHomeGame = homeTeam.abbreviation === team.abbreviation
-      }
-
       if (isHomeGame === null) {
-        console.warn(`[MySportsFeeds Stats] Cannot determine home/away for ${teamAbbrev} game ${game?.id} - skipping for venue splits`)
+        console.warn(`[MySportsFeeds Stats] Cannot determine home/away for ${teamAbbrev} game ${game?.id} - skipping for venue splits. homeTeam=${JSON.stringify(homeTeam)}, awayTeam=${JSON.stringify(awayTeam)}, team=${JSON.stringify(team)}`)
       }
 
       // Only add to home/away stats if we could reliably detect the venue
