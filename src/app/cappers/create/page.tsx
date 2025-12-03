@@ -351,7 +351,7 @@ const TOTALS_ARCHETYPES: PresetConfig[] = [
 
 // ============================================
 // SPREAD ARCHETYPES - All weights MUST sum to 250%
-// Available factors: netRatingDiff, turnoverDiff, shootingEfficiencyMomentum, reboundingDiff, fourFactorsDiff, injuryAvailability, momentumIndex, defensivePressure, assistEfficiency
+// Available factors: netRatingDiff, turnoverDiff, shootingEfficiencyMomentum, reboundingDiff, fourFactorsDiff, injuryAvailability, momentumIndex, defensivePressure, assistEfficiency, clutchShooting, scoringMargin, perimeterDefense
 // ============================================
 const SPREAD_ARCHETYPES: PresetConfig[] = [
   {
@@ -478,6 +478,48 @@ const SPREAD_ARCHETYPES: PresetConfig[] = [
       // Primary: assistEfficiency (75), Strong: turnover (55) + fourFactors (50), Support: netRating (40) + rebounding (30) = 250
       enabled: ['assistEfficiency', 'turnoverDiff', 'fourFactorsDiff', 'netRatingDiff', 'reboundingDiff'],
       weights: { assistEfficiency: 75, turnoverDiff: 55, fourFactorsDiff: 50, netRatingDiff: 40, reboundingDiff: 30 }
+    }
+  },
+  {
+    id: 'ice-veins',
+    name: 'Ice Veins',
+    description: 'Clutch shooting wins close games. Nerves of steel.',
+    icon: Target,
+    color: 'cyan',
+    philosophy: 'When the game is on the line, FT% and FG% are everything. Teams that execute under pressure close out games and cover spreads.',
+    totalFactors: { enabled: [], weights: {} },
+    spreadFactors: {
+      // Primary: clutchShooting (80), Strong: scoringMargin (55) + netRating (50), Support: fourFactors (40) + turnover (25) = 250
+      enabled: ['clutchShooting', 'scoringMargin', 'netRatingDiff', 'fourFactorsDiff', 'turnoverDiff'],
+      weights: { clutchShooting: 80, scoringMargin: 55, netRatingDiff: 50, fourFactorsDiff: 40, turnoverDiff: 25 }
+    }
+  },
+  {
+    id: 'lockdown',
+    name: 'The Lockdown',
+    description: 'Defense travels. Elite perimeter D = spreads covered.',
+    icon: Shield,
+    color: 'violet',
+    philosophy: 'Great 3PT defense wins in the modern NBA. Teams that contest shots and limit opponent FG% control the game tempo and cover.',
+    totalFactors: { enabled: [], weights: {} },
+    spreadFactors: {
+      // Primary: perimeterDefense (80), Strong: defensivePressure (55) + fourFactors (50), Support: turnover (40) + netRating (25) = 250
+      enabled: ['perimeterDefense', 'defensivePressure', 'fourFactorsDiff', 'turnoverDiff', 'netRatingDiff'],
+      weights: { perimeterDefense: 80, defensivePressure: 55, fourFactorsDiff: 50, turnoverDiff: 40, netRatingDiff: 25 }
+    }
+  },
+  {
+    id: 'point-machine',
+    name: 'The Point Machine',
+    description: 'Outscore everyone. Scoring margin is destiny.',
+    icon: Flame,
+    color: 'orange',
+    philosophy: 'Simple math: teams that consistently outscore opponents cover spreads. Raw PPG differential reveals true team quality.',
+    totalFactors: { enabled: [], weights: {} },
+    spreadFactors: {
+      // Primary: scoringMargin (85), Strong: clutchShooting (55) + netRating (50), Support: fourFactors (35) + turnover (25) = 250
+      enabled: ['scoringMargin', 'clutchShooting', 'netRatingDiff', 'fourFactorsDiff', 'turnoverDiff'],
+      weights: { scoringMargin: 85, clutchShooting: 55, netRatingDiff: 50, fourFactorsDiff: 35, turnoverDiff: 25 }
     }
   }
 ]
