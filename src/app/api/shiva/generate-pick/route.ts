@@ -833,7 +833,7 @@ export async function POST(request: Request) {
         }
       },
       status: 'pending',
-      is_system_pick: isSystemCapper,
+      is_system_pick: isSystemCapperCheck,
       reasoning: `${capperId.toUpperCase()} pick generated via wizard pipeline`,
       algorithm_version: `${capperId}_v1`
     }
