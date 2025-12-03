@@ -360,8 +360,8 @@ export default function CreateCapperPage() {
   const selectedPreset = selectedPresets[archetypeBetType]
   const activeBetType = factorBetType
 
-  // Expanded factor groups
-  const [expandedGroups, setExpandedGroups] = useState<string[]>(['pace', 'form'])
+  // Factor category filter - 'all' shows all factors (default for archetype animation)
+  const [factorCategoryFilter, setFactorCategoryFilter] = useState<string>('all')
 
   // Name editing state
   const [isEditingName, setIsEditingName] = useState(false)
@@ -566,14 +566,7 @@ export default function CreateCapperPage() {
     updateConfig({ factor_config: newFactorConfig })
   }
 
-  // Toggle factor group expansion
-  const toggleGroupExpanded = (groupId: string) => {
-    setExpandedGroups(prev =>
-      prev.includes(groupId)
-        ? prev.filter(g => g !== groupId)
-        : [...prev, groupId]
-    )
-  }
+
 
   const canSubmit = () => {
     // Name is required
@@ -1013,103 +1006,87 @@ export default function CreateCapperPage() {
                         </div>
                       </div>
 
-                      {/* Archetype Cards - Use bet-type specific archetypes */}
+                      {/* Archetype Cards - Uniform 2x2 grid with equal heights */}
                       {(() => {
                         const archetypes = archetypeBetType === 'TOTAL' ? TOTALS_ARCHETYPES : SPREAD_ARCHETYPES
                         return (
-                          <>
-                            <div className="grid grid-cols-3 gap-2 mb-2">
-                              {archetypes.slice(0, 3).map(preset => {
-                                const Icon = preset.icon
-                                const isSelected = selectedPresets[archetypeBetType] === preset.id
-                                return (
-                                  <button
-                                    key={preset.id}
-                                    onClick={() => handlePresetSelect(preset)}
-                                    className={`group p-3 rounded-xl border-2 transition-all text-left ${isSelected
-                                      ? `border-${preset.color}-500 bg-gradient-to-br from-${preset.color}-500/20 to-${preset.color}-600/10 shadow-lg shadow-${preset.color}-500/20`
-                                      : 'border-slate-600 hover:border-slate-500 bg-slate-700/30 hover:bg-slate-700/50'
-                                      }`}
-                                  >
-                                    <div className="flex items-start gap-2">
-                                      <div className={`p-1.5 rounded-lg transition-all flex-shrink-0 ${isSelected ? `bg-${preset.color}-500/30` : 'bg-slate-600 group-hover:bg-slate-500'}`}>
-                                        <Icon className={`w-4 h-4 ${isSelected ? `text-${preset.color}-400` : 'text-slate-300'}`} />
-                                      </div>
-                                      <div className="flex-1 min-w-0">
-                                        <h4 className={`font-bold text-xs truncate ${isSelected ? `text-${preset.color}-400` : 'text-white'}`}>
-                                          {preset.name}
-                                        </h4>
-                                        <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-2">{preset.description}</p>
-                                      </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            {archetypes.map(preset => {
+                              const Icon = preset.icon
+                              const isSelected = selectedPresets[archetypeBetType] === preset.id
+                              return (
+                                <button
+                                  key={preset.id}
+                                  onClick={() => handlePresetSelect(preset)}
+                                  className={`group p-3 rounded-xl border-2 transition-all text-left h-[72px] ${isSelected
+                                    ? `border-${preset.color}-500 bg-gradient-to-br from-${preset.color}-500/20 to-${preset.color}-600/10 shadow-lg shadow-${preset.color}-500/20`
+                                    : 'border-slate-600 hover:border-slate-500 bg-slate-700/30 hover:bg-slate-700/50'
+                                    }`}
+                                >
+                                  <div className="flex items-start gap-2 h-full">
+                                    <div className={`p-1.5 rounded-lg transition-all flex-shrink-0 ${isSelected ? `bg-${preset.color}-500/30` : 'bg-slate-600 group-hover:bg-slate-500'}`}>
+                                      <Icon className={`w-4 h-4 ${isSelected ? `text-${preset.color}-400` : 'text-slate-300'}`} />
                                     </div>
-                                  </button>
-                                )
-                              })}
-                            </div>
-                            <div className="grid grid-cols-2 gap-2">
-                              {archetypes.slice(3).map(preset => {
-                                const Icon = preset.icon
-                                const isSelected = selectedPresets[archetypeBetType] === preset.id
-                                return (
-                                  <button
-                                    key={preset.id}
-                                    onClick={() => handlePresetSelect(preset)}
-                                    className={`group p-3 rounded-xl border-2 transition-all text-left ${isSelected
-                                      ? `border-${preset.color}-500 bg-gradient-to-br from-${preset.color}-500/20 to-${preset.color}-600/10 shadow-lg shadow-${preset.color}-500/20`
-                                      : 'border-slate-600 hover:border-slate-500 bg-slate-700/30 hover:bg-slate-700/50'
-                                      }`}
-                                  >
-                                    <div className="flex items-start gap-2">
-                                      <div className={`p-1.5 rounded-lg transition-all flex-shrink-0 ${isSelected ? `bg-${preset.color}-500/30` : 'bg-slate-600 group-hover:bg-slate-500'}`}>
-                                        <Icon className={`w-4 h-4 ${isSelected ? `text-${preset.color}-400` : 'text-slate-300'}`} />
-                                      </div>
-                                      <div className="flex-1 min-w-0">
-                                        <h4 className={`font-bold text-xs truncate ${isSelected ? `text-${preset.color}-400` : 'text-white'}`}>
-                                          {preset.name}
-                                        </h4>
-                                        <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-2">{preset.description}</p>
-                                      </div>
+                                    <div className="flex-1 min-w-0">
+                                      <h4 className={`font-bold text-xs truncate ${isSelected ? `text-${preset.color}-400` : 'text-white'}`}>
+                                        {preset.name}
+                                      </h4>
+                                      <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-2">{preset.description}</p>
                                     </div>
-                                  </button>
-                                )
-                              })}
-                            </div>
-                          </>
+                                  </div>
+                                </button>
+                              )
+                            })}
+                          </div>
                         )
                       })()}
                     </div>
                   )}
 
-                  {/* Factor Configuration - Two Column Layout */}
+                  {/* Factor Configuration - Horizontal Category Tabs + Full Width Panel */}
                   {config.pick_mode !== 'manual' && (
-                    <div className="grid grid-cols-12 gap-4">
-                      {/* Left: Factor Groups */}
-                      <div className="col-span-5 space-y-1">
+                    <div className="space-y-3">
+                      {/* Category Filter Tabs */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <button
+                          onClick={() => setFactorCategoryFilter('all')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${factorCategoryFilter === 'all'
+                              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                              : 'bg-slate-800/50 text-slate-400 border border-slate-700/50 hover:bg-slate-700/50 hover:text-white'
+                            }`}
+                        >
+                          All Factors
+                        </button>
                         {FACTOR_GROUPS[factorBetType].map(group => {
                           const GroupIcon = group.icon
                           const enabledCount = group.factors.filter(f =>
                             config.factor_config[factorBetType]?.enabled_factors.includes(f)
                           ).length
+                          const isActive = factorCategoryFilter === group.id
 
                           return (
                             <button
                               key={group.id}
-                              onClick={() => toggleGroupExpanded(group.id)}
-                              className={`w-full flex items-center gap-2 p-2.5 rounded-lg border transition-all text-left ${expandedGroups.includes(group.id)
-                                ? `border-${group.color}-500/50 bg-${group.color}-500/10`
-                                : 'border-slate-700/50 bg-slate-800/50 hover:bg-slate-700/50'
+                              onClick={() => setFactorCategoryFilter(group.id)}
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${isActive
+                                  ? `bg-${group.color}-500/20 text-${group.color}-400 border border-${group.color}-500/40`
+                                  : 'bg-slate-800/50 text-slate-400 border border-slate-700/50 hover:bg-slate-700/50 hover:text-white'
                                 }`}
                             >
-                              <GroupIcon className={`w-4 h-4 text-${group.color}-400 flex-shrink-0`} />
-                              <span className="text-sm font-medium text-white flex-1">{group.name}</span>
-                              <span className={`text-xs font-bold text-${group.color}-400`}>+{enabledCount}</span>
+                              <GroupIcon className={`w-3.5 h-3.5 ${isActive ? `text-${group.color}-400` : ''}`} />
+                              <span className="hidden sm:inline">{group.name.split(' ')[0]}</span>
+                              {enabledCount > 0 && (
+                                <span className={`text-[10px] px-1 rounded ${isActive ? `bg-${group.color}-500/30` : 'bg-slate-700'}`}>
+                                  {enabledCount}
+                                </span>
+                              )}
                             </button>
                           )
                         })}
                       </div>
 
-                      {/* Right: Factor Weights Panel */}
-                      <div className="col-span-7 bg-slate-900/50 border border-slate-700/50 rounded-xl p-3">
+                      {/* Full-Width Factor Weights Panel */}
+                      <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-4">
                         {/* Header with bet type label and budget */}
                         <div className="flex items-center justify-between mb-3">
                           <div className={`py-1 px-3 rounded-md font-semibold text-xs ${factorBetType === 'TOTAL' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'bg-purple-500/20 text-purple-400 border border-purple-500/30'}`}>
@@ -1121,7 +1098,7 @@ export default function CreateCapperPage() {
                             const isValid = isWeightValid(factorBetType)
                             return (
                               <div className={`flex items-center gap-2 px-2 py-1 rounded-lg ${isValid ? 'bg-green-500/10' : 'bg-amber-500/10'}`}>
-                                <div className="w-16 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                                <div className="w-20 h-2 bg-slate-700 rounded-full overflow-hidden">
                                   <div
                                     className={`h-full transition-all duration-300 ${isValid ? 'bg-green-500' : 'bg-amber-500'}`}
                                     style={{ width: `${Math.min((totalW / 250) * 100, 100)}%` }}
@@ -1135,68 +1112,80 @@ export default function CreateCapperPage() {
                           })()}
                         </div>
 
-                        {/* Factor Sliders */}
-                        <div className="space-y-2">
-                          {AVAILABLE_FACTORS[factorBetType]?.map(factor => {
-                            const isEnabled = config.factor_config[factorBetType]?.enabled_factors.includes(factor)
-                            const weight = config.factor_config[factorBetType]?.weights[factor] || 50
-                            const details = FACTOR_DETAILS[factor as keyof typeof FACTOR_DETAILS]
-                            const Icon = details?.icon || Target
+                        {/* Factor Sliders - Filtered by category */}
+                        <div className="grid grid-cols-1 gap-2">
+                          {(() => {
+                            // Get factors to display based on category filter
+                            const allFactors = AVAILABLE_FACTORS[factorBetType] || []
+                            const filteredFactors = factorCategoryFilter === 'all'
+                              ? allFactors
+                              : FACTOR_GROUPS[factorBetType]
+                                .find(g => g.id === factorCategoryFilter)?.factors || []
 
-                            return (
-                              <div
-                                key={factor}
-                                className={`flex items-center gap-2 p-2 rounded-lg border transition-all ${isEnabled ? 'border-amber-500/30 bg-slate-800/60' : 'border-slate-700/30 bg-slate-800/20'}`}
-                              >
-                                {/* Toggle */}
-                                <button
-                                  onClick={() => handleFactorToggle(factorBetType, factor)}
-                                  className={`w-8 h-4 rounded-full transition flex-shrink-0 ${isEnabled ? 'bg-amber-500' : 'bg-slate-600'}`}
+                            return filteredFactors.map(factor => {
+                              const isEnabled = config.factor_config[factorBetType]?.enabled_factors.includes(factor)
+                              const weight = config.factor_config[factorBetType]?.weights[factor] || 50
+                              const details = FACTOR_DETAILS[factor as keyof typeof FACTOR_DETAILS]
+                              const Icon = details?.icon || Target
+
+                              return (
+                                <div
+                                  key={factor}
+                                  className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${isEnabled ? 'border-amber-500/30 bg-slate-800/60' : 'border-slate-700/30 bg-slate-800/20'}`}
                                 >
-                                  <div className={`w-3 h-3 bg-white rounded-full transition-transform mt-0.5 ${isEnabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
-                                </button>
+                                  {/* Toggle */}
+                                  <button
+                                    onClick={() => handleFactorToggle(factorBetType, factor)}
+                                    className={`w-10 h-5 rounded-full transition flex-shrink-0 ${isEnabled ? 'bg-amber-500' : 'bg-slate-600'}`}
+                                  >
+                                    <div className={`w-4 h-4 bg-white rounded-full transition-transform mt-0.5 ${isEnabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                                  </button>
 
-                                {/* Icon + Name + Tooltip */}
-                                <Icon className={`w-4 h-4 flex-shrink-0 ${isEnabled ? 'text-amber-400' : 'text-slate-500'}`} />
-                                <span className={`text-xs font-medium flex-shrink-0 w-20 truncate ${isEnabled ? 'text-white' : 'text-slate-400'}`}>
-                                  {details?.name?.split(' ').slice(0, 2).join(' ')}
-                                </span>
-                                {/* Info Tooltip */}
-                                <div className="relative group/tooltip flex-shrink-0">
-                                  <HelpCircle className={`w-3.5 h-3.5 cursor-help ${isEnabled ? 'text-slate-400 hover:text-amber-400' : 'text-slate-600'}`} />
-                                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-slate-900 border border-amber-500/30 rounded-lg shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none">
-                                    <div className="text-xs font-bold text-amber-400 mb-1">{details?.name}</div>
-                                    <div className="text-[10px] text-slate-300 mb-2">{details?.description}</div>
-                                    <div className="text-[10px] text-slate-400 italic">{details?.importance}</div>
-                                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full border-4 border-transparent border-t-slate-900" />
+                                  {/* Icon + Name */}
+                                  <div className="flex items-center gap-2 flex-shrink-0 w-36">
+                                    <Icon className={`w-4 h-4 flex-shrink-0 ${isEnabled ? 'text-amber-400' : 'text-slate-500'}`} />
+                                    <span className={`text-sm font-medium truncate ${isEnabled ? 'text-white' : 'text-slate-400'}`}>
+                                      {details?.name || factor}
+                                    </span>
                                   </div>
+
+                                  {/* Info Tooltip */}
+                                  <div className="relative group/tooltip flex-shrink-0">
+                                    <HelpCircle className={`w-4 h-4 cursor-help ${isEnabled ? 'text-slate-400 hover:text-amber-400' : 'text-slate-600'}`} />
+                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-slate-900 border border-amber-500/30 rounded-lg shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none">
+                                      <div className="text-xs font-bold text-amber-400 mb-1">{details?.name}</div>
+                                      <div className="text-[10px] text-slate-300 mb-2">{details?.description}</div>
+                                      <div className="text-[10px] text-slate-400 italic">{details?.importance}</div>
+                                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full border-4 border-transparent border-t-slate-900" />
+                                    </div>
+                                  </div>
+
+                                  {/* Slider */}
+                                  {isEnabled ? (
+                                    <div className="flex-1 flex items-center gap-3 min-w-0">
+                                      <input
+                                        type="range"
+                                        min="0"
+                                        max="100"
+                                        value={weight}
+                                        onChange={e => handleWeightChange(factorBetType, factor, parseInt(e.target.value))}
+                                        className="flex-1 h-2 rounded-full appearance-none cursor-pointer bg-slate-700"
+                                        style={{
+                                          background: `linear-gradient(to right, rgb(34 197 94) 0%, rgb(34 197 94) ${weight}%, rgb(51 65 85) ${weight}%, rgb(51 65 85) 100%)`
+                                        }}
+                                      />
+                                      <span className="text-sm font-bold text-green-400 w-12 text-right">{weight}%</span>
+                                    </div>
+                                  ) : (
+                                    <div className="flex-1 h-2 bg-slate-700/50 rounded-full" />
+                                  )}
                                 </div>
-
-                                {/* Slider */}
-                                {isEnabled ? (
-                                  <div className="flex-1 flex items-center gap-2 min-w-0">
-                                    <input
-                                      type="range"
-                                      min="0"
-                                      max="100"
-                                      value={weight}
-                                      onChange={e => handleWeightChange(factorBetType, factor, parseInt(e.target.value))}
-                                      className="flex-1 h-1.5 rounded-full appearance-none cursor-pointer bg-slate-700"
-                                      style={{
-                                        background: `linear-gradient(to right, rgb(34 197 94) 0%, rgb(34 197 94) ${weight}%, rgb(51 65 85) ${weight}%, rgb(51 65 85) 100%)`
-                                      }}
-                                    />
-                                    <span className="text-sm font-bold text-green-400 w-10 text-right">{weight}%</span>
-                                  </div>
-                                ) : (
-                                  <div className="flex-1 h-1.5 bg-slate-700/50 rounded-full" />
-                                )}
-                              </div>
-                            )
-                          })}
+                              )
+                            })
+                          })()}
                         </div>
 
-                        <p className="text-[10px] text-slate-500 text-center pt-2 mt-2 border-t border-slate-700/50">
+                        <p className="text-[10px] text-slate-500 text-center pt-3 mt-3 border-t border-slate-700/50">
                           💡 Toggle factors on/off, then adjust weights to total 250%
                         </p>
                       </div>
