@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/auth-context'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
-import { Sparkles, Zap, Hand, Ban, Gauge, TrendingUp, Target, Home, Battery, BarChart3, Shield, Trophy, Flame, UserX, Anchor, Scale, Rocket, Castle, TrendingDown, Loader2, AlertCircle, Swords, Crown, Star, ChevronRight, Pencil, Check, X, ChevronDown, Activity, Crosshair, Repeat, RotateCcw, MapPin, Award, Shuffle, HelpCircle } from 'lucide-react'
+import { Sparkles, Zap, Hand, Ban, Gauge, TrendingUp, Target, Home, Battery, BarChart3, Shield, Trophy, Flame, UserX, Anchor, Scale, Rocket, Castle, TrendingDown, Loader2, AlertCircle, Swords, Crown, Star, ChevronRight, Pencil, Check, X, ChevronDown, Activity, Crosshair, Repeat, RotateCcw, MapPin, Award, Shuffle, HelpCircle, AlertTriangle, Waves, Eye, Snowflake, Bomb, LineChart, Mountain, Skull, Compass, Wind } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useCallback } from 'react'
 
@@ -255,6 +255,45 @@ const TOTALS_ARCHETYPES: PresetConfig[] = [
       weights: { paceIndex: 20, offForm: 20, defErosion: 20, threeEnv: 20, whistleEnv: 20 }
     },
     spreadFactors: { enabled: [], weights: {} }
+  },
+  {
+    id: 'the-fade',
+    name: 'The Fade Artist',
+    description: 'Bet against the cold. Fade the strugglers.',
+    icon: TrendingDown,
+    color: 'blue',
+    philosophy: 'Defense tells the truth. Teams with eroding D and declining offense are bleeding points. Fade them into oblivion.',
+    totalFactors: {
+      enabled: ['defErosion', 'offForm', 'injuryAvailability', 'whistleEnv'],
+      weights: { defErosion: 45, offForm: 25, injuryAvailability: 20, whistleEnv: 10 }
+    },
+    spreadFactors: { enabled: [], weights: {} }
+  },
+  {
+    id: 'tempo-tyrant',
+    name: 'The Tempo Tyrant',
+    description: 'Control the clock. Slow games = unders.',
+    icon: Snowflake,
+    color: 'sky',
+    philosophy: 'Pace and defense together reveal the grind-it-out games. Low possessions + strong defense = under city. Trust the tempo.',
+    totalFactors: {
+      enabled: ['paceIndex', 'defErosion', 'offForm'],
+      weights: { paceIndex: 50, defErosion: 30, offForm: 20 }
+    },
+    spreadFactors: { enabled: [], weights: {} }
+  },
+  {
+    id: 'injury-assassin',
+    name: 'The Injury Assassin',
+    description: 'Missing stars change everything.',
+    icon: Skull,
+    color: 'rose',
+    philosophy: 'When key players sit, scoring collapses or explodes. Injuries + defensive context = totals gold. The market adjusts too slowly.',
+    totalFactors: {
+      enabled: ['injuryAvailability', 'defErosion', 'offForm', 'paceIndex'],
+      weights: { injuryAvailability: 45, defErosion: 25, offForm: 20, paceIndex: 10 }
+    },
+    spreadFactors: { enabled: [], weights: {} }
   }
 ]
 
@@ -327,6 +366,45 @@ const SPREAD_ARCHETYPES: PresetConfig[] = [
     spreadFactors: {
       enabled: ['injuryAvailability', 'fourFactorsDiff', 'homeAwaySplits', 'netRatingDiff'],
       weights: { injuryAvailability: 40, fourFactorsDiff: 25, homeAwaySplits: 20, netRatingDiff: 15 }
+    }
+  },
+  {
+    id: 'road-warrior',
+    name: 'The Road Warrior',
+    description: 'Road dogs have hidden value. Find the edge.',
+    icon: Compass,
+    color: 'teal',
+    philosophy: 'Home court advantage is overrated by the public. Elite road teams are undervalued. Pair venue splits with turnover discipline for road covers.',
+    totalFactors: { enabled: [], weights: {} },
+    spreadFactors: {
+      enabled: ['homeAwaySplits', 'turnoverDiff', 'fourFactorsDiff', 'netRatingDiff'],
+      weights: { homeAwaySplits: 45, turnoverDiff: 25, fourFactorsDiff: 20, netRatingDiff: 10 }
+    }
+  },
+  {
+    id: 'cold-blooded',
+    name: 'The Cold Blooded',
+    description: 'Fade the hype. Trust fundamentals over narratives.',
+    icon: Eye,
+    color: 'gray',
+    philosophy: 'Ignore the noise. Net rating + four factors = truth. Public chases hot teams, sharps trust the math. Cold execution beats hot takes.',
+    totalFactors: { enabled: [], weights: {} },
+    spreadFactors: {
+      enabled: ['netRatingDiff', 'fourFactorsDiff', 'injuryAvailability'],
+      weights: { netRatingDiff: 45, fourFactorsDiff: 40, injuryAvailability: 15 }
+    }
+  },
+  {
+    id: 'the-grinder',
+    name: 'The Grinder',
+    description: 'Discipline wins. Low turnover teams cover.',
+    icon: Mountain,
+    color: 'stone',
+    philosophy: 'Ball security + efficient shooting = covering spreads. Grind it out teams frustrate opponents. Turnovers + shooting momentum = sustainable edge.',
+    totalFactors: { enabled: [], weights: {} },
+    spreadFactors: {
+      enabled: ['turnoverDiff', 'shootingEfficiencyMomentum', 'netRatingDiff', 'fourFactorsDiff'],
+      weights: { turnoverDiff: 40, shootingEfficiencyMomentum: 30, netRatingDiff: 20, fourFactorsDiff: 10 }
     }
   }
 ]
@@ -407,6 +485,38 @@ export default function CreateCapperPage() {
       setConfig(prev => ({ ...prev, display_name: displayName, capper_id: capperId }))
     }
   }, [profile])
+
+  // Randomly select 2 archetypes on page load (1 TOTAL, 1 SPREAD) and apply their factors
+  useEffect(() => {
+    // Pick random TOTAL archetype
+    const randomTotalIndex = Math.floor(Math.random() * TOTALS_ARCHETYPES.length)
+    const randomTotalArchetype = TOTALS_ARCHETYPES[randomTotalIndex]
+
+    // Pick random SPREAD archetype
+    const randomSpreadIndex = Math.floor(Math.random() * SPREAD_ARCHETYPES.length)
+    const randomSpreadArchetype = SPREAD_ARCHETYPES[randomSpreadIndex]
+
+    // Set selected presets
+    setSelectedPresets({
+      TOTAL: randomTotalArchetype.id,
+      SPREAD: randomSpreadArchetype.id
+    })
+
+    // Apply their factor configurations
+    setConfig(prev => ({
+      ...prev,
+      factor_config: {
+        TOTAL: {
+          enabled_factors: randomTotalArchetype.totalFactors.enabled,
+          weights: randomTotalArchetype.totalFactors.weights
+        },
+        SPREAD: {
+          enabled_factors: randomSpreadArchetype.spreadFactors.enabled,
+          weights: randomSpreadArchetype.spreadFactors.weights
+        }
+      }
+    }))
+  }, []) // Empty dependency array = runs once on mount
 
   const updateConfig = (updates: Partial<CapperConfig>) => {
     setConfig(prev => ({ ...prev, ...updates }))
@@ -1051,8 +1161,8 @@ export default function CreateCapperPage() {
                         <button
                           onClick={() => setFactorCategoryFilter('all')}
                           className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${factorCategoryFilter === 'all'
-                              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
-                              : 'bg-slate-800/50 text-slate-400 border border-slate-700/50 hover:bg-slate-700/50 hover:text-white'
+                            ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                            : 'bg-slate-800/50 text-slate-400 border border-slate-700/50 hover:bg-slate-700/50 hover:text-white'
                             }`}
                         >
                           All Factors
@@ -1069,8 +1179,8 @@ export default function CreateCapperPage() {
                               key={group.id}
                               onClick={() => setFactorCategoryFilter(group.id)}
                               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${isActive
-                                  ? `bg-${group.color}-500/20 text-${group.color}-400 border border-${group.color}-500/40`
-                                  : 'bg-slate-800/50 text-slate-400 border border-slate-700/50 hover:bg-slate-700/50 hover:text-white'
+                                ? `bg-${group.color}-500/20 text-${group.color}-400 border border-${group.color}-500/40`
+                                : 'bg-slate-800/50 text-slate-400 border border-slate-700/50 hover:bg-slate-700/50 hover:text-white'
                                 }`}
                             >
                               <GroupIcon className={`w-3.5 h-3.5 ${isActive ? `text-${group.color}-400` : ''}`} />
