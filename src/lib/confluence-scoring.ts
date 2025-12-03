@@ -201,6 +201,10 @@ export function calculateFactorAlignment(
     const wc = factor.weighted_contributions
     if (!wc) continue
 
+    // Skip neutral factors (net === 0) - they don't lean either way
+    // This prevents neutral factors from artificially lowering alignment %
+    if (wc.net === 0) continue
+
     totalFactors++
 
     // Net > 0 means OVER/AWAY bias, Net < 0 means UNDER/HOME bias
