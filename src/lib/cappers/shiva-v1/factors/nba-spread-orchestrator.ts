@@ -20,10 +20,12 @@ import { fetchNBAStatsBundle, summarizeAvailabilityWithLLM } from './data-fetche
 import { computeNetRatingDifferential } from './s1-net-rating-differential'
 import { computeTurnoverDifferential } from './s2-turnover-differential'
 import { computeShootingEfficiencyMomentum } from './s3-shooting-efficiency-momentum'
-import { computeHomeAwaySplits } from './s4-home-away-splits'
+import { computeReboundingDiff } from './s4-rebounding-diff'
 import { computeFourFactorsDifferential } from './s5-four-factors-differential'
 import { computeInjuryAvailabilitySpread } from './s6-injury-availability'
 import { computeMomentumIndex } from './s7-momentum-index'
+import { computeDefensivePressure } from './s8-defensive-pressure'
+import { computeAssistEfficiency } from './s9-assist-efficiency'
 
 /**
  * Main entry point: compute only enabled NBA spread factors
@@ -40,13 +42,15 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
 
   const nbaStatsConditionCheck = {
     enabledFactorKeys,
-    shouldFetchNBAStats: enabledFactorKeys.some(key => ['netRatingDiff', 'turnoverDiff', 'shootingEfficiencyMomentum', 'homeAwaySplits', 'paceMismatch', 'fourFactorsDiff', 'momentumIndex'].includes(key)),
+    shouldFetchNBAStats: enabledFactorKeys.some(key => ['netRatingDiff', 'turnoverDiff', 'shootingEfficiencyMomentum', 'reboundingDiff', 'fourFactorsDiff', 'momentumIndex', 'defensivePressure', 'assistEfficiency'].includes(key)),
     netRatingDiff: enabledFactorKeys.includes('netRatingDiff'),
     turnoverDiff: enabledFactorKeys.includes('turnoverDiff'),
     shootingEfficiencyMomentum: enabledFactorKeys.includes('shootingEfficiencyMomentum'),
-    homeAwaySplits: enabledFactorKeys.includes('homeAwaySplits') || enabledFactorKeys.includes('paceMismatch'),
+    reboundingDiff: enabledFactorKeys.includes('reboundingDiff'),
     fourFactorsDiff: enabledFactorKeys.includes('fourFactorsDiff'),
-    momentumIndex: enabledFactorKeys.includes('momentumIndex')
+    momentumIndex: enabledFactorKeys.includes('momentumIndex'),
+    defensivePressure: enabledFactorKeys.includes('defensivePressure'),
+    assistEfficiency: enabledFactorKeys.includes('assistEfficiency')
   }
   console.log('[SPREAD:NBA_STATS_CONDITION_CHECK]', nbaStatsConditionCheck)
 
@@ -99,7 +103,7 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
   }
 
   // All factors that require NBA stats bundle
-  const factorsRequiringBundle = ['netRatingDiff', 'turnoverDiff', 'shootingEfficiencyMomentum', 'homeAwaySplits', 'paceMismatch', 'fourFactorsDiff']
+  const factorsRequiringBundle = ['netRatingDiff', 'turnoverDiff', 'shootingEfficiencyMomentum', 'reboundingDiff', 'fourFactorsDiff', 'momentumIndex', 'defensivePressure', 'assistEfficiency']
   const needsBundle = enabledFactorKeys.some(key => factorsRequiringBundle.includes(key))
 
   console.log('[SPREAD:CONDITION_CHECK]', {
@@ -179,16 +183,15 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
     }
   }
 
-  // S4: Home/Away Performance Splits (replaced Pace Mismatch)
-  // Also support legacy 'paceMismatch' key for backward compatibility
-  if (enabledFactorKeys.includes('homeAwaySplits') || enabledFactorKeys.includes('paceMismatch')) {
+  // S4: Rebounding Differential (replaced Home/Away Splits)
+  if (enabledFactorKeys.includes('reboundingDiff')) {
     try {
-      console.log('[SPREAD:S4] Computing Home/Away Performance Splits...')
-      factors.push(computeHomeAwaySplits(bundle!, ctx))
+      console.log('[SPREAD:S4] Computing Rebounding Differential...')
+      factors.push(computeReboundingDiff(bundle!, ctx))
       console.log('[SPREAD:S4] Success')
     } catch (error) {
       console.error('[SPREAD:S4:ERROR]', error)
-      factorErrors.push(`homeAwaySplits: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      factorErrors.push(`reboundingDiff: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 
@@ -213,6 +216,30 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
     } catch (error) {
       console.error('[SPREAD:S7:ERROR]', error)
       factorErrors.push(`momentumIndex: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
+  // S8: Defensive Pressure
+  if (enabledFactorKeys.includes('defensivePressure')) {
+    try {
+      console.log('[SPREAD:S8] Computing Defensive Pressure...')
+      factors.push(computeDefensivePressure(bundle!, ctx))
+      console.log('[SPREAD:S8] Success')
+    } catch (error) {
+      console.error('[SPREAD:S8:ERROR]', error)
+      factorErrors.push(`defensivePressure: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
+  // S9: Assist Efficiency
+  if (enabledFactorKeys.includes('assistEfficiency')) {
+    try {
+      console.log('[SPREAD:S9] Computing Assist Efficiency...')
+      factors.push(computeAssistEfficiency(bundle!, ctx))
+      console.log('[SPREAD:S9] Success')
+    } catch (error) {
+      console.error('[SPREAD:S9:ERROR]', error)
+      factorErrors.push(`assistEfficiency: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 

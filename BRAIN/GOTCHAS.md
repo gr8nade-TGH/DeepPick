@@ -1,11 +1,43 @@
 # Sharp Siege - Gotchas & Common Issues
 
-**Last Updated:** 2025-11-30  
+**Last Updated:** 2025-12-03 (Update #25)
 **Purpose:** Document tricky bugs, common pitfalls, and fragile areas
 
 ---
 
 ## ?? Critical Gotchas
+
+### 0. **Home/Away Detection (MySportsFeeds API)** ⚠️ CRITICAL - NEW
+**Problem:** MySportsFeeds API has inconsistent home/away data structure across different endpoints
+**Impact:** S4 (Home/Away Splits) factor was failing, causing null bundle errors
+
+**Solution (4-tier fallback system):**
+```typescript
+// Method 1: Direct isHome boolean (most reliable when present)
+const isHome = gameLog.isHome;
+
+// Method 2: Compare homeTeam/awayTeam abbreviations (DEN, LAL, etc.)
+const isHome = game.homeTeam?.abbreviation === teamAbbrev;
+
+// Method 3: Compare homeTeam/awayTeam IDs
+const isHome = game.homeTeam?.id === teamId;
+
+// Method 4: Parse game ID format as fallback (e.g., "20241203-DEN-LAL")
+const [date, awayAbbrev, homeAbbrev] = gameId.split('-');
+const isHome = homeAbbrev === teamAbbrev;
+```
+
+**Files:**
+- `src/lib/data-sources/mysportsfeeds-stats.ts` (getTeamFormData function)
+
+**Debugging:**
+- Check console logs for "Failed to determine home/away status"
+- Verify game.homeTeam and game.schedule.homeTeam structures
+- Add full gameLog JSON dump if detection fails
+
+**Fixed in:** Update #25 (commits 57e84d2, 337dcf3, b1dd590, 163ef84, 8865cd2, 66b0310, 27fa35a)
+
+---
 
 ### 1. **Bet Type Specificity** ?? HIGH PRIORITY
 **Problem:** TOTAL and SPREAD picks must be tracked separately  

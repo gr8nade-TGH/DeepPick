@@ -106,15 +106,17 @@ export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<NBAStatsBundle> 
       homeOrebPct: homeRecent.avgOrebPct,
       homeFtr: homeRecent.avgFtr,
 
-      // Home/Away splits (for SPREAD factor S4) - optional for now
-      awayORtgHome: awayRecent.ortgHome,
-      awayORtgAway: awayRecent.ortgAway,
-      awayDRtgHome: awayRecent.drtgHome,
-      awayDRtgAway: awayRecent.drtgAway,
-      homeORtgHome: homeRecent.ortgHome,
-      homeORtgAway: homeRecent.ortgAway,
-      homeDRtgHome: homeRecent.drtgHome,
-      homeDRtgAway: homeRecent.drtgAway,
+      // Defensive pressure data (for SPREAD factor S8)
+      awaySteals: awayRecent.avgSteals,
+      awayBlocks: awayRecent.avgBlocks,
+      homeSteals: homeRecent.avgSteals,
+      homeBlocks: homeRecent.avgBlocks,
+
+      // Assist efficiency data (for SPREAD factor S9)
+      awayAssists: awayRecent.avgAssists,
+      homeAssists: homeRecent.avgAssists,
+      awayTurnovers: awayRecent.avgTurnovers,
+      homeTurnovers: homeRecent.avgTurnovers,
 
       // Points Per Game (calculated from ORtg and Pace)
       awayPointsPerGame: (awayRecent.ortg * awayRecent.pace) / 100,

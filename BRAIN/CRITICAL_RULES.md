@@ -1,6 +1,6 @@
 # CRITICAL RULES - READ FIRST
 
-**Last Updated:** 2025-12-02  
+**Last Updated:** 2025-12-03 (Update #25)
 **Priority:** HIGHEST - Read before any work
 
 ---
@@ -24,6 +24,36 @@
 - Factor orchestrators (`src/lib/cappers/shiva-v1/`)
 
 **This is the #1 issue - prioritize above all else!**
+
+---
+
+## 🏭 FACTOR FACTORY (NEW - Update #25)
+
+**IMPORTANT:** Factor system has been refactored to use a single source of truth!
+
+**Old Way (DEPRECATED):** Adding a factor required updating 12+ files
+**New Way:** Add factor to `src/lib/factors/definitions/` (1-4 files total)
+
+**Factor Factory Location:** `src/lib/factors/`
+- `types.ts` - FactorDefinition interface
+- `registry.ts` - Central registry (all 14 factors)
+- `compat.ts` - Backward-compatible layer
+- `definitions/nba/totals/` - F1-F7 factor files
+- `definitions/nba/spread/` - S1-S7 factor files
+
+**Current Factors:**
+- **TOTALS (7):** F1-Pace, F2-OffForm, F3-DefErosion, F4-ThreeEnv, F5-WhistleEnv, F6-Injury, F7-RestAdvantage
+- **SPREAD (7):** S1-NetRating, S2-Turnover, S3-Shooting, S4-HomeAway, S5-FourFactors, S6-Injury, S7-MomentumIndex
+
+**Documentation:** `docs/FACTOR_FACTORY.md` (capper diagnostics, troubleshooting, how to add factors)
+
+**When Adding New Factors:**
+1. Create factor file in `src/lib/factors/definitions/nba/[totals|spread]/`
+2. Add to registry in `src/lib/factors/registry.ts`
+3. Update migration to assign to system cappers
+4. Update BRAIN documentation
+
+**That's it! No need to update 12+ files anymore.**
 
 ---
 

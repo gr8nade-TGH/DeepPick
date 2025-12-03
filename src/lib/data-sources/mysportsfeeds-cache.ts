@@ -19,7 +19,7 @@ export interface TeamFormData {
   gamesAnalyzed: number // Number of games used in calculation
   avgTurnovers: number // Average turnovers per game (for SPREAD factor S2)
 
-  // Rebounding data (for SPREAD factor S3)
+  // Rebounding data (for SPREAD factor S4)
   avgOffReb: number // Offensive rebounds per game
   avgDefReb: number // Defensive rebounds per game
   avgOppOffReb: number // Opponent offensive rebounds per game
@@ -31,13 +31,20 @@ export interface TeamFormData {
   avgOrebPct: number // Offensive Rebound %
   avgFtr: number // Free Throw Rate
 
-  // Home/Away splits (for SPREAD factor S4)
-  ortgHome?: number // ORtg in home games only
-  ortgAway?: number // ORtg in away games only
-  drtgHome?: number // DRtg in home games only
-  drtgAway?: number // DRtg in away games only
-  homeGames?: number // Number of home games analyzed
-  awayGames?: number // Number of away games analyzed
+  // Defensive pressure data (for SPREAD factor S8)
+  avgSteals: number // Steals per game
+  avgBlocks: number // Blocks per game
+
+  // Assist efficiency data (for SPREAD factor S9)
+  avgAssists: number // Assists per game
+
+  // Rest advantage data (for TOTALS factor F7)
+  restDays?: number // Days since last game
+  isBackToBack?: boolean // True if playing on consecutive days
+
+  // Momentum data (for SPREAD factor S7)
+  winStreak?: number // Positive = win streak, Negative = loss streak
+  last10Record?: { wins: number; losses: number } // Record in last 10 games
 }
 
 // Cache TTL: 4 hours (team stats don't change frequently during the day)

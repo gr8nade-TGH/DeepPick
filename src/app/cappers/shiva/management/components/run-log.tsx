@@ -250,10 +250,11 @@ export function RunLogTable({ betType = 'TOTAL', capper = 'SHIVA' }: RunLogTable
       'netRatingDiff': 'NetRtg',
       'turnoverDiff': 'TO Diff',
       'shootingEfficiencyMomentum': 'Shooting',
-      'homeAwaySplits': 'H/A',
-      'paceMismatch': 'Pace',
+      'reboundingDiff': 'Reb',
       'fourFactorsDiff': '4 Factors',
-      'momentumIndex': 'Momentum'
+      'momentumIndex': 'Momentum',
+      'defensivePressure': 'Def',
+      'assistEfficiency': 'Ast'
     }
     return mapping[key] || key.substring(0, 2).toUpperCase()
   }

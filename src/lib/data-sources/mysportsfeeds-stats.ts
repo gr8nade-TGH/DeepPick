@@ -41,7 +41,7 @@ export interface TeamFormData {
   gamesAnalyzed: number // Number of games used in calculation
   avgTurnovers: number // Average turnovers per game (for SPREAD factor S2)
 
-  // Rebounding data (for SPREAD factor S3)
+  // Rebounding data (for SPREAD factor S4 - Rebounding Differential)
   avgOffReb: number // Offensive rebounds per game
   avgDefReb: number // Defensive rebounds per game
   avgOppOffReb: number // Opponent offensive rebounds per game
@@ -53,13 +53,12 @@ export interface TeamFormData {
   avgOrebPct: number // Offensive Rebound %
   avgFtr: number // Free Throw Rate
 
-  // Home/Away splits (for SPREAD factor S4)
-  ortgHome?: number // ORtg in home games only
-  ortgAway?: number // ORtg in away games only
-  drtgHome?: number // DRtg in home games only
-  drtgAway?: number // DRtg in away games only
-  homeGames?: number // Number of home games analyzed
-  awayGames?: number // Number of away games analyzed
+  // Defensive pressure data (for SPREAD factor S8)
+  avgSteals: number // Steals per game
+  avgBlocks: number // Blocks per game
+
+  // Assist efficiency data (for SPREAD factor S9)
+  avgAssists: number // Assists per game
 
   // Rest advantage data (for TOTALS factor F7)
   restDays?: number // Days since last game
@@ -124,7 +123,6 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
   const cached = await getSupabaseCachedTeamForm(cacheKey)
 
   // Validate cached data has all required fields (invalidate old cache entries)
-  // Also require home/away splits to be present - we're 2+ months into season, all teams should have both
   const hasRequiredFields = cached &&
     typeof cached.avgTurnovers === 'number' &&
     typeof cached.avgOffReb === 'number' &&
@@ -134,26 +132,16 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
     typeof cached.avgEfg === 'number' &&
     typeof cached.avgTovPct === 'number' &&
     typeof cached.avgOrebPct === 'number' &&
-    typeof cached.avgFtr === 'number'
+    typeof cached.avgFtr === 'number' &&
+    typeof cached.avgSteals === 'number' &&
+    typeof cached.avgBlocks === 'number' &&
+    typeof cached.avgAssists === 'number'
 
-  // Check if home/away splits are properly populated (both should have at least 1 game)
-  const hasHomeAwaySplits = cached &&
-    typeof cached.homeGames === 'number' && cached.homeGames > 0 &&
-    typeof cached.awayGames === 'number' && cached.awayGames > 0 &&
-    typeof cached.ortgHome === 'number' &&
-    typeof cached.ortgAway === 'number'
-
-  if (hasRequiredFields && hasHomeAwaySplits) {
-    console.log(`[MySportsFeeds Stats] Cache HIT for ${cacheKey} - using cached data (home: ${cached.homeGames}, away: ${cached.awayGames} games)`)
-    return cached
+  if (hasRequiredFields) {
+    console.log(`[MySportsFeeds Stats] Cache HIT for ${cacheKey} - using cached data`)
+    return cached as TeamFormData
   } else if (cached) {
-    console.log(`[MySportsFeeds Stats] Cache INVALID for ${cacheKey} - missing home/away splits or required fields, refetching...`, {
-      hasRequiredFields,
-      homeGames: cached.homeGames,
-      awayGames: cached.awayGames,
-      ortgHome: cached.ortgHome,
-      ortgAway: cached.ortgAway
-    })
+    console.log(`[MySportsFeeds Stats] Cache INVALID for ${cacheKey} - missing required fields, refetching...`)
   }
 
   console.log(`[MySportsFeeds Stats] Cache MISS for ${cacheKey} - fetching from API...`)
@@ -226,13 +214,12 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
     let totalFGM = 0
     let total3PM = 0
 
-    // Home/Away splits tracking (for S4 factor)
-    let homeORtgTotal = 0
-    let homeDRtgTotal = 0
-    let homeGamesCount = 0
-    let awayORtgTotal = 0
-    let awayDRtgTotal = 0
-    let awayGamesCount = 0
+    // Defensive pressure stats (for S8 factor)
+    let totalSteals = 0
+    let totalBlocks = 0
+
+    // Assist efficiency stats (for S9 factor)
+    let totalAssists = 0
 
     // Momentum tracking (for S7 factor)
     let currentStreak = 0
@@ -261,6 +248,13 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
       // Opponent rebounding (from defense stats)
       const oppOREB = stats.defense?.offRebAgainst || 0
       const oppDREB = stats.defense?.defRebAgainst || 0
+
+      // Defensive pressure stats (for S8 factor)
+      const teamSteals = stats.defense?.stl || 0
+      const teamBlocks = stats.defense?.blk || 0
+
+      // Assist stats (for S9 factor)
+      const teamAssists = stats.offense?.ast || 0
 
       // CRITICAL: Skip games with missing/zero stats (incomplete data from API)
       if (teamFGA === 0 && teamFTA === 0 && teamPTS === 0) {
@@ -298,117 +292,12 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
       totalOppDefReb += oppDREB
       totalFGM += teamFGM
       total3PM += team3PM
-
-      // Track home/away splits
-      const game = gameLog.game
-      const team = gameLog.team
-
-      // MySportsFeeds API can have homeTeam/awayTeam at different levels:
-      // - game.homeTeam / game.awayTeam (direct)
-      // - game.schedule.homeTeam / game.schedule.awayTeam (nested under schedule)
-      // - gameLog.isHome (direct boolean on gameLog object, most reliable)
-      const homeTeam = game?.homeTeam || game?.schedule?.homeTeam
-      const awayTeam = game?.awayTeam || game?.schedule?.awayTeam
-
-      // Debug: Log FULL game structure for first game only to understand API response
-      if (gameLogs.indexOf(gameLog) === 0) {
-        console.log(`[MySportsFeeds Stats] FULL gameLog structure for ${teamAbbrev}:`, JSON.stringify(gameLog, null, 2).substring(0, 2000))
-        console.log(`[MySportsFeeds Stats] Home/Away detection debug for ${teamAbbrev}:`, {
-          gameId: game?.id,
-          teamId: team?.id,
-          teamAbbrev: team?.abbreviation,
-          // Check all possible locations
-          directHomeTeam: game?.homeTeam,
-          directAwayTeam: game?.awayTeam,
-          scheduleHomeTeam: game?.schedule?.homeTeam,
-          scheduleAwayTeam: game?.schedule?.awayTeam,
-          venueAllegiance: game?.schedule?.venueAllegiance,
-          isHomeDirectField: gameLog?.isHome,
-          // NEW: Check opponent field
-          opponent: gameLog?.opponent,
-          opponentTeam: game?.opponent,
-          // Resolved values
-          resolvedHomeTeamId: homeTeam?.id,
-          resolvedHomeTeamAbbrev: homeTeam?.abbreviation,
-          resolvedAwayTeamId: awayTeam?.id,
-          resolvedAwayTeamAbbrev: awayTeam?.abbreviation,
-          gameKeys: game ? Object.keys(game) : [],
-          scheduleKeys: game?.schedule ? Object.keys(game.schedule) : [],
-          gameLogKeys: gameLog ? Object.keys(gameLog) : []
-        })
-      }
-
-      // Determine if this is a home game using multiple methods
-      let isHomeGame: boolean | null = null
-
-      // Method 1: Direct isHome field on gameLog (most reliable if present)
-      if (typeof gameLog?.isHome === 'boolean') {
-        isHomeGame = gameLog.isHome
-      }
-
-      // Method 2: Compare homeTeam/awayTeam references to our team
-      // game.schedule.homeTeam and game.schedule.awayTeam are short references with id and abbreviation
-      if (isHomeGame === null && team?.abbreviation) {
-        // Try comparing abbreviations (most reliable since we know our team abbrev)
-        const homeTeamAbbrev = homeTeam?.abbreviation?.toUpperCase() ||
-          game?.schedule?.homeTeam?.abbreviation?.toUpperCase()
-        const awayTeamAbbrev = awayTeam?.abbreviation?.toUpperCase() ||
-          game?.schedule?.awayTeam?.abbreviation?.toUpperCase()
-        const ourTeamAbbrev = team.abbreviation.toUpperCase()
-
-        if (homeTeamAbbrev && homeTeamAbbrev === ourTeamAbbrev) {
-          isHomeGame = true
-        } else if (awayTeamAbbrev && awayTeamAbbrev === ourTeamAbbrev) {
-          isHomeGame = false
-        }
-      }
-
-      // Method 3: Compare IDs
-      if (isHomeGame === null && team?.id) {
-        const homeTeamId = homeTeam?.id || game?.schedule?.homeTeam?.id
-        const awayTeamId = awayTeam?.id || game?.schedule?.awayTeam?.id
-
-        if (homeTeamId && homeTeamId === team.id) {
-          isHomeGame = true
-        } else if (awayTeamId && awayTeamId === team.id) {
-          isHomeGame = false
-        }
-      }
-
-      // Method 4: Parse game ID if format is "{date}-{away}-{home}"
-      if (isHomeGame === null && game?.id && team?.abbreviation) {
-        const gameIdStr = String(game.id)
-        const gameIdParts = gameIdStr.split('-')
-        if (gameIdParts.length >= 3) {
-          const homeAbbrevFromId = gameIdParts[gameIdParts.length - 1].toUpperCase()
-          const awayAbbrevFromId = gameIdParts[gameIdParts.length - 2].toUpperCase()
-          const teamAbbrevUpper = team.abbreviation.toUpperCase()
-
-          if (homeAbbrevFromId === teamAbbrevUpper) {
-            isHomeGame = true
-          } else if (awayAbbrevFromId === teamAbbrevUpper) {
-            isHomeGame = false
-          }
-        }
-      }
-
-      if (isHomeGame === null) {
-        console.warn(`[MySportsFeeds Stats] Cannot determine home/away for ${teamAbbrev} game ${game?.id} - skipping for venue splits. homeTeam=${JSON.stringify(homeTeam)}, awayTeam=${JSON.stringify(awayTeam)}, team=${JSON.stringify(team)}`)
-      }
-
-      // Only add to home/away stats if we could reliably detect the venue
-      if (isHomeGame === true) {
-        homeORtgTotal += ortg
-        homeDRtgTotal += drtg
-        homeGamesCount++
-      } else if (isHomeGame === false) {
-        awayORtgTotal += ortg
-        awayDRtgTotal += drtg
-        awayGamesCount++
-      }
-      // If isHomeGame is null, we couldn't determine - don't add to either bucket
+      totalSteals += teamSteals
+      totalBlocks += teamBlocks
+      totalAssists += teamAssists
 
       // Track game dates for rest calculation (F7)
+      const game = gameLog.game
       if (game?.startTime) {
         gameDates.push(new Date(game.startTime))
       }
@@ -525,19 +414,17 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
     const avgOrebPct = (totalOffReb + totalOppDefReb) > 0 ? totalOffReb / (totalOffReb + totalOppDefReb) : 0
     const avgFtr = totalFGA > 0 ? totalFTA / totalFGA : 0
 
-    // Home/Away splits calculations (for S4)
-    const ortgHome = homeGamesCount > 0 ? homeORtgTotal / homeGamesCount : undefined
-    const ortgAway = awayGamesCount > 0 ? awayORtgTotal / awayGamesCount : undefined
-    const drtgHome = homeGamesCount > 0 ? homeDRtgTotal / homeGamesCount : undefined
-    const drtgAway = awayGamesCount > 0 ? awayDRtgTotal / awayGamesCount : undefined
+    // Defensive pressure averages (for S8)
+    const avgSteals = totalSteals / gameCount
+    const avgBlocks = totalBlocks / gameCount
 
-    console.log(`[MySportsFeeds Stats] Home/Away splits for ${teamAbbrev}:`, {
-      homeGames: homeGamesCount,
-      awayGames: awayGamesCount,
-      ortgHome: ortgHome?.toFixed(1),
-      ortgAway: ortgAway?.toFixed(1),
-      drtgHome: drtgHome?.toFixed(1),
-      drtgAway: drtgAway?.toFixed(1)
+    // Assist efficiency averages (for S9)
+    const avgAssists = totalAssists / gameCount
+
+    console.log(`[MySportsFeeds Stats] Defensive pressure for ${teamAbbrev}:`, {
+      avgSteals: avgSteals.toFixed(1),
+      avgBlocks: avgBlocks.toFixed(1),
+      avgAssists: avgAssists.toFixed(1)
     })
 
     const formData: TeamFormData = {
@@ -551,7 +438,7 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
       gamesAnalyzed: gameCount,
       avgTurnovers,
 
-      // Rebounding data (S3)
+      // Rebounding data (S4 - Rebounding Differential)
       avgOffReb,
       avgDefReb,
       avgOppOffReb,
@@ -563,13 +450,12 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
       avgOrebPct,
       avgFtr,
 
-      // Home/Away splits (S4)
-      ortgHome,
-      ortgAway,
-      drtgHome,
-      drtgAway,
-      homeGames: homeGamesCount,
-      awayGames: awayGamesCount,
+      // Defensive pressure (S8)
+      avgSteals,
+      avgBlocks,
+
+      // Assist efficiency (S9)
+      avgAssists,
 
       // Rest advantage (F7)
       restDays,

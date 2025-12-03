@@ -140,6 +140,48 @@ export const FACTOR_REGISTRY: FactorRegistry = {
     shortName: 'Momentum'
   },
 
+  reboundingDiff: {
+    name: 'Rebounding Differential',
+    description: 'Board control advantage - offensive and defensive rebounding differential. OREB = second chance pts.',
+    defaultWeight: 20,
+    maxPoints: 5.0,
+    supportedSports: ['NBA'],
+    supportedBetTypes: ['SPREAD'],
+    availableDataSources: ['mysportsfeeds', 'system'],
+    defaultDataSource: 'mysportsfeeds',
+    scope: 'matchup',
+    icon: '🏀',
+    shortName: 'Reb'
+  },
+
+  defensivePressure: {
+    name: 'Defensive Pressure',
+    description: 'Defensive disruption through steals and blocks. High pressure creates transition opportunities.',
+    defaultWeight: 15,
+    maxPoints: 5.0,
+    supportedSports: ['NBA'],
+    supportedBetTypes: ['SPREAD'],
+    availableDataSources: ['mysportsfeeds', 'system'],
+    defaultDataSource: 'mysportsfeeds',
+    scope: 'matchup',
+    icon: '🛡️',
+    shortName: 'Def'
+  },
+
+  assistEfficiency: {
+    name: 'Assist Efficiency',
+    description: 'Ball movement quality and team chemistry. High AST/TOV ratio = smart decision making.',
+    defaultWeight: 15,
+    maxPoints: 5.0,
+    supportedSports: ['NBA'],
+    supportedBetTypes: ['SPREAD'],
+    availableDataSources: ['mysportsfeeds', 'system'],
+    defaultDataSource: 'mysportsfeeds',
+    scope: 'matchup',
+    icon: '🤝',
+    shortName: 'Ast'
+  },
+
   // ========================================================================
   // GLOBAL FACTORS (All sports/bet types)
   // ========================================================================

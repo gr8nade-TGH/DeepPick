@@ -78,15 +78,17 @@ export interface NBAStatsBundle {
   homeOrebPct?: number
   homeFtr?: number
 
-  // Home/Away splits (for SPREAD factor S4) - optional for all
-  awayORtgHome?: number
-  awayORtgAway?: number
-  awayDRtgHome?: number
-  awayDRtgAway?: number
-  homeORtgHome?: number
-  homeORtgAway?: number
-  homeDRtgHome?: number
-  homeDRtgAway?: number
+  // Defensive pressure data (for SPREAD factor S8)
+  awaySteals?: number
+  awayBlocks?: number
+  homeSteals?: number
+  homeBlocks?: number
+
+  // Assist efficiency data (for SPREAD factor S9)
+  awayAssists?: number
+  homeAssists?: number
+  awayTurnovers?: number
+  homeTurnovers?: number
 
   // Rest advantage data (for TOTALS factor F7)
   awayRestDays?: number

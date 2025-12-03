@@ -7,7 +7,226 @@
 
 ## 📋 Update History
 
-### 2025-12-03 (Update #24) - NEW FACTORS: Rest Advantage (F7) + Momentum Index (S7)
+### 2025-12-03 (Update #25) - FACTOR FACTORY + Home/Away Detection Fixes
+**Brain Agent:** v1.0
+**Trigger:** User requested "brain update" after implementing new factors and fixing critical bugs
+
+**Commits Analyzed:** 24 new commits (6079b08 → 57e84d2)
+**Date Range:** 2025-12-02 to 2025-12-03
+**Current HEAD:** 57e84d2
+
+---
+
+## 🏭 MAJOR ARCHITECTURAL CHANGE: FACTOR FACTORY
+
+**Problem:** Adding new factors required updating 12+ files across the codebase
+**Solution:** Single source of truth for all factor definitions
+
+**New Architecture:**
+- **Location:** `src/lib/factors/`
+- **Core Files:**
+  - `types.ts` - FactorDefinition interface with sport/betType tagging
+  - `registry.ts` - Central registry with all 14 factors (7 TOTALS, 7 SPREAD)
+  - `compat.ts` - Backward-compatible layer for existing code
+  - `index.ts` - Public API exports
+  - `definitions/nba/totals/` - F1-F7 factor files
+  - `definitions/nba/spread/` - S1-S7 factor files
+
+**Benefits:**
+- Adding new factors now requires updating **1-4 files** instead of 12+
+- Factor metadata lives in ONE place, everything else derived
+- Ready for multi-sport expansion (NFL, MLB, etc.)
+- UI helper functions: `getAvailableFactors()`, `getFactorDetailsForUI()`, `getFactorGroups()`
+
+**Migration:**
+- Old `factor-registry.ts` now imports from Factor Factory via compat layer
+- All existing code continues to work (backward compatible)
+- Future factors should be added to `src/lib/factors/definitions/`
+
+**Documentation:** `docs/FACTOR_FACTORY.md` (299 lines)
+- Capper diagnostics workflow
+- Troubleshooting guide for factor issues
+- How to add new factors (simplified process)
+
+---
+
+## 🆕 NEW FACTORS ADDED (F7 + S7)
+
+### F7: Rest Advantage (TOTALS)
+- **Key:** `restAdvantage`
+- **Description:** Rest differential between teams. Back-to-backs cause fatigue and lower scoring.
+- **Data:** `restDays`, `isBackToBack` from MySportsFeeds team_gamelogs
+- **Calculation:** `signal = tanh((restDiff + fatigueScore) / 3)`
+- **File:** `src/lib/factors/definitions/nba/totals/f7-rest-advantage.ts`
+
+### S7: Momentum Index (SPREAD)
+- **Key:** `momentumIndex`
+- **Description:** Team momentum based on win streak and last 10 record. Hot teams cover spreads.
+- **Data:** `winStreak`, `last10Record` from MySportsFeeds team_gamelogs
+- **Calculation:** `momentum = (streak × 0.6) + (last10WinPct × 0.4)`, `signal = tanh(momentumDiff / 5)`
+- **File:** `src/lib/factors/definitions/nba/spread/s7-momentum-index.ts`
+
+**Capper Assignments (Migration 065):**
+- NEXUS: restAdvantage 30% (fatigue-focused)
+- IFRIT/BLITZ: momentumIndex 25% (momentum-focused)
+- SHIVA/TITAN: Both factors 15%
+- SENTINEL: restAdvantage 20%
+- THIEF: momentumIndex 25%
+
+**Total Factors:** 7 TOTALS + 7 SPREAD (was 6 each)
+
+---
+
+## 🐛 CRITICAL BUG FIXES
+
+### 1. Home/Away Detection (8 commits)
+**Problem:** MySportsFeeds API has inconsistent home/away data structure
+**Impact:** S4 (Home/Away Splits) factor failing, causing null bundle errors
+
+**Solution (4-tier fallback system):**
+1. **Method 1:** Direct `isHome` boolean field (most reliable when present)
+2. **Method 2:** Compare `homeTeam`/`awayTeam` abbreviations (DEN, LAL, etc.)
+3. **Method 3:** Compare `homeTeam`/`awayTeam` IDs
+4. **Method 4:** Parse game ID format as fallback (e.g., `20241203-DEN-LAL`)
+
+**Files Modified:**
+- `src/lib/data-sources/mysportsfeeds-stats.ts` (69 lines changed)
+- Added comprehensive logging when detection fails
+- Fixed duplicate variable declarations
+
+**Commits:**
+- 57e84d2 - Improve home/away detection with better abbreviation and ID comparison
+- 337dcf3 - Add full gameLog JSON dump to understand API structure
+- b1dd590 - Parse game ID to determine home/away status
+- 163ef84 - Add venueAllegiance fallback
+- 8865cd2 - Improve factor display names and home/away detection
+- 66b0310 - Check both game.homeTeam and game.schedule.homeTeam structures
+- 27fa35a - Add comprehensive logging for home/away splits detection
+
+### 2. SPREAD Pick Direction (1 commit)
+**Problem:** SPREAD picks showed who WINS instead of who COVERS
+**Fix:** Now correctly shows which team covers the spread
+**Commit:** 68564b5
+
+### 3. Factor Alignment Calculation (2 commits)
+**Problem 1:** Neutral factors (net=0) artificially lowered alignment %
+**Fix:** Exclude neutral factors from denominator
+**Commit:** 66a5ea7
+
+**Problem 2:** SPREAD picks used full team name but alignment detection only checked abbreviation
+**Fix:** Check BOTH abbreviation AND name for proper AWAY/HOME detection
+**Commit:** e55cdd2
+
+### 4. Factor Key Consistency (1 commit)
+**Problem:** Create Capper page used different factor keys than SHIVA registry
+**Fix:** Updated FACTOR_DETAILS, AVAILABLE_FACTORS, FACTOR_GROUPS to use correct SHIVA keys
+**Migration:** 064_update_system_cappers_with_archetypes.sql assigns proper archetypes to 7 system cappers
+**Commit:** 1cda971
+
+### 5. Rest Calculation (1 commit)
+**Problem:** Rest days calculated from unsorted game dates
+**Fix:** Sort gameDates to get most recent game first
+**Commit:** deab5ba
+
+### 6. System Capper Check (1 commit)
+**Problem:** Used function reference instead of boolean result
+**Fix:** Use `isSystemCapperCheck` boolean result
+**Commit:** 7134191
+
+---
+
+## 🎨 UX IMPROVEMENTS
+
+### 1. Archetype System Overhaul (5 commits)
+**Changes:**
+- Uniform 2x2 archetype grid with fixed height (72px)
+- Horizontal category filter tabs (replaced left column)
+- "All Factors" tab shows all factors (default - preserves animation)
+- Category tabs filter to specific factor groups
+- Full-width factor panel with better spacing
+- Random archetype selection on page load
+- More archetypes added (total now 8+)
+
+**Archetype Renames:**
+- "Rest Detective" → "The Whistle Hunter" (refs/free throws focus)
+- "Home Court Hero" → "The Disruptor" (turnover-focused)
+- "Form Rider" → "Hot Hand" (matches actual shootingMomentum factor)
+
+**Weight Budget:** All archetypes now sum to 250% correctly
+
+**Commits:**
+- e79c5f7 - UX overhaul with uniform grid + horizontal tabs
+- 5c2e5b7 - Add more archetypes + random selection
+- b353e4a - Fix all archetypes to sum to 250%
+- f4559d4 - Replace Rest Detective with Whistle Hunter
+- 28a8afa - Replace Home Court Hero with Disruptor
+- 8888591 - Rename Form Rider to Hot Hand
+
+### 2. Factor Display Names (1 commit)
+**Changes:**
+- S3 renamed from "SHOOT" to "Shooting" (removed Momentum from name since we have S7)
+- Updated factor short names in run-log.tsx for better readability
+**Commit:** 8865cd2
+
+---
+
+## 📊 SYSTEM CAPPER UPDATES
+
+**Migration 064:** Apply archetype combos to all 7 system cappers
+- SHIVA: Balanced approach (all factors enabled)
+- IFRIT: Hot Hand archetype (momentum-focused)
+- NEXUS: Whistle Hunter archetype (refs/free throws)
+- BLITZ: Hot Hand archetype (momentum-focused)
+- TITAN: Balanced approach
+- THIEF: Disruptor archetype (turnover-focused)
+- PICKSMITH: Meta-capper (consensus)
+
+**All weights sum to 250% per bet type**
+
+---
+
+## 📁 FILES MODIFIED
+
+**Factor Factory (21 files):**
+- New: `src/lib/factors/` directory with types, registry, compat, index
+- New: 14 factor definition files (F1-F7, S1-S7)
+- Modified: `factor-registry.ts` (now imports from Factor Factory)
+- Modified: `factor-config-modal.tsx` (removed duplicate restAdvantage)
+- Modified: `mysportsfeeds-stats.ts` (fixed duplicate variables)
+
+**New Factors (28 files):**
+- New: `f7-rest-advantage.ts`, `s7-momentum-index.ts`
+- New: `065_add_f7_s7_factors.sql`
+- Modified: Orchestrators, registries, Create Capper, SHIVA Management, Admin Factors
+- New: All BRAIN documentation files (12 files)
+
+**Bug Fixes:**
+- `mysportsfeeds-stats.ts` (home/away detection - 69 lines changed)
+- `confluence-scoring.ts` (factor alignment)
+- `manual-pick-confluence.ts` (factor alignment)
+
+**UX:**
+- `create/page.tsx` (archetype grid + category tabs - 261 lines changed)
+- `run-log.tsx` (factor display names)
+
+**Documentation:**
+- New: `docs/FACTOR_FACTORY.md` (299 lines)
+- Updated: `BRAIN/EDGE_FACTORS_REFERENCE.md`
+- Updated: `BRAIN/UPDATE_LOG.md`
+
+---
+
+## 🚨 CRITICAL NOTES
+
+1. **Factor Factory is now the source of truth** - Add new factors to `src/lib/factors/definitions/`
+2. **Home/Away detection has 4 fallback methods** - Should be robust now
+3. **All archetypes sum to 250%** - Weight budget enforced
+4. **7 TOTALS + 7 SPREAD factors** - System complete for NBA
+5. **Factor alignment excludes neutral factors** - More accurate tier grading
+
+---
+
+### 2025-12-03 (Update #24) - NEW FACTORS: Rest Advantage (F7) + Momentum Index (S7) [SUPERSEDED BY #25]
 **Brain Agent:** v1.0
 **Trigger:** User requested new factors for capper diversity
 

@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/auth-context'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
-import { Sparkles, Zap, Hand, Ban, Gauge, TrendingUp, Target, Home, Battery, BarChart3, Shield, Trophy, Flame, UserX, Anchor, Scale, Rocket, Castle, TrendingDown, Loader2, AlertCircle, Swords, Crown, Star, ChevronRight, Pencil, Check, X, ChevronDown, Activity, Crosshair, Repeat, RotateCcw, MapPin, Award, Shuffle, HelpCircle, AlertTriangle, Waves, Eye, Snowflake, Bomb, LineChart, Mountain, Skull, Compass, Wind, Clock } from 'lucide-react'
+import { Sparkles, Zap, Hand, Ban, Gauge, TrendingUp, Target, Home, Battery, BarChart3, Shield, Trophy, Flame, UserX, Anchor, Scale, Rocket, Castle, TrendingDown, Loader2, AlertCircle, Swords, Crown, Star, ChevronRight, Pencil, Check, X, ChevronDown, Activity, Crosshair, Repeat, RotateCcw, MapPin, Award, Shuffle, HelpCircle, AlertTriangle, Waves, Eye, Snowflake, Bomb, LineChart, Mountain, Skull, Compass, Wind, Clock, Users } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useCallback } from 'react'
 
@@ -52,8 +52,8 @@ interface CapperConfig {
 
 // ============================================
 // FACTOR_DETAILS - Using CORRECT SHIVA factor keys
-// TOTALS: paceIndex, offForm, defErosion, threeEnv, whistleEnv, injuryAvailability
-// SPREAD: netRatingDiff, turnoverDiff, shootingEfficiencyMomentum, homeAwaySplits, fourFactorsDiff, injuryAvailability
+// TOTALS: paceIndex, offForm, defErosion, threeEnv, whistleEnv, injuryAvailability, restAdvantage
+// SPREAD: netRatingDiff, turnoverDiff, shootingEfficiencyMomentum, reboundingDiff, fourFactorsDiff, injuryAvailability, momentumIndex, defensivePressure, assistEfficiency
 // ============================================
 const FACTOR_DETAILS: Record<string, { name: string; icon: any; description: string; importance: string; example: string; defaultWeight: number; color: string }> = {
   // === TOTALS FACTORS ===
@@ -148,14 +148,32 @@ const FACTOR_DETAILS: Record<string, { name: string; icon: any; description: str
     defaultWeight: 25,
     color: 'red'
   },
-  homeAwaySplits: {
-    name: 'Home/Away Splits',
-    icon: Home,
-    description: 'Performance differential based on home vs road context',
-    importance: 'Road performance vs home performance reveals true ATS value.',
-    example: 'Strong road team (+5 NetRtg away) vs weak home team → Road team ATS edge.',
+  reboundingDiff: {
+    name: 'Rebounding Differential',
+    icon: Activity,
+    description: 'Board control advantage - offensive and defensive rebounding',
+    importance: 'Offensive rebounds = second chance points. DREB ends opponent possessions.',
+    example: '+5 total rebounding advantage → Extra possessions → ATS edge.',
     defaultWeight: 20,
     color: 'purple'
+  },
+  defensivePressure: {
+    name: 'Defensive Pressure',
+    icon: Shield,
+    description: 'Defensive disruption through steals and blocks',
+    importance: 'High pressure defense creates transition opportunities.',
+    example: 'Team with +2 steals/game → Transition points → Cover potential.',
+    defaultWeight: 15,
+    color: 'teal'
+  },
+  assistEfficiency: {
+    name: 'Assist Efficiency',
+    icon: Users,
+    description: 'Ball movement quality and team chemistry (AST/TOV ratio)',
+    importance: 'High AST/TOV ratio = smart decisions = better shots.',
+    example: 'Team with 2.0 AST/TOV vs 1.5 → Better offense → ATS value.',
+    defaultWeight: 15,
+    color: 'sky'
   },
   fourFactorsDiff: {
     name: 'Four Factors Differential',
@@ -180,7 +198,7 @@ const FACTOR_DETAILS: Record<string, { name: string; icon: any; description: str
 // Available factors for each bet type - USING CORRECT SHIVA KEYS
 const AVAILABLE_FACTORS = {
   TOTAL: ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv', 'injuryAvailability', 'restAdvantage'],
-  SPREAD: ['netRatingDiff', 'turnoverDiff', 'shootingEfficiencyMomentum', 'homeAwaySplits', 'fourFactorsDiff', 'injuryAvailability', 'momentumIndex']
+  SPREAD: ['netRatingDiff', 'turnoverDiff', 'shootingEfficiencyMomentum', 'reboundingDiff', 'fourFactorsDiff', 'injuryAvailability', 'momentumIndex', 'defensivePressure', 'assistEfficiency']
 }
 
 // Factor groups for organized display - USING CORRECT SHIVA KEYS
@@ -198,10 +216,12 @@ const FACTOR_GROUPS = {
     { id: 'netRating', name: 'Net Rating', icon: BarChart3, factors: ['netRatingDiff'], color: 'indigo' },
     { id: 'turnovers', name: 'Turnovers', icon: Shuffle, factors: ['turnoverDiff'], color: 'emerald' },
     { id: 'momentum', name: 'Shooting Momentum', icon: Flame, factors: ['shootingEfficiencyMomentum'], color: 'red' },
-    { id: 'homeAway', name: 'Home/Away Splits', icon: Home, factors: ['homeAwaySplits'], color: 'purple' },
+    { id: 'rebounding', name: 'Rebounding', icon: Activity, factors: ['reboundingDiff'], color: 'purple' },
     { id: 'fourFactors', name: 'Four Factors', icon: Trophy, factors: ['fourFactorsDiff'], color: 'amber' },
     { id: 'injuries', name: 'Injuries', icon: UserX, factors: ['injuryAvailability'], color: 'purple' },
     { id: 'momentumIndex', name: 'Momentum Index', icon: TrendingUp, factors: ['momentumIndex'], color: 'green' },
+    { id: 'defensivePressure', name: 'Defensive Pressure', icon: Shield, factors: ['defensivePressure'], color: 'teal' },
+    { id: 'assistEfficiency', name: 'Assist Efficiency', icon: Users, factors: ['assistEfficiency'], color: 'sky' },
   ]
 }
 
@@ -331,7 +351,7 @@ const TOTALS_ARCHETYPES: PresetConfig[] = [
 
 // ============================================
 // SPREAD ARCHETYPES - All weights MUST sum to 250%
-// Available factors: netRatingDiff, turnoverDiff, shootingEfficiencyMomentum, homeAwaySplits, fourFactorsDiff, injuryAvailability
+// Available factors: netRatingDiff, turnoverDiff, shootingEfficiencyMomentum, reboundingDiff, fourFactorsDiff, injuryAvailability, momentumIndex, defensivePressure, assistEfficiency
 // ============================================
 const SPREAD_ARCHETYPES: PresetConfig[] = [
   {
@@ -343,9 +363,9 @@ const SPREAD_ARCHETYPES: PresetConfig[] = [
     philosophy: 'Recent shooting momentum predicts near-term performance. Teams shooting hot carry that confidence. Fade cold shooters.',
     totalFactors: { enabled: [], weights: {} },
     spreadFactors: {
-      // Primary: shooting (80), Strong: netRating (60) + homeAway (50), Support: fourFactors (40) + turnover (20) = 250
-      enabled: ['shootingEfficiencyMomentum', 'netRatingDiff', 'homeAwaySplits', 'fourFactorsDiff', 'turnoverDiff'],
-      weights: { shootingEfficiencyMomentum: 80, netRatingDiff: 60, homeAwaySplits: 50, fourFactorsDiff: 40, turnoverDiff: 20 }
+      // Primary: shooting (80), Strong: netRating (60) + rebounding (50), Support: fourFactors (40) + turnover (20) = 250
+      enabled: ['shootingEfficiencyMomentum', 'netRatingDiff', 'reboundingDiff', 'fourFactorsDiff', 'turnoverDiff'],
+      weights: { shootingEfficiencyMomentum: 80, netRatingDiff: 60, reboundingDiff: 50, fourFactorsDiff: 40, turnoverDiff: 20 }
     }
   },
   {
@@ -357,9 +377,9 @@ const SPREAD_ARCHETYPES: PresetConfig[] = [
     philosophy: 'Ignore records, focus on how teams match up. Elite offense vs weak defense = cover. Four factors reveal the truth.',
     totalFactors: { enabled: [], weights: {} },
     spreadFactors: {
-      // Primary: fourFactors (70), Strong: homeAway (60) + netRating (50), Support: shooting (40) + injury (30) = 250
-      enabled: ['fourFactorsDiff', 'homeAwaySplits', 'netRatingDiff', 'shootingEfficiencyMomentum', 'injuryAvailability'],
-      weights: { fourFactorsDiff: 70, homeAwaySplits: 60, netRatingDiff: 50, shootingEfficiencyMomentum: 40, injuryAvailability: 30 }
+      // Primary: fourFactors (70), Strong: rebounding (60) + netRating (50), Support: shooting (40) + injury (30) = 250
+      enabled: ['fourFactorsDiff', 'reboundingDiff', 'netRatingDiff', 'shootingEfficiencyMomentum', 'injuryAvailability'],
+      weights: { fourFactorsDiff: 70, reboundingDiff: 60, netRatingDiff: 50, shootingEfficiencyMomentum: 40, injuryAvailability: 30 }
     }
   },
   {
@@ -371,9 +391,9 @@ const SPREAD_ARCHETYPES: PresetConfig[] = [
     philosophy: 'Turnovers are the great equalizer. Teams that force chaos and protect the rock control destiny. Discipline beats talent.',
     totalFactors: { enabled: [], weights: {} },
     spreadFactors: {
-      // Primary: turnover (90), Strong: fourFactors (60) + netRating (50), Support: shooting (30) + homeAway (20) = 250
-      enabled: ['turnoverDiff', 'fourFactorsDiff', 'netRatingDiff', 'shootingEfficiencyMomentum', 'homeAwaySplits'],
-      weights: { turnoverDiff: 90, fourFactorsDiff: 60, netRatingDiff: 50, shootingEfficiencyMomentum: 30, homeAwaySplits: 20 }
+      // Primary: turnover (70) + defensivePressure (50), Strong: fourFactors (50) + netRating (40), Support: rebounding (40) = 250
+      enabled: ['turnoverDiff', 'defensivePressure', 'fourFactorsDiff', 'netRatingDiff', 'reboundingDiff'],
+      weights: { turnoverDiff: 70, defensivePressure: 50, fourFactorsDiff: 50, netRatingDiff: 40, reboundingDiff: 40 }
     }
   },
   {
@@ -385,9 +405,9 @@ const SPREAD_ARCHETYPES: PresetConfig[] = [
     philosophy: 'Games are won by the better team. Net rating differential determines who closes. Trust the fundamentals over narratives.',
     totalFactors: { enabled: [], weights: {} },
     spreadFactors: {
-      // Primary: netRating (75), Strong: shooting (55) + turnover (50), Support: homeAway (40) + fourFactors (30) = 250
-      enabled: ['netRatingDiff', 'shootingEfficiencyMomentum', 'turnoverDiff', 'homeAwaySplits', 'fourFactorsDiff'],
-      weights: { netRatingDiff: 75, shootingEfficiencyMomentum: 55, turnoverDiff: 50, homeAwaySplits: 40, fourFactorsDiff: 30 }
+      // Primary: netRating (75), Strong: shooting (55) + turnover (50), Support: rebounding (40) + fourFactors (30) = 250
+      enabled: ['netRatingDiff', 'shootingEfficiencyMomentum', 'turnoverDiff', 'reboundingDiff', 'fourFactorsDiff'],
+      weights: { netRatingDiff: 75, shootingEfficiencyMomentum: 55, turnoverDiff: 50, reboundingDiff: 40, fourFactorsDiff: 30 }
     }
   },
   {
@@ -399,23 +419,23 @@ const SPREAD_ARCHETYPES: PresetConfig[] = [
     philosophy: 'Vegas adjusts lines, but not enough. A star out = 4-7 point swing. Beat the book before lines fully adjust.',
     totalFactors: { enabled: [], weights: {} },
     spreadFactors: {
-      // Primary: injury (80), Strong: fourFactors (60) + homeAway (50), Support: netRating (40) + turnover (20) = 250
-      enabled: ['injuryAvailability', 'fourFactorsDiff', 'homeAwaySplits', 'netRatingDiff', 'turnoverDiff'],
-      weights: { injuryAvailability: 80, fourFactorsDiff: 60, homeAwaySplits: 50, netRatingDiff: 40, turnoverDiff: 20 }
+      // Primary: injury (80), Strong: fourFactors (60) + rebounding (50), Support: netRating (40) + turnover (20) = 250
+      enabled: ['injuryAvailability', 'fourFactorsDiff', 'reboundingDiff', 'netRatingDiff', 'turnoverDiff'],
+      weights: { injuryAvailability: 80, fourFactorsDiff: 60, reboundingDiff: 50, netRatingDiff: 40, turnoverDiff: 20 }
     }
   },
   {
-    id: 'road-warrior',
-    name: 'The Road Warrior',
-    description: 'Road dogs have hidden value. Find the edge.',
-    icon: Compass,
+    id: 'board-bully',
+    name: 'The Board Bully',
+    description: 'Control the glass, control the game.',
+    icon: Activity,
     color: 'teal',
-    philosophy: 'Home court advantage is overrated by the public. Elite road teams are undervalued. Venue splits reveal mispriced lines.',
+    philosophy: 'Rebounding is the most underrated factor. Offensive boards = 2nd chances. Defensive boards = end possessions. Board control wins ATS.',
     totalFactors: { enabled: [], weights: {} },
     spreadFactors: {
-      // Primary: homeAway (85), Strong: turnover (55) + fourFactors (50), Support: netRating (40) + shooting (20) = 250
-      enabled: ['homeAwaySplits', 'turnoverDiff', 'fourFactorsDiff', 'netRatingDiff', 'shootingEfficiencyMomentum'],
-      weights: { homeAwaySplits: 85, turnoverDiff: 55, fourFactorsDiff: 50, netRatingDiff: 40, shootingEfficiencyMomentum: 20 }
+      // Primary: rebounding (85), Strong: turnover (55) + fourFactors (50), Support: netRating (40) + shooting (20) = 250
+      enabled: ['reboundingDiff', 'turnoverDiff', 'fourFactorsDiff', 'netRatingDiff', 'shootingEfficiencyMomentum'],
+      weights: { reboundingDiff: 85, turnoverDiff: 55, fourFactorsDiff: 50, netRatingDiff: 40, shootingEfficiencyMomentum: 20 }
     }
   },
   {
@@ -427,9 +447,9 @@ const SPREAD_ARCHETYPES: PresetConfig[] = [
     philosophy: 'Ignore the noise. Net rating + four factors = truth. Public chases hot teams, sharps trust the math.',
     totalFactors: { enabled: [], weights: {} },
     spreadFactors: {
-      // Primary: netRating (80) + fourFactors (70), Strong: injury (50), Support: turnover (30) + homeAway (20) = 250
-      enabled: ['netRatingDiff', 'fourFactorsDiff', 'injuryAvailability', 'turnoverDiff', 'homeAwaySplits'],
-      weights: { netRatingDiff: 80, fourFactorsDiff: 70, injuryAvailability: 50, turnoverDiff: 30, homeAwaySplits: 20 }
+      // Primary: netRating (80) + fourFactors (70), Strong: injury (50), Support: turnover (30) + rebounding (20) = 250
+      enabled: ['netRatingDiff', 'fourFactorsDiff', 'injuryAvailability', 'turnoverDiff', 'reboundingDiff'],
+      weights: { netRatingDiff: 80, fourFactorsDiff: 70, injuryAvailability: 50, turnoverDiff: 30, reboundingDiff: 20 }
     }
   },
   {
@@ -441,9 +461,23 @@ const SPREAD_ARCHETYPES: PresetConfig[] = [
     philosophy: 'Ball security + efficient shooting = covering spreads. Grind it out teams frustrate opponents and cover.',
     totalFactors: { enabled: [], weights: {} },
     spreadFactors: {
-      // Primary: turnover (75), Strong: shooting (60) + netRating (50), Support: fourFactors (40) + homeAway (25) = 250
-      enabled: ['turnoverDiff', 'shootingEfficiencyMomentum', 'netRatingDiff', 'fourFactorsDiff', 'homeAwaySplits'],
-      weights: { turnoverDiff: 75, shootingEfficiencyMomentum: 60, netRatingDiff: 50, fourFactorsDiff: 40, homeAwaySplits: 25 }
+      // Primary: turnover (75), Strong: shooting (60) + netRating (50), Support: fourFactors (40) + rebounding (25) = 250
+      enabled: ['turnoverDiff', 'shootingEfficiencyMomentum', 'netRatingDiff', 'fourFactorsDiff', 'reboundingDiff'],
+      weights: { turnoverDiff: 75, shootingEfficiencyMomentum: 60, netRatingDiff: 50, fourFactorsDiff: 40, reboundingDiff: 25 }
+    }
+  },
+  {
+    id: 'ball-mover',
+    name: 'The Ball Mover',
+    description: 'Unselfish teams with great chemistry cover.',
+    icon: Users,
+    color: 'sky',
+    philosophy: 'High AST/TOV ratio = smart decisions = quality shots. ISO-heavy teams fade under pressure. Trust the system.',
+    totalFactors: { enabled: [], weights: {} },
+    spreadFactors: {
+      // Primary: assistEfficiency (75), Strong: turnover (55) + fourFactors (50), Support: netRating (40) + rebounding (30) = 250
+      enabled: ['assistEfficiency', 'turnoverDiff', 'fourFactorsDiff', 'netRatingDiff', 'reboundingDiff'],
+      weights: { assistEfficiency: 75, turnoverDiff: 55, fourFactorsDiff: 50, netRatingDiff: 40, reboundingDiff: 30 }
     }
   }
 ]
@@ -487,8 +521,8 @@ export default function CreateCapperPage() {
   const [isCheckingName, setIsCheckingName] = useState(false)
 
   // Default config uses Sharp Scholar (TOTALS) + Matchup Master (SPREAD) - balanced approach
-  // Valid TOTALS: paceIndex, offForm, defErosion, threeEnv, whistleEnv, injuryAvailability
-  // Valid SPREAD: netRatingDiff, turnoverDiff, shootingEfficiencyMomentum, homeAwaySplits, fourFactorsDiff, injuryAvailability
+  // Valid TOTALS: paceIndex, offForm, defErosion, threeEnv, whistleEnv, injuryAvailability, restAdvantage
+  // Valid SPREAD: netRatingDiff, turnoverDiff, shootingEfficiencyMomentum, reboundingDiff, fourFactorsDiff, injuryAvailability, momentumIndex, defensivePressure, assistEfficiency
   const [config, setConfig] = useState<CapperConfig>({
     capper_id: '',
     display_name: '',
@@ -504,8 +538,8 @@ export default function CreateCapperPage() {
         weights: { paceIndex: 20, offForm: 20, defErosion: 20, threeEnv: 20, whistleEnv: 20 }
       },
       SPREAD: {
-        enabled_factors: ['fourFactorsDiff', 'homeAwaySplits', 'netRatingDiff', 'shootingEfficiencyMomentum'],
-        weights: { fourFactorsDiff: 25, homeAwaySplits: 25, netRatingDiff: 25, shootingEfficiencyMomentum: 25 }
+        enabled_factors: ['fourFactorsDiff', 'reboundingDiff', 'netRatingDiff', 'shootingEfficiencyMomentum'],
+        weights: { fourFactorsDiff: 25, reboundingDiff: 25, netRatingDiff: 25, shootingEfficiencyMomentum: 25 }
       }
     },
     execution_interval_minutes: 15,

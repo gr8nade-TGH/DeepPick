@@ -310,63 +310,74 @@ export function FactorConfigModal({
           "Supported: NBA Spread predictions"
         ]
       },
-      homeAwaySplits: {
+      reboundingDiff: {
         features: [
-          "🏠 Home/Away Performance Splits: Contextual team performance",
-          "📊 Formula: awayRoadNetRtg vs homeHomeNetRtg, signal = tanh(contextAdvantage / 8)",
-          "⚖️ Smart Scaling: Uses tanh for smooth saturation, caps at ±16 net rating differential",
-          "🎯 Directional Scoring: Team with better contextual performance gets edge",
+          "🏀 Rebounding Differential: Board control advantage",
+          "📊 Formula: OREB advantage * 1.1 + total reb diff * 0.3, signal = tanh(weighted / 6)",
+          "⚖️ Smart Scaling: OREB worth more (second chance points)",
+          "🎯 Directional Scoring: Team with better rebounding gets edge",
           "📈 Max Points: 5.0 (moderate ATS impact)"
         ],
         examples: [
-          "Scenario 1: Strong road team vs weak home team",
-          "• Away Road NetRtg: +5.0, Home Home NetRtg: -2.0",
-          "• Context Advantage: +7.0 (away favored)",
-          "• Signal: +0.66, Result: +3.30 Away Score",
+          "Scenario 1: Strong rebounding team",
+          "• Away OREB: 12, DREB: 35, Home OREB: 8, DREB: 32",
+          "• OREB Advantage: +4, Total Reb Diff: +7",
+          "• Signal: +0.72, Result: +3.60 Away Score",
           "",
-          "Scenario 2: Weak road team vs strong home team",
-          "• Away Road NetRtg: -4.0, Home Home NetRtg: +6.0",
-          "• Context Advantage: -10.0 (home favored)",
-          "• Signal: -0.85, Result: +4.25 Home Score",
-          "",
-          "Scenario 3: Even contextual performance",
-          "• Away Road NetRtg: +2.0, Home Home NetRtg: +2.0",
-          "• Context Advantage: 0.0",
-          "• Signal: 0.0, Result: 0.0 (Neutral)"
+          "Scenario 2: Home team dominates boards",
+          "• Away OREB: 7, DREB: 30, Home OREB: 14, DREB: 38",
+          "• OREB Advantage: -7, Total Reb Diff: -15",
+          "• Signal: -0.91, Result: +4.55 Home Score"
         ],
         registry: [
-          "Weight: 15% (Default - Adjustable)",
+          "Weight: 20% (Default - Adjustable)",
           "Max Points: 5.0 (moderate ATS impact)",
           "Scope: NBA SPREAD only",
-          "Data Sources: MySportsFeeds (team_gamelogs, home vs away splits)",
+          "Data Sources: MySportsFeeds (team_gamelogs, rebounds)",
           "Supported: NBA Spread predictions"
         ]
       },
-      // Backward compatibility: map old paceMismatch to new homeAwaySplits
-      paceMismatch: {
+      defensivePressure: {
         features: [
-          "🏠 Home/Away Performance Splits: Contextual team performance",
-          "📊 Formula: awayRoadNetRtg vs homeHomeNetRtg, signal = tanh(contextAdvantage / 8)",
-          "⚖️ Smart Scaling: Uses tanh for smooth saturation, caps at ±16 net rating differential",
-          "🎯 Directional Scoring: Team with better contextual performance gets edge",
+          "🛡️ Defensive Pressure: Disruption through steals and blocks",
+          "📊 Formula: steals * 1.5 + blocks * 0.8, signal = tanh(diff / 4)",
+          "⚖️ Smart Scaling: Steals worth more (transition opportunities)",
+          "🎯 Directional Scoring: More disruptive defense gets edge",
           "📈 Max Points: 5.0 (moderate ATS impact)"
         ],
         examples: [
-          "Scenario 1: Strong road team vs weak home team",
-          "• Away Road NetRtg: +5.0, Home Home NetRtg: -2.0",
-          "• Context Advantage: +7.0 (away favored)",
-          "• Signal: +0.66, Result: +3.30 Away Score",
-          "",
-          "Scenario 2: Weak road team vs strong home team",
-          "• Away Road NetRtg: -4.0, Home Home NetRtg: +6.0",
-          "• Context Advantage: -10.0 (home favored)",
-          "• Signal: -0.85, Result: +4.25 Home Score"
+          "Scenario 1: High pressure defense",
+          "• Away STL: 9, BLK: 5, Home STL: 6, BLK: 4",
+          "• Away Disruption: 17.5, Home Disruption: 12.2",
+          "• Signal: +0.82, Result: +4.10 Away Score"
         ],
         registry: [
           "Weight: 15% (Default - Adjustable)",
           "Max Points: 5.0 (moderate ATS impact)",
           "Scope: NBA SPREAD only",
-          "Data Sources: MySportsFeeds (team_gamelogs, home vs away splits)",
+          "Data Sources: MySportsFeeds (team_gamelogs, defense)",
+          "Supported: NBA Spread predictions"
+        ]
+      },
+      assistEfficiency: {
+        features: [
+          "🎯 Assist Efficiency: Ball movement and team chemistry",
+          "📊 Formula: AST/TOV ratio comparison, signal = tanh(diff / 0.5)",
+          "⚖️ Smart Scaling: High AST/TOV = smart decisions = better shots",
+          "🎯 Directional Scoring: Better ball movement gets edge",
+          "📈 Max Points: 5.0 (moderate ATS impact)"
+        ],
+        examples: [
+          "Scenario 1: Elite ball movement",
+          "• Away AST: 28, TOV: 12 (2.33 ratio), Home AST: 22, TOV: 15 (1.47 ratio)",
+          "• AST/TOV Diff: +0.86",
+          "• Signal: +0.93, Result: +4.65 Away Score"
+        ],
+        registry: [
+          "Weight: 15% (Default - Adjustable)",
+          "Max Points: 5.0 (moderate ATS impact)",
+          "Scope: NBA SPREAD only",
+          "Data Sources: MySportsFeeds (team_gamelogs, offense)",
           "Supported: NBA Spread predictions"
         ]
       },
@@ -843,46 +854,60 @@ export function FactorConfigModal({
           "*Formula: Efficiency 60% + Momentum 40%, tanh scaling for saturation*"
         ]
       },
-      homeAwaySplits: {
-        metric: "Home/Away performance splits - how teams perform in their current game context",
-        formula: "awayRoadNetRtg = awayORtgAway - awayDRtgAway, homeHomeNetRtg = homeORtgHome - homeDRtgHome, contextAdvantage = awayRoadNetRtg - homeHomeNetRtg, signal = tanh(contextAdvantage / 8)",
+      reboundingDiff: {
+        metric: "Rebounding differential - board control advantage through OREB and DREB",
+        formula: "weightedDiff = (awayOREBadv × 1.1) + (totalRebDiff × 0.3), signal = tanh(weightedDiff / 6)",
         examples: [
-          "| Away Road NetRtg | Home Home NetRtg | Context Adv | Signal | Away Score | Home Score | Category |",
-          "|------------------|------------------|-------------|--------|------------|------------|----------|",
-          "| +5.0             | -2.0             | +7.0        | +0.66  | +3.30      | 0.0        | Strong road team |",
-          "| +2.0             | +2.0             | 0.0         | 0.0    | 0.0        | 0.0        | Even |",
-          "| -4.0             | +6.0             | -10.0       | -0.85  | 0.0        | +4.25      | Strong home team |",
+          "| Away OREB | Away DREB | Home OREB | Home DREB | Signal | Away Score | Home Score |",
+          "|-----------|-----------|-----------|-----------|--------|------------|------------|",
+          "| 12        | 35        | 8         | 32        | +0.72  | +3.60      | 0.0        |",
+          "| 7         | 30        | 14        | 38        | -0.91  | 0.0        | +4.55      |",
           "",
-          "🏠 **Home/Away Splits Theory:**",
-          "• Teams perform differently at home vs on the road",
-          "• Road NetRtg shows how well away team handles travel and hostile environments",
-          "• Home NetRtg shows home court advantage and crowd impact",
+          "🏀 **Rebounding Theory:**",
+          "• Offensive rebounds = second chance points (worth more)",
+          "• Defensive rebounds = ending opponent possessions",
+          "• Board control directly impacts scoring margin",
           "",
           "📊 **Calculation:**",
-          "• Positive contextAdvantage = Away team plays better on road than Home plays at home",
-          "• Negative contextAdvantage = Home team plays better at home than Away plays on road",
+          "• OREB advantage weighted 1.1x (more valuable)",
+          "• Total reb diff weighted 0.3x (supporting signal)",
           "",
-          "🎯 **ATS Value:**",
-          "• Strong road teams often undervalued by markets",
-          "• Home teams with poor home splits may be overvalued",
-          "",
-          "*Metric: Net Rating (ORtg - DRtg) split by home vs away games*",
-          "*Formula: contextAdvantage = awayRoadNetRtg - homeHomeNetRtg, signal = tanh(contextAdvantage / 8)*"
+          "*Metric: Offensive and defensive rebounds per game*",
+          "*Formula: weightedDiff = (OREBadv × 1.1) + (totalRebDiff × 0.3)*"
         ]
       },
-      // Backward compatibility alias
-      paceMismatch: {
-        metric: "Home/Away performance splits - how teams perform in their current game context",
-        formula: "awayRoadNetRtg = awayORtgAway - awayDRtgAway, homeHomeNetRtg = homeORtgHome - homeDRtgHome, contextAdvantage = awayRoadNetRtg - homeHomeNetRtg, signal = tanh(contextAdvantage / 8)",
+      defensivePressure: {
+        metric: "Defensive disruption through steals and blocks",
+        formula: "disruption = (steals × 1.5) + (blocks × 0.8), signal = tanh(diff / 4)",
         examples: [
-          "| Away Road NetRtg | Home Home NetRtg | Context Adv | Signal | Away Score | Home Score |",
-          "|------------------|------------------|-------------|--------|------------|------------|",
-          "| +5.0             | -2.0             | +7.0        | +0.66  | +3.30      | 0.0        |",
-          "| -4.0             | +6.0             | -10.0       | -0.85  | 0.0        | +4.25      |",
+          "| Away STL | Away BLK | Home STL | Home BLK | Signal | Away Score | Home Score |",
+          "|----------|----------|----------|----------|--------|------------|------------|",
+          "| 9        | 5        | 6        | 4        | +0.82  | +4.10      | 0.0        |",
+          "| 5        | 3        | 10       | 6        | -0.88  | 0.0        | +4.40      |",
           "",
-          "🏠 **Home/Away Splits Theory:**",
-          "• Teams perform differently at home vs on the road",
-          "• Contextual performance is more predictive than overall stats"
+          "🛡️ **Defensive Pressure Theory:**",
+          "• Steals lead to fast break points (weighted 1.5x)",
+          "• Blocks end possessions but ball may stay with offense (weighted 0.8x)",
+          "",
+          "*Metric: Steals and blocks per game*",
+          "*Formula: disruption = (STL × 1.5) + (BLK × 0.8)*"
+        ]
+      },
+      assistEfficiency: {
+        metric: "Ball movement quality measured by AST/TOV ratio",
+        formula: "astTovRatio = assists / turnovers, signal = tanh(diff / 0.5)",
+        examples: [
+          "| Away AST | Away TOV | Home AST | Home TOV | Signal | Away Score | Home Score |",
+          "|----------|----------|----------|----------|--------|------------|------------|",
+          "| 28       | 12       | 22       | 15       | +0.93  | +4.65      | 0.0        |",
+          "| 20       | 16       | 26       | 11       | -0.87  | 0.0        | +4.35      |",
+          "",
+          "🎯 **Assist Efficiency Theory:**",
+          "• High AST/TOV = smart decisions = better shot quality",
+          "• ISO-heavy teams (low AST) struggle under pressure",
+          "",
+          "*Metric: Assists and turnovers per game*",
+          "*Formula: AST/TOV ratio comparison*"
         ]
       },
       restAdvantage: {
