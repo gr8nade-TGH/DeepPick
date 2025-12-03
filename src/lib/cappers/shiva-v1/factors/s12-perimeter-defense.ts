@@ -20,6 +20,20 @@ function tanh(x: number): number {
 export function computePerimeterDefense(bundle: NBAStatsBundle, ctx: RunCtx): any {
   console.log('[S12:PerimeterDefense] Computing...')
 
+  if (!bundle) {
+    return {
+      factor_no: 12,
+      key: 'perimeterDefense',
+      name: 'Perimeter Defense',
+      normalized_value: 0,
+      raw_values_json: {},
+      parsed_values_json: { points: 0, awayScore: 0, homeScore: 0 },
+      caps_applied: false,
+      cap_reason: null,
+      notes: 'Factor disabled - no data bundle'
+    }
+  }
+
   // Extract opponent shooting data - NBA averages: ~36% 3P, ~46% FG
   const awayOpp3Pct = bundle.awayOpp3Pct ?? 36.0
   const awayOppFgPct = bundle.awayOppFgPct ?? 46.0
@@ -42,18 +56,20 @@ export function computePerimeterDefense(bundle: NBAStatsBundle, ctx: RunCtx): an
   const homeScore = signal < 0 ? points : 0
 
   const edge = signal > 0 ? 'Away' : 'Home'
-  const notes = `${edge} perimeter D: Opp 3P% ${awayOpp3Pct.toFixed(1)} vs ${homeOpp3Pct.toFixed(1)}`
+  const notes = `${edge} perimeter D: Opp 3P% ${awayOpp3Pct.toFixed(1)} vs ${homeOpp3Pct.toFixed(1)}, Opp FG% ${awayOppFgPct.toFixed(1)} vs ${homeOppFgPct.toFixed(1)}`
 
   console.log(`[S12:PerimeterDefense] Signal=${signal.toFixed(3)}, Points=${points.toFixed(2)}`)
 
   return {
-    signal,
-    awayScore,
-    homeScore,
-    meta: {
-      raw_values_json: { awayOpp3Pct, awayOppFgPct, homeOpp3Pct, homeOppFgPct, threePctDiff, fgPctDiff, combinedDiff },
-      parsed_values_json: { notes }
-    }
+    factor_no: 12,
+    key: 'perimeterDefense',
+    name: 'Perimeter Defense',
+    normalized_value: signal,
+    raw_values_json: { awayOpp3Pct, awayOppFgPct, homeOpp3Pct, homeOppFgPct, threePctDiff, fgPctDiff, combinedDiff },
+    parsed_values_json: { points, awayScore, homeScore, signal },
+    caps_applied: false,
+    cap_reason: null,
+    notes
   }
 }
 

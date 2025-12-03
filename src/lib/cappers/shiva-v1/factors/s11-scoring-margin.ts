@@ -20,6 +20,20 @@ function tanh(x: number): number {
 export function computeScoringMargin(bundle: NBAStatsBundle, ctx: RunCtx): any {
   console.log('[S11:ScoringMargin] Computing...')
 
+  if (!bundle) {
+    return {
+      factor_no: 11,
+      key: 'scoringMargin',
+      name: 'Scoring Margin',
+      normalized_value: 0,
+      raw_values_json: {},
+      parsed_values_json: { points: 0, awayScore: 0, homeScore: 0 },
+      caps_applied: false,
+      cap_reason: null,
+      notes: 'Factor disabled - no data bundle'
+    }
+  }
+
   // Extract scoring data - NBA average ~113 PPG
   const awayPpg = bundle.awayPpg ?? bundle.awayPointsPerGame ?? 113.0
   const awayOppPpg = bundle.awayOppPpg ?? 113.0
@@ -48,13 +62,15 @@ export function computeScoringMargin(bundle: NBAStatsBundle, ctx: RunCtx): any {
   console.log(`[S11:ScoringMargin] Signal=${signal.toFixed(3)}, Points=${points.toFixed(2)}`)
 
   return {
-    signal,
-    awayScore,
-    homeScore,
-    meta: {
-      raw_values_json: { awayPpg, awayOppPpg, awayMargin, homePpg, homeOppPpg, homeMargin, marginDiff },
-      parsed_values_json: { notes }
-    }
+    factor_no: 11,
+    key: 'scoringMargin',
+    name: 'Scoring Margin',
+    normalized_value: signal,
+    raw_values_json: { awayPpg, awayOppPpg, awayMargin, homePpg, homeOppPpg, homeMargin, marginDiff },
+    parsed_values_json: { points, awayScore, homeScore, signal },
+    caps_applied: false,
+    cap_reason: null,
+    notes
   }
 }
 

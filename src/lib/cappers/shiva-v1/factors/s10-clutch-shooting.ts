@@ -20,6 +20,20 @@ function tanh(x: number): number {
 export function computeClutchShooting(bundle: NBAStatsBundle, ctx: RunCtx): any {
   console.log('[S10:ClutchShooting] Computing...')
 
+  if (!bundle) {
+    return {
+      factor_no: 10,
+      key: 'clutchShooting',
+      name: 'Clutch Shooting',
+      normalized_value: 0,
+      raw_values_json: {},
+      parsed_values_json: { points: 0, awayScore: 0, homeScore: 0 },
+      caps_applied: false,
+      cap_reason: null,
+      notes: 'Factor disabled - no data bundle'
+    }
+  }
+
   // Extract shooting data - NBA averages: ~77% FT, ~46% FG
   const awayFtPct = bundle.awayFtPct ?? 77.0
   const awayFgPct = bundle.awayFgPct ?? 46.0
@@ -41,18 +55,20 @@ export function computeClutchShooting(bundle: NBAStatsBundle, ctx: RunCtx): any 
   const homeScore = signal < 0 ? points : 0
 
   const edge = signal > 0 ? 'Away' : 'Home'
-  const notes = `${edge} clutch: FT% ${awayFtPct.toFixed(1)} vs ${homeFtPct.toFixed(1)}`
+  const notes = `${edge} clutch: FT% ${awayFtPct.toFixed(1)} vs ${homeFtPct.toFixed(1)}, FG% ${awayFgPct.toFixed(1)} vs ${homeFgPct.toFixed(1)}`
 
   console.log(`[S10:ClutchShooting] Signal=${signal.toFixed(3)}, Points=${points.toFixed(2)}`)
 
   return {
-    signal,
-    awayScore,
-    homeScore,
-    meta: {
-      raw_values_json: { awayFtPct, awayFgPct, homeFtPct, homeFgPct, ftPctDiff, fgPctDiff, combinedDiff },
-      parsed_values_json: { notes }
-    }
+    factor_no: 10,
+    key: 'clutchShooting',
+    name: 'Clutch Shooting',
+    normalized_value: signal,
+    raw_values_json: { awayFtPct, awayFgPct, homeFtPct, homeFgPct, ftPctDiff, fgPctDiff, combinedDiff },
+    parsed_values_json: { points, awayScore, homeScore, signal },
+    caps_applied: false,
+    cap_reason: null,
+    notes
   }
 }
 
