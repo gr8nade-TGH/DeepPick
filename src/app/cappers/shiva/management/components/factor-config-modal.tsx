@@ -670,32 +670,6 @@ export function FactorConfigModal({
           "*Formula: awayNetRating = awayORtg - awayDRtg, homeNetRating = homeORtg - homeDRtg, differential = awayNetRating - homeNetRating, expectedMargin = (differential/100) × pace, signal = tanh(expectedMargin/8), if signal > 0: awayScore = |signal| × 5.0, homeScore = 0; else: awayScore = 0, homeScore = |signal| × 5.0*"
         ]
       },
-      restAdvantage: {
-        metric: "Rest days differential + back-to-back penalty + travel impact",
-        formula: "Calculate rest days for each team, apply -3.5 pts for back-to-back, -1.5 additional for road back-to-back, signal = tanh(restAdvantage/4), if signal > 0: awayScore = |signal| × 5.0, homeScore = 0; else: awayScore = 0, homeScore = |signal| × 5.0",
-        examples: [
-          "| Away Rest | Home Rest | B2B Penalty | Road B2B | Rest Advantage | Signal | Away Score | Home Score | Confidence | Example |",
-          "|-----------|-----------|-------------|----------|----------------|--------|------------|------------|------------|---------|",
-          "| 2 days    | 1 day (B2B) | -3.5      | -1.5     | +5.0           | +0.90  | +4.50      | 0.0        | High       | Suns @ Nuggets (road B2B) |",
-          "| 3 days    | 1 day (B2B) | -3.5      | 0.0      | +3.5           | +0.76  | +3.80      | 0.0        | High       | Well-rested vs B2B |",
-          "| 2 days    | 2 days    | 0.0         | 0.0      | 0.0            | 0.0    | 0.0        | 0.0        | Neutral    | Equal rest |",
-          "| 1 day (B2B) | 2 days  | -3.5        | -1.5     | -5.0           | -0.90  | 0.0        | +4.50      | High       | Home team rested |",
-          "| 1 day (B2B) | 3 days  | -3.5        | 0.0      | -3.5           | -0.76  | 0.0        | +3.80      | High       | Home team advantage |",
-          "",
-          "🏃 **Rest Advantage Calculation:**",
-          "• Back-to-back (1 day rest) = -3.5 points ATS penalty",
-          "• Road back-to-back = additional -1.5 points",
-          "• 3+ days rest vs B2B opponent = +3.5 to +5.0 advantage",
-          "",
-          "📊 **Research-Backed Trends:**",
-          "• Teams on 2+ days rest vs B2B opponent: 57% ATS (2013-2024)",
-          "• Road teams on back-to-back: 45% ATS (below 50%)",
-          "• Teams on 3-in-4 nights: 42% ATS",
-          "",
-          "*Metric: Rest days differential + back-to-back penalty + travel impact*",
-          "*Formula: Calculate rest days for each team, apply -3.5 pts for back-to-back, -1.5 additional for road back-to-back, signal = tanh(restAdvantage/4), if signal > 0: awayScore = |signal| × 5.0, homeScore = 0; else: awayScore = 0, homeScore = |signal| × 5.0*"
-        ]
-      },
       atsMomentum: {
         metric: "Recent ATS performance (last 10 games) - covers vs losses",
         formula: "Calculate ATS record for last 10 games, assign momentum score: 70%+ = +3.0, 60%+ = +1.5, 50% = 0.0, 40%- = -1.5, 30%- = -3.0, differential = awayMomentum - homeMomentum, signal = tanh(differential/3), if signal > 0: awayScore = |signal| × 5.0, homeScore = 0; else: awayScore = 0, homeScore = |signal| × 5.0",

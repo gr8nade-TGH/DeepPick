@@ -345,9 +345,7 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
       }
 
       // Track wins/losses for momentum (S7)
-      // Determine if team won this game
-      const teamPTS = stats.offense?.pts || 0
-      const oppPTS = stats.defense?.ptsAgainst || 0
+      // Determine if team won this game (reuse teamPTS and oppPTS from above)
       if (teamPTS > oppPTS) {
         wins++
       } else if (oppPTS > teamPTS) {
