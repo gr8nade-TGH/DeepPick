@@ -37,6 +37,9 @@ import { S6_INJURY_AVAILABILITY_SPREAD } from './definitions/nba/spread/s6-injur
 import { S7_MOMENTUM_INDEX } from './definitions/nba/spread/s7-momentum-index'
 import { S8_DEFENSIVE_PRESSURE } from './definitions/nba/spread/s8-defensive-pressure'
 import { S9_ASSIST_EFFICIENCY } from './definitions/nba/spread/s9-assist-efficiency'
+import { S10_CLUTCH_SHOOTING } from './definitions/nba/spread/s10-clutch-shooting'
+import { S11_SCORING_MARGIN } from './definitions/nba/spread/s11-scoring-margin'
+import { S12_PERIMETER_DEFENSE } from './definitions/nba/spread/s12-perimeter-defense'
 
 // ============================================================================
 // MASTER FACTOR LIST - Add new factors to this array
@@ -52,7 +55,7 @@ const ALL_FACTORS: FactorDefinition[] = [
   F6_INJURY_AVAILABILITY_TOTALS,
   F7_REST_ADVANTAGE,
 
-  // NBA SPREAD (9 factors)
+  // NBA SPREAD (12 factors)
   S1_NET_RATING_DIFF,
   S2_TURNOVER_DIFF,
   S3_SHOOTING_EFFICIENCY,
@@ -62,6 +65,9 @@ const ALL_FACTORS: FactorDefinition[] = [
   S7_MOMENTUM_INDEX,
   S8_DEFENSIVE_PRESSURE,
   S9_ASSIST_EFFICIENCY,
+  S10_CLUTCH_SHOOTING,
+  S11_SCORING_MARGIN,
+  S12_PERIMETER_DEFENSE,
 ]
 
 // ============================================================================

@@ -26,6 +26,9 @@ import { computeInjuryAvailabilitySpread } from './s6-injury-availability'
 import { computeMomentumIndex } from './s7-momentum-index'
 import { computeDefensivePressure } from './s8-defensive-pressure'
 import { computeAssistEfficiency } from './s9-assist-efficiency'
+import { computeClutchShooting } from './s10-clutch-shooting'
+import { computeScoringMargin } from './s11-scoring-margin'
+import { computePerimeterDefense } from './s12-perimeter-defense'
 
 /**
  * Main entry point: compute only enabled NBA spread factors
@@ -42,7 +45,7 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
 
   const nbaStatsConditionCheck = {
     enabledFactorKeys,
-    shouldFetchNBAStats: enabledFactorKeys.some(key => ['netRatingDiff', 'turnoverDiff', 'shootingEfficiencyMomentum', 'reboundingDiff', 'fourFactorsDiff', 'momentumIndex', 'defensivePressure', 'assistEfficiency'].includes(key)),
+    shouldFetchNBAStats: enabledFactorKeys.some(key => ['netRatingDiff', 'turnoverDiff', 'shootingEfficiencyMomentum', 'reboundingDiff', 'fourFactorsDiff', 'momentumIndex', 'defensivePressure', 'assistEfficiency', 'clutchShooting', 'scoringMargin', 'perimeterDefense'].includes(key)),
     netRatingDiff: enabledFactorKeys.includes('netRatingDiff'),
     turnoverDiff: enabledFactorKeys.includes('turnoverDiff'),
     shootingEfficiencyMomentum: enabledFactorKeys.includes('shootingEfficiencyMomentum'),
@@ -50,7 +53,10 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
     fourFactorsDiff: enabledFactorKeys.includes('fourFactorsDiff'),
     momentumIndex: enabledFactorKeys.includes('momentumIndex'),
     defensivePressure: enabledFactorKeys.includes('defensivePressure'),
-    assistEfficiency: enabledFactorKeys.includes('assistEfficiency')
+    assistEfficiency: enabledFactorKeys.includes('assistEfficiency'),
+    clutchShooting: enabledFactorKeys.includes('clutchShooting'),
+    scoringMargin: enabledFactorKeys.includes('scoringMargin'),
+    perimeterDefense: enabledFactorKeys.includes('perimeterDefense')
   }
   console.log('[SPREAD:NBA_STATS_CONDITION_CHECK]', nbaStatsConditionCheck)
 
@@ -240,6 +246,42 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
     } catch (error) {
       console.error('[SPREAD:S9:ERROR]', error)
       factorErrors.push(`assistEfficiency: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
+  // S10: Clutch Shooting
+  if (enabledFactorKeys.includes('clutchShooting')) {
+    try {
+      console.log('[SPREAD:S10] Computing Clutch Shooting...')
+      factors.push(computeClutchShooting(bundle!, ctx))
+      console.log('[SPREAD:S10] Success')
+    } catch (error) {
+      console.error('[SPREAD:S10:ERROR]', error)
+      factorErrors.push(`clutchShooting: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
+  // S11: Scoring Margin
+  if (enabledFactorKeys.includes('scoringMargin')) {
+    try {
+      console.log('[SPREAD:S11] Computing Scoring Margin...')
+      factors.push(computeScoringMargin(bundle!, ctx))
+      console.log('[SPREAD:S11] Success')
+    } catch (error) {
+      console.error('[SPREAD:S11:ERROR]', error)
+      factorErrors.push(`scoringMargin: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
+  // S12: Perimeter Defense
+  if (enabledFactorKeys.includes('perimeterDefense')) {
+    try {
+      console.log('[SPREAD:S12] Computing Perimeter Defense...')
+      factors.push(computePerimeterDefense(bundle!, ctx))
+      console.log('[SPREAD:S12] Success')
+    } catch (error) {
+      console.error('[SPREAD:S12:ERROR]', error)
+      factorErrors.push(`perimeterDefense: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 

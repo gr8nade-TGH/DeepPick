@@ -132,7 +132,25 @@ export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<NBAStatsBundle> 
       awayWinStreak: awayRecent.winStreak,
       homeWinStreak: homeRecent.winStreak,
       awayLast10Record: awayRecent.last10Record,
-      homeLast10Record: homeRecent.last10Record
+      homeLast10Record: homeRecent.last10Record,
+
+      // Clutch shooting data (for SPREAD factor S10)
+      awayFtPct: awayRecent.avgFtPct,
+      awayFgPct: awayRecent.avgFgPct,
+      homeFtPct: homeRecent.avgFtPct,
+      homeFgPct: homeRecent.avgFgPct,
+
+      // Scoring margin data (for SPREAD factor S11)
+      awayPpg: awayRecent.avgPpg,
+      awayOppPpg: awayRecent.avgOppPpg,
+      homePpg: homeRecent.avgPpg,
+      homeOppPpg: homeRecent.avgOppPpg,
+
+      // Perimeter defense data (for SPREAD factor S12)
+      awayOpp3Pct: awayRecent.avgOpp3Pct,
+      awayOppFgPct: awayRecent.avgOppFgPct,
+      homeOpp3Pct: homeRecent.avgOpp3Pct,
+      homeOppFgPct: homeRecent.avgOppFgPct
     }
 
     console.log('[DATA_FETCHER] Stats bundle created successfully')

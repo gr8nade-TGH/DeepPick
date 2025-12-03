@@ -102,6 +102,24 @@ export interface NBAStatsBundle {
   awayLast10Record?: { wins: number; losses: number }
   homeLast10Record?: { wins: number; losses: number }
 
+  // Clutch shooting data (for SPREAD factor S10)
+  awayFtPct?: number
+  awayFgPct?: number
+  homeFtPct?: number
+  homeFgPct?: number
+
+  // Scoring margin data (for SPREAD factor S11)
+  awayPpg?: number
+  awayOppPpg?: number
+  homePpg?: number
+  homeOppPpg?: number
+
+  // Perimeter defense data (for SPREAD factor S12)
+  awayOpp3Pct?: number
+  awayOppFgPct?: number
+  homeOpp3Pct?: number
+  homeOppFgPct?: number
+
   // League anchors
   leaguePace: number
   leagueORtg: number

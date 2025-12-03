@@ -60,6 +60,18 @@ export interface TeamFormData {
   // Assist efficiency data (for SPREAD factor S9)
   avgAssists: number // Assists per game
 
+  // Clutch shooting data (for SPREAD factor S10)
+  avgFtPct: number // Free throw percentage
+  avgFgPct: number // Field goal percentage
+
+  // Scoring margin data (for SPREAD factor S11)
+  avgPpg: number // Points per game
+  avgOppPpg: number // Opponent points per game
+
+  // Perimeter defense data (for SPREAD factor S12)
+  avgOpp3Pct: number // Opponent 3-point percentage
+  avgOppFgPct: number // Opponent field goal percentage
+
   // Rest advantage data (for TOTALS factor F7)
   restDays?: number // Days since last game
   isBackToBack?: boolean // True if playing on consecutive days
@@ -221,6 +233,17 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
     // Assist efficiency stats (for S9 factor)
     let totalAssists = 0
 
+    // Clutch shooting stats (for S10 factor)
+    let totalFTM = 0
+    let totalPTS = 0
+    let totalOppPTS = 0
+
+    // Perimeter defense stats (for S12 factor)
+    let totalOpp3PA = 0
+    let totalOpp3PM = 0
+    let totalOppFGA = 0
+    let totalOppFGM = 0
+
     // Momentum tracking (for S7 factor)
     let currentStreak = 0
     let wins = 0
@@ -255,6 +278,15 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
 
       // Assist stats (for S9 factor)
       const teamAssists = stats.offense?.ast || 0
+
+      // Clutch shooting stats (for S10 factor)
+      const teamFTM = stats.freeThrows?.ftMade || 0
+
+      // Opponent shooting stats (for S12 perimeter defense)
+      const opp3PA = stats.defense?.fg3PtAttAgainst || 0
+      const opp3PM = stats.defense?.fg3PtMadeAgainst || 0
+      const oppFGA = stats.defense?.fgAttAgainst || 0
+      const oppFGM = stats.defense?.fgMadeAgainst || 0
 
       // CRITICAL: Skip games with missing/zero stats (incomplete data from API)
       if (teamFGA === 0 && teamFTA === 0 && teamPTS === 0) {
@@ -295,6 +327,13 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
       totalSteals += teamSteals
       totalBlocks += teamBlocks
       totalAssists += teamAssists
+      totalFTM += teamFTM
+      totalPTS += teamPTS
+      totalOppPTS += oppPTS
+      totalOpp3PA += opp3PA
+      totalOpp3PM += opp3PM
+      totalOppFGA += oppFGA
+      totalOppFGM += oppFGM
 
       // Track game dates for rest calculation (F7)
       const game = gameLog.game
@@ -421,6 +460,18 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
     // Assist efficiency averages (for S9)
     const avgAssists = totalAssists / gameCount
 
+    // Clutch shooting averages (for S10)
+    const avgFtPct = totalFTA > 0 ? (totalFTM / totalFTA) * 100 : 77.0
+    const avgFgPct = totalFGA > 0 ? (totalFGM / totalFGA) * 100 : 46.0
+
+    // Scoring margin averages (for S11)
+    const avgPpg = totalPTS / gameCount
+    const avgOppPpg = totalOppPTS / gameCount
+
+    // Perimeter defense averages (for S12)
+    const avgOpp3Pct = totalOpp3PA > 0 ? (totalOpp3PM / totalOpp3PA) * 100 : 36.0
+    const avgOppFgPct = totalOppFGA > 0 ? (totalOppFGM / totalOppFGA) * 100 : 46.0
+
     console.log(`[MySportsFeeds Stats] Defensive pressure for ${teamAbbrev}:`, {
       avgSteals: avgSteals.toFixed(1),
       avgBlocks: avgBlocks.toFixed(1),
@@ -456,6 +507,18 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
 
       // Assist efficiency (S9)
       avgAssists,
+
+      // Clutch shooting (S10)
+      avgFtPct,
+      avgFgPct,
+
+      // Scoring margin (S11)
+      avgPpg,
+      avgOppPpg,
+
+      // Perimeter defense (S12)
+      avgOpp3Pct,
+      avgOppFgPct,
 
       // Rest advantage (F7)
       restDays,

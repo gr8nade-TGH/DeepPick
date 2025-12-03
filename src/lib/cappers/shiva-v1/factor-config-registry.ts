@@ -182,6 +182,48 @@ export const FACTOR_REGISTRY: FactorRegistry = {
     shortName: 'Ast'
   },
 
+  clutchShooting: {
+    name: 'Clutch Shooting',
+    description: 'Free throw and field goal efficiency. Critical for close games and covering spreads.',
+    defaultWeight: 15,
+    maxPoints: 5.0,
+    supportedSports: ['NBA'],
+    supportedBetTypes: ['SPREAD'],
+    availableDataSources: ['mysportsfeeds', 'system'],
+    defaultDataSource: 'mysportsfeeds',
+    scope: 'matchup',
+    icon: '🎯',
+    shortName: 'Clutch'
+  },
+
+  scoringMargin: {
+    name: 'Scoring Margin',
+    description: 'Raw points per game vs points allowed. Simple but powerful team quality indicator.',
+    defaultWeight: 20,
+    maxPoints: 5.0,
+    supportedSports: ['NBA'],
+    supportedBetTypes: ['SPREAD'],
+    availableDataSources: ['mysportsfeeds', 'system'],
+    defaultDataSource: 'mysportsfeeds',
+    scope: 'matchup',
+    icon: '📊',
+    shortName: 'Margin'
+  },
+
+  perimeterDefense: {
+    name: 'Perimeter Defense',
+    description: 'Opponent 3-point and FG% allowed. Stopping the 3-ball is crucial in modern NBA.',
+    defaultWeight: 15,
+    maxPoints: 5.0,
+    supportedSports: ['NBA'],
+    supportedBetTypes: ['SPREAD'],
+    availableDataSources: ['mysportsfeeds', 'system'],
+    defaultDataSource: 'mysportsfeeds',
+    scope: 'matchup',
+    icon: '🏰',
+    shortName: 'PerimD'
+  },
+
   // ========================================================================
   // GLOBAL FACTORS (All sports/bet types)
   // ========================================================================
