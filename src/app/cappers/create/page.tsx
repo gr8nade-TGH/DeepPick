@@ -593,39 +593,11 @@ export default function CreateCapperPage() {
     setError(null)
 
     try {
-
-      // Map user-friendly factor names to SHIVA v1 factor names
-      const mappedFactorConfig: typeof config.factor_config = {}
-
-      for (const betType of Object.keys(config.factor_config)) {
-        const mapping = FACTOR_NAME_MAPPING[betType as keyof typeof FACTOR_NAME_MAPPING]
-        const originalConfig = config.factor_config[betType]
-
-        // Map enabled factors
-        const mappedEnabledFactors = originalConfig.enabled_factors.map(
-          factor => mapping[factor as keyof typeof mapping] || factor
-        )
-
-        // Map weights
-        const mappedWeights: { [key: string]: number } = {}
-        for (const [factor, weight] of Object.entries(originalConfig.weights)) {
-          const mappedFactorName = mapping[factor as keyof typeof mapping] || factor
-          mappedWeights[mappedFactorName] = weight
-        }
-
-        mappedFactorConfig[betType] = {
-          enabled_factors: mappedEnabledFactors,
-          weights: mappedWeights
-        }
-      }
-
+      // Factor config already uses correct SHIVA v1 factor keys, no mapping needed
       const response = await fetch('/api/cappers/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...config,
-          factor_config: mappedFactorConfig
-        })
+        body: JSON.stringify(config)
       })
 
       const data = await response.json()

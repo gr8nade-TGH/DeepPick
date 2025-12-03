@@ -744,10 +744,24 @@ export async function POST(request: Request) {
     const factorContributions = result.log?.factors || []
 
     // Determine pick direction for factor alignment
+    // For SPREAD picks, selection contains the full team NAME (e.g., "San Antonio Spurs +6.5")
+    // so we need to check BOTH abbreviation AND name
+    const awayAbbrev = typeof game.away_team === 'object' ? game.away_team?.abbreviation : null
+    const awayName = typeof game.away_team === 'object' ? game.away_team?.name : game.away_team
+    const isAwayPick = pick.selection?.includes(awayAbbrev || '') || pick.selection?.includes(awayName || '')
+
     const pickDirection = pick.selection?.includes('OVER') ? 'OVER'
       : pick.selection?.includes('UNDER') ? 'UNDER'
-        : pick.selection?.includes(game.away_team?.abbreviation || game.away_team) ? 'AWAY'
+        : isAwayPick ? 'AWAY'
           : 'HOME'
+
+    console.log(`🎯 [SHIVA:GeneratePick] Pick direction detection:`, {
+      selection: pick.selection,
+      awayAbbrev,
+      awayName,
+      isAwayPick,
+      pickDirection
+    })
 
     // Calculate factor alignment (how many factors agree with the pick)
     const { factorsOnSide, totalFactors } = calculateFactorAlignment(factorContributions, pickDirection)
