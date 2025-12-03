@@ -88,6 +88,18 @@ export interface NBAStatsBundle {
   homeDRtgHome?: number
   homeDRtgAway?: number
 
+  // Rest advantage data (for TOTALS factor F7)
+  awayRestDays?: number
+  homeRestDays?: number
+  awayIsBackToBack?: boolean
+  homeIsBackToBack?: boolean
+
+  // Momentum data (for SPREAD factor S7)
+  awayWinStreak?: number
+  homeWinStreak?: number
+  awayLast10Record?: { wins: number; losses: number }
+  homeLast10Record?: { wins: number; losses: number }
+
   // League anchors
   leaguePace: number
   leagueORtg: number

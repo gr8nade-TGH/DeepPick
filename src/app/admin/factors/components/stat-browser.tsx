@@ -153,8 +153,8 @@ export const AVAILABLE_STATS: Record<string, StatCategory> = {
       { key: 'winPct', name: 'Win Percentage', description: 'Overall win percentage', unit: '%', currentlyUsed: false, dataSource: 'standings', apiPath: 'standings.json → winPct' },
       { key: 'confRank', name: 'Conference Rank', description: 'Team rank in conference', unit: 'rank', currentlyUsed: false, dataSource: 'standings', apiPath: 'standings.json → conferenceRank' },
       { key: 'divRank', name: 'Division Rank', description: 'Team rank in division', unit: 'rank', currentlyUsed: false, dataSource: 'standings', apiPath: 'standings.json → divisionRank' },
-      { key: 'streak', name: 'Current Streak', description: 'Current win/loss streak', unit: 'games', currentlyUsed: false, dataSource: 'standings', apiPath: 'standings.json → streak' },
-      { key: 'last10', name: 'Last 10 Record', description: 'Wins in last 10 games', unit: 'wins', currentlyUsed: false, dataSource: 'standings', apiPath: 'standings.json → lastTen' },
+      { key: 'streak', name: 'Current Streak', description: 'Current win/loss streak', unit: 'games', currentlyUsed: true, usedIn: ['momentumIndex'], dataSource: 'standings', apiPath: 'standings.json → streak' },
+      { key: 'last10', name: 'Last 10 Record', description: 'Wins in last 10 games', unit: 'wins', currentlyUsed: true, usedIn: ['momentumIndex'], dataSource: 'standings', apiPath: 'standings.json → lastTen' },
       { key: 'netRtg', name: 'Net Rating', description: 'ORtg minus DRtg (team quality)', unit: 'pts/100', currentlyUsed: false, dataSource: 'calculated', apiPath: 'Calculated from ortg - drtg' },
     ]
   },
@@ -163,8 +163,8 @@ export const AVAILABLE_STATS: Record<string, StatCategory> = {
     icon: Plane,
     color: 'orange',
     stats: [
-      { key: 'restDays', name: 'Rest Days', description: 'Days since last game', unit: 'days', currentlyUsed: false, dataSource: 'schedule', apiPath: 'Calculated from games.json dates' },
-      { key: 'b2bGame', name: 'Back-to-Back', description: 'Is this game a back-to-back?', unit: 'bool', currentlyUsed: false, dataSource: 'schedule', apiPath: 'Calculated from games.json dates' },
+      { key: 'restDays', name: 'Rest Days', description: 'Days since last game', unit: 'days', currentlyUsed: true, usedIn: ['restAdvantage'], dataSource: 'schedule', apiPath: 'Calculated from games.json dates' },
+      { key: 'b2bGame', name: 'Back-to-Back', description: 'Is this game a back-to-back?', unit: 'bool', currentlyUsed: true, usedIn: ['restAdvantage'], dataSource: 'schedule', apiPath: 'Calculated from games.json dates' },
       { key: 'b2bWinPct', name: 'B2B Win %', description: 'Win % in back-to-back games', unit: '%', currentlyUsed: false, dataSource: 'calculated', apiPath: 'Calculated from team_gamelogs' },
       { key: 'q4Scoring', name: '4th Quarter Scoring', description: 'Average 4th quarter points', unit: 'pts', currentlyUsed: false, dataSource: 'boxscore', apiPath: 'game_boxscore → quarterSummary.Q4' },
       { key: 'q4Diff', name: '4th Quarter Diff', description: 'Average 4th quarter point differential', unit: 'diff', currentlyUsed: false, dataSource: 'boxscore', apiPath: 'Calculated from game_boxscore' },
@@ -289,10 +289,10 @@ export function StatBrowser({ open, onClose, onSelectStat }: StatBrowserProps) {
                           <Badge
                             variant="outline"
                             className={`text-[10px] px-1.5 py-0 flex items-center gap-1 ${stat.dataSource === 'already_fetched'
-                                ? 'text-green-400 border-green-500/30 bg-green-500/10'
-                                : stat.dataSource === 'calculated'
-                                  ? 'text-cyan-400 border-cyan-500/30 bg-cyan-500/10'
-                                  : 'text-amber-400 border-amber-500/30 bg-amber-500/10'
+                              ? 'text-green-400 border-green-500/30 bg-green-500/10'
+                              : stat.dataSource === 'calculated'
+                                ? 'text-cyan-400 border-cyan-500/30 bg-cyan-500/10'
+                                : 'text-amber-400 border-amber-500/30 bg-amber-500/10'
                               }`}
                           >
                             <SourceIcon className="w-3 h-3" />

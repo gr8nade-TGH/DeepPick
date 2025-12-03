@@ -34,6 +34,7 @@ const FACTOR_INFO = {
       { key: 'defErosion', name: 'Defensive Erosion', stats: ['awayDRtgSeason', 'homeDRtgSeason', 'leagueDRtg'], logic: 'Combined DRtg vs league avg → Higher (worse D) = OVER' },
       { key: 'threeEnv', name: '3-Point Environment', stats: ['away3PAR', 'home3PAR', 'away3Pct', 'home3Pct'], logic: 'Combined 3PA rate × 3P% → Higher = OVER' },
       { key: 'whistleEnv', name: 'Whistle Environment', stats: ['awayFTr', 'homeFTr', 'leagueFTr'], logic: 'Combined FT rate vs league avg → Higher = OVER' },
+      { key: 'restAdvantage', name: 'Rest Advantage', stats: ['awayRestDays', 'homeRestDays', 'awayIsB2B', 'homeIsB2B'], logic: 'Rest differential → Fatigued teams = UNDER' },
     ],
   },
   spread: {
@@ -43,6 +44,7 @@ const FACTOR_INFO = {
       { key: 'turnoverDiff', name: 'Turnover Diff', stats: ['awayTOVLast10', 'homeTOVLast10'], logic: 'Away TOV - Home TOV → Lower = Away advantage' },
       { key: 'fourFactorsDiff', name: 'Four Factors Diff', stats: ['awayEfg', 'homeEfg', 'awayTovPct', 'homeTovPct', 'awayOrebPct', 'homeOrebPct'], logic: 'Dean Oliver Four Factors comparison' },
       { key: 'homeAwaySplits', name: 'Home/Away Splits', stats: ['awayORtgAway', 'homeORtgHome', 'awayDRtgAway', 'homeDRtgHome'], logic: 'Location-adjusted performance' },
+      { key: 'momentumIndex', name: 'Momentum Index', stats: ['awayWinStreak', 'homeWinStreak', 'awayLast10', 'homeLast10'], logic: 'Streak + Last 10 → Hot teams cover' },
     ],
   },
   availableStats: {

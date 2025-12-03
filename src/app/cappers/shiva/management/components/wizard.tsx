@@ -818,8 +818,8 @@ export function SHIVAWizard(props: SHIVAWizardProps = {}) {
     // ✅ DYNAMIC FACTOR KEY VALIDATION BASED ON BET TYPE
     const betType = props.betType || 'TOTAL'
     const expectedFactorKeys = betType === 'TOTAL'
-      ? ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv', 'injuryAvailability']
-      : ['netRatingDiff', 'turnoverDiff', 'shootingEfficiencyMomentum', 'paceMismatch', 'fourFactorsDiff']
+      ? ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv', 'injuryAvailability', 'restAdvantage']
+      : ['netRatingDiff', 'turnoverDiff', 'shootingEfficiencyMomentum', 'paceMismatch', 'fourFactorsDiff', 'momentumIndex']
 
     // Check if we have at least some factors (minimum 1)
     if (factors.length < 1) {

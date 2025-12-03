@@ -60,6 +60,14 @@ export interface TeamFormData {
   drtgAway?: number // DRtg in away games only
   homeGames?: number // Number of home games analyzed
   awayGames?: number // Number of away games analyzed
+
+  // Rest advantage data (for TOTALS factor F7)
+  restDays?: number // Days since last game
+  isBackToBack?: boolean // True if playing on consecutive days
+
+  // Momentum data (for SPREAD factor S7)
+  winStreak?: number // Positive = win streak, Negative = loss streak
+  last10Record?: { wins: number; losses: number } // Record in last 10 games
 }
 
 /**
@@ -226,6 +234,12 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
     let awayDRtgTotal = 0
     let awayGamesCount = 0
 
+    // Momentum tracking (for S7 factor)
+    let currentStreak = 0
+    let wins = 0
+    let losses = 0
+    let gameDates: Date[] = []
+
     for (const gameLog of gameLogs) {
       const stats = gameLog.stats
       if (!stats) {
@@ -324,6 +338,55 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
         awayDRtgTotal += drtg
         awayGamesCount++
       }
+
+      // Track game dates for rest calculation (F7)
+      if (game?.startTime) {
+        gameDates.push(new Date(game.startTime))
+      }
+
+      // Track wins/losses for momentum (S7)
+      // Determine if team won this game
+      const teamPTS = stats.offense?.pts || 0
+      const oppPTS = stats.defense?.ptsAgainst || 0
+      if (teamPTS > oppPTS) {
+        wins++
+      } else if (oppPTS > teamPTS) {
+        losses++
+      }
+    }
+
+    // Calculate win streak (positive = wins, negative = losses)
+    // Process games in chronological order (oldest first) to get current streak
+    let streakCount = 0
+    let lastResult: 'W' | 'L' | null = null
+    for (const gameLog of gameLogs.slice().reverse()) { // Reverse to go oldest to newest
+      const stats = gameLog.stats
+      if (!stats) continue
+      const teamPTS = stats.offense?.pts || 0
+      const oppPTS = stats.defense?.ptsAgainst || 0
+      const result = teamPTS > oppPTS ? 'W' : 'L'
+
+      if (lastResult === null || result === lastResult) {
+        streakCount = result === 'W' ? streakCount + 1 : streakCount - 1
+        lastResult = result
+      } else {
+        // Streak broken, start new streak
+        streakCount = result === 'W' ? 1 : -1
+        lastResult = result
+      }
+    }
+    const winStreak = streakCount
+
+    // Calculate rest days (days since most recent game)
+    // gameDates[0] is the most recent game
+    let restDays = 1 // Default to 1 day rest
+    let isBackToBack = false
+    if (gameDates.length > 0) {
+      const today = new Date()
+      const mostRecentGame = gameDates[0]
+      const daysSinceLastGame = Math.floor((today.getTime() - mostRecentGame.getTime()) / (1000 * 60 * 60 * 24))
+      restDays = daysSinceLastGame
+      isBackToBack = daysSinceLastGame === 0 // Playing same day or next day
     }
 
     const gameCount = gameLogs.length
@@ -428,7 +491,15 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
       drtgHome,
       drtgAway,
       homeGames: homeGamesCount,
-      awayGames: awayGamesCount
+      awayGames: awayGamesCount,
+
+      // Rest advantage (F7)
+      restDays,
+      isBackToBack,
+
+      // Momentum (S7)
+      winStreak,
+      last10Record: { wins, losses }
     }
 
     console.log(`[MySportsFeeds Stats] Form data for ${teamAbbrev}:`, {

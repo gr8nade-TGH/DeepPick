@@ -118,7 +118,19 @@ export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<NBAStatsBundle> 
 
       // Points Per Game (calculated from ORtg and Pace)
       awayPointsPerGame: (awayRecent.ortg * awayRecent.pace) / 100,
-      homePointsPerGame: (homeRecent.ortg * homeRecent.pace) / 100
+      homePointsPerGame: (homeRecent.ortg * homeRecent.pace) / 100,
+
+      // Rest advantage data (for TOTALS factor F7)
+      awayRestDays: awayRecent.restDays,
+      homeRestDays: homeRecent.restDays,
+      awayIsBackToBack: awayRecent.isBackToBack,
+      homeIsBackToBack: homeRecent.isBackToBack,
+
+      // Momentum data (for SPREAD factor S7)
+      awayWinStreak: awayRecent.winStreak,
+      homeWinStreak: homeRecent.winStreak,
+      awayLast10Record: awayRecent.last10Record,
+      homeLast10Record: homeRecent.last10Record
     }
 
     console.log('[DATA_FETCHER] Stats bundle created successfully')

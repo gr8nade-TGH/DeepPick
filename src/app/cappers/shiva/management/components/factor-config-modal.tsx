@@ -369,6 +369,60 @@ export function FactorConfigModal({
           "Data Sources: MySportsFeeds (team_gamelogs, home vs away splits)",
           "Supported: NBA Spread predictions"
         ]
+      },
+      restAdvantage: {
+        features: [
+          "😴 Rest Advantage: Fatigue impact on scoring",
+          "📊 Formula: restDiff = awayRestDays - homeRestDays, fatigueScore based on B2B detection",
+          "⚖️ Smart Scaling: Uses tanh for smooth saturation, caps at ±3 days differential",
+          "🎯 Directional Scoring: Fatigued teams score less, well-rested teams score more",
+          "📈 Max Points: 5.0 (significant impact on totals)"
+        ],
+        examples: [
+          "Scenario 1: Both teams on back-to-back",
+          "• Away Rest: 0 days (B2B), Home Rest: 0 days (B2B)",
+          "• Both teams fatigued → Strong Under signal",
+          "• Signal: -0.80, Result: +4.0 Under Score",
+          "",
+          "Scenario 2: Well-rested vs fatigued",
+          "• Away Rest: 3 days, Home Rest: 0 days (B2B)",
+          "• Home team fatigued → Moderate Under lean",
+          "• Signal: -0.40, Result: +2.0 Under Score"
+        ],
+        registry: [
+          "Weight: 15% (Default - Adjustable)",
+          "Max Points: 5.0 (significant impact on totals)",
+          "Scope: NBA TOTALS only",
+          "Data Sources: MySportsFeeds (team_gamelogs, game dates)",
+          "Supported: NBA Totals predictions"
+        ]
+      },
+      momentumIndex: {
+        features: [
+          "📈 Momentum Index: Team momentum based on streak and recent record",
+          "📊 Formula: momentum = (streak × 0.6) + (last10WinPct × 0.4), signal = tanh(momentumDiff / 5)",
+          "⚖️ Smart Scaling: Uses tanh for smooth saturation, caps at ±10 momentum differential",
+          "🎯 Directional Scoring: Hot teams cover spreads, cold teams fail to cover",
+          "📈 Max Points: 5.0 (significant ATS impact)"
+        ],
+        examples: [
+          "Scenario 1: Hot team vs cold team",
+          "• Away: 5-game win streak (8-2 L10), Home: 3-game losing streak (3-7 L10)",
+          "• Momentum Diff: +6.0 (away favored)",
+          "• Signal: +0.76, Result: +3.80 Away Score",
+          "",
+          "Scenario 2: Both teams neutral",
+          "• Away: 1-game win streak (5-5 L10), Home: 1-game win streak (5-5 L10)",
+          "• Momentum Diff: 0.0 (neutral)",
+          "• Signal: 0.0, Result: No edge"
+        ],
+        registry: [
+          "Weight: 15% (Default - Adjustable)",
+          "Max Points: 5.0 (significant ATS impact)",
+          "Scope: NBA SPREAD only",
+          "Data Sources: MySportsFeeds (team_gamelogs, streak and last 10 record)",
+          "Supported: NBA Spread predictions"
+        ]
       }
     }
     return detailsMap[key] || { features: [], examples: [], registry: [] }
@@ -855,6 +909,40 @@ export function FactorConfigModal({
           "🏠 **Home/Away Splits Theory:**",
           "• Teams perform differently at home vs on the road",
           "• Contextual performance is more predictive than overall stats"
+        ]
+      },
+      restAdvantage: {
+        metric: "Rest differential between teams - back-to-backs cause fatigue and lower scoring",
+        formula: "restDiff = awayRestDays - homeRestDays, fatigueScore = (awayB2B ? -2 : 0) + (homeB2B ? -2 : 0), signal = tanh((restDiff + fatigueScore) / 3)",
+        examples: [
+          "| Away Rest | Home Rest | Away B2B | Home B2B | Signal | Over Score | Under Score |",
+          "|-----------|-----------|----------|----------|--------|------------|-------------|",
+          "| 0 (B2B)   | 0 (B2B)   | Yes      | Yes      | -0.80  | 0.0        | +4.0        |",
+          "| 3         | 0 (B2B)   | No       | Yes      | -0.40  | 0.0        | +2.0        |",
+          "| 2         | 2         | No       | No       | 0.0    | 0.0        | 0.0         |",
+          "| 0 (B2B)   | 3         | Yes      | No       | -0.60  | 0.0        | +3.0        |",
+          "",
+          "😴 **Rest Advantage Theory:**",
+          "• Back-to-back games cause significant fatigue",
+          "• Fatigued teams score less efficiently",
+          "• Both teams fatigued = strong Under signal"
+        ]
+      },
+      momentumIndex: {
+        metric: "Team momentum based on win streak and last 10 record",
+        formula: "momentum = (streak × 0.6) + (last10WinPct × 0.4), momentumDiff = awayMomentum - homeMomentum, signal = tanh(momentumDiff / 5)",
+        examples: [
+          "| Away Streak | Away L10 | Home Streak | Home L10 | Signal | Away Score | Home Score |",
+          "|-------------|----------|-------------|----------|--------|------------|------------|",
+          "| +5 (W)      | 8-2      | -3 (L)      | 3-7      | +0.76  | +3.80      | 0.0        |",
+          "| +2 (W)      | 6-4      | +1 (W)      | 5-5      | +0.20  | +1.00      | 0.0        |",
+          "| +1 (W)      | 5-5      | +1 (W)      | 5-5      | 0.0    | 0.0        | 0.0        |",
+          "| -2 (L)      | 4-6      | +4 (W)      | 7-3      | -0.60  | 0.0        | +3.00      |",
+          "",
+          "📈 **Momentum Theory:**",
+          "• Hot teams tend to cover spreads",
+          "• Cold teams tend to fail to cover",
+          "• Streak weighted 60%, Last 10 weighted 40%"
         ]
       }
     }

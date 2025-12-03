@@ -23,6 +23,7 @@ import { computeShootingEfficiencyMomentum } from './s3-shooting-efficiency-mome
 import { computeHomeAwaySplits } from './s4-home-away-splits'
 import { computeFourFactorsDifferential } from './s5-four-factors-differential'
 import { computeInjuryAvailabilitySpread } from './s6-injury-availability'
+import { computeMomentumIndex } from './s7-momentum-index'
 
 /**
  * Main entry point: compute only enabled NBA spread factors
@@ -39,12 +40,13 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
 
   const nbaStatsConditionCheck = {
     enabledFactorKeys,
-    shouldFetchNBAStats: enabledFactorKeys.some(key => ['netRatingDiff', 'turnoverDiff', 'shootingEfficiencyMomentum', 'homeAwaySplits', 'paceMismatch', 'fourFactorsDiff'].includes(key)),
+    shouldFetchNBAStats: enabledFactorKeys.some(key => ['netRatingDiff', 'turnoverDiff', 'shootingEfficiencyMomentum', 'homeAwaySplits', 'paceMismatch', 'fourFactorsDiff', 'momentumIndex'].includes(key)),
     netRatingDiff: enabledFactorKeys.includes('netRatingDiff'),
     turnoverDiff: enabledFactorKeys.includes('turnoverDiff'),
     shootingEfficiencyMomentum: enabledFactorKeys.includes('shootingEfficiencyMomentum'),
     homeAwaySplits: enabledFactorKeys.includes('homeAwaySplits') || enabledFactorKeys.includes('paceMismatch'),
-    fourFactorsDiff: enabledFactorKeys.includes('fourFactorsDiff')
+    fourFactorsDiff: enabledFactorKeys.includes('fourFactorsDiff'),
+    momentumIndex: enabledFactorKeys.includes('momentumIndex')
   }
   console.log('[SPREAD:NBA_STATS_CONDITION_CHECK]', nbaStatsConditionCheck)
 
@@ -199,6 +201,18 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
     } catch (error) {
       console.error('[SPREAD:S5:ERROR]', error)
       factorErrors.push(`fourFactorsDiff: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
+  // S7: Momentum Index
+  if (enabledFactorKeys.includes('momentumIndex')) {
+    try {
+      console.log('[SPREAD:S7] Computing Momentum Index...')
+      factors.push(computeMomentumIndex(bundle!, ctx))
+      console.log('[SPREAD:S7] Success')
+    } catch (error) {
+      console.error('[SPREAD:S7:ERROR]', error)
+      factorErrors.push(`momentumIndex: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 

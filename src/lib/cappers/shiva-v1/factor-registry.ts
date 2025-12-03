@@ -96,6 +96,21 @@ export const NBA_TOTALS_FACTORS: FactorMeta[] = [
     maxPoints: 5.0,
     defaultWeight: 0.20,
     defaultDataSource: 'mysportsfeeds'
+  },
+  {
+    key: 'restAdvantage',
+    name: 'Rest Advantage',
+    shortName: 'Rest',
+    icon: '😴',
+    description: 'Rest differential between teams. Back-to-backs typically result in lower scoring due to fatigue.',
+    appliesTo: {
+      sports: ['NBA'],
+      betTypes: ['TOTAL'],
+      scope: 'LEAGUE'
+    },
+    maxPoints: 5.0,
+    defaultWeight: 0.15,
+    defaultDataSource: 'mysportsfeeds'
   }
 ];
 
@@ -189,6 +204,21 @@ export const NBA_SPREAD_FACTORS: FactorMeta[] = [
     },
     maxPoints: 5.0,
     defaultWeight: 0.10,
+    defaultDataSource: 'mysportsfeeds'
+  },
+  {
+    key: 'momentumIndex',
+    name: 'Momentum Index',
+    shortName: 'Momentum',
+    icon: '📈',
+    description: 'Team momentum based on win streak and last 10 record. Hot teams tend to cover spreads.',
+    appliesTo: {
+      sports: ['NBA'],
+      betTypes: ['SPREAD'],
+      scope: 'LEAGUE'
+    },
+    maxPoints: 5.0,
+    defaultWeight: 0.15,
     defaultDataSource: 'mysportsfeeds'
   }
 ];

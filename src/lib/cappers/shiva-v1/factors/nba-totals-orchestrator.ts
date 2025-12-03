@@ -13,6 +13,7 @@ import { computeDefensiveErosion } from './f3-defensive-erosion'
 import { computeThreePointEnv } from './f4-three-point-env'
 import { computeWhistleEnv } from './f5-free-throw-env'
 import { computeInjuryAvailability } from './f6-injury-availability-deterministic'
+import { computeRestAdvantage } from './f7-rest-advantage'
 
 /**
  * Main entry point: compute only enabled NBA totals factors
@@ -33,12 +34,13 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
   })
   const nbaStatsConditionCheck = {
     enabledFactorKeys,
-    shouldFetchNBAStats: enabledFactorKeys.some(key => ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv'].includes(key)),
+    shouldFetchNBAStats: enabledFactorKeys.some(key => ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv', 'restAdvantage'].includes(key)),
     paceIndex: enabledFactorKeys.includes('paceIndex'),
     offForm: enabledFactorKeys.includes('offForm'),
     defErosion: enabledFactorKeys.includes('defErosion'),
     threeEnv: enabledFactorKeys.includes('threeEnv'),
-    whistleEnv: enabledFactorKeys.includes('whistleEnv')
+    whistleEnv: enabledFactorKeys.includes('whistleEnv'),
+    restAdvantage: enabledFactorKeys.includes('restAdvantage')
   }
   console.log('[TOTALS:NBA_STATS_CONDITION_CHECK]', nbaStatsConditionCheck)
 
@@ -255,6 +257,16 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
     } catch (error) {
       console.error('[TOTALS:ERROR] whistleEnv failed:', error)
       factorErrors.push(`whistleEnv: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+  if (enabledFactorKeys.includes('restAdvantage')) {
+    try {
+      console.log('[TOTALS:COMPUTING] restAdvantage...')
+      factors.push(computeRestAdvantage(bundle!, ctx))
+      console.log('[TOTALS:SUCCESS] restAdvantage computed')
+    } catch (error) {
+      console.error('[TOTALS:ERROR] restAdvantage failed:', error)
+      factorErrors.push(`restAdvantage: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 

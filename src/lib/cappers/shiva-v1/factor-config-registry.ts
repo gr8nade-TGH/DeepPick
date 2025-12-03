@@ -114,16 +114,30 @@ export const FACTOR_REGISTRY: FactorRegistry = {
 
   restAdvantage: {
     name: 'Rest Advantage',
-    description: 'Days of rest differential between teams',
-    defaultWeight: 8,
-    maxPoints: 0.4,
-    supportedSports: ['NBA', 'NFL'],
-    supportedBetTypes: ['SPREAD', 'MONEYLINE', 'TOTAL'],
-    availableDataSources: ['system'],
-    defaultDataSource: 'system',
+    description: 'Rest differential between teams. Back-to-backs typically result in lower scoring due to fatigue.',
+    defaultWeight: 15,
+    maxPoints: 5.0,
+    supportedSports: ['NBA'],
+    supportedBetTypes: ['TOTAL'],
+    availableDataSources: ['mysportsfeeds', 'system'],
+    defaultDataSource: 'mysportsfeeds',
     scope: 'matchup',
     icon: '😴',
     shortName: 'Rest'
+  },
+
+  momentumIndex: {
+    name: 'Momentum Index',
+    description: 'Team momentum based on win streak and last 10 record. Hot teams tend to cover spreads.',
+    defaultWeight: 15,
+    maxPoints: 5.0,
+    supportedSports: ['NBA'],
+    supportedBetTypes: ['SPREAD'],
+    availableDataSources: ['mysportsfeeds', 'system'],
+    defaultDataSource: 'mysportsfeeds',
+    scope: 'matchup',
+    icon: '📈',
+    shortName: 'Momentum'
   },
 
   // ========================================================================

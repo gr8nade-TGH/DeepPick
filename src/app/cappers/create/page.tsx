@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/auth-context'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
-import { Sparkles, Zap, Hand, Ban, Gauge, TrendingUp, Target, Home, Battery, BarChart3, Shield, Trophy, Flame, UserX, Anchor, Scale, Rocket, Castle, TrendingDown, Loader2, AlertCircle, Swords, Crown, Star, ChevronRight, Pencil, Check, X, ChevronDown, Activity, Crosshair, Repeat, RotateCcw, MapPin, Award, Shuffle, HelpCircle, AlertTriangle, Waves, Eye, Snowflake, Bomb, LineChart, Mountain, Skull, Compass, Wind } from 'lucide-react'
+import { Sparkles, Zap, Hand, Ban, Gauge, TrendingUp, Target, Home, Battery, BarChart3, Shield, Trophy, Flame, UserX, Anchor, Scale, Rocket, Castle, TrendingDown, Loader2, AlertCircle, Swords, Crown, Star, ChevronRight, Pencil, Check, X, ChevronDown, Activity, Crosshair, Repeat, RotateCcw, MapPin, Award, Shuffle, HelpCircle, AlertTriangle, Waves, Eye, Snowflake, Bomb, LineChart, Mountain, Skull, Compass, Wind, Clock } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useCallback } from 'react'
 
@@ -111,6 +111,15 @@ const FACTOR_DETAILS: Record<string, { name: string; icon: any; description: str
     defaultWeight: 20,
     color: 'purple'
   },
+  restAdvantage: {
+    name: 'Rest Advantage',
+    icon: Clock,
+    description: 'Rest differential between teams. Back-to-backs cause fatigue.',
+    importance: 'Fatigued teams score less efficiently; well-rested teams score more.',
+    example: 'Both teams on B2B → Strong Under signal due to fatigue.',
+    defaultWeight: 15,
+    color: 'slate'
+  },
   // === SPREAD FACTORS ===
   netRatingDiff: {
     name: 'Net Rating Differential',
@@ -156,13 +165,22 @@ const FACTOR_DETAILS: Record<string, { name: string; icon: any; description: str
     example: 'Winning 3/4 factors → High probability of covering spread.',
     defaultWeight: 25,
     color: 'amber'
+  },
+  momentumIndex: {
+    name: 'Momentum Index',
+    icon: TrendingUp,
+    description: 'Team momentum based on win streak and last 10 record',
+    importance: 'Hot teams tend to cover spreads; cold teams tend to fail.',
+    example: 'Team on 5-game win streak (8-2 L10) → Strong ATS signal.',
+    defaultWeight: 15,
+    color: 'green'
   }
 }
 
 // Available factors for each bet type - USING CORRECT SHIVA KEYS
 const AVAILABLE_FACTORS = {
-  TOTAL: ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv', 'injuryAvailability'],
-  SPREAD: ['netRatingDiff', 'turnoverDiff', 'shootingEfficiencyMomentum', 'homeAwaySplits', 'fourFactorsDiff', 'injuryAvailability']
+  TOTAL: ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv', 'injuryAvailability', 'restAdvantage'],
+  SPREAD: ['netRatingDiff', 'turnoverDiff', 'shootingEfficiencyMomentum', 'homeAwaySplits', 'fourFactorsDiff', 'injuryAvailability', 'momentumIndex']
 }
 
 // Factor groups for organized display - USING CORRECT SHIVA KEYS
@@ -174,6 +192,7 @@ const FACTOR_GROUPS = {
     { id: 'shooting', name: '3-Point Environment', icon: Crosshair, factors: ['threeEnv'], color: 'orange' },
     { id: 'whistle', name: 'Whistle Environment', icon: Activity, factors: ['whistleEnv'], color: 'yellow' },
     { id: 'injuries', name: 'Injuries', icon: UserX, factors: ['injuryAvailability'], color: 'purple' },
+    { id: 'rest', name: 'Rest Advantage', icon: Clock, factors: ['restAdvantage'], color: 'slate' },
   ],
   SPREAD: [
     { id: 'netRating', name: 'Net Rating', icon: BarChart3, factors: ['netRatingDiff'], color: 'indigo' },
@@ -182,6 +201,7 @@ const FACTOR_GROUPS = {
     { id: 'homeAway', name: 'Home/Away Splits', icon: Home, factors: ['homeAwaySplits'], color: 'purple' },
     { id: 'fourFactors', name: 'Four Factors', icon: Trophy, factors: ['fourFactorsDiff'], color: 'amber' },
     { id: 'injuries', name: 'Injuries', icon: UserX, factors: ['injuryAvailability'], color: 'purple' },
+    { id: 'momentumIndex', name: 'Momentum Index', icon: TrendingUp, factors: ['momentumIndex'], color: 'green' },
   ]
 }
 
