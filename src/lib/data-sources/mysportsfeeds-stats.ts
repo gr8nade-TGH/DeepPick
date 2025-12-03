@@ -306,6 +306,7 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
       // MySportsFeeds API can have homeTeam/awayTeam at different levels:
       // - game.homeTeam / game.awayTeam (direct)
       // - game.schedule.homeTeam / game.schedule.awayTeam (nested under schedule)
+      // - gameLog.isHome (direct boolean on gameLog object, most reliable)
       const homeTeam = game?.homeTeam || game?.schedule?.homeTeam
       const awayTeam = game?.awayTeam || game?.schedule?.awayTeam
 
@@ -315,29 +316,51 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
           gameId: game?.id,
           teamId: team?.id,
           teamAbbrev: team?.abbreviation,
-          // Check both possible locations
+          // Check all possible locations
           directHomeTeam: game?.homeTeam,
           directAwayTeam: game?.awayTeam,
           scheduleHomeTeam: game?.schedule?.homeTeam,
           scheduleAwayTeam: game?.schedule?.awayTeam,
+          isHomeDirectField: gameLog?.isHome, // New: Check direct isHome field
           // Resolved values
           resolvedHomeTeamId: homeTeam?.id,
           resolvedAwayTeamId: awayTeam?.id,
-          gameKeys: game ? Object.keys(game) : []
+          gameKeys: game ? Object.keys(game) : [],
+          gameLogKeys: gameLog ? Object.keys(gameLog) : []
         })
       }
 
-      const isHomeGame = homeTeam?.id === team?.id
+      // Determine if this is a home game using multiple methods:
+      // 1. Direct isHome field on gameLog (most reliable if present)
+      // 2. Compare homeTeam.id to team.id
+      // 3. Compare homeTeam.abbreviation to team.abbreviation
+      let isHomeGame: boolean | null = null
 
-      if (isHomeGame) {
+      if (typeof gameLog?.isHome === 'boolean') {
+        // Direct boolean field - most reliable
+        isHomeGame = gameLog.isHome
+      } else if (homeTeam?.id && team?.id) {
+        // Compare IDs
+        isHomeGame = homeTeam.id === team.id
+      } else if (homeTeam?.abbreviation && team?.abbreviation) {
+        // Fallback: Compare abbreviations
+        isHomeGame = homeTeam.abbreviation === team.abbreviation
+      } else {
+        // Can't determine - skip this game for home/away stats only
+        console.warn(`[MySportsFeeds Stats] Cannot determine home/away for ${teamAbbrev} game ${game?.id} - skipping for venue splits`)
+      }
+
+      // Only add to home/away stats if we could reliably detect the venue
+      if (isHomeGame === true) {
         homeORtgTotal += ortg
         homeDRtgTotal += drtg
         homeGamesCount++
-      } else {
+      } else if (isHomeGame === false) {
         awayORtgTotal += ortg
         awayDRtgTotal += drtg
         awayGamesCount++
       }
+      // If isHomeGame is null, we couldn't determine - don't add to either bucket
 
       // Track game dates for rest calculation (F7)
       if (game?.startTime) {

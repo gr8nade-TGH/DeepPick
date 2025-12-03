@@ -237,20 +237,23 @@ export function RunLogTable({ betType = 'TOTAL', capper = 'SHIVA' }: RunLogTable
   const getFactorShortName = (key: string): string => {
     const mapping: Record<string, string> = {
       // TOTALS factors
-      'edgeVsMarket': 'EM',
-      'paceIndex': 'PI',
-      'offForm': 'OF',
-      'defErosion': 'DE',
-      'threeEnv': '3E',
-      'whistleEnv': 'WE',
-      'injuryAvailability': 'IA',
+      'edgeVsMarket': 'Edge',
+      'paceIndex': 'Pace',
+      'offForm': 'Off',
+      'defErosion': 'Def',
+      'threeEnv': '3PT',
+      'whistleEnv': 'FT',
+      'injuryAvailability': 'Injury',
+      'restAdvantage': 'Rest',
       // SPREAD factors
-      'edgeVsMarketSpread': 'EM',
+      'edgeVsMarketSpread': 'Edge',
       'netRatingDiff': 'NetRtg',
-      'turnoverDiff': 'TD',
-      'shootingEfficiencyMomentum': 'SHOOT',
-      'paceMismatch': 'PACE',
-      'fourFactorsDiff': '4F'
+      'turnoverDiff': 'TO Diff',
+      'shootingEfficiencyMomentum': 'Shooting',
+      'homeAwaySplits': 'H/A',
+      'paceMismatch': 'Pace',
+      'fourFactorsDiff': '4 Factors',
+      'momentumIndex': 'Momentum'
     }
     return mapping[key] || key.substring(0, 2).toUpperCase()
   }

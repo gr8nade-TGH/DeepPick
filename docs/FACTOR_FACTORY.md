@@ -260,6 +260,16 @@ is_system_pick: isSystemCapperCheck,  // ✅ CORRECT - boolean result
 
 **Trade-off:** If insert fails, cooldown prevents retry. Must manually clear cooldown to retry.
 
+### Issue: Rest Days Showing "41d/41d" (Fixed Dec 2025)
+
+**Problem:** The F7 (restAdvantage) factor was showing "41 days rest" because `gameDates` array wasn't sorted - it used the first game from the API response (often the oldest) instead of the most recent.
+
+**File:** `src/lib/data-sources/mysportsfeeds-stats.ts` line 382
+
+**Fix:** Added `gameDates.sort((a, b) => b.getTime() - a.getTime())` before accessing `gameDates[0]`
+
+**Symptom:** Notes showing "Both teams well rested (41d/41d)" for F7 factor.
+
 ---
 
 ## Current Factors
