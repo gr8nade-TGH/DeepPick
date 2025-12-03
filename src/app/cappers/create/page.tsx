@@ -190,6 +190,10 @@ const FACTOR_GROUPS = {
 // Key differentiators: pace vs efficiency vs situational
 // Valid factors: paceIndex, offForm, defErosion, threeEnv, whistleEnv, injuryAvailability
 // ============================================
+// ============================================
+// TOTALS ARCHETYPES - All weights MUST sum to 250%
+// Available factors: paceIndex, offForm, defErosion, threeEnv, whistleEnv, injuryAvailability
+// ============================================
 const TOTALS_ARCHETYPES: PresetConfig[] = [
   {
     id: 'pace-prophet',
@@ -197,10 +201,11 @@ const TOTALS_ARCHETYPES: PresetConfig[] = [
     description: 'Game tempo is everything. Fast pace = points.',
     icon: Rocket,
     color: 'cyan',
-    philosophy: 'Pace is the #1 predictor of totals. Fast-paced games create more possessions = more points. Ignores shooting variance, trusts volume.',
+    philosophy: 'Pace is the #1 predictor of totals. Fast-paced games create more possessions = more points. Volume beats variance.',
     totalFactors: {
-      enabled: ['paceIndex', 'offForm', 'threeEnv'],
-      weights: { paceIndex: 50, offForm: 30, threeEnv: 20 }
+      // Primary: paceIndex (80), Strong: offForm (60) + threeEnv (50), Support: defErosion (40) + whistleEnv (20) = 250
+      enabled: ['paceIndex', 'offForm', 'threeEnv', 'defErosion', 'whistleEnv'],
+      weights: { paceIndex: 80, offForm: 60, threeEnv: 50, defErosion: 40, whistleEnv: 20 }
     },
     spreadFactors: { enabled: [], weights: {} }
   },
@@ -212,8 +217,9 @@ const TOTALS_ARCHETYPES: PresetConfig[] = [
     color: 'green',
     philosophy: 'Offensive and defensive ratings tell the real story. A +10 offense vs -8 defense is a goldmine regardless of pace.',
     totalFactors: {
-      enabled: ['offForm', 'defErosion', 'injuryAvailability', 'paceIndex'],
-      weights: { offForm: 40, defErosion: 30, injuryAvailability: 20, paceIndex: 10 }
+      // Primary: offForm (70) + defErosion (60), Strong: injury (50) + pace (40), Support: threeEnv (30) = 250
+      enabled: ['offForm', 'defErosion', 'injuryAvailability', 'paceIndex', 'threeEnv'],
+      weights: { offForm: 70, defErosion: 60, injuryAvailability: 50, paceIndex: 40, threeEnv: 30 }
     },
     spreadFactors: { enabled: [], weights: {} }
   },
@@ -225,8 +231,9 @@ const TOTALS_ARCHETYPES: PresetConfig[] = [
     color: 'orange',
     philosophy: 'Shooting streaks are real. Teams hitting 40%+ from 3 don\'t cool off overnight. Chase the heat, fade the cold.',
     totalFactors: {
-      enabled: ['threeEnv', 'offForm', 'paceIndex', 'whistleEnv'],
-      weights: { threeEnv: 40, offForm: 25, paceIndex: 20, whistleEnv: 15 }
+      // Primary: threeEnv (80), Strong: offForm (60) + paceIndex (50), Support: whistleEnv (40) + defErosion (20) = 250
+      enabled: ['threeEnv', 'offForm', 'paceIndex', 'whistleEnv', 'defErosion'],
+      weights: { threeEnv: 80, offForm: 60, paceIndex: 50, whistleEnv: 40, defErosion: 20 }
     },
     spreadFactors: { enabled: [], weights: {} }
   },
@@ -236,10 +243,11 @@ const TOTALS_ARCHETYPES: PresetConfig[] = [
     description: 'Refs run the game. Free throws decide totals.',
     icon: AlertTriangle,
     color: 'yellow',
-    philosophy: 'Free throws are free points. High-foul games inflate totals. Aggressive drivers + whistle-happy refs = easy overs. The line never adjusts for ref tendencies.',
+    philosophy: 'Free throws are free points. High-foul games inflate totals. Aggressive drivers + whistle-happy refs = easy overs.',
     totalFactors: {
-      enabled: ['whistleEnv', 'offForm', 'defErosion'],
-      weights: { whistleEnv: 55, offForm: 25, defErosion: 20 }
+      // Primary: whistleEnv (90), Strong: offForm (60) + defErosion (50), Support: paceIndex (30) + injury (20) = 250
+      enabled: ['whistleEnv', 'offForm', 'defErosion', 'paceIndex', 'injuryAvailability'],
+      weights: { whistleEnv: 90, offForm: 60, defErosion: 50, paceIndex: 30, injuryAvailability: 20 }
     },
     spreadFactors: { enabled: [], weights: {} }
   },
@@ -251,8 +259,9 @@ const TOTALS_ARCHETYPES: PresetConfig[] = [
     color: 'slate',
     philosophy: 'No single factor dominates. Balanced weighting across all variables produces consistent, grindable edge over the long run.',
     totalFactors: {
+      // Balanced: 50% each across 5 factors = 250
       enabled: ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv'],
-      weights: { paceIndex: 20, offForm: 20, defErosion: 20, threeEnv: 20, whistleEnv: 20 }
+      weights: { paceIndex: 50, offForm: 50, defErosion: 50, threeEnv: 50, whistleEnv: 50 }
     },
     spreadFactors: { enabled: [], weights: {} }
   },
@@ -264,8 +273,9 @@ const TOTALS_ARCHETYPES: PresetConfig[] = [
     color: 'blue',
     philosophy: 'Defense tells the truth. Teams with eroding D and declining offense are bleeding points. Fade them into oblivion.',
     totalFactors: {
-      enabled: ['defErosion', 'offForm', 'injuryAvailability', 'whistleEnv'],
-      weights: { defErosion: 45, offForm: 25, injuryAvailability: 20, whistleEnv: 10 }
+      // Primary: defErosion (80), Strong: offForm (60) + injury (50), Support: whistleEnv (40) + paceIndex (20) = 250
+      enabled: ['defErosion', 'offForm', 'injuryAvailability', 'whistleEnv', 'paceIndex'],
+      weights: { defErosion: 80, offForm: 60, injuryAvailability: 50, whistleEnv: 40, paceIndex: 20 }
     },
     spreadFactors: { enabled: [], weights: {} }
   },
@@ -277,8 +287,9 @@ const TOTALS_ARCHETYPES: PresetConfig[] = [
     color: 'sky',
     philosophy: 'Pace and defense together reveal the grind-it-out games. Low possessions + strong defense = under city. Trust the tempo.',
     totalFactors: {
-      enabled: ['paceIndex', 'defErosion', 'offForm'],
-      weights: { paceIndex: 50, defErosion: 30, offForm: 20 }
+      // Primary: paceIndex (90) + defErosion (70), Strong: offForm (50), Support: threeEnv (25) + whistleEnv (15) = 250
+      enabled: ['paceIndex', 'defErosion', 'offForm', 'threeEnv', 'whistleEnv'],
+      weights: { paceIndex: 90, defErosion: 70, offForm: 50, threeEnv: 25, whistleEnv: 15 }
     },
     spreadFactors: { enabled: [], weights: {} }
   },
@@ -290,17 +301,17 @@ const TOTALS_ARCHETYPES: PresetConfig[] = [
     color: 'rose',
     philosophy: 'When key players sit, scoring collapses or explodes. Injuries + defensive context = totals gold. The market adjusts too slowly.',
     totalFactors: {
-      enabled: ['injuryAvailability', 'defErosion', 'offForm', 'paceIndex'],
-      weights: { injuryAvailability: 45, defErosion: 25, offForm: 20, paceIndex: 10 }
+      // Primary: injury (80), Strong: defErosion (60) + offForm (50), Support: paceIndex (40) + whistleEnv (20) = 250
+      enabled: ['injuryAvailability', 'defErosion', 'offForm', 'paceIndex', 'whistleEnv'],
+      weights: { injuryAvailability: 80, defErosion: 60, offForm: 50, paceIndex: 40, whistleEnv: 20 }
     },
     spreadFactors: { enabled: [], weights: {} }
   }
 ]
 
 // ============================================
-// SPREAD ARCHETYPES - Designed for ATS betting
-// Key differentiators: form vs matchups vs situational
-// Valid factors: netRatingDiff, turnoverDiff, shootingEfficiencyMomentum, homeAwaySplits, fourFactorsDiff, injuryAvailability
+// SPREAD ARCHETYPES - All weights MUST sum to 250%
+// Available factors: netRatingDiff, turnoverDiff, shootingEfficiencyMomentum, homeAwaySplits, fourFactorsDiff, injuryAvailability
 // ============================================
 const SPREAD_ARCHETYPES: PresetConfig[] = [
   {
@@ -309,11 +320,12 @@ const SPREAD_ARCHETYPES: PresetConfig[] = [
     description: 'Shooting streaks are real. Ride the hot teams.',
     icon: TrendingUp,
     color: 'red',
-    philosophy: 'Recent shooting momentum predicts near-term performance. Teams shooting hot from 3 and the field carry that confidence. Fade cold shooters.',
+    philosophy: 'Recent shooting momentum predicts near-term performance. Teams shooting hot carry that confidence. Fade cold shooters.',
     totalFactors: { enabled: [], weights: {} },
     spreadFactors: {
-      enabled: ['shootingEfficiencyMomentum', 'netRatingDiff', 'homeAwaySplits'],
-      weights: { shootingEfficiencyMomentum: 50, netRatingDiff: 30, homeAwaySplits: 20 }
+      // Primary: shooting (80), Strong: netRating (60) + homeAway (50), Support: fourFactors (40) + turnover (20) = 250
+      enabled: ['shootingEfficiencyMomentum', 'netRatingDiff', 'homeAwaySplits', 'fourFactorsDiff', 'turnoverDiff'],
+      weights: { shootingEfficiencyMomentum: 80, netRatingDiff: 60, homeAwaySplits: 50, fourFactorsDiff: 40, turnoverDiff: 20 }
     }
   },
   {
@@ -322,11 +334,12 @@ const SPREAD_ARCHETYPES: PresetConfig[] = [
     description: 'It\'s all about the matchup. Offense vs defense.',
     icon: Swords,
     color: 'indigo',
-    philosophy: 'Ignore records, focus on how teams match up. Elite offense vs weak defense = cover. Strong defense vs weak offense = cover.',
+    philosophy: 'Ignore records, focus on how teams match up. Elite offense vs weak defense = cover. Four factors reveal the truth.',
     totalFactors: { enabled: [], weights: {} },
     spreadFactors: {
-      enabled: ['fourFactorsDiff', 'homeAwaySplits', 'netRatingDiff', 'shootingEfficiencyMomentum'],
-      weights: { fourFactorsDiff: 40, homeAwaySplits: 25, netRatingDiff: 20, shootingEfficiencyMomentum: 15 }
+      // Primary: fourFactors (70), Strong: homeAway (60) + netRating (50), Support: shooting (40) + injury (30) = 250
+      enabled: ['fourFactorsDiff', 'homeAwaySplits', 'netRatingDiff', 'shootingEfficiencyMomentum', 'injuryAvailability'],
+      weights: { fourFactorsDiff: 70, homeAwaySplits: 60, netRatingDiff: 50, shootingEfficiencyMomentum: 40, injuryAvailability: 30 }
     }
   },
   {
@@ -335,11 +348,12 @@ const SPREAD_ARCHETYPES: PresetConfig[] = [
     description: 'Chaos wins. Force turnovers, control the game.',
     icon: Shuffle,
     color: 'emerald',
-    philosophy: 'Turnovers are the great equalizer. Teams that force chaos and protect the rock control destiny. High-turnover games favor disciplined underdogs.',
+    philosophy: 'Turnovers are the great equalizer. Teams that force chaos and protect the rock control destiny. Discipline beats talent.',
     totalFactors: { enabled: [], weights: {} },
     spreadFactors: {
-      enabled: ['turnoverDiff', 'fourFactorsDiff', 'netRatingDiff'],
-      weights: { turnoverDiff: 50, fourFactorsDiff: 30, netRatingDiff: 20 }
+      // Primary: turnover (90), Strong: fourFactors (60) + netRating (50), Support: shooting (30) + homeAway (20) = 250
+      enabled: ['turnoverDiff', 'fourFactorsDiff', 'netRatingDiff', 'shootingEfficiencyMomentum', 'homeAwaySplits'],
+      weights: { turnoverDiff: 90, fourFactorsDiff: 60, netRatingDiff: 50, shootingEfficiencyMomentum: 30, homeAwaySplits: 20 }
     }
   },
   {
@@ -348,11 +362,12 @@ const SPREAD_ARCHETYPES: PresetConfig[] = [
     description: 'Net rating and efficiency win close games.',
     icon: Trophy,
     color: 'amber',
-    philosophy: 'Games are won by the better team. Net rating differential and four factors efficiency determine who closes. Trust the fundamentals.',
+    philosophy: 'Games are won by the better team. Net rating differential determines who closes. Trust the fundamentals over narratives.',
     totalFactors: { enabled: [], weights: {} },
     spreadFactors: {
-      enabled: ['netRatingDiff', 'shootingEfficiencyMomentum', 'turnoverDiff', 'homeAwaySplits'],
-      weights: { netRatingDiff: 40, shootingEfficiencyMomentum: 25, turnoverDiff: 20, homeAwaySplits: 15 }
+      // Primary: netRating (75), Strong: shooting (55) + turnover (50), Support: homeAway (40) + fourFactors (30) = 250
+      enabled: ['netRatingDiff', 'shootingEfficiencyMomentum', 'turnoverDiff', 'homeAwaySplits', 'fourFactorsDiff'],
+      weights: { netRatingDiff: 75, shootingEfficiencyMomentum: 55, turnoverDiff: 50, homeAwaySplits: 40, fourFactorsDiff: 30 }
     }
   },
   {
@@ -361,11 +376,12 @@ const SPREAD_ARCHETYPES: PresetConfig[] = [
     description: 'Lines move slow. Injuries create value.',
     icon: UserX,
     color: 'purple',
-    philosophy: 'Vegas adjusts lines, but not enough. A star out = 4-7 point swing. Beat the book before lines fully adjust to injury news.',
+    philosophy: 'Vegas adjusts lines, but not enough. A star out = 4-7 point swing. Beat the book before lines fully adjust.',
     totalFactors: { enabled: [], weights: {} },
     spreadFactors: {
-      enabled: ['injuryAvailability', 'fourFactorsDiff', 'homeAwaySplits', 'netRatingDiff'],
-      weights: { injuryAvailability: 40, fourFactorsDiff: 25, homeAwaySplits: 20, netRatingDiff: 15 }
+      // Primary: injury (80), Strong: fourFactors (60) + homeAway (50), Support: netRating (40) + turnover (20) = 250
+      enabled: ['injuryAvailability', 'fourFactorsDiff', 'homeAwaySplits', 'netRatingDiff', 'turnoverDiff'],
+      weights: { injuryAvailability: 80, fourFactorsDiff: 60, homeAwaySplits: 50, netRatingDiff: 40, turnoverDiff: 20 }
     }
   },
   {
@@ -374,11 +390,12 @@ const SPREAD_ARCHETYPES: PresetConfig[] = [
     description: 'Road dogs have hidden value. Find the edge.',
     icon: Compass,
     color: 'teal',
-    philosophy: 'Home court advantage is overrated by the public. Elite road teams are undervalued. Pair venue splits with turnover discipline for road covers.',
+    philosophy: 'Home court advantage is overrated by the public. Elite road teams are undervalued. Venue splits reveal mispriced lines.',
     totalFactors: { enabled: [], weights: {} },
     spreadFactors: {
-      enabled: ['homeAwaySplits', 'turnoverDiff', 'fourFactorsDiff', 'netRatingDiff'],
-      weights: { homeAwaySplits: 45, turnoverDiff: 25, fourFactorsDiff: 20, netRatingDiff: 10 }
+      // Primary: homeAway (85), Strong: turnover (55) + fourFactors (50), Support: netRating (40) + shooting (20) = 250
+      enabled: ['homeAwaySplits', 'turnoverDiff', 'fourFactorsDiff', 'netRatingDiff', 'shootingEfficiencyMomentum'],
+      weights: { homeAwaySplits: 85, turnoverDiff: 55, fourFactorsDiff: 50, netRatingDiff: 40, shootingEfficiencyMomentum: 20 }
     }
   },
   {
@@ -387,11 +404,12 @@ const SPREAD_ARCHETYPES: PresetConfig[] = [
     description: 'Fade the hype. Trust fundamentals over narratives.',
     icon: Eye,
     color: 'gray',
-    philosophy: 'Ignore the noise. Net rating + four factors = truth. Public chases hot teams, sharps trust the math. Cold execution beats hot takes.',
+    philosophy: 'Ignore the noise. Net rating + four factors = truth. Public chases hot teams, sharps trust the math.',
     totalFactors: { enabled: [], weights: {} },
     spreadFactors: {
-      enabled: ['netRatingDiff', 'fourFactorsDiff', 'injuryAvailability'],
-      weights: { netRatingDiff: 45, fourFactorsDiff: 40, injuryAvailability: 15 }
+      // Primary: netRating (80) + fourFactors (70), Strong: injury (50), Support: turnover (30) + homeAway (20) = 250
+      enabled: ['netRatingDiff', 'fourFactorsDiff', 'injuryAvailability', 'turnoverDiff', 'homeAwaySplits'],
+      weights: { netRatingDiff: 80, fourFactorsDiff: 70, injuryAvailability: 50, turnoverDiff: 30, homeAwaySplits: 20 }
     }
   },
   {
@@ -400,11 +418,12 @@ const SPREAD_ARCHETYPES: PresetConfig[] = [
     description: 'Discipline wins. Low turnover teams cover.',
     icon: Mountain,
     color: 'stone',
-    philosophy: 'Ball security + efficient shooting = covering spreads. Grind it out teams frustrate opponents. Turnovers + shooting momentum = sustainable edge.',
+    philosophy: 'Ball security + efficient shooting = covering spreads. Grind it out teams frustrate opponents and cover.',
     totalFactors: { enabled: [], weights: {} },
     spreadFactors: {
-      enabled: ['turnoverDiff', 'shootingEfficiencyMomentum', 'netRatingDiff', 'fourFactorsDiff'],
-      weights: { turnoverDiff: 40, shootingEfficiencyMomentum: 30, netRatingDiff: 20, fourFactorsDiff: 10 }
+      // Primary: turnover (75), Strong: shooting (60) + netRating (50), Support: fourFactors (40) + homeAway (25) = 250
+      enabled: ['turnoverDiff', 'shootingEfficiencyMomentum', 'netRatingDiff', 'fourFactorsDiff', 'homeAwaySplits'],
+      weights: { turnoverDiff: 75, shootingEfficiencyMomentum: 60, netRatingDiff: 50, fourFactorsDiff: 40, homeAwaySplits: 25 }
     }
   }
 ]
