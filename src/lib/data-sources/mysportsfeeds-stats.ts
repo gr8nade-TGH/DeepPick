@@ -310,8 +310,9 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
       const homeTeam = game?.homeTeam || game?.schedule?.homeTeam
       const awayTeam = game?.awayTeam || game?.schedule?.awayTeam
 
-      // Debug: Log game structure for first game only
+      // Debug: Log FULL game structure for first game only to understand API response
       if (gameLogs.indexOf(gameLog) === 0) {
+        console.log(`[MySportsFeeds Stats] FULL gameLog structure for ${teamAbbrev}:`, JSON.stringify(gameLog, null, 2).substring(0, 2000))
         console.log(`[MySportsFeeds Stats] Home/Away detection debug for ${teamAbbrev}:`, {
           gameId: game?.id,
           teamId: team?.id,
@@ -321,8 +322,11 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
           directAwayTeam: game?.awayTeam,
           scheduleHomeTeam: game?.schedule?.homeTeam,
           scheduleAwayTeam: game?.schedule?.awayTeam,
-          venueAllegiance: game?.schedule?.venueAllegiance, // New: Check venue allegiance
-          isHomeDirectField: gameLog?.isHome, // Check direct isHome field
+          venueAllegiance: game?.schedule?.venueAllegiance,
+          isHomeDirectField: gameLog?.isHome,
+          // NEW: Check opponent field
+          opponent: gameLog?.opponent,
+          opponentTeam: game?.opponent,
           // Resolved values
           resolvedHomeTeamId: homeTeam?.id,
           resolvedHomeTeamAbbrev: homeTeam?.abbreviation,
