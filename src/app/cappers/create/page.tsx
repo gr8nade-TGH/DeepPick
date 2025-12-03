@@ -50,167 +50,145 @@ interface CapperConfig {
   execution_priority: number
 }
 
-const FACTOR_DETAILS = {
+// ============================================
+// FACTOR_DETAILS - Using CORRECT SHIVA factor keys
+// TOTALS: paceIndex, offForm, defErosion, threeEnv, whistleEnv, injuryAvailability
+// SPREAD: netRatingDiff, turnoverDiff, shootingEfficiencyMomentum, homeAwaySplits, fourFactorsDiff, injuryAvailability
+// ============================================
+const FACTOR_DETAILS: Record<string, { name: string; icon: any; description: string; importance: string; example: string; defaultWeight: number; color: string }> = {
+  // === TOTALS FACTORS ===
   paceIndex: {
     name: 'Pace Index',
     icon: Gauge,
     description: 'Expected game pace based on both teams\' recent pace (last 10 games)',
     importance: 'Fast-paced games produce higher totals; slow-paced games produce lower totals.',
-    example: 'High pace game (+12 possessions vs league avg) → Strong Over signal. Slow pace game (-8 possessions) → Strong Under signal.',
-    defaultWeight: 30,
+    example: 'High pace game (+12 possessions vs league avg) → Strong Over signal.',
+    defaultWeight: 20,
     color: 'cyan'
   },
-  netRating: {
-    name: 'Net Rating',
+  offForm: {
+    name: 'Offensive Form',
     icon: TrendingUp,
-    description: 'Combined offensive and defensive efficiency differential',
+    description: 'Recent offensive efficiency and scoring trends',
     importance: 'Elite offenses vs weak defenses create higher scoring games.',
-    example: 'Strong offense (+8 net rating) vs weak defense (-6 net rating) → Strong Over signal.',
-    defaultWeight: 30,
+    example: 'Strong offense (+8 net rating) vs weak defense → Strong Over signal.',
+    defaultWeight: 20,
     color: 'green'
   },
-  shooting: {
-    name: 'Shooting Performance',
+  defErosion: {
+    name: 'Defensive Erosion',
+    icon: Shield,
+    description: 'Defensive performance degradation due to fatigue or injuries',
+    importance: 'Eroded defenses allow more points; strong defenses limit scoring.',
+    example: 'Team allowing +6 PPG more than season avg → Strong Over lean.',
+    defaultWeight: 20,
+    color: 'red'
+  },
+  threeEnv: {
+    name: '3-Point Environment',
     icon: Target,
-    description: '3PT% and FG% trends over last 5 games',
+    description: '3PT% trends and shooting volume environment',
     importance: 'Hot shooting teams score more points; cold shooting teams score fewer.',
     example: 'Team shooting 40% from 3PT (vs 35% avg) → +2.5 points per game.',
-    defaultWeight: 25,
+    defaultWeight: 20,
     color: 'orange'
   },
-  homeAwayDiff: {
-    name: 'Home/Away Split',
-    icon: Home,
-    description: 'Home vs away scoring differential',
-    importance: 'Home teams typically score 2-4 more points per game than on the road.',
-    example: 'Home team averages +3.5 PPG at home → Slight Over lean.',
-    defaultWeight: 20,
-    color: 'blue'
-  },
-  restDays: {
-    name: 'Rest & Fatigue',
-    icon: Battery,
-    description: 'Days of rest and back-to-back game impact',
-    importance: 'Fatigued teams score fewer points and allow more points on defense.',
-    example: 'Team on back-to-back (0 days rest) → -3 to -5 points expected.',
+  whistleEnv: {
+    name: 'Whistle Environment',
+    icon: Activity,
+    description: 'Free throw rate and foul tendencies impact on scoring',
+    importance: 'High foul rate games produce more free throws and higher totals.',
+    example: 'Both teams in top 10 FT rate → Game likely to go Over.',
     defaultWeight: 20,
     color: 'yellow'
   },
-  recentForm: {
-    name: 'Recent Form (ATS)',
+  injuryAvailability: {
+    name: 'Injury Availability',
+    icon: UserX,
+    description: 'Impact of injured players on game outcome',
+    importance: 'Missing key players significantly impacts scoring and competitive balance.',
+    example: 'Star player (30 PPG) OUT → 4.5 point impact on total.',
+    defaultWeight: 20,
+    color: 'purple'
+  },
+  // === SPREAD FACTORS ===
+  netRatingDiff: {
+    name: 'Net Rating Differential',
+    icon: BarChart3,
+    description: 'Difference in overall team quality (offense + defense ratings)',
+    importance: 'Better teams by net rating tend to cover spreads.',
+    example: 'Team A: +8 NetRtg vs Team B: -3 NetRtg → Team A strong ATS.',
+    defaultWeight: 25,
+    color: 'indigo'
+  },
+  turnoverDiff: {
+    name: 'Turnover Differential',
+    icon: Shuffle,
+    description: 'Ball security and forcing turnovers differential',
+    importance: 'Teams that protect the ball and force turnovers create extra possessions.',
+    example: '+3 turnover differential → Extra 6+ points of offense.',
+    defaultWeight: 20,
+    color: 'emerald'
+  },
+  shootingEfficiencyMomentum: {
+    name: 'Shooting Momentum',
     icon: Flame,
-    description: 'Against-the-spread performance over last 3 and 10 games',
+    description: 'Recent shooting efficiency trends and hot/cold streaks',
     importance: 'Teams on hot ATS streaks tend to continue covering spreads.',
-    example: 'Team is 8-2 ATS in last 10 games → Strong cover signal.',
-    defaultWeight: 30,
+    example: 'Team shooting +5% above season avg last 5 games → Strong cover signal.',
+    defaultWeight: 25,
     color: 'red'
   },
   homeAwaySplits: {
     name: 'Home/Away Splits',
     icon: Home,
-    description: 'How teams perform in their current game context (road vs home)',
+    description: 'Performance differential based on home vs road context',
     importance: 'Road performance vs home performance reveals true ATS value.',
-    example: 'Strong road team (+5 NetRtg away) vs weak home team (-2 NetRtg home) → Road team gets ATS edge.',
+    example: 'Strong road team (+5 NetRtg away) vs weak home team → Road team ATS edge.',
     defaultWeight: 20,
     color: 'purple'
   },
-  // Backward compatibility alias
-  paceMismatch: {
-    name: 'Home/Away Splits',
-    icon: Home,
-    description: 'How teams perform in their current game context (road vs home)',
-    importance: 'Road performance vs home performance reveals true ATS value.',
-    example: 'Strong road team (+5 NetRtg away) vs weak home team (-2 NetRtg home) → Road team gets ATS edge.',
-    defaultWeight: 20,
-    color: 'purple'
-  },
-  offDefBalance: {
-    name: 'Offensive/Defensive Balance',
-    icon: BarChart3,
-    description: 'Team efficiency ratings on both ends of the floor',
-    importance: 'Elite offenses vs weak defenses create larger point margins.',
-    example: 'Elite offense (+8 rating) vs weak defense (-6 rating) → Large spread advantage.',
-    defaultWeight: 25,
-    color: 'indigo'
-  },
-  homeCourtEdge: {
-    name: 'Home Court Advantage',
-    icon: Shield,
-    description: 'Home vs away point differential and win rate',
-    importance: 'Home teams cover spreads more often than road teams.',
-    example: 'Strong home team (+6.5 PPG at home) → Home spread advantage.',
-    defaultWeight: 15,
-    color: 'emerald'
-  },
-  clutchPerformance: {
-    name: 'Clutch Performance',
+  fourFactorsDiff: {
+    name: 'Four Factors Differential',
     icon: Trophy,
-    description: 'Performance in close games (within 5 points in 4th quarter)',
-    importance: 'Clutch teams cover spreads in tight games.',
-    example: 'Team is 12-3 in clutch situations → Strong spread cover signal.',
-    defaultWeight: 15,
-    color: 'amber'
-  },
-  injuryImpact: {
-    name: 'Key Injuries & Availability',
-    icon: UserX,
-    description: 'Impact of injured players on game outcome (deterministic formula)',
-    importance: 'Missing key players significantly impacts scoring (TOTALS) and competitive balance (SPREAD).',
-    example: 'Star player (30 PPG, 36 MPG) OUT → 4.5 point impact. TOTALS: favors Under. SPREAD: opponent gets ATS edge.',
+    description: 'Dean Oliver\'s Four Factors matchup analysis (eFG%, TOV%, ORB%, FTr)',
+    importance: 'Four factors predict winning better than raw scoring.',
+    example: 'Winning 3/4 factors → High probability of covering spread.',
     defaultWeight: 25,
-    color: 'red'
+    color: 'amber'
   }
 }
 
+// Available factors for each bet type - USING CORRECT SHIVA KEYS
 const AVAILABLE_FACTORS = {
-  TOTAL: ['paceIndex', 'netRating', 'shooting', 'homeAwayDiff', 'restDays', 'injuryImpact'],
-  SPREAD: ['recentForm', 'homeAwaySplits', 'offDefBalance', 'homeCourtEdge', 'clutchPerformance', 'injuryImpact']
+  TOTAL: ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv', 'injuryAvailability'],
+  SPREAD: ['netRatingDiff', 'turnoverDiff', 'shootingEfficiencyMomentum', 'homeAwaySplits', 'fourFactorsDiff', 'injuryAvailability']
 }
 
-// Factor groups for organized display - each group can contain multiple factors
+// Factor groups for organized display - USING CORRECT SHIVA KEYS
 const FACTOR_GROUPS = {
   TOTAL: [
     { id: 'pace', name: 'Pace & Tempo', icon: Activity, factors: ['paceIndex'], color: 'cyan' },
-    { id: 'offense', name: 'Offense', icon: TrendingUp, factors: ['netRating'], color: 'green' },
-    { id: 'shooting', name: 'Shooting', icon: Crosshair, factors: ['shooting'], color: 'orange' },
-    { id: 'homeAway', name: 'Home/Away Splits', icon: Home, factors: ['homeAwayDiff'], color: 'blue' },
-    { id: 'situational', name: 'Situational', icon: Battery, factors: ['restDays'], color: 'yellow' },
-    { id: 'injuries', name: 'Injuries', icon: UserX, factors: ['injuryImpact'], color: 'red' },
+    { id: 'offense', name: 'Offensive Form', icon: TrendingUp, factors: ['offForm'], color: 'green' },
+    { id: 'defense', name: 'Defensive Erosion', icon: Shield, factors: ['defErosion'], color: 'red' },
+    { id: 'shooting', name: '3-Point Environment', icon: Crosshair, factors: ['threeEnv'], color: 'orange' },
+    { id: 'whistle', name: 'Whistle Environment', icon: Activity, factors: ['whistleEnv'], color: 'yellow' },
+    { id: 'injuries', name: 'Injuries', icon: UserX, factors: ['injuryAvailability'], color: 'purple' },
   ],
   SPREAD: [
-    { id: 'form', name: 'Recent Form', icon: Flame, factors: ['recentForm'], color: 'red' },
+    { id: 'netRating', name: 'Net Rating', icon: BarChart3, factors: ['netRatingDiff'], color: 'indigo' },
+    { id: 'turnovers', name: 'Turnovers', icon: Shuffle, factors: ['turnoverDiff'], color: 'emerald' },
+    { id: 'momentum', name: 'Shooting Momentum', icon: Flame, factors: ['shootingEfficiencyMomentum'], color: 'red' },
     { id: 'homeAway', name: 'Home/Away Splits', icon: Home, factors: ['homeAwaySplits'], color: 'purple' },
-    { id: 'efficiency', name: 'Efficiency', icon: BarChart3, factors: ['offDefBalance'], color: 'indigo' },
-    { id: 'homeAdvantage', name: 'Home Court', icon: Shield, factors: ['homeCourtEdge'], color: 'emerald' },
-    { id: 'clutch', name: 'Clutch', icon: Trophy, factors: ['clutchPerformance'], color: 'amber' },
-    { id: 'injuries', name: 'Injuries', icon: UserX, factors: ['injuryImpact'], color: 'red' },
+    { id: 'fourFactors', name: 'Four Factors', icon: Trophy, factors: ['fourFactorsDiff'], color: 'amber' },
+    { id: 'injuries', name: 'Injuries', icon: UserX, factors: ['injuryAvailability'], color: 'purple' },
   ]
-}
-
-// Map user-friendly factor names to SHIVA v1 factor names used by the wizard
-const FACTOR_NAME_MAPPING = {
-  TOTAL: {
-    'paceIndex': 'paceIndex',        // Same
-    'netRating': 'offForm',          // Maps to offForm
-    'shooting': 'threeEnv',          // Maps to threeEnv
-    'homeAwayDiff': 'defErosion',    // Maps to defErosion
-    'restDays': 'whistleEnv',        // Maps to whistleEnv
-    'injuryImpact': 'injuryAvailability' // Maps to injuryAvailability
-  },
-  SPREAD: {
-    'recentForm': 'shootingMomentum',      // Maps to shootingMomentum
-    'homeAwaySplits': 'homeAwaySplits',    // New factor
-    'paceMismatch': 'homeAwaySplits',      // Legacy alias → maps to homeAwaySplits
-    'offDefBalance': 'netRatingDiff',      // Maps to netRatingDiff
-    'homeCourtEdge': 'turnoverDiff',       // Maps to turnoverDiff
-    'clutchPerformance': 'fourFactorsDiff', // Maps to fourFactorsDiff
-    'injuryImpact': 'injuryAvailabilitySpread' // Maps to injuryAvailabilitySpread
-  }
 }
 
 // ============================================
 // TOTALS ARCHETYPES - Designed for O/U betting
 // Key differentiators: pace vs efficiency vs situational
+// Valid factors: paceIndex, offForm, defErosion, threeEnv, whistleEnv, injuryAvailability
 // ============================================
 const TOTALS_ARCHETYPES: PresetConfig[] = [
   {
@@ -221,8 +199,8 @@ const TOTALS_ARCHETYPES: PresetConfig[] = [
     color: 'cyan',
     philosophy: 'Pace is the #1 predictor of totals. Fast-paced games create more possessions = more points. Ignores shooting variance, trusts volume.',
     totalFactors: {
-      enabled: ['paceIndex', 'netRating', 'restDays'],
-      weights: { paceIndex: 100, netRating: 80, restDays: 70 }
+      enabled: ['paceIndex', 'offForm', 'threeEnv'],
+      weights: { paceIndex: 50, offForm: 30, threeEnv: 20 }
     },
     spreadFactors: { enabled: [], weights: {} }
   },
@@ -234,8 +212,8 @@ const TOTALS_ARCHETYPES: PresetConfig[] = [
     color: 'green',
     philosophy: 'Offensive and defensive ratings tell the real story. A +10 offense vs -8 defense is a goldmine regardless of pace.',
     totalFactors: {
-      enabled: ['netRating', 'injuryImpact', 'homeAwayDiff', 'paceIndex'],
-      weights: { netRating: 100, injuryImpact: 70, homeAwayDiff: 50, paceIndex: 30 }
+      enabled: ['offForm', 'defErosion', 'injuryAvailability', 'paceIndex'],
+      weights: { offForm: 40, defErosion: 30, injuryAvailability: 20, paceIndex: 10 }
     },
     spreadFactors: { enabled: [], weights: {} }
   },
@@ -247,21 +225,21 @@ const TOTALS_ARCHETYPES: PresetConfig[] = [
     color: 'orange',
     philosophy: 'Shooting streaks are real. Teams hitting 40%+ from 3 don\'t cool off overnight. Chase the heat, fade the cold.',
     totalFactors: {
-      enabled: ['shooting', 'netRating', 'paceIndex', 'homeAwayDiff'],
-      weights: { shooting: 100, netRating: 60, paceIndex: 50, homeAwayDiff: 40 }
+      enabled: ['threeEnv', 'offForm', 'paceIndex', 'whistleEnv'],
+      weights: { threeEnv: 40, offForm: 25, paceIndex: 20, whistleEnv: 15 }
     },
     spreadFactors: { enabled: [], weights: {} }
   },
   {
     id: 'rest-detective',
     name: 'The Rest Detective',
-    description: 'Fatigue kills. Back-to-backs and travel matter.',
+    description: 'Fatigue kills. Injuries and defensive erosion matter.',
     icon: Battery,
     color: 'yellow',
-    philosophy: 'Tired legs = poor shooting = lower totals. Fresh teams with rest advantage dominate. Schedule spots are undervalued by the public.',
+    philosophy: 'Tired legs and missing players = defensive breakdowns = higher totals. Fresh teams with full rosters dominate. Availability is undervalued.',
     totalFactors: {
-      enabled: ['restDays', 'injuryImpact', 'homeAwayDiff', 'netRating'],
-      weights: { restDays: 100, injuryImpact: 80, homeAwayDiff: 40, netRating: 30 }
+      enabled: ['defErosion', 'injuryAvailability', 'offForm', 'paceIndex'],
+      weights: { defErosion: 35, injuryAvailability: 30, offForm: 20, paceIndex: 15 }
     },
     spreadFactors: { enabled: [], weights: {} }
   },
@@ -273,8 +251,8 @@ const TOTALS_ARCHETYPES: PresetConfig[] = [
     color: 'slate',
     philosophy: 'No single factor dominates. Balanced weighting across all variables produces consistent, grindable edge over the long run.',
     totalFactors: {
-      enabled: ['paceIndex', 'netRating', 'shooting', 'homeAwayDiff', 'restDays'],
-      weights: { paceIndex: 50, netRating: 50, shooting: 50, homeAwayDiff: 50, restDays: 50 }
+      enabled: ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv'],
+      weights: { paceIndex: 20, offForm: 20, defErosion: 20, threeEnv: 20, whistleEnv: 20 }
     },
     spreadFactors: { enabled: [], weights: {} }
   }
@@ -283,6 +261,7 @@ const TOTALS_ARCHETYPES: PresetConfig[] = [
 // ============================================
 // SPREAD ARCHETYPES - Designed for ATS betting
 // Key differentiators: form vs matchups vs situational
+// Valid factors: netRatingDiff, turnoverDiff, shootingEfficiencyMomentum, homeAwaySplits, fourFactorsDiff, injuryAvailability
 // ============================================
 const SPREAD_ARCHETYPES: PresetConfig[] = [
   {
@@ -294,8 +273,8 @@ const SPREAD_ARCHETYPES: PresetConfig[] = [
     philosophy: 'Teams covering spreads have confidence and momentum. A team 8-2 ATS in last 10 keeps covering. Public overreacts to bad beats.',
     totalFactors: { enabled: [], weights: {} },
     spreadFactors: {
-      enabled: ['recentForm', 'clutchPerformance', 'homeAwaySplits'],
-      weights: { recentForm: 100, clutchPerformance: 80, homeAwaySplits: 70 }
+      enabled: ['shootingEfficiencyMomentum', 'netRatingDiff', 'homeAwaySplits'],
+      weights: { shootingEfficiencyMomentum: 50, netRatingDiff: 30, homeAwaySplits: 20 }
     }
   },
   {
@@ -307,8 +286,8 @@ const SPREAD_ARCHETYPES: PresetConfig[] = [
     philosophy: 'Ignore records, focus on how teams match up. Elite offense vs weak defense = cover. Strong defense vs weak offense = cover.',
     totalFactors: { enabled: [], weights: {} },
     spreadFactors: {
-      enabled: ['offDefBalance', 'homeAwaySplits', 'injuryImpact', 'recentForm'],
-      weights: { offDefBalance: 100, homeAwaySplits: 70, injuryImpact: 50, recentForm: 30 }
+      enabled: ['fourFactorsDiff', 'homeAwaySplits', 'netRatingDiff', 'shootingEfficiencyMomentum'],
+      weights: { fourFactorsDiff: 40, homeAwaySplits: 25, netRatingDiff: 20, shootingEfficiencyMomentum: 15 }
     }
   },
   {
@@ -320,21 +299,21 @@ const SPREAD_ARCHETYPES: PresetConfig[] = [
     philosophy: 'Vegas still underweights home court advantage. Strong home teams with good home splits are money. Road favorites are traps.',
     totalFactors: { enabled: [], weights: {} },
     spreadFactors: {
-      enabled: ['homeCourtEdge', 'homeAwaySplits', 'offDefBalance', 'recentForm'],
-      weights: { homeCourtEdge: 100, homeAwaySplits: 80, offDefBalance: 40, recentForm: 30 }
+      enabled: ['homeAwaySplits', 'fourFactorsDiff', 'netRatingDiff', 'turnoverDiff'],
+      weights: { homeAwaySplits: 40, fourFactorsDiff: 25, netRatingDiff: 20, turnoverDiff: 15 }
     }
   },
   {
     id: 'closer',
     name: 'The Closer',
-    description: 'Clutch performance wins spreads. Who closes games?',
+    description: 'Net rating and efficiency win close games.',
     icon: Trophy,
     color: 'amber',
-    philosophy: 'Games are won in the 4th quarter. Teams with clutch DNA cover in tight games. Closers beat pretenders when it matters.',
+    philosophy: 'Games are won by the better team. Net rating differential and four factors efficiency determine who closes. Trust the fundamentals.',
     totalFactors: { enabled: [], weights: {} },
     spreadFactors: {
-      enabled: ['clutchPerformance', 'recentForm', 'offDefBalance', 'homeCourtEdge'],
-      weights: { clutchPerformance: 100, recentForm: 60, offDefBalance: 50, homeCourtEdge: 40 }
+      enabled: ['netRatingDiff', 'shootingEfficiencyMomentum', 'turnoverDiff', 'homeAwaySplits'],
+      weights: { netRatingDiff: 40, shootingEfficiencyMomentum: 25, turnoverDiff: 20, homeAwaySplits: 15 }
     }
   },
   {
@@ -346,8 +325,8 @@ const SPREAD_ARCHETYPES: PresetConfig[] = [
     philosophy: 'Vegas adjusts lines, but not enough. A star out = 4-7 point swing. Beat the book before lines fully adjust to injury news.',
     totalFactors: { enabled: [], weights: {} },
     spreadFactors: {
-      enabled: ['injuryImpact', 'offDefBalance', 'homeAwaySplits', 'recentForm'],
-      weights: { injuryImpact: 100, offDefBalance: 60, homeAwaySplits: 50, recentForm: 40 }
+      enabled: ['injuryAvailability', 'fourFactorsDiff', 'homeAwaySplits', 'netRatingDiff'],
+      weights: { injuryAvailability: 40, fourFactorsDiff: 25, homeAwaySplits: 20, netRatingDiff: 15 }
     }
   }
 ]
@@ -390,6 +369,9 @@ export default function CreateCapperPage() {
   const [nameError, setNameError] = useState<string | null>(null)
   const [isCheckingName, setIsCheckingName] = useState(false)
 
+  // Default config uses Sharp Scholar (TOTALS) + Matchup Master (SPREAD) - balanced approach
+  // Valid TOTALS: paceIndex, offForm, defErosion, threeEnv, whistleEnv, injuryAvailability
+  // Valid SPREAD: netRatingDiff, turnoverDiff, shootingEfficiencyMomentum, homeAwaySplits, fourFactorsDiff, injuryAvailability
   const [config, setConfig] = useState<CapperConfig>({
     capper_id: '',
     display_name: '',
@@ -401,12 +383,12 @@ export default function CreateCapperPage() {
     excluded_teams: [],
     factor_config: {
       TOTAL: {
-        enabled_factors: ['paceIndex', 'netRating', 'shooting', 'homeAwayDiff', 'restDays'],
-        weights: { paceIndex: 50, netRating: 50, shooting: 50, homeAwayDiff: 50, restDays: 50 }
+        enabled_factors: ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv'],
+        weights: { paceIndex: 20, offForm: 20, defErosion: 20, threeEnv: 20, whistleEnv: 20 }
       },
       SPREAD: {
-        enabled_factors: ['recentForm', 'homeAwaySplits', 'offDefBalance', 'homeCourtEdge', 'clutchPerformance'],
-        weights: { recentForm: 50, homeAwaySplits: 50, offDefBalance: 50, homeCourtEdge: 50, clutchPerformance: 50 }
+        enabled_factors: ['fourFactorsDiff', 'homeAwaySplits', 'netRatingDiff', 'shootingEfficiencyMomentum'],
+        weights: { fourFactorsDiff: 25, homeAwaySplits: 25, netRatingDiff: 25, shootingEfficiencyMomentum: 25 }
       }
     },
     execution_interval_minutes: 15,
@@ -772,12 +754,12 @@ export default function CreateCapperPage() {
                     <div className="relative w-32 h-32 mb-4">
                       {/* Background glow ring - blends both colors */}
                       <div className={`absolute inset-0 rounded-full transition-all duration-500 ${hasBoth
-                          ? 'bg-gradient-to-br from-cyan-500/20 via-purple-500/20 to-red-500/20 border-2 border-amber-500/60 shadow-lg shadow-amber-500/30'
-                          : totalsPreset
-                            ? `bg-gradient-to-br from-${totalsPreset.color}-500/30 to-${totalsPreset.color}-600/10 border-2 border-${totalsPreset.color}-500/50 shadow-lg shadow-${totalsPreset.color}-500/20`
-                            : spreadPreset
-                              ? `bg-gradient-to-br from-${spreadPreset.color}-500/30 to-${spreadPreset.color}-600/10 border-2 border-${spreadPreset.color}-500/50 shadow-lg shadow-${spreadPreset.color}-500/20`
-                              : 'bg-slate-700/50 border-2 border-slate-600'
+                        ? 'bg-gradient-to-br from-cyan-500/20 via-purple-500/20 to-red-500/20 border-2 border-amber-500/60 shadow-lg shadow-amber-500/30'
+                        : totalsPreset
+                          ? `bg-gradient-to-br from-${totalsPreset.color}-500/30 to-${totalsPreset.color}-600/10 border-2 border-${totalsPreset.color}-500/50 shadow-lg shadow-${totalsPreset.color}-500/20`
+                          : spreadPreset
+                            ? `bg-gradient-to-br from-${spreadPreset.color}-500/30 to-${spreadPreset.color}-600/10 border-2 border-${spreadPreset.color}-500/50 shadow-lg shadow-${spreadPreset.color}-500/20`
+                            : 'bg-slate-700/50 border-2 border-slate-600'
                         }`} />
 
                       {hasBoth ? (
@@ -875,8 +857,8 @@ export default function CreateCapperPage() {
                     const totalsPreset = TOTALS_ARCHETYPES.find(p => p.id === selectedPresets.TOTAL)
                     return (
                       <div className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${totalsPreset
-                          ? `bg-${totalsPreset.color}-500/10 border border-${totalsPreset.color}-500/30`
-                          : 'bg-slate-800/50 border border-slate-700/50'
+                        ? `bg-${totalsPreset.color}-500/10 border border-${totalsPreset.color}-500/30`
+                        : 'bg-slate-800/50 border border-slate-700/50'
                         }`}>
                         <span className="text-[10px] font-bold text-cyan-400 uppercase w-20">NBA Totals:</span>
                         {totalsPreset ? (
@@ -893,8 +875,8 @@ export default function CreateCapperPage() {
                     const spreadPreset = SPREAD_ARCHETYPES.find(p => p.id === selectedPresets.SPREAD)
                     return (
                       <div className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${spreadPreset
-                          ? `bg-${spreadPreset.color}-500/10 border border-${spreadPreset.color}-500/30`
-                          : 'bg-slate-800/50 border border-slate-700/50'
+                        ? `bg-${spreadPreset.color}-500/10 border border-${spreadPreset.color}-500/30`
+                        : 'bg-slate-800/50 border border-slate-700/50'
                         }`}>
                         <span className="text-[10px] font-bold text-purple-400 uppercase w-20">NBA Spread:</span>
                         {spreadPreset ? (
