@@ -1010,7 +1010,7 @@ export function InsightCard(props: InsightCardProps) {
                                     </span>
                                   </div>
                                   <div className="flex justify-between items-center">
-                                    <span className="flex items-center gap-1"><span>🎯</span><span>{safePick.type} Win Rate:</span></span>
+                                    <span className="flex items-center gap-1"><span>🎯</span><span>{safePick.type?.toUpperCase() || 'BET'} Win Rate:</span></span>
                                     <span className={`font-medium ${(tierGradeResult.breakdown.specPoints || 0) >= 12 ? 'text-green-400' : (tierGradeResult.breakdown.specPoints || 0) >= 6 ? 'text-yellow-400' : 'text-slate-400'}`}>
                                       +{tierGradeResult.breakdown.specPoints?.toFixed(1) || '0'}
                                       <span className="text-slate-500 text-[9px] ml-1">/20</span>
