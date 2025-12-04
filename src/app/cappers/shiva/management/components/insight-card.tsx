@@ -938,29 +938,28 @@ export function InsightCard(props: InsightCardProps) {
                               {/* AI Pick: has edgePoints and alignmentPoints */}
                               {tierGradeResult.breakdown.edgePoints !== undefined && tierGradeResult.breakdown.alignmentPoints !== undefined ? (
                                 <>
-                                  <div className="text-[10px] text-cyan-400 mb-1">🤖 AI Pick Signals</div>
                                   <div className="flex justify-between items-center">
                                     <span className="flex items-center gap-1"><span>⚡</span><span>Edge Strength:</span></span>
-                                    <span className={`font-medium ${(tierGradeResult.breakdown.edgePoints || 0) >= 2 ? 'text-green-400' : (tierGradeResult.breakdown.edgePoints || 0) >= 1 ? 'text-yellow-400' : 'text-slate-400'}`}>
+                                    <span className={`font-medium ${(tierGradeResult.breakdown.edgePoints || 0) >= 25 ? 'text-green-400' : (tierGradeResult.breakdown.edgePoints || 0) >= 15 ? 'text-yellow-400' : 'text-slate-400'}`}>
                                       +{tierGradeResult.breakdown.edgePoints?.toFixed(1) || '0'}
                                     </span>
                                   </div>
                                   <div className="flex justify-between items-center">
                                     <span className="flex items-center gap-1"><span>🎯</span><span>{safePick.type} Win Rate:</span></span>
-                                    <span className={`font-medium ${(tierGradeResult.breakdown.specPoints || 0) >= 1 ? 'text-green-400' : 'text-slate-400'}`}>
+                                    <span className={`font-medium ${(tierGradeResult.breakdown.specPoints || 0) >= 10 ? 'text-green-400' : (tierGradeResult.breakdown.specPoints || 0) >= 5 ? 'text-yellow-400' : 'text-slate-400'}`}>
                                       +{tierGradeResult.breakdown.specPoints?.toFixed(1) || '0'}
                                     </span>
                                   </div>
                                   <div className="flex justify-between items-center">
                                     <span className="flex items-center gap-1"><span>🔥</span><span>Win Streak:</span></span>
-                                    <span className={`font-medium ${(tierGradeResult.breakdown.streakPoints || 0) > 0 ? 'text-green-400' : 'text-slate-400'}`}>
+                                    <span className={`font-medium ${(tierGradeResult.breakdown.streakPoints || 0) >= 5 ? 'text-green-400' : (tierGradeResult.breakdown.streakPoints || 0) > 0 ? 'text-yellow-400' : 'text-slate-400'}`}>
                                       +{tierGradeResult.breakdown.streakPoints?.toFixed(1) || '0'}
                                     </span>
                                   </div>
                                   <div className="flex justify-between items-center">
                                     <span className="flex items-center gap-1"><span>🧩</span><span>Factor Alignment:</span></span>
-                                    <span className={`font-medium ${(tierGradeResult.breakdown.alignmentPoints || 0) >= 1 ? 'text-green-400' : (tierGradeResult.breakdown.alignmentPoints || 0) < 0 ? 'text-red-400' : 'text-yellow-400'}`}>
-                                      {(tierGradeResult.breakdown.alignmentPoints || 0) >= 0 ? '+' : ''}{tierGradeResult.breakdown.alignmentPoints?.toFixed(1) || '0'}
+                                    <span className={`font-medium ${(tierGradeResult.breakdown.alignmentPoints || 0) >= 25 ? 'text-green-400' : (tierGradeResult.breakdown.alignmentPoints || 0) >= 10 ? 'text-yellow-400' : 'text-slate-400'}`}>
+                                      +{tierGradeResult.breakdown.alignmentPoints?.toFixed(1) || '0'}
                                       <span className="text-slate-500 text-[10px] ml-1">({tierGradeResult.breakdown.alignmentPct || 0}%)</span>
                                     </span>
                                   </div>
@@ -1031,12 +1030,12 @@ export function InsightCard(props: InsightCardProps) {
                               {/* Total - common for all */}
                               <div className="border-t border-slate-700 pt-1.5 mt-1.5 flex justify-between font-bold">
                                 <span>Confluence Score:</span>
-                                <span className={rarity.textColor}>{tierGradeResult.confluenceScore?.toFixed(1) || tierGradeResult.tierScore?.toFixed(1) || '0'}</span>
+                                <span className={rarity.textColor}>{Math.round(tierGradeResult.confluenceScore ?? tierGradeResult.tierScore ?? 0)}</span>
                               </div>
 
                               {/* Tier thresholds hint */}
                               <div className="text-[10px] text-slate-500 pt-1 border-t border-slate-700/50">
-                                Legendary ≥7 • Elite ≥6 • Rare ≥5 • Uncommon ≥4 • Common &lt;4
+                                Legendary ≥80 • Elite ≥65 • Rare ≥50 • Uncommon ≥35 • Common &lt;35
                               </div>
                             </div>
                           ) : (
@@ -1064,7 +1063,7 @@ export function InsightCard(props: InsightCardProps) {
                 <div className="text-slate-400 text-xs font-medium flex items-center gap-1 flex-wrap">
                   <span>{isManualPick ? 'Human Capper' : 'AI Generated'}</span>
                   <span className="text-slate-600">•</span>
-                  <span className={rarity.textColor}>Score {(tierGradeResult.tierScore ?? tierGradeResult.confluenceScore ?? 0).toFixed(isConfluenceFormat ? 1 : 0)}</span>
+                  <span className={rarity.textColor}>Score {Math.round(tierGradeResult.tierScore ?? tierGradeResult.confluenceScore ?? 0)}</span>
                   {safePick.units > 0 && (
                     <span className="text-slate-500">• {safePick.units}U</span>
                   )}

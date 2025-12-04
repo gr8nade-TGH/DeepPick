@@ -1,21 +1,21 @@
 /**
- * CONFLUENCE SCORING SYSTEM
+ * CONFLUENCE SCORING SYSTEM (v2 - 1-100 Scale)
  *
  * A quality-based tier system where picks earn tiers through confluence of signals.
  * Units risked do NOT affect tier - only quality signals matter.
  *
- * SIGNALS (max 8 points):
- * 1. Edge Strength (0-3): Primary driver - how strong is the edge score?
- * 2. Specialization Record (0-2): Capper's win rate for this bet type
- * 3. Streak Bonus (0-1): Current win streak for this bet type
- * 4. Factor Alignment (-0.5 to +2): What % of factors agree with the pick?
+ * SIGNALS (continuous scoring for unique outcomes):
+ * 1. Edge Strength (35%): Primary driver - uses actual edge score (0-10 → 0-35)
+ * 2. Specialization Record (20%): Capper's win rate for this bet type (0-100% → 0-20)
+ * 3. Streak Bonus (10%): Current win streak for this bet type (0-10 → 0-10)
+ * 4. Factor Alignment (35%): What % of factors agree with the pick (0-100% → 0-35)
  *
- * TIERS (designed so Common is 40-60% of picks):
- * - Legendary: ≥7.0 (exceptional - near max signals, <5% of picks)
- * - Elite: 6.0-6.9 (strong confluence)
- * - Rare: 5.0-5.9 (solid confluence)
- * - Uncommon: 4.0-4.9 (showing promise)
- * - Common: <4.0 (new cappers, average picks - 40-60% of picks)
+ * TIERS (1-100 scale, designed for ~40-50% Common picks):
+ * - Legendary: ≥80 (exceptional confluence, <5% of picks)
+ * - Elite: 65-79 (strong confluence)
+ * - Rare: 50-64 (solid confluence)
+ * - Uncommon: 35-49 (showing promise)
+ * - Common: <35 (new cappers, average picks)
  */
 
 export type ConfluenceTier = 'Legendary' | 'Elite' | 'Rare' | 'Uncommon' | 'Common'
@@ -38,10 +38,10 @@ export interface ConfluenceInput {
 }
 
 export interface ConfluenceBreakdown {
-  edgePoints: number        // 0-3
-  specPoints: number        // 0-2
-  streakPoints: number      // 0-1
-  alignmentPoints: number   // -0.5 to +2
+  edgePoints: number        // 0-35 (continuous)
+  specPoints: number        // 0-20 (continuous)
+  streakPoints: number      // 0-10 (continuous)
+  alignmentPoints: number   // 0-35 (continuous)
   alignmentPct: number      // 0-100 (for display)
 }
 
@@ -51,53 +51,70 @@ export interface ConfluenceResult {
   breakdown: ConfluenceBreakdown
 }
 
+// Weight constants for the 1-100 scale
+const WEIGHTS = {
+  EDGE_STRENGTH: 35,      // 35% weight (max 35 points)
+  SPECIALIZATION: 20,     // 20% weight (max 20 points)
+  STREAK: 10,             // 10% weight (max 10 points)
+  FACTOR_ALIGNMENT: 35    // 35% weight (max 35 points)
+} as const
+
 /**
- * SIGNAL 1: Edge Strength (max +3 points)
- * The primary quality driver - higher edge score = better pick
+ * SIGNAL 1: Edge Strength (max 35 points)
+ * Continuous scoring based on edge score (0-10 scale)
+ * Uses smooth curve to reward higher edges more
  */
 function getEdgeStrengthPoints(edgeScore: number): number {
-  if (edgeScore >= 8.0) return 3.0
-  if (edgeScore >= 6.0) return 2.0
-  if (edgeScore >= 4.0) return 1.0
-  return 0
+  // Clamp to 0-10 range
+  const clamped = Math.max(0, Math.min(10, edgeScore))
+  // Linear scale: 0-10 → 0-35
+  return (clamped / 10) * WEIGHTS.EDGE_STRENGTH
 }
 
 /**
- * SIGNAL 2: Specialization Record (max +2 points)
- * Capper's historical win rate for this specific bet type
+ * SIGNAL 2: Specialization Record (max 20 points)
+ * Continuous scoring based on win rate percentage
  * Requires minimum 10 graded picks to qualify
+ * Win rates 45-60% map to 0-20 points (below 45% = 0, above 60% = 20)
  */
 function getSpecializationPoints(winRate?: number, sampleSize?: number): number {
-  // No history or insufficient sample = no bonus
+  // No history or insufficient sample = 0 points
   if (winRate === undefined || sampleSize === undefined || sampleSize < 10) {
     return 0
   }
 
-  if (winRate >= 58) return 2.0
-  if (winRate >= 54) return 1.0
-  return 0
+  // Map win rate 45-60% to 0-20 points
+  // Below 45% = 0, Above 60% = 20
+  const MIN_RATE = 45
+  const MAX_RATE = 60
+
+  if (winRate <= MIN_RATE) return 0
+  if (winRate >= MAX_RATE) return WEIGHTS.SPECIALIZATION
+
+  // Linear interpolation between 45-60%
+  const normalized = (winRate - MIN_RATE) / (MAX_RATE - MIN_RATE)
+  return normalized * WEIGHTS.SPECIALIZATION
 }
 
 /**
- * SIGNAL 3: Streak Bonus (max +1 point)
- * Current win streak for this bet type
- * No penalty for losing streaks - just no bonus
+ * SIGNAL 3: Streak Bonus (max 10 points)
+ * Continuous scoring based on win streak count
+ * 0 streak = 0 points, 5+ streak = max 10 points
  */
 function getStreakPoints(winStreak: number): number {
-  if (winStreak >= 4) return 1.0
-  if (winStreak >= 2) return 0.5
-  return 0
+  if (winStreak <= 0) return 0
+
+  // Cap at 5 wins for max points
+  const capped = Math.min(winStreak, 5)
+  return (capped / 5) * WEIGHTS.STREAK
 }
 
 /**
- * SIGNAL 4: Factor Alignment (range: -0.5 to +2 points)
- * What percentage of factors agree with the final pick direction?
- * 
- * Formula: Linear scale from 50% to 100%
- * - 100% alignment → +2.0 (perfect confluence)
- * - 75% alignment → +1.0
- * - 50% alignment → +0.0 (split decision)
- * - <50% alignment → -0.5 (most factors disagree - penalty)
+ * SIGNAL 4: Factor Alignment (max 35 points)
+ * Continuous scoring based on alignment percentage
+ * 50% = 0 points (split decision)
+ * 100% = 35 points (perfect alignment)
+ * Below 50% = 0 points (no penalty in new system)
  */
 function getFactorAlignmentPoints(factorsOnSide: number, totalFactors: number): { points: number, pct: number } {
   if (totalFactors === 0) {
@@ -107,31 +124,34 @@ function getFactorAlignmentPoints(factorsOnSide: number, totalFactors: number): 
   const alignmentPct = factorsOnSide / totalFactors
   const displayPct = Math.round(alignmentPct * 100)
 
-  if (alignmentPct >= 0.5) {
-    // Linear scale: 50% → 0 points, 100% → 2 points
-    const points = (alignmentPct - 0.5) * 4
-    return { points: Math.round(points * 10) / 10, pct: displayPct }
+  if (alignmentPct <= 0.5) {
+    // At or below 50% = 0 points (split or worse)
+    return { points: 0, pct: displayPct }
   }
 
-  // Below 50% = conflicting signals penalty
-  return { points: -0.5, pct: displayPct }
+  // Scale 50-100% to 0-35 points
+  // (alignmentPct - 0.5) / 0.5 gives 0-1 range for 50-100%
+  const normalized = (alignmentPct - 0.5) / 0.5
+  const points = normalized * WEIGHTS.FACTOR_ALIGNMENT
+
+  return { points, pct: displayPct }
 }
 
 /**
- * Map confluence score to tier
+ * Map confluence score to tier (1-100 scale)
  *
- * Thresholds designed so Common is the majority (40-60% of picks):
- * - Common: <4 (new cappers, average picks)
- * - Uncommon: 4-4.9 (showing promise)
- * - Rare: 5-5.9 (solid confluence)
- * - Elite: 6-6.9 (strong confluence)
- * - Legendary: ≥7 (exceptional - near max signals)
+ * Thresholds designed so Common is ~40-50% of picks:
+ * - Common: <35 (new cappers, average picks)
+ * - Uncommon: 35-49 (showing promise)
+ * - Rare: 50-64 (solid confluence)
+ * - Elite: 65-79 (strong confluence)
+ * - Legendary: ≥80 (exceptional - near max signals)
  */
 function getTierFromScore(score: number): ConfluenceTier {
-  if (score >= 7.0) return 'Legendary'
-  if (score >= 6.0) return 'Elite'
-  if (score >= 5.0) return 'Rare'
-  if (score >= 4.0) return 'Uncommon'
+  if (score >= 80) return 'Legendary'
+  if (score >= 65) return 'Elite'
+  if (score >= 50) return 'Rare'
+  if (score >= 35) return 'Uncommon'
   return 'Common'
 }
 
@@ -151,13 +171,13 @@ export function calculateConfluenceScore(input: ConfluenceInput): ConfluenceResu
   const tier = getTierFromScore(confluenceScore)
 
   return {
-    confluenceScore: Math.round(confluenceScore * 10) / 10,
+    confluenceScore: Math.round(confluenceScore * 10) / 10, // Round to 1 decimal
     tier,
     breakdown: {
-      edgePoints,
-      specPoints,
-      streakPoints,
-      alignmentPoints,
+      edgePoints: Math.round(edgePoints * 10) / 10,
+      specPoints: Math.round(specPoints * 10) / 10,
+      streakPoints: Math.round(streakPoints * 10) / 10,
+      alignmentPoints: Math.round(alignmentPoints * 10) / 10,
       alignmentPct
     }
   }
