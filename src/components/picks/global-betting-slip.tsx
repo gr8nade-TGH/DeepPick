@@ -409,12 +409,17 @@ export function GlobalBettingSlip({ capperId, isCapper }: GlobalBettingSlipProps
                       return (
                         <div
                           key={pick.id}
-                          className="p-4 hover:bg-slate-800/50 transition-colors cursor-pointer group"
+                          className="p-4 hover:bg-slate-800/50 transition-colors cursor-pointer group relative"
                           onClick={() => {
                             setSelectedPickId(pick.id)
                             setSelectedCapper(pick.capper)
                           }}
                         >
+                          {/* Source indicator - bottom right */}
+                          <span className={`absolute bottom-1 right-2 text-[9px] font-medium ${isManualPick ? 'text-green-500/60' : 'text-purple-400/60'}`}>
+                            {isManualPick ? 'Manual' : 'Gen'}
+                          </span>
+
                           <div className="flex gap-3">
                             {/* Rarity Square - smaller like pick history grid */}
                             <div
@@ -424,13 +429,7 @@ export function GlobalBettingSlip({ capperId, isCapper }: GlobalBettingSlipProps
                                 border: `2px solid ${rarity.borderColor}`,
                                 boxShadow: `0 0 8px ${rarity.glowColor}, 0 0 12px rgba(34, 211, 238, 0.3)`
                               }}
-                            >
-                              {/* Source indicator dot */}
-                              <span
-                                className={`absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full ${isManualPick ? 'bg-green-400' : 'bg-purple-400'}`}
-                                style={{ boxShadow: isManualPick ? '0 0 3px rgba(74,222,128,0.8)' : '0 0 3px rgba(192,132,252,0.8)' }}
-                              />
-                            </div>
+                            />
 
                             {/* Pick Details */}
                             <div className="flex-1 min-w-0">
@@ -465,17 +464,12 @@ export function GlobalBettingSlip({ capperId, isCapper }: GlobalBettingSlipProps
                                 {pick.selection}
                               </div>
 
-                              {/* Game time + source */}
-                              <div className="flex items-center justify-between mt-1">
-                                {pick.games && (
-                                  <span className="text-[10px] text-slate-500">
-                                    {formatGameDateTime(pick.games.game_start_timestamp)}
-                                  </span>
-                                )}
-                                <span className={`text-[9px] font-medium ${isManualPick ? 'text-green-500/70' : 'text-purple-400/70'}`}>
-                                  {isManualPick ? '✋ Manual' : '⚡ Gen'}
-                                </span>
-                              </div>
+                              {/* Game time */}
+                              {pick.games && (
+                                <div className="text-[10px] text-slate-500">
+                                  {formatGameDateTime(pick.games.game_start_timestamp)}
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
