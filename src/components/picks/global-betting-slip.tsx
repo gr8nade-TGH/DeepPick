@@ -416,20 +416,19 @@ export function GlobalBettingSlip({ capperId, isCapper }: GlobalBettingSlipProps
                           }}
                         >
                           <div className="flex gap-3">
-                            {/* Rarity Square - matches pick history grid */}
+                            {/* Rarity Square - smaller like pick history grid */}
                             <div
-                              className="w-10 h-10 rounded flex-shrink-0 flex items-center justify-center relative transition-transform group-hover:scale-110"
+                              className="w-7 h-7 rounded flex-shrink-0 relative transition-transform group-hover:scale-110"
                               style={{
                                 background: `linear-gradient(135deg, rgba(34, 211, 238, 0.85), rgba(6, 182, 212, 0.85))`,
                                 border: `2px solid ${rarity.borderColor}`,
                                 boxShadow: `0 0 8px ${rarity.glowColor}, 0 0 12px rgba(34, 211, 238, 0.3)`
                               }}
                             >
-                              <span className="text-white text-[10px] font-bold">{Math.round(tierScore)}</span>
                               {/* Source indicator dot */}
                               <span
-                                className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full ${isManualPick ? 'bg-green-400' : 'bg-purple-400'}`}
-                                style={{ boxShadow: isManualPick ? '0 0 4px rgba(74,222,128,0.8)' : '0 0 4px rgba(192,132,252,0.8)' }}
+                                className={`absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full ${isManualPick ? 'bg-green-400' : 'bg-purple-400'}`}
+                                style={{ boxShadow: isManualPick ? '0 0 3px rgba(74,222,128,0.8)' : '0 0 3px rgba(192,132,252,0.8)' }}
                               />
                             </div>
 
