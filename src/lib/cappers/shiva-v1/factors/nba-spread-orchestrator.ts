@@ -110,10 +110,13 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
 
   // All factors that require NBA stats bundle
   // S10, S11, S12 added for new factors (clutchShooting, scoringMargin, perimeterDefense)
+  // Also include legacy aliases: shootingMomentum, homeAwaySplits, paceMismatch
   const factorsRequiringBundle = [
     'netRatingDiff', 'turnoverDiff', 'shootingEfficiencyMomentum', 'reboundingDiff',
     'fourFactorsDiff', 'momentumIndex', 'defensivePressure', 'assistEfficiency',
-    'clutchShooting', 'scoringMargin', 'perimeterDefense'
+    'clutchShooting', 'scoringMargin', 'perimeterDefense',
+    // Legacy aliases
+    'shootingMomentum', 'homeAwaySplits', 'paceMismatch'
   ]
   const needsBundle = enabledFactorKeys.some(key => factorsRequiringBundle.includes(key))
 
@@ -183,7 +186,8 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
   }
 
   // S3: Shooting Efficiency + Momentum
-  if (enabledFactorKeys.includes('shootingEfficiencyMomentum')) {
+  // Also handle legacy 'shootingMomentum' alias
+  if (enabledFactorKeys.includes('shootingEfficiencyMomentum') || enabledFactorKeys.includes('shootingMomentum')) {
     try {
       console.log('[SPREAD:S3] Computing Shooting Efficiency + Momentum...')
       factors.push(await computeShootingEfficiencyMomentum(bundle!, ctx))
@@ -194,8 +198,9 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
     }
   }
 
-  // S4: Rebounding Differential (replaced Home/Away Splits)
-  if (enabledFactorKeys.includes('reboundingDiff')) {
+  // S4: Rebounding Differential
+  // Also handle legacy 'homeAwaySplits' and 'paceMismatch' aliases (these use rebounding as proxy)
+  if (enabledFactorKeys.includes('reboundingDiff') || enabledFactorKeys.includes('homeAwaySplits') || enabledFactorKeys.includes('paceMismatch')) {
     try {
       console.log('[SPREAD:S4] Computing Rebounding Differential...')
       factors.push(computeReboundingDiff(bundle!, ctx))
@@ -299,8 +304,8 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
   })
 
   // S6: Injury Availability (deterministic)
-  // NOTE: Capper profiles use 'injuryAvailability' key for SPREAD too (same as TOTALS)
-  if (enabledFactorKeys.includes('injuryAvailability')) {
+  // NOTE: Capper profiles may use 'injuryAvailability' or 'injuryAvailabilitySpread' key
+  if (enabledFactorKeys.includes('injuryAvailability') || enabledFactorKeys.includes('injuryAvailabilitySpread')) {
     console.log('[SPREAD:S6] Computing Key Injuries & Availability...')
     try {
       const injuryFactor = await computeInjuryAvailabilitySpread(bundle, ctx)
