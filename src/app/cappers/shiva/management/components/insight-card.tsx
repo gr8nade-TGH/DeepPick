@@ -999,30 +999,35 @@ export function InsightCard(props: InsightCardProps) {
                                 </>
                               ) : tierGradeResult.breakdown.convictionPoints !== undefined ? (
                                 /* Manual Pick: has convictionPoints */
+                                /* Scales: Conviction 0-35, Spec 0-20, Streak 0-10, Quality 0-35 */
                                 <>
                                   <div className="text-[10px] text-green-400 mb-1">👤 Manual Pick Signals</div>
                                   <div className="flex justify-between items-center">
                                     <span className="flex items-center gap-1"><span>💪</span><span>Bet Conviction:</span></span>
-                                    <span className={`font-medium ${(tierGradeResult.breakdown.convictionPoints || 0) >= 2 ? 'text-green-400' : 'text-yellow-400'}`}>
+                                    <span className={`font-medium ${(tierGradeResult.breakdown.convictionPoints || 0) >= 21 ? 'text-green-400' : (tierGradeResult.breakdown.convictionPoints || 0) >= 14 ? 'text-yellow-400' : 'text-slate-400'}`}>
                                       +{tierGradeResult.breakdown.convictionPoints?.toFixed(1) || '0'}
+                                      <span className="text-slate-500 text-[9px] ml-1">/35</span>
                                     </span>
                                   </div>
                                   <div className="flex justify-between items-center">
                                     <span className="flex items-center gap-1"><span>🎯</span><span>{safePick.type} Win Rate:</span></span>
-                                    <span className={`font-medium ${(tierGradeResult.breakdown.specPoints || 0) >= 1 ? 'text-green-400' : 'text-slate-400'}`}>
+                                    <span className={`font-medium ${(tierGradeResult.breakdown.specPoints || 0) >= 12 ? 'text-green-400' : (tierGradeResult.breakdown.specPoints || 0) >= 6 ? 'text-yellow-400' : 'text-slate-400'}`}>
                                       +{tierGradeResult.breakdown.specPoints?.toFixed(1) || '0'}
+                                      <span className="text-slate-500 text-[9px] ml-1">/20</span>
                                     </span>
                                   </div>
                                   <div className="flex justify-between items-center">
                                     <span className="flex items-center gap-1"><span>🔥</span><span>Win Streak:</span></span>
-                                    <span className={`font-medium ${(tierGradeResult.breakdown.streakPoints || 0) > 0 ? 'text-green-400' : 'text-slate-400'}`}>
+                                    <span className={`font-medium ${(tierGradeResult.breakdown.streakPoints || 0) >= 6 ? 'text-green-400' : (tierGradeResult.breakdown.streakPoints || 0) >= 2 ? 'text-yellow-400' : 'text-slate-400'}`}>
                                       +{tierGradeResult.breakdown.streakPoints?.toFixed(1) || '0'}
+                                      <span className="text-slate-500 text-[9px] ml-1">/10</span>
                                     </span>
                                   </div>
                                   <div className="flex justify-between items-center">
-                                    <span className="flex items-center gap-1"><span>💰</span><span>Career Net Units:</span></span>
-                                    <span className={`font-medium ${(tierGradeResult.breakdown.qualityPoints || 0) >= 1 ? 'text-green-400' : 'text-slate-400'}`}>
+                                    <span className="flex items-center gap-1"><span>💰</span><span>Quality Signal:</span></span>
+                                    <span className={`font-medium ${(tierGradeResult.breakdown.qualityPoints || 0) >= 21 ? 'text-green-400' : (tierGradeResult.breakdown.qualityPoints || 0) >= 14 ? 'text-yellow-400' : 'text-slate-400'}`}>
                                       +{tierGradeResult.breakdown.qualityPoints?.toFixed(1) || '0'}
+                                      <span className="text-slate-500 text-[9px] ml-1">/35</span>
                                     </span>
                                   </div>
                                 </>
@@ -1034,7 +1039,10 @@ export function InsightCard(props: InsightCardProps) {
                               {/* Total - common for all */}
                               <div className="border-t border-slate-700 pt-1.5 mt-1.5 flex justify-between font-bold">
                                 <span>Pick Power:</span>
-                                <span className={rarity.textColor}>{Math.round(tierGradeResult.confluenceScore ?? tierGradeResult.tierScore ?? 0)}</span>
+                                <span className={rarity.textColor}>
+                                  {Math.round(tierGradeResult.confluenceScore ?? tierGradeResult.tierScore ?? 0)}
+                                  <span className="text-slate-500 text-[9px] font-normal ml-1">/100</span>
+                                </span>
                               </div>
 
                               {/* Tier threshold visual bar */}
