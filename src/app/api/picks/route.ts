@@ -66,9 +66,9 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
 
-    // Filter by capper if provided
+    // Filter by capper if provided (case-insensitive)
     if (capper) {
-      query = query.eq('capper', capper.toLowerCase())
+      query = query.ilike('capper', capper)
     }
 
     // Filter by status if provided

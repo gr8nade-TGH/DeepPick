@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
         graded_at,
         game_snapshot
       `)
-      .eq('capper', capperId.toLowerCase())
+      .ilike('capper', capperId)
       .order('created_at', { ascending: false })
       .limit(20)
 
