@@ -928,7 +928,7 @@ export function InsightCard(props: InsightCardProps) {
                           }}
                         >
                           <div className="font-bold text-white mb-2 border-b border-slate-700 pb-1">
-                            {rarity.icon} {rarity.tier} - Confluence Score
+                            {rarity.icon} {rarity.tier} Pick Power
                           </div>
 
                           {/* Confluence Format - handles AI, Manual, and PICKSMITH picks */}
@@ -1029,20 +1029,43 @@ export function InsightCard(props: InsightCardProps) {
 
                               {/* Total - common for all */}
                               <div className="border-t border-slate-700 pt-1.5 mt-1.5 flex justify-between font-bold">
-                                <span>Confluence Score:</span>
+                                <span>Pick Power:</span>
                                 <span className={rarity.textColor}>{Math.round(tierGradeResult.confluenceScore ?? tierGradeResult.tierScore ?? 0)}</span>
                               </div>
 
-                              {/* Tier thresholds hint */}
-                              <div className="text-[10px] text-slate-500 pt-1 border-t border-slate-700/50">
-                                Legendary ≥80 • Elite ≥65 • Rare ≥50 • Uncommon ≥35 • Common &lt;35
+                              {/* Tier threshold visual bar */}
+                              <div className="pt-2 mt-1.5 border-t border-slate-700/50">
+                                <div className="flex gap-0.5 h-2 rounded-sm overflow-hidden mb-1">
+                                  <div className="flex-[45] bg-slate-600/60 relative">
+                                    <span className="absolute inset-0 flex items-center justify-center text-[7px] text-slate-400 font-medium">0-44</span>
+                                  </div>
+                                  <div className="flex-[15] bg-green-800/60 relative">
+                                    <span className="absolute inset-0 flex items-center justify-center text-[7px] text-green-300 font-medium">45</span>
+                                  </div>
+                                  <div className="flex-[15] bg-blue-700/60 relative">
+                                    <span className="absolute inset-0 flex items-center justify-center text-[7px] text-blue-300 font-medium">60</span>
+                                  </div>
+                                  <div className="flex-[15] bg-purple-700/60 relative">
+                                    <span className="absolute inset-0 flex items-center justify-center text-[7px] text-purple-300 font-medium">75</span>
+                                  </div>
+                                  <div className="flex-[10] bg-amber-600/60 relative">
+                                    <span className="absolute inset-0 flex items-center justify-center text-[7px] text-amber-300 font-medium">90+</span>
+                                  </div>
+                                </div>
+                                <div className="flex text-[8px] font-medium">
+                                  <span className="flex-[45] text-slate-500 text-center">Common</span>
+                                  <span className="flex-[15] text-green-500 text-center">Unco</span>
+                                  <span className="flex-[15] text-blue-400 text-center">Rare</span>
+                                  <span className="flex-[15] text-purple-400 text-center">Elite</span>
+                                  <span className="flex-[10] text-amber-400 text-center">Leg</span>
+                                </div>
                               </div>
                             </div>
                           ) : (
                             /* Legacy Format Fallback */
                             <div className="space-y-1 text-slate-300">
                               <div className="text-amber-400 text-[10px] mb-2">
-                                ⚠️ Legacy format - new picks use Confluence scoring
+                                ⚠️ Legacy format - new picks use Pick Power scoring
                               </div>
                               <div className="flex justify-between items-center">
                                 <span>📊 Sharp Score:</span>

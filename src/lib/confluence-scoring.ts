@@ -138,20 +138,20 @@ function getFactorAlignmentPoints(factorsOnSide: number, totalFactors: number): 
 }
 
 /**
- * Map confluence score to tier (1-100 scale)
+ * Map Pick Power score to tier (1-100 scale)
  *
- * Thresholds designed so Common is ~40-50% of picks:
- * - Common: <35 (new cappers, average picks)
- * - Uncommon: 35-49 (showing promise)
- * - Rare: 50-64 (solid confluence)
- * - Elite: 65-79 (strong confluence)
- * - Legendary: ≥80 (exceptional - near max signals)
+ * TIER THRESHOLDS:
+ * - Legendary: 90+ (exceptional - near max signals, <5% of picks)
+ * - Elite: 75-89 (strong confluence)
+ * - Rare: 60-74 (solid confluence)
+ * - Uncommon: 45-59 (showing promise)
+ * - Common: 0-44 (new cappers, average picks)
  */
 function getTierFromScore(score: number): ConfluenceTier {
-  if (score >= 80) return 'Legendary'
-  if (score >= 65) return 'Elite'
-  if (score >= 50) return 'Rare'
-  if (score >= 35) return 'Uncommon'
+  if (score >= 90) return 'Legendary'
+  if (score >= 75) return 'Elite'
+  if (score >= 60) return 'Rare'
+  if (score >= 45) return 'Uncommon'
   return 'Common'
 }
 
