@@ -23,6 +23,11 @@ interface Pick {
     home_team: { name: string; abbreviation: string }
     game_start_timestamp: string
   }
+  insight_card_snapshot?: {
+    metadata?: {
+      is_manual_pick?: boolean
+    }
+  }
 }
 
 interface GlobalBettingSlipProps {
@@ -373,56 +378,61 @@ export function GlobalBettingSlip({ capperId, isCapper }: GlobalBettingSlipProps
                   </div>
                 ) : (
                   <div className="divide-y divide-slate-700">
-                    {openPicks.map((pick) => (
-                      <div key={pick.id} className="p-4 hover:bg-slate-800/50 transition-colors">
-                        {/* Pick Type Badge */}
-                        <div className="flex items-center justify-between mb-2">
-                          <span className={`text-xs font-semibold px-2 py-1 rounded ${pick.is_system_pick
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-green-600 text-white'
-                            }`}>
-                            {pick.is_system_pick ? 'GENERATED' : 'MANUAL'}
-                          </span>
-                          <span className="text-xs text-slate-400">
-                            {pick.units} units
-                          </span>
-                        </div>
+                    {openPicks.map((pick) => {
+                      // Detect truly manual picks via metadata flag
+                      const isManualPick = pick.insight_card_snapshot?.metadata?.is_manual_pick === true
 
-                        {/* Game Info */}
-                        {pick.games && (
-                          <div className="text-sm text-white font-semibold mb-1">
-                            {pick.games.away_team.abbreviation} @ {pick.games.home_team.abbreviation}
-                          </div>
-                        )}
-
-                        {/* Pick Details */}
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <span className="text-white font-semibold">{pick.selection}</span>
-                            <span className="text-xs text-slate-400 ml-2">
-                              {pick.pick_type}
+                      return (
+                        <div key={pick.id} className="p-4 hover:bg-slate-800/50 transition-colors">
+                          {/* Pick Type Badge */}
+                          <div className="flex items-center justify-between mb-2">
+                            <span className={`text-xs font-semibold px-2 py-1 rounded ${isManualPick
+                              ? 'bg-green-600 text-white'
+                              : 'bg-blue-600 text-white'
+                              }`}>
+                              {isManualPick ? 'MANUAL' : 'GENERATED'}
+                            </span>
+                            <span className="text-xs text-slate-400">
+                              {pick.units} units
                             </span>
                           </div>
-                          <span className="text-xs text-slate-400">
-                            {pick.odds > 0 ? '+' : ''}{pick.odds}
-                          </span>
+
+                          {/* Game Info */}
+                          {pick.games && (
+                            <div className="text-sm text-white font-semibold mb-1">
+                              {pick.games.away_team.abbreviation} @ {pick.games.home_team.abbreviation}
+                            </div>
+                          )}
+
+                          {/* Pick Details */}
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <span className="text-white font-semibold">{pick.selection}</span>
+                              <span className="text-xs text-slate-400 ml-2">
+                                {pick.pick_type}
+                              </span>
+                            </div>
+                            <span className="text-xs text-slate-400">
+                              {pick.odds > 0 ? '+' : ''}{pick.odds}
+                            </span>
+                          </div>
+
+                          {/* Game Time */}
+                          {pick.games && (
+                            <div className="text-xs text-slate-500 mt-2">
+                              {formatGameDateTime(pick.games.game_start_timestamp)}
+                            </div>
+                          )}
+
+                          {/* Confidence */}
+                          {pick.confidence && (
+                            <div className="text-xs text-slate-400 mt-1">
+                              Confidence: {parseFloat(pick.confidence).toFixed(1)}/10
+                            </div>
+                          )}
                         </div>
-
-                        {/* Game Time */}
-                        {pick.games && (
-                          <div className="text-xs text-slate-500 mt-2">
-                            {formatGameDateTime(pick.games.game_start_timestamp)}
-                          </div>
-                        )}
-
-                        {/* Confidence */}
-                        {pick.confidence && (
-                          <div className="text-xs text-slate-400 mt-1">
-                            Confidence: {parseFloat(pick.confidence).toFixed(1)}/10
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
               </div>

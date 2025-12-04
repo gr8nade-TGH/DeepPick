@@ -53,6 +53,7 @@ export async function GET(request: NextRequest) {
         result,
         is_system_pick,
         odds,
+        insight_card_snapshot,
         games(
           id,
           away_team,
