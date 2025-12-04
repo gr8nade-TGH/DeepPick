@@ -15,45 +15,45 @@ const MAX_POINTS = 5.0
 export const F6_INJURY_AVAILABILITY_TOTALS: FactorDefinition<TotalsFactorResult> = {
   key: 'injuryAvailability',
   factorNumber: 6,
-  name: 'Key Injuries & Availability - Totals',
+  name: 'Key Injuries',
   shortName: 'Injuries',
-  
+
   sport: 'NBA',
   betType: 'TOTAL',
   category: 'injury',
-  
+
   icon: '🏥',
-  description: 'AI analysis of key player injuries and availability',
+  description: 'Who\'s sitting out? Missing stars = fewer points. Missing defenders = more points allowed.',
   logic: `Analyzes injury reports to estimate scoring impact.
     - Missing scorers = lower totals
     - Missing defenders = higher totals
     - Uses PPG and minutes data to weight impact
     - Considers both teams' injury situations`,
-  
+
   dataSource: 'mysportsfeeds',  // Uses MySportsFeeds injury data
   dataRequirements: ['awayInjuries', 'homeInjuries'],
-  
+
   defaultWeight: 15,
   maxPoints: MAX_POINTS,
-  
+
   compute: (bundle, ctx): TotalsFactorResult => {
     // NOTE: Injury factor is computed async in orchestrator
     // This definition is for registry/UI purposes
     // The actual computation is handled separately
-    
+
     if (!bundle) {
       return createTotalsResult(0, MAX_POINTS, {}, { reason: 'no_bundle' })
     }
-    
+
     // If injury data was pre-computed and attached to bundle
     if (bundle.injuryImpact) {
       const impact = bundle.injuryImpact
       const totalImpact = (impact.awayImpact || 0) + (impact.homeImpact || 0)
-      
+
       // Negative impact = missing scorers = under
       // Positive impact = missing defenders = over (rare)
       const signal = clamp(totalImpact / 10, -1, 1)
-      
+
       return createTotalsResult(signal, MAX_POINTS, {
         awayImpact: impact.awayImpact,
         homeImpact: impact.homeImpact,
@@ -64,7 +64,7 @@ export const F6_INJURY_AVAILABILITY_TOTALS: FactorDefinition<TotalsFactorResult>
         points: Math.abs(signal) * MAX_POINTS
       })
     }
-    
+
     // No injury data available
     return createTotalsResult(0, MAX_POINTS, {
       note: 'Injury data computed async in orchestrator'

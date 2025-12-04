@@ -14,45 +14,45 @@ export const F3_DEFENSIVE_EROSION: FactorDefinition<TotalsFactorResult> = {
   key: 'defErosion',
   factorNumber: 3,
   name: 'Defensive Erosion',
-  shortName: 'DRtg/Avail',
-  
+  shortName: 'Defensive Erosion',
+
   sport: 'NBA',
   betType: 'TOTAL',
   category: 'defense',
-  
+
   icon: '🛡️',
-  description: 'Defensive rating decline + injury impact',
+  description: 'Are these defenses slipping? Weak or tired defenses allow more points.',
   logic: `Analyzes each team's defensive vulnerability.
     - Higher DRtg (worse defense) = more points allowed
     - Recent defensive struggles = scoring boost
     - Combines both teams' defensive weaknesses`,
-  
+
   dataSource: 'mysportsfeeds',
   dataRequirements: ['awayDRtgSeason', 'homeDRtgSeason', 'leagueDRtg'],
-  
+
   defaultWeight: 20,
   maxPoints: MAX_POINTS,
-  
+
   compute: (bundle, ctx): TotalsFactorResult => {
     if (!bundle) {
       return createTotalsResult(0, MAX_POINTS, {}, { reason: 'no_bundle' })
     }
-    
+
     // Extract data
     const awayDRtg = bundle.awayDRtgSeason || 110.0
     const homeDRtg = bundle.homeDRtgSeason || 110.0
     const leagueDRtg = bundle.leagueDRtg || 110.0
-    
+
     // Calculate defensive erosion (higher DRtg = worse defense = over signal)
     const awayErosion = awayDRtg - leagueDRtg
     const homeErosion = homeDRtg - leagueDRtg
     const combinedErosion = (awayErosion + homeErosion) / 2
-    
+
     const cappedErosion = clamp(combinedErosion, -15, 15)
-    
+
     // Positive erosion (bad defense) = over signal
     const signal = clamp(tanh(cappedErosion / SCALE), -1, 1)
-    
+
     const rawValues = {
       awayDRtg,
       homeDRtg,
@@ -61,13 +61,13 @@ export const F3_DEFENSIVE_EROSION: FactorDefinition<TotalsFactorResult> = {
       homeErosion,
       combinedErosion
     }
-    
+
     const parsedValues = {
       points: Math.abs(signal) * MAX_POINTS,
       awayDefenseImpact: awayErosion,
       homeDefenseImpact: homeErosion
     }
-    
+
     return createTotalsResult(signal, MAX_POINTS, rawValues, parsedValues)
   }
 }

@@ -67,10 +67,10 @@ export const NBA_SPREAD_FACTORS: FactorMeta[] =
 export const GLOBAL_FACTORS: FactorMeta[] = [
   {
     key: 'edgeVsMarket',
-    name: 'Edge vs Market - Totals',
+    name: 'Edge vs Market',
     shortName: 'Edge',
     icon: '📊',
-    description: 'Predicted total vs market line. Positive edge favors Over, negative favors Under.',
+    description: 'The money line. How far is our prediction from Vegas? Bigger edge = stronger conviction.',
     appliesTo: { sports: '*', betTypes: ['TOTAL'], scope: 'GLOBAL' },
     maxPoints: 5.0,
     defaultWeight: 0.15,
@@ -78,10 +78,10 @@ export const GLOBAL_FACTORS: FactorMeta[] = [
   },
   {
     key: 'edgeVsMarketSpread',
-    name: 'Edge vs Market - Spread',
+    name: 'Edge vs Market',
     shortName: 'Edge',
     icon: '📊',
-    description: 'Predicted margin vs market spread. Positive edge favors away team, negative favors home team.',
+    description: 'The money line. How far is our prediction from Vegas? Bigger edge = stronger conviction.',
     appliesTo: { sports: '*', betTypes: ['SPREAD'], scope: 'GLOBAL' },
     maxPoints: 5.0,
     defaultWeight: 0.15,
