@@ -217,11 +217,14 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
       filtered = filtered.filter(p => getTierFromPick(p) === tierFilter)
     }
 
-    // Filter by source (system vs manual)
+    // Filter by source (system/generated vs manual)
+    // Note: is_system_pick=true means core AI cappers (SHIVA, IFRIT, etc.)
+    // is_system_pick=false for user cappers, but they can have GENERATED or MANUAL picks
+    // True manual picks have insight_card_snapshot.metadata.is_manual_pick = true
     if (sourceFilter !== 'all') {
       filtered = filtered.filter(p => {
-        const isSystem = p.is_system_pick === true
-        return sourceFilter === 'system' ? isSystem : !isSystem
+        const isManualPick = (p as any).insight_card_snapshot?.metadata?.is_manual_pick === true
+        return sourceFilter === 'manual' ? isManualPick : !isManualPick
       })
     }
 
@@ -797,14 +800,15 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
                         {/* Tier Formula Breakdown - Pick Power Scoring */}
                         <div className="pt-1.5 mt-1.5 border-t border-slate-700/50">
                           <div className="text-[9px] text-slate-500 space-y-0.5">
-                            {/* Show tier breakdown - handles both Pick Power and legacy formats */}
+                            {/* Show tier breakdown - handles AI picks, Manual picks, and legacy formats */}
                             {pick.game_snapshot?.tier_grade ? (() => {
                               const tg = pick.game_snapshot.tier_grade as any
-                              // Check if this is new Pick Power format (has edgePoints in breakdown)
-                              const isPickPower = tg.breakdown?.edgePoints !== undefined
+                              // Check format: AI Pick Power (edgePoints), Manual Pick Power (convictionPoints), or Legacy
+                              const isAIPickPower = tg.breakdown?.edgePoints !== undefined
+                              const isManualPickPower = tg.breakdown?.convictionPoints !== undefined
 
-                              if (isPickPower) {
-                                // New Pick Power Format (1-100 scale)
+                              if (isAIPickPower) {
+                                // AI Pick Power Format (1-100 scale)
                                 const { edgePoints = 0, specPoints = 0, streakPoints = 0, alignmentPoints = 0, alignmentPct = 0 } = tg.breakdown || {}
                                 const pickPower = tg.confluenceScore ?? (edgePoints + specPoints + streakPoints + alignmentPoints)
 
@@ -813,25 +817,25 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
                                     <div className="flex justify-between">
                                       <span>⚡ Edge Strength:</span>
                                       <span className={edgePoints >= 25 ? 'text-green-400' : edgePoints >= 15 ? 'text-yellow-400' : 'text-slate-400'}>
-                                        +{edgePoints.toFixed(1)}
+                                        +{Number(edgePoints).toFixed(1)}
                                       </span>
                                     </div>
                                     <div className="flex justify-between">
                                       <span>🎯 {pick.pick_type?.toUpperCase() || 'BET'} Win Rate:</span>
                                       <span className={specPoints >= 10 ? 'text-green-400' : specPoints >= 5 ? 'text-yellow-400' : 'text-slate-400'}>
-                                        +{specPoints.toFixed(1)}
+                                        +{Number(specPoints).toFixed(1)}
                                       </span>
                                     </div>
                                     <div className="flex justify-between">
                                       <span>🔥 Win Streak:</span>
                                       <span className={streakPoints >= 5 ? 'text-green-400' : streakPoints > 0 ? 'text-yellow-400' : 'text-slate-400'}>
-                                        +{streakPoints.toFixed(1)}
+                                        +{Number(streakPoints).toFixed(1)}
                                       </span>
                                     </div>
                                     <div className="flex justify-between">
                                       <span>🧩 Factor Alignment:</span>
                                       <span className={alignmentPoints >= 25 ? 'text-green-400' : alignmentPoints >= 10 ? 'text-yellow-400' : 'text-slate-400'}>
-                                        +{alignmentPoints.toFixed(1)}
+                                        +{Number(alignmentPoints).toFixed(1)}
                                         <span className="text-slate-600 ml-0.5">({alignmentPct}%)</span>
                                       </span>
                                     </div>
@@ -841,15 +845,52 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
                                     </div>
                                   </>
                                 )
+                              } else if (isManualPickPower) {
+                                // Manual Pick Power Format (1-100 scale)
+                                const { convictionPoints = 0, specPoints = 0, streakPoints = 0, qualityPoints = 0 } = tg.breakdown || {}
+                                const pickPower = tg.confluenceScore ?? (convictionPoints + specPoints + streakPoints + qualityPoints)
+
+                                return (
+                                  <>
+                                    <div className="flex justify-between">
+                                      <span>💪 Bet Conviction:</span>
+                                      <span className={convictionPoints >= 25 ? 'text-green-400' : convictionPoints >= 14 ? 'text-yellow-400' : 'text-slate-400'}>
+                                        +{Number(convictionPoints).toFixed(1)}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span>🎯 {pick.pick_type?.toUpperCase() || 'BET'} Win Rate:</span>
+                                      <span className={specPoints >= 10 ? 'text-green-400' : specPoints >= 5 ? 'text-yellow-400' : 'text-slate-400'}>
+                                        +{Number(specPoints).toFixed(1)}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span>🔥 Win Streak:</span>
+                                      <span className={streakPoints >= 5 ? 'text-green-400' : streakPoints > 0 ? 'text-yellow-400' : 'text-slate-400'}>
+                                        +{Number(streakPoints).toFixed(1)}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span>💰 Quality Signal:</span>
+                                      <span className={qualityPoints >= 25 ? 'text-green-400' : qualityPoints >= 10 ? 'text-yellow-400' : 'text-slate-400'}>
+                                        +{Number(qualityPoints).toFixed(1)}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between border-t border-slate-700/50 pt-0.5 mt-0.5 font-semibold">
+                                      <span>⚔️ Pick Power:</span>
+                                      <span style={{ color: rarity.borderColor }}>{Math.round(pickPower)}</span>
+                                    </div>
+                                  </>
+                                )
                               } else {
-                                // Legacy Format
+                                // Legacy Format (old 0-8 scale)
                                 const sharpScore = tg.breakdown?.sharpScore ?? (tg.inputs?.baseConfidence ? tg.inputs.baseConfidence * 10 : (pick.confidence || 5) * 10)
                                 return (
                                   <>
                                     <div className="text-[8px] text-amber-400/70 mb-0.5">Legacy format</div>
                                     <div className="flex justify-between">
                                       <span>📊 Sharp Score:</span>
-                                      <span className="text-slate-300">{sharpScore.toFixed(1)}</span>
+                                      <span className="text-slate-300">{Number(sharpScore).toFixed(1)}</span>
                                     </div>
                                     <div className="flex justify-between border-t border-slate-700/50 pt-0.5 mt-0.5 font-semibold">
                                       <span>⚔️ Pick Power:</span>

@@ -1,22 +1,22 @@
 /**
- * MANUAL PICK CONFLUENCE SCORING
+ * MANUAL PICK CONFLUENCE SCORING (Pick Power)
  *
- * Confluence-based tier system for manual (user-created) picks.
+ * Pick Power tier system for manual (user-created) picks.
  * Since manual picks don't have AI-generated edge scores or factors,
  * we use alternative quality signals.
  *
- * SIGNALS (max 8 points):
- * 1. Bet Conviction (0-3): Units risked = conviction level
- * 2. Specialization Record (0-2): Win rate for this bet type
- * 3. Win Streak (0-1): Current consecutive wins for bet type
- * 4. Quality Signal (0-2): Capper's overall profitability (net units)
+ * SIGNALS (max 100 points) - Same weights as SHIVA:
+ * 1. Bet Conviction (0-35): Units risked = conviction level (replaces Edge Strength)
+ * 2. Specialization Record (0-20): Win rate for this bet type
+ * 3. Win Streak (0-10): Current consecutive wins for bet type
+ * 4. Quality Signal (0-35): Capper's overall profitability (replaces Factor Alignment)
  *
- * TIERS (same as SHIVA confluence):
- * - Legendary: ≥7.0 (exceptional)
- * - Elite: 6.0-6.9 (strong)
- * - Rare: 5.0-5.9 (solid)
- * - Uncommon: 4.0-4.9 (promise)
- * - Common: <4.0 (40-60% of picks)
+ * TIERS:
+ * - Legendary: ≥90 (exceptional)
+ * - Elite: 75-89 (strong)
+ * - Rare: 60-74 (solid)
+ * - Uncommon: 45-59 (promise)
+ * - Common: <45 (majority of picks)
  */
 
 import { getSupabaseAdmin } from '@/lib/supabase/server'
@@ -47,60 +47,62 @@ export interface ManualConfluenceResult {
 }
 
 /**
- * SIGNAL 1: Bet Conviction (max +3 points)
+ * SIGNAL 1: Bet Conviction (max 35 points)
  * Higher units = more conviction in the pick
+ * Uses continuous scale like SHIVA's Edge Strength
  */
 function getConvictionPoints(units: number): number {
-  if (units >= 5) return 3.0
-  if (units >= 4) return 2.5
-  if (units >= 3) return 2.0
-  if (units >= 2) return 1.0
-  return 0.5  // 1 unit = minimal conviction
+  // Map 1-5 units to 0-35 points (linear scale)
+  // 1 unit = 7 pts, 2 = 14 pts, 3 = 21 pts, 4 = 28 pts, 5 = 35 pts
+  const pts = Math.min(units, 5) * 7
+  return Math.round(pts * 10) / 10
 }
 
 /**
- * SIGNAL 2: Specialization Record (max +2 points)
+ * SIGNAL 2: Specialization Record (max 20 points)
  * Same as SHIVA - win rate for this bet type
+ * Uses continuous scale for more granularity
  */
 function getSpecializationPoints(winRate?: number, sampleSize?: number): number {
   if (winRate === undefined || sampleSize === undefined || sampleSize < 10) {
     return 0
   }
-  if (winRate >= 58) return 2.0
-  if (winRate >= 54) return 1.0
-  return 0
+  // Map 45-60% win rate to 0-20 points (continuous)
+  const normalizedWR = Math.max(0, Math.min(1, (winRate - 45) / 15))
+  return Math.round(normalizedWR * 20 * 10) / 10
 }
 
 /**
- * SIGNAL 3: Win Streak (max +1 point)
+ * SIGNAL 3: Win Streak (max 10 points)
  * Same as SHIVA - current win streak for bet type
+ * Uses continuous scale, caps at 5-game streak
  */
 function getStreakPoints(winStreak: number): number {
-  if (winStreak >= 4) return 1.0
-  if (winStreak >= 2) return 0.5
-  return 0
+  // Map 0-5 win streak to 0-10 points (continuous)
+  const normalizedStreak = Math.min(winStreak, 5) / 5
+  return Math.round(normalizedStreak * 10 * 10) / 10
 }
 
 /**
- * SIGNAL 4: Quality Signal (max +2 points)
+ * SIGNAL 4: Quality Signal (max 35 points)
  * Capper's overall profitability (net units career)
+ * Uses continuous scale for more granularity
  */
 function getQualityPoints(netUnits: number): number {
-  if (netUnits >= 20) return 2.0
-  if (netUnits >= 10) return 1.5
-  if (netUnits >= 5) return 1.0
-  if (netUnits >= 0) return 0.5
-  return 0  // Negative = no bonus
+  if (netUnits <= 0) return 0  // Negative = no bonus
+  // Map 0-50 net units to 0-35 points (continuous, capped)
+  const normalizedUnits = Math.min(netUnits, 50) / 50
+  return Math.round(normalizedUnits * 35 * 10) / 10
 }
 
 /**
- * Get tier from confluence score (same thresholds as SHIVA)
+ * Get tier from Pick Power score (same thresholds as SHIVA)
  */
 function getTierFromScore(score: number): ManualConfluenceTier {
-  if (score >= 7.0) return 'Legendary'
-  if (score >= 6.0) return 'Elite'
-  if (score >= 5.0) return 'Rare'
-  if (score >= 4.0) return 'Uncommon'
+  if (score >= 90) return 'Legendary'
+  if (score >= 75) return 'Elite'
+  if (score >= 60) return 'Rare'
+  if (score >= 45) return 'Uncommon'
   return 'Common'
 }
 
@@ -172,13 +174,13 @@ export async function calculateManualConfluence(
   const tier = getTierFromScore(confluenceScore)
 
   return {
-    confluenceScore: Math.round(confluenceScore * 10) / 10,
+    confluenceScore: Math.round(confluenceScore),  // Whole number for cleaner display
     tier,
     breakdown: {
-      convictionPoints,
-      specPoints,
-      streakPoints,
-      qualityPoints,
+      convictionPoints: Math.round(convictionPoints * 10) / 10,
+      specPoints: Math.round(specPoints * 10) / 10,
+      streakPoints: Math.round(streakPoints * 10) / 10,
+      qualityPoints: Math.round(qualityPoints * 10) / 10,
       specWinRate: stats.specWinRate,
       specSampleSize: stats.specSampleSize,
       currentStreak: stats.currentStreak,
