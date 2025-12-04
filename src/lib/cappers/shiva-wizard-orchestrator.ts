@@ -182,31 +182,56 @@ export async function executeWizardPipeline(input: WizardOrchestratorInput): Pro
       const homeTeam = typeof game.home_team === 'string' ? game.home_team : game.home_team.name
 
       // For SPREAD betting: Pick based on who COVERS, not who wins
-      // If away wins outright (predictedMargin < 0), away DEFINITELY covers as underdog
-      // If home wins (predictedMargin > 0), check if they cover their spread
-      const homeSpreadAbs = Math.abs(marketSpread) // e.g., 6.5
-      if (predictedMargin < 0) {
-        // Away wins outright - always covers as underdog
-        isAwayPick = true
+      // predictedMargin: positive = home wins by X, negative = away wins by |X|
+      // marketSpread: negative = home favored (e.g., -6.5), positive = away favored (e.g., +3.5 means away is -3.5)
+      const spreadAbs = Math.abs(marketSpread)
+      let coverReason = ''
+
+      if (marketSpread < 0) {
+        // HOME is favorite (e.g., marketSpread = -6.5)
+        // HOME covers if they win by MORE than |spread|
+        // AWAY covers if HOME wins by LESS than |spread| OR AWAY wins outright
+        if (predictedMargin < 0) {
+          // Away wins outright - covers as underdog
+          isAwayPick = true
+          coverReason = `Away wins outright (by ${Math.abs(predictedMargin).toFixed(1)}) - covers as underdog`
+        } else if (predictedMargin < spreadAbs) {
+          // Home wins but doesn't cover their spread
+          isAwayPick = true
+          coverReason = `Home wins by ${predictedMargin.toFixed(1)} but spread is ${spreadAbs} - away covers`
+        } else {
+          // Home wins and covers their spread
+          isAwayPick = false
+          coverReason = `Home wins by ${predictedMargin.toFixed(1)} and covers spread of ${spreadAbs}`
+        }
       } else {
-        // Home wins, but by how much vs the spread?
-        // Home covers only if they win by MORE than their spread
-        // e.g., if spread is -6.5 and we predict home wins by 2.6, home does NOT cover
-        isAwayPick = predictedMargin < homeSpreadAbs
+        // AWAY is favorite (e.g., marketSpread = +3.5 means away is -3.5)
+        // AWAY covers if they win by MORE than spread
+        // HOME covers if AWAY wins by LESS than spread OR HOME wins outright
+        if (predictedMargin > 0) {
+          // Home wins outright - covers as underdog
+          isAwayPick = false
+          coverReason = `Home wins outright (by ${predictedMargin.toFixed(1)}) - covers as underdog vs favorite away`
+        } else if (Math.abs(predictedMargin) < spreadAbs) {
+          // Away wins but doesn't cover their spread
+          isAwayPick = false
+          coverReason = `Away wins by ${Math.abs(predictedMargin).toFixed(1)} but spread is ${spreadAbs} - home covers`
+        } else {
+          // Away wins and covers their spread
+          isAwayPick = true
+          coverReason = `Away wins by ${Math.abs(predictedMargin).toFixed(1)} and covers spread of ${spreadAbs}`
+        }
       }
       pickDirection = isAwayPick ? awayTeam : homeTeam
 
       console.log('[WizardOrchestrator] SPREAD pick direction:', {
         predictedMargin,
         marketSpread,
-        homeSpreadAbs,
+        spreadAbs,
+        homeFavorite: marketSpread < 0,
         isAwayPick,
         pickDirection,
-        reason: predictedMargin < 0
-          ? 'Away wins outright - covers as underdog'
-          : (predictedMargin < homeSpreadAbs
-            ? `Home wins by ${predictedMargin.toFixed(1)} but spread is ${homeSpreadAbs} - away covers`
-            : `Home wins by ${predictedMargin.toFixed(1)} and covers spread of ${homeSpreadAbs}`)
+        reason: coverReason
       })
 
       // Calculate edge: predicted margin vs market spread
