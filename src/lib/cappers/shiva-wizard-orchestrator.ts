@@ -234,12 +234,21 @@ export async function executeWizardPipeline(input: WizardOrchestratorInput): Pro
         reason: coverReason
       })
 
-      // Calculate edge: predicted margin vs market spread
-      // marketSpread is from home perspective (negative = home favored, positive = away favored)
-      // predictedMargin is from away perspective (positive = away wins, negative = home wins)
-      // Direct subtraction gives us the edge
-      // Example: Mkt=+4 (away favored by 4), Pred=-2 (home wins by 2) → Edge=-6 (home undervalued)
-      marketEdgePts = predictedMargin - marketSpread
+      // Calculate edge: how much better is HOME than market expects?
+      // predictedMargin: positive = home wins by X, negative = away wins by |X|
+      // marketSpread: positive = away favored (home underdog by X), negative = home favored
+      //
+      // Examples:
+      // - Mkt=+8.5 (home +8.5 underdog), Pred=-4.8 (away wins by 4.8)
+      //   Market expects home to lose by 8.5, we predict home loses by 4.8
+      //   Edge = -4.8 - (-8.5) = +3.7 (home is 3.7 pts better than market → value on home)
+      //
+      // - Mkt=-6.5 (home -6.5 favorite), Pred=+2.0 (home wins by 2.0)
+      //   Market expects home to win by 6.5, we predict home wins by 2.0
+      //   Edge = 2.0 - 6.5 = -4.5 (home is 4.5 pts worse than market → value on away)
+      //
+      // Formula: Edge = predictedMargin - (-marketSpread) = predictedMargin + marketSpread
+      marketEdgePts = predictedMargin + marketSpread
 
       // Create Edge vs Market Spread factor (100% weight, max 5.0 points)
       edgeVsMarketFactor = createEdgeVsMarketSpreadFactor(predictedMargin, marketSpread, marketEdgePts)
@@ -800,15 +809,16 @@ function createEdgeVsMarketSpreadFactor(predictedMargin: number, marketSpread: n
   const signal = Math.tanh(marketEdgePts / 3.0) // Scale by 3 for spread sensitivity
 
   // Convert to awayScore/homeScore based on MAX_POINTS
+  // Edge is from HOME's perspective: positive = home has value, negative = away has value
   let awayScore = 0
   let homeScore = 0
 
   if (signal > 0) {
-    // Positive edge = away team has value
-    awayScore = Math.abs(signal) * MAX_POINTS
-  } else if (signal < 0) {
-    // Negative edge = home team has value
+    // Positive edge = home team has value (home is better than market expects)
     homeScore = Math.abs(signal) * MAX_POINTS
+  } else if (signal < 0) {
+    // Negative edge = away team has value (home is worse than market expects)
+    awayScore = Math.abs(signal) * MAX_POINTS
   }
 
   return {
