@@ -518,28 +518,29 @@ export async function GET(
       const totalText = pickType === 'TOTAL' ? pick.selection : (pickType === 'SPREAD' ? pick.selection : '')
 
       // Build computedTier from game_snapshot.tier_grade if available (for manual picks too)
+      // Manual picks use the new Pick Power confluence format: convictionPoints, specPoints, streakPoints, qualityPoints
       const manualTierGrade = gameSnapshot?.tier_grade
       const manualComputedTier = manualTierGrade ? {
         tier: manualTierGrade.tier,
+        // Use tierScore for Pick Power (1-100 scale)
+        confluenceScore: manualTierGrade.tierScore,
         tierScore: manualTierGrade.tierScore,
         breakdown: manualTierGrade.breakdown ? {
-          sharpScore: manualTierGrade.breakdown.sharpScore,
-          edgeBonus: manualTierGrade.breakdown.edgeBonus || 0,
-          teamRecordBonus: manualTierGrade.breakdown.teamRecordBonus || 0,
-          recentFormBonus: manualTierGrade.breakdown.recentFormBonus || 0,
-          losingStreakPenalty: manualTierGrade.breakdown.losingStreakPenalty || 0,
-          rawScore: manualTierGrade.breakdown.rawScore || manualTierGrade.tierScore || 0,
-          unitGateApplied: manualTierGrade.breakdown.unitGateApplied || false,
-          originalTier: manualTierGrade.breakdown.originalTier
+          // Manual Pick Power signals (replaces AI signals)
+          convictionPoints: manualTierGrade.breakdown.convictionPoints || 0,
+          specPoints: manualTierGrade.breakdown.specPoints || 0,
+          streakPoints: manualTierGrade.breakdown.streakPoints || 0,
+          qualityPoints: manualTierGrade.breakdown.qualityPoints || 0,
+          // Display stats
+          specWinRate: manualTierGrade.breakdown.specWinRate,
+          specSampleSize: manualTierGrade.breakdown.specSampleSize,
+          currentStreak: manualTierGrade.breakdown.currentStreak,
+          netUnits: manualTierGrade.breakdown.netUnits
         } : {
-          sharpScore: manualTierGrade.tierScore || (pick.confidence || 5) * 10,
-          edgeBonus: 0,
-          teamRecordBonus: 0,
-          recentFormBonus: 0,
-          losingStreakPenalty: 0,
-          rawScore: manualTierGrade.tierScore || (pick.confidence || 5) * 10,
-          unitGateApplied: false,
-          originalTier: undefined
+          convictionPoints: 0,
+          specPoints: 0,
+          streakPoints: 0,
+          qualityPoints: 0
         }
       } : undefined
 

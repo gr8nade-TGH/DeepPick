@@ -811,7 +811,11 @@ export function InsightCard(props: InsightCardProps) {
   }
 
   // Check if this is new confluence format or legacy
-  const isConfluenceFormat = tierGradeResult.breakdown?.edgePoints !== undefined
+  // Confluence format includes AI picks (edgePoints), Manual picks (convictionPoints), and PICKSMITH (consensusPoints)
+  const isConfluenceFormat =
+    tierGradeResult.breakdown?.edgePoints !== undefined ||
+    tierGradeResult.breakdown?.convictionPoints !== undefined ||
+    tierGradeResult.breakdown?.consensusPoints !== undefined
 
   // Get rarity styling from calculated tier
   const rarity = getRarityStyleFromTier(tierGradeResult.tier)
