@@ -465,12 +465,17 @@ export function GlobalBettingSlip({ capperId, isCapper }: GlobalBettingSlipProps
                                 {pick.selection}
                               </div>
 
-                              {/* Game time */}
-                              {pick.games && (
-                                <div className="text-[10px] text-slate-500 mt-1">
-                                  {formatGameDateTime(pick.games.game_start_timestamp)}
-                                </div>
-                              )}
+                              {/* Game time + source */}
+                              <div className="flex items-center justify-between mt-1">
+                                {pick.games && (
+                                  <span className="text-[10px] text-slate-500">
+                                    {formatGameDateTime(pick.games.game_start_timestamp)}
+                                  </span>
+                                )}
+                                <span className={`text-[9px] font-medium ${isManualPick ? 'text-green-500/70' : 'text-purple-400/70'}`}>
+                                  {isManualPick ? '✋ Manual' : '⚡ Gen'}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
