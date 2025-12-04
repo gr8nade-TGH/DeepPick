@@ -386,17 +386,21 @@ is_system_pick: isSystemCapperCheck,  // ✅ CORRECT - boolean result
 
 ## Current Factors
 
-### NBA TOTALS (7 Factors)
+### NBA TOTALS (9 Factors)
 
-| # | Key | Name | Data Source |
-|---|-----|------|-------------|
-| F1 | `paceIndex` | Pace Index | MySportsFeeds |
-| F2 | `offForm` | Offensive Form | MySportsFeeds |
-| F3 | `defErosion` | Defensive Erosion | MySportsFeeds |
-| F4 | `threeEnv` | 3-Point Environment | MySportsFeeds |
-| F5 | `whistleEnv` | Whistle Environment | MySportsFeeds |
-| F6 | `injuryAvailability` | Injury Availability | MySportsFeeds |
-| F7 | `restAdvantage` | Rest Advantage | MySportsFeeds |
+| # | Key | Name | Data Source | Bias |
+|---|-----|------|-------------|------|
+| F1 | `paceIndex` | Pace Index | MySportsFeeds | Neutral |
+| F2 | `offForm` | Offensive Form | MySportsFeeds | OVER |
+| F3 | `defErosion` | Defensive Erosion | MySportsFeeds | OVER |
+| F4 | `threeEnv` | 3-Point Environment | MySportsFeeds | OVER |
+| F5 | `whistleEnv` | Whistle Environment | MySportsFeeds | OVER |
+| F6 | `injuryAvailability` | Injury Availability | MySportsFeeds | UNDER |
+| F7 | `restAdvantage` | Rest Advantage | MySportsFeeds | Neutral |
+| F8 | `defStrength` | Defensive Strength | MySportsFeeds | **UNDER** |
+| F9 | `coldShooting` | Cold Shooting | MySportsFeeds | **UNDER** |
+
+**Note:** F8 and F9 are specifically designed as UNDER-biased factors to provide pick diversity.
 
 ### NBA SPREAD (12 Factors)
 

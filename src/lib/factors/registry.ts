@@ -26,6 +26,8 @@ import { F4_THREE_POINT_ENV } from './definitions/nba/totals/f4-three-point-env'
 import { F5_WHISTLE_ENV } from './definitions/nba/totals/f5-whistle-env'
 import { F6_INJURY_AVAILABILITY_TOTALS } from './definitions/nba/totals/f6-injury-availability'
 import { F7_REST_ADVANTAGE } from './definitions/nba/totals/f7-rest-advantage'
+import { F8_DEFENSIVE_STRENGTH } from './definitions/nba/totals/f8-defensive-strength'
+import { F9_COLD_SHOOTING } from './definitions/nba/totals/f9-cold-shooting'
 
 // NBA SPREAD Factors
 import { S1_NET_RATING_DIFF } from './definitions/nba/spread/s1-net-rating-diff'
@@ -46,7 +48,7 @@ import { S12_PERIMETER_DEFENSE } from './definitions/nba/spread/s12-perimeter-de
 // ============================================================================
 
 const ALL_FACTORS: FactorDefinition[] = [
-  // NBA TOTALS (7 factors)
+  // NBA TOTALS (9 factors)
   F1_PACE_INDEX,
   F2_OFFENSIVE_FORM,
   F3_DEFENSIVE_EROSION,
@@ -54,6 +56,8 @@ const ALL_FACTORS: FactorDefinition[] = [
   F5_WHISTLE_ENV,
   F6_INJURY_AVAILABILITY_TOTALS,
   F7_REST_ADVANTAGE,
+  F8_DEFENSIVE_STRENGTH,
+  F9_COLD_SHOOTING,
 
   // NBA SPREAD (12 factors)
   S1_NET_RATING_DIFF,

@@ -120,6 +120,24 @@ const FACTOR_DETAILS: Record<string, { name: string; icon: any; description: str
     defaultWeight: 15,
     color: 'slate'
   },
+  defStrength: {
+    name: 'Defensive Strength',
+    icon: Shield,
+    description: 'UNDER-biased: Strong combined defense = fewer points allowed.',
+    importance: 'Elite defenses limit scoring. Both teams with strong D = low-scoring game.',
+    example: 'Both teams DRtg < 108 (top 10 defense) → Strong Under signal.',
+    defaultWeight: 20,
+    color: 'teal'
+  },
+  coldShooting: {
+    name: 'Cold Shooting',
+    icon: Snowflake,
+    description: 'UNDER-biased: Teams in shooting slumps score fewer points.',
+    importance: 'Cold shooting streaks are real. Teams below league avg 3P% = fewer points.',
+    example: 'Both teams shooting 32% from 3 (vs 35% avg) → Strong Under signal.',
+    defaultWeight: 20,
+    color: 'sky'
+  },
   // === SPREAD FACTORS ===
   netRatingDiff: {
     name: 'Net Rating Differential',
@@ -197,7 +215,7 @@ const FACTOR_DETAILS: Record<string, { name: string; icon: any; description: str
 
 // Available factors for each bet type - USING CORRECT SHIVA KEYS
 const AVAILABLE_FACTORS = {
-  TOTAL: ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv', 'injuryAvailability', 'restAdvantage'],
+  TOTAL: ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv', 'injuryAvailability', 'restAdvantage', 'defStrength', 'coldShooting'],
   SPREAD: ['netRatingDiff', 'turnoverDiff', 'shootingEfficiencyMomentum', 'reboundingDiff', 'fourFactorsDiff', 'injuryAvailability', 'momentumIndex', 'defensivePressure', 'assistEfficiency']
 }
 
@@ -207,7 +225,9 @@ const FACTOR_GROUPS = {
     { id: 'pace', name: 'Pace & Tempo', icon: Activity, factors: ['paceIndex'], color: 'cyan' },
     { id: 'offense', name: 'Offensive Form', icon: TrendingUp, factors: ['offForm'], color: 'green' },
     { id: 'defense', name: 'Defensive Erosion', icon: Shield, factors: ['defErosion'], color: 'red' },
+    { id: 'defStrength', name: 'Defensive Strength', icon: Shield, factors: ['defStrength'], color: 'teal' },
     { id: 'shooting', name: '3-Point Environment', icon: Crosshair, factors: ['threeEnv'], color: 'orange' },
+    { id: 'coldShooting', name: 'Cold Shooting', icon: Snowflake, factors: ['coldShooting'], color: 'sky' },
     { id: 'whistle', name: 'Whistle Environment', icon: Activity, factors: ['whistleEnv'], color: 'yellow' },
     { id: 'injuries', name: 'Injuries', icon: UserX, factors: ['injuryAvailability'], color: 'purple' },
     { id: 'rest', name: 'Rest Advantage', icon: Clock, factors: ['restAdvantage'], color: 'slate' },
@@ -344,6 +364,34 @@ const TOTALS_ARCHETYPES: PresetConfig[] = [
       // Primary: injury (80), Strong: defErosion (60) + offForm (50), Support: paceIndex (40) + whistleEnv (20) = 250
       enabled: ['injuryAvailability', 'defErosion', 'offForm', 'paceIndex', 'whistleEnv'],
       weights: { injuryAvailability: 80, defErosion: 60, offForm: 50, paceIndex: 40, whistleEnv: 20 }
+    },
+    spreadFactors: { enabled: [], weights: {} }
+  },
+  {
+    id: 'the-locksmith',
+    name: 'The Locksmith',
+    description: 'UNDER specialist. Defense wins and limits scoring.',
+    icon: Shield,
+    color: 'teal',
+    philosophy: 'Elite defenses create low-scoring games. When both teams play strong D, the total stays under. Lock it down.',
+    totalFactors: {
+      // UNDER-FOCUSED: defStrength (80) + coldShooting (70) + injury (50) + paceIndex (30) + restAdvantage (20) = 250
+      enabled: ['defStrength', 'coldShooting', 'injuryAvailability', 'paceIndex', 'restAdvantage'],
+      weights: { defStrength: 80, coldShooting: 70, injuryAvailability: 50, paceIndex: 30, restAdvantage: 20 }
+    },
+    spreadFactors: { enabled: [], weights: {} }
+  },
+  {
+    id: 'the-grinder',
+    name: 'The Grinder',
+    description: 'Slow games, ugly games, UNDER games.',
+    icon: Snowflake,
+    color: 'sky',
+    philosophy: 'Pace is king for unders. Slow teams + cold shooting + fatigue = grinding, low-scoring affairs. Embrace the ugly.',
+    totalFactors: {
+      // UNDER-FOCUSED: paceIndex (70) + coldShooting (60) + defStrength (50) + restAdvantage (40) + injury (30) = 250
+      enabled: ['paceIndex', 'coldShooting', 'defStrength', 'restAdvantage', 'injuryAvailability'],
+      weights: { paceIndex: 70, coldShooting: 60, defStrength: 50, restAdvantage: 40, injuryAvailability: 30 }
     },
     spreadFactors: { enabled: [], weights: {} }
   }

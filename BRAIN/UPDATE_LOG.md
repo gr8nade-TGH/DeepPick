@@ -7,6 +7,325 @@
 
 ## 📋 Update History
 
+### 2025-12-04 (Update #26) - DEEP Meta-Capper + Pick Power System + 3 New SPREAD Factors
+**Brain Agent:** v1.0
+**Trigger:** User requested "brain update before i make a new agent"
+
+**Commits Analyzed:** 24 new commits (57e84d2 → ec70d28)
+**Date Range:** 2025-12-03 to 2025-12-04
+**Current HEAD:** ec70d28
+
+**CRITICAL ISSUE IDENTIFIED:** All cappers generating identical picks due to Vegas-based baseline. See `docs/BASELINE_PROJECTION_FIX.md` for fix.
+
+---
+
+## 🚀 MAJOR FEATURE: DEEP Meta-Capper (Formerly PICKSMITH)
+
+**DEEP = Factor Confluence Intelligence**
+
+DEEP is the meta-capper that aggregates picks from profitable system cappers using advanced consensus algorithms.
+
+### Core Features:
+
+**1. Tier-Weighted Voting**
+- Legendary picks = 5x weight
+- Elite picks = 4x weight
+- Rare picks = 3x weight
+- Uncommon picks = 2x weight
+- Common picks = 1x weight
+
+**2. Factor Confluence Analysis**
+- Identifies which factors AGREE across cappers
+- Measures factor alignment strength
+- Detects when cappers share the same TOP factors
+
+**3. Counter-Thesis Evaluation**
+- Analyzes WHY disagreeing cappers disagree
+- Evaluates weakness of opposing case
+- Provides balanced perspective
+
+**4. Scalable Architecture**
+- Optimized caching (10min TTL)
+- Ready for 100+ cappers
+- Efficient consensus computation
+
+### New 5-Signal Tier Grading (Max 12 Points)
+
+1. **Consensus Strength (0-3):** How many cappers agree
+2. **Tier Quality (0-3):** Average tier of contributing picks
+3. **Factor Alignment (0-3):** Do cappers share the same TOP factors?
+4. **Counter-Thesis Weakness (0-2):** How weak is the disagreeing case?
+5. **DEEP's Record (0-1):** Historical performance on bet type
+
+**Tier Thresholds (12-point scale):**
+- Legendary: ≥10 (unanimous, high-tier, aligned factors)
+- Elite: 8-9.9
+- Rare: 6-7.9
+- Uncommon: 4-5.9
+- Common: <4
+
+### Files Created:
+
+**DEEP Module:** `src/lib/cappers/deep/`
+- `consensus.ts` (259 lines) - Tier-weighted voting algorithm
+- `eligibility.ts` (92 lines) - Capper eligibility rules
+- `factor-confluence.ts` (173 lines) - Factor alignment analysis
+- `pick-generator.ts` (300 lines) - Main pick generation logic
+- `tier-grading.ts` (220 lines) - 5-signal tier grading
+- `units-calculator.ts` (211 lines) - Units calculation
+- `types.ts` (146 lines) - TypeScript interfaces
+- `index.ts` (23 lines) - Public API
+
+**API Routes:**
+- `src/app/api/deep/generate/route.ts` (65 lines)
+- `src/app/api/deep/status/route.ts` (76 lines)
+- `src/app/api/deep/insight-card/[pickId]/route.ts` (143 lines)
+- `src/app/api/cron/deep-auto-picks/route.ts` (69 lines)
+
+**Total:** 1,793 insertions, 12 deletions
+
+---
+
+## 🎯 MAJOR CHANGE: Pick Power System (1-100 Scale)
+
+**Old System:** Confluence Score (0-8 points)
+**New System:** Pick Power (1-100 scale)
+
+### Why the Change?
+
+**Problem:** 0-8 scale produced only ~17 unique outcomes
+**Solution:** 1-100 scale produces thousands of unique outcomes
+
+### New Scoring Weights:
+
+- **Edge Strength:** 35% (0-35 points) - was 37.5%
+- **Specialization Record:** 20% (0-20 points) - was 25%
+- **Win Streak:** 10% (0-10 points) - was 12.5%
+- **Factor Alignment:** 35% (0-35 points) - was 25% ⬆️ INCREASED
+
+**Factor Alignment weight increased from 25% to 35%** - More emphasis on factor agreement
+
+### New Tier Thresholds:
+
+| Tier | Old (0-8) | New (1-100) |
+|------|-----------|-------------|
+| Legendary | ≥7.0 | ≥90 |
+| Elite | 6.0-6.9 | 75-89 |
+| Rare | 5.0-5.9 | 60-74 |
+| Uncommon | 4.0-4.9 | 45-59 |
+| Common | <4.0 | 0-44 |
+
+### UX Improvements:
+
+**Visual Tier Bar:**
+- Shows score ranges with colored segments
+- Each segment displays threshold number + abbreviated tier name
+- Much more visible than text-only thresholds
+
+**Renamed:**
+- "Confluence Score" → "Pick Power" (Diablo-inspired)
+- Removed "AI Pick Signals" label from tooltip
+- Display shows whole numbers for cleaner UX
+
+**Files Modified:**
+- `src/lib/confluence-scoring.ts` (148 lines changed)
+- `src/app/cappers/shiva/management/components/insight-card.tsx` (17 lines changed)
+
+---
+
+## 🆕 3 NEW SPREAD FACTORS (S10-S12)
+
+**Reason:** Replaced broken S4 (Home/Away Splits) with 3 new working factors
+
+### S10: Clutch Shooting
+- **Key:** `clutchShooting`
+- **Description:** FT% + FG% - critical for close games
+- **Data:** `ftPct`, `fgPct` from MySportsFeeds
+- **Calculation:** Combined shooting efficiency differential
+- **File:** `src/lib/factors/definitions/nba/spread/s10-clutch-shooting.ts`
+
+### S11: Scoring Margin
+- **Key:** `scoringMargin`
+- **Description:** PPG vs Opp PPG - simple team quality indicator
+- **Data:** `ppg`, `oppPpg` from MySportsFeeds
+- **Calculation:** Point differential per game
+- **File:** `src/lib/factors/definitions/nba/spread/s11-scoring-margin.ts`
+
+### S12: Perimeter Defense
+- **Key:** `perimeterDefense`
+- **Description:** Opp 3P% + Opp eFG% - modern NBA defense
+- **Data:** `opp3pPct`, `oppEfgPct` from MySportsFeeds
+- **Calculation:** Opponent shooting efficiency allowed
+- **File:** `src/lib/factors/definitions/nba/spread/s12-perimeter-defense.ts`
+
+**Total SPREAD Factors:** 12 (was 9, removed broken S4)
+**Total TOTALS Factors:** 7 (unchanged)
+
+### Files Modified:
+
+- Factor definitions: 3 new files (69-77 lines each)
+- SHIVA implementations: 3 new files (58-60 lines each)
+- `registry.ts` - Added S10-S12 imports
+- `factor-config-registry.ts` - Added metadata (42 lines)
+- `types.ts` - Added NBAStatsBundle fields (18 lines)
+- `data-fetcher.ts` - Pass new stats (20 lines)
+- `mysportsfeeds-stats.ts` - Extract new stats (63 lines)
+- `nba-spread-orchestrator.ts` - Compute new factors (46 lines)
+
+**Total:** 587 insertions, 4 deletions
+
+### 3 New SPREAD Archetypes:
+
+Using S10-S12 factors:
+- **The Closer** - Clutch shooting focus
+- **The Dominator** - Scoring margin focus
+- **The Lockdown** - Perimeter defense focus
+
+---
+
+## 🎨 UX IMPROVEMENTS
+
+### Open Bets Tab Enhancements (5 commits)
+
+**1. Rarity Squares + Insight Card Modal**
+- Clickable rarity squares showing Pick Power score
+- Tier border/glow styling
+- Clicking any pick opens Insight Card modal
+- Matches Pick History grid styling
+
+**2. Manual/Generated Indicator**
+- Subtle indicator in bottom-right corner
+- Green dot for manual picks
+- Purple dot for generated picks
+- Positioned absolutely to avoid layout shift
+
+**3. Source Filter**
+- Filter by manual vs generated picks
+- Case-insensitive capper matching
+
+**4. Smaller Rarity Squares**
+- Removed number from squares
+- Cleaner visual design
+
+**Files Modified:**
+- `src/components/picks/global-betting-slip.tsx` (142 lines changed)
+
+### Pick History Grid Updates (1 commit)
+
+**Pick Power Tier System:**
+- Updated to use new 1-100 scale
+- Visual tier indicators
+- Tier-styled cubes with checkmarks/X marks
+
+**Files Modified:**
+- Pick history grid components
+
+---
+
+## 🐛 BUG FIXES
+
+### 1. SPREAD Pick Direction (2 commits)
+**Problem:** Incorrect pick direction when AWAY team is favorite
+**Fix:** Corrected logic to properly handle AWAY favorites
+**Commits:** b5512ff, 68564b5
+
+### 2. Edge vs Market Spread Calculation (1 commit)
+**Problem:** Incorrect edge calculation for SPREAD picks
+**Fix:** Corrected formula
+**Commit:** 6c1d69e
+
+### 3. Manual Pick Signals Display (3 commits)
+**Issues:**
+- Bet type not uppercased
+- Incorrect scales displayed
+- Pick Power format not showing
+
+**Fixes:**
+- Uppercase bet type in signals
+- Update scales to 1-100
+- Display Pick Power confluence format
+
+**Commits:** d222f21, f970f86, f73eb19
+
+### 4. PICKSMITH/DEEP Routing (1 commit)
+**Problem:** Routing and insight card display issues
+**Fix:** Updated routes to use /api/deep for deep/picksmith cappers
+**Commit:** 5c5d5d4
+
+### 5. Factor Names and Tooltips (1 commit)
+**Problem:** Unclear factor names
+**Fix:** Improved clarity
+**Commit:** 221c50d
+
+### 6. S10-S12 Factor Returns (1 commit)
+**Problem:** Missing key/name/normalized_value fields
+**Fix:** Added required fields to factor returns
+**Commit:** 582a7b6
+
+### 7. S10-S12 Bundle Check (1 commit)
+**Problem:** S10-S12 not in bundle-requiring list
+**Fix:** Added to list
+**Commit:** f17b7fe
+
+---
+
+## 📊 SYSTEM CHANGES
+
+### Capper Count:
+- **Before:** 7 system cappers (SHIVA, IFRIT, NEXUS, BLITZ, TITAN, THIEF, PICKSMITH)
+- **After:** 7 system cappers (SHIVA, IFRIT, NEXUS, BLITZ, TITAN, THIEF, DEEP)
+
+**PICKSMITH renamed to DEEP** - Same capper ID, new name and algorithm
+
+### Factor Count:
+- **TOTALS:** 7 factors (unchanged)
+- **SPREAD:** 12 factors (was 9, added S10-S12, removed broken S4)
+
+### Tier Grading:
+- **Manual Picks:** Still uses 1-100 scale (unchanged)
+- **Generated Picks (SHIVA):** Now uses 1-100 scale (was 0-8)
+- **DEEP Picks:** Uses 12-point scale with 5 signals (new)
+
+---
+
+## 📁 FILES MODIFIED
+
+**DEEP Meta-Capper (15 files):**
+- New: `src/lib/cappers/deep/` module (8 files, 1,424 lines)
+- New: API routes (4 files, 353 lines)
+- Modified: `generate-pick/route.ts`, `pick-insight-modal.tsx`, `tier-grading.ts`
+
+**Pick Power System (2 files):**
+- `confluence-scoring.ts` (148 lines changed)
+- `insight-card.tsx` (17 lines changed)
+
+**S10-S12 Factors (12 files):**
+- New: Factor definitions (3 files, 217 lines)
+- New: SHIVA implementations (3 files, 177 lines)
+- Modified: Registry, orchestrator, types, data-fetcher, mysportsfeeds-stats
+
+**UX Improvements (1 file):**
+- `global-betting-slip.tsx` (142 lines changed)
+
+**Bug Fixes (multiple files):**
+- Various routing, display, and calculation fixes
+
+**Documentation (1 file):**
+- `docs/FACTOR_FACTORY.md` - Updated factor list to S12
+
+---
+
+## 🚨 CRITICAL NOTES
+
+1. **PICKSMITH is now DEEP** - Same capper ID, new name and algorithm
+2. **Pick Power is 1-100 scale** - More granular than old 0-8 system
+3. **DEEP uses 12-point tier grading** - Different from SHIVA's 100-point system
+4. **12 SPREAD factors** - S10-S12 added, S4 removed (broken)
+5. **Factor Alignment weight increased to 35%** - More emphasis on factor agreement
+6. **DEEP is production-ready** - Scalable to 100+ cappers with caching
+
+---
+
 ### 2025-12-03 (Update #25) - FACTOR FACTORY + Home/Away Detection Fixes
 **Brain Agent:** v1.0
 **Trigger:** User requested "brain update" after implementing new factors and fixing critical bugs

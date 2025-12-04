@@ -1,6 +1,6 @@
 # CRITICAL RULES - READ FIRST
 
-**Last Updated:** 2025-12-03 (Update #25)
+**Last Updated:** 2025-12-04 (Update #26)
 **Priority:** HIGHEST - Read before any work
 
 ---
@@ -59,20 +59,26 @@
 
 ## ?? CURRENT PRIORITIES (In Order)
 
-1. **Fix Factors & Pick Generation** ?? CRITICAL
+1. **Fix Baseline Projection System** ?? CRITICAL - NEW!
+   - All cappers picking same side (zero diversity)
+   - Change from Vegas-based to stats-based baseline
+   - Add 3 universal core factors
+   - See `docs/BASELINE_PROJECTION_FIX.md`
+
+2. **Fix Factors & Pick Generation** ?? HIGH
    - Factor data pulling correctly per capper
    - Verify factor settings respected
    - Check Run logs for errors
 
-2. **Ensure Insight Cards Spawn Correctly** ?? HIGH
-   - All 3 pick types (Manual, Generated, Picksmith)
+3. **Ensure Insight Cards Spawn Correctly** ?? HIGH
+   - All 3 pick types (Manual, Generated, DEEP)
    - Correct tier grading displayed
    - Factor breakdown shown properly
 
-3. **Confirm Tier Grading Works** ?? HIGH
-   - Manual picks (confluence-based)
-   - Generated picks (SHIVA - confluence-based)
-   - Picksmith picks (meta-capper consensus)
+4. **Confirm Tier Grading Works** ?? HIGH
+   - Manual picks (1-100 scale)
+   - Generated picks (SHIVA - 1-100 Pick Power)
+   - DEEP picks (12-point meta-capper)
 
 4. **Test All 3 Pick Creation Methods** ?? MEDIUM
    - Manual picks (user-created)
@@ -91,17 +97,20 @@
 
 ### 2. GENERATED PICKS (SHIVA AI)
 - **Created By:** SHIVA AI system
-- **Tier Grading:** `src/lib/confluence-scoring.ts`
-- **Signals:** Edge Strength, Specialization Record, Win Streak, Factor Alignment
-- **Insight Card:** Shows AI factors, edge breakdown, confidence score
+- **Tier Grading:** `src/lib/confluence-scoring.ts` (1-100 scale - "Pick Power")
+- **Signals:** Edge Strength (35%), Specialization Record (20%), Win Streak (10%), Factor Alignment (35%)
+- **Tier Thresholds:** Legendary 90+, Elite 75-89, Rare 60-74, Uncommon 45-59, Common 0-44
+- **Insight Card:** Shows AI factors, edge breakdown, Pick Power score
 - **API:** `/api/shiva/generate-pick/route.ts`
 
-### 3. PICKSMITH GENERATED PICKS (Meta-Capper Consensus)
-- **Created By:** PICKSMITH meta-capper (aggregates multiple cappers)
-- **Tier Grading:** `src/lib/cappers/picksmith/tier-grading.ts`
-- **Signals:** Consensus strength, contributing cappers, agreement level
-- **Insight Card:** Shows contributing cappers, consensus reasoning
-- **Special:** Requires full team data in game_snapshot
+### 3. DEEP GENERATED PICKS (Meta-Capper Consensus) - FORMERLY PICKSMITH
+- **Created By:** DEEP meta-capper (Factor Confluence Intelligence)
+- **Tier Grading:** `src/lib/cappers/deep/tier-grading.ts` (12-point scale)
+- **Signals:** Consensus Strength (0-3), Tier Quality (0-3), Factor Alignment (0-3), Counter-Thesis (0-2), DEEP's Record (0-1)
+- **Tier Thresholds:** Legendary 10+, Elite 8-9.9, Rare 6-7.9, Uncommon 4-5.9, Common <4
+- **Insight Card:** Shows contributing cappers, factor confluence, counter-thesis
+- **Special:** Tier-weighted voting (Legendary=5x, Elite=4x, Rare=3x, Uncommon=2x, Common=1x)
+- **API:** `/api/deep/generate/route.ts`
 
 **IMPORTANT:** Each pick type has:
 - Different tier grading formula
@@ -124,12 +133,13 @@ Before any major changes:
 
 - [ ] Test MANUAL pick creation
 - [ ] Test GENERATED pick creation (SHIVA)
-- [ ] Test PICKSMITH pick creation
+- [ ] Test DEEP pick creation (meta-capper)
 - [ ] Verify insight cards spawn for all 3 types
-- [ ] Confirm tier grading works for all 3 types
+- [ ] Confirm tier grading works for all 3 types (1-100 for Manual/SHIVA, 12-point for DEEP)
 - [ ] Check Run logs for factor data errors
 - [ ] Test with both TOTAL and SPREAD picks
 - [ ] Verify Configure Factors popup settings respected
+- [ ] Test Pick Power display (1-100 scale with tier bar)
 
 ---
 
@@ -155,20 +165,27 @@ Before any major changes:
 
 ##  Quick Reference
 
-| Pick Type | Tier Grading File | Insight Card Type |
-|-----------|------------------|-------------------|
-| Manual | `manual-pick-confluence.ts` | Manual format |
-| Generated (SHIVA) | `confluence-scoring.ts` | AI factors format |
-| Picksmith | `picksmith/tier-grading.ts` | Consensus format |
+| Pick Type | Tier Grading File | Scale | Insight Card Type |
+|-----------|------------------|-------|-------------------|
+| Manual | `manual-pick-confluence.ts` | 1-100 | Manual format |
+| Generated (SHIVA) | `confluence-scoring.ts` | 1-100 (Pick Power) | AI factors format |
+| DEEP (Meta-Capper) | `deep/tier-grading.ts` | 12-point | Consensus format |
+
+**Tier Thresholds:**
+- **Manual/SHIVA (1-100):** Legendary 90+, Elite 75-89, Rare 60-74, Uncommon 45-59, Common 0-44
+- **DEEP (12-point):** Legendary 10+, Elite 8-9.9, Rare 6-7.9, Uncommon 4-5.9, Common <4
 
 ---
 
 ##  Remember
 
 1. **Factor data pulling is #1 priority** - Check Configure Factors popup vs Run logs
-2. **3 pick types, 3 tier formulas** - Don't mix them up
-3. **Insight cards differ per type** - Manual  Generated  Picksmith
-4. **Not in production** - Can delete picks, test freely
-5. **Deterministic battles = future** - Don't prioritize
-6. **Always check Run logs** - Factor data errors show here
+2. **3 pick types, 3 tier formulas, 2 scales** - Don't mix them up
+3. **Pick Power = 1-100 scale** - Renamed from Confluence Score (was 0-8)
+4. **DEEP uses 12-point scale** - Different from SHIVA's 100-point system
+5. **Insight cards differ per type** - Manual  Generated  DEEP
+6. **Not in production** - Can delete picks, test freely
+7. **Deterministic battles = future** - Don't prioritize
+8. **Always check Run logs** - Factor data errors show here
+9. **PICKSMITH is now DEEP** - Same capper ID, new name and algorithm
 

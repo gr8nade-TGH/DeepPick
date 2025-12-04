@@ -1,12 +1,12 @@
 # Sharp Siege - Edge Factors Reference
 
 **Purpose:** Quick reference for SPREAD and TOTAL pick edge factors
-**Last Updated:** 2025-12-03
+**Last Updated:** 2025-12-04 (Update #26)
 **System:** SHIVA v1 Factor Engine
 
 ---
 
-## 📊 SPREAD Picks (7 Factors)
+## 📊 SPREAD Picks (12 Factors)
 
 ### 1. 📈 Net Rating Differential (30% weight)
 - **Max Points:** 5.0
@@ -17,34 +17,54 @@
   - Edge: `expectedMargin - spreadLine`
 - **File:** `src/lib/cappers/shiva-v1/factors/s1-net-rating-differential.ts`
 
-### 2. 🏀 Turnover Differential (25% weight)
+### 2. 🏀 Turnover Differential (S2)
 - **Max Points:** 5.0
 - **Description:** Ball security and defensive pressure (turnovers forced vs committed)
 
-### 3. 🏠 Home/Away Splits (20% weight)
-- **Max Points:** 5.0
-- **Description:** Home court impact on spread outcomes
-
-### 4. 🎯 Shooting Efficiency + Momentum (15% weight)
+### 3. 🎯 Shooting Efficiency (S3)
 - **Max Points:** 5.0
 - **Description:** eFG%/FTr combined with recent performance trends
 
-### 5. ⚖️ Four Factors Differential (10% weight)
+### 4. ⚖️ Four Factors Differential (S5)
 - **Max Points:** 5.0
 - **Description:** Dean Oliver's Four Factors efficiency differential
 
-### 6. 📈 Momentum Index (15% weight) - **NEW**
+### 5. 🩹 Injury Availability - SPREAD (S6)
+- **Max Points:** 5.0
+- **Description:** Impact of key injuries on spread outcomes
+
+### 6. 📈 Momentum Index (S7)
 - **Max Points:** 5.0
 - **Description:** Team momentum based on win streak and last 10 record
 - **Calculation:**
   - `momentum = (streak × 0.6) + (last10WinPct × 0.4)`
   - `signal = tanh(momentumDiff / 5)`
-- **File:** `src/lib/cappers/shiva-v1/factors/s7-momentum-index.ts`
+- **File:** `src/lib/factors/definitions/nba/spread/s7-momentum-index.ts`
 
-### 7. 📊 Edge vs Market - Spread (15% weight)
+### 7. 🎯 Clutch Shooting (S10) - **NEW**
+- **Max Points:** 5.0
+- **Description:** FT% + FG% - critical for close games
+- **Calculation:** Combined shooting efficiency differential
+- **File:** `src/lib/factors/definitions/nba/spread/s10-clutch-shooting.ts`
+
+### 8. 📊 Scoring Margin (S11) - **NEW**
+- **Max Points:** 5.0
+- **Description:** PPG vs Opp PPG - simple team quality indicator
+- **Calculation:** Point differential per game
+- **File:** `src/lib/factors/definitions/nba/spread/s11-scoring-margin.ts`
+
+### 9. 🛡️ Perimeter Defense (S12) - **NEW**
+- **Max Points:** 5.0
+- **Description:** Opp 3P% + Opp eFG% - modern NBA defense
+- **Calculation:** Opponent shooting efficiency allowed
+- **File:** `src/lib/factors/definitions/nba/spread/s12-perimeter-defense.ts`
+
+### 10-12. 📊 Edge vs Market - Spread
 - **Max Points:** 5.0
 - **Description:** Predicted margin vs market spread (final adjustment)
 - **Calculation:** `edge = predictedMargin - marketSpread`
+
+**Note:** S4 (Home/Away Splits) was removed due to MySportsFeeds API issues. Replaced with S10-S12.
 
 ---
 

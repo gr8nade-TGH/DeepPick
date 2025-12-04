@@ -14,6 +14,8 @@ import { computeThreePointEnv } from './f4-three-point-env'
 import { computeWhistleEnv } from './f5-free-throw-env'
 import { computeInjuryAvailability } from './f6-injury-availability-deterministic'
 import { computeRestAdvantage } from './f7-rest-advantage'
+import { computeDefensiveStrength } from './f8-defensive-strength'
+import { computeColdShooting } from './f9-cold-shooting'
 
 /**
  * Main entry point: compute only enabled NBA totals factors
@@ -34,13 +36,15 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
   })
   const nbaStatsConditionCheck = {
     enabledFactorKeys,
-    shouldFetchNBAStats: enabledFactorKeys.some(key => ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv', 'restAdvantage'].includes(key)),
+    shouldFetchNBAStats: enabledFactorKeys.some(key => ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv', 'restAdvantage', 'defStrength', 'coldShooting'].includes(key)),
     paceIndex: enabledFactorKeys.includes('paceIndex'),
     offForm: enabledFactorKeys.includes('offForm'),
     defErosion: enabledFactorKeys.includes('defErosion'),
     threeEnv: enabledFactorKeys.includes('threeEnv'),
     whistleEnv: enabledFactorKeys.includes('whistleEnv'),
-    restAdvantage: enabledFactorKeys.includes('restAdvantage')
+    restAdvantage: enabledFactorKeys.includes('restAdvantage'),
+    defStrength: enabledFactorKeys.includes('defStrength'),
+    coldShooting: enabledFactorKeys.includes('coldShooting')
   }
   console.log('[TOTALS:NBA_STATS_CONDITION_CHECK]', nbaStatsConditionCheck)
 
@@ -149,22 +153,26 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
 
   console.log('[TOTALS:CONDITION_CHECK]', {
     enabledFactorKeys,
-    conditionCheck: enabledFactorKeys.some(key => ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv'].includes(key)),
+    conditionCheck: enabledFactorKeys.some(key => ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv', 'defStrength', 'coldShooting'].includes(key)),
     paceIndex: enabledFactorKeys.includes('paceIndex'),
     offForm: enabledFactorKeys.includes('offForm'),
     defErosion: enabledFactorKeys.includes('defErosion'),
     threeEnv: enabledFactorKeys.includes('threeEnv'),
-    whistleEnv: enabledFactorKeys.includes('whistleEnv')
+    whistleEnv: enabledFactorKeys.includes('whistleEnv'),
+    defStrength: enabledFactorKeys.includes('defStrength'),
+    coldShooting: enabledFactorKeys.includes('coldShooting')
   })
 
-  if (enabledFactorKeys.some(key => ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv'].includes(key))) {
+  if (enabledFactorKeys.some(key => ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv', 'defStrength', 'coldShooting'].includes(key))) {
     console.log('[TOTALS:ABOUT_TO_FETCH_NBA_STATS]', 'Starting NBA Stats API fetch...')
     console.log('[TOTALS:ENABLED_FACTORS_FOR_DATA]', {
       paceIndex: enabledFactorKeys.includes('paceIndex'),
       offForm: enabledFactorKeys.includes('offForm'),
       defErosion: enabledFactorKeys.includes('defErosion'),
       threeEnv: enabledFactorKeys.includes('threeEnv'),
-      whistleEnv: enabledFactorKeys.includes('whistleEnv')
+      whistleEnv: enabledFactorKeys.includes('whistleEnv'),
+      defStrength: enabledFactorKeys.includes('defStrength'),
+      coldShooting: enabledFactorKeys.includes('coldShooting')
     })
     console.log('[TOTALS:TEAM_NAMES]', { away: ctx.away, home: ctx.home })
     bundle = await fetchNBAStatsBundle(ctx)
@@ -267,6 +275,26 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
     } catch (error) {
       console.error('[TOTALS:ERROR] restAdvantage failed:', error)
       factorErrors.push(`restAdvantage: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+  if (enabledFactorKeys.includes('defStrength')) {
+    try {
+      console.log('[TOTALS:COMPUTING] defStrength...')
+      factors.push(computeDefensiveStrength(bundle!, ctx))
+      console.log('[TOTALS:SUCCESS] defStrength computed')
+    } catch (error) {
+      console.error('[TOTALS:ERROR] defStrength failed:', error)
+      factorErrors.push(`defStrength: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+  if (enabledFactorKeys.includes('coldShooting')) {
+    try {
+      console.log('[TOTALS:COMPUTING] coldShooting...')
+      factors.push(computeColdShooting(bundle!, ctx))
+      console.log('[TOTALS:SUCCESS] coldShooting computed')
+    } catch (error) {
+      console.error('[TOTALS:ERROR] coldShooting failed:', error)
+      factorErrors.push(`coldShooting: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 
