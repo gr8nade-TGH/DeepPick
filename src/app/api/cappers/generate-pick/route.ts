@@ -32,6 +32,19 @@ export async function GET(request: Request) {
     }, { status: 400 })
   }
 
+  // CRITICAL: PICKSMITH is a meta-capper that aggregates consensus from other cappers
+  // It should NOT go through the SHIVA wizard pipeline - it has its own dedicated generator
+  // See: /api/picksmith/generate and /api/cron/picksmith-auto-picks
+  if (capperId.toLowerCase() === 'picksmith') {
+    console.log(`🎯 [UNIFIED-PICK-GEN] ⚠️ PICKSMITH detected - skipping wizard pipeline`)
+    console.log(`🎯 [UNIFIED-PICK-GEN] PICKSMITH uses /api/picksmith/generate for consensus-based picks`)
+    return NextResponse.json({
+      success: false,
+      message: 'PICKSMITH is a meta-capper and should not use the wizard pipeline. Use /api/picksmith/generate instead.',
+      timestamp: executionTime
+    })
+  }
+
   try {
     const supabase = getSupabaseAdmin()
 

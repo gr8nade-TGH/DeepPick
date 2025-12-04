@@ -48,6 +48,10 @@ export async function GET(
     // Format: "PICKSMITH consensus: ... Contributing cappers: SHIVA(3u, +15.5u record), SENTINEL(4u, +12.3u record)"
     const contributingCappers = parseContributingCappers(pick.reasoning || '')
 
+    // Check if this is a wizard-pipeline pick (has insight_card_snapshot with factors but no consensus data)
+    const isWizardPipelinePick = pick.reasoning?.includes('wizard pipeline') ||
+      (pick.insight_card_snapshot?.factors?.length > 0 && contributingCappers.length === 0)
+
     // Get game details
     const { data: game } = await admin
       .from('games')
@@ -55,14 +59,18 @@ export async function GET(
       .eq('id', pick.game_id)
       .single()
 
-    // Get the actual picks from contributing cappers for this game
-    const capperIds = contributingCappers.map(c => c.id.toLowerCase())
-    const { data: contributorPicks } = await admin
-      .from('picks')
-      .select('*')
-      .eq('game_id', pick.game_id)
-      .in('capper', capperIds)
-      .ilike('pick_type', `${pick.pick_type.replace('_over', '').replace('_under', '')}%`)
+    // Get the actual picks from contributing cappers for this game (only if we have cappers)
+    let contributorPicks: any[] = []
+    if (contributingCappers.length > 0) {
+      const capperIds = contributingCappers.map(c => c.id.toLowerCase())
+      const { data } = await admin
+        .from('picks')
+        .select('*')
+        .eq('game_id', pick.game_id)
+        .in('capper', capperIds)
+        .ilike('pick_type', `${pick.pick_type.replace('_over', '').replace('_under', '')}%`)
+      contributorPicks = data || []
+    }
 
     // Build insight card data
     const pickType = pick.pick_type?.toUpperCase() || 'TOTAL'
@@ -85,6 +93,23 @@ export async function GET(
     const homeTeamAbbr = extractTeamAbbr(game?.home_team || pick.game_snapshot?.home_team, homeTeamName.substring(0, 3).toUpperCase())
     const awayTeamAbbr = extractTeamAbbr(game?.away_team || pick.game_snapshot?.away_team, awayTeamName.substring(0, 3).toUpperCase())
 
+    // For wizard-pipeline picks, use the snapshot factors; for consensus picks, build from cappers
+    const factors = isWizardPipelinePick
+      ? (pick.insight_card_snapshot?.factors || []).map((f: any, idx: number) => ({
+        id: `factor-${idx + 1}`,
+        name: f.name || f.key || 'Unknown Factor',
+        key: f.key,
+        weight: f.weight || 0,
+        contribution: f.contribution || 0,
+        description: f.notes || '',
+        dataSource: 'Factor Analysis',
+        rawValue: f.z || 0
+      }))
+      : buildConsensusFactors(contributingCappers, contributorPicks)
+
+    // Get tier grade from game_snapshot if available
+    const tierGrade = pick.game_snapshot?.tier_grade
+
     const insightCard = {
       capper: 'PICKSMITH',
       capperIconUrl: '/cappers/picksmith.png',
@@ -93,6 +118,8 @@ export async function GET(
       pickId: pick.id,
       generatedAt: pick.created_at,
       is_system_pick: true,
+      // Flag to indicate this was generated via wizard pipeline (legacy)
+      isWizardPipelinePick,
       matchup: {
         away: { name: awayTeamName, abbreviation: awayTeamAbbr },
         home: { name: homeTeamName, abbreviation: homeTeamAbbr },
@@ -111,13 +138,16 @@ export async function GET(
         locked_odds: pick.game_snapshot,
         locked_at: pick.created_at
       },
-      // PICKSMITH-specific: Show consensus factors instead of analysis factors
-      factors: buildConsensusFactors(contributingCappers, contributorPicks || []),
-      predictedScore: { away: 0, home: 0, winner: 'Consensus' },
+      factors,
+      predictedScore: { away: 0, home: 0, winner: isWizardPipelinePick ? 'Factor Analysis' : 'Consensus' },
       writeups: {
-        prediction: buildConsensusWriteup(pick, contributingCappers),
-        gamePrediction: `PICKSMITH consensus pick based on ${contributingCappers.length} profitable cappers`,
-        bold: null
+        prediction: isWizardPipelinePick
+          ? buildWizardPipelineWriteup(pick, factors)
+          : buildConsensusWriteup(pick, contributingCappers),
+        gamePrediction: isWizardPipelinePick
+          ? `PICKSMITH pick generated via factor analysis (legacy pipeline)`
+          : `PICKSMITH consensus pick based on ${contributingCappers.length} profitable cappers`,
+        bold: pick.insight_card_snapshot?.bold_predictions || null
       },
       market: {
         conf7: pick.confidence || 7,
@@ -140,10 +170,21 @@ export async function GET(
         } : undefined,
         postMortem: null
       },
+      // Tier grade from game_snapshot
+      tierGrade: tierGrade ? {
+        tier: tierGrade.tier,
+        confluenceScore: tierGrade.confluenceScore,
+        breakdown: tierGrade.breakdown
+      } : null,
       // PICKSMITH-specific fields
-      consensus: {
+      consensus: isWizardPipelinePick ? {
+        contributingCappers: [],
+        contributorPicks: [],
+        consensusType: 'LEGACY_WIZARD_PIPELINE' as const,
+        note: 'This pick was generated via the wizard pipeline (factor analysis) instead of consensus aggregation.'
+      } : {
         contributingCappers,
-        contributorPicks: (contributorPicks || []).map(p => ({
+        contributorPicks: contributorPicks.map(p => ({
           capper: p.capper?.toUpperCase(),
           selection: p.selection,
           units: p.units,
@@ -222,6 +263,14 @@ function buildConsensusWriteup(
   pick: any,
   cappers: Array<{ id: string; name: string; units: number; netUnits: number }>
 ): string {
+  if (cappers.length === 0) {
+    return `## PICKSMITH Analysis
+
+No contributing cappers data available for this pick.
+
+${pick.reasoning || ''}`
+  }
+
   const capperList = cappers.map(c =>
     `**${c.name}** (${c.units}u, +${c.netUnits.toFixed(1)}u record)`
   ).join(', ')
@@ -243,4 +292,28 @@ ${capperList}
 PICKSMITH identified strong consensus among system cappers with proven track records. When multiple profitable cappers independently arrive at the same conclusion, it signals a high-value opportunity.
 
 ${pick.reasoning || ''}`
+}
+
+// Build writeup for wizard-pipeline picks (legacy)
+function buildWizardPipelineWriteup(pick: any, factors: any[]): string {
+  const topFactors = factors
+    .filter(f => Math.abs(f.contribution || 0) > 0.5)
+    .sort((a, b) => Math.abs(b.contribution || 0) - Math.abs(a.contribution || 0))
+    .slice(0, 3)
+
+  const factorSummary = topFactors.length > 0
+    ? topFactors.map(f => `- **${f.name}**: ${f.description || 'N/A'}`).join('\n')
+    : 'No significant factors identified.'
+
+  return `## PICKSMITH Factor Analysis
+
+⚠️ **Note:** This pick was generated via the legacy wizard pipeline (factor analysis) instead of the standard consensus aggregation method.
+
+### Key Factors
+${factorSummary}
+
+### Analysis
+This pick was generated using PICKSMITH's factor-based analysis system, which evaluates statistical indicators to identify betting opportunities.
+
+${pick.insight_card_snapshot?.professional_analysis || pick.reasoning || ''}`
 }

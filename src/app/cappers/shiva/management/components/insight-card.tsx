@@ -483,14 +483,19 @@ function PicksmithInsightCard({ props, consensus }: {
   consensus?: {
     contributingCappers: Array<{ id: string; name: string; units: number; netUnits: number }>
     contributorPicks: Array<{ capper: string; selection: string; units: number; confidence: number }>
-    consensusType: 'STRONG' | 'STANDARD'
+    consensusType: 'STRONG' | 'STANDARD' | 'LEGACY_WIZARD_PIPELINE'
+    note?: string
   }
 }) {
   const cappers = consensus?.contributingCappers || []
+  const isWizardPipelinePick = consensus?.consensusType === 'LEGACY_WIZARD_PIPELINE' || cappers.length === 0
   const totalUnits = cappers.reduce((sum, c) => sum + c.units, 0)
   const avgUnits = cappers.length > 0 ? (totalUnits / cappers.length).toFixed(1) : '0'
   const totalRecord = cappers.reduce((sum, c) => sum + c.netUnits, 0)
   const consensusStrength = cappers.length >= 4 ? 'UNANIMOUS' : cappers.length >= 3 ? 'STRONG' : 'STANDARD'
+
+  // Get tier grade from props if available
+  const tierGrade = (props as any).tierGrade
 
   // Format team names
   const awayTeam = props.matchup?.away
@@ -578,82 +583,146 @@ function PicksmithInsightCard({ props, consensus }: {
           </div>
         </div>
 
-        {/* ===== CONSENSUS STRENGTH BADGE ===== */}
-        <div className="px-6 py-4 bg-gradient-to-r from-slate-800/50 via-amber-900/20 to-slate-800/50 border-b border-amber-500/20">
-          <div className="flex items-center justify-center gap-3">
-            <div className={`
-              px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2
-              ${consensusStrength === 'UNANIMOUS' ? 'bg-green-500/20 text-green-400 border border-green-500/40' :
-                consensusStrength === 'STRONG' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' :
-                  'bg-slate-500/20 text-slate-300 border border-slate-500/40'}
-            `}>
-              {consensusStrength === 'UNANIMOUS' ? '🔥' : consensusStrength === 'STRONG' ? '⚡' : '✓'}
-              <span>{consensusStrength} CONSENSUS</span>
-              <span className="text-xs opacity-75">({cappers.length}v0)</span>
+        {/* ===== WIZARD PIPELINE WARNING (for legacy picks) ===== */}
+        {isWizardPipelinePick && (
+          <div className="px-6 py-3 bg-gradient-to-r from-orange-900/30 via-orange-800/20 to-orange-900/30 border-b border-orange-500/30">
+            <div className="flex items-center gap-2 text-orange-300 text-xs">
+              <span>⚠️</span>
+              <span>This pick was generated via factor analysis (legacy pipeline) instead of consensus aggregation.</span>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* ===== CONTRIBUTING CAPPERS GRID ===== */}
-        <div className="p-5 bg-gradient-to-br from-slate-800 to-slate-900 border-b border-amber-500/20">
-          <div className="text-xs font-bold text-amber-400 uppercase mb-4 flex items-center gap-2">
-            <span>🎯</span>
-            <span>CONTRIBUTING CAPPERS</span>
+        {/* ===== TIER GRADE (if available) ===== */}
+        {tierGrade && (
+          <div className="px-6 py-4 bg-gradient-to-r from-slate-800/50 via-purple-900/20 to-slate-800/50 border-b border-purple-500/20">
+            <div className="flex items-center justify-center gap-4">
+              <div className={`
+                px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2
+                ${tierGrade.tier === 'Legendary' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/40' :
+                  tierGrade.tier === 'Elite' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/40' :
+                    tierGrade.tier === 'Rare' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/40' :
+                      tierGrade.tier === 'Uncommon' ? 'bg-green-500/20 text-green-400 border border-green-500/40' :
+                        'bg-slate-500/20 text-slate-300 border border-slate-500/40'}
+              `}>
+                <span>{tierGrade.tier === 'Legendary' ? '👑' : tierGrade.tier === 'Elite' ? '💎' : tierGrade.tier === 'Rare' ? '💠' : tierGrade.tier === 'Uncommon' ? '🔷' : '◇'}</span>
+                <span>{tierGrade.tier?.toUpperCase() || 'COMMON'}</span>
+              </div>
+              <div className="text-slate-400 text-sm">
+                Confluence Score: <span className="text-white font-bold">{tierGrade.confluenceScore?.toFixed(1) || 0}</span>
+              </div>
+            </div>
           </div>
+        )}
 
-          <div className="grid grid-cols-2 gap-3">
-            {cappers.map((capper, idx) => {
-              const capperBranding = KNOWN_CAPPER_BRANDING[capper.name] || getCapperBranding(capper.name)
-              return (
-                <div
-                  key={capper.id}
-                  className={`bg-gradient-to-br from-slate-700/80 to-slate-800/80 rounded-xl p-4 border border-slate-600/50 hover:border-${capperBranding.color}-500/50 transition-all hover:scale-[1.02]`}
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className={`w-10 h-10 bg-gradient-to-br ${capperBranding.gradient} rounded-full flex items-center justify-center text-lg shadow-md`}>
-                      {capperBranding.icon}
-                    </div>
-                    <div>
-                      <div className="font-bold text-white text-sm">{capper.name}</div>
-                      <div className={`text-xs ${capper.netUnits >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                        {capper.netUnits >= 0 ? '+' : ''}{capper.netUnits.toFixed(1)}u record
+        {/* ===== CONSENSUS STRENGTH BADGE (only for consensus picks) ===== */}
+        {!isWizardPipelinePick && (
+          <div className="px-6 py-4 bg-gradient-to-r from-slate-800/50 via-amber-900/20 to-slate-800/50 border-b border-amber-500/20">
+            <div className="flex items-center justify-center gap-3">
+              <div className={`
+                px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2
+                ${consensusStrength === 'UNANIMOUS' ? 'bg-green-500/20 text-green-400 border border-green-500/40' :
+                  consensusStrength === 'STRONG' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' :
+                    'bg-slate-500/20 text-slate-300 border border-slate-500/40'}
+              `}>
+                {consensusStrength === 'UNANIMOUS' ? '🔥' : consensusStrength === 'STRONG' ? '⚡' : '✓'}
+                <span>{consensusStrength} CONSENSUS</span>
+                <span className="text-xs opacity-75">({cappers.length}v0)</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===== CONTRIBUTING CAPPERS GRID (only for consensus picks) ===== */}
+        {!isWizardPipelinePick && cappers.length > 0 && (
+          <div className="p-5 bg-gradient-to-br from-slate-800 to-slate-900 border-b border-amber-500/20">
+            <div className="text-xs font-bold text-amber-400 uppercase mb-4 flex items-center gap-2">
+              <span>🎯</span>
+              <span>CONTRIBUTING CAPPERS</span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              {cappers.map((capper, idx) => {
+                const capperBranding = KNOWN_CAPPER_BRANDING[capper.name] || getCapperBranding(capper.name)
+                return (
+                  <div
+                    key={capper.id}
+                    className={`bg-gradient-to-br from-slate-700/80 to-slate-800/80 rounded-xl p-4 border border-slate-600/50 hover:border-${capperBranding.color}-500/50 transition-all hover:scale-[1.02]`}
+                  >
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className={`w-10 h-10 bg-gradient-to-br ${capperBranding.gradient} rounded-full flex items-center justify-center text-lg shadow-md`}>
+                        {capperBranding.icon}
+                      </div>
+                      <div>
+                        <div className="font-bold text-white text-sm">{capper.name}</div>
+                        <div className={`text-xs ${capper.netUnits >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {capper.netUnits >= 0 ? '+' : ''}{capper.netUnits.toFixed(1)}u record
+                        </div>
                       </div>
                     </div>
+                    <div className="flex items-center justify-between bg-slate-900/50 rounded-lg px-3 py-2">
+                      <span className="text-slate-400 text-xs">Bet Size</span>
+                      <span className="text-amber-400 font-bold">{capper.units}u</span>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between bg-slate-900/50 rounded-lg px-3 py-2">
-                    <span className="text-slate-400 text-xs">Bet Size</span>
-                    <span className="text-amber-400 font-bold">{capper.units}u</span>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ===== FACTOR ANALYSIS (for wizard pipeline picks) ===== */}
+        {isWizardPipelinePick && props.factors && props.factors.length > 0 && (
+          <div className="p-5 bg-gradient-to-br from-slate-800 to-slate-900 border-b border-amber-500/20">
+            <div className="text-xs font-bold text-amber-400 uppercase mb-4 flex items-center gap-2">
+              <span>📊</span>
+              <span>FACTOR ANALYSIS</span>
+            </div>
+
+            <div className="space-y-2">
+              {props.factors.slice(0, 5).map((factor: any, idx: number) => (
+                <div key={idx} className="bg-slate-800/80 rounded-lg p-3 border border-slate-700/50">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-white font-medium text-sm">{factor.name}</span>
+                    <span className={`text-xs font-bold ${(factor.contribution || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {(factor.contribution || 0) >= 0 ? '+' : ''}{(factor.contribution || 0).toFixed(2)}
+                    </span>
                   </div>
+                  {factor.description && (
+                    <div className="text-slate-400 text-xs">{factor.description}</div>
+                  )}
                 </div>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* ===== CONSENSUS STATS ===== */}
-        <div className="p-5 bg-gradient-to-br from-slate-800/60 to-slate-900/60 border-b border-amber-500/20">
-          <div className="text-xs font-bold text-amber-400 uppercase mb-4 flex items-center gap-2">
-            <span>📊</span>
-            <span>CONSENSUS STATS</span>
-          </div>
-
-          <div className="grid grid-cols-3 gap-3">
-            <div className="bg-slate-800/80 rounded-xl p-4 text-center border border-slate-700/50">
-              <div className="text-2xl font-black text-white">{cappers.length}</div>
-              <div className="text-xs text-slate-400 mt-1">Cappers Agree</div>
+              ))}
             </div>
-            <div className="bg-slate-800/80 rounded-xl p-4 text-center border border-slate-700/50">
-              <div className="text-2xl font-black text-amber-400">{avgUnits}u</div>
-              <div className="text-xs text-slate-400 mt-1">Avg Bet Size</div>
+          </div>
+        )}
+
+        {/* ===== CONSENSUS STATS (only for consensus picks) ===== */}
+        {!isWizardPipelinePick && (
+          <div className="p-5 bg-gradient-to-br from-slate-800/60 to-slate-900/60 border-b border-amber-500/20">
+            <div className="text-xs font-bold text-amber-400 uppercase mb-4 flex items-center gap-2">
+              <span>📊</span>
+              <span>CONSENSUS STATS</span>
             </div>
-            <div className="bg-slate-800/80 rounded-xl p-4 text-center border border-slate-700/50">
-              <div className={`text-2xl font-black ${totalRecord >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                {totalRecord >= 0 ? '+' : ''}{totalRecord.toFixed(1)}u
+
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-slate-800/80 rounded-xl p-4 text-center border border-slate-700/50">
+                <div className="text-2xl font-black text-white">{cappers.length}</div>
+                <div className="text-xs text-slate-400 mt-1">Cappers Agree</div>
               </div>
-              <div className="text-xs text-slate-400 mt-1">Combined Record</div>
+              <div className="bg-slate-800/80 rounded-xl p-4 text-center border border-slate-700/50">
+                <div className="text-2xl font-black text-amber-400">{avgUnits}u</div>
+                <div className="text-xs text-slate-400 mt-1">Avg Bet Size</div>
+              </div>
+              <div className="bg-slate-800/80 rounded-xl p-4 text-center border border-slate-700/50">
+                <div className={`text-2xl font-black ${totalRecord >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {totalRecord >= 0 ? '+' : ''}{totalRecord.toFixed(1)}u
+                </div>
+                <div className="text-xs text-slate-400 mt-1">Combined Record</div>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* ===== WHY THIS PICK ===== */}
         <div className="p-5 bg-gradient-to-br from-slate-800/40 to-slate-900/40 border-b border-amber-500/20">
@@ -662,15 +731,31 @@ function PicksmithInsightCard({ props, consensus }: {
             <span>WHY THIS PICK?</span>
           </div>
           <div className="bg-slate-900/60 rounded-xl p-4 border border-slate-700/50">
-            <p className="text-slate-300 text-sm leading-relaxed">
-              PICKSMITH identified <span className="text-amber-400 font-semibold">{consensusStrength.toLowerCase()} consensus</span> among {cappers.length} profitable system cappers.
-              When multiple independent AI models with proven track records arrive at the same conclusion, it signals a <span className="text-amber-400 font-semibold">high-value opportunity</span>.
-            </p>
-            <div className="mt-3 pt-3 border-t border-slate-700/50">
-              <p className="text-slate-400 text-xs">
-                Combined conviction: <span className="text-white font-semibold">{totalUnits}u</span> across all contributing cappers
-              </p>
-            </div>
+            {isWizardPipelinePick ? (
+              <>
+                <p className="text-slate-300 text-sm leading-relaxed">
+                  This pick was generated using <span className="text-amber-400 font-semibold">factor-based analysis</span> through the legacy wizard pipeline.
+                  The system evaluated multiple statistical factors to identify this betting opportunity.
+                </p>
+                <div className="mt-3 pt-3 border-t border-slate-700/50">
+                  <p className="text-slate-400 text-xs">
+                    Note: Future PICKSMITH picks will use consensus aggregation from multiple cappers.
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-slate-300 text-sm leading-relaxed">
+                  PICKSMITH identified <span className="text-amber-400 font-semibold">{consensusStrength.toLowerCase()} consensus</span> among {cappers.length} profitable system cappers.
+                  When multiple independent AI models with proven track records arrive at the same conclusion, it signals a <span className="text-amber-400 font-semibold">high-value opportunity</span>.
+                </p>
+                <div className="mt-3 pt-3 border-t border-slate-700/50">
+                  <p className="text-slate-400 text-xs">
+                    Combined conviction: <span className="text-white font-semibold">{totalUnits}u</span> across all contributing cappers
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -725,7 +810,7 @@ function PicksmithInsightCard({ props, consensus }: {
           </button>
         </div>
       </div>
-    </div>
+    </div >
   )
 }
 
