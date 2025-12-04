@@ -382,6 +382,7 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
     factors,
     factor_version: 'nba_spread_v1',
     baseline_avg,
+    statsBundle: bundle || undefined, // Pass bundle up for stats-based baseline calculation
     totals_debug
   }
 }

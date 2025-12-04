@@ -204,32 +204,58 @@ export async function POST(request: Request) {
     // Store all extra data in metadata JSONB column
 
     // Get market line and predicted value based on bet type
-    // NOTE: baseline_avg is now the VEGAS MARKET LINE (not calculated team stats)
-    // This anchors all cappers to the same starting point
+    // NOTE: baseline_avg is now the STATS-BASED BASELINE (not Vegas)
+    // This enables pick diversity across cappers with different factor weights
     let marketLine: number
     let predictedValue: number
-    let baselineAvg: number
+    let baselineAvg: number // Stats-based baseline
+    let statsBaselineDebug: any = null // Debug info for transparency
 
     if (betType === 'TOTAL') {
-      // TOTALS: Vegas total line is our baseline
+      // TOTALS: Vegas total line for market comparison
       marketLine = result.steps?.step2?.snapshot?.total?.line ||
         result.pick?.lockedOdds?.total?.line ||
         220
       predictedValue = result.log?.finalPrediction?.total || 220
-      baselineAvg = marketLine // Vegas total line IS the baseline now
+      // NEW: Extract stats-based baseline from step4 predictions
+      const baselineDebug = result.steps?.step4?.predictions?.baseline_debug
+      if (baselineDebug?.source === 'stats') {
+        baselineAvg = baselineDebug.clampedBaseline ?? marketLine
+        statsBaselineDebug = baselineDebug
+      } else {
+        baselineAvg = marketLine // Fallback to Vegas if no stats available
+        statsBaselineDebug = { source: 'vegas_fallback', reason: 'No stats baseline in step4' }
+      }
     } else if (betType === 'SPREAD') {
-      // SPREAD: Vegas spread is our baseline
+      // SPREAD: Vegas spread for market comparison
       marketLine = result.steps?.step2?.snapshot?.spread?.line ||
         result.pick?.lockedOdds?.spread?.line ||
         0
       predictedValue = result.steps?.step4?.predictions?.spread_pred_points || 0
-      baselineAvg = result.steps?.step2?.snapshot?.spread?.away_spread || 0 // Vegas away spread
+      // NEW: Extract stats-based baseline from step4 predictions
+      const baselineDebug = result.steps?.step4?.predictions?.baseline_debug
+      if (baselineDebug?.source === 'stats') {
+        baselineAvg = baselineDebug.baseline ?? 0
+        statsBaselineDebug = baselineDebug
+      } else {
+        baselineAvg = 0 // Fallback to 0 if no stats available (neutral margin)
+        statsBaselineDebug = { source: 'vegas_fallback', reason: 'No stats baseline in step4' }
+      }
     } else {
       // Fallback for unknown bet types
       marketLine = 0
       predictedValue = 0
       baselineAvg = 0
     }
+
+    console.log('[SHIVA:GeneratePick] Baseline extraction:', {
+      betType,
+      baselineAvg,
+      marketLine,
+      predictedValue,
+      statsBaselineSource: statsBaselineDebug?.source,
+      gapVsVegas: baselineAvg - marketLine
+    })
 
     const metadata: any = {
       capper: capperId,
@@ -241,8 +267,10 @@ export async function POST(request: Request) {
       selection: result.pick?.selection || 'PASS',
       factor_contributions: result.log?.factors || [], // Now contains F1-F5 or S1-S5 factors!
       predicted_total: predictedValue, // For TOTAL: predicted total, For SPREAD: predicted margin
-      baseline_avg: baselineAvg, // Vegas market line (TOTAL) or Vegas spread (SPREAD) - used as anchor
+      baseline_avg: baselineAvg, // NEW: Stats-based baseline (not Vegas) for pick diversity
       market_total: marketLine, // For TOTAL: market total line, For SPREAD: market spread line
+      // NEW: Stats baseline debug info for transparency in insight cards
+      stats_baseline_debug: statsBaselineDebug,
       predicted_home_score: result.log?.finalPrediction?.home || 0,
       predicted_away_score: result.log?.finalPrediction?.away || 0,
       game: {

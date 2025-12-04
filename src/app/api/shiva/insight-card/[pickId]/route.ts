@@ -980,6 +980,13 @@ function buildInsightCard({ pick, game, run, factorContributions, predictedTotal
       confFinal: confFinal,
       dominant: isSpread ? 'spread' as const : 'total' as const
     },
+    // NEW: Stats-based baseline info for transparency
+    baseline: {
+      statsBaseline: baselineAvg,
+      vegasLine: marketTotal,
+      gapVsVegas: baselineAvg - marketTotal,
+      debug: run.metadata?.stats_baseline_debug || run.metadata?.steps?.step4?.predictions?.baseline_debug || null
+    },
     results: {
       status: pick.status === 'won' ? 'win'
         : pick.status === 'lost' ? 'loss'

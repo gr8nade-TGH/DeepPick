@@ -601,6 +601,8 @@ async function computeFactors(
     factorWeights,
     factor_version: factorVersion,
     baseline_avg: result.baseline_avg || (betType === 'TOTAL' ? 220 : 0), // TOTALS: 220, SPREAD: 0
+    // Pass through stats bundle for baseline projection calculation
+    statsBundle: result.statsBundle,
     // Pass through debug info (used for recalibration checks)
     totals_debug: result.totals_debug,
     spread_debug: result.spread_debug
@@ -608,13 +610,133 @@ async function computeFactors(
 }
 
 /**
+ * Calculate stats-based baseline from team statistics
+ *
+ * This replaces using Vegas as the baseline, enabling pick diversity across cappers.
+ * Each capper applies their weighted factors to this stats baseline, producing
+ * different predicted values that may land on opposite sides of the Vegas line.
+ *
+ * @param statsBundle - NBA stats bundle with team performance data
+ * @param betType - 'TOTAL' or 'SPREAD'
+ * @param vegasFallback - Vegas line to use if stats are unavailable
+ * @returns Stats-based baseline value
+ */
+function calculateStatsBaseline(
+  statsBundle: any,
+  betType: string,
+  vegasFallback: number
+): { baseline: number; debug: any } {
+  // If no stats bundle available, fall back to Vegas (shouldn't happen in production)
+  if (!statsBundle) {
+    console.warn('[StatsBaseline] No stats bundle available, falling back to Vegas:', vegasFallback)
+    return {
+      baseline: vegasFallback,
+      debug: { source: 'vegas_fallback', reason: 'No stats bundle' }
+    }
+  }
+
+  const HCA = 2.8 // Home Court Advantage in points (modern NBA average)
+
+  if (betType === 'TOTAL') {
+    // TOTALS: Expected total = pace-adjusted scoring expectation
+    // Uses offensive ratings and expected game pace
+    const expPace = (statsBundle.awayPaceLast10 + statsBundle.homePaceLast10) / 2
+    const awayExpPts = (expPace * statsBundle.awayORtgLast10) / 100
+    const homeExpPts = (expPace * statsBundle.homeORtgLast10) / 100
+
+    // Clamp to reasonable NBA total range (180-260)
+    const rawBaseline = awayExpPts + homeExpPts
+    const baseline = Math.max(180, Math.min(260, rawBaseline))
+
+    console.log('[StatsBaseline:TOTALS]', {
+      expPace: expPace.toFixed(1),
+      awayORtg: statsBundle.awayORtgLast10.toFixed(1),
+      homeORtg: statsBundle.homeORtgLast10.toFixed(1),
+      awayExpPts: awayExpPts.toFixed(1),
+      homeExpPts: homeExpPts.toFixed(1),
+      rawBaseline: rawBaseline.toFixed(1),
+      baseline: baseline.toFixed(1)
+    })
+
+    return {
+      baseline,
+      debug: {
+        source: 'stats',
+        expPace,
+        awayORtg: statsBundle.awayORtgLast10,
+        homeORtg: statsBundle.homeORtgLast10,
+        awayExpPts,
+        homeExpPts,
+        rawBaseline,
+        clampedBaseline: baseline
+      }
+    }
+  } else if (betType === 'SPREAD') {
+    // SPREAD: Expected margin based on net ratings + home court advantage
+    // Net Rating = ORtg - DRtg (points per 100 possessions above/below average)
+    const awayNetRtg = statsBundle.awayORtgLast10 - statsBundle.awayDRtgSeason
+    const homeNetRtg = statsBundle.homeORtgLast10 - statsBundle.homeDRtgSeason
+
+    // Net rating differential (positive = away is better per 100 poss)
+    const netRtgDiff = awayNetRtg - homeNetRtg
+
+    // Clamp net rating diff to reasonable range (-20 to +20)
+    const clampedNetRtgDiff = Math.max(-20, Math.min(20, netRtgDiff))
+
+    // Stats baseline = predicted home margin
+    // If away has higher net rating, they should win (negative margin = away wins)
+    // Add HCA to favor home team
+    const baseline = -clampedNetRtgDiff + HCA
+
+    console.log('[StatsBaseline:SPREAD]', {
+      awayNetRtg: awayNetRtg.toFixed(1),
+      homeNetRtg: homeNetRtg.toFixed(1),
+      netRtgDiff: netRtgDiff.toFixed(1),
+      clampedNetRtgDiff: clampedNetRtgDiff.toFixed(1),
+      HCA,
+      baseline: baseline.toFixed(1),
+      interpretation: baseline > 0
+        ? `Home favored by ${baseline.toFixed(1)} pts`
+        : `Away favored by ${Math.abs(baseline).toFixed(1)} pts`
+    })
+
+    return {
+      baseline,
+      debug: {
+        source: 'stats',
+        awayORtg: statsBundle.awayORtgLast10,
+        awayDRtg: statsBundle.awayDRtgSeason,
+        homeORtg: statsBundle.homeORtgLast10,
+        homeDRtg: statsBundle.homeDRtgSeason,
+        awayNetRtg,
+        homeNetRtg,
+        netRtgDiff,
+        clampedNetRtgDiff,
+        HCA,
+        baseline
+      }
+    }
+  }
+
+  // Fallback for unknown bet type
+  console.warn('[StatsBaseline] Unknown bet type:', betType)
+  return {
+    baseline: vegasFallback,
+    debug: { source: 'vegas_fallback', reason: `Unknown bet type: ${betType}` }
+  }
+}
+
+/**
  * Step 4: Generate predictions
  *
- * IMPORTANT: We use the Vegas market line as our baseline (not calculated team stats).
- * This ensures all cappers start from the same anchor point (market consensus).
- * Factor adjustments then represent how much we think the market is off.
+ * NEW: Uses stats-based baseline instead of Vegas market line.
+ * This enables pick diversity - different cappers with different factor weights
+ * will produce different predictions that may land on opposite sides of Vegas.
+ *
+ * The Edge vs Market factor (Step 5) then captures the TRUE edge:
+ * how far our stats-based prediction differs from market consensus.
  */
-async function generatePredictions(runId: string, step3Result: any, sport: string, betType: string, game?: any, marketBaseline?: number) {
+async function generatePredictions(runId: string, step3Result: any, sport: string, betType: string, game?: any, vegasLine?: number) {
   const { calculateConfidence } = await import('@/lib/cappers/shiva-v1/confidence-calculator')
 
   if (!step3Result?.factors || step3Result.factors.length === 0) {
@@ -629,39 +751,45 @@ async function generatePredictions(runId: string, step3Result: any, sport: strin
     confSource
   })
 
-  // USE VEGAS MARKET LINE AS BASELINE
-  // TOTALS: Vegas total line (e.g., 223.5)
-  // SPREAD: Vegas away spread (e.g., +4.5 means away is underdog by 4.5)
-  // Fallback to defaults only if market data is missing
-  const baselineAvg = marketBaseline ?? (betType === 'TOTAL' ? 220 : 0)
+  // NEW: Calculate STATS-BASED BASELINE instead of using Vegas
+  // This enables pick diversity - different cappers will produce different predictions
+  const vegasFallback = vegasLine ?? (betType === 'TOTAL' ? 220 : 0)
+  const { baseline: statsBaseline, debug: baselineDebug } = calculateStatsBaseline(
+    step3Result.statsBundle,
+    betType,
+    vegasFallback
+  )
 
   // Extract team names for winner field
   const awayTeamName = game ? (typeof game.away_team === 'string' ? game.away_team : game.away_team?.name) : 'AWAY'
   const homeTeamName = game ? (typeof game.home_team === 'string' ? game.home_team : game.home_team?.name) : 'HOME'
 
   if (betType === 'TOTAL') {
-    // TOTALS: Calculate predicted total
-    // Step 1: Start with VEGAS MARKET LINE as baseline (not team PPG)
+    // TOTALS: Calculate predicted total using STATS BASELINE
+    // Step 1: Start with STATS-BASED BASELINE (pace + efficiency projection)
     // Step 2: Add factor adjustment (edgeRaw = overScore - underScore from F1-F5)
-    // Step 3: Edge vs Market is calculated AFTER this in Step 5
+    // Step 3: Edge vs Market compares this prediction to Vegas in Step 5
     //
-    // Using 1.0x multiplier: factor points = game points adjustment
-    // Example: Vegas line = 223, edgeRaw = +3.0 → predicted = 226 (OVER by 3)
+    // Example: Stats baseline = 228, edgeRaw = +3.0 → predicted = 231
+    //          Vegas = 223.5 → Edge = +7.5 (strong OVER)
     const factorAdjustment = confidenceResult.edgeRaw
-    const predictedTotal = Math.max(180, Math.min(280, baselineAvg + factorAdjustment))
+    const predictedTotal = Math.max(180, Math.min(280, statsBaseline + factorAdjustment))
 
     console.log('[WizardOrchestrator:Step4] TOTALS Prediction calculation:', {
-      vegasBaseline: baselineAvg,
-      edgeRaw: confidenceResult.edgeRaw,
-      factorAdjustment,
-      predictedTotal,
-      note: 'Using Vegas market line as baseline'
+      statsBaseline: statsBaseline.toFixed(1),
+      vegasLine: vegasFallback,
+      baselineSource: baselineDebug.source,
+      edgeRaw: confidenceResult.edgeRaw.toFixed(2),
+      factorAdjustment: factorAdjustment.toFixed(2),
+      predictedTotal: predictedTotal.toFixed(1),
+      vsVegas: (predictedTotal - vegasFallback).toFixed(1),
+      note: 'Using STATS-BASED baseline for pick diversity'
     })
 
     return {
       run_id: runId,
       predictions: {
-        pace_exp: 100.0,
+        pace_exp: baselineDebug.expPace || 100.0,
         delta_100: 0.0,
         spread_pred_points: 0.0,
         total_pred_points: predictedTotal,
@@ -670,57 +798,47 @@ async function generatePredictions(runId: string, step3Result: any, sport: strin
           away: predictedTotal / 2 - 2
         },
         winner: 'TBD', // TOTALS don't have a winner prediction
-        conf7_score: confidenceResult.confScore
+        conf7_score: confidenceResult.confScore,
+        // NEW: Include baseline debug info for transparency
+        baseline_debug: baselineDebug
       },
       confidence: confidenceResult,
       conf_source: confSource
     }
   } else if (betType === 'SPREAD') {
-    // SPREAD: Calculate predicted margin
-    // Step 1: Start with VEGAS SPREAD as baseline (not calculated net rating)
-    //         baselineAvg = away spread (e.g., +4.5 means away is 4.5 pt underdog)
+    // SPREAD: Calculate predicted margin using STATS BASELINE
+    // Step 1: Start with STATS-BASED BASELINE (net rating + HCA)
+    //         statsBaseline = predicted home margin (positive = home wins by X)
     // Step 2: Add factor adjustment (edgeRaw = awayScore - homeScore from S1-S6)
-    // Step 3: Edge vs Market is calculated AFTER this in Step 5
+    // Step 3: Edge vs Market compares this prediction to Vegas in Step 5
     //
-    // Using 1.0x multiplier: factor points = game points adjustment
-    // Example: Vegas spread = +4.5 (away), edgeRaw = -2.0 → predicted = +2.5 (away closer to winning)
-
-    // USE VEGAS SPREAD AS BASELINE
-    // baselineAvg is the away team's spread from Vegas (positive = underdog, negative = favorite)
-    const vegasSpread = baselineAvg // This is the away team's spread
-
-    // Add factor adjustment from all factors (S1-S6 scores)
-    // edgeRaw = awayScoreTotal - homeScoreTotal (positive = away advantage)
-    const factorAdjustment = confidenceResult.edgeRaw
-
-    // Final predicted margin = Vegas spread - factor adjustment
-    // vegasSpread is the away team's spread (positive = underdog, e.g., +6.5)
+    // statsBaseline: positive = home favored, negative = away favored
     // factorAdjustment: positive = factors favor away, negative = factors favor home
-    // If factors favor away (+3.9), they should REDUCE the spread (away not as big an underdog)
-    // Example: vegasSpread = +6.5, factorAdjustment = +3.9 → predictedMargin = +2.6 (home wins by 2.6)
-    // Example: vegasSpread = +6.5, factorAdjustment = +8.0 → predictedMargin = -1.5 (away wins by 1.5)
-    // Positive predictedMargin = home wins by X, Negative = away wins by |X|
-    const predictedMargin = vegasSpread - factorAdjustment
+    // Subtracting positive factorAdjustment reduces home's predicted margin
+    const factorAdjustment = confidenceResult.edgeRaw
+    const predictedMargin = statsBaseline - factorAdjustment
 
     // Calculate predicted scores based on margin
-    // Assume average NBA game total is ~220 points (only used for score distribution, NOT for total prediction)
+    // Assume average NBA game total is ~220 points (only used for score distribution)
     const avgGameTotal = 220
     const predictedAwayScore = (avgGameTotal / 2) - (predictedMargin / 2)
     const predictedHomeScore = (avgGameTotal / 2) + (predictedMargin / 2)
 
-    // Determine winner based on margin - use actual team name, not 'AWAY'/'HOME'
+    // Determine winner based on margin - use actual team name
     // If predictedMargin < 0, away team wins outright
     const winner = predictedMargin < 0 ? awayTeamName : homeTeamName
 
     console.log('[WizardOrchestrator:Step4] SPREAD Prediction calculation:', {
-      vegasSpread: baselineAvg,
-      edgeRaw: confidenceResult.edgeRaw,
-      factorAdjustment,
-      predictedMargin,
-      predictedAwayScore,
-      predictedHomeScore,
+      statsBaseline: statsBaseline.toFixed(1),
+      vegasLine: vegasFallback,
+      baselineSource: baselineDebug.source,
+      edgeRaw: confidenceResult.edgeRaw.toFixed(2),
+      factorAdjustment: factorAdjustment.toFixed(2),
+      predictedMargin: predictedMargin.toFixed(1),
+      predictedAwayScore: predictedAwayScore.toFixed(1),
+      predictedHomeScore: predictedHomeScore.toFixed(1),
       winner,
-      note: 'Using Vegas spread as baseline'
+      note: 'Using STATS-BASED baseline for pick diversity'
     })
 
     return {
@@ -735,7 +853,9 @@ async function generatePredictions(runId: string, step3Result: any, sport: strin
           home: predictedHomeScore
         },
         winner, // Now contains actual team name (e.g., "Chicago Bulls")
-        conf7_score: confidenceResult.confScore
+        conf7_score: confidenceResult.confScore,
+        // NEW: Include baseline debug info for transparency
+        baseline_debug: baselineDebug
       },
       confidence: confidenceResult,
       conf_source: confSource

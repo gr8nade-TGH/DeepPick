@@ -141,6 +141,8 @@ export interface FactorComputationResult {
   factors: any[]
   factor_version: string
   baseline_avg: number // Sum of both teams' PPG (away + home)
+  // Stats bundle for baseline projection calculation
+  statsBundle?: NBAStatsBundle
   totals_debug: {
     league_anchors: {
       pace: number

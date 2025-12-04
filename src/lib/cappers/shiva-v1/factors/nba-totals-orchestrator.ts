@@ -350,6 +350,7 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
     factors: weightedFactors,
     factor_version: 'nba_totals_v1',
     baseline_avg: baselineAvg, // Add baseline_avg to return value
+    statsBundle: bundle || undefined, // Pass bundle up for stats-based baseline calculation
     totals_debug: {
       league_anchors: bundle ? {
         pace: bundle.leaguePace,
