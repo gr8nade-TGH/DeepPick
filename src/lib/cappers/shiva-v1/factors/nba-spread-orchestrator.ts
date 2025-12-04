@@ -109,7 +109,12 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
   }
 
   // All factors that require NBA stats bundle
-  const factorsRequiringBundle = ['netRatingDiff', 'turnoverDiff', 'shootingEfficiencyMomentum', 'reboundingDiff', 'fourFactorsDiff', 'momentumIndex', 'defensivePressure', 'assistEfficiency']
+  // S10, S11, S12 added for new factors (clutchShooting, scoringMargin, perimeterDefense)
+  const factorsRequiringBundle = [
+    'netRatingDiff', 'turnoverDiff', 'shootingEfficiencyMomentum', 'reboundingDiff',
+    'fourFactorsDiff', 'momentumIndex', 'defensivePressure', 'assistEfficiency',
+    'clutchShooting', 'scoringMargin', 'perimeterDefense'
+  ]
   const needsBundle = enabledFactorKeys.some(key => factorsRequiringBundle.includes(key))
 
   console.log('[SPREAD:CONDITION_CHECK]', {
