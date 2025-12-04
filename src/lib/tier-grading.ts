@@ -2,10 +2,10 @@
  * COMPREHENSIVE TIER GRADING SYSTEM (LEGACY)
  *
  * NOTE: This is the legacy 0-100 scale tier grading system.
- * For new picks, we use the confluence-based system (0-8 scale) in:
+ * For new picks, we use the confluence-based system (0-8/12 scale) in:
  * - src/lib/confluence-scoring.ts (SHIVA/AI picks)
  * - src/lib/manual-pick-confluence.ts (Manual picks)
- * - src/lib/cappers/picksmith/tier-grading.ts (PICKSMITH picks)
+ * - src/lib/cappers/deep/tier-grading.ts (DEEP meta-capper picks - 12 point scale)
  *
  * Legacy 5 Tiers (Legendary = Top):
  * 🏆 Legendary (≥85, requires 4+ units)

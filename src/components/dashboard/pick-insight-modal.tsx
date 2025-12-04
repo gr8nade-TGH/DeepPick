@@ -22,9 +22,12 @@ export function PickInsightModal({ pickId, capper, onClose }: PickInsightModalPr
         console.log('[PickInsightModal] Fetching insight card for pick:', pickId, 'capper:', capper)
 
         // Route to correct API based on capper
-        const apiPath = capper?.toLowerCase() === 'picksmith'
-          ? `/api/picksmith/insight-card/${pickId}`
-          : `/api/shiva/insight-card/${pickId}`
+        const capperLower = capper?.toLowerCase()
+        let apiPath = `/api/shiva/insight-card/${pickId}`
+
+        if (capperLower === 'deep' || capperLower === 'picksmith') {
+          apiPath = `/api/deep/insight-card/${pickId}`
+        }
 
         const response = await fetch(apiPath)
 

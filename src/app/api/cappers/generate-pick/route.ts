@@ -32,15 +32,16 @@ export async function GET(request: Request) {
     }, { status: 400 })
   }
 
-  // CRITICAL: PICKSMITH is a meta-capper that aggregates consensus from other cappers
-  // It should NOT go through the SHIVA wizard pipeline - it has its own dedicated generator
-  // See: /api/picksmith/generate and /api/cron/picksmith-auto-picks
-  if (capperId.toLowerCase() === 'picksmith') {
-    console.log(`🎯 [UNIFIED-PICK-GEN] ⚠️ PICKSMITH detected - skipping wizard pipeline`)
-    console.log(`🎯 [UNIFIED-PICK-GEN] PICKSMITH uses /api/picksmith/generate for consensus-based picks`)
+  // CRITICAL: DEEP/PICKSMITH are meta-cappers that aggregate consensus from other cappers
+  // They should NOT go through the SHIVA wizard pipeline - they have dedicated generators
+  // See: /api/deep/generate and /api/cron/deep-auto-picks
+  const capperLower = capperId.toLowerCase()
+  if (capperLower === 'picksmith' || capperLower === 'deep') {
+    console.log(`🎯 [UNIFIED-PICK-GEN] ⚠️ ${capperId} detected - skipping wizard pipeline`)
+    console.log(`🎯 [UNIFIED-PICK-GEN] ${capperId} uses /api/deep/generate for consensus-based picks`)
     return NextResponse.json({
       success: false,
-      message: 'PICKSMITH is a meta-capper and should not use the wizard pipeline. Use /api/picksmith/generate instead.',
+      message: `${capperId} is a meta-capper and should not use the wizard pipeline. Use /api/deep/generate instead.`,
       timestamp: executionTime
     })
   }
