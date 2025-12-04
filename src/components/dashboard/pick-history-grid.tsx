@@ -382,34 +382,44 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
               <div className="p-4 space-y-4 max-h-[80vh] overflow-y-auto text-sm">
                 <div className="text-center border-b border-slate-700 pb-3">
                   <h3 className="text-lg font-bold bg-gradient-to-r from-amber-400 via-purple-400 to-blue-400 text-transparent bg-clip-text">
-                    🏆 Confluence Tier System
+                    ⚔️ Pick Power Tier System
                   </h3>
                   <p className="text-[10px] text-slate-500 mt-1">Quality-based tier system — units do NOT affect tier</p>
                 </div>
 
-                {/* Tier Thresholds - New Confluence Scale */}
-                <div className="bg-slate-800/50 rounded-lg p-3 space-y-1.5">
-                  <div className="text-xs font-semibold text-slate-300 mb-2">📊 Tier Thresholds (0-8 Confluence Score)</div>
+                {/* Tier Thresholds - 1-100 Scale */}
+                <div className="bg-slate-800/50 rounded-lg p-3 space-y-2">
+                  <div className="text-xs font-semibold text-slate-300 mb-2">📊 Pick Power Tiers (1-100 Scale)</div>
                   <div className="grid grid-cols-5 gap-1.5 text-[10px]">
                     <div className="text-center p-1.5 rounded bg-amber-500/20 border border-amber-500/40">
                       <div className="text-amber-400 font-bold">🏆 Legendary</div>
-                      <div className="text-amber-300">≥7</div>
+                      <div className="text-amber-300">90+</div>
                     </div>
                     <div className="text-center p-1.5 rounded bg-purple-500/20 border border-purple-500/40">
                       <div className="text-purple-400 font-bold">💎 Elite</div>
-                      <div className="text-purple-300">6-6.9</div>
+                      <div className="text-purple-300">75-89</div>
                     </div>
                     <div className="text-center p-1.5 rounded bg-blue-500/20 border border-blue-500/40">
                       <div className="text-blue-400 font-bold">💠 Rare</div>
-                      <div className="text-blue-300">5-5.9</div>
+                      <div className="text-blue-300">60-74</div>
                     </div>
                     <div className="text-center p-1.5 rounded bg-green-500/20 border border-green-500/40">
                       <div className="text-green-400 font-bold">✦ Uncommon</div>
-                      <div className="text-green-300">4-4.9</div>
+                      <div className="text-green-300">45-59</div>
                     </div>
                     <div className="text-center p-1.5 rounded bg-slate-500/20 border border-slate-500/40">
                       <div className="text-slate-400 font-bold">◆ Common</div>
-                      <div className="text-slate-300">&lt;4</div>
+                      <div className="text-slate-300">0-44</div>
+                    </div>
+                  </div>
+                  {/* Visual tier bar */}
+                  <div className="mt-2">
+                    <div className="flex gap-0.5 h-3 rounded overflow-hidden">
+                      <div className="flex-[45] bg-slate-600/60 flex items-center justify-center text-[8px] text-slate-300 font-medium">0-44</div>
+                      <div className="flex-[15] bg-green-700/60 flex items-center justify-center text-[8px] text-green-200 font-medium">45-59</div>
+                      <div className="flex-[15] bg-blue-600/60 flex items-center justify-center text-[8px] text-blue-200 font-medium">60-74</div>
+                      <div className="flex-[15] bg-purple-600/60 flex items-center justify-center text-[8px] text-purple-200 font-medium">75-89</div>
+                      <div className="flex-[10] bg-amber-500/60 flex items-center justify-center text-[8px] text-amber-200 font-medium">90+</div>
                     </div>
                   </div>
                 </div>
@@ -420,19 +430,19 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
                   <div className="text-[10px] text-slate-300 space-y-1.5">
                     <div className="flex justify-between items-center bg-slate-800/40 px-2 py-1 rounded">
                       <span>⚡ Edge Strength (confidence score)</span>
-                      <span className="text-slate-400">0-3 pts</span>
+                      <span className="text-cyan-400">0-35 pts</span>
                     </div>
                     <div className="flex justify-between items-center bg-slate-800/40 px-2 py-1 rounded">
                       <span>🎯 Specialization Record (bet-type win rate)</span>
-                      <span className="text-slate-400">0-2 pts</span>
+                      <span className="text-cyan-400">0-20 pts</span>
                     </div>
                     <div className="flex justify-between items-center bg-slate-800/40 px-2 py-1 rounded">
                       <span>🔥 Win Streak (consecutive wins)</span>
-                      <span className="text-slate-400">0-1 pts</span>
+                      <span className="text-cyan-400">0-10 pts</span>
                     </div>
                     <div className="flex justify-between items-center bg-slate-800/40 px-2 py-1 rounded">
                       <span>🧩 Factor Alignment (% factors agree)</span>
-                      <span className="text-slate-400">-0.5 to +2 pts</span>
+                      <span className="text-cyan-400">0-35 pts</span>
                     </div>
                   </div>
                 </div>
@@ -443,19 +453,19 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
                   <div className="text-[10px] text-slate-300 space-y-1.5">
                     <div className="flex justify-between items-center bg-slate-800/40 px-2 py-1 rounded">
                       <span>💪 Bet Conviction (units risked)</span>
-                      <span className="text-slate-400">0-3 pts</span>
+                      <span className="text-green-400">0-35 pts</span>
                     </div>
                     <div className="flex justify-between items-center bg-slate-800/40 px-2 py-1 rounded">
                       <span>🎯 Specialization Record (bet-type win rate)</span>
-                      <span className="text-slate-400">0-2 pts</span>
+                      <span className="text-green-400">0-20 pts</span>
                     </div>
                     <div className="flex justify-between items-center bg-slate-800/40 px-2 py-1 rounded">
                       <span>🔥 Win Streak (consecutive wins)</span>
-                      <span className="text-slate-400">0-1 pts</span>
+                      <span className="text-green-400">0-10 pts</span>
                     </div>
                     <div className="flex justify-between items-center bg-slate-800/40 px-2 py-1 rounded">
                       <span>💰 Quality Signal (career net units)</span>
-                      <span className="text-slate-400">0-2 pts</span>
+                      <span className="text-green-400">0-35 pts</span>
                     </div>
                   </div>
                 </div>
@@ -466,19 +476,19 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
                   <div className="text-[10px] text-slate-300 space-y-1.5">
                     <div className="flex justify-between items-center bg-slate-800/40 px-2 py-1 rounded">
                       <span>🤝 Consensus Strength (# cappers agree)</span>
-                      <span className="text-slate-400">0-3 pts</span>
+                      <span className="text-purple-400">0-35 pts</span>
                     </div>
                     <div className="flex justify-between items-center bg-slate-800/40 px-2 py-1 rounded">
                       <span>🎯 Specialization Record (PICKSMITH win rate)</span>
-                      <span className="text-slate-400">0-2 pts</span>
+                      <span className="text-purple-400">0-20 pts</span>
                     </div>
                     <div className="flex justify-between items-center bg-slate-800/40 px-2 py-1 rounded">
                       <span>🔥 Win Streak (PICKSMITH streak)</span>
-                      <span className="text-slate-400">0-1 pts</span>
+                      <span className="text-purple-400">0-10 pts</span>
                     </div>
                     <div className="flex justify-between items-center bg-slate-800/40 px-2 py-1 rounded">
                       <span>💰 Quality Signal (avg capper net units)</span>
-                      <span className="text-slate-400">0-2 pts</span>
+                      <span className="text-purple-400">0-35 pts</span>
                     </div>
                   </div>
                 </div>
@@ -489,7 +499,7 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
                     <div className="text-center font-semibold text-slate-300 mb-1">✨ Key Principles</div>
                     <div>• <span className="text-green-400">Units do NOT affect tier</span> — tier = quality, units = bet size</div>
                     <div>• <span className="text-purple-400">TOTAL</span> and <span className="text-cyan-400">SPREAD</span> records tracked separately</div>
-                    <div>• All pick types use 0-8 scale with same tier thresholds</div>
+                    <div>• All pick types use 1-100 scale with same tier thresholds</div>
                     <div>• Legendary picks are genuinely rare and sharp</div>
                   </div>
                 </div>
@@ -784,50 +794,50 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
                             </span>
                           )}
                         </div>
-                        {/* Tier Formula Breakdown - Confluence Scoring */}
+                        {/* Tier Formula Breakdown - Pick Power Scoring */}
                         <div className="pt-1.5 mt-1.5 border-t border-slate-700/50">
                           <div className="text-[9px] text-slate-500 space-y-0.5">
-                            {/* Show tier breakdown - handles both confluence and legacy formats */}
+                            {/* Show tier breakdown - handles both Pick Power and legacy formats */}
                             {pick.game_snapshot?.tier_grade ? (() => {
                               const tg = pick.game_snapshot.tier_grade as any
-                              // Check if this is new confluence format (has edgePoints in breakdown)
-                              const isConfluence = tg.breakdown?.edgePoints !== undefined
+                              // Check if this is new Pick Power format (has edgePoints in breakdown)
+                              const isPickPower = tg.breakdown?.edgePoints !== undefined
 
-                              if (isConfluence) {
-                                // New Confluence Format
+                              if (isPickPower) {
+                                // New Pick Power Format (1-100 scale)
                                 const { edgePoints = 0, specPoints = 0, streakPoints = 0, alignmentPoints = 0, alignmentPct = 0 } = tg.breakdown || {}
-                                const confluenceScore = tg.confluenceScore ?? (edgePoints + specPoints + streakPoints + alignmentPoints)
+                                const pickPower = tg.confluenceScore ?? (edgePoints + specPoints + streakPoints + alignmentPoints)
 
                                 return (
                                   <>
                                     <div className="flex justify-between">
                                       <span>⚡ Edge Strength:</span>
-                                      <span className={edgePoints >= 2 ? 'text-green-400' : edgePoints >= 1 ? 'text-yellow-400' : 'text-slate-400'}>
+                                      <span className={edgePoints >= 25 ? 'text-green-400' : edgePoints >= 15 ? 'text-yellow-400' : 'text-slate-400'}>
                                         +{edgePoints.toFixed(1)}
                                       </span>
                                     </div>
                                     <div className="flex justify-between">
                                       <span>🎯 {pick.pick_type?.toUpperCase() || 'BET'} Win Rate:</span>
-                                      <span className={specPoints >= 1 ? 'text-green-400' : 'text-slate-400'}>
+                                      <span className={specPoints >= 10 ? 'text-green-400' : specPoints >= 5 ? 'text-yellow-400' : 'text-slate-400'}>
                                         +{specPoints.toFixed(1)}
                                       </span>
                                     </div>
                                     <div className="flex justify-between">
                                       <span>🔥 Win Streak:</span>
-                                      <span className={streakPoints > 0 ? 'text-green-400' : 'text-slate-400'}>
+                                      <span className={streakPoints >= 5 ? 'text-green-400' : streakPoints > 0 ? 'text-yellow-400' : 'text-slate-400'}>
                                         +{streakPoints.toFixed(1)}
                                       </span>
                                     </div>
                                     <div className="flex justify-between">
                                       <span>🧩 Factor Alignment:</span>
-                                      <span className={alignmentPoints >= 1 ? 'text-green-400' : alignmentPoints < 0 ? 'text-red-400' : 'text-yellow-400'}>
-                                        {alignmentPoints >= 0 ? '+' : ''}{alignmentPoints.toFixed(1)}
+                                      <span className={alignmentPoints >= 25 ? 'text-green-400' : alignmentPoints >= 10 ? 'text-yellow-400' : 'text-slate-400'}>
+                                        +{alignmentPoints.toFixed(1)}
                                         <span className="text-slate-600 ml-0.5">({alignmentPct}%)</span>
                                       </span>
                                     </div>
                                     <div className="flex justify-between border-t border-slate-700/50 pt-0.5 mt-0.5 font-semibold">
-                                      <span>🏆 Confluence:</span>
-                                      <span style={{ color: rarity.borderColor }}>{confluenceScore.toFixed(1)}</span>
+                                      <span>⚔️ Pick Power:</span>
+                                      <span style={{ color: rarity.borderColor }}>{Math.round(pickPower)}</span>
                                     </div>
                                   </>
                                 )
@@ -842,7 +852,7 @@ export function PickHistoryGrid({ onPickClick }: PickHistoryGridProps) {
                                       <span className="text-slate-300">{sharpScore.toFixed(1)}</span>
                                     </div>
                                     <div className="flex justify-between border-t border-slate-700/50 pt-0.5 mt-0.5 font-semibold">
-                                      <span>🏆 Tier Score:</span>
+                                      <span>⚔️ Pick Power:</span>
                                       <span style={{ color: rarity.borderColor }}>{(tg.tierScore || 0).toFixed(0)}</span>
                                     </div>
                                   </>
