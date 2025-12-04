@@ -57,8 +57,14 @@ export function computeColdShooting(bundle: any, ctx: any): any {
   const league3Pct = bundle.league3Pct || 0.35
 
   // Extract FG% data (if available, otherwise use defaults)
-  const awayFgPct = bundle.awayFgPct || 0.46
-  const homeFgPct = bundle.homeFgPct || 0.46
+  // Note: FG% from MySportsFeeds comes as whole numbers (46.5), not decimals (0.465)
+  let awayFgPct = bundle.awayFgPct || 46
+  let homeFgPct = bundle.homeFgPct || 46
+
+  // Normalize to decimal if it came as a whole percentage
+  if (awayFgPct > 1) awayFgPct = awayFgPct / 100
+  if (homeFgPct > 1) homeFgPct = homeFgPct / 100
+
   const leagueFgPct = 0.47  // NBA league average FG%
 
   // Calculate 3P% coldness (negative = cold)
