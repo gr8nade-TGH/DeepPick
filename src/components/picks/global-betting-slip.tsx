@@ -6,6 +6,8 @@ import { X, Grid3x3 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useBettingSlip } from '@/contexts/betting-slip-context'
+import { PickInsightModal } from '@/components/dashboard/pick-insight-modal'
+import { getRarityTierFromConfidence, getRarityStyleFromTier, type RarityTier } from '@/lib/tier-grading'
 
 interface Pick {
   id: string
@@ -18,10 +20,17 @@ interface Pick {
   status: string
   is_system_pick: boolean
   created_at: string
+  capper?: string
   games?: {
     away_team: { name: string; abbreviation: string }
     home_team: { name: string; abbreviation: string }
     game_start_timestamp: string
+  }
+  game_snapshot?: {
+    tier_grade?: {
+      tier?: string
+      tierScore?: number
+    }
   }
   insight_card_snapshot?: {
     metadata?: {
@@ -35,6 +44,15 @@ interface GlobalBettingSlipProps {
   isCapper: boolean
 }
 
+// Get tier from stored tier_grade or fallback to confidence calculation
+const getTierFromPick = (pick: Pick): RarityTier => {
+  if (pick.game_snapshot?.tier_grade?.tier) {
+    return pick.game_snapshot.tier_grade.tier as RarityTier
+  }
+  const confidence = parseFloat(pick.confidence) || 50
+  return getRarityTierFromConfidence(confidence)
+}
+
 export function GlobalBettingSlip({ capperId, isCapper }: GlobalBettingSlipProps) {
   const router = useRouter()
   const { selections, removeSelection, clearSelections, notifyPicksPlaced } = useBettingSlip()
@@ -45,6 +63,8 @@ export function GlobalBettingSlip({ capperId, isCapper }: GlobalBettingSlipProps
   const [stakes, setStakes] = useState<{ [id: string]: number }>({})
   const [isPlacing, setIsPlacing] = useState(false)
   const [prevSelectionCount, setPrevSelectionCount] = useState(0)
+  const [selectedPickId, setSelectedPickId] = useState<string | null>(null)
+  const [selectedCapper, setSelectedCapper] = useState<string | undefined>(undefined)
 
   // Don't show if not a capper
   if (!isCapper) return null
@@ -381,55 +401,79 @@ export function GlobalBettingSlip({ capperId, isCapper }: GlobalBettingSlipProps
                     {openPicks.map((pick) => {
                       // Detect truly manual picks via metadata flag
                       const isManualPick = pick.insight_card_snapshot?.metadata?.is_manual_pick === true
+                      // Get tier styling
+                      const tier = getTierFromPick(pick)
+                      const rarity = getRarityStyleFromTier(tier)
+                      const tierScore = pick.game_snapshot?.tier_grade?.tierScore || parseFloat(pick.confidence) || 0
 
                       return (
-                        <div key={pick.id} className="p-4 hover:bg-slate-800/50 transition-colors">
-                          {/* Pick Type Badge */}
-                          <div className="flex items-center justify-between mb-2">
-                            <span className={`text-xs font-semibold px-2 py-1 rounded ${isManualPick
-                              ? 'bg-green-600 text-white'
-                              : 'bg-blue-600 text-white'
-                              }`}>
-                              {isManualPick ? 'MANUAL' : 'GENERATED'}
-                            </span>
-                            <span className="text-xs text-slate-400">
-                              {pick.units} units
-                            </span>
+                        <div
+                          key={pick.id}
+                          className="p-4 hover:bg-slate-800/50 transition-colors cursor-pointer group"
+                          onClick={() => {
+                            setSelectedPickId(pick.id)
+                            setSelectedCapper(pick.capper)
+                          }}
+                        >
+                          <div className="flex gap-3">
+                            {/* Rarity Square - matches pick history grid */}
+                            <div
+                              className="w-10 h-10 rounded flex-shrink-0 flex items-center justify-center relative transition-transform group-hover:scale-110"
+                              style={{
+                                background: `linear-gradient(135deg, rgba(34, 211, 238, 0.85), rgba(6, 182, 212, 0.85))`,
+                                border: `2px solid ${rarity.borderColor}`,
+                                boxShadow: `0 0 8px ${rarity.glowColor}, 0 0 12px rgba(34, 211, 238, 0.3)`
+                              }}
+                            >
+                              <span className="text-white text-[10px] font-bold">{Math.round(tierScore)}</span>
+                              {/* Source indicator dot */}
+                              <span
+                                className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full ${isManualPick ? 'bg-green-400' : 'bg-purple-400'}`}
+                                style={{ boxShadow: isManualPick ? '0 0 4px rgba(74,222,128,0.8)' : '0 0 4px rgba(192,132,252,0.8)' }}
+                              />
+                            </div>
+
+                            {/* Pick Details */}
+                            <div className="flex-1 min-w-0">
+                              {/* Top row: Tier badge + units */}
+                              <div className="flex items-center justify-between mb-1">
+                                <span
+                                  className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+                                  style={{
+                                    background: `${rarity.borderColor}30`,
+                                    color: rarity.textColor.replace('text-', '').includes('-')
+                                      ? undefined
+                                      : rarity.borderColor,
+                                    borderLeft: `2px solid ${rarity.borderColor}`
+                                  }}
+                                >
+                                  {rarity.icon} {tier.toUpperCase()}
+                                </span>
+                                <span className="text-xs text-slate-400">
+                                  {pick.units}u
+                                </span>
+                              </div>
+
+                              {/* Game matchup */}
+                              {pick.games && (
+                                <div className="text-xs text-slate-300 mb-0.5">
+                                  {pick.games.away_team.abbreviation} @ {pick.games.home_team.abbreviation}
+                                </div>
+                              )}
+
+                              {/* Selection */}
+                              <div className="text-sm text-white font-semibold truncate">
+                                {pick.selection}
+                              </div>
+
+                              {/* Game time */}
+                              {pick.games && (
+                                <div className="text-[10px] text-slate-500 mt-1">
+                                  {formatGameDateTime(pick.games.game_start_timestamp)}
+                                </div>
+                              )}
+                            </div>
                           </div>
-
-                          {/* Game Info */}
-                          {pick.games && (
-                            <div className="text-sm text-white font-semibold mb-1">
-                              {pick.games.away_team.abbreviation} @ {pick.games.home_team.abbreviation}
-                            </div>
-                          )}
-
-                          {/* Pick Details */}
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <span className="text-white font-semibold">{pick.selection}</span>
-                              <span className="text-xs text-slate-400 ml-2">
-                                {pick.pick_type}
-                              </span>
-                            </div>
-                            <span className="text-xs text-slate-400">
-                              {pick.odds > 0 ? '+' : ''}{pick.odds}
-                            </span>
-                          </div>
-
-                          {/* Game Time */}
-                          {pick.games && (
-                            <div className="text-xs text-slate-500 mt-2">
-                              {formatGameDateTime(pick.games.game_start_timestamp)}
-                            </div>
-                          )}
-
-                          {/* Confidence */}
-                          {pick.confidence && (
-                            <div className="text-xs text-slate-400 mt-1">
-                              Confidence: {parseFloat(pick.confidence).toFixed(1)}/10
-                            </div>
-                          )}
                         </div>
                       )
                     })}
@@ -439,6 +483,18 @@ export function GlobalBettingSlip({ capperId, isCapper }: GlobalBettingSlipProps
             )}
           </div>
         </div>
+      )}
+
+      {/* Pick Insight Modal */}
+      {selectedPickId && (
+        <PickInsightModal
+          pickId={selectedPickId}
+          capper={selectedCapper}
+          onClose={() => {
+            setSelectedPickId(null)
+            setSelectedCapper(undefined)
+          }}
+        />
       )}
     </>
   )
