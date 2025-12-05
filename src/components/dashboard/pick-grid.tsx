@@ -5,6 +5,7 @@ import { Activity, Clock, Zap, Flame, Filter, TrendingUp, BarChart3, Info } from
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { PickInsightModal } from '@/components/dashboard/pick-insight-modal'
 import { getRarityTierFromConfidence, getRarityStyleFromTier, type RarityTier } from '@/lib/tier-grading'
+import { TierSquare } from '@/components/ui/tier-square'
 
 interface Pick {
     id: string
@@ -556,9 +557,6 @@ function HeavyAgreementBadge({ capperCount, combinedRecord }: { capperCount: num
         </div>
     )
 }
-
-// Import shared TierSquare component
-import { TierSquare } from '@/components/ui/tier-square'
 
 // Get adaptive square size based on pick count
 function getSquareSize(pickCount: number): 'sm' | 'md' | 'lg' {
