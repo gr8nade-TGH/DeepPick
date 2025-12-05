@@ -567,18 +567,19 @@ export function FactorConfigModal({
       },
       threeEnv: {
         metric: "3-point environment & volatility based on attempt rate and shooting variance",
-        formula: "envRate = (home3PAR + away3PAR)/2, rateDelta = envRate - league3PAR, shootingVariance = |home3Pct - away3Pct|, hotShootingFactor = max(0, shootingVariance - leagueVariance), combinedSignal = (2×rateDelta) + (hotShootingFactor×10), signal = tanh(combinedSignal/0.1), if signal > 0: overScore = |signal| × 5.0, underScore = 0; else: overScore = 0, underScore = |signal| × 5.0",
+        formula: "envRate = (home3PAR + away3PAR)/2, rateDelta = envRate - league3PAR, shootingVariance = |home3Pct - away3Pct|, hotShootingFactor = max(0, shootingVariance - leagueVariance), combinedSignal = (2×rateDelta) + (hotShootingFactor×10), signal = tanh(combinedSignal/0.3), if signal > 0: overScore = |signal| × 5.0, underScore = 0; else: overScore = 0, underScore = |signal| × 5.0",
         examples: [
           "| Home 3PAR | Away 3PAR | Env Rate | League 3PAR | Rate Delta | Shooting Var | Hot Factor | Signal | Over Score | Under Score | Confidence | Example Teams |",
           "|-----------|-----------|----------|-------------|------------|--------------|------------|--------|------------|-------------|------------|---------------|",
-          "| 0.45      | 0.43      | 0.44     | 0.39        | +0.05      | 0.08         | 0.03       | +0.85  | +4.25      | 0.0         | High       | High-volume 3P teams |",
-          "| 0.42      | 0.40      | 0.41     | 0.39        | +0.02      | 0.05         | 0.00       | +0.46  | +2.30      | 0.0         | Moderate   | Above avg 3P teams |",
-          "| 0.40      | 0.38      | 0.39     | 0.39        | 0.00       | 0.03         | 0.00       | 0.00   | 0.0        | 0.0         | Neutral    | League avg 3P teams |",
-          "| 0.35      | 0.33      | 0.34     | 0.39        | -0.05      | 0.02         | 0.00       | -0.85  | 0.0        | +4.25       | High       | Low-volume 3P teams |",
-          "| 0.32      | 0.30      | 0.31     | 0.39        | -0.08      | 0.01         | 0.00       | -1.00  | 0.0        | +5.00       | Maximum    | Very low 3P teams |",
+          "| 0.50      | 0.48      | 0.49     | 0.42        | +0.07      | 0.06         | 0.01       | +0.49  | +2.45      | 0.0         | Moderate   | High-volume 3P (CLE, BOS) |",
+          "| 0.46      | 0.44      | 0.45     | 0.42        | +0.03      | 0.05         | 0.00       | +0.20  | +1.00      | 0.0         | Low        | Above avg 3P teams |",
+          "| 0.43      | 0.41      | 0.42     | 0.42        | 0.00       | 0.03         | 0.00       | 0.00   | 0.0        | 0.0         | Neutral    | League avg 3P |",
+          "| 0.40      | 0.38      | 0.39     | 0.42        | -0.03      | 0.02         | 0.00       | -0.20  | 0.0        | +1.00       | Low        | Below avg 3P teams |",
+          "| 0.36      | 0.34      | 0.35     | 0.42        | -0.07      | 0.01         | 0.00       | -0.44  | 0.0        | +2.20       | Moderate   | Low-volume 3P teams |",
           "",
           "*Metric: 3-point environment based on attempt rate and shooting variance*",
-          "*Formula: envRate = (home3PAR + away3PAR)/2, rateDelta = envRate - league3PAR, shootingVariance = |home3Pct - away3Pct|, hotShootingFactor = max(0, shootingVariance - leagueVariance), combinedSignal = (2×rateDelta) + (hotShootingFactor×10), signal = tanh(combinedSignal/0.1), if signal > 0: overScore = |signal| × 5.0, underScore = 0; else: overScore = 0, underScore = |signal| × 5.0*"
+          "*Formula: envRate = (home3PAR + away3PAR)/2, rateDelta = envRate - league3PAR, combinedSignal = (2×rateDelta) + (hotShootingFactor×10), signal = tanh(combinedSignal/0.3)*",
+          "*2024-25 NBA League Average 3PAR: 0.42 (42% of shots from three)*"
         ]
       },
       whistleEnv: {

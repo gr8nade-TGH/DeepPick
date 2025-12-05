@@ -74,10 +74,15 @@ export function calculateThreePointEnvPoints(input: ThreePointEnvInput): ThreePo
 
   // Combine rate delta and shooting variance
   // Higher 3P attempt rate + hot shooting = more points scored
+  // Note: rateDelta is typically small (±0.05), hotShootingFactor is typically 0-0.10
   const combinedSignal = (2 * rateDelta) + (hotShootingFactor * 10)
 
   // Normalize using tanh for smooth saturation
-  const signal = Math.tanh(combinedSignal / 0.1) // Scale factor for sensitivity
+  // Scale factor of 0.3 means:
+  // - ±0.05 3PAR difference from league avg → ±0.10 combinedSignal → ±0.32 signal
+  // - ±0.10 3PAR difference from league avg → ±0.20 combinedSignal → ±0.58 signal
+  // Previous 0.1 scale was too aggressive (0.05 difference → 0.99 signal!)
+  const signal = Math.tanh(combinedSignal / 0.3)
 
   // Convert to over/under scores
   const overScore = signal > 0 ? Math.abs(signal) * MAX_POINTS : 0
