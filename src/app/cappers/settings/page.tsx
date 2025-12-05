@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Sparkles, Zap, Hand, Ban, Gauge, TrendingUp, Target, Home, Battery, BarChart3, Shield, Trophy, Flame, UserX, Anchor, Scale, Rocket, Castle, TrendingDown, Loader2, AlertCircle, Swords, Crown, Star, ChevronRight, Pencil, Check, X, ChevronDown, Activity, Crosshair, Repeat, RotateCcw, MapPin, Award, Shuffle, HelpCircle, AlertTriangle, Waves, Eye, Snowflake, Bomb, LineChart, Mountain, Skull, Compass, Wind, Clock, Users, ArrowLeft, Save } from 'lucide-react'
+import { Sparkles, Zap, Hand, Ban, Gauge, TrendingUp, Target, Home, Battery, BarChart3, Shield, Trophy, Flame, UserX, Anchor, Scale, Rocket, Castle, TrendingDown, Loader2, AlertCircle, Swords, Crown, Star, ChevronRight, Pencil, Check, X, ChevronDown, Activity, Crosshair, Repeat, RotateCcw, MapPin, Award, Shuffle, HelpCircle, AlertTriangle, Waves, Eye, Snowflake, Bomb, LineChart, Mountain, Skull, Compass, Wind, Clock, Users, ArrowLeft, Save, BedDouble, Thermometer } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
 
@@ -218,7 +218,9 @@ const TOTALS_ARCHETYPES: PresetConfig[] = [
   { id: 'tempo-tyrant', name: 'The Tempo Tyrant', description: 'Control the clock. Slow games = unders.', icon: Snowflake, color: 'sky', philosophy: 'Pace and defense together reveal the grind-it-out games.', totalFactors: { enabled: ['paceIndex', 'defErosion', 'offForm', 'threeEnv', 'whistleEnv'], weights: { paceIndex: 90, defErosion: 70, offForm: 50, threeEnv: 25, whistleEnv: 15 } }, spreadFactors: { enabled: [], weights: {} } },
   { id: 'injury-assassin', name: 'The Injury Assassin', description: 'Missing stars change everything.', icon: Skull, color: 'rose', philosophy: 'When key players sit, scoring collapses or explodes.', totalFactors: { enabled: ['injuryAvailability', 'defErosion', 'offForm', 'paceIndex', 'whistleEnv'], weights: { injuryAvailability: 80, defErosion: 60, offForm: 50, paceIndex: 40, whistleEnv: 20 } }, spreadFactors: { enabled: [], weights: {} } },
   { id: 'the-locksmith', name: 'The Locksmith', description: 'UNDER specialist. Defense wins and limits scoring.', icon: Shield, color: 'teal', philosophy: 'Elite defenses create low-scoring games.', totalFactors: { enabled: ['defStrength', 'coldShooting', 'injuryAvailability', 'paceIndex', 'restAdvantage'], weights: { defStrength: 80, coldShooting: 70, injuryAvailability: 50, paceIndex: 30, restAdvantage: 20 } }, spreadFactors: { enabled: [], weights: {} } },
-  { id: 'the-grinder', name: 'The Grinder', description: 'Slow games, ugly games, UNDER games.', icon: Snowflake, color: 'sky', philosophy: 'Pace is king for unders.', totalFactors: { enabled: ['paceIndex', 'coldShooting', 'defStrength', 'restAdvantage', 'injuryAvailability'], weights: { paceIndex: 70, coldShooting: 60, defStrength: 50, restAdvantage: 40, injuryAvailability: 30 } }, spreadFactors: { enabled: [], weights: {} } }
+  { id: 'the-grinder', name: 'The Grinder', description: 'Slow games, ugly games, UNDER games.', icon: Snowflake, color: 'sky', philosophy: 'Pace is king for unders.', totalFactors: { enabled: ['paceIndex', 'coldShooting', 'defStrength', 'restAdvantage', 'injuryAvailability'], weights: { paceIndex: 70, coldShooting: 60, defStrength: 50, restAdvantage: 40, injuryAvailability: 30 } }, spreadFactors: { enabled: [], weights: {} } },
+  { id: 'rest-detective', name: 'The Rest Detective', description: 'Fatigue kills. Fresh legs = easy points.', icon: BedDouble, color: 'indigo', philosophy: 'Back-to-backs and long road trips destroy performance.', totalFactors: { enabled: ['restAdvantage', 'injuryAvailability', 'defErosion', 'paceIndex', 'offForm'], weights: { restAdvantage: 80, injuryAvailability: 60, defErosion: 50, paceIndex: 35, offForm: 25 } }, spreadFactors: { enabled: [], weights: {} } },
+  { id: 'cold-hunter', name: 'The Cold Hunter', description: 'Fade the slump. Cold shooting = unders.', icon: Thermometer, color: 'blue', philosophy: 'Shooting slumps are real. Fade the brick-layers.', totalFactors: { enabled: ['coldShooting', 'threeEnv', 'defStrength', 'paceIndex', 'offForm'], weights: { coldShooting: 85, threeEnv: 55, defStrength: 45, paceIndex: 40, offForm: 25 } }, spreadFactors: { enabled: [], weights: {} } }
 ]
 
 // ============================================
@@ -601,8 +603,8 @@ export default function CapperSettingsPage() {
                   <button
                     onClick={() => setArchetypeBetType('TOTAL')}
                     className={`px-4 py-2 rounded-lg font-medium transition-all ${archetypeBetType === 'TOTAL'
-                        ? 'bg-green-500/20 text-green-400 border border-green-500/50'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                      ? 'bg-green-500/20 text-green-400 border border-green-500/50'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800'
                       }`}
                   >
                     TOTALS
@@ -610,8 +612,8 @@ export default function CapperSettingsPage() {
                   <button
                     onClick={() => setArchetypeBetType('SPREAD')}
                     className={`px-4 py-2 rounded-lg font-medium transition-all ${archetypeBetType === 'SPREAD'
-                        ? 'bg-purple-500/20 text-purple-400 border border-purple-500/50'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                      ? 'bg-purple-500/20 text-purple-400 border border-purple-500/50'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800'
                       }`}
                   >
                     SPREAD
@@ -632,8 +634,8 @@ export default function CapperSettingsPage() {
                           key={preset.id}
                           onClick={() => handlePresetSelect(preset.id, archetypeBetType)}
                           className={`p-4 rounded-xl border transition-all text-left ${isSelected
-                              ? `bg-${preset.color}-500/20 border-${preset.color}-500/50 ring-2 ring-${preset.color}-500/30`
-                              : 'bg-slate-800/50 border-slate-700 hover:border-slate-600'
+                            ? `bg-${preset.color}-500/20 border-${preset.color}-500/50 ring-2 ring-${preset.color}-500/30`
+                            : 'bg-slate-800/50 border-slate-700 hover:border-slate-600'
                             }`}
                         >
                           <Icon className={`w-6 h-6 mb-2 ${isSelected ? `text-${preset.color}-400` : 'text-slate-400'}`} />
@@ -660,8 +662,8 @@ export default function CapperSettingsPage() {
                             key={key}
                             onClick={() => setSelectedTotalsModel(key)}
                             className={`w-full p-3 rounded-lg border transition-all flex items-center gap-3 ${selectedTotalsModel === key
-                                ? 'bg-green-500/20 border-green-500/50'
-                                : 'bg-slate-800/50 border-slate-700 hover:border-slate-600'
+                              ? 'bg-green-500/20 border-green-500/50'
+                              : 'bg-slate-800/50 border-slate-700 hover:border-slate-600'
                               }`}
                           >
                             <div className={`w-10 h-10 rounded-full flex items-center justify-center ${selectedTotalsModel === key ? 'bg-green-500/30' : 'bg-slate-700'
@@ -686,8 +688,8 @@ export default function CapperSettingsPage() {
                             key={key}
                             onClick={() => setSelectedSpreadModel(key)}
                             className={`w-full p-3 rounded-lg border transition-all flex items-center gap-3 ${selectedSpreadModel === key
-                                ? 'bg-purple-500/20 border-purple-500/50'
-                                : 'bg-slate-800/50 border-slate-700 hover:border-slate-600'
+                              ? 'bg-purple-500/20 border-purple-500/50'
+                              : 'bg-slate-800/50 border-slate-700 hover:border-slate-600'
                               }`}
                           >
                             <div className={`w-10 h-10 rounded-full flex items-center justify-center ${selectedSpreadModel === key ? 'bg-purple-500/30' : 'bg-slate-700'
@@ -719,8 +721,8 @@ export default function CapperSettingsPage() {
                         key={mode}
                         onClick={() => setPickMode(mode)}
                         className={`p-4 rounded-xl border transition-all ${pickMode === mode
-                            ? 'bg-cyan-500/20 border-cyan-500/50'
-                            : 'bg-slate-800/50 border-slate-700 hover:border-slate-600'
+                          ? 'bg-cyan-500/20 border-cyan-500/50'
+                          : 'bg-slate-800/50 border-slate-700 hover:border-slate-600'
                           }`}
                       >
                         <p className={`font-medium capitalize ${pickMode === mode ? 'text-white' : 'text-slate-300'}`}>{mode}</p>
@@ -750,8 +752,8 @@ export default function CapperSettingsPage() {
                           )
                         }}
                         className={`p-2 rounded-lg border text-xs font-medium transition-all ${excludedTeams.includes(team)
-                            ? 'bg-red-500/20 border-red-500/50 text-red-400'
-                            : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:border-slate-600'
+                          ? 'bg-red-500/20 border-red-500/50 text-red-400'
+                          : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:border-slate-600'
                           }`}
                       >
                         {team}

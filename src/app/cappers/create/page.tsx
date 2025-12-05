@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/auth-context'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
-import { Sparkles, Zap, Hand, Ban, Gauge, TrendingUp, Target, Home, Battery, BarChart3, Shield, Trophy, Flame, UserX, Anchor, Scale, Rocket, Castle, TrendingDown, Loader2, AlertCircle, Swords, Crown, Star, ChevronRight, Pencil, Check, X, ChevronDown, Activity, Crosshair, Repeat, RotateCcw, MapPin, Award, Shuffle, HelpCircle, AlertTriangle, Waves, Eye, Snowflake, Bomb, LineChart, Mountain, Skull, Compass, Wind, Clock, Users } from 'lucide-react'
+import { Sparkles, Zap, Hand, Ban, Gauge, TrendingUp, Target, Home, Battery, BarChart3, Shield, Trophy, Flame, UserX, Anchor, Scale, Rocket, Castle, TrendingDown, Loader2, AlertCircle, Swords, Crown, Star, ChevronRight, Pencil, Check, X, ChevronDown, Activity, Crosshair, Repeat, RotateCcw, MapPin, Award, Shuffle, HelpCircle, AlertTriangle, Waves, Eye, Snowflake, Bomb, LineChart, Mountain, Skull, Compass, Wind, Clock, Users, BedDouble, Thermometer } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useCallback } from 'react'
 
@@ -492,6 +492,34 @@ const TOTALS_ARCHETYPES: PresetConfig[] = [
       // UNDER-FOCUSED: paceIndex (70) + coldShooting (60) + defStrength (50) + restAdvantage (40) + injury (30) = 250
       enabled: ['paceIndex', 'coldShooting', 'defStrength', 'restAdvantage', 'injuryAvailability'],
       weights: { paceIndex: 70, coldShooting: 60, defStrength: 50, restAdvantage: 40, injuryAvailability: 30 }
+    },
+    spreadFactors: { enabled: [], weights: {} }
+  },
+  {
+    id: 'rest-detective',
+    name: 'The Rest Detective',
+    description: 'Fatigue kills. Fresh legs = easy points.',
+    icon: BedDouble,
+    color: 'indigo',
+    philosophy: 'Back-to-backs and long road trips destroy performance. Fresh teams outscore tired ones. The schedule tells the story.',
+    totalFactors: {
+      // REST-FOCUSED: restAdvantage (80) + injuryAvailability (60) + defErosion (50) + paceIndex (35) + offForm (25) = 250
+      enabled: ['restAdvantage', 'injuryAvailability', 'defErosion', 'paceIndex', 'offForm'],
+      weights: { restAdvantage: 80, injuryAvailability: 60, defErosion: 50, paceIndex: 35, offForm: 25 }
+    },
+    spreadFactors: { enabled: [], weights: {} }
+  },
+  {
+    id: 'cold-hunter',
+    name: 'The Cold Hunter',
+    description: 'Fade the slump. Cold shooting = unders.',
+    icon: Thermometer,
+    color: 'blue',
+    philosophy: 'Shooting slumps are real. Teams in cold stretches don\'t suddenly heat up. Fade the brick-layers, trust the regression.',
+    totalFactors: {
+      // COLD-SHOOTING FOCUSED: coldShooting (85) + threeEnv (55) + defStrength (45) + paceIndex (40) + offForm (25) = 250
+      enabled: ['coldShooting', 'threeEnv', 'defStrength', 'paceIndex', 'offForm'],
+      weights: { coldShooting: 85, threeEnv: 55, defStrength: 45, paceIndex: 40, offForm: 25 }
     },
     spreadFactors: { enabled: [], weights: {} }
   }
