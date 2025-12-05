@@ -1,7 +1,8 @@
 # CRITICAL RULES - READ FIRST
 
-**Last Updated:** 2025-12-04 (Update #26)
+**Last Updated:** 2025-12-05 (Update #27)
 **Priority:** HIGHEST - Read before any work
+**Production URL:** https://deep-pick.vercel.app
 
 ---
 
@@ -59,11 +60,11 @@
 
 ## ?? CURRENT PRIORITIES (In Order)
 
-1. **Fix Baseline Projection System** ?? CRITICAL - NEW!
-   - All cappers picking same side (zero diversity)
-   - Change from Vegas-based to stats-based baseline
-   - Add 3 universal core factors
-   - See `docs/BASELINE_PROJECTION_FIX.md`
+1. **Fix SPREAD Pick Diversity & Confidence** ?? CRITICAL - UPDATED!
+   - SPREAD picks generating but most marked as PASS (low confidence)
+   - When picks do generate, all cappers pick same side
+   - Stats-based baseline IMPLEMENTED but diversity still low
+   - See `docs/AGENT_HANDOFF_2025-12-05.md` for investigation plan
 
 2. **Fix Factors & Pick Generation** ?? HIGH
    - Factor data pulling correctly per capper

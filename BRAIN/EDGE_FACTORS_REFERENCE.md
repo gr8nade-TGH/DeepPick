@@ -1,12 +1,12 @@
 # Sharp Siege - Edge Factors Reference
 
 **Purpose:** Quick reference for SPREAD and TOTAL pick edge factors
-**Last Updated:** 2025-12-04 (Update #26)
+**Last Updated:** 2025-12-05 (Update #27)
 **System:** SHIVA v1 Factor Engine
 
 ---
 
-## 📊 SPREAD Picks (12 Factors)
+## 📊 SPREAD Picks (13 Factors)
 
 ### 1. 📈 Net Rating Differential (30% weight)
 - **Max Points:** 5.0
@@ -59,16 +59,22 @@
 - **Calculation:** Opponent shooting efficiency allowed
 - **File:** `src/lib/factors/definitions/nba/spread/s12-perimeter-defense.ts`
 
-### 10-12. 📊 Edge vs Market - Spread
+### 10. 🏠 Home/Away Splits (S13) - **NEW**
+- **Max Points:** 5.0
+- **Description:** Home/away performance differential
+- **Calculation:** Team performance at home vs away
+- **File:** `src/lib/cappers/shiva-v1/factors/s13-home-away-splits.ts`
+
+### 11-13. 📊 Edge vs Market - Spread
 - **Max Points:** 5.0
 - **Description:** Predicted margin vs market spread (final adjustment)
 - **Calculation:** `edge = predictedMargin - marketSpread`
 
-**Note:** S4 (Home/Away Splits) was removed due to MySportsFeeds API issues. Replaced with S10-S12.
+**Note:** S4 (Home/Away Splits) was removed due to MySportsFeeds API issues. S13 is the working replacement.
 
 ---
 
-## 🏀 TOTAL Picks (7 Factors)
+## 🏀 TOTAL Picks (9 Factors)
 
 ### 1. ⏱️ Pace Index (20% weight)
 - **Max Points:** 5.0
@@ -102,6 +108,18 @@
 - **Max Points:** 5.0
 - **Description:** Predicted total vs market line (final adjustment)
 - **Calculation:** `edge = predictedTotal - marketTotalLine`
+
+### 8. 🛡️ Defensive Strength (F8) - **NEW**
+- **Max Points:** 5.0
+- **Description:** Defensive rating differential (UNDER-biased)
+- **Purpose:** Create UNDER picks to balance OVER bias
+- **File:** `src/lib/cappers/shiva-v1/factors/f8-defensive-strength.ts`
+
+### 9. 🧊 Cold Shooting (F9) - **NEW**
+- **Max Points:** 5.0
+- **Description:** Low FG% indicator (UNDER-biased)
+- **Purpose:** Identify games with poor shooting
+- **File:** `src/lib/cappers/shiva-v1/factors/f9-cold-shooting.ts`
 
 ---
 

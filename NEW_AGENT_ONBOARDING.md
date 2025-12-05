@@ -1,7 +1,8 @@
 # 🚀 Sharp Siege Development Agent - Onboarding
 
-**Date:** 2025-12-04  
-**Your Mission:** Fix baseline projection system to create pick diversity across cappers
+**Date:** 2025-12-05
+**Production URL:** https://deep-pick.vercel.app
+**Your Mission:** Fix SPREAD pick diversity and confidence issues
 
 ---
 
@@ -12,64 +13,73 @@ Read in this exact order:
 1. **BRAIN/CRITICAL_RULES.md** ⚠️ **START HERE**
    - Top priorities, 3 pick types, Factor Factory, DEEP meta-capper
    - Updated with Pick Power (1-100 scale) and DEEP (12-point scale)
+   - Production URL: https://deep-pick.vercel.app
 
-2. **docs/BASELINE_PROJECTION_FIX.md** 🎯 **YOUR PRIMARY TASK**
-   - The Problem: All cappers picking same side
-   - Root Cause: Using Vegas as baseline instead of team stats
-   - The Fix: Stats-based baseline + 3 universal core factors
-   - Files to modify with exact paths
+2. **docs/AGENT_HANDOFF_2025-12-05.md** 🎯 **YOUR PRIMARY TASK**
+   - The Problem: SPREAD picks mostly PASS, same-side when they generate
+   - Recent fixes: REST DAYS bug, OVER bias, UI bugs
+   - Investigation plan: Confidence thresholds, factor weights, S13 factor
+   - Testing commands provided
 
-3. **BRAIN/UPDATE_LOG.md** (Update #26 section)
-   - Recent changes: DEEP meta-capper, Pick Power system, S10-S12 factors
-   - 12 SPREAD factors, 7 TOTALS factors
+3. **BRAIN/UPDATE_LOG.md** (Update #27 section)
+   - Stats-based baseline IMPLEMENTED (6 models)
+   - S13 Home/Away Splits added
+   - F8/F9 UNDER-biased factors added
+   - 13 SPREAD factors, 9 TOTALS factors
 
 4. **BRAIN/EDGE_FACTORS_REFERENCE.md**
-   - All 12 SPREAD factors (S1-S3, S5-S7, S10-S12)
-   - All 7 TOTALS factors (F1-F7)
+   - All 13 SPREAD factors (S1-S3, S5-S7, S10-S13)
+   - All 9 TOTALS factors (F1-F9)
 
 ---
 
 ## 🎯 YOUR PRIMARY TASK
 
 ### The Problem:
-All 7 cappers generating **identical picks** (e.g., all picking MEM +10). Zero diversity.
+**SPREAD picks generating but most marked as PASS (low confidence). When picks do generate, all cappers pick same side.**
 
-### Root Cause:
-Current code uses **Vegas line as baseline** instead of building independent projection from team stats.
+### What's Already Fixed:
+✅ **Stats-based baseline IMPLEMENTED** - 6 baseline models available
+✅ **REST DAYS bug fixed** - Now using daily endpoints
+✅ **OVER bias fixed** - Updated league averages, adjusted scale factors
+✅ **S13 Home/Away Splits added** - Working replacement for broken S4
+✅ **F8/F9 UNDER factors added** - Defensive Strength, Cold Shooting
 
-**File:** `src/lib/cappers/shiva-wizard-orchestrator.ts` (lines 613-615, 688-703)
+### Current Issue:
+Despite baseline diversity, SPREAD picks still have:
+1. **Low confidence** - Most picks marked as PASS after recalibration
+2. **Same-side picks** - When picks do generate, all cappers agree
 
-### The Fix (3 Steps):
+### Investigation Plan:
 
-**Step 1: Stats-Based Baseline (NOT Vegas)**
-```typescript
-function calculateBaseline(homeTeam: Stats, awayTeam: Stats): number {
-  const netRatingDiff = homeTeam.netRating - awayTeam.netRating
-  const homeCourtAdj = 3.0 // NBA average HCA
-  return netRatingDiff + homeCourtAdj
-}
+**Step 1: Test SPREAD Pick Generation**
+```powershell
+# Test IFRIT SPREAD
+Invoke-WebRequest -Uri "https://deep-pick.vercel.app/api/cappers/generate-pick?capperId=ifrit&sport=NBA&betType=SPREAD" -Method GET -UseBasicParsing -TimeoutSec 180
+
+# Test NEXUS SPREAD
+Invoke-WebRequest -Uri "https://deep-pick.vercel.app/api/cappers/generate-pick?capperId=nexus&sport=NBA&betType=SPREAD" -Method GET -UseBasicParsing -TimeoutSec 180
 ```
 
-**Step 2: Apply 3 Core Factors (Universal for ALL cappers)**
-- Home Court Advantage (confirmed)
-- Pace Environment (decision needed)
-- Scoring Environment (decision needed)
+**Step 2: Check Confidence Recalibration**
+- File: `src/lib/cappers/shiva-wizard-orchestrator.ts`
+- Look for confidence thresholds (currently PASS if < 5.0)
+- SPREAD may need lower threshold than TOTALS
 
-**Step 3: Apply Capper-Specific Factors**
-- Each capper's archetype weights different factors
-- Different magnitudes → different sides of Vegas → **DIVERSITY!**
+**Step 3: Verify SPREAD Factor Weights**
+- File: `src/app/cappers/settings/page.tsx`
+- Check if all cappers have similar SPREAD archetypes
+- Ensure weights sum to 250% for each capper
 
-### Files to Modify:
+**Step 4: Test S13 Factor Computation**
+- File: `src/lib/cappers/shiva-v1/factors/s13-home-away-splits.ts`
+- Verify it's computing correctly
+- Check if it's contributing to diversity
 
-1. `src/lib/cappers/shiva-wizard-orchestrator.ts` - Change baseline logic
-2. Create `src/lib/cappers/core-factors/` directory with 3 core factor files
-3. `src/lib/cappers/shiva-v1/confidence-calculator.ts` - May need updates
-
-### Decision Needed:
-
-Confirm **2nd and 3rd core factors** (Home Court is confirmed):
-- **Recommendation:** Pace Environment + Scoring Environment
-- See `docs/BASELINE_PROJECTION_FIX.md` for full analysis
+**Step 5: Compare Baseline Model Outputs**
+- File: `src/lib/cappers/baseline-models/`
+- Test if different models produce different SPREAD projections
+- May need to adjust model weights for SPREAD vs TOTALS
 
 ---
 
@@ -85,17 +95,25 @@ Confirm **2nd and 3rd core factors** (Home Court is confirmed):
 
 ### Factor System:
 
-- **TOTALS:** 7 factors (F1-F7)
-- **SPREAD:** 12 factors (S1-S3, S5-S7, S10-S12) - S4 removed
+- **TOTALS:** 9 factors (F1-F9) - Added F8 Defensive Strength, F9 Cold Shooting
+- **SPREAD:** 13 factors (S1-S3, S5-S7, S10-S13) - S4 removed, S13 added
 - **Factor Factory:** `src/lib/factors/` - Single source of truth
 - **Adding new factors:** 1-4 files (was 12+)
 
-### Recent Changes (Update #26):
+### Recent Changes (Update #27):
+
+- **Stats-based baseline IMPLEMENTED** - 6 baseline models for diversity
+- **S13 Home/Away Splits** - Working replacement for broken S4
+- **F8/F9 UNDER factors** - Defensive Strength, Cold Shooting
+- **REST DAYS bug fixed** - Daily endpoints instead of seasonal
+- **OVER bias fixed** - Updated league averages, adjusted scale factors
+- **OpenAI models updated** - All using gpt-4.1 now
+
+### Previous Changes (Update #26):
 
 - **PICKSMITH renamed to DEEP** - Factor Confluence Intelligence
 - **Pick Power:** 1-100 scale (was 0-8 Confluence Score)
 - **S10-S12 added:** Clutch Shooting, Scoring Margin, Perimeter Defense
-- **Factor Alignment weight:** Increased to 35% (was 25%)
 
 ---
 
@@ -149,12 +167,13 @@ git push origin main
 ## ✅ Your First Steps
 
 1. **Read the 4 critical files above** (30 min)
-2. **Ask user for live site URL**
-3. **Review baseline projection fix** in `docs/BASELINE_PROJECTION_FIX.md`
-4. **Confirm core factors decision** with user (Pace + Scoring?)
-5. **Implement the fix** in 3 files
-6. **Test on live site** - Verify pick diversity
-7. **Report back** with results
+2. **Test SPREAD pick generation** using PowerShell commands in handoff doc
+3. **Analyze API responses** - Check confidence scores, factor contributions
+4. **Investigate confidence thresholds** - Why are picks marked as PASS?
+5. **Check capper SPREAD archetypes** - Are they too similar?
+6. **Test S13 factor** - Is it computing correctly?
+7. **Compare baseline models** - Do they produce different SPREAD projections?
+8. **Report findings** with specific recommendations
 
 ---
 
@@ -169,5 +188,16 @@ git push origin main
 
 ---
 
-**Good luck! Your primary goal is to fix the baseline projection system and create pick diversity.** 🎯
+## 🔑 Key Files for Investigation
+
+- `src/lib/cappers/shiva-wizard-orchestrator.ts` - Confidence recalibration logic
+- `src/lib/cappers/shiva-v1/factors/nba-spread-orchestrator.ts` - SPREAD factor orchestration
+- `src/app/cappers/settings/page.tsx` - Capper archetypes and factor weights
+- `src/lib/cappers/shiva-v1/factors/s13-home-away-splits.ts` - New S13 factor
+- `src/lib/cappers/baseline-models/` - 6 baseline prediction models
+- `src/app/api/cappers/generate-pick/route.ts` - Pick generation API
+
+---
+
+**Good luck! Your primary goal is to fix SPREAD pick diversity and confidence issues.** 🎯
 

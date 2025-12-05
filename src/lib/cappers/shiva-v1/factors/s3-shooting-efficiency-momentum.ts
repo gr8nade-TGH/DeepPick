@@ -9,8 +9,6 @@
  */
 
 import { NBAStatsBundle, RunCtx } from './types'
-import { getTeamFormData } from '@/lib/data-sources/mysportsfeeds-stats'
-import { getTeamAbbrev } from '@/lib/data-sources/team-mappings'
 
 /**
  * Calculate shooting efficiency + momentum points for SPREAD prediction
@@ -151,44 +149,41 @@ export function calculateShootingEfficiencyMomentumPoints(params: {
  * Compute S3 (Shooting Efficiency + Momentum) for orchestrator
  * Fetches last 3 games data for momentum calculation
  */
-export async function computeShootingEfficiencyMomentum(bundle: NBAStatsBundle, ctx: RunCtx): Promise<any> {
+export function computeShootingEfficiencyMomentum(bundle: NBAStatsBundle, ctx: RunCtx): any {
   console.log('[S3:SHOOTING_EFFICIENCY_MOMENTUM] Computing shooting efficiency + momentum...')
 
-  // Validate required data from bundle (last 10 games)
-  if (!bundle.awayEfg || !bundle.awayFtr || !bundle.homeEfg || !bundle.homeFtr ||
-    !bundle.awayORtgLast10 || !bundle.homeORtgLast10) {
-    throw new Error('[S3:SHOOTING_EFFICIENCY_MOMENTUM] Missing shooting efficiency data in bundle')
+  // Validate required data from bundle (last 10 games AND last 3 games for momentum)
+  // Use typeof checks to allow 0 values (which are valid) while catching undefined/null
+  if (typeof bundle.awayEfg !== 'number' || typeof bundle.awayFtr !== 'number' ||
+    typeof bundle.homeEfg !== 'number' || typeof bundle.homeFtr !== 'number' ||
+    typeof bundle.awayORtgLast10 !== 'number' || typeof bundle.homeORtgLast10 !== 'number' ||
+    typeof bundle.awayORtgLast3 !== 'number' || typeof bundle.homeORtgLast3 !== 'number') {
+    console.error('[S3:SHOOTING_EFFICIENCY_MOMENTUM] Missing data:', {
+      awayEfg: bundle.awayEfg,
+      awayFtr: bundle.awayFtr,
+      homeEfg: bundle.homeEfg,
+      homeFtr: bundle.homeFtr,
+      awayORtgLast10: bundle.awayORtgLast10,
+      homeORtgLast10: bundle.homeORtgLast10,
+      awayORtgLast3: bundle.awayORtgLast3,
+      homeORtgLast3: bundle.homeORtgLast3
+    })
+    throw new Error('[S3:SHOOTING_EFFICIENCY_MOMENTUM] Missing shooting efficiency or momentum data in bundle')
   }
 
-  // Fetch last 3 games data for momentum calculation
-  console.log('[S3:SHOOTING_EFFICIENCY_MOMENTUM] Fetching last 3 games for momentum analysis...')
-  const awayAbbrev = getTeamAbbrev(ctx.away)
-  const homeAbbrev = getTeamAbbrev(ctx.home)
-
-  let awayRecent3, homeRecent3
-  try {
-    [awayRecent3, homeRecent3] = await Promise.all([
-      getTeamFormData(awayAbbrev, 3),
-      getTeamFormData(homeAbbrev, 3)
-    ])
-  } catch (error) {
-    console.error('[S3:SHOOTING_EFFICIENCY_MOMENTUM] Failed to fetch last 3 games:', error)
-    throw new Error('[S3:SHOOTING_EFFICIENCY_MOMENTUM] Could not fetch recent 3-game data for momentum calculation')
-  }
-
-  console.log('[S3:SHOOTING_EFFICIENCY_MOMENTUM] Last 3 games data:', {
-    awayORtg3: awayRecent3.ortg.toFixed(1),
-    homeORtg3: homeRecent3.ortg.toFixed(1)
+  console.log('[S3:SHOOTING_EFFICIENCY_MOMENTUM] Using bundle data for momentum:', {
+    awayORtg3: bundle.awayORtgLast3.toFixed(1),
+    homeORtg3: bundle.homeORtgLast3.toFixed(1)
   })
 
   const result = calculateShootingEfficiencyMomentumPoints({
     awayEfg: bundle.awayEfg,
     awayFtr: bundle.awayFtr,
-    awayORtgLast3: awayRecent3.ortg,
+    awayORtgLast3: bundle.awayORtgLast3,
     awayORtgLast10: bundle.awayORtgLast10,
     homeEfg: bundle.homeEfg,
     homeFtr: bundle.homeFtr,
-    homeORtgLast3: homeRecent3.ortg,
+    homeORtgLast3: bundle.homeORtgLast3,
     homeORtgLast10: bundle.homeORtgLast10
   })
 

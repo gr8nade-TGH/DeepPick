@@ -189,15 +189,13 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
 
   // S3: Shooting Efficiency + Momentum
   // Also handle legacy 'shootingMomentum' alias
+  // NOTE: If this factor fails, throw error - no fallback values allowed
+  // Now uses bundle's pre-fetched 3-game data (no separate API call)
   if (enabledFactorKeys.includes('shootingEfficiencyMomentum') || enabledFactorKeys.includes('shootingMomentum')) {
-    try {
-      console.log('[SPREAD:S3] Computing Shooting Efficiency + Momentum...')
-      factors.push(await computeShootingEfficiencyMomentum(bundle!, ctx))
-      console.log('[SPREAD:S3] Success')
-    } catch (error) {
-      console.error('[SPREAD:S3:ERROR]', error)
-      factorErrors.push(`shootingEfficiencyMomentum: ${error instanceof Error ? error.message : 'Unknown error'}`)
-    }
+    console.log('[SPREAD:S3] Computing Shooting Efficiency + Momentum...')
+    const s3Factor = computeShootingEfficiencyMomentum(bundle!, ctx)
+    factors.push(s3Factor)
+    console.log('[SPREAD:S3] Success')
   }
 
   // S4: Rebounding Differential

@@ -35,6 +35,8 @@ export interface NBAStatsBundle {
   // Offensive/Defensive ratings
   awayORtgLast10: number
   homeORtgLast10: number
+  awayORtgLast3?: number  // For S3 momentum calculation
+  homeORtgLast3?: number  // For S3 momentum calculation
   awayDRtgSeason: number
   homeDRtgSeason: number
 

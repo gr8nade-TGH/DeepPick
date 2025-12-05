@@ -27,19 +27,23 @@ export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<NBAStatsBundle> 
 
     console.log(`[DATA_FETCHER] Resolved teams: ${awayAbbrev} @ ${homeAbbrev}`)
 
-    // Fetch recent form (last 10 games, or fewer if not available)
+    // Fetch recent form (last 10 games AND last 3 games for momentum)
     // Early in the season, teams may not have played 10 games yet
     // The function will use whatever games are available and calculate averages accordingly
-    console.log('[DATA_FETCHER] Fetching team statistics from MySportsFeeds (up to 10 games)...')
+    console.log('[DATA_FETCHER] Fetching team statistics from MySportsFeeds (10-game and 3-game windows)...')
 
-    const [awayRecent, homeRecent] = await Promise.all([
+    const [awayRecent, homeRecent, awayRecent3, homeRecent3] = await Promise.all([
       getTeamFormData(awayAbbrev, 10),
-      getTeamFormData(homeAbbrev, 10)
+      getTeamFormData(homeAbbrev, 10),
+      getTeamFormData(awayAbbrev, 3),  // For S3 momentum calculation
+      getTeamFormData(homeAbbrev, 3)   // For S3 momentum calculation
     ])
 
     console.log('[DATA_FETCHER] Successfully fetched all team statistics')
-    console.log(`[DATA_FETCHER] ${awayAbbrev} recent: Pace=${awayRecent.pace.toFixed(1)}, ORtg=${awayRecent.ortg.toFixed(1)}`)
-    console.log(`[DATA_FETCHER] ${homeAbbrev} recent: Pace=${homeRecent.pace.toFixed(1)}, ORtg=${homeRecent.ortg.toFixed(1)}`)
+    console.log(`[DATA_FETCHER] ${awayAbbrev} L10: Pace=${awayRecent.pace.toFixed(1)}, ORtg=${awayRecent.ortg.toFixed(1)}`)
+    console.log(`[DATA_FETCHER] ${homeAbbrev} L10: Pace=${homeRecent.pace.toFixed(1)}, ORtg=${homeRecent.ortg.toFixed(1)}`)
+    console.log(`[DATA_FETCHER] ${awayAbbrev} L3: ORtg=${awayRecent3.ortg.toFixed(1)}`)
+    console.log(`[DATA_FETCHER] ${homeAbbrev} L3: ORtg=${homeRecent3.ortg.toFixed(1)}`)
 
     // Build the stats bundle
     // NOTE: Using available games (up to 10) for both recent and season to reduce API calls
@@ -55,6 +59,8 @@ export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<NBAStatsBundle> 
       // Offensive Rating
       awayORtgLast10: awayRecent.ortg,
       homeORtgLast10: homeRecent.ortg,
+      awayORtgLast3: awayRecent3.ortg,  // For S3 momentum calculation
+      homeORtgLast3: homeRecent3.ortg,  // For S3 momentum calculation
       leagueORtg: 114.5, // 2024-25 NBA league average ORtg (was 110.0 - outdated!)
 
       // Defensive Rating (using 10-game for season)
