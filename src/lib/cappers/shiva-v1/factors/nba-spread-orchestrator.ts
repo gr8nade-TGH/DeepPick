@@ -72,8 +72,8 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
           pace: 99.5,
           ORtg: 114.5,
           DRtg: 114.5,
-          threePAR: 0.39,
-          FTr: 0.22,
+          threePAR: 0.42,
+          FTr: 0.26,
           threePstdev: 0.036
         },
         injury_impact: { defenseImpactA: 0, defenseImpactB: 0, summary: 'No factors enabled', rawResponse: '' },
@@ -365,8 +365,8 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
       pace: 99.5,
       ORtg: 114.5,
       DRtg: 114.5,
-      threePAR: 0.39,
-      FTr: 0.22,
+      threePAR: 0.42,
+      FTr: 0.26,
       threePstdev: 0.036
     },
     injury_impact: { defenseImpactA: 0, defenseImpactB: 0, summary: 'Not implemented for spread yet', rawResponse: '' },

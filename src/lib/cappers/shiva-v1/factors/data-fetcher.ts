@@ -63,16 +63,18 @@ export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<NBAStatsBundle> 
       leagueDRtg: 114.5, // 2024-25 NBA league average DRtg (was 110.0 - outdated!)
 
       // 3-Point Stats
+      // 2024-25 NBA league average 3PAR is ~0.42 (teams now take 42% of shots from 3)
+      // This is up from ~0.39 in previous seasons
       away3PAR: awayRecent.threeP_rate,
       home3PAR: homeRecent.threeP_rate,
-      awayOpp3PAR: 0.39, // TODO: Fetch opponent stats in future enhancement
-      homeOpp3PAR: 0.39,
+      awayOpp3PAR: 0.42, // Updated for 2024-25
+      homeOpp3PAR: 0.42,
       away3Pct: awayRecent.threeP_pct,
       home3Pct: homeRecent.threeP_pct,
       away3PctLast10: awayRecent.threeP_pct,
       home3PctLast10: homeRecent.threeP_pct,
-      league3PAR: 0.39, // NBA league average (static)
-      league3Pct: 0.35, // NBA league average (static)
+      league3PAR: 0.42, // 2024-25 NBA league average (was 0.39 - outdated!)
+      league3Pct: 0.365, // 2024-25 NBA league average 3P% (was 0.35)
       league3Pstdev: 0.036, // NBA league standard deviation (static)
 
       // Free Throw Rate

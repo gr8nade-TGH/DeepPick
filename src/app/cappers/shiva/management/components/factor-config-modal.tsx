@@ -457,16 +457,17 @@ export function FactorConfigModal({
         examples: [
           "| Expected Pace | League Pace | Delta | Signal | Over Score | Under Score | Confidence | Example Teams |",
           "|---------------|-------------|-------|--------|------------|-------------|------------|---------------|",
-          "| 108.0         | 100.1       | +7.9  | +0.70  | +3.50      | 0.0         | High       | Fast teams    |",
-          "| 105.0         | 100.1       | +4.9  | +0.55  | +2.75      | 0.0         | Moderate   | Above avg     |",
-          "| 102.0         | 100.1       | +1.9  | +0.24  | +1.20      | 0.0         | Low        | Slightly fast |",
-          "| 100.1         | 100.1       | 0.0   | 0.0    | 0.0        | 0.0         | Neutral    | League avg    |",
-          "| 98.0          | 100.1       | -2.1  | -0.26  | 0.0        | +1.30       | Low        | Slightly slow |",
-          "| 95.0          | 100.1       | -5.1  | -0.56  | 0.0        | +2.80       | Moderate   | Below avg     |",
-          "| 92.0          | 100.1       | -8.1  | -0.78  | 0.0        | +3.90       | High       | Slow teams    |",
+          "| 107.5         | 99.5        | +8.0  | +0.76  | +3.80      | 0.0         | High       | Fast teams (IND, ATL)    |",
+          "| 104.5         | 99.5        | +5.0  | +0.56  | +2.80      | 0.0         | Moderate   | Above avg (SAC, MIL)     |",
+          "| 102.0         | 99.5        | +2.5  | +0.30  | +1.50      | 0.0         | Low        | Slightly fast |",
+          "| 99.5          | 99.5        | 0.0   | 0.0    | 0.0        | 0.0         | Neutral    | League avg    |",
+          "| 97.0          | 99.5        | -2.5  | -0.30  | 0.0        | +1.50       | Low        | Slightly slow |",
+          "| 94.5          | 99.5        | -5.0  | -0.56  | 0.0        | +2.80       | Moderate   | Below avg (ORL, CLE)     |",
+          "| 91.5          | 99.5        | -8.0  | -0.76  | 0.0        | +3.80       | High       | Slow teams    |",
           "",
           "*Metric: Expected game pace based on both teams' recent pace (last 10 games)*",
-          "*Formula: expPace = (awayPace + homePace)/2, signal = tanh((expPace - leaguePace)/8), if signal > 0: overScore = |signal| × 5.0, underScore = 0; else: overScore = 0, underScore = |signal| × 5.0*"
+          "*Formula: expPace = (awayPace + homePace)/2, signal = tanh((expPace - leaguePace)/8), if signal > 0: overScore = |signal| × 5.0, underScore = 0; else: overScore = 0, underScore = |signal| × 5.0*",
+          "*2024-25 NBA League Average Pace: 99.5*"
         ]
       },
       offForm: {
@@ -475,18 +476,17 @@ export function FactorConfigModal({
         examples: [
           "| Combined ORtg | League ORtg | Advantage | Signal | Over Score | Under Score | Confidence | Example Teams |",
           "|---------------|-------------|-----------|--------|------------|-------------|------------|---------------|",
-          "| 125.0         | 110.0       | +15.0     | +0.91  | +4.55      | 0.0         | High       | Hot offenses  |",
-          "| 120.0         | 110.0       | +10.0     | +0.76  | +3.80      | 0.0         | High       | Above avg     |",
-          "| 115.0         | 110.0       | +5.0      | +0.46  | +2.30      | 0.0         | Moderate   | Slightly hot  |",
-          "| 112.0         | 110.0       | +2.0      | +0.20  | +1.00      | 0.0         | Low        | Mildly hot    |",
-          "| 110.0         | 110.0       | 0.0       | 0.0    | 0.0        | 0.0         | Neutral    | League avg    |",
-          "| 108.0         | 110.0       | -2.0      | -0.20  | 0.0        | +1.00       | Low        | Mildly cold   |",
-          "| 105.0         | 110.0       | -5.0      | -0.46  | 0.0        | +2.30       | Moderate   | Slightly cold |",
-          "| 100.0         | 110.0       | -10.0     | -0.76  | 0.0        | +3.80       | High       | Below avg     |",
-          "| 95.0          | 110.0       | -15.0     | -0.91  | 0.0        | +4.55       | High       | Cold offenses  |",
+          "| 124.5         | 114.5       | +10.0     | +0.76  | +3.80      | 0.0         | High       | Hot offenses (BOS, OKC)  |",
+          "| 119.5         | 114.5       | +5.0      | +0.46  | +2.30      | 0.0         | Moderate   | Above avg (NYK, CLE)     |",
+          "| 117.0         | 114.5       | +2.5      | +0.24  | +1.20      | 0.0         | Low        | Slightly hot  |",
+          "| 114.5         | 114.5       | 0.0       | 0.0    | 0.0        | 0.0         | Neutral    | League avg    |",
+          "| 112.0         | 114.5       | -2.5      | -0.24  | 0.0        | +1.20       | Low        | Slightly cold |",
+          "| 109.5         | 114.5       | -5.0      | -0.46  | 0.0        | +2.30       | Moderate   | Below avg (WAS, POR)     |",
+          "| 104.5         | 114.5       | -10.0     | -0.76  | 0.0        | +3.80       | High       | Cold offenses (UTA, DET) |",
           "",
           "*Metric: Combined team offensive efficiency vs league average (last 10 games)*",
-          "*Formula: combinedORtg = (homeORtg + awayORtg)/2, advantage = combinedORtg - leagueORtg, signal = tanh(advantage/10), if signal > 0: overScore = |signal| × 5.0, underScore = 0; else: overScore = 0, underScore = |signal| × 5.0*"
+          "*Formula: combinedORtg = (homeORtg + awayORtg)/2, advantage = combinedORtg - leagueORtg, signal = tanh(advantage/10), if signal > 0: overScore = |signal| × 5.0, underScore = 0; else: overScore = 0, underScore = |signal| × 5.0*",
+          "*2024-25 NBA League Average ORtg: 114.5*"
         ]
       },
       defErosion: {
@@ -495,17 +495,17 @@ export function FactorConfigModal({
         examples: [
           "| Combined DRtg | League DRtg | DRtg Delta | Injury Impact | Total Erosion | Signal | Over Score | Under Score | Confidence | Example Teams |",
           "|---------------|-------------|------------|---------------|---------------|--------|------------|-------------|------------|---------------|",
-          "| 120.0         | 110.0       | +10.0      | -0.5          | +5.5          | +0.60  | +3.00      | 0.0         | High       | Weak defense + injuries |",
-          "| 115.0         | 110.0       | +5.0       | -0.2          | +2.9          | +0.35  | +1.75      | 0.0         | Moderate   | Below avg + minor injuries |",
-          "| 112.0         | 110.0       | +2.0       | 0.0           | +1.4          | +0.17  | +0.85      | 0.0         | Low        | Slightly weak |",
-          "| 110.0         | 110.0       | 0.0        | 0.0           | 0.0           | 0.0    | 0.0        | 0.0         | Neutral    | League avg |",
-          "| 108.0         | 110.0       | -2.0       | 0.0           | -1.4          | -0.17  | 0.0        | +0.85       | Low        | Slightly strong |",
-          "| 105.0         | 110.0       | -5.0       | +0.2          | -2.9          | -0.35  | 0.0        | +1.75       | Moderate   | Above avg + healthy |",
-          "| 100.0         | 110.0       | -10.0      | +0.5          | -5.5          | -0.60  | 0.0        | +3.00       | High       | Strong defense + healthy |",
-          "| 95.0          | 110.0       | -15.0      | +0.8          | -8.1          | -0.85  | 0.0        | +4.25       | Very High  | Elite defense + very healthy |",
+          "| 122.5         | 114.5       | +8.0       | -0.5          | +4.1          | +0.47  | +2.35      | 0.0         | Moderate   | Weak defense + injuries (WAS, POR) |",
+          "| 119.5         | 114.5       | +5.0       | -0.2          | +2.9          | +0.35  | +1.75      | 0.0         | Moderate   | Below avg + minor injuries |",
+          "| 117.0         | 114.5       | +2.5       | 0.0           | +1.75         | +0.21  | +1.05      | 0.0         | Low        | Slightly weak |",
+          "| 114.5         | 114.5       | 0.0        | 0.0           | 0.0           | 0.0    | 0.0        | 0.0         | Neutral    | League avg |",
+          "| 112.0         | 114.5       | -2.5       | 0.0           | -1.75         | -0.21  | 0.0        | +1.05       | Low        | Slightly strong |",
+          "| 109.5         | 114.5       | -5.0       | +0.2          | -2.9          | -0.35  | 0.0        | +1.75       | Moderate   | Above avg + healthy (OKC, BOS) |",
+          "| 106.5         | 114.5       | -8.0       | +0.5          | -4.1          | -0.47  | 0.0        | +2.35       | Moderate   | Strong defense + healthy (CLE, MIN) |",
           "",
           "*Metric: Combined defensive rating decline + injury impact (season + AI analysis)*",
-          "*Formula: combinedDRtg = (homeDRtg + awayDRtg)/2, drtgDelta = combinedDRtg - leagueDRtg, totalErosion = 0.7×drtgDelta + 0.3×injuryImpact×10, signal = tanh(totalErosion/8), if signal > 0: overScore = |signal| × 5.0, underScore = 0; else: overScore = 0, underScore = |signal| × 5.0*"
+          "*Formula: combinedDRtg = (homeDRtg + awayDRtg)/2, drtgDelta = combinedDRtg - leagueDRtg, totalErosion = 0.7×drtgDelta + 0.3×injuryImpact×10, signal = tanh(totalErosion/8), if signal > 0: overScore = |signal| × 5.0, underScore = 0; else: overScore = 0, underScore = |signal| × 5.0*",
+          "*2024-25 NBA League Average DRtg: 114.5*"
         ]
       },
       edgeVsMarket: {

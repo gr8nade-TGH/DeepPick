@@ -129,12 +129,13 @@ export function computeThreePointEnv(bundle: any, ctx: RunCtx): FactorComputatio
   }
 
   // Extract data from NBA Stats API bundle
-  const home3PAR = bundle.home3PAR || 0.39
-  const away3PAR = bundle.away3PAR || 0.39
-  const home3Pct = bundle.home3Pct || 0.35
-  const away3Pct = bundle.away3Pct || 0.35
-  const league3PAR = bundle.league3PAR || 0.39
-  const league3Pct = bundle.league3Pct || 0.35
+  // 2024-25 NBA league averages: 3PAR ~0.42, 3P% ~0.365
+  const home3PAR = bundle.home3PAR || 0.42
+  const away3PAR = bundle.away3PAR || 0.42
+  const home3Pct = bundle.home3Pct || 0.365
+  const away3Pct = bundle.away3Pct || 0.365
+  const league3PAR = bundle.league3PAR || 0.42
+  const league3Pct = bundle.league3Pct || 0.365
 
   // Calculate 3P environment points
   const result = calculateThreePointEnvPoints({
