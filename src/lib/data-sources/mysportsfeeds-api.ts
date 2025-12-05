@@ -280,10 +280,40 @@ export async function fetchTeamGameLogs(teamAbbrev: string, limit: number = 10):
   console.log(`[MySportsFeeds] Current date: ${new Date().toISOString()}`)
   console.log(`[MySportsFeeds] Using season keyword: ${season}`)
 
-  // CRITICAL: Add sort=game.starttime.D to get games in DESCENDING order (newest first)
-  // Without this, the API returns games in ascending order (oldest first), which causes
-  // rest days calculation to use the first games of the season instead of the most recent
-  const result = await fetchMySportsFeeds(`team_gamelogs.json?team=${teamAbbrev}&limit=${limit}&sort=game.starttime.D`, season)
+  // CRITICAL FIX: The MySportsFeeds API sort parameter may not work for seasonal team_gamelogs
+  // Fetch ALL games (no limit), sort them ourselves by date descending, then take the last N
+  // This ensures we always get the MOST RECENT games, not the first games of the season
+  const result = await fetchMySportsFeeds(`team_gamelogs.json?team=${teamAbbrev}`, season)
+
+  // Sort games by startTime descending (newest first) and take only the requested limit
+  if (result.gamelogs && result.gamelogs.length > 0) {
+    // Sort by game startTime descending
+    result.gamelogs.sort((a: any, b: any) => {
+      const dateA = new Date(a.game?.startTime || 0).getTime()
+      const dateB = new Date(b.game?.startTime || 0).getTime()
+      return dateB - dateA // Descending order (newest first)
+    })
+
+    // Log the first (most recent) and last (oldest) games for debugging
+    const firstGame = result.gamelogs[0]
+    const lastGame = result.gamelogs[result.gamelogs.length - 1]
+    console.log(`[MySportsFeeds] Sorted ${result.gamelogs.length} games for ${teamAbbrev}:`, {
+      mostRecentGame: {
+        gameId: firstGame.game?.id,
+        startTime: firstGame.game?.startTime
+      },
+      oldestGame: {
+        gameId: lastGame.game?.id,
+        startTime: lastGame.game?.startTime
+      }
+    })
+
+    // Take only the requested number of games (most recent)
+    if (result.gamelogs.length > limit) {
+      result.gamelogs = result.gamelogs.slice(0, limit)
+      console.log(`[MySportsFeeds] Trimmed to ${limit} most recent games for ${teamAbbrev}`)
+    }
+  }
 
   // Log what we got back
   console.log(`[MySportsFeeds] Team game logs response for ${teamAbbrev}:`, {
@@ -300,7 +330,19 @@ export async function fetchTeamGameLogs(teamAbbrev: string, limit: number = 10):
   // If current season has no games, fall back to previous season
   if (!result.gamelogs || result.gamelogs.length === 0) {
     console.log(`[MySportsFeeds] No games found for ${teamAbbrev} in current season, trying previous season (2024-2025-regular)...`)
-    const previousSeasonResult = await fetchMySportsFeeds(`team_gamelogs.json?team=${teamAbbrev}&limit=${limit}&sort=game.starttime.D`, '2024-2025-regular')
+    const previousSeasonResult = await fetchMySportsFeeds(`team_gamelogs.json?team=${teamAbbrev}`, '2024-2025-regular')
+
+    // Sort previous season games too
+    if (previousSeasonResult.gamelogs && previousSeasonResult.gamelogs.length > 0) {
+      previousSeasonResult.gamelogs.sort((a: any, b: any) => {
+        const dateA = new Date(a.game?.startTime || 0).getTime()
+        const dateB = new Date(b.game?.startTime || 0).getTime()
+        return dateB - dateA
+      })
+      if (previousSeasonResult.gamelogs.length > limit) {
+        previousSeasonResult.gamelogs = previousSeasonResult.gamelogs.slice(0, limit)
+      }
+    }
 
     console.log(`[MySportsFeeds] Previous season response for ${teamAbbrev}:`, {
       hasGamelogs: !!previousSeasonResult.gamelogs,
