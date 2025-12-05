@@ -736,9 +736,23 @@ function calculateStatsBaseline(
       }
     }
 
-    const baseline = Math.max(180, Math.min(260, rawBaseline))
-    console.log(`[StatsBaseline:TOTALS:${model}]`, { ...debugInfo, clampedBaseline: baseline.toFixed(1) })
-    return { baseline, debug: { source: 'stats', ...debugInfo, clampedBaseline: baseline } }
+    // FIX: Regress toward Vegas to avoid systematic OVER bias
+    // Raw stats-based calculations tend to overestimate totals by 5-15 points
+    // Blend: 40% raw stats + 60% Vegas to stay grounded
+    // This preserves model diversity while avoiding extreme predictions
+    const REGRESSION_WEIGHT = 0.60 // 60% Vegas, 40% stats
+    const regressedBaseline = (rawBaseline * (1 - REGRESSION_WEIGHT)) + (vegasFallback * REGRESSION_WEIGHT)
+
+    const baseline = Math.max(180, Math.min(260, regressedBaseline))
+    console.log(`[StatsBaseline:TOTALS:${model}]`, {
+      ...debugInfo,
+      rawBaseline: rawBaseline.toFixed(1),
+      vegas: vegasFallback,
+      regressionWeight: REGRESSION_WEIGHT,
+      regressedBaseline: regressedBaseline.toFixed(1),
+      finalBaseline: baseline.toFixed(1)
+    })
+    return { baseline, debug: { source: 'stats', ...debugInfo, rawBaseline, regressedBaseline, finalBaseline: baseline } }
 
   } else if (betType === 'SPREAD') {
     const model = (baselineModel as SpreadBaselineModel) || 'net-rating'
