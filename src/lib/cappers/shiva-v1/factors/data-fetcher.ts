@@ -76,11 +76,12 @@ export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<NBAStatsBundle> 
       league3Pstdev: 0.036, // NBA league standard deviation (static)
 
       // Free Throw Rate
+      // 2024-25 NBA league average FTr is ~0.26 (FTA/FGA ratio)
       awayFTr: awayRecent.ft_rate,
       homeFTr: homeRecent.ft_rate,
-      awayOppFTr: 0.22, // TODO: Fetch opponent stats in future enhancement
-      homeOppFTr: 0.22,
-      leagueFTr: 0.22, // NBA league average (static)
+      awayOppFTr: 0.26, // TODO: Fetch opponent stats in future enhancement
+      homeOppFTr: 0.26,
+      leagueFTr: 0.26, // 2024-25 NBA league average (updated from 0.22)
 
       // Turnover data (for SPREAD factor S2)
       awayTOVLast10: awayRecent.avgTurnovers,

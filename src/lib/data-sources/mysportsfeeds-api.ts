@@ -280,7 +280,10 @@ export async function fetchTeamGameLogs(teamAbbrev: string, limit: number = 10):
   console.log(`[MySportsFeeds] Current date: ${new Date().toISOString()}`)
   console.log(`[MySportsFeeds] Using season keyword: ${season}`)
 
-  const result = await fetchMySportsFeeds(`team_gamelogs.json?team=${teamAbbrev}&limit=${limit}`, season)
+  // CRITICAL: Add sort=game.starttime.D to get games in DESCENDING order (newest first)
+  // Without this, the API returns games in ascending order (oldest first), which causes
+  // rest days calculation to use the first games of the season instead of the most recent
+  const result = await fetchMySportsFeeds(`team_gamelogs.json?team=${teamAbbrev}&limit=${limit}&sort=game.starttime.D`, season)
 
   // Log what we got back
   console.log(`[MySportsFeeds] Team game logs response for ${teamAbbrev}:`, {
@@ -297,7 +300,7 @@ export async function fetchTeamGameLogs(teamAbbrev: string, limit: number = 10):
   // If current season has no games, fall back to previous season
   if (!result.gamelogs || result.gamelogs.length === 0) {
     console.log(`[MySportsFeeds] No games found for ${teamAbbrev} in current season, trying previous season (2024-2025-regular)...`)
-    const previousSeasonResult = await fetchMySportsFeeds(`team_gamelogs.json?team=${teamAbbrev}&limit=${limit}`, '2024-2025-regular')
+    const previousSeasonResult = await fetchMySportsFeeds(`team_gamelogs.json?team=${teamAbbrev}&limit=${limit}&sort=game.starttime.D`, '2024-2025-regular')
 
     console.log(`[MySportsFeeds] Previous season response for ${teamAbbrev}:`, {
       hasGamelogs: !!previousSeasonResult.gamelogs,

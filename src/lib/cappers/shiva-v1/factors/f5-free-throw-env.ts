@@ -105,9 +105,10 @@ export function computeWhistleEnv(bundle: any, ctx: RunCtx): FactorComputation {
   }
 
   // Extract data from NBA Stats API bundle
-  const homeFTr = bundle.homeFTr || 0.22
-  const awayFTr = bundle.awayFTr || 0.22
-  const leagueFTr = bundle.leagueFTr || 0.22
+  // 2024-25 NBA league average FTr is ~0.26
+  const homeFTr = bundle.homeFTr || 0.26
+  const awayFTr = bundle.awayFTr || 0.26
+  const leagueFTr = bundle.leagueFTr || 0.26
 
   // Calculate FT environment points
   const result = calculateFreeThrowEnvPoints({
