@@ -336,9 +336,11 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
       totalOppFGM += oppFGM
 
       // Track game dates for rest calculation (F7)
+      // MySportsFeeds API returns startTime under game.schedule.startTime, NOT game.startTime
       const game = gameLog.game
-      if (game?.startTime) {
-        gameDates.push(new Date(game.startTime))
+      const gameStartTime = game?.schedule?.startTime || game?.startTime
+      if (gameStartTime) {
+        gameDates.push(new Date(gameStartTime))
       }
 
       // Track wins/losses for momentum (S7)

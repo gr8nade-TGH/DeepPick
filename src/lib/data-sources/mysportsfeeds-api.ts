@@ -287,24 +287,27 @@ export async function fetchTeamGameLogs(teamAbbrev: string, limit: number = 10):
 
   // Sort games by startTime descending (newest first) and take only the requested limit
   if (result.gamelogs && result.gamelogs.length > 0) {
-    // Sort by game startTime descending
+    // Sort by game.schedule.startTime descending (API docs show startTime is under game.schedule)
     result.gamelogs.sort((a: any, b: any) => {
-      const dateA = new Date(a.game?.startTime || 0).getTime()
-      const dateB = new Date(b.game?.startTime || 0).getTime()
+      // MySportsFeeds API returns startTime under game.schedule.startTime, NOT game.startTime
+      const dateA = new Date(a.game?.schedule?.startTime || a.game?.startTime || 0).getTime()
+      const dateB = new Date(b.game?.schedule?.startTime || b.game?.startTime || 0).getTime()
       return dateB - dateA // Descending order (newest first)
     })
 
     // Log the first (most recent) and last (oldest) games for debugging
     const firstGame = result.gamelogs[0]
     const lastGame = result.gamelogs[result.gamelogs.length - 1]
+    const firstStartTime = firstGame.game?.schedule?.startTime || firstGame.game?.startTime
+    const lastStartTime = lastGame.game?.schedule?.startTime || lastGame.game?.startTime
     console.log(`[MySportsFeeds] Sorted ${result.gamelogs.length} games for ${teamAbbrev}:`, {
       mostRecentGame: {
-        gameId: firstGame.game?.id,
-        startTime: firstGame.game?.startTime
+        gameId: firstGame.game?.id || firstGame.game?.schedule?.id,
+        startTime: firstStartTime
       },
       oldestGame: {
-        gameId: lastGame.game?.id,
-        startTime: lastGame.game?.startTime
+        gameId: lastGame.game?.id || lastGame.game?.schedule?.id,
+        startTime: lastStartTime
       }
     })
 
@@ -332,11 +335,11 @@ export async function fetchTeamGameLogs(teamAbbrev: string, limit: number = 10):
     console.log(`[MySportsFeeds] No games found for ${teamAbbrev} in current season, trying previous season (2024-2025-regular)...`)
     const previousSeasonResult = await fetchMySportsFeeds(`team_gamelogs.json?team=${teamAbbrev}`, '2024-2025-regular')
 
-    // Sort previous season games too
+    // Sort previous season games too (use correct field path: game.schedule.startTime)
     if (previousSeasonResult.gamelogs && previousSeasonResult.gamelogs.length > 0) {
       previousSeasonResult.gamelogs.sort((a: any, b: any) => {
-        const dateA = new Date(a.game?.startTime || 0).getTime()
-        const dateB = new Date(b.game?.startTime || 0).getTime()
+        const dateA = new Date(a.game?.schedule?.startTime || a.game?.startTime || 0).getTime()
+        const dateB = new Date(b.game?.schedule?.startTime || b.game?.startTime || 0).getTime()
         return dateB - dateA
       })
       if (previousSeasonResult.gamelogs.length > limit) {
