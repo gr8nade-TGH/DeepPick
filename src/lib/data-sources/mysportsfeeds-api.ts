@@ -269,91 +269,98 @@ export async function fetchTeamGameLogByDate(date: string, teamAbbrev: string): 
 /**
  * Fetch team game logs for last N games
  *
- * NOTE: 30-second backoff is enforced globally in fetchMySportsFeeds() for all API requests
+ * CRITICAL: The MySportsFeeds seasonal team_gamelogs endpoint has incomplete data.
+ * We must use the DAILY team_gamelogs endpoint instead, which has up-to-date stats.
+ *
+ * Strategy:
+ * 1. First get recent game schedule from games.json (1 API call)
+ * 2. Then fetch daily team_gamelogs for each game date (N API calls for N games)
  *
  * @param teamAbbrev - Team abbreviation (e.g., "BOS", "LAL")
  * @param limit - Number of games to fetch (default: 10)
  */
 export async function fetchTeamGameLogs(teamAbbrev: string, limit: number = 10): Promise<any> {
   const season = getNBASeason().season
-  console.log(`[MySportsFeeds] Fetching last ${limit} games for ${teamAbbrev} (season: ${season})`)
+  console.log(`[MySportsFeeds] Fetching last ${limit} games for ${teamAbbrev} using DAILY endpoints`)
   console.log(`[MySportsFeeds] Current date: ${new Date().toISOString()}`)
-  console.log(`[MySportsFeeds] Using season keyword: ${season}`)
 
-  // CRITICAL FIX: The MySportsFeeds API sort parameter may not work for seasonal team_gamelogs
-  // Fetch ALL games (no limit), sort them ourselves by date descending, then take the last N
-  // This ensures we always get the MOST RECENT games, not the first games of the season
-  const result = await fetchMySportsFeeds(`team_gamelogs.json?team=${teamAbbrev}`, season)
+  // Step 1: Get recent game schedule (completed games only)
+  // Look back 45 days to ensure we get enough games
+  const scheduleResult = await fetchMySportsFeeds(
+    `games.json?team=${teamAbbrev}&date=from-45-days-ago-to-today&status=final`,
+    season
+  )
 
-  // Sort games by startTime descending (newest first) and take only the requested limit
-  if (result.gamelogs && result.gamelogs.length > 0) {
-    // Sort by game.schedule.startTime descending (API docs show startTime is under game.schedule)
-    result.gamelogs.sort((a: any, b: any) => {
-      // MySportsFeeds API returns startTime under game.schedule.startTime, NOT game.startTime
-      const dateA = new Date(a.game?.schedule?.startTime || a.game?.startTime || 0).getTime()
-      const dateB = new Date(b.game?.schedule?.startTime || b.game?.startTime || 0).getTime()
-      return dateB - dateA // Descending order (newest first)
-    })
+  const games = scheduleResult.games || []
+  if (games.length === 0) {
+    console.log(`[MySportsFeeds] No completed games found for ${teamAbbrev}`)
+    return { gamelogs: [] }
+  }
 
-    // Log the first (most recent) and last (oldest) games for debugging
-    const firstGame = result.gamelogs[0]
-    const lastGame = result.gamelogs[result.gamelogs.length - 1]
-    const firstStartTime = firstGame.game?.schedule?.startTime || firstGame.game?.startTime
-    const lastStartTime = lastGame.game?.schedule?.startTime || lastGame.game?.startTime
-    console.log(`[MySportsFeeds] Sorted ${result.gamelogs.length} games for ${teamAbbrev}:`, {
-      mostRecentGame: {
-        gameId: firstGame.game?.id || firstGame.game?.schedule?.id,
-        startTime: firstStartTime
-      },
-      oldestGame: {
-        gameId: lastGame.game?.id || lastGame.game?.schedule?.id,
-        startTime: lastStartTime
+  // Sort games by startTime descending (newest first) and take only what we need
+  games.sort((a: any, b: any) => {
+    const dateA = new Date(a.schedule?.startTime || 0).getTime()
+    const dateB = new Date(b.schedule?.startTime || 0).getTime()
+    return dateB - dateA
+  })
+
+  // Only fetch gamelogs for the N most recent games
+  const gamesToFetch = games.slice(0, limit)
+  console.log(`[MySportsFeeds] Found ${games.length} completed games, fetching stats for ${gamesToFetch.length} most recent`)
+
+  // Step 2: Fetch daily team_gamelogs for each game date
+  const gamelogs: any[] = []
+  for (const game of gamesToFetch) {
+    const startTime = game.schedule?.startTime
+    if (!startTime) continue
+
+    // Convert startTime to YYYYMMDD format for the daily endpoint
+    const gameDate = new Date(startTime)
+    const dateStr = `${gameDate.getUTCFullYear()}${String(gameDate.getUTCMonth() + 1).padStart(2, '0')}${String(gameDate.getUTCDate()).padStart(2, '0')}`
+
+    try {
+      const dailyResult = await fetchMySportsFeeds(
+        `date/${dateStr}/team_gamelogs.json?team=${teamAbbrev}`,
+        season
+      )
+
+      if (dailyResult.gamelogs && dailyResult.gamelogs.length > 0) {
+        // Find the gamelog that matches this specific game
+        const matchingGamelog = dailyResult.gamelogs.find((gl: any) =>
+          gl.game?.id === game.schedule?.id
+        ) || dailyResult.gamelogs[0]
+
+        gamelogs.push(matchingGamelog)
       }
-    })
-
-    // Take only the requested number of games (most recent)
-    if (result.gamelogs.length > limit) {
-      result.gamelogs = result.gamelogs.slice(0, limit)
-      console.log(`[MySportsFeeds] Trimmed to ${limit} most recent games for ${teamAbbrev}`)
+    } catch (err) {
+      console.error(`[MySportsFeeds] Failed to fetch gamelog for ${teamAbbrev} on ${dateStr}:`, err)
     }
   }
+
+  // Sort gamelogs by startTime descending (should already be in order, but ensure it)
+  gamelogs.sort((a: any, b: any) => {
+    const dateA = new Date(a.game?.startTime || 0).getTime()
+    const dateB = new Date(b.game?.startTime || 0).getTime()
+    return dateB - dateA
+  })
+
+  console.log(`[MySportsFeeds] Successfully fetched ${gamelogs.length} gamelogs for ${teamAbbrev}`)
+  if (gamelogs.length > 0) {
+    console.log(`[MySportsFeeds] Most recent game: ${gamelogs[0].game?.startTime} pts: ${gamelogs[0].stats?.offense?.pts}`)
+  }
+
+  const result = { gamelogs }
 
   // Log what we got back
   console.log(`[MySportsFeeds] Team game logs response for ${teamAbbrev}:`, {
     hasGamelogs: !!result.gamelogs,
     gamelogsCount: result.gamelogs?.length || 0,
-    responseKeys: Object.keys(result),
     firstGameSample: result.gamelogs?.[0] ? {
       gameId: result.gamelogs[0].game?.id,
       startTime: result.gamelogs[0].game?.startTime,
       hasStats: !!result.gamelogs[0].stats
     } : null
   })
-
-  // If current season has no games, fall back to previous season
-  if (!result.gamelogs || result.gamelogs.length === 0) {
-    console.log(`[MySportsFeeds] No games found for ${teamAbbrev} in current season, trying previous season (2024-2025-regular)...`)
-    const previousSeasonResult = await fetchMySportsFeeds(`team_gamelogs.json?team=${teamAbbrev}`, '2024-2025-regular')
-
-    // Sort previous season games too (use correct field path: game.schedule.startTime)
-    if (previousSeasonResult.gamelogs && previousSeasonResult.gamelogs.length > 0) {
-      previousSeasonResult.gamelogs.sort((a: any, b: any) => {
-        const dateA = new Date(a.game?.schedule?.startTime || a.game?.startTime || 0).getTime()
-        const dateB = new Date(b.game?.schedule?.startTime || b.game?.startTime || 0).getTime()
-        return dateB - dateA
-      })
-      if (previousSeasonResult.gamelogs.length > limit) {
-        previousSeasonResult.gamelogs = previousSeasonResult.gamelogs.slice(0, limit)
-      }
-    }
-
-    console.log(`[MySportsFeeds] Previous season response for ${teamAbbrev}:`, {
-      hasGamelogs: !!previousSeasonResult.gamelogs,
-      gamelogsCount: previousSeasonResult.gamelogs?.length || 0
-    })
-
-    return previousSeasonResult
-  }
 
   return result
 }
