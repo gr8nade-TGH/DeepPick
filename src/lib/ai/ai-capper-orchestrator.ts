@@ -340,7 +340,7 @@ Format your output as a JSON object with factor names as keys, and include a "va
 }`
 
       const chatGptAnalysisResponse = await this.openaiClient.chat.completions.create({
-        model: this.capperSettings.ai_model_run2 || 'gpt-4o-mini',
+        model: this.capperSettings.ai_model_run2 || 'gpt-4.1',
         messages: [
           {
             role: 'system',
@@ -430,7 +430,7 @@ Make it engaging, professional, and data-driven. Example:
 }`
 
     const response = await this.openaiClient.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-4.1',
       messages: [
         {
           role: 'system',

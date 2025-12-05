@@ -62,8 +62,8 @@ export async function analyzeInjuriesWithAI(input: InjuryAnalysisInput, provider
 
     // Check if there are any injuries at all
     const hasInjuries = mergedData.awayTeam.injuredPlayers.length > 0 ||
-                        mergedData.homeTeam.injuredPlayers.length > 0 ||
-                        mergedData.recentNews.length > 0
+      mergedData.homeTeam.injuredPlayers.length > 0 ||
+      mergedData.recentNews.length > 0
 
     if (!hasInjuries) {
       console.log('[Injury AI] No injuries found - returning neutral impact')
@@ -157,7 +157,7 @@ Return ONLY the JSON, no other text.
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
+          model: 'gpt-4.1',
           messages: [
             {
               role: 'system',

@@ -2,7 +2,7 @@
  * Bold Predictions Generator
  * 
  * Generates AI-powered bold player predictions for SHIVA picks
- * Uses OpenAI gpt-4o-mini with MySportsFeeds injury data
+ * Uses OpenAI gpt-4.1 with MySportsFeeds injury data
  * 
  * This is a standalone function that can be called directly without HTTP requests
  */
@@ -452,8 +452,8 @@ Return ONLY valid JSON in this exact format:
 }`
     }
 
-    // Call OpenAI API directly using GPT-4o (latest production model)
-    console.log('[BoldPredictions] Calling OpenAI GPT-4o API with real MySportsFeeds player stats...')
+    // Call OpenAI API directly using GPT-4.1 (latest production model)
+    console.log('[BoldPredictions] Calling OpenAI GPT-4.1 API with real MySportsFeeds player stats...')
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -462,7 +462,7 @@ Return ONLY valid JSON in this exact format:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o',  // Using GPT-4o instead of gpt-4o-mini for better accuracy
+        model: 'gpt-4.1',  // Using GPT-4.1 for best accuracy
         messages: [
           {
             role: 'system',

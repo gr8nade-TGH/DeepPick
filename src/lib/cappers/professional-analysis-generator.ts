@@ -2,7 +2,7 @@
  * Professional Analysis Generator
  * 
  * Generates AI-powered professional betting analysis for SHIVA picks
- * Uses OpenAI gpt-4o-mini with MySportsFeeds injury data
+ * Uses OpenAI gpt-4.1 with MySportsFeeds injury data
  */
 
 import { fetchPlayerInjuriesForTeams } from '@/lib/data-sources/mysportsfeeds-api'
@@ -354,7 +354,7 @@ Return ONLY the bullet-point analysis (no JSON, no extra formatting).`
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4.1',
         messages: [
           {
             role: 'system',
