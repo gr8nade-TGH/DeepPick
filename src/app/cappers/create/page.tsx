@@ -12,6 +12,49 @@ import { useCallback } from 'react'
 
 type ConfigTab = 'archetype' | 'options'
 
+// ============================================
+// BASELINE MODELS - For Pick Diversity
+// Different models produce different predictions, creating genuine splits
+// ============================================
+type TotalsBaselineModel = 'pace-efficiency' | 'ppg-based' | 'matchup-defensive'
+type SpreadBaselineModel = 'net-rating' | 'scoring-margin' | 'h2h-projection'
+
+const TOTALS_BASELINE_MODELS: Record<TotalsBaselineModel, { name: string; description: string; icon: string }> = {
+  'pace-efficiency': {
+    name: 'Pace-Efficiency',
+    description: 'Uses pace × offensive ratings. Best for fast-paced teams.',
+    icon: '⚡'
+  },
+  'ppg-based': {
+    name: 'PPG Average',
+    description: 'Uses raw scoring averages. Best for consistent scorers.',
+    icon: '📊'
+  },
+  'matchup-defensive': {
+    name: 'Matchup-Defensive',
+    description: 'Weights opponent defense heavily. Best for elite defenses.',
+    icon: '🛡️'
+  }
+}
+
+const SPREAD_BASELINE_MODELS: Record<SpreadBaselineModel, { name: string; description: string; icon: string }> = {
+  'net-rating': {
+    name: 'Net Rating',
+    description: 'Uses efficiency differential (ORtg - DRtg).',
+    icon: '📈'
+  },
+  'scoring-margin': {
+    name: 'Scoring Margin',
+    description: 'Uses actual point differentials from games.',
+    icon: '🎯'
+  },
+  'h2h-projection': {
+    name: 'Head-to-Head',
+    description: 'Projects scores vs specific opponent defense.',
+    icon: '⚔️'
+  }
+}
+
 interface PresetConfig {
   id: string
   name: string
@@ -44,6 +87,7 @@ interface CapperConfig {
     [betType: string]: {
       enabled_factors: string[]
       weights: { [factor: string]: number }
+      baseline_model?: string // For pick diversity - different models produce different predictions
     }
   }
   execution_interval_minutes: number
@@ -649,7 +693,7 @@ export default function CreateCapperPage() {
     }
   }, [profile])
 
-  // Randomly select 2 archetypes on page load (1 TOTAL, 1 SPREAD) and apply their factors
+  // Randomly select 2 archetypes + 2 baseline models on page load
   useEffect(() => {
     // Pick random TOTAL archetype
     const randomTotalIndex = Math.floor(Math.random() * TOTALS_ARCHETYPES.length)
@@ -659,23 +703,31 @@ export default function CreateCapperPage() {
     const randomSpreadIndex = Math.floor(Math.random() * SPREAD_ARCHETYPES.length)
     const randomSpreadArchetype = SPREAD_ARCHETYPES[randomSpreadIndex]
 
+    // Pick random baseline models (for pick diversity)
+    const totalsBaselineKeys = Object.keys(TOTALS_BASELINE_MODELS) as TotalsBaselineModel[]
+    const spreadBaselineKeys = Object.keys(SPREAD_BASELINE_MODELS) as SpreadBaselineModel[]
+    const randomTotalsBaseline = totalsBaselineKeys[Math.floor(Math.random() * totalsBaselineKeys.length)]
+    const randomSpreadBaseline = spreadBaselineKeys[Math.floor(Math.random() * spreadBaselineKeys.length)]
+
     // Set selected presets
     setSelectedPresets({
       TOTAL: randomTotalArchetype.id,
       SPREAD: randomSpreadArchetype.id
     })
 
-    // Apply their factor configurations
+    // Apply their factor configurations + baseline models
     setConfig(prev => ({
       ...prev,
       factor_config: {
         TOTAL: {
           enabled_factors: randomTotalArchetype.totalFactors.enabled,
-          weights: randomTotalArchetype.totalFactors.weights
+          weights: randomTotalArchetype.totalFactors.weights,
+          baseline_model: randomTotalsBaseline
         },
         SPREAD: {
           enabled_factors: randomSpreadArchetype.spreadFactors.enabled,
-          weights: randomSpreadArchetype.spreadFactors.weights
+          weights: randomSpreadArchetype.spreadFactors.weights,
+          baseline_model: randomSpreadBaseline
         }
       }
     }))
@@ -826,13 +878,16 @@ export default function CreateCapperPage() {
     setSelectedPresets(prev => ({ ...prev, [currentBetType]: preset.id }))
 
     // Apply preset configuration ONLY for the current bet type
+    // Preserve the baseline_model when changing archetypes
     const factorsForBetType = currentBetType === 'TOTAL' ? preset.totalFactors : preset.spreadFactors
+    const existingBaselineModel = config.factor_config?.[currentBetType]?.baseline_model
 
     const newFactorConfig = {
       ...config.factor_config,
       [currentBetType]: {
         enabled_factors: factorsForBetType.enabled,
-        weights: factorsForBetType.weights
+        weights: factorsForBetType.weights,
+        baseline_model: existingBaselineModel // Preserve the baseline model
       }
     }
 
@@ -1126,8 +1181,38 @@ export default function CreateCapperPage() {
                     )
                   })()}
 
+                  {/* Baseline Models - For Pick Diversity */}
+                  <div className="mt-3 pt-3 border-t border-slate-700/50">
+                    <div className="text-[9px] font-bold text-slate-500 uppercase mb-2 flex items-center gap-1">
+                      <Shuffle className="w-3 h-3" />
+                      Prediction Models
+                    </div>
+                    {/* TOTALS Baseline */}
+                    {(() => {
+                      const model = config.factor_config?.TOTAL?.baseline_model as TotalsBaselineModel | undefined
+                      const modelInfo = model ? TOTALS_BASELINE_MODELS[model] : null
+                      return (
+                        <div className="flex items-center gap-2 px-2 py-1.5 rounded bg-slate-800/30 mb-1">
+                          <span className="text-[9px] text-cyan-400/70 w-14">Totals:</span>
+                          <span className="text-[10px] text-slate-300">{modelInfo?.icon} {modelInfo?.name || 'Default'}</span>
+                        </div>
+                      )
+                    })()}
+                    {/* SPREAD Baseline */}
+                    {(() => {
+                      const model = config.factor_config?.SPREAD?.baseline_model as SpreadBaselineModel | undefined
+                      const modelInfo = model ? SPREAD_BASELINE_MODELS[model] : null
+                      return (
+                        <div className="flex items-center gap-2 px-2 py-1.5 rounded bg-slate-800/30">
+                          <span className="text-[9px] text-purple-400/70 w-14">Spread:</span>
+                          <span className="text-[10px] text-slate-300">{modelInfo?.icon} {modelInfo?.name || 'Default'}</span>
+                        </div>
+                      )
+                    })()}
+                  </div>
+
                   {/* NFL TOTALS - Coming Soon */}
-                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/30 border border-slate-700/30 opacity-50">
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/30 border border-slate-700/30 opacity-50 mt-3">
                     <span className="text-[10px] font-bold text-slate-500 uppercase w-20">NFL Totals:</span>
                     <span className="text-xs text-slate-500 italic">(coming soon)</span>
                   </div>

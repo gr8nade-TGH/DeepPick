@@ -34,6 +34,7 @@ export interface WizardOrchestratorInput {
   factorConfig?: {
     weights: Record<string, number>
     enabled_factors: string[]
+    baseline_model?: string // For pick diversity - different models produce different predictions
   }
 }
 
@@ -119,8 +120,10 @@ export async function executeWizardPipeline(input: WizardOrchestratorInput): Pro
       ? (steps.step2.snapshot?.total?.line || 220)
       : (steps.step2.snapshot?.spread?.away_spread || 0)
 
-    console.log('[WizardOrchestrator] Step 4: Generating predictions with Vegas baseline:', { marketBaseline, betType })
-    steps.step4 = await generatePredictions(runId, steps.step3, sport, betType, game, marketBaseline)
+    // Get baseline model from factor config (for pick diversity)
+    const baselineModel = factorConfig?.baseline_model
+    console.log('[WizardOrchestrator] Step 4: Generating predictions with Vegas baseline:', { marketBaseline, betType, baselineModel })
+    steps.step4 = await generatePredictions(runId, steps.step3, sport, betType, game, marketBaseline, baselineModel)
     console.log('[WizardOrchestrator] Step 4: Predictions generated')
 
     // Step 5: Market Edge Adjustment
@@ -620,121 +623,175 @@ async function computeFactors(
   }
 }
 
+// ============================================================================
+// BASELINE MODEL TYPES - For Pick Diversity
+// ============================================================================
+export type TotalsBaselineModel = 'pace-efficiency' | 'ppg-based' | 'matchup-defensive'
+export type SpreadBaselineModel = 'net-rating' | 'scoring-margin' | 'h2h-projection'
+
+export const TOTALS_BASELINE_MODELS = {
+  'pace-efficiency': {
+    name: 'Pace-Efficiency',
+    description: 'Uses pace × offensive ratings. Best for: fast-paced teams.',
+    icon: '⚡'
+  },
+  'ppg-based': {
+    name: 'PPG Average',
+    description: 'Uses raw scoring averages. Best for: consistent scorers.',
+    icon: '📊'
+  },
+  'matchup-defensive': {
+    name: 'Matchup-Defensive',
+    description: 'Weights opponent defense heavily. Best for: elite defenses.',
+    icon: '🛡️'
+  }
+}
+
+export const SPREAD_BASELINE_MODELS = {
+  'net-rating': {
+    name: 'Net Rating',
+    description: 'Uses efficiency differential (ORtg - DRtg).',
+    icon: '📈'
+  },
+  'scoring-margin': {
+    name: 'Scoring Margin',
+    description: 'Uses actual point differentials from games.',
+    icon: '🎯'
+  },
+  'h2h-projection': {
+    name: 'Head-to-Head',
+    description: 'Projects scores vs specific opponent defense.',
+    icon: '⚔️'
+  }
+}
+
 /**
  * Calculate stats-based baseline from team statistics
  *
- * This replaces using Vegas as the baseline, enabling pick diversity across cappers.
- * Each capper applies their weighted factors to this stats baseline, producing
- * different predicted values that may land on opposite sides of the Vegas line.
+ * DIVERSITY SYSTEM: Different baseline models produce different predictions,
+ * which leads to different Edge vs Market calculations, creating genuine splits.
  *
  * @param statsBundle - NBA stats bundle with team performance data
  * @param betType - 'TOTAL' or 'SPREAD'
  * @param vegasFallback - Vegas line to use if stats are unavailable
+ * @param baselineModel - Which baseline calculation model to use (for pick diversity)
  * @returns Stats-based baseline value
  */
 function calculateStatsBaseline(
   statsBundle: any,
   betType: string,
-  vegasFallback: number
+  vegasFallback: number,
+  baselineModel?: string
 ): { baseline: number; debug: any } {
-  // If no stats bundle available, fall back to Vegas (shouldn't happen in production)
   if (!statsBundle) {
     console.warn('[StatsBaseline] No stats bundle available, falling back to Vegas:', vegasFallback)
-    return {
-      baseline: vegasFallback,
-      debug: { source: 'vegas_fallback', reason: 'No stats bundle' }
-    }
+    return { baseline: vegasFallback, debug: { source: 'vegas_fallback', reason: 'No stats bundle' } }
   }
 
-  const HCA = 2.8 // Home Court Advantage in points (modern NBA average)
+  const HCA = 2.8 // Home Court Advantage in points
+  const LEAGUE_AVG_PPG = 115 // 2024-25 NBA league average PPG
 
   if (betType === 'TOTAL') {
-    // TOTALS: Expected total = pace-adjusted scoring expectation
-    // Uses offensive ratings and expected game pace
-    const expPace = (statsBundle.awayPaceLast10 + statsBundle.homePaceLast10) / 2
-    const awayExpPts = (expPace * statsBundle.awayORtgLast10) / 100
-    const homeExpPts = (expPace * statsBundle.homeORtgLast10) / 100
+    const model = (baselineModel as TotalsBaselineModel) || 'pace-efficiency'
+    let rawBaseline: number
+    let debugInfo: any = { model }
 
-    // Clamp to reasonable NBA total range (180-260)
-    const rawBaseline = awayExpPts + homeExpPts
+    switch (model) {
+      case 'ppg-based': {
+        // MODEL 2: PPG-Based - Uses raw scoring averages
+        const awayPpg = statsBundle.awayPpg || 110
+        const homePpg = statsBundle.homePpg || 110
+        const awayOppPpg = statsBundle.awayOppPpg || 110
+        const homeOppPpg = statsBundle.homeOppPpg || 110
+        const awayVsHomeDef = awayPpg + (homeOppPpg - LEAGUE_AVG_PPG)
+        const homeVsAwayDef = homePpg + (awayOppPpg - LEAGUE_AVG_PPG)
+        rawBaseline = awayVsHomeDef + homeVsAwayDef
+        debugInfo = { ...debugInfo, awayPpg, homePpg, awayOppPpg, homeOppPpg, rawBaseline: rawBaseline.toFixed(1) }
+        break
+      }
+      case 'matchup-defensive': {
+        // MODEL 3: Matchup-Defensive - Weights defense more heavily
+        const expPace = (statsBundle.awayPaceLast10 + statsBundle.homePaceLast10) / 2
+        const awayORtg = statsBundle.awayORtgLast10 || 110
+        const homeORtg = statsBundle.homeORtgLast10 || 110
+        const awayDRtg = statsBundle.awayDRtgSeason || 110
+        const homeDRtg = statsBundle.homeDRtgSeason || 110
+        const awayEffectiveRtg = 0.6 * awayORtg + 0.4 * homeDRtg
+        const homeEffectiveRtg = 0.6 * homeORtg + 0.4 * awayDRtg
+        const awayExpPts = (expPace * awayEffectiveRtg) / 100
+        const homeExpPts = (expPace * homeEffectiveRtg) / 100
+        rawBaseline = awayExpPts + homeExpPts
+        debugInfo = { ...debugInfo, expPace: expPace.toFixed(1), awayEffectiveRtg: awayEffectiveRtg.toFixed(1), homeEffectiveRtg: homeEffectiveRtg.toFixed(1), rawBaseline: rawBaseline.toFixed(1) }
+        break
+      }
+      case 'pace-efficiency':
+      default: {
+        // MODEL 1: Pace-Efficiency (Default)
+        const expPace = (statsBundle.awayPaceLast10 + statsBundle.homePaceLast10) / 2
+        const awayExpPts = (expPace * statsBundle.awayORtgLast10) / 100
+        const homeExpPts = (expPace * statsBundle.homeORtgLast10) / 100
+        rawBaseline = awayExpPts + homeExpPts
+        debugInfo = { ...debugInfo, expPace: expPace.toFixed(1), awayORtg: statsBundle.awayORtgLast10?.toFixed(1), homeORtg: statsBundle.homeORtgLast10?.toFixed(1), rawBaseline: rawBaseline.toFixed(1) }
+        break
+      }
+    }
+
     const baseline = Math.max(180, Math.min(260, rawBaseline))
+    console.log(`[StatsBaseline:TOTALS:${model}]`, { ...debugInfo, clampedBaseline: baseline.toFixed(1) })
+    return { baseline, debug: { source: 'stats', ...debugInfo, clampedBaseline: baseline } }
 
-    console.log('[StatsBaseline:TOTALS]', {
-      expPace: expPace.toFixed(1),
-      awayORtg: statsBundle.awayORtgLast10.toFixed(1),
-      homeORtg: statsBundle.homeORtgLast10.toFixed(1),
-      awayExpPts: awayExpPts.toFixed(1),
-      homeExpPts: homeExpPts.toFixed(1),
-      rawBaseline: rawBaseline.toFixed(1),
-      baseline: baseline.toFixed(1)
-    })
-
-    return {
-      baseline,
-      debug: {
-        source: 'stats',
-        expPace,
-        awayORtg: statsBundle.awayORtgLast10,
-        homeORtg: statsBundle.homeORtgLast10,
-        awayExpPts,
-        homeExpPts,
-        rawBaseline,
-        clampedBaseline: baseline
-      }
-    }
   } else if (betType === 'SPREAD') {
-    // SPREAD: Expected margin based on net ratings + home court advantage
-    // Net Rating = ORtg - DRtg (points per 100 possessions above/below average)
-    const awayNetRtg = statsBundle.awayORtgLast10 - statsBundle.awayDRtgSeason
-    const homeNetRtg = statsBundle.homeORtgLast10 - statsBundle.homeDRtgSeason
+    const model = (baselineModel as SpreadBaselineModel) || 'net-rating'
+    let baseline: number
+    let debugInfo: any = { model, HCA }
 
-    // Net rating differential (positive = away is better per 100 poss)
-    const netRtgDiff = awayNetRtg - homeNetRtg
-
-    // Clamp net rating diff to reasonable range (-20 to +20)
-    const clampedNetRtgDiff = Math.max(-20, Math.min(20, netRtgDiff))
-
-    // Stats baseline = predicted home margin
-    // If away has higher net rating, they should win (negative margin = away wins)
-    // Add HCA to favor home team
-    const baseline = -clampedNetRtgDiff + HCA
-
-    console.log('[StatsBaseline:SPREAD]', {
-      awayNetRtg: awayNetRtg.toFixed(1),
-      homeNetRtg: homeNetRtg.toFixed(1),
-      netRtgDiff: netRtgDiff.toFixed(1),
-      clampedNetRtgDiff: clampedNetRtgDiff.toFixed(1),
-      HCA,
-      baseline: baseline.toFixed(1),
-      interpretation: baseline > 0
-        ? `Home favored by ${baseline.toFixed(1)} pts`
-        : `Away favored by ${Math.abs(baseline).toFixed(1)} pts`
-    })
-
-    return {
-      baseline,
-      debug: {
-        source: 'stats',
-        awayORtg: statsBundle.awayORtgLast10,
-        awayDRtg: statsBundle.awayDRtgSeason,
-        homeORtg: statsBundle.homeORtgLast10,
-        homeDRtg: statsBundle.homeDRtgSeason,
-        awayNetRtg,
-        homeNetRtg,
-        netRtgDiff,
-        clampedNetRtgDiff,
-        HCA,
-        baseline
+    switch (model) {
+      case 'scoring-margin': {
+        // MODEL 2: Scoring Margin - Uses actual point differentials
+        const awayPpg = statsBundle.awayPpg || 110
+        const awayOppPpg = statsBundle.awayOppPpg || 110
+        const homePpg = statsBundle.homePpg || 110
+        const homeOppPpg = statsBundle.homeOppPpg || 110
+        const awayMargin = awayPpg - awayOppPpg
+        const homeMargin = homePpg - homeOppPpg
+        const rawBaseline = (homeMargin - awayMargin) + HCA
+        baseline = Math.max(-25, Math.min(25, rawBaseline))
+        debugInfo = { ...debugInfo, awayMargin: awayMargin.toFixed(1), homeMargin: homeMargin.toFixed(1), baseline: baseline.toFixed(1) }
+        break
+      }
+      case 'h2h-projection': {
+        // MODEL 3: Head-to-Head Projection
+        const awayPpg = statsBundle.awayPpg || 110
+        const homePpg = statsBundle.homePpg || 110
+        const awayOppPpg = statsBundle.awayOppPpg || LEAGUE_AVG_PPG
+        const homeOppPpg = statsBundle.homeOppPpg || LEAGUE_AVG_PPG
+        const awayProjectedScore = awayPpg + (homeOppPpg - LEAGUE_AVG_PPG)
+        const homeProjectedScore = homePpg + (awayOppPpg - LEAGUE_AVG_PPG) + (HCA / 2)
+        const rawBaseline = (homeProjectedScore - awayProjectedScore) + (HCA / 2)
+        baseline = Math.max(-25, Math.min(25, rawBaseline))
+        debugInfo = { ...debugInfo, awayProjected: awayProjectedScore.toFixed(1), homeProjected: homeProjectedScore.toFixed(1), baseline: baseline.toFixed(1) }
+        break
+      }
+      case 'net-rating':
+      default: {
+        // MODEL 1: Net Rating (Default)
+        const awayNetRtg = statsBundle.awayORtgLast10 - statsBundle.awayDRtgSeason
+        const homeNetRtg = statsBundle.homeORtgLast10 - statsBundle.homeDRtgSeason
+        const netRtgDiff = awayNetRtg - homeNetRtg
+        const clampedNetRtgDiff = Math.max(-20, Math.min(20, netRtgDiff))
+        baseline = -clampedNetRtgDiff + HCA
+        debugInfo = { ...debugInfo, awayNetRtg: awayNetRtg.toFixed(1), homeNetRtg: homeNetRtg.toFixed(1), baseline: baseline.toFixed(1) }
+        break
       }
     }
+
+    const interpretation = baseline > 0 ? `Home favored by ${baseline.toFixed(1)} pts` : `Away favored by ${Math.abs(baseline).toFixed(1)} pts`
+    console.log(`[StatsBaseline:SPREAD:${model}]`, { ...debugInfo, interpretation })
+    return { baseline, debug: { source: 'stats', ...debugInfo, interpretation } }
   }
 
-  // Fallback for unknown bet type
   console.warn('[StatsBaseline] Unknown bet type:', betType)
-  return {
-    baseline: vegasFallback,
-    debug: { source: 'vegas_fallback', reason: `Unknown bet type: ${betType}` }
-  }
+  return { baseline: vegasFallback, debug: { source: 'vegas_fallback', reason: `Unknown bet type: ${betType}` } }
 }
 
 /**
@@ -747,7 +804,7 @@ function calculateStatsBaseline(
  * The Edge vs Market factor (Step 5) then captures the TRUE edge:
  * how far our stats-based prediction differs from market consensus.
  */
-async function generatePredictions(runId: string, step3Result: any, sport: string, betType: string, game?: any, vegasLine?: number) {
+async function generatePredictions(runId: string, step3Result: any, sport: string, betType: string, game?: any, vegasLine?: number, baselineModel?: string) {
   const { calculateConfidence } = await import('@/lib/cappers/shiva-v1/confidence-calculator')
 
   if (!step3Result?.factors || step3Result.factors.length === 0) {
@@ -764,11 +821,13 @@ async function generatePredictions(runId: string, step3Result: any, sport: strin
 
   // NEW: Calculate STATS-BASED BASELINE instead of using Vegas
   // This enables pick diversity - different cappers will produce different predictions
+  // The baselineModel parameter determines which calculation method to use
   const vegasFallback = vegasLine ?? (betType === 'TOTAL' ? 220 : 0)
   const { baseline: statsBaseline, debug: baselineDebug } = calculateStatsBaseline(
     step3Result.statsBundle,
     betType,
-    vegasFallback
+    vegasFallback,
+    baselineModel
   )
 
   // Extract team names for winner field
