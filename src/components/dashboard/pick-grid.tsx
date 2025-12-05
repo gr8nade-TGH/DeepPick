@@ -1,8 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Activity, Clock, Zap, Flame, Filter } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import { Activity, Clock, Zap, Flame, Filter, TrendingUp, BarChart3, Info } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { PickInsightModal } from '@/components/dashboard/pick-insight-modal'
+import { getRarityTierFromConfidence, getRarityStyleFromTier, type RarityTier } from '@/lib/tier-grading'
 
 interface Pick {
     id: string
@@ -14,12 +16,17 @@ interface Pick {
     confidence?: number
     net_units?: number
     capper?: string
+    is_system_pick?: boolean
     game_snapshot?: {
         home_team: { name?: string; abbreviation?: string } | string
         away_team: { name?: string; abbreviation?: string } | string
         game_date: string
         game_time: string
         game_start_timestamp?: string
+        tier_grade?: {
+            tier: string
+            tierScore: number
+        }
     }
     game?: {
         home_team: { name?: string; abbreviation?: string } | string
@@ -161,6 +168,9 @@ interface PickData {
     units: number
     confidence: number
     pickId: string
+    tier: RarityTier
+    tierScore: number
+    isSystemPick: boolean
 }
 
 interface SideData {
@@ -168,12 +178,46 @@ interface SideData {
     picks: PickData[]
     avgUnits: number
     heatLevel: number
+    maxTierScore: number // Highest tier score on this side
+    bestTier: RarityTier // Best tier on this side
 }
 
 interface CellData {
     sides: SideData[] // Multiple sides if cappers disagree
     totalPicks: number
     isSplit: boolean // true if cappers disagree
+    bestTierScore: number // Overall best tier score in this cell
+}
+
+// Get tier from pick
+function getTierFromPick(pick: Pick): RarityTier {
+    // Check for stored tier_grade first
+    const tierGrade = pick.game_snapshot?.tier_grade
+    if (tierGrade?.tier) {
+        const storedTier = tierGrade.tier as string
+        if (['Legendary', 'Elite', 'Epic', 'Rare', 'Uncommon', 'Common'].includes(storedTier)) {
+            return storedTier === 'Epic' ? 'Elite' : storedTier as RarityTier
+        }
+    }
+    // Fallback to confidence-based calculation
+    return getRarityTierFromConfidence(pick.confidence || 0)
+}
+
+// Get tier score (for sorting)
+function getTierScore(pick: Pick): number {
+    const tierGrade = pick.game_snapshot?.tier_grade
+    if (tierGrade?.tierScore) return tierGrade.tierScore
+    // Convert confidence to approximate tier score (0-100)
+    return Math.min(100, (pick.confidence || 0) * 10)
+}
+
+// Tier order for sorting (higher is better)
+const TIER_ORDER: Record<RarityTier, number> = {
+    'Legendary': 5,
+    'Elite': 4,
+    'Rare': 3,
+    'Uncommon': 2,
+    'Common': 1
 }
 
 interface GameRow {
@@ -313,29 +357,48 @@ function buildGameRows(picks: Pick[]): GameRow[] {
                 if (!sideMap.has(key)) {
                     sideMap.set(key, [])
                 }
+                const tier = getTierFromPick(p)
+                const tierScore = getTierScore(p)
                 sideMap.get(key)!.push({
                     capper: p.capper || 'Unknown',
-                    selection: formatSelectionForDisplay(p.selection), // Normalize for display
+                    selection: formatSelectionForDisplay(p.selection),
                     units: p.units,
                     confidence: p.confidence || 0,
-                    pickId: p.id
+                    pickId: p.id,
+                    tier,
+                    tierScore,
+                    isSystemPick: p.is_system_pick === true
                 })
             })
 
-            // Convert to sides array, sorted by count (most picks first)
+            // Convert to sides array, sorted by best tier first, then by count
             const sides: SideData[] = Array.from(sideMap.entries())
-                .map(([key, picks]) => ({
-                    selection: picks[0].selection, // Already formatted
-                    picks,
-                    avgUnits: picks.reduce((s, p) => s + p.units, 0) / picks.length,
-                    heatLevel: Math.min(5, picks.length)
-                }))
-                .sort((a, b) => b.picks.length - a.picks.length)
+                .map(([key, picks]) => {
+                    // Sort picks within side by tier (best first)
+                    const sortedPicks = [...picks].sort((a, b) =>
+                        TIER_ORDER[b.tier] - TIER_ORDER[a.tier] || b.tierScore - a.tierScore
+                    )
+                    const maxTierScore = Math.max(...picks.map(p => p.tierScore))
+                    const bestTier = sortedPicks[0]?.tier || 'Common'
+                    return {
+                        selection: picks[0].selection,
+                        picks: sortedPicks,
+                        avgUnits: picks.reduce((s, p) => s + p.units, 0) / picks.length,
+                        heatLevel: Math.min(5, picks.length),
+                        maxTierScore,
+                        bestTier
+                    }
+                })
+                // Sort sides by best tier, then by pick count
+                .sort((a, b) => TIER_ORDER[b.bestTier] - TIER_ORDER[a.bestTier] || b.picks.length - a.picks.length)
+
+            const bestTierScore = Math.max(...sides.map(s => s.maxTierScore))
 
             return {
                 sides,
                 totalPicks: cellPicks.length,
-                isSplit: sides.length > 1
+                isSplit: sides.length > 1,
+                bestTierScore
             }
         }
 
@@ -358,7 +421,13 @@ function buildGameRows(picks: Pick[]): GameRow[] {
         })
     })
 
-    // Sort: LIVE games at BOTTOM, then by game time (nearest first)
+    // Get best tier score from a cell
+    const getBestTierScore = (cell: CellData | null): number => {
+        if (!cell) return 0
+        return cell.bestTierScore || 0
+    }
+
+    // Sort: LIVE games at BOTTOM, then by best tier (highest first), then by game time
     return rows.sort((a, b) => {
         const now = Date.now()
         const aTime = a.gameTime ? new Date(a.gameTime).getTime() : Infinity
@@ -370,7 +439,14 @@ function buildGameRows(picks: Pick[]): GameRow[] {
         if (aIsLive && !bIsLive) return 1
         if (!aIsLive && bIsLive) return -1
 
-        // Within same category, sort by time (earliest first for upcoming, most recent first for live)
+        // For non-live games, sort by best tier score (highest first)
+        const aBestTier = Math.max(getBestTierScore(a.spread), getBestTierScore(a.total))
+        const bBestTier = Math.max(getBestTierScore(b.spread), getBestTierScore(b.total))
+        if (aBestTier !== bBestTier) {
+            return bBestTier - aBestTier // Higher tier score first
+        }
+
+        // Within same tier, sort by time (earliest first for upcoming, most recent first for live)
         if (aIsLive && bIsLive) {
             return bTime - aTime // Most recently started live games first
         }
@@ -481,176 +557,294 @@ function HeavyAgreementBadge({ capperCount, combinedRecord }: { capperCount: num
     )
 }
 
-// Cell content component
+// Tier Square component - same visual style as Pick History grid
+function TierSquare({
+    pickData,
+    pick,
+    onClick,
+    size = 'md',
+    capperStats
+}: {
+    pickData: PickData
+    pick: Pick | undefined
+    onClick: () => void
+    size?: 'sm' | 'md' | 'lg'
+    capperStats?: CapperStats
+}) {
+    const rarity = getRarityStyleFromTier(pickData.tier)
+    const sizeClass = size === 'sm' ? 'w-5 h-5' : size === 'lg' ? 'w-7 h-7' : 'w-6 h-6'
+
+    const style = {
+        background: `linear-gradient(135deg, ${rarity.borderColor}40, ${rarity.borderColor}20)`,
+        border: `2px solid ${rarity.borderColor}`,
+        boxShadow: `0 0 8px ${rarity.glowColor}`
+    }
+
+    return (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <button
+                    onClick={onClick}
+                    className={`${sizeClass} rounded cursor-pointer transition-all hover:scale-125 flex items-center justify-center relative`}
+                    style={style}
+                >
+                    {/* Source indicator - tiny dot in corner */}
+                    <span
+                        className={`absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full ${pickData.isSystemPick ? 'bg-cyan-400' : 'bg-purple-400'}`}
+                        style={{ boxShadow: pickData.isSystemPick ? '0 0 3px rgba(34,211,238,0.8)' : '0 0 3px rgba(192,132,252,0.8)' }}
+                    />
+                </button>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="p-0 border-0 bg-transparent z-[100]">
+                <div
+                    className="rounded-lg p-2.5 max-w-xs"
+                    style={{
+                        background: `linear-gradient(135deg, rgba(15,15,25,0.98), rgba(25,25,40,0.98))`,
+                        border: `2px solid ${rarity.borderColor}`,
+                        boxShadow: `0 0 15px ${rarity.glowColor}`
+                    }}
+                >
+                    <div className="space-y-1.5">
+                        {/* Tier badge + Source */}
+                        <div className="flex items-center gap-2">
+                            <span
+                                className="text-[9px] font-bold px-1.5 py-0.5 rounded"
+                                style={{
+                                    background: `linear-gradient(135deg, ${rarity.borderColor}40, ${rarity.borderColor}20)`,
+                                    color: rarity.borderColor,
+                                    border: `1px solid ${rarity.borderColor}60`
+                                }}
+                            >
+                                {rarity.icon} {pickData.tier.toUpperCase()}
+                            </span>
+                            <span className={`text-[9px] px-1.5 py-0.5 rounded ${pickData.isSystemPick
+                                ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40'
+                                : 'bg-purple-500/20 text-purple-400 border border-purple-500/40'}`}>
+                                {pickData.isSystemPick ? '🤖 AI' : '👤 Manual'}
+                            </span>
+                        </div>
+
+                        {/* Capper name */}
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-semibold text-amber-400 uppercase">
+                                {pickData.capper}
+                            </span>
+                            <span className="text-[10px] text-slate-400">
+                                {pickData.units}u
+                            </span>
+                        </div>
+
+                        {/* Selection */}
+                        <div className="text-xs font-bold text-white">
+                            {pickData.selection}
+                        </div>
+
+                        {/* Capper stats if available */}
+                        {capperStats && (
+                            <div className="flex items-center gap-2 pt-1 border-t border-slate-700">
+                                <span className="text-[9px] text-slate-400">Record:</span>
+                                <span className="text-[10px] text-white font-semibold">
+                                    {capperStats.wins}-{capperStats.losses}
+                                </span>
+                                <span className={`text-[10px] font-semibold ${capperStats.net_units >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                    {capperStats.net_units >= 0 ? '+' : ''}{capperStats.net_units.toFixed(1)}u
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </TooltipContent>
+        </Tooltip>
+    )
+}
+
+// Get adaptive square size based on pick count
+function getSquareSize(pickCount: number): 'sm' | 'md' | 'lg' {
+    if (pickCount > 8) return 'sm'
+    if (pickCount > 4) return 'md'
+    return 'lg'
+}
+
+// Cell content component with tier squares
 function PickCell({
     cell,
     picks,
     onPickClick,
     capperStats,
-    teamStats,
-    getTeamSpecificStats
 }: {
     cell: CellData | null
     picks: Pick[]
     onPickClick: (pick: Pick) => void
     capperStats: Record<string, CapperStats>
-    teamStats: TeamStatsMap
-    getTeamSpecificStats: (capper: string, team: string | null) => { wins: number; losses: number; netUnits: number } | null
 }) {
     if (!cell) {
         return (
-            <div className="flex items-center justify-center h-full min-h-[60px]">
+            <div className="flex items-center justify-center h-full min-h-[80px]">
                 <span className="text-slate-600 text-sm">—</span>
             </div>
         )
     }
 
-    // Selection is already normalized in buildGameRows, just return it
-    const formatSelection = (sel: string) => sel
+    const totalPicksInCell = cell.sides.reduce((sum, s) => sum + s.picks.length, 0)
+    const squareSize = getSquareSize(totalPicksInCell)
+    const bestSideRarity = getRarityStyleFromTier(cell.sides[0]?.bestTier || 'Common')
 
-    // Extract team from selection (e.g., "HOU -11.5" -> "HOU", "Over 235.5" -> null)
-    const extractTeamFromSel = (selection: string): string | null => {
-        if (!selection) return null
-        const upper = selection.trim().toUpperCase()
-        if (upper.startsWith('OVER') || upper.startsWith('UNDER')) return null
-        const match = upper.match(/^([A-Z]{2,3})\s/)
-        return match ? match[1] : null
-    }
-
-    // Calculate combined record for cappers on a side
-    const getCombinedRecord = (sideCappers: PickData[]) => {
-        let wins = 0, losses = 0, netUnits = 0
-        sideCappers.forEach(p => {
-            const stats = capperStats[p.capper.toUpperCase()]
-            if (stats) {
-                wins += stats.wins
-                losses += stats.losses
-                netUnits += stats.net_units
-            }
-        })
-        return { wins, losses, netUnits }
-    }
-
-    // If split, show both sides SIDE BY SIDE in one row
+    // Split picks - show side by side battle visualization
     if (cell.isSplit) {
         return (
-            <div className="relative min-h-[90px]">
-                <div className="flex gap-1 rounded-lg border border-amber-500/30 bg-gradient-to-br from-slate-800/60 to-slate-900/40 min-h-[90px]">
+            <div className="relative">
+                <div
+                    className="flex rounded-lg border overflow-hidden min-h-[100px]"
+                    style={{
+                        borderColor: `${bestSideRarity.borderColor}40`,
+                        background: 'linear-gradient(135deg, rgba(30,30,45,0.8), rgba(20,20,35,0.9))'
+                    }}
+                >
                     {cell.sides.slice(0, 2).map((side, idx) => {
-                        const avgUnitsStr = side.avgUnits.toFixed(side.avgUnits % 1 === 0 ? 0 : 2)
-                        const isWinning = idx === 0
+                        const sideRarity = getRarityStyleFromTier(side.bestTier)
+                        const isLeading = idx === 0
+                        const tierCounts = countTiers(side.picks)
+
                         return (
-                            <div key={idx} className={`
-                                flex-1 p-2.5 relative
-                                ${idx === 0 ? 'border-r border-slate-700/50' : ''}
-                                ${isWinning ? 'bg-slate-800/40' : 'bg-slate-900/30 opacity-80'}
-                            `}>
-                                <div className="flex items-center gap-0.5 mb-1.5 flex-wrap relative z-10">
-                                    {(() => {
-                                        const team = extractTeamFromSel(side.selection)
-                                        return side.picks.slice(0, 3).map((p, i) => (
-                                            <div key={i} className="relative z-20" onClick={() => {
-                                                const pick = picks.find(pk => pk.id === p.pickId)
-                                                if (pick) onPickClick(pick)
-                                            }}>
-                                                <CapperBadge
-                                                    capper={p.capper}
-                                                    stats={capperStats[p.capper.toUpperCase()]}
-                                                    teamStats={getTeamSpecificStats(p.capper, team)}
-                                                    team={team}
-                                                />
-                                            </div>
-                                        ))
-                                    })()}
-                                    {side.picks.length > 3 && (
-                                        <span className="text-[9px] text-slate-400">+{side.picks.length - 3}</span>
-                                    )}
+                            <div
+                                key={idx}
+                                className={`flex-1 p-3 flex flex-col ${idx === 0 ? 'border-r border-slate-700/50' : ''}`}
+                                style={{
+                                    background: isLeading
+                                        ? `linear-gradient(135deg, ${sideRarity.borderColor}10, transparent)`
+                                        : 'transparent'
+                                }}
+                            >
+                                {/* Selection label */}
+                                <div className={`text-xs font-bold mb-2 ${isLeading ? 'text-white' : 'text-slate-400'}`}>
+                                    {side.selection}
                                 </div>
-                                <div className={`text-xs font-semibold leading-tight ${isWinning ? 'text-white' : 'text-slate-400'}`}>
-                                    {formatSelection(side.selection)}
+
+                                {/* Tier squares grid */}
+                                <div className="flex flex-wrap gap-1 mb-2">
+                                    {side.picks.map((p, i) => {
+                                        const pick = picks.find(pk => pk.id === p.pickId)
+                                        return (
+                                            <TierSquare
+                                                key={i}
+                                                pickData={p}
+                                                pick={pick}
+                                                onClick={() => pick && onPickClick(pick)}
+                                                size={squareSize}
+                                                capperStats={capperStats[p.capper.toUpperCase()]}
+                                            />
+                                        )
+                                    })}
                                 </div>
-                                <div className="text-[10px] text-slate-500 mt-0.5">
-                                    ({avgUnitsStr}u)
-                                </div>
-                                <div className="absolute -top-1 -right-1">
-                                    <HeatDot level={side.heatLevel} />
+
+                                {/* Tier summary */}
+                                <div className="mt-auto">
+                                    <TierSummary counts={tierCounts} compact />
                                 </div>
                             </div>
                         )
                     })}
                 </div>
-                <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2">
-                    <span className="text-[8px] font-bold text-amber-400 bg-slate-900 px-1.5 py-0.5 rounded border border-amber-500/40 uppercase tracking-wider">⚡ Split</span>
+                {/* Split badge */}
+                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 z-10">
+                    <span className="text-[8px] font-bold text-amber-400 bg-slate-900 px-2 py-0.5 rounded-full border border-amber-500/40 uppercase tracking-wider shadow-lg">
+                        ⚔️ Split
+                    </span>
                 </div>
             </div>
         )
     }
 
-    // Single consensus - all cappers agree
+    // Consensus - all picks on same side
     const side = cell.sides[0]
-    const avgUnitsStr = side.avgUnits.toFixed(side.avgUnits % 1 === 0 ? 0 : 2)
+    const sideRarity = getRarityStyleFromTier(side.bestTier)
+    const tierCounts = countTiers(side.picks)
     const isLock = side.picks.length >= 4
-    const combinedRecord = getCombinedRecord(side.picks)
 
     return (
-        <div className="relative group">
-            <div className={`
-                rounded-lg p-3 border transition-all duration-200
-                ${isLock
-                    ? 'bg-gradient-to-br from-amber-900/40 via-yellow-900/30 to-slate-900/50 border-amber-500/50 shadow-lg shadow-amber-500/10'
-                    : side.heatLevel >= 3
-                        ? 'bg-gradient-to-br from-orange-900/30 to-slate-800/50 border-orange-500/30'
-                        : side.heatLevel >= 2
-                            ? 'bg-gradient-to-br from-yellow-900/20 to-slate-800/50 border-yellow-500/20'
-                            : 'bg-slate-800/50 border-slate-700/50'}
-            `}>
-                {/* Heavy Agreement Badge for 4+ consensus */}
-                {isLock && <HeavyAgreementBadge capperCount={side.picks.length} combinedRecord={combinedRecord} />}
-
-                {/* Capper badges row */}
-                <div className="flex items-center gap-1 mb-2 flex-wrap">
-                    {(() => {
-                        const team = extractTeamFromSel(side.selection)
-                        return side.picks.slice(0, 6).map((p, i) => (
-                            <div key={i} onClick={() => {
-                                const pick = picks.find(pk => pk.id === p.pickId)
-                                if (pick) onPickClick(pick)
-                            }}>
-                                <CapperBadge
-                                    capper={p.capper}
-                                    stats={capperStats[p.capper.toUpperCase()]}
-                                    teamStats={getTeamSpecificStats(p.capper, team)}
-                                    team={team}
-                                />
-                            </div>
-                        ))
-                    })()}
-                    {side.picks.length > 6 && (
-                        <span className="text-[10px] text-slate-400 font-medium">+{side.picks.length - 6}</span>
-                    )}
+        <div
+            className="rounded-lg p-3 border transition-all"
+            style={{
+                borderColor: isLock ? '#F59E0B' : `${sideRarity.borderColor}50`,
+                background: isLock
+                    ? 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(30,30,45,0.9))'
+                    : `linear-gradient(135deg, ${sideRarity.borderColor}10, rgba(20,20,35,0.9))`,
+                boxShadow: isLock ? '0 0 15px rgba(245,158,11,0.2)' : `0 0 10px ${sideRarity.glowColor}`
+            }}
+        >
+            {/* Lock badge */}
+            {isLock && (
+                <div className="flex items-center gap-2 mb-2">
+                    <span className="text-[9px] font-black text-amber-900 bg-gradient-to-r from-amber-400 to-yellow-400 px-2 py-0.5 rounded-full uppercase tracking-wide animate-pulse">
+                        🔥 {side.picks.length}x Agreement
+                    </span>
                 </div>
+            )}
 
-                {/* Pick selection */}
-                <div className={`text-sm font-semibold leading-tight ${isLock ? 'text-amber-100' : 'text-white'}`}>
-                    {formatSelection(side.selection)}
-                </div>
-
-                {/* Units info */}
-                <div className="text-[11px] text-slate-400 mt-1">
-                    ({avgUnitsStr}u avg)
-                </div>
+            {/* Selection */}
+            <div className="text-sm font-bold text-white mb-2">
+                {side.selection}
             </div>
 
-            {/* Heat dot indicator (top right) */}
-            <div className="absolute -top-1 -right-1">
-                {isLock ? (
-                    <div className="w-3 h-3 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 shadow-lg shadow-amber-500/50 animate-pulse flex items-center justify-center text-[8px]">
-                        🔥
-                    </div>
-                ) : (
-                    <HeatDot level={side.heatLevel} />
-                )}
+            {/* Tier squares grid */}
+            <div className="flex flex-wrap gap-1 mb-2">
+                {side.picks.map((p, i) => {
+                    const pick = picks.find(pk => pk.id === p.pickId)
+                    return (
+                        <TierSquare
+                            key={i}
+                            pickData={p}
+                            pick={pick}
+                            onClick={() => pick && onPickClick(pick)}
+                            size={squareSize}
+                            capperStats={capperStats[p.capper.toUpperCase()]}
+                        />
+                    )
+                })}
             </div>
+
+            {/* Tier summary */}
+            <TierSummary counts={tierCounts} />
+        </div>
+    )
+}
+
+// Count tiers in picks
+function countTiers(picks: PickData[]): Record<RarityTier, number> {
+    const counts: Record<RarityTier, number> = {
+        'Legendary': 0, 'Elite': 0, 'Rare': 0, 'Uncommon': 0, 'Common': 0
+    }
+    picks.forEach(p => {
+        counts[p.tier] = (counts[p.tier] || 0) + 1
+    })
+    return counts
+}
+
+// Tier summary component
+function TierSummary({ counts, compact = false }: { counts: Record<RarityTier, number>, compact?: boolean }) {
+    const tiers: RarityTier[] = ['Legendary', 'Elite', 'Rare', 'Uncommon', 'Common']
+    const activeTiers = tiers.filter(t => counts[t] > 0)
+
+    if (activeTiers.length === 0) return null
+
+    return (
+        <div className={`flex items-center gap-1 ${compact ? 'flex-wrap' : ''}`}>
+            {activeTiers.map(tier => {
+                const rarity = getRarityStyleFromTier(tier)
+                return (
+                    <span
+                        key={tier}
+                        className={`text-[9px] font-bold px-1 py-0.5 rounded ${compact ? '' : 'px-1.5'}`}
+                        style={{
+                            color: rarity.borderColor,
+                            background: `${rarity.borderColor}20`,
+                            border: `1px solid ${rarity.borderColor}40`
+                        }}
+                    >
+                        {rarity.icon}{counts[tier]}
+                    </span>
+                )
+            })}
         </div>
     )
 }
@@ -790,6 +984,18 @@ export function PickGrid() {
         g.spread?.isSplit || g.total?.isSplit
     ).length
 
+    // Count picks by tier
+    const tierCounts = useMemo(() => {
+        const counts: Record<RarityTier, number> = {
+            'Legendary': 0, 'Elite': 0, 'Rare': 0, 'Uncommon': 0, 'Common': 0
+        }
+        picks.forEach(p => {
+            const tier = getTierFromPick(p)
+            counts[tier] = (counts[tier] || 0) + 1
+        })
+        return counts
+    }, [picks])
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-slate-950">
@@ -808,137 +1014,171 @@ export function PickGrid() {
     })
 
     return (
-        <div className="min-h-screen bg-slate-950 pb-12">
-            {/* Header */}
-            <div className="bg-gradient-to-b from-slate-900 to-slate-950 border-b border-slate-800">
-                <div className="container mx-auto px-4 py-6">
-                    <div className="flex items-center justify-between mb-4">
-                        <div>
-                            <div className="flex items-center gap-3 mb-1">
-                                <Zap className="w-8 h-8 text-cyan-400" />
-                                <h1 className="text-2xl font-black text-white">Pick Grid</h1>
+        <TooltipProvider delayDuration={100}>
+            <div className="min-h-screen bg-slate-950 pb-12">
+                {/* Header */}
+                <div className="bg-gradient-to-b from-slate-900 to-slate-950 border-b border-slate-800">
+                    <div className="container mx-auto px-4 py-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <div>
+                                <div className="flex items-center gap-3 mb-1">
+                                    <Zap className="w-8 h-8 text-cyan-400" />
+                                    <h1 className="text-2xl font-black text-white">Pick Grid</h1>
+                                </div>
+                                <p className="text-slate-400 text-sm">
+                                    Today's picks organized by game • Click tier squares for pick details
+                                </p>
                             </div>
-                            <p className="text-slate-400 text-sm">
-                                Today's picks organized by game • Hover on badges for capper stats
-                            </p>
+
                         </div>
 
-                    </div>
-
-                    {/* Filter Tabs */}
-                    <div className="flex items-center gap-2 mb-4">
-                        {[
-                            { id: 'all' as FilterType, label: 'All', count: totalGames, icon: Filter },
-                            { id: 'locks' as FilterType, label: 'Agreement', count: lockCount, icon: Flame },
-                            { id: 'hot' as FilterType, label: 'Hot', count: hotGames, icon: Flame },
-                            { id: 'splits' as FilterType, label: 'Splits', count: splitGames, icon: Zap },
-                        ].map(tab => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveFilter(tab.id)}
-                                className={`
+                        {/* Filter Tabs */}
+                        <div className="flex items-center gap-2 mb-4">
+                            {[
+                                { id: 'all' as FilterType, label: 'All', count: totalGames, icon: Filter },
+                                { id: 'locks' as FilterType, label: 'Agreement', count: lockCount, icon: Flame },
+                                { id: 'hot' as FilterType, label: 'Hot', count: hotGames, icon: Flame },
+                                { id: 'splits' as FilterType, label: 'Splits', count: splitGames, icon: Zap },
+                            ].map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveFilter(tab.id)}
+                                    className={`
                                     flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all
                                     ${activeFilter === tab.id
-                                        ? tab.id === 'locks'
-                                            ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-amber-900 shadow-lg shadow-amber-500/20'
-                                            : 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/20'
-                                        : 'bg-slate-800/50 text-slate-400 hover:bg-slate-700/50 hover:text-white'
-                                    }
+                                            ? tab.id === 'locks'
+                                                ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-amber-900 shadow-lg shadow-amber-500/20'
+                                                : 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/20'
+                                            : 'bg-slate-800/50 text-slate-400 hover:bg-slate-700/50 hover:text-white'
+                                        }
                                 `}
-                            >
-                                <tab.icon className="w-4 h-4" />
-                                {tab.label}
-                                <span className={`
+                                >
+                                    <tab.icon className="w-4 h-4" />
+                                    {tab.label}
+                                    <span className={`
                                     text-xs px-1.5 py-0.5 rounded-full
                                     ${activeFilter === tab.id
-                                        ? tab.id === 'locks' ? 'bg-amber-900/30' : 'bg-white/20'
-                                        : 'bg-slate-700'
-                                    }
+                                            ? tab.id === 'locks' ? 'bg-amber-900/30' : 'bg-white/20'
+                                            : 'bg-slate-700'
+                                        }
                                 `}>
-                                    {tab.count}
-                                </span>
-                            </button>
-                        ))}
-                    </div>
+                                        {tab.count}
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
 
-                    {/* Stats bar */}
-                    <div className="flex items-center gap-6 text-sm">
-                        <span className="text-slate-400">
-                            <span className="text-white font-bold">{totalGames}</span> games
-                        </span>
-                        <span className="text-slate-400">
-                            <span className="text-cyan-400 font-bold">{totalPicks}</span> picks
-                        </span>
-                        {lockCount > 0 && (
-                            <span className="text-slate-400">
-                                <span className="text-amber-400 font-bold">{lockCount}</span> 🔥 agreement
-                            </span>
-                        )}
-                        <span className="text-slate-400">
-                            <span className="text-green-400 font-bold">{hotGames}</span> 🔥 hot
-                        </span>
-                        {splitGames > 0 && (
-                            <span className="text-slate-400">
-                                <span className="text-amber-400 font-bold">{splitGames}</span> ⚡ splits
-                            </span>
-                        )}
+                        {/* Stats bar with tier legend */}
+                        <div className="flex items-center justify-between flex-wrap gap-4">
+                            <div className="flex items-center gap-6 text-sm">
+                                <span className="text-slate-400">
+                                    <span className="text-white font-bold">{totalGames}</span> games
+                                </span>
+                                <span className="text-slate-400">
+                                    <span className="text-cyan-400 font-bold">{totalPicks}</span> picks
+                                </span>
+                                {lockCount > 0 && (
+                                    <span className="text-slate-400">
+                                        <span className="text-amber-400 font-bold">{lockCount}</span> 🔥 agreement
+                                    </span>
+                                )}
+                                {splitGames > 0 && (
+                                    <span className="text-slate-400">
+                                        <span className="text-amber-400 font-bold">{splitGames}</span> ⚔️ splits
+                                    </span>
+                                )}
+                            </div>
+
+                            {/* Tier Legend */}
+                            <div className="flex items-center gap-3">
+                                <span className="text-[10px] text-slate-500 uppercase tracking-wider">Tiers:</span>
+                                {(['Legendary', 'Elite', 'Rare', 'Uncommon', 'Common'] as RarityTier[]).map(tier => {
+                                    const rarity = getRarityStyleFromTier(tier)
+                                    const count = tierCounts[tier]
+                                    if (count === 0) return null
+                                    return (
+                                        <div key={tier} className="flex items-center gap-1">
+                                            <div
+                                                className="w-4 h-4 rounded"
+                                                style={{
+                                                    background: `linear-gradient(135deg, ${rarity.borderColor}40, ${rarity.borderColor}20)`,
+                                                    border: `2px solid ${rarity.borderColor}`,
+                                                    boxShadow: `0 0 6px ${rarity.glowColor}`
+                                                }}
+                                            />
+                                            <span
+                                                className="text-[10px] font-bold"
+                                                style={{ color: rarity.borderColor }}
+                                            >
+                                                {rarity.icon}{count}
+                                            </span>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            {/* Grid Table */}
-            <div className="container mx-auto px-4 mt-6">
-                {filteredRows.length === 0 ? (
-                    <div className="text-center py-20">
-                        <Activity className="h-12 w-12 text-slate-600 mx-auto mb-4" />
-                        <p className="text-slate-400">
-                            {activeFilter === 'all'
-                                ? 'No picks available today'
-                                : `No ${activeFilter} picks available`}
-                        </p>
-                        {activeFilter !== 'all' && (
-                            <button
-                                onClick={() => setActiveFilter('all')}
-                                className="mt-3 text-cyan-400 text-sm hover:underline"
-                            >
-                                View all picks →
-                            </button>
-                        )}
-                    </div>
-                ) : (
-                    <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/50">
-                        <table className="w-full border-collapse table-fixed">
-                            <thead>
-                                <tr className="border-b border-slate-700 bg-slate-800/50">
-                                    <th className="text-left py-4 px-5 text-xs font-bold text-slate-300 uppercase tracking-wider w-[200px]">
+                {/* Grid Table - Fixed height with scroll */}
+                <div className="container mx-auto px-4 mt-6">
+                    {filteredRows.length === 0 ? (
+                        <div className="text-center py-20">
+                            <Activity className="h-12 w-12 text-slate-600 mx-auto mb-4" />
+                            <p className="text-slate-400">
+                                {activeFilter === 'all'
+                                    ? 'No picks available today'
+                                    : `No ${activeFilter} picks available`}
+                            </p>
+                            {activeFilter !== 'all' && (
+                                <button
+                                    onClick={() => setActiveFilter('all')}
+                                    className="mt-3 text-cyan-400 text-sm hover:underline"
+                                >
+                                    View all picks →
+                                </button>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="rounded-xl border border-slate-800 bg-slate-900/50 overflow-hidden">
+                            {/* Sticky header */}
+                            <div className="bg-slate-800/80 backdrop-blur-sm sticky top-0 z-20 border-b border-slate-700">
+                                <div className="grid grid-cols-[200px_1fr_1fr]">
+                                    <div className="py-4 px-5 text-xs font-bold text-slate-300 uppercase tracking-wider">
                                         Matchup
-                                    </th>
-                                    <th className="text-center py-4 px-5 text-xs font-bold text-slate-300 uppercase tracking-wider w-[calc((100%-200px)/2)]">
-                                        <span className="flex items-center justify-center gap-2">
-                                            📊 Spread
-                                        </span>
-                                    </th>
-                                    <th className="text-center py-4 px-5 text-xs font-bold text-slate-300 uppercase tracking-wider w-[calc((100%-200px)/2)]">
-                                        <span className="flex items-center justify-center gap-2">
-                                            🎯 Total
-                                        </span>
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                                    </div>
+                                    <div className="py-4 px-5 text-xs font-bold text-slate-300 uppercase tracking-wider text-center">
+                                        📊 Spread
+                                    </div>
+                                    <div className="py-4 px-5 text-xs font-bold text-slate-300 uppercase tracking-wider text-center">
+                                        🎯 Total
+                                    </div>
+                                </div>
+                            </div>
+                            {/* Scrollable body - max height with scroll */}
+                            <div className="max-h-[calc(100vh-320px)] overflow-y-auto overflow-x-hidden">
                                 {filteredRows.map((row, idx) => {
                                     const countdown = getCountdown(row.gameTime)
                                     const isLive = countdown === 'LIVE'
                                     const minutesUntil = getMinutesUntilGame(row.gameTime)
                                     const isUrgent = minutesUntil > 0 && minutesUntil <= 60
                                     const hasLock = isLock(row.spread) || isLock(row.total)
+                                    // Get best tier for row highlight
+                                    const getBestTier = (cell: CellData | null): RarityTier => {
+                                        if (!cell || cell.sides.length === 0) return 'Common'
+                                        return cell.sides[0].bestTier
+                                    }
+                                    const rowBestTier = TIER_ORDER[getBestTier(row.spread)] > TIER_ORDER[getBestTier(row.total)]
+                                        ? getBestTier(row.spread)
+                                        : getBestTier(row.total)
+                                    const rowRarity = getRarityStyleFromTier(rowBestTier)
 
                                     return (
-                                        <tr
+                                        <div
                                             key={row.gameKey}
                                             className={`
-                                                border-b border-slate-800/50 transition-colors
-                                                ${hasLock
+                                            grid grid-cols-[200px_1fr_1fr] border-b border-slate-800/50 transition-colors
+                                            ${hasLock
                                                     ? 'bg-gradient-to-r from-amber-950/20 via-slate-900/30 to-amber-950/20'
                                                     : isLive
                                                         ? 'bg-red-950/20'
@@ -946,11 +1186,14 @@ export function PickGrid() {
                                                             ? 'bg-orange-950/10'
                                                             : idx % 2 === 0 ? 'bg-slate-900/30' : 'bg-slate-900/10'
                                                 }
-                                                hover:bg-slate-800/50
-                                            `}
+                                            hover:bg-slate-800/50
+                                        `}
+                                            style={{
+                                                borderLeft: rowBestTier !== 'Common' ? `3px solid ${rowRarity.borderColor}40` : undefined
+                                            }}
                                         >
                                             {/* Matchup Cell */}
-                                            <td className="py-5 px-5 align-top">
+                                            <div className="py-5 px-5">
                                                 <div className="flex items-center gap-2">
                                                     {hasLock && (
                                                         <span className="text-amber-400">🔥</span>
@@ -961,14 +1204,14 @@ export function PickGrid() {
                                                 </div>
                                                 {countdown && (
                                                     <div className={`
-                                                        text-xs mt-1.5 flex items-center gap-1.5 font-medium
-                                                        ${isLive
+                                                    text-xs mt-1.5 flex items-center gap-1.5 font-medium
+                                                    ${isLive
                                                             ? 'text-red-400 animate-pulse'
                                                             : isUrgent
                                                                 ? 'text-orange-400 animate-pulse'
                                                                 : 'text-slate-500'
                                                         }
-                                                    `}>
+                                                `}>
                                                         <Clock className="w-3 h-3" />
                                                         {isLive
                                                             ? '🔴 LIVE'
@@ -978,51 +1221,61 @@ export function PickGrid() {
                                                         }
                                                     </div>
                                                 )}
-                                            </td>
+                                                {/* Best tier badge */}
+                                                {rowBestTier !== 'Common' && (
+                                                    <div
+                                                        className="mt-2 inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded"
+                                                        style={{
+                                                            color: rowRarity.borderColor,
+                                                            background: `${rowRarity.borderColor}20`,
+                                                            border: `1px solid ${rowRarity.borderColor}40`
+                                                        }}
+                                                    >
+                                                        {rowRarity.icon} {rowBestTier}
+                                                    </div>
+                                                )}
+                                            </div>
 
                                             {/* Spread Cell */}
-                                            <td className="py-5 px-4 align-top">
+                                            <div className="py-5 px-4">
                                                 <PickCell
                                                     cell={row.spread}
                                                     picks={picks}
                                                     onPickClick={handlePickClick}
                                                     capperStats={capperStats}
-                                                    teamStats={teamStats}
-                                                    getTeamSpecificStats={getTeamSpecificStats}
                                                 />
-                                            </td>
+                                            </div>
 
                                             {/* Total Cell */}
-                                            <td className="py-5 px-4 align-top">
+                                            <div className="py-5 px-4">
                                                 <PickCell
                                                     cell={row.total}
                                                     picks={picks}
                                                     onPickClick={handlePickClick}
                                                     capperStats={capperStats}
-                                                    teamStats={teamStats}
-                                                    getTeamSpecificStats={getTeamSpecificStats}
                                                 />
-                                            </td>
-                                        </tr>
+                                            </div>
+                                        </div>
                                     )
                                 })}
-                            </tbody>
-                        </table>
-                    </div>
+                            </div>
+                        </div>
+                    )}
+                )}
+                </div>
+
+                {/* Insight Modal */}
+                {selectedPickId && (
+                    <PickInsightModal
+                        pickId={selectedPickId}
+                        onClose={() => {
+                            setSelectedPickId(null)
+                            setSelectedCapper(undefined)
+                        }}
+                        capper={selectedCapper}
+                    />
                 )}
             </div>
-
-            {/* Insight Modal */}
-            {selectedPickId && (
-                <PickInsightModal
-                    pickId={selectedPickId}
-                    onClose={() => {
-                        setSelectedPickId(null)
-                        setSelectedCapper(undefined)
-                    }}
-                    capper={selectedCapper}
-                />
-            )}
-        </div>
+        </TooltipProvider>
     )
 }
