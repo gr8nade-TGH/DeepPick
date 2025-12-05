@@ -1170,7 +1170,6 @@ export function PickGrid() {
                             </div>
                         </div>
                     )}
-                )}
                 </div>
 
                 {/* Insight Modal */}
