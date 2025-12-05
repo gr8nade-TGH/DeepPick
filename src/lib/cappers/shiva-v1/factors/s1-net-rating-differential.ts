@@ -59,7 +59,7 @@ function tanh(x: number): number {
 export function calculateNetRatingDiffPoints(input: NetRatingDiffInput): NetRatingDiffOutput {
   const { awayORtg, awayDRtg, homeORtg, homeDRtg, pace, spreadLine } = input
   const MAX_POINTS = 5.0
-  const SCALE = 8.0 // Scaling factor for tanh (8 points = strong signal)
+  const SCALE = 3.5 // Scaling factor for tanh (3.5 points = strong signal) - reduced from 8.0 for better sensitivity
 
   // Input validation
   if (![awayORtg, awayDRtg, homeORtg, homeDRtg, pace].every(v => Number.isFinite(v) && v > 0)) {

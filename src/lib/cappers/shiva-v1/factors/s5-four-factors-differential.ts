@@ -11,7 +11,7 @@
  * - Rating = (0.50 × eFG%) - (0.30 × TOV%) + (0.15 × OREB%) + (0.05 × FTR)
  * - Differential = awayRating - homeRating
  * - Expected Margin = differential × 120 (scale to points)
- * - Signal = tanh(expectedMargin / 8.0)
+ * - Signal = tanh(expectedMargin / 4.0) - reduced from 8.0 for better sensitivity
  *
  * ATS Predictive Value:
  * - Four Factors have 95% correlation to team wins
@@ -107,8 +107,8 @@ export function calculateFourFactorsPoints(input: FourFactorsInput): FourFactors
   // Rating differential of 0.10 ≈ 12 point margin
   const expectedMargin = differential * 120
 
-  // Apply tanh scaling for smooth saturation
-  const signal = clamp(tanh(expectedMargin / 8.0), -1, 1)
+  // Apply tanh scaling for smooth saturation - reduced from 8.0 to 4.0 for better sensitivity
+  const signal = clamp(tanh(expectedMargin / 4.0), -1, 1)
 
   // Award points based on signal direction
   let awayScore = 0

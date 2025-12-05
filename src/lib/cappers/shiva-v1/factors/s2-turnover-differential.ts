@@ -78,8 +78,8 @@ export function calculateTurnoverDiffPoints(input: TurnoverDiffInput): TurnoverD
   const expectedPointImpact = turnoverDifferential * POINTS_PER_TURNOVER
 
   // Calculate signal using tanh for smooth saturation
-  // Divide by 5.0 to normalize (max expected differential is ~5 TOV)
-  const signal = clamp(tanh(expectedPointImpact / 5.0), -1, 1)
+  // Divide by 3.0 to normalize - reduced from 5.0 for better sensitivity
+  const signal = clamp(tanh(expectedPointImpact / 3.0), -1, 1)
 
   // Convert signal to scores
   let awayScore = 0
