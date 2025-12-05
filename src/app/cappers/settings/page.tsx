@@ -170,13 +170,18 @@ const FACTOR_DETAILS: Record<string, { name: string; icon: any; description: str
   defensivePressure: { name: 'Defensive Pressure', icon: Shield, description: 'Defensive disruption through steals and blocks', importance: 'High pressure defense creates transition opportunities.', example: 'Team with +2 steals/game → Cover potential.', defaultWeight: 15, color: 'teal' },
   assistEfficiency: { name: 'Assist Efficiency', icon: Users, description: 'Ball movement quality and team chemistry', importance: 'High AST/TOV ratio = smart decisions.', example: 'Team with 2.0 AST/TOV vs 1.5 → ATS value.', defaultWeight: 15, color: 'sky' },
   fourFactorsDiff: { name: 'Four Factors Differential', icon: Trophy, description: 'Dean Oliver\'s Four Factors matchup analysis', importance: 'Four factors predict winning better than raw scoring.', example: 'Winning 3/4 factors → High probability of covering.', defaultWeight: 25, color: 'amber' },
-  momentumIndex: { name: 'Momentum Index', icon: TrendingUp, description: 'Team momentum based on win streak', importance: 'Hot teams tend to cover spreads.', example: 'Team on 5-game win streak → Strong ATS signal.', defaultWeight: 15, color: 'green' }
+  momentumIndex: { name: 'Momentum Index', icon: TrendingUp, description: 'Team momentum based on win streak', importance: 'Hot teams tend to cover spreads.', example: 'Team on 5-game win streak → Strong ATS signal.', defaultWeight: 15, color: 'green' },
+  // === ADDITIONAL SPREAD FACTORS (used by specific archetypes) ===
+  clutchShooting: { name: 'Clutch Shooting', icon: Target, description: 'FT% and late-game shooting efficiency', importance: 'Clutch performers close out games and cover spreads.', example: 'Team with 85% FT in 4th quarter → Strong ATS.', defaultWeight: 20, color: 'cyan' },
+  scoringMargin: { name: 'Scoring Margin', icon: BarChart3, description: 'Average point differential per game', importance: 'Teams that outscore opponents consistently cover.', example: '+8 scoring margin → Strong cover signal.', defaultWeight: 20, color: 'blue' },
+  perimeterDefense: { name: 'Perimeter Defense', icon: Shield, description: 'Opponent 3PT% and perimeter containment', importance: 'Elite perimeter D limits opponent scoring.', example: 'Holding opponents to 32% from 3 → ATS edge.', defaultWeight: 20, color: 'rose' },
+  homeAwaySplits: { name: 'Home/Away Splits', icon: Home, description: 'Performance difference home vs away', importance: 'Some teams play dramatically different at home.', example: 'Team 15-2 at home vs 5-12 away → Home ATS value.', defaultWeight: 20, color: 'violet' }
 }
 
 // Available factors for each bet type
 const AVAILABLE_FACTORS = {
   TOTAL: ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv', 'injuryAvailability', 'restAdvantage', 'defStrength', 'coldShooting'],
-  SPREAD: ['netRatingDiff', 'turnoverDiff', 'shootingEfficiencyMomentum', 'reboundingDiff', 'fourFactorsDiff', 'injuryAvailability', 'momentumIndex', 'defensivePressure', 'assistEfficiency']
+  SPREAD: ['netRatingDiff', 'turnoverDiff', 'shootingEfficiencyMomentum', 'reboundingDiff', 'fourFactorsDiff', 'injuryAvailability', 'momentumIndex', 'defensivePressure', 'assistEfficiency', 'clutchShooting', 'scoringMargin', 'perimeterDefense', 'homeAwaySplits']
 }
 
 // Factor groups for organized display
@@ -193,15 +198,19 @@ const FACTOR_GROUPS = {
     { id: 'rest', name: 'Rest Advantage', icon: Clock, factors: ['restAdvantage'], color: 'slate' },
   ],
   SPREAD: [
-    { id: 'netRating', name: 'Net Rating', icon: BarChart3, factors: ['netRatingDiff'], color: 'indigo' },
+    { id: 'netRating', name: 'Net', icon: BarChart3, factors: ['netRatingDiff'], color: 'indigo' },
     { id: 'turnovers', name: 'Turnovers', icon: Shuffle, factors: ['turnoverDiff'], color: 'emerald' },
-    { id: 'momentum', name: 'Shooting Momentum', icon: Flame, factors: ['shootingEfficiencyMomentum'], color: 'red' },
+    { id: 'shooting', name: 'Shooting', icon: Flame, factors: ['shootingEfficiencyMomentum'], color: 'red' },
     { id: 'rebounding', name: 'Rebounding', icon: Activity, factors: ['reboundingDiff'], color: 'purple' },
-    { id: 'fourFactors', name: 'Four Factors', icon: Trophy, factors: ['fourFactorsDiff'], color: 'amber' },
+    { id: 'fourFactors', name: 'Four', icon: Trophy, factors: ['fourFactorsDiff'], color: 'amber' },
     { id: 'injuries', name: 'Injuries', icon: UserX, factors: ['injuryAvailability'], color: 'purple' },
-    { id: 'momentumIndex', name: 'Momentum Index', icon: TrendingUp, factors: ['momentumIndex'], color: 'green' },
-    { id: 'defensivePressure', name: 'Defensive Pressure', icon: Shield, factors: ['defensivePressure'], color: 'teal' },
-    { id: 'assistEfficiency', name: 'Assist Efficiency', icon: Users, factors: ['assistEfficiency'], color: 'sky' },
+    { id: 'momentumIndex', name: 'Momentum', icon: TrendingUp, factors: ['momentumIndex'], color: 'green' },
+    { id: 'defensivePressure', name: 'Defensive', icon: Shield, factors: ['defensivePressure'], color: 'teal' },
+    { id: 'assistEfficiency', name: 'Assist', icon: Users, factors: ['assistEfficiency'], color: 'sky' },
+    { id: 'clutchShooting', name: 'Clutch', icon: Target, factors: ['clutchShooting'], color: 'cyan' },
+    { id: 'scoringMargin', name: 'Margin', icon: BarChart3, factors: ['scoringMargin'], color: 'blue' },
+    { id: 'perimeterDefense', name: 'Perimeter', icon: Shield, factors: ['perimeterDefense'], color: 'rose' },
+    { id: 'homeAwaySplits', name: 'Home/Away', icon: Home, factors: ['homeAwaySplits'], color: 'violet' },
   ]
 }
 
@@ -228,14 +237,18 @@ const TOTALS_ARCHETYPES: PresetConfig[] = [
 // ============================================
 const SPREAD_ARCHETYPES: PresetConfig[] = [
   { id: 'hot-hand', name: 'The Hot Hand', description: 'Shooting streaks are real. Ride the hot teams.', icon: TrendingUp, color: 'red', philosophy: 'Recent shooting momentum predicts near-term performance.', totalFactors: { enabled: [], weights: {} }, spreadFactors: { enabled: ['shootingEfficiencyMomentum', 'netRatingDiff', 'reboundingDiff', 'fourFactorsDiff', 'turnoverDiff'], weights: { shootingEfficiencyMomentum: 80, netRatingDiff: 60, reboundingDiff: 50, fourFactorsDiff: 40, turnoverDiff: 20 } } },
-  { id: 'matchup-master', name: 'The Matchup Master', description: 'It\'s all about the matchup. Offense vs defense.', icon: Swords, color: 'indigo', philosophy: 'Ignore records, focus on how teams match up.', totalFactors: { enabled: [], weights: {} }, spreadFactors: { enabled: ['fourFactorsDiff', 'reboundingDiff', 'netRatingDiff', 'shootingEfficiencyMomentum', 'injuryAvailability'], weights: { fourFactorsDiff: 70, reboundingDiff: 60, netRatingDiff: 50, shootingEfficiencyMomentum: 40, injuryAvailability: 30 } } },
+  { id: 'matchup-master', name: 'The Matchup Master', description: 'It\'s all about the matchup. Offense vs defense.', icon: Swords, color: 'indigo', philosophy: 'Ignore records, focus on how teams match up.', totalFactors: { enabled: [], weights: {} }, spreadFactors: { enabled: ['fourFactorsDiff', 'homeAwaySplits', 'netRatingDiff', 'shootingEfficiencyMomentum', 'momentumIndex'], weights: { fourFactorsDiff: 70, homeAwaySplits: 50, netRatingDiff: 50, shootingEfficiencyMomentum: 40, momentumIndex: 40 } } },
   { id: 'disruptor', name: 'The Disruptor', description: 'Chaos wins. Force turnovers, control the game.', icon: Shuffle, color: 'emerald', philosophy: 'Turnovers are the great equalizer.', totalFactors: { enabled: [], weights: {} }, spreadFactors: { enabled: ['turnoverDiff', 'defensivePressure', 'fourFactorsDiff', 'netRatingDiff', 'reboundingDiff'], weights: { turnoverDiff: 70, defensivePressure: 50, fourFactorsDiff: 50, netRatingDiff: 40, reboundingDiff: 40 } } },
   { id: 'closer', name: 'The Closer', description: 'Net rating and efficiency win close games.', icon: Trophy, color: 'amber', philosophy: 'Games are won by the better team.', totalFactors: { enabled: [], weights: {} }, spreadFactors: { enabled: ['netRatingDiff', 'shootingEfficiencyMomentum', 'turnoverDiff', 'reboundingDiff', 'fourFactorsDiff'], weights: { netRatingDiff: 75, shootingEfficiencyMomentum: 55, turnoverDiff: 50, reboundingDiff: 40, fourFactorsDiff: 30 } } },
   { id: 'injury-hawk', name: 'The Injury Hawk', description: 'Lines move slow. Injuries create value.', icon: UserX, color: 'purple', philosophy: 'Vegas adjusts lines, but not enough.', totalFactors: { enabled: [], weights: {} }, spreadFactors: { enabled: ['injuryAvailability', 'fourFactorsDiff', 'reboundingDiff', 'netRatingDiff', 'turnoverDiff'], weights: { injuryAvailability: 80, fourFactorsDiff: 60, reboundingDiff: 50, netRatingDiff: 40, turnoverDiff: 20 } } },
   { id: 'board-bully', name: 'The Board Bully', description: 'Control the glass, control the game.', icon: Activity, color: 'teal', philosophy: 'Rebounding is the most underrated factor.', totalFactors: { enabled: [], weights: {} }, spreadFactors: { enabled: ['reboundingDiff', 'turnoverDiff', 'fourFactorsDiff', 'netRatingDiff', 'shootingEfficiencyMomentum'], weights: { reboundingDiff: 85, turnoverDiff: 55, fourFactorsDiff: 50, netRatingDiff: 40, shootingEfficiencyMomentum: 20 } } },
   { id: 'cold-blooded', name: 'The Cold Blooded', description: 'Fade the hype. Trust fundamentals over narratives.', icon: Eye, color: 'gray', philosophy: 'Ignore the noise. Net rating + four factors = truth.', totalFactors: { enabled: [], weights: {} }, spreadFactors: { enabled: ['netRatingDiff', 'fourFactorsDiff', 'injuryAvailability', 'turnoverDiff', 'reboundingDiff'], weights: { netRatingDiff: 80, fourFactorsDiff: 70, injuryAvailability: 50, turnoverDiff: 30, reboundingDiff: 20 } } },
   { id: 'the-grinder', name: 'The Grinder', description: 'Discipline wins. Low turnover teams cover.', icon: Mountain, color: 'stone', philosophy: 'Ball security + efficient shooting = covering spreads.', totalFactors: { enabled: [], weights: {} }, spreadFactors: { enabled: ['turnoverDiff', 'shootingEfficiencyMomentum', 'netRatingDiff', 'fourFactorsDiff', 'reboundingDiff'], weights: { turnoverDiff: 75, shootingEfficiencyMomentum: 60, netRatingDiff: 50, fourFactorsDiff: 40, reboundingDiff: 25 } } },
-  { id: 'ball-mover', name: 'The Ball Mover', description: 'Unselfish teams with great chemistry cover.', icon: Users, color: 'sky', philosophy: 'High AST/TOV ratio = smart decisions.', totalFactors: { enabled: [], weights: {} }, spreadFactors: { enabled: ['assistEfficiency', 'turnoverDiff', 'fourFactorsDiff', 'netRatingDiff', 'reboundingDiff'], weights: { assistEfficiency: 75, turnoverDiff: 55, fourFactorsDiff: 50, netRatingDiff: 40, reboundingDiff: 30 } } }
+  { id: 'ball-mover', name: 'The Ball Mover', description: 'Unselfish teams with great chemistry cover.', icon: Users, color: 'sky', philosophy: 'High AST/TOV ratio = smart decisions.', totalFactors: { enabled: [], weights: {} }, spreadFactors: { enabled: ['assistEfficiency', 'turnoverDiff', 'fourFactorsDiff', 'netRatingDiff', 'reboundingDiff'], weights: { assistEfficiency: 75, turnoverDiff: 55, fourFactorsDiff: 50, netRatingDiff: 40, reboundingDiff: 30 } } },
+  // New archetypes using clutchShooting, scoringMargin, perimeterDefense
+  { id: 'ice-veins', name: 'Ice Veins', description: 'Clutch shooting wins close games. Nerves of steel.', icon: Target, color: 'cyan', philosophy: 'When the game is on the line, FT% and FG% are everything.', totalFactors: { enabled: [], weights: {} }, spreadFactors: { enabled: ['clutchShooting', 'scoringMargin', 'netRatingDiff', 'fourFactorsDiff', 'turnoverDiff'], weights: { clutchShooting: 80, scoringMargin: 55, netRatingDiff: 50, fourFactorsDiff: 40, turnoverDiff: 25 } } },
+  { id: 'lockdown', name: 'The Lockdown', description: 'Defense travels. Elite perimeter D = spreads covered.', icon: Shield, color: 'rose', philosophy: 'Perimeter defense + pressure creates turnovers and limits scoring.', totalFactors: { enabled: [], weights: {} }, spreadFactors: { enabled: ['perimeterDefense', 'defensivePressure', 'fourFactorsDiff', 'turnoverDiff', 'netRatingDiff'], weights: { perimeterDefense: 80, defensivePressure: 55, fourFactorsDiff: 50, turnoverDiff: 40, netRatingDiff: 25 } } },
+  { id: 'point-machine', name: 'The Point Machine', description: 'Outscore everyone. Scoring margin is destiny.', icon: BarChart3, color: 'blue', philosophy: 'Simple math: teams that outscore opponents cover spreads.', totalFactors: { enabled: [], weights: {} }, spreadFactors: { enabled: ['scoringMargin', 'clutchShooting', 'netRatingDiff', 'fourFactorsDiff', 'turnoverDiff'], weights: { scoringMargin: 85, clutchShooting: 55, netRatingDiff: 50, fourFactorsDiff: 35, turnoverDiff: 25 } } }
 ]
 
 const NBA_TEAMS = [
