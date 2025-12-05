@@ -257,6 +257,9 @@ export async function POST(request: Request) {
       gapVsVegas: baselineAvg - marketLine
     })
 
+    // Extract baseline model from factorConfig for transparency
+    const baselineModel = factorConfig?.baseline_model || (betType === 'TOTAL' ? 'pace-efficiency' : 'net-rating')
+
     const metadata: any = {
       capper: capperId,
       sport: 'NBA',
@@ -269,6 +272,8 @@ export async function POST(request: Request) {
       predicted_total: predictedValue, // For TOTAL: predicted total, For SPREAD: predicted margin
       baseline_avg: baselineAvg, // NEW: Stats-based baseline (not Vegas) for pick diversity
       market_total: marketLine, // For TOTAL: market total line, For SPREAD: market spread line
+      // NEW: Baseline model used for pick diversity
+      baseline_model: baselineModel,
       // NEW: Stats baseline debug info for transparency in insight cards
       stats_baseline_debug: statsBaselineDebug,
       predicted_home_score: result.log?.finalPrediction?.home || 0,
