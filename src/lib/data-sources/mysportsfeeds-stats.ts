@@ -184,6 +184,16 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
       const resolvedHomeTeam = firstGame.game?.homeTeam || firstGame.game?.schedule?.homeTeam
       const resolvedAwayTeam = firstGame.game?.awayTeam || firstGame.game?.schedule?.awayTeam
 
+      // DEBUG REST DAYS: Log ALL date-related fields
+      console.log(`[MySportsFeeds Stats] REST DAYS DEBUG for ${teamAbbrev}:`, {
+        'game.startTime': firstGame.game?.startTime,
+        'game.schedule': firstGame.game?.schedule,
+        'game.schedule.startTime': firstGame.game?.schedule?.startTime,
+        'game.date': firstGame.game?.date,
+        gameKeys: firstGame.game ? Object.keys(firstGame.game) : [],
+        scheduleKeys: firstGame.game?.schedule ? Object.keys(firstGame.game.schedule) : []
+      })
+
       console.log(`[MySportsFeeds Stats] DIAGNOSTIC - First game for ${teamAbbrev}:`, {
         gameId: firstGame.game?.id,
         startTime: firstGame.game?.startTime,
@@ -195,7 +205,6 @@ export async function getTeamFormData(teamInput: string, n: number = 10): Promis
         defense: firstGame.stats?.defense,
         rebounds: firstGame.stats?.rebounds,
         // Home/Away detection fields - check both possible locations
-        gameKeys: firstGame.game ? Object.keys(firstGame.game) : [],
         teamId: firstGame.team?.id,
         directHomeTeam: firstGame.game?.homeTeam,
         directAwayTeam: firstGame.game?.awayTeam,
