@@ -15,43 +15,78 @@ type ConfigTab = 'archetype' | 'options'
 // ============================================
 // BASELINE MODELS - For Pick Diversity
 // Different models produce different predictions, creating genuine splits
+// Each model has a unique avatar border style for visual differentiation
 // ============================================
 type TotalsBaselineModel = 'pace-efficiency' | 'ppg-based' | 'matchup-defensive'
 type SpreadBaselineModel = 'net-rating' | 'scoring-margin' | 'h2h-projection'
 
-const TOTALS_BASELINE_MODELS: Record<TotalsBaselineModel, { name: string; description: string; icon: string }> = {
+interface BaselineModelInfo {
+  name: string
+  description: string
+  icon: string
+  color: string
+  borderStyle: string // Unique CSS for avatar border
+  glowColor: string
+  philosophy: string
+}
+
+const TOTALS_BASELINE_MODELS: Record<TotalsBaselineModel, BaselineModelInfo> = {
   'pace-efficiency': {
     name: 'Pace-Efficiency',
-    description: 'Uses pace × offensive ratings. Best for fast-paced teams.',
-    icon: '⚡'
+    description: 'Uses pace × offensive ratings',
+    icon: '⚡',
+    color: 'yellow',
+    borderStyle: 'border-4 border-yellow-400 shadow-[0_0_20px_rgba(250,204,21,0.5),inset_0_0_15px_rgba(250,204,21,0.2)]',
+    glowColor: 'rgba(250,204,21,0.6)',
+    philosophy: 'Speed kills. Trust the tempo.'
   },
   'ppg-based': {
     name: 'PPG Average',
-    description: 'Uses raw scoring averages. Best for consistent scorers.',
-    icon: '📊'
+    description: 'Uses raw scoring averages',
+    icon: '📊',
+    color: 'blue',
+    borderStyle: 'border-4 border-blue-400 shadow-[0_0_20px_rgba(96,165,250,0.5),inset_0_0_15px_rgba(96,165,250,0.2)]',
+    glowColor: 'rgba(96,165,250,0.6)',
+    philosophy: 'Numbers don\'t lie. Trust the average.'
   },
   'matchup-defensive': {
     name: 'Matchup-Defensive',
-    description: 'Weights opponent defense heavily. Best for elite defenses.',
-    icon: '🛡️'
+    description: 'Weights opponent defense heavily',
+    icon: '🛡️',
+    color: 'emerald',
+    borderStyle: 'border-4 border-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.5),inset_0_0_15px_rgba(52,211,153,0.2)]',
+    glowColor: 'rgba(52,211,153,0.6)',
+    philosophy: 'Defense wins. Respect the matchup.'
   }
 }
 
-const SPREAD_BASELINE_MODELS: Record<SpreadBaselineModel, { name: string; description: string; icon: string }> = {
+const SPREAD_BASELINE_MODELS: Record<SpreadBaselineModel, BaselineModelInfo> = {
   'net-rating': {
     name: 'Net Rating',
-    description: 'Uses efficiency differential (ORtg - DRtg).',
-    icon: '📈'
+    description: 'Uses efficiency differential',
+    icon: '📈',
+    color: 'purple',
+    borderStyle: 'border-4 border-purple-400 shadow-[0_0_20px_rgba(192,132,252,0.5),inset_0_0_15px_rgba(192,132,252,0.2)]',
+    glowColor: 'rgba(192,132,252,0.6)',
+    philosophy: 'Quality matters. Trust the ratings.'
   },
   'scoring-margin': {
     name: 'Scoring Margin',
-    description: 'Uses actual point differentials from games.',
-    icon: '🎯'
+    description: 'Uses actual point differentials',
+    icon: '🎯',
+    color: 'red',
+    borderStyle: 'border-4 border-red-400 shadow-[0_0_20px_rgba(248,113,113,0.5),inset_0_0_15px_rgba(248,113,113,0.2)]',
+    glowColor: 'rgba(248,113,113,0.6)',
+    philosophy: 'Scoreboard is truth. Trust the margins.'
   },
   'h2h-projection': {
     name: 'Head-to-Head',
-    description: 'Projects scores vs specific opponent defense.',
-    icon: '⚔️'
+    description: 'Projects vs specific opponent',
+    icon: '⚔️',
+    color: 'orange',
+    borderStyle: 'border-4 border-orange-400 shadow-[0_0_20px_rgba(251,146,60,0.5),inset_0_0_15px_rgba(251,146,60,0.2)]',
+    glowColor: 'rgba(251,146,60,0.6)',
+    philosophy: 'Every opponent is different. Project the clash.'
   }
 }
 
@@ -693,44 +728,86 @@ export default function CreateCapperPage() {
     }
   }, [profile])
 
-  // Randomly select 2 archetypes + 2 baseline models on page load
+  // State for baseline model usage counts (for least-used default selection)
+  const [baselineModelUsage, setBaselineModelUsage] = useState<{
+    totals: Record<string, number>
+    spread: Record<string, number>
+  } | null>(null)
+
+  // Helper: Select least-used model from usage counts (random on tie)
+  const selectLeastUsedModel = <T extends string>(
+    models: T[],
+    usage: Record<string, number>
+  ): T => {
+    const minCount = Math.min(...models.map(m => usage[m] || 0))
+    const leastUsed = models.filter(m => (usage[m] || 0) === minCount)
+    return leastUsed[Math.floor(Math.random() * leastUsed.length)]
+  }
+
+  // Fetch baseline model usage and select 2 archetypes + 2 baseline models on page load
   useEffect(() => {
-    // Pick random TOTAL archetype
-    const randomTotalIndex = Math.floor(Math.random() * TOTALS_ARCHETYPES.length)
-    const randomTotalArchetype = TOTALS_ARCHETYPES[randomTotalIndex]
+    const initializeSelections = async () => {
+      // Fetch usage counts for smart default selection
+      let totalsUsage: Record<string, number> = {}
+      let spreadUsage: Record<string, number> = {}
 
-    // Pick random SPREAD archetype
-    const randomSpreadIndex = Math.floor(Math.random() * SPREAD_ARCHETYPES.length)
-    const randomSpreadArchetype = SPREAD_ARCHETYPES[randomSpreadIndex]
-
-    // Pick random baseline models (for pick diversity)
-    const totalsBaselineKeys = Object.keys(TOTALS_BASELINE_MODELS) as TotalsBaselineModel[]
-    const spreadBaselineKeys = Object.keys(SPREAD_BASELINE_MODELS) as SpreadBaselineModel[]
-    const randomTotalsBaseline = totalsBaselineKeys[Math.floor(Math.random() * totalsBaselineKeys.length)]
-    const randomSpreadBaseline = spreadBaselineKeys[Math.floor(Math.random() * spreadBaselineKeys.length)]
-
-    // Set selected presets
-    setSelectedPresets({
-      TOTAL: randomTotalArchetype.id,
-      SPREAD: randomSpreadArchetype.id
-    })
-
-    // Apply their factor configurations + baseline models
-    setConfig(prev => ({
-      ...prev,
-      factor_config: {
-        TOTAL: {
-          enabled_factors: randomTotalArchetype.totalFactors.enabled,
-          weights: randomTotalArchetype.totalFactors.weights,
-          baseline_model: randomTotalsBaseline
-        },
-        SPREAD: {
-          enabled_factors: randomSpreadArchetype.spreadFactors.enabled,
-          weights: randomSpreadArchetype.spreadFactors.weights,
-          baseline_model: randomSpreadBaseline
+      try {
+        const response = await fetch('/api/cappers/baseline-model-usage')
+        const data = await response.json()
+        if (data.success) {
+          totalsUsage = data.totals
+          spreadUsage = data.spread
+          setBaselineModelUsage({ totals: totalsUsage, spread: spreadUsage })
         }
+      } catch (err) {
+        console.log('Could not fetch baseline model usage, using random selection')
       }
-    }))
+
+      // Pick random TOTAL archetype
+      const randomTotalIndex = Math.floor(Math.random() * TOTALS_ARCHETYPES.length)
+      const randomTotalArchetype = TOTALS_ARCHETYPES[randomTotalIndex]
+
+      // Pick random SPREAD archetype
+      const randomSpreadIndex = Math.floor(Math.random() * SPREAD_ARCHETYPES.length)
+      const randomSpreadArchetype = SPREAD_ARCHETYPES[randomSpreadIndex]
+
+      // Select baseline models (prefer least-used for diversity)
+      const totalsBaselineKeys = Object.keys(TOTALS_BASELINE_MODELS) as TotalsBaselineModel[]
+      const spreadBaselineKeys = Object.keys(SPREAD_BASELINE_MODELS) as SpreadBaselineModel[]
+
+      const selectedTotalsBaseline = Object.keys(totalsUsage).length > 0
+        ? selectLeastUsedModel(totalsBaselineKeys, totalsUsage)
+        : totalsBaselineKeys[Math.floor(Math.random() * totalsBaselineKeys.length)]
+
+      const selectedSpreadBaseline = Object.keys(spreadUsage).length > 0
+        ? selectLeastUsedModel(spreadBaselineKeys, spreadUsage)
+        : spreadBaselineKeys[Math.floor(Math.random() * spreadBaselineKeys.length)]
+
+      // Set selected presets
+      setSelectedPresets({
+        TOTAL: randomTotalArchetype.id,
+        SPREAD: randomSpreadArchetype.id
+      })
+
+      // Apply their factor configurations + baseline models
+      setConfig(prev => ({
+        ...prev,
+        factor_config: {
+          TOTAL: {
+            enabled_factors: randomTotalArchetype.totalFactors.enabled,
+            weights: randomTotalArchetype.totalFactors.weights,
+            baseline_model: selectedTotalsBaseline
+          },
+          SPREAD: {
+            enabled_factors: randomSpreadArchetype.spreadFactors.enabled,
+            weights: randomSpreadArchetype.spreadFactors.weights,
+            baseline_model: selectedSpreadBaseline
+          }
+        }
+      }))
+    }
+
+    initializeSelections()
   }, []) // Empty dependency array = runs once on mount
 
   const updateConfig = (updates: Partial<CapperConfig>) => {
@@ -1043,17 +1120,44 @@ export default function CreateCapperPage() {
                   const TotalsIcon = totalsPreset?.icon || Swords
                   const SpreadIcon = spreadPreset?.icon || Swords
 
+                  // Get baseline model border style (combine both for unique visual)
+                  const totalsModel = config.factor_config?.TOTAL?.baseline_model as TotalsBaselineModel | undefined
+                  const spreadModel = config.factor_config?.SPREAD?.baseline_model as SpreadBaselineModel | undefined
+                  const totalsModelInfo = totalsModel ? TOTALS_BASELINE_MODELS[totalsModel] : null
+                  const spreadModelInfo = spreadModel ? SPREAD_BASELINE_MODELS[spreadModel] : null
+
+                  // Create combined glow from both baseline models
+                  const combinedGlow = totalsModelInfo && spreadModelInfo
+                    ? `0 0 25px ${totalsModelInfo.glowColor}, 0 0 40px ${spreadModelInfo.glowColor}`
+                    : totalsModelInfo ? `0 0 30px ${totalsModelInfo.glowColor}`
+                      : spreadModelInfo ? `0 0 30px ${spreadModelInfo.glowColor}`
+                        : 'none'
+
                   return (
                     <div className="relative w-32 h-32 mb-4">
-                      {/* Background glow ring - blends both colors */}
-                      <div className={`absolute inset-0 rounded-full transition-all duration-500 ${hasBoth
-                        ? 'bg-gradient-to-br from-cyan-500/20 via-purple-500/20 to-red-500/20 border-2 border-amber-500/60 shadow-lg shadow-amber-500/30'
-                        : totalsPreset
-                          ? `bg-gradient-to-br from-${totalsPreset.color}-500/30 to-${totalsPreset.color}-600/10 border-2 border-${totalsPreset.color}-500/50 shadow-lg shadow-${totalsPreset.color}-500/20`
-                          : spreadPreset
-                            ? `bg-gradient-to-br from-${spreadPreset.color}-500/30 to-${spreadPreset.color}-600/10 border-2 border-${spreadPreset.color}-500/50 shadow-lg shadow-${spreadPreset.color}-500/20`
-                            : 'bg-slate-700/50 border-2 border-slate-600'
-                        }`} />
+                      {/* Outer ring - Baseline Model border (animated glow) */}
+                      <div
+                        className="absolute -inset-1 rounded-full transition-all duration-500 animate-pulse"
+                        style={{
+                          boxShadow: combinedGlow,
+                          background: totalsModelInfo && spreadModelInfo
+                            ? `conic-gradient(from 0deg, ${totalsModelInfo.glowColor}, ${spreadModelInfo.glowColor}, ${totalsModelInfo.glowColor})`
+                            : 'transparent',
+                          opacity: 0.6
+                        }}
+                      />
+
+                      {/* Inner avatar circle */}
+                      <div className={`absolute inset-0 rounded-full transition-all duration-500 bg-gradient-to-br from-slate-800 to-slate-900 ${totalsModelInfo && spreadModelInfo
+                        ? `border-4 border-transparent`
+                        : 'border-2 border-slate-600'
+                        }`}
+                        style={{
+                          borderImage: totalsModelInfo && spreadModelInfo
+                            ? `linear-gradient(135deg, ${totalsModelInfo.glowColor}, ${spreadModelInfo.glowColor}) 1`
+                            : undefined
+                        }}
+                      />
 
                       {hasBoth ? (
                         <>
@@ -1072,9 +1176,16 @@ export default function CreateCapperPage() {
                               </div>
                             </div>
                           </div>
-                          {/* Fusion badge */}
-                          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-gradient-to-r from-cyan-500 to-purple-500 text-[8px] font-bold text-white uppercase tracking-wider shadow-lg">
-                            Fusion
+                          {/* Baseline model badge */}
+                          <div
+                            className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[8px] font-bold text-white uppercase tracking-wider shadow-lg"
+                            style={{
+                              background: totalsModelInfo && spreadModelInfo
+                                ? `linear-gradient(135deg, ${totalsModelInfo.glowColor}, ${spreadModelInfo.glowColor})`
+                                : 'linear-gradient(135deg, #fbbf24, #f97316)'
+                            }}
+                          >
+                            {totalsModelInfo?.icon || '⚡'} {spreadModelInfo?.icon || '📈'}
                           </div>
                         </>
                       ) : hasAny ? (
@@ -1181,34 +1292,92 @@ export default function CreateCapperPage() {
                     )
                   })()}
 
-                  {/* Baseline Models - For Pick Diversity */}
+                  {/* Baseline Models - Interactive Selection */}
                   <div className="mt-3 pt-3 border-t border-slate-700/50">
                     <div className="text-[9px] font-bold text-slate-500 uppercase mb-2 flex items-center gap-1">
                       <Shuffle className="w-3 h-3" />
-                      Prediction Models
+                      Prediction Brain
                     </div>
-                    {/* TOTALS Baseline */}
-                    {(() => {
-                      const model = config.factor_config?.TOTAL?.baseline_model as TotalsBaselineModel | undefined
-                      const modelInfo = model ? TOTALS_BASELINE_MODELS[model] : null
-                      return (
-                        <div className="flex items-center gap-2 px-2 py-1.5 rounded bg-slate-800/30 mb-1">
-                          <span className="text-[9px] text-cyan-400/70 w-14">Totals:</span>
-                          <span className="text-[10px] text-slate-300">{modelInfo?.icon} {modelInfo?.name || 'Default'}</span>
-                        </div>
-                      )
-                    })()}
-                    {/* SPREAD Baseline */}
-                    {(() => {
-                      const model = config.factor_config?.SPREAD?.baseline_model as SpreadBaselineModel | undefined
-                      const modelInfo = model ? SPREAD_BASELINE_MODELS[model] : null
-                      return (
-                        <div className="flex items-center gap-2 px-2 py-1.5 rounded bg-slate-800/30">
-                          <span className="text-[9px] text-purple-400/70 w-14">Spread:</span>
-                          <span className="text-[10px] text-slate-300">{modelInfo?.icon} {modelInfo?.name || 'Default'}</span>
-                        </div>
-                      )
-                    })()}
+
+                    {/* TOTALS Baseline Selector */}
+                    <div className="mb-2">
+                      <div className="text-[8px] text-cyan-400/70 uppercase mb-1">Totals Model:</div>
+                      <div className="grid grid-cols-3 gap-1">
+                        {(Object.entries(TOTALS_BASELINE_MODELS) as [TotalsBaselineModel, BaselineModelInfo][]).map(([key, info]) => {
+                          const isSelected = config.factor_config?.TOTAL?.baseline_model === key
+                          const usageCount = baselineModelUsage?.totals?.[key] || 0
+                          return (
+                            <button
+                              key={key}
+                              onClick={() => setConfig(prev => ({
+                                ...prev,
+                                factor_config: {
+                                  ...prev.factor_config,
+                                  TOTAL: { ...prev.factor_config.TOTAL, baseline_model: key }
+                                }
+                              }))}
+                              className={`relative p-1.5 rounded-lg text-center transition-all ${isSelected
+                                ? 'ring-2 ring-offset-1 ring-offset-slate-900'
+                                : 'hover:bg-slate-700/50 opacity-60 hover:opacity-100'
+                                }`}
+                              style={{
+                                backgroundColor: isSelected ? `${info.glowColor.replace('0.6', '0.2')}` : 'rgba(30,41,59,0.5)',
+                                boxShadow: isSelected ? `0 0 15px ${info.glowColor}, inset 0 0 0 2px ${info.glowColor}` : 'none'
+                              }}
+                              title={info.philosophy}
+                            >
+                              <div className="text-lg">{info.icon}</div>
+                              <div className="text-[7px] font-bold text-white truncate">{info.name.split('-')[0]}</div>
+                              {usageCount > 0 && (
+                                <div className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-slate-700 text-[6px] text-slate-400 flex items-center justify-center">
+                                  {usageCount}
+                                </div>
+                              )}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+
+                    {/* SPREAD Baseline Selector */}
+                    <div>
+                      <div className="text-[8px] text-purple-400/70 uppercase mb-1">Spread Model:</div>
+                      <div className="grid grid-cols-3 gap-1">
+                        {(Object.entries(SPREAD_BASELINE_MODELS) as [SpreadBaselineModel, BaselineModelInfo][]).map(([key, info]) => {
+                          const isSelected = config.factor_config?.SPREAD?.baseline_model === key
+                          const usageCount = baselineModelUsage?.spread?.[key] || 0
+                          return (
+                            <button
+                              key={key}
+                              onClick={() => setConfig(prev => ({
+                                ...prev,
+                                factor_config: {
+                                  ...prev.factor_config,
+                                  SPREAD: { ...prev.factor_config.SPREAD, baseline_model: key }
+                                }
+                              }))}
+                              className={`relative p-1.5 rounded-lg text-center transition-all ${isSelected
+                                ? 'ring-2 ring-offset-1 ring-offset-slate-900'
+                                : 'hover:bg-slate-700/50 opacity-60 hover:opacity-100'
+                                }`}
+                              style={{
+                                backgroundColor: isSelected ? `${info.glowColor.replace('0.6', '0.2')}` : 'rgba(30,41,59,0.5)',
+                                boxShadow: isSelected ? `0 0 15px ${info.glowColor}, inset 0 0 0 2px ${info.glowColor}` : 'none'
+                              }}
+                              title={info.philosophy}
+                            >
+                              <div className="text-lg">{info.icon}</div>
+                              <div className="text-[7px] font-bold text-white truncate">{info.name.split(' ')[0]}</div>
+                              {usageCount > 0 && (
+                                <div className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-slate-700 text-[6px] text-slate-400 flex items-center justify-center">
+                                  {usageCount}
+                                </div>
+                              )}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
                   </div>
 
                   {/* NFL TOTALS - Coming Soon */}
