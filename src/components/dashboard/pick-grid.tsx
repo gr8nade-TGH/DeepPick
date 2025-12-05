@@ -557,106 +557,8 @@ function HeavyAgreementBadge({ capperCount, combinedRecord }: { capperCount: num
     )
 }
 
-// Tier Square component - same visual style as Pick History grid
-function TierSquare({
-    pickData,
-    pick,
-    onClick,
-    size = 'md',
-    capperStats
-}: {
-    pickData: PickData
-    pick: Pick | undefined
-    onClick: () => void
-    size?: 'sm' | 'md' | 'lg'
-    capperStats?: CapperStats
-}) {
-    const rarity = getRarityStyleFromTier(pickData.tier)
-    const sizeClass = size === 'sm' ? 'w-5 h-5' : size === 'lg' ? 'w-7 h-7' : 'w-6 h-6'
-
-    const style = {
-        background: `linear-gradient(135deg, ${rarity.borderColor}40, ${rarity.borderColor}20)`,
-        border: `2px solid ${rarity.borderColor}`,
-        boxShadow: `0 0 8px ${rarity.glowColor}`
-    }
-
-    return (
-        <Tooltip>
-            <TooltipTrigger asChild>
-                <button
-                    onClick={onClick}
-                    className={`${sizeClass} rounded cursor-pointer transition-all hover:scale-125 flex items-center justify-center relative`}
-                    style={style}
-                >
-                    {/* Source indicator - tiny dot in corner */}
-                    <span
-                        className={`absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full ${pickData.isSystemPick ? 'bg-cyan-400' : 'bg-purple-400'}`}
-                        style={{ boxShadow: pickData.isSystemPick ? '0 0 3px rgba(34,211,238,0.8)' : '0 0 3px rgba(192,132,252,0.8)' }}
-                    />
-                </button>
-            </TooltipTrigger>
-            <TooltipContent side="top" className="p-0 border-0 bg-transparent z-[100]">
-                <div
-                    className="rounded-lg p-2.5 max-w-xs"
-                    style={{
-                        background: `linear-gradient(135deg, rgba(15,15,25,0.98), rgba(25,25,40,0.98))`,
-                        border: `2px solid ${rarity.borderColor}`,
-                        boxShadow: `0 0 15px ${rarity.glowColor}`
-                    }}
-                >
-                    <div className="space-y-1.5">
-                        {/* Tier badge + Source */}
-                        <div className="flex items-center gap-2">
-                            <span
-                                className="text-[9px] font-bold px-1.5 py-0.5 rounded"
-                                style={{
-                                    background: `linear-gradient(135deg, ${rarity.borderColor}40, ${rarity.borderColor}20)`,
-                                    color: rarity.borderColor,
-                                    border: `1px solid ${rarity.borderColor}60`
-                                }}
-                            >
-                                {rarity.icon} {pickData.tier.toUpperCase()}
-                            </span>
-                            <span className={`text-[9px] px-1.5 py-0.5 rounded ${pickData.isSystemPick
-                                ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40'
-                                : 'bg-purple-500/20 text-purple-400 border border-purple-500/40'}`}>
-                                {pickData.isSystemPick ? '🤖 AI' : '👤 Manual'}
-                            </span>
-                        </div>
-
-                        {/* Capper name */}
-                        <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] font-semibold text-amber-400 uppercase">
-                                {pickData.capper}
-                            </span>
-                            <span className="text-[10px] text-slate-400">
-                                {pickData.units}u
-                            </span>
-                        </div>
-
-                        {/* Selection */}
-                        <div className="text-xs font-bold text-white">
-                            {pickData.selection}
-                        </div>
-
-                        {/* Capper stats if available */}
-                        {capperStats && (
-                            <div className="flex items-center gap-2 pt-1 border-t border-slate-700">
-                                <span className="text-[9px] text-slate-400">Record:</span>
-                                <span className="text-[10px] text-white font-semibold">
-                                    {capperStats.wins}-{capperStats.losses}
-                                </span>
-                                <span className={`text-[10px] font-semibold ${capperStats.net_units >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                    {capperStats.net_units >= 0 ? '+' : ''}{capperStats.net_units.toFixed(1)}u
-                                </span>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </TooltipContent>
-        </Tooltip>
-    )
-}
+// Import shared TierSquare component
+import { TierSquare } from '@/components/ui/tier-square'
 
 // Get adaptive square size based on pick count
 function getSquareSize(pickCount: number): 'sm' | 'md' | 'lg' {
@@ -724,14 +626,18 @@ function PickCell({
                                 <div className="flex flex-wrap gap-1 mb-2">
                                     {side.picks.map((p, i) => {
                                         const pick = picks.find(pk => pk.id === p.pickId)
+                                        const stats = capperStats[p.capper.toUpperCase()]
                                         return (
                                             <TierSquare
                                                 key={i}
-                                                pickData={p}
-                                                pick={pick}
-                                                onClick={() => pick && onPickClick(pick)}
+                                                tier={p.tier}
                                                 size={squareSize}
-                                                capperStats={capperStats[p.capper.toUpperCase()]}
+                                                onClick={() => pick && onPickClick(pick)}
+                                                capperName={p.capper}
+                                                selection={p.selection}
+                                                units={p.units}
+                                                isSystemPick={p.isSystemPick}
+                                                capperRecord={stats ? { wins: stats.wins, losses: stats.losses, netUnits: stats.net_units } : undefined}
                                             />
                                         )
                                     })}
@@ -790,14 +696,18 @@ function PickCell({
             <div className="flex flex-wrap gap-1 mb-2">
                 {side.picks.map((p, i) => {
                     const pick = picks.find(pk => pk.id === p.pickId)
+                    const stats = capperStats[p.capper.toUpperCase()]
                     return (
                         <TierSquare
                             key={i}
-                            pickData={p}
-                            pick={pick}
-                            onClick={() => pick && onPickClick(pick)}
+                            tier={p.tier}
                             size={squareSize}
-                            capperStats={capperStats[p.capper.toUpperCase()]}
+                            onClick={() => pick && onPickClick(pick)}
+                            capperName={p.capper}
+                            selection={p.selection}
+                            units={p.units}
+                            isSystemPick={p.isSystemPick}
+                            capperRecord={stats ? { wins: stats.wins, losses: stats.losses, netUnits: stats.net_units } : undefined}
                         />
                     )
                 })}
