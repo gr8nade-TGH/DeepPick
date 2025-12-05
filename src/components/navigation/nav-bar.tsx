@@ -19,7 +19,8 @@ import {
   Shield,
   Users,
   Swords,
-  Flame
+  Flame,
+  Cpu
 } from 'lucide-react'
 
 export function NavBar() {
@@ -201,6 +202,13 @@ export function NavBar() {
                       <span>Factor Dashboard</span>
                     </Link>
                     <Link
+                      href="/admin/ai-manager"
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-slate-700 transition-colors text-slate-300 hover:text-white"
+                    >
+                      <Cpu className="w-4 h-4 text-purple-400" />
+                      <span>AI Manager</span>
+                    </Link>
+                    <Link
                       href="/admin/users"
                       className="flex items-center gap-3 px-4 py-3 hover:bg-slate-700 transition-colors text-slate-300 hover:text-white border-t border-slate-700"
                     >
@@ -368,6 +376,13 @@ export function NavBar() {
                   >
                     <Activity className="w-5 h-5 text-cyan-400" />
                     <span>Factor Dashboard</span>
+                  </Link>
+                  <Link
+                    href="/admin/ai-manager"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-all"
+                  >
+                    <Cpu className="w-5 h-5 text-purple-400" />
+                    <span>AI Manager</span>
                   </Link>
                   <Link
                     href="/admin/users"
