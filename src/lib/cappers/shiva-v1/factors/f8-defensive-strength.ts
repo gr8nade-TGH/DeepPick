@@ -52,9 +52,9 @@ export function computeDefensiveStrength(bundle: any, ctx: any): any {
   }
 
   // Get defensive ratings from bundle
-  const awayDRtg = bundle.awayDRtgSeason || 110.0
-  const homeDRtg = bundle.homeDRtgSeason || 110.0
-  const leagueDRtg = bundle.leagueDRtg || 110.0
+  const awayDRtg = bundle.awayDRtgSeason || 114.5  // 2024-25 league avg
+  const homeDRtg = bundle.homeDRtgSeason || 114.5  // 2024-25 league avg
+  const leagueDRtg = bundle.leagueDRtg || 114.5   // 2024-25 league avg
 
   // Calculate defensive strength (lower DRtg = better defense = UNDER signal)
   // Positive values mean BETTER than league average

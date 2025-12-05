@@ -88,14 +88,14 @@ export function calculateDefensiveErosionPoints(input: DefensiveErosionInput): D
 
   // Calculate signal using tanh for smooth saturation
   const rawSignal = tanh(totalErosion / SCALE)
-  
+
   // Apply hard limits to allow full ±1.0 signal for extreme cases
   const signal = clamp(rawSignal, -1, 1)
 
   // Convert to single positive scores for one direction
   let overScore = 0
   let underScore = 0
-  
+
   if (signal > 0) {
     // Positive signal favors Over (worse defense = more points allowed)
     overScore = Math.abs(signal) * MAX_POINTS
@@ -155,30 +155,30 @@ export function computeDefensiveErosion(bundle: any, ctx: any): any {
   }
 
   // Get defensive ratings from bundle
-  const awayDRtg = bundle.awayDRtgSeason || 110.0
-  const homeDRtg = bundle.homeDRtgSeason || 110.0
-  const leagueDRtg = bundle.leagueDRtg || 110.0
-  
+  const awayDRtg = bundle.awayDRtgSeason || 114.5  // 2024-25 league avg
+  const homeDRtg = bundle.homeDRtgSeason || 114.5  // 2024-25 league avg
+  const leagueDRtg = bundle.leagueDRtg || 114.5   // 2024-25 league avg
+
   // Calculate combined defensive rating vs league
   const combinedDRtg = (awayDRtg + homeDRtg) / 2
   const drtgDelta = combinedDRtg - leagueDRtg
-  
+
   // Get injury impact from context (if available)
   const injuryImpact = ctx.injuryImpact || { defenseImpactA: 0, defenseImpactB: 0 }
   const totalInjuryImpact = (injuryImpact.defenseImpactA + injuryImpact.defenseImpactB) / 2
-  
+
   // Combine defensive decline with injury impact
   // 70% defensive rating, 30% injury impact
   const totalErosion = 0.7 * drtgDelta + 0.3 * (totalInjuryImpact * 10)
-  
+
   // Use tanh for smooth saturation
   const signal = Math.tanh(totalErosion / 8)
-  
+
   // Convert to over/under scores
   const maxPoints = 2.0
   const overScore = signal > 0 ? Math.abs(signal) * maxPoints : 0
   const underScore = signal < 0 ? Math.abs(signal) * maxPoints : 0
-  
+
   return {
     factor_no: 3,
     key: 'defErosion',

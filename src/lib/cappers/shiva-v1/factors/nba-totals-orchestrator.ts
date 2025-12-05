@@ -54,12 +54,12 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
     return {
       factors: [],
       factor_version: 'nba_totals_v1',
-      baseline_avg: 220, // Default NBA average
+      baseline_avg: 228, // 2024-25 NBA average (was 220)
       totals_debug: {
         league_anchors: {
-          pace: 100.1,
-          ORtg: 110.0,
-          DRtg: 110.0,
+          pace: 99.5,
+          ORtg: 114.5,
+          DRtg: 114.5,
           threePAR: 0.39,
           FTr: 0.22,
           threePstdev: 0.036
@@ -69,14 +69,14 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
         console_logs: {
           branch_used: branchLog,
           bundle: {
-            awayPaceSeason: 100.1,
-            awayPaceLast10: 100.1,
-            homePaceSeason: 100.1,
-            homePaceLast10: 100.1,
-            awayORtgLast10: 110.0,
-            homeORtgLast10: 110.0,
-            awayDRtgSeason: 110.0,
-            homeDRtgSeason: 110.0,
+            awayPaceSeason: 99.5,
+            awayPaceLast10: 99.5,
+            homePaceSeason: 99.5,
+            homePaceLast10: 99.5,
+            awayORtgLast10: 114.5,
+            homeORtgLast10: 114.5,
+            awayDRtgSeason: 114.5,
+            homeDRtgSeason: 114.5,
             away3PAR: 0.39,
             home3PAR: 0.39,
             awayOpp3PAR: 0.39,
@@ -107,15 +107,15 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
             homeTovPct: 0.14,
             homeOrebPct: 0.24,
             homeFtr: 0.22,
-            leaguePace: 100.1,
-            leagueORtg: 110.0,
-            leagueDRtg: 110.0,
+            leaguePace: 99.5,
+            leagueORtg: 114.5,
+            leagueDRtg: 114.5,
             league3PAR: 0.39,
             league3Pct: 0.35,
             leagueFTr: 0.22,
             league3Pstdev: 0.036,
-            awayPointsPerGame: 110.0,
-            homePointsPerGame: 110.0
+            awayPointsPerGame: 114.5,
+            homePointsPerGame: 114.5
           },
           rows_z_points: []
         },
@@ -388,9 +388,9 @@ export async function computeTotalsFactors(ctx: RunCtx): Promise<FactorComputati
         FTr: bundle.leagueFTr,
         threePstdev: bundle.league3Pstdev
       } : {
-        pace: 100.1,
-        ORtg: 110.0,
-        DRtg: 110.0,
+        pace: 99.5,
+        ORtg: 114.5,
+        DRtg: 114.5,
         threePAR: 0.39,
         FTr: 0.22,
         threePstdev: 0.036

@@ -74,14 +74,14 @@ export function calculateOffensiveFormPoints(input: OffensiveFormInput): Offensi
 
   // Calculate signal using tanh for smooth saturation
   const rawSignal = tanh(advantage / SCALE)
-  
+
   // Apply hard limits to allow full ±1.0 signal for extreme cases
   const signal = clamp(rawSignal, -1, 1)
 
   // Convert to single positive scores for one direction
   let overScore = 0
   let underScore = 0
-  
+
   if (signal > 0) {
     // Positive signal favors Over (high offense = more points)
     overScore = Math.abs(signal) * MAX_POINTS
@@ -139,22 +139,22 @@ export function computeOffensiveForm(bundle: any, ctx: any): any {
   }
 
   // Get offensive ratings from bundle
-  const awayORtg = bundle.awayORtgLast10 || 110.0
-  const homeORtg = bundle.homeORtgLast10 || 110.0
-  const leagueORtg = bundle.leagueORtg || 110.0
-  
+  const awayORtg = bundle.awayORtgLast10 || 114.5  // 2024-25 league avg
+  const homeORtg = bundle.homeORtgLast10 || 114.5  // 2024-25 league avg
+  const leagueORtg = bundle.leagueORtg || 114.5   // 2024-25 league avg
+
   // Calculate combined offensive efficiency vs league
   const combinedORtg = (awayORtg + homeORtg) / 2
   const advantage = combinedORtg - leagueORtg
-  
+
   // Use tanh for smooth saturation (advantage/10 gives good range)
   const signal = Math.tanh(advantage / 10)
-  
+
   // Convert to over/under scores
   const maxPoints = 2.0
   const overScore = signal > 0 ? Math.abs(signal) * maxPoints : 0
   const underScore = signal < 0 ? Math.abs(signal) * maxPoints : 0
-  
+
   return {
     factor_no: 2,
     key: 'offForm',

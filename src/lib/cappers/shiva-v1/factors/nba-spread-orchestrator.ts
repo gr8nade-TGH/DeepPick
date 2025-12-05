@@ -69,9 +69,9 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
       baseline_avg: 0, // Spread baseline is 0 (no inherent advantage)
       totals_debug: {
         league_anchors: {
-          pace: 100.1,
-          ORtg: 110.0,
-          DRtg: 110.0,
+          pace: 99.5,
+          ORtg: 114.5,
+          DRtg: 114.5,
           threePAR: 0.39,
           FTr: 0.22,
           threePstdev: 0.036
@@ -362,9 +362,9 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
       FTr: bundle.leagueFTr,
       threePstdev: bundle.league3Pstdev
     } : {
-      pace: 100.1,
-      ORtg: 110.0,
-      DRtg: 110.0,
+      pace: 99.5,
+      ORtg: 114.5,
+      DRtg: 114.5,
       threePAR: 0.39,
       FTr: 0.22,
       threePstdev: 0.036

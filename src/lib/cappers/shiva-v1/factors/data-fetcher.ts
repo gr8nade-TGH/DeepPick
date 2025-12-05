@@ -50,17 +50,17 @@ export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<NBAStatsBundle> 
       awayPaceLast10: awayRecent.pace,
       homePaceSeason: homeRecent.pace,
       homePaceLast10: homeRecent.pace,
-      leaguePace: 100.1, // NBA league average (static)
+      leaguePace: 99.5, // 2024-25 NBA league average pace
 
       // Offensive Rating
       awayORtgLast10: awayRecent.ortg,
       homeORtgLast10: homeRecent.ortg,
-      leagueORtg: 110.0, // NBA league average (static)
+      leagueORtg: 114.5, // 2024-25 NBA league average ORtg (was 110.0 - outdated!)
 
       // Defensive Rating (using 10-game for season)
       awayDRtgSeason: awayRecent.drtg,
       homeDRtgSeason: homeRecent.drtg,
-      leagueDRtg: 110.0, // NBA league average (static)
+      leagueDRtg: 114.5, // 2024-25 NBA league average DRtg (was 110.0 - outdated!)
 
       // 3-Point Stats
       away3PAR: awayRecent.threeP_rate,

@@ -166,11 +166,11 @@ export function computeNetRatingDifferential(bundle: any, ctx: any): any {
   }
 
   // Extract data from bundle
-  const awayORtg = bundle.awayORtgLast10 || 110.0
-  const awayDRtg = bundle.awayDRtgSeason || 110.0
-  const homeORtg = bundle.homeORtgLast10 || 110.0
-  const homeDRtg = bundle.homeDRtgSeason || 110.0
-  const pace = bundle.leaguePace || 100.1
+  const awayORtg = bundle.awayORtgLast10 || 114.5  // 2024-25 league avg
+  const awayDRtg = bundle.awayDRtgSeason || 114.5  // 2024-25 league avg
+  const homeORtg = bundle.homeORtgLast10 || 114.5  // 2024-25 league avg
+  const homeDRtg = bundle.homeDRtgSeason || 114.5  // 2024-25 league avg
+  const pace = bundle.leaguePace || 99.5  // 2024-25 league avg
 
   // Get spread line from context if available
   const spreadLine = ctx.spreadLine // Optional: may be undefined
