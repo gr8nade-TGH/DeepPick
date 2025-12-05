@@ -22,8 +22,9 @@ type SpreadBaselineModel = 'net-rating' | 'scoring-margin' | 'h2h-projection'
 
 interface BaselineModelInfo {
   name: string
+  shortName: string
   description: string
-  icon: string
+  iconName: 'Zap' | 'BarChart3' | 'Shield' | 'TrendingUp' | 'Target' | 'Swords'
   color: string
   borderStyle: string // Unique CSS for avatar border
   glowColor: string
@@ -33,8 +34,9 @@ interface BaselineModelInfo {
 const TOTALS_BASELINE_MODELS: Record<TotalsBaselineModel, BaselineModelInfo> = {
   'pace-efficiency': {
     name: 'Pace-Efficiency',
+    shortName: 'Pace',
     description: 'Uses pace × offensive ratings',
-    icon: '⚡',
+    iconName: 'Zap',
     color: 'yellow',
     borderStyle: 'border-4 border-yellow-400 shadow-[0_0_20px_rgba(250,204,21,0.5),inset_0_0_15px_rgba(250,204,21,0.2)]',
     glowColor: 'rgba(250,204,21,0.6)',
@@ -42,8 +44,9 @@ const TOTALS_BASELINE_MODELS: Record<TotalsBaselineModel, BaselineModelInfo> = {
   },
   'ppg-based': {
     name: 'PPG Average',
+    shortName: 'PPG',
     description: 'Uses raw scoring averages',
-    icon: '📊',
+    iconName: 'BarChart3',
     color: 'blue',
     borderStyle: 'border-4 border-blue-400 shadow-[0_0_20px_rgba(96,165,250,0.5),inset_0_0_15px_rgba(96,165,250,0.2)]',
     glowColor: 'rgba(96,165,250,0.6)',
@@ -51,8 +54,9 @@ const TOTALS_BASELINE_MODELS: Record<TotalsBaselineModel, BaselineModelInfo> = {
   },
   'matchup-defensive': {
     name: 'Matchup-Defensive',
+    shortName: 'Defense',
     description: 'Weights opponent defense heavily',
-    icon: '🛡️',
+    iconName: 'Shield',
     color: 'emerald',
     borderStyle: 'border-4 border-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.5),inset_0_0_15px_rgba(52,211,153,0.2)]',
     glowColor: 'rgba(52,211,153,0.6)',
@@ -63,8 +67,9 @@ const TOTALS_BASELINE_MODELS: Record<TotalsBaselineModel, BaselineModelInfo> = {
 const SPREAD_BASELINE_MODELS: Record<SpreadBaselineModel, BaselineModelInfo> = {
   'net-rating': {
     name: 'Net Rating',
+    shortName: 'Net',
     description: 'Uses efficiency differential',
-    icon: '📈',
+    iconName: 'TrendingUp',
     color: 'purple',
     borderStyle: 'border-4 border-purple-400 shadow-[0_0_20px_rgba(192,132,252,0.5),inset_0_0_15px_rgba(192,132,252,0.2)]',
     glowColor: 'rgba(192,132,252,0.6)',
@@ -72,8 +77,9 @@ const SPREAD_BASELINE_MODELS: Record<SpreadBaselineModel, BaselineModelInfo> = {
   },
   'scoring-margin': {
     name: 'Scoring Margin',
+    shortName: 'Margin',
     description: 'Uses actual point differentials',
-    icon: '🎯',
+    iconName: 'Target',
     color: 'red',
     borderStyle: 'border-4 border-red-400 shadow-[0_0_20px_rgba(248,113,113,0.5),inset_0_0_15px_rgba(248,113,113,0.2)]',
     glowColor: 'rgba(248,113,113,0.6)',
@@ -81,12 +87,27 @@ const SPREAD_BASELINE_MODELS: Record<SpreadBaselineModel, BaselineModelInfo> = {
   },
   'h2h-projection': {
     name: 'Head-to-Head',
+    shortName: 'H2H',
     description: 'Projects vs specific opponent',
-    icon: '⚔️',
+    iconName: 'Swords',
     color: 'orange',
     borderStyle: 'border-4 border-orange-400 shadow-[0_0_20px_rgba(251,146,60,0.5),inset_0_0_15px_rgba(251,146,60,0.2)]',
     glowColor: 'rgba(251,146,60,0.6)',
     philosophy: 'Every opponent is different. Project the clash.'
+  }
+}
+
+// Helper to render baseline model icons
+const BaselineIcon = ({ iconName, className }: { iconName: BaselineModelInfo['iconName'], className?: string }) => {
+  const iconClass = className || 'w-5 h-5'
+  switch (iconName) {
+    case 'Zap': return <Zap className={iconClass} />
+    case 'BarChart3': return <BarChart3 className={iconClass} />
+    case 'Shield': return <Shield className={iconClass} />
+    case 'TrendingUp': return <TrendingUp className={iconClass} />
+    case 'Target': return <Target className={iconClass} />
+    case 'Swords': return <Swords className={iconClass} />
+    default: return null
   }
 }
 
@@ -1178,14 +1199,15 @@ export default function CreateCapperPage() {
                           </div>
                           {/* Baseline model badge */}
                           <div
-                            className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[8px] font-bold text-white uppercase tracking-wider shadow-lg"
+                            className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[8px] font-bold text-white uppercase tracking-wider shadow-lg flex items-center gap-1"
                             style={{
                               background: totalsModelInfo && spreadModelInfo
                                 ? `linear-gradient(135deg, ${totalsModelInfo.glowColor}, ${spreadModelInfo.glowColor})`
                                 : 'linear-gradient(135deg, #fbbf24, #f97316)'
                             }}
                           >
-                            {totalsModelInfo?.icon || '⚡'} {spreadModelInfo?.icon || '📈'}
+                            {totalsModelInfo && <BaselineIcon iconName={totalsModelInfo.iconName} className="w-3 h-3" />}
+                            {spreadModelInfo && <BaselineIcon iconName={spreadModelInfo.iconName} className="w-3 h-3" />}
                           </div>
                         </>
                       ) : hasAny ? (
@@ -1293,16 +1315,16 @@ export default function CreateCapperPage() {
                   })()}
 
                   {/* Baseline Models - Interactive Selection */}
-                  <div className="mt-3 pt-3 border-t border-slate-700/50">
-                    <div className="text-[9px] font-bold text-slate-500 uppercase mb-2 flex items-center gap-1">
-                      <Shuffle className="w-3 h-3" />
+                  <div className="mt-4 pt-3 border-t border-slate-700/50">
+                    <div className="text-[10px] font-bold text-slate-400 uppercase mb-3 flex items-center gap-1.5">
+                      <Activity className="w-3.5 h-3.5 text-cyan-400" />
                       Prediction Brain
                     </div>
 
                     {/* TOTALS Baseline Selector */}
-                    <div className="mb-2">
-                      <div className="text-[8px] text-cyan-400/70 uppercase mb-1">Totals Model:</div>
-                      <div className="grid grid-cols-3 gap-1">
+                    <div className="mb-3">
+                      <div className="text-[9px] text-cyan-400/80 uppercase mb-1.5 font-medium">Totals Model</div>
+                      <div className="grid grid-cols-3 gap-2">
                         {(Object.entries(TOTALS_BASELINE_MODELS) as [TotalsBaselineModel, BaselineModelInfo][]).map(([key, info]) => {
                           const isSelected = config.factor_config?.TOTAL?.baseline_model === key
                           const usageCount = baselineModelUsage?.totals?.[key] || 0
@@ -1316,20 +1338,28 @@ export default function CreateCapperPage() {
                                   TOTAL: { ...prev.factor_config.TOTAL, baseline_model: key }
                                 }
                               }))}
-                              className={`relative p-1.5 rounded-lg text-center transition-all ${isSelected
-                                ? 'ring-2 ring-offset-1 ring-offset-slate-900'
-                                : 'hover:bg-slate-700/50 opacity-60 hover:opacity-100'
+                              className={`relative flex flex-col items-center p-2 rounded-lg transition-all border-2 ${isSelected
+                                ? 'border-transparent'
+                                : 'border-slate-700/50 hover:border-slate-600 opacity-50 hover:opacity-80'
                                 }`}
                               style={{
-                                backgroundColor: isSelected ? `${info.glowColor.replace('0.6', '0.2')}` : 'rgba(30,41,59,0.5)',
-                                boxShadow: isSelected ? `0 0 15px ${info.glowColor}, inset 0 0 0 2px ${info.glowColor}` : 'none'
+                                backgroundColor: isSelected ? `${info.glowColor.replace('0.6', '0.15')}` : 'rgba(30,41,59,0.3)',
+                                boxShadow: isSelected ? `0 0 12px ${info.glowColor}, inset 0 0 0 2px ${info.glowColor}` : 'none'
                               }}
                               title={info.philosophy}
                             >
-                              <div className="text-lg">{info.icon}</div>
-                              <div className="text-[7px] font-bold text-white truncate">{info.name.split('-')[0]}</div>
+                              <div
+                                className="w-7 h-7 rounded-full flex items-center justify-center mb-1"
+                                style={{
+                                  backgroundColor: isSelected ? info.glowColor.replace('0.6', '0.3') : 'rgba(100,116,139,0.2)',
+                                  color: isSelected ? info.glowColor.replace('0.6', '1') : 'rgb(148,163,184)'
+                                }}
+                              >
+                                <BaselineIcon iconName={info.iconName} className="w-4 h-4" />
+                              </div>
+                              <div className="text-[8px] font-semibold text-white">{info.shortName}</div>
                               {usageCount > 0 && (
-                                <div className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-slate-700 text-[6px] text-slate-400 flex items-center justify-center">
+                                <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-slate-700/90 text-[7px] text-slate-300 flex items-center justify-center border border-slate-600">
                                   {usageCount}
                                 </div>
                               )}
@@ -1341,8 +1371,8 @@ export default function CreateCapperPage() {
 
                     {/* SPREAD Baseline Selector */}
                     <div>
-                      <div className="text-[8px] text-purple-400/70 uppercase mb-1">Spread Model:</div>
-                      <div className="grid grid-cols-3 gap-1">
+                      <div className="text-[9px] text-purple-400/80 uppercase mb-1.5 font-medium">Spread Model</div>
+                      <div className="grid grid-cols-3 gap-2">
                         {(Object.entries(SPREAD_BASELINE_MODELS) as [SpreadBaselineModel, BaselineModelInfo][]).map(([key, info]) => {
                           const isSelected = config.factor_config?.SPREAD?.baseline_model === key
                           const usageCount = baselineModelUsage?.spread?.[key] || 0
@@ -1356,20 +1386,28 @@ export default function CreateCapperPage() {
                                   SPREAD: { ...prev.factor_config.SPREAD, baseline_model: key }
                                 }
                               }))}
-                              className={`relative p-1.5 rounded-lg text-center transition-all ${isSelected
-                                ? 'ring-2 ring-offset-1 ring-offset-slate-900'
-                                : 'hover:bg-slate-700/50 opacity-60 hover:opacity-100'
+                              className={`relative flex flex-col items-center p-2 rounded-lg transition-all border-2 ${isSelected
+                                ? 'border-transparent'
+                                : 'border-slate-700/50 hover:border-slate-600 opacity-50 hover:opacity-80'
                                 }`}
                               style={{
-                                backgroundColor: isSelected ? `${info.glowColor.replace('0.6', '0.2')}` : 'rgba(30,41,59,0.5)',
-                                boxShadow: isSelected ? `0 0 15px ${info.glowColor}, inset 0 0 0 2px ${info.glowColor}` : 'none'
+                                backgroundColor: isSelected ? `${info.glowColor.replace('0.6', '0.15')}` : 'rgba(30,41,59,0.3)',
+                                boxShadow: isSelected ? `0 0 12px ${info.glowColor}, inset 0 0 0 2px ${info.glowColor}` : 'none'
                               }}
                               title={info.philosophy}
                             >
-                              <div className="text-lg">{info.icon}</div>
-                              <div className="text-[7px] font-bold text-white truncate">{info.name.split(' ')[0]}</div>
+                              <div
+                                className="w-7 h-7 rounded-full flex items-center justify-center mb-1"
+                                style={{
+                                  backgroundColor: isSelected ? info.glowColor.replace('0.6', '0.3') : 'rgba(100,116,139,0.2)',
+                                  color: isSelected ? info.glowColor.replace('0.6', '1') : 'rgb(148,163,184)'
+                                }}
+                              >
+                                <BaselineIcon iconName={info.iconName} className="w-4 h-4" />
+                              </div>
+                              <div className="text-[8px] font-semibold text-white">{info.shortName}</div>
                               {usageCount > 0 && (
-                                <div className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-slate-700 text-[6px] text-slate-400 flex items-center justify-center">
+                                <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-slate-700/90 text-[7px] text-slate-300 flex items-center justify-center border border-slate-600">
                                   {usageCount}
                                 </div>
                               )}

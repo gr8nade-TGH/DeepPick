@@ -14,7 +14,7 @@ export const runtime = 'nodejs'
 export async function POST(request: Request) {
   try {
     const cookieStore = await cookies()
-    
+
     // Create authenticated Supabase client
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -54,7 +54,8 @@ export async function POST(request: Request) {
       pick_mode,
       excluded_teams,
       auto_generate_hours_before,
-      execution_interval_minutes
+      execution_interval_minutes,
+      factor_config
     } = body
 
     if (!capper_id) {
@@ -91,6 +92,7 @@ export async function POST(request: Request) {
     if (excluded_teams !== undefined) updates.excluded_teams = excluded_teams
     if (auto_generate_hours_before !== undefined) updates.auto_generate_hours_before = auto_generate_hours_before
     if (execution_interval_minutes !== undefined) updates.execution_interval_minutes = execution_interval_minutes
+    if (factor_config !== undefined) updates.factor_config = factor_config
 
     // Update the capper
     const { data: updatedCapper, error: updateError } = await admin
