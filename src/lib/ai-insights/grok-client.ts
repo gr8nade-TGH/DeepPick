@@ -24,11 +24,21 @@ export interface GrokSentimentResponse {
     overallConfidence: 'high' | 'medium' | 'low'
     samplePosts: Array<{ text: string; likes: number; sentiment: string }>
     rawAnalysis: string
+    // Engagement breakdown
+    awayTotalLikes: number
+    homeTotalLikes: number
   }
-  quantified?: {
-    X: number  // Sentiment skew score (-10 to +10)
-    Y: number  // Conviction strength (0 to 10)
-    Z: number  // Data quality (0 to 1)
+  // The Pulse Factor Score (0 to 3.5 points toward one side)
+  pulseScore?: {
+    direction: 'away' | 'home'       // Which team gets the points
+    points: number                    // 0 to 3.5
+    teamName: string                  // e.g., "Celtics -7.5"
+    breakdown: {
+      sentimentLean: number           // -1 to +1 (positive = away favored)
+      engagementLean: number          // -1 to +1 (positive = away more engagement)
+      rawLean: number                 // Combined weighted score
+      confidenceMultiplier: number    // 0.7 to 1.0
+    }
   }
   error?: string
   usage?: { promptTokens: number; completionTokens: number; totalTokens: number }
@@ -85,13 +95,13 @@ Be specific about percentages and cite real sentiment patterns you observe.`
       return { success: false, error: 'No content in Grok response' }
     }
 
-    // Parse the JSON response
-    const parsed = parseGrokResponse(content, request.betType)
+    // Parse the JSON response and calculate Pulse Score
+    const parsed = parseGrokResponse(content, request.betType, request)
 
     return {
       success: true,
       sentiment: parsed.sentiment,
-      quantified: parsed.quantified,
+      pulseScore: parsed.pulseScore,
       usage: {
         promptTokens: data.usage?.prompt_tokens || 0,
         completionTokens: data.usage?.completion_tokens || 0,
@@ -168,9 +178,13 @@ Respond in this exact JSON format:
 }`
 }
 
-function parseGrokResponse(content: string, betType: 'SPREAD' | 'TOTAL'): {
+function parseGrokResponse(
+  content: string,
+  betType: 'SPREAD' | 'TOTAL',
+  request: GrokSentimentRequest
+): {
   sentiment: GrokSentimentResponse['sentiment']
-  quantified: GrokSentimentResponse['quantified']
+  pulseScore: GrokSentimentResponse['pulseScore']
 } {
   try {
     // Try to extract JSON from the response
@@ -183,18 +197,72 @@ function parseGrokResponse(content: string, betType: 'SPREAD' | 'TOTAL'): {
 
     const awaySentimentPct = Number(parsed.awaySentimentPct) || 50
     const homeSentimentPct = Number(parsed.homeSentimentPct) || 50
+    const samplePosts: Array<{ text: string; likes: number; sentiment: string }> = parsed.samplePosts || []
 
-    // Quantify into X, Y, Z values
-    // X = Sentiment Skew: (awaySentiment - 50) / 5 → range -10 to +10
-    //     Positive = public favors away/OVER, Negative = public favors home/UNDER
-    const X = Math.max(-10, Math.min(10, (awaySentimentPct - 50) / 5))
+    // Calculate engagement by side
+    let awayTotalLikes = 0
+    let homeTotalLikes = 0
+    for (const post of samplePosts) {
+      const likes = Number(post.likes) || 0
+      const sentiment = post.sentiment?.toLowerCase() || ''
+      if (sentiment === 'away' || sentiment === 'over') {
+        awayTotalLikes += likes
+      } else if (sentiment === 'home' || sentiment === 'under') {
+        homeTotalLikes += likes
+      }
+    }
 
-    // Y = Conviction Strength: how one-sided is it? |away - home| / 10 → range 0 to 10
-    const Y = Math.abs(awaySentimentPct - homeSentimentPct) / 10
+    // ═══════════════════════════════════════════════════════════════════
+    // THE PULSE FACTOR SCORE CALCULATION
+    // ═══════════════════════════════════════════════════════════════════
 
-    // Z = Data Quality: based on confidence level
-    const confidenceMap: Record<string, number> = { 'high': 0.9, 'medium': 0.7, 'low': 0.5 }
-    const Z = confidenceMap[parsed.overallConfidence] || 0.6
+    // Signal 1: Sentiment Lean (60% weight)
+    // Range: -1 (100% home) to +1 (100% away)
+    const sentimentLean = (awaySentimentPct - homeSentimentPct) / 100
+
+    // Signal 2: Engagement Lean (40% weight)
+    // Range: -1 (all home likes) to +1 (all away likes)
+    const totalLikes = awayTotalLikes + homeTotalLikes
+    const engagementLean = totalLikes > 0
+      ? (awayTotalLikes - homeTotalLikes) / totalLikes
+      : 0  // No engagement data = neutral
+
+    // Combined weighted score
+    const SENTIMENT_WEIGHT = 0.6
+    const ENGAGEMENT_WEIGHT = 0.4
+    const rawLean = (sentimentLean * SENTIMENT_WEIGHT) + (engagementLean * ENGAGEMENT_WEIGHT)
+
+    // Confidence multiplier (reduces score when data quality is lower)
+    const confidenceMultipliers: Record<string, number> = {
+      'high': 1.0,
+      'medium': 0.85,
+      'low': 0.7
+    }
+    const confidenceMultiplier = confidenceMultipliers[parsed.overallConfidence] || 0.85
+
+    // Adjust for confidence
+    const adjustedLean = rawLean * confidenceMultiplier
+
+    // Scale to 0-3.5 range
+    // |adjustedLean| ranges from 0 to 1, multiply by 3.5 for max points
+    const points = Math.min(3.5, Math.abs(adjustedLean) * 3.5)
+
+    // Determine direction
+    const direction: 'away' | 'home' = adjustedLean >= 0 ? 'away' : 'home'
+
+    // Build team name with spread for display
+    let teamName: string
+    if (betType === 'SPREAD') {
+      if (direction === 'away') {
+        const spread = request.spread?.away ?? 0
+        teamName = `${request.awayTeam} ${spread > 0 ? '+' : ''}${spread}`
+      } else {
+        const spread = request.spread?.home ?? 0
+        teamName = `${request.homeTeam} ${spread > 0 ? '+' : ''}${spread}`
+      }
+    } else {
+      teamName = direction === 'away' ? 'OVER' : 'UNDER'
+    }
 
     return {
       sentiment: {
@@ -203,13 +271,21 @@ function parseGrokResponse(content: string, betType: 'SPREAD' | 'TOTAL'): {
         awayReasons: parsed.awayReasons || [],
         homeReasons: parsed.homeReasons || [],
         overallConfidence: parsed.overallConfidence || 'medium',
-        samplePosts: parsed.samplePosts || [],
-        rawAnalysis: parsed.rawAnalysis || ''
+        samplePosts,
+        rawAnalysis: parsed.rawAnalysis || '',
+        awayTotalLikes,
+        homeTotalLikes
       },
-      quantified: {
-        X: Number(X.toFixed(2)),
-        Y: Number(Y.toFixed(2)),
-        Z: Number(Z.toFixed(2))
+      pulseScore: {
+        direction,
+        points: Number(points.toFixed(2)),
+        teamName,
+        breakdown: {
+          sentimentLean: Number(sentimentLean.toFixed(3)),
+          engagementLean: Number(engagementLean.toFixed(3)),
+          rawLean: Number(rawLean.toFixed(3)),
+          confidenceMultiplier
+        }
       }
     }
   } catch (error) {
@@ -223,9 +299,21 @@ function parseGrokResponse(content: string, betType: 'SPREAD' | 'TOTAL'): {
         homeReasons: ['Parse error'],
         overallConfidence: 'low',
         samplePosts: [],
-        rawAnalysis: content.substring(0, 500)
+        rawAnalysis: content.substring(0, 500),
+        awayTotalLikes: 0,
+        homeTotalLikes: 0
       },
-      quantified: { X: 0, Y: 0, Z: 0.3 }
+      pulseScore: {
+        direction: 'home',
+        points: 0,
+        teamName: 'N/A',
+        breakdown: {
+          sentimentLean: 0,
+          engagementLean: 0,
+          rawLean: 0,
+          confidenceMultiplier: 0.7
+        }
+      }
     }
   }
 }
