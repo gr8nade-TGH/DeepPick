@@ -214,7 +214,8 @@ function getTierScore(pick: Pick): number {
 
 // Tier order for sorting (higher is better)
 const TIER_ORDER: Record<RarityTier, number> = {
-    'Legendary': 5,
+    'Legendary': 6,
+    'Epic': 5,
     'Elite': 4,
     'Rare': 3,
     'Uncommon': 2,
@@ -720,7 +721,7 @@ function PickCell({
 // Count tiers in picks
 function countTiers(picks: PickData[]): Record<RarityTier, number> {
     const counts: Record<RarityTier, number> = {
-        'Legendary': 0, 'Elite': 0, 'Rare': 0, 'Uncommon': 0, 'Common': 0
+        'Legendary': 0, 'Epic': 0, 'Elite': 0, 'Rare': 0, 'Uncommon': 0, 'Common': 0
     }
     picks.forEach(p => {
         counts[p.tier] = (counts[p.tier] || 0) + 1
@@ -730,7 +731,7 @@ function countTiers(picks: PickData[]): Record<RarityTier, number> {
 
 // Tier summary component
 function TierSummary({ counts, compact = false }: { counts: Record<RarityTier, number>, compact?: boolean }) {
-    const tiers: RarityTier[] = ['Legendary', 'Elite', 'Rare', 'Uncommon', 'Common']
+    const tiers: RarityTier[] = ['Legendary', 'Epic', 'Elite', 'Rare', 'Uncommon', 'Common']
     const activeTiers = tiers.filter(t => counts[t] > 0)
 
     if (activeTiers.length === 0) return null
@@ -895,7 +896,7 @@ export function PickGrid() {
     // Count picks by tier
     const tierCounts = useMemo(() => {
         const counts: Record<RarityTier, number> = {
-            'Legendary': 0, 'Elite': 0, 'Rare': 0, 'Uncommon': 0, 'Common': 0
+            'Legendary': 0, 'Epic': 0, 'Elite': 0, 'Rare': 0, 'Uncommon': 0, 'Common': 0
         }
         picks.forEach(p => {
             const tier = getTierFromPick(p)
@@ -1000,7 +1001,7 @@ export function PickGrid() {
                             {/* Tier Legend */}
                             <div className="flex items-center gap-3">
                                 <span className="text-[10px] text-slate-500 uppercase tracking-wider">Tiers:</span>
-                                {(['Legendary', 'Elite', 'Rare', 'Uncommon', 'Common'] as RarityTier[]).map(tier => {
+                                {(['Legendary', 'Epic', 'Elite', 'Rare', 'Uncommon', 'Common'] as RarityTier[]).map(tier => {
                                     const rarity = getRarityStyleFromTier(tier)
                                     const count = tierCounts[tier]
                                     if (count === 0) return null
