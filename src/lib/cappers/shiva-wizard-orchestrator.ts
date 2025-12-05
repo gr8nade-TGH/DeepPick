@@ -103,7 +103,7 @@ export async function executeWizardPipeline(input: WizardOrchestratorInput): Pro
 
     // Step 2: Odds Snapshot
     console.log('[WizardOrchestrator] Step 2: Capturing odds snapshot...')
-    steps.step2 = await captureOddsSnapshot(runId, game, sport)
+    steps.step2 = await captureOddsSnapshot(runId, game, sport, betType)
     console.log('[WizardOrchestrator] Step 2: Odds snapshot captured')
 
     // Step 3: Factor Analysis (F1-F5)
@@ -361,8 +361,9 @@ export async function executeWizardPipeline(input: WizardOrchestratorInput): Pro
 
 /**
  * Step 2: Capture odds snapshot
+ * @param betType - Required to validate only the relevant odds (TOTAL line for TOTAL picks, SPREAD line for SPREAD picks)
  */
-async function captureOddsSnapshot(runId: string, game: any, sport: string) {
+async function captureOddsSnapshot(runId: string, game: any, sport: string, betType: 'TOTAL' | 'SPREAD' = 'TOTAL') {
   const supabase = getSupabaseAdmin()
 
   // Fetch current odds from the game
@@ -387,25 +388,28 @@ async function captureOddsSnapshot(runId: string, game: any, sport: string) {
     .map(book => odds[book]?.total?.line)
     .filter(line => line !== undefined && line !== null)
 
-  // REQUIRE valid odds data - no fallbacks!
-  if (totalLines.length === 0) {
-    throw new Error(`No valid total line data available from sportsbooks. Cannot generate pick without accurate market odds. Game: ${homeTeam} vs ${awayTeam}`)
+  // REQUIRE valid total line data for TOTAL picks - no fallbacks!
+  if (betType === 'TOTAL' && totalLines.length === 0) {
+    throw new Error(`No valid total line data available from sportsbooks. Cannot generate TOTAL pick without accurate market odds. Game: ${homeTeam} vs ${awayTeam}`)
   }
 
-  // REQUIRE minimum number of books for consensus
-  if (totalLines.length < 2) {
+  // REQUIRE minimum number of books for consensus (for TOTAL picks)
+  if (betType === 'TOTAL' && totalLines.length > 0 && totalLines.length < 2) {
     console.warn('[WizardOrchestrator:Step2] ⚠️ Only 1 sportsbook has total line - may be soft/stale line')
   }
 
-  const avgTotalLine = parseFloat((totalLines.reduce((a, b) => a + b, 0) / totalLines.length).toFixed(1))
+  // Calculate average total line (use 0 as default for SPREAD picks where total isn't required)
+  const avgTotalLine = totalLines.length > 0
+    ? parseFloat((totalLines.reduce((a, b) => a + b, 0) / totalLines.length).toFixed(1))
+    : 0
 
-  // Calculate line variance to detect disagreement between books
-  const minTotalLine = Math.min(...totalLines)
-  const maxTotalLine = Math.max(...totalLines)
+  // Calculate line variance to detect disagreement between books (only if we have total lines)
+  const minTotalLine = totalLines.length > 0 ? Math.min(...totalLines) : 0
+  const maxTotalLine = totalLines.length > 0 ? Math.max(...totalLines) : 0
   const totalLineVariance = maxTotalLine - minTotalLine
 
-  // Flag suspicious variance (books disagree by >2 points)
-  if (totalLineVariance > 2.0) {
+  // Flag suspicious variance (books disagree by >2 points) - only for TOTAL picks
+  if (betType === 'TOTAL' && totalLineVariance > 2.0) {
     console.warn('[WizardOrchestrator:Step2] ⚠️ High total line variance detected:', {
       minLine: minTotalLine,
       maxLine: maxTotalLine,
@@ -415,15 +419,17 @@ async function captureOddsSnapshot(runId: string, game: any, sport: string) {
     })
   }
 
-  console.log('[WizardOrchestrator:Step2] Total line calculation:', {
-    sportsbooks: sportsbooks.length,
-    totalLines,
-    avgTotalLine,
-    minLine: minTotalLine,
-    maxLine: maxTotalLine,
-    variance: totalLineVariance,
-    booksConsidered: totalLines.length
-  })
+  if (totalLines.length > 0) {
+    console.log('[WizardOrchestrator:Step2] Total line calculation:', {
+      sportsbooks: sportsbooks.length,
+      totalLines,
+      avgTotalLine,
+      minLine: minTotalLine,
+      maxLine: maxTotalLine,
+      variance: totalLineVariance,
+      booksConsidered: totalLines.length
+    })
+  }
 
   // Calculate average spread line from all sportsbooks
   const spreadLines = sportsbooks
@@ -431,24 +437,27 @@ async function captureOddsSnapshot(runId: string, game: any, sport: string) {
     .filter(line => line !== undefined && line !== null)
 
   // REQUIRE valid spread data for SPREAD picks - no fallbacks!
-  if (spreadLines.length === 0) {
+  if (betType === 'SPREAD' && spreadLines.length === 0) {
     throw new Error(`No valid spread line data available from sportsbooks. Cannot generate SPREAD pick without accurate market odds. Game: ${homeTeam} vs ${awayTeam}`)
   }
 
-  // REQUIRE minimum number of books for consensus
-  if (spreadLines.length < 2) {
+  // REQUIRE minimum number of books for consensus (for SPREAD picks)
+  if (betType === 'SPREAD' && spreadLines.length > 0 && spreadLines.length < 2) {
     console.warn('[WizardOrchestrator:Step2] ⚠️ Only 1 sportsbook has spread line - may be soft/stale line')
   }
 
-  const avgSpreadLine = parseFloat((spreadLines.reduce((a, b) => a + b, 0) / spreadLines.length).toFixed(1))
+  // Calculate average spread line (use 0 as default for TOTAL picks where spread isn't required)
+  const avgSpreadLine = spreadLines.length > 0
+    ? parseFloat((spreadLines.reduce((a, b) => a + b, 0) / spreadLines.length).toFixed(1))
+    : 0
 
-  // Calculate line variance to detect disagreement between books
-  const minSpreadLine = Math.min(...spreadLines)
-  const maxSpreadLine = Math.max(...spreadLines)
+  // Calculate line variance to detect disagreement between books (only if we have spread lines)
+  const minSpreadLine = spreadLines.length > 0 ? Math.min(...spreadLines) : 0
+  const maxSpreadLine = spreadLines.length > 0 ? Math.max(...spreadLines) : 0
   const spreadLineVariance = maxSpreadLine - minSpreadLine
 
-  // Flag suspicious variance (books disagree by >1.5 points)
-  if (spreadLineVariance > 1.5) {
+  // Flag suspicious variance (books disagree by >1.5 points) - only for SPREAD picks
+  if (betType === 'SPREAD' && spreadLineVariance > 1.5) {
     console.warn('[WizardOrchestrator:Step2] ⚠️ High spread line variance detected:', {
       minLine: minSpreadLine,
       maxLine: maxSpreadLine,
@@ -462,16 +471,18 @@ async function captureOddsSnapshot(runId: string, game: any, sport: string) {
   // Negative spread = home team favored, positive = away team favored
   const favTeam = avgSpreadLine < 0 ? homeTeam : awayTeam
 
-  console.log('[WizardOrchestrator:Step2] Spread line calculation:', {
-    sportsbooks: sportsbooks.length,
-    spreadLines,
-    avgSpreadLine,
-    minLine: minSpreadLine,
-    maxLine: maxSpreadLine,
-    variance: spreadLineVariance,
-    favTeam,
-    booksConsidered: spreadLines.length
-  })
+  if (spreadLines.length > 0) {
+    console.log('[WizardOrchestrator:Step2] Spread line calculation:', {
+      sportsbooks: sportsbooks.length,
+      spreadLines,
+      avgSpreadLine,
+      minLine: minSpreadLine,
+      maxLine: maxSpreadLine,
+      variance: spreadLineVariance,
+      favTeam,
+      booksConsidered: spreadLines.length
+    })
+  }
 
   // Build snapshot from game data
   const snapshot = {
