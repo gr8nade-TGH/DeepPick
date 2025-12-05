@@ -7,6 +7,56 @@
 
 ## 📋 Update History
 
+### 2025-12-05 (Update #28) - AI Archetype Insights System Design
+**Brain Agent:** v1.0
+**Trigger:** User requested AI-powered archetype-specific insights with 3-pass verification
+
+**Status:** DESIGN PHASE - Implementation plan created, ready for primary agent
+**Production URL:** https://deep-pick.vercel.app
+
+**MAJOR ARCHITECTURAL DECISION:** Adding AI-powered insights to all 24 archetypes (12 TOTALS, 12 SPREAD) with 3-pass verification system to prevent hallucinations.
+
+---
+
+## 🤖 NEW SYSTEM: AI Archetype Insights (DESIGNED)
+
+**Problem:** Current system uses mathematical factors only. Need real AI reasoning per archetype.
+
+**Solution:** 3-Pass Verification Pipeline
+1. **Pass 1 (Researcher)**: AI generates initial analysis with specific claims
+2. **Pass 2 (Auditor)**: Verifies claims against ground truth data (MySportsFeeds, NBA.com)
+3. **Pass 3 (Judge)**: Synthesizes verified data into X, Y, Z values for factor computation
+
+**Quality Control:**
+- Pass 2 quality < 0.70 → Reject insight
+- Pass 2 quality 0.70-0.85 → Flag for review
+- Overall quality ≥ 0.75 → Use in picks
+
+**Cost Analysis:**
+- $0.29 per game (24 archetypes)
+- $4.35/day (15 games)
+- $130/month (using GPT-4.1 for Pass 3)
+- $35/month (optimization: GPT-4o-mini for all passes)
+
+**Files Created:**
+- `docs/AI_ARCHETYPE_INSIGHTS_IMPLEMENTATION.md` - Complete implementation guide
+- `docs/AI_INSIGHTS_HANDOFF.md` - Handoff document for primary agent
+- `src/lib/ai-insights/archetype-definitions.ts` - Archetype metadata (starter)
+
+**Database Schema:**
+- `game_archetype_insights` table - Stores all 3 passes + quality scores
+
+**Next Steps:**
+1. Primary agent builds AI Manager admin page (`/admin/ai-manager`)
+2. Implement 3-pass pipeline for one archetype (Pace Prophet)
+3. Scale to all 24 archetypes
+4. Integrate with factor system (F10 for TOTALS, S14 for SPREAD)
+5. Deploy cache warming cron
+
+**Key Innovation:** Self-validating AI system that catches hallucinations before they reach pick generation.
+
+---
+
 ### 2025-12-05 (Update #27) - Stats-Based Baseline + S13 Factor + Bug Fixes
 **Brain Agent:** v1.0
 **Trigger:** User requested "brain update" before deleting previous agent

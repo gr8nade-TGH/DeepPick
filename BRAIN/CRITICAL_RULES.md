@@ -1,15 +1,26 @@
 # CRITICAL RULES - READ FIRST
 
-**Last Updated:** 2025-12-05 (Update #27)
+**Last Updated:** 2025-12-05 (Update #28)
 **Priority:** HIGHEST - Read before any work
 **Production URL:** https://deep-pick.vercel.app
 
 ---
 
-## ?? TOP PRIORITY ISSUES
+## 🚨 TOP PRIORITY ISSUES
 
-### #1 CRITICAL: Factor Data & Pick Generation
-**Problem:** Factors and pick generation partially working, some cappers work, others don't  
+### #1 NEW: AI Archetype Insights Implementation
+**Status:** 🎯 DESIGN COMPLETE - Ready for implementation
+**Goal:** Add AI-powered insights to all 24 archetypes with 3-pass verification system
+**Next Step:** Primary agent builds AI Manager admin page (`/admin/ai-manager`)
+**Documentation:**
+- `docs/AI_ARCHETYPE_INSIGHTS_IMPLEMENTATION.md` - Full implementation guide
+- `docs/AI_INSIGHTS_HANDOFF.md` - Quick start for primary agent
+- `src/lib/ai-insights/archetype-definitions.ts` - Archetype metadata
+
+**Key Innovation:** Self-validating AI that prevents hallucinations with Researcher → Auditor → Judge pipeline
+
+### #2 ONGOING: Factor Data & Pick Generation
+**Problem:** Factors and pick generation partially working, some cappers work, others don't
 **Root Cause:** Factor data not pulling properly per capper based on their factor settings
 
 **Debugging Process (MANDATORY):**
@@ -23,8 +34,6 @@
 - Pick generation API routes (`/api/shiva/generate-pick/route.ts`)
 - Run logs (check console/API responses)
 - Factor orchestrators (`src/lib/cappers/shiva-v1/`)
-
-**This is the #1 issue - prioritize above all else!**
 
 ---
 
