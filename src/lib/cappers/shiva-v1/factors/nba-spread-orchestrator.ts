@@ -29,6 +29,7 @@ import { computeAssistEfficiency } from './s9-assist-efficiency'
 import { computeClutchShooting } from './s10-clutch-shooting'
 import { computeScoringMargin } from './s11-scoring-margin'
 import { computePerimeterDefense } from './s12-perimeter-defense'
+import { computeHomeAwaySplits } from './s13-home-away-splits'
 
 /**
  * Main entry point: compute only enabled NBA spread factors
@@ -45,7 +46,7 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
 
   const nbaStatsConditionCheck = {
     enabledFactorKeys,
-    shouldFetchNBAStats: enabledFactorKeys.some(key => ['netRatingDiff', 'turnoverDiff', 'shootingEfficiencyMomentum', 'reboundingDiff', 'fourFactorsDiff', 'momentumIndex', 'defensivePressure', 'assistEfficiency', 'clutchShooting', 'scoringMargin', 'perimeterDefense'].includes(key)),
+    shouldFetchNBAStats: enabledFactorKeys.some(key => ['netRatingDiff', 'turnoverDiff', 'shootingEfficiencyMomentum', 'reboundingDiff', 'fourFactorsDiff', 'momentumIndex', 'defensivePressure', 'assistEfficiency', 'clutchShooting', 'scoringMargin', 'perimeterDefense', 'homeAwaySplits'].includes(key)),
     netRatingDiff: enabledFactorKeys.includes('netRatingDiff'),
     turnoverDiff: enabledFactorKeys.includes('turnoverDiff'),
     shootingEfficiencyMomentum: enabledFactorKeys.includes('shootingEfficiencyMomentum'),
@@ -56,7 +57,8 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
     assistEfficiency: enabledFactorKeys.includes('assistEfficiency'),
     clutchShooting: enabledFactorKeys.includes('clutchShooting'),
     scoringMargin: enabledFactorKeys.includes('scoringMargin'),
-    perimeterDefense: enabledFactorKeys.includes('perimeterDefense')
+    perimeterDefense: enabledFactorKeys.includes('perimeterDefense'),
+    homeAwaySplits: enabledFactorKeys.includes('homeAwaySplits')
   }
   console.log('[SPREAD:NBA_STATS_CONDITION_CHECK]', nbaStatsConditionCheck)
 
@@ -109,14 +111,14 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
   }
 
   // All factors that require NBA stats bundle
-  // S10, S11, S12 added for new factors (clutchShooting, scoringMargin, perimeterDefense)
-  // Also include legacy aliases: shootingMomentum, homeAwaySplits, paceMismatch
+  // S10, S11, S12, S13 added for new factors (clutchShooting, scoringMargin, perimeterDefense, homeAwaySplits)
+  // Also include legacy aliases: shootingMomentum, paceMismatch
   const factorsRequiringBundle = [
     'netRatingDiff', 'turnoverDiff', 'shootingEfficiencyMomentum', 'reboundingDiff',
     'fourFactorsDiff', 'momentumIndex', 'defensivePressure', 'assistEfficiency',
-    'clutchShooting', 'scoringMargin', 'perimeterDefense',
+    'clutchShooting', 'scoringMargin', 'perimeterDefense', 'homeAwaySplits',
     // Legacy aliases
-    'shootingMomentum', 'homeAwaySplits', 'paceMismatch'
+    'shootingMomentum', 'paceMismatch'
   ]
   const needsBundle = enabledFactorKeys.some(key => factorsRequiringBundle.includes(key))
 
@@ -199,8 +201,8 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
   }
 
   // S4: Rebounding Differential
-  // Also handle legacy 'homeAwaySplits' and 'paceMismatch' aliases (these use rebounding as proxy)
-  if (enabledFactorKeys.includes('reboundingDiff') || enabledFactorKeys.includes('homeAwaySplits') || enabledFactorKeys.includes('paceMismatch')) {
+  // Also handle legacy 'paceMismatch' alias (uses rebounding as proxy)
+  if (enabledFactorKeys.includes('reboundingDiff') || enabledFactorKeys.includes('paceMismatch')) {
     try {
       console.log('[SPREAD:S4] Computing Rebounding Differential...')
       factors.push(computeReboundingDiff(bundle!, ctx))
@@ -292,6 +294,18 @@ export async function computeSpreadFactors(ctx: RunCtx): Promise<FactorComputati
     } catch (error) {
       console.error('[SPREAD:S12:ERROR]', error)
       factorErrors.push(`perimeterDefense: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
+  // S13: Home/Away Splits
+  if (enabledFactorKeys.includes('homeAwaySplits')) {
+    try {
+      console.log('[SPREAD:S13] Computing Home/Away Splits...')
+      factors.push(computeHomeAwaySplits(bundle!, ctx))
+      console.log('[SPREAD:S13] Success')
+    } catch (error) {
+      console.error('[SPREAD:S13:ERROR]', error)
+      factorErrors.push(`homeAwaySplits: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 

@@ -120,6 +120,12 @@ export interface NBAStatsBundle {
   homeOpp3Pct?: number
   homeOppFgPct?: number
 
+  // Home/Away splits data (for SPREAD factor S13)
+  awayTeamAwayWinPct?: number
+  awayTeamAwayNetRtg?: number
+  homeTeamHomeWinPct?: number
+  homeTeamHomeNetRtg?: number
+
   // League anchors
   leaguePace: number
   leagueORtg: number
