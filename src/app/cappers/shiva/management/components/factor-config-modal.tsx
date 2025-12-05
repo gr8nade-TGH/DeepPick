@@ -587,15 +587,15 @@ export function FactorConfigModal({
         examples: [
           "| Home FTr | Away FTr | FT Env | League FTr | FT Delta | Signal | Over Score | Under Score | Confidence | Example Teams |",
           "|----------|----------|--------|------------|----------|--------|------------|-------------|------------|---------------|",
-          "| 0.28     | 0.26     | 0.27   | 0.22       | +0.05    | +0.76  | +3.80      | 0.0         | High       | High FT rate teams |",
-          "| 0.25     | 0.23     | 0.24   | 0.22       | +0.02    | +0.33  | +1.65      | 0.0         | Moderate   | Above avg FT teams |",
-          "| 0.22     | 0.20     | 0.21   | 0.22       | -0.01    | -0.17  | 0.0        | +0.85       | Low        | Slightly below avg |",
-          "| 0.20     | 0.18     | 0.19   | 0.22       | -0.03    | -0.46  | 0.0        | +2.30       | Moderate   | Below avg FT teams |",
-          "| 0.18     | 0.16     | 0.17   | 0.22       | -0.05    | -0.76  | 0.0        | +3.80       | High       | Low FT rate teams |",
-          "| 0.15     | 0.13     | 0.14   | 0.22       | -0.08    | -1.00  | 0.0        | +5.00       | Maximum    | Very low FT teams |",
+          "| 0.32     | 0.30     | 0.31   | 0.26       | +0.05    | +0.76  | +3.80      | 0.0         | High       | High FT rate (PHI, LAL) |",
+          "| 0.29     | 0.27     | 0.28   | 0.26       | +0.02    | +0.33  | +1.65      | 0.0         | Moderate   | Above avg FT teams |",
+          "| 0.26     | 0.26     | 0.26   | 0.26       | 0.0      | 0.0    | 0.0        | 0.0         | Neutral    | League avg |",
+          "| 0.24     | 0.22     | 0.23   | 0.26       | -0.03    | -0.46  | 0.0        | +2.30       | Moderate   | Below avg FT teams |",
+          "| 0.21     | 0.19     | 0.20   | 0.26       | -0.06    | -0.76  | 0.0        | +3.80       | High       | Low FT rate (BOS, GS) |",
           "",
           "*Metric: Free throw rate environment based on team FT attempt rates*",
-          "*Formula: ftrEnv = (homeFTr + awayFTr)/2, ftrDelta = ftrEnv - leagueFTr, signal = tanh(ftrDelta/0.06), if signal > 0: overScore = |signal| × 5.0, underScore = 0; else: overScore = 0, underScore = |signal| × 5.0*"
+          "*Formula: ftrEnv = (homeFTr + awayFTr)/2, ftrDelta = ftrEnv - leagueFTr, signal = tanh(ftrDelta/0.06), if signal > 0: overScore = |signal| × 5.0, underScore = 0; else: overScore = 0, underScore = |signal| × 5.0*",
+          "*2024-25 NBA League Average FTr: 0.26*"
         ]
       },
       injuryAvailability: {
