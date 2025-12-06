@@ -1440,42 +1440,65 @@ export function InsightCard(props: InsightCardProps) {
           </div>
         )}
 
-        {/* ===== CONFIDENCE BREAKDOWN - Market Stats (AI picks only) ===== */}
-        {!isManualPick && (
-          <div className="p-4 bg-slate-800" style={{ borderBottom: `1px solid ${rarity.borderColor}20` }}>
-            <div className={`text-xs font-bold ${rarity.textColor} uppercase mb-3 flex items-center gap-2`}>
-              <span>📊</span>
-              <span>Confidence Breakdown</span>
-            </div>
-            <div className="grid grid-cols-5 gap-2 text-center">
-              <div className="bg-slate-900/60 rounded-lg p-2 border border-slate-700/50">
-                <div className="text-[10px] text-slate-400 uppercase mb-1 font-semibold">CONF7</div>
-                <div className="text-lg font-mono font-bold text-white">{safeMarket.conf7.toFixed(2)}</div>
-              </div>
-              <div className="bg-slate-900/60 rounded-lg p-2 border border-slate-700/50">
-                <div className="text-[10px] text-slate-400 uppercase mb-1 font-semibold">MARKET ADJ</div>
-                <div className={`text-lg font-mono font-bold ${safeMarket.confAdj > 0 ? 'text-green-400' : safeMarket.confAdj < 0 ? 'text-red-400' : 'text-slate-400'}`}>
-                  {safeMarket.confAdj > 0 ? '+' : ''}{safeMarket.confAdj.toFixed(2)}
+        {/* ===== AI ARCHETYPE SECTION - The Pulse/Influencer etc (AI picks only) ===== */}
+        {!isManualPick && props.aiArchetype && (
+          <div
+            className="p-5 relative overflow-hidden"
+            style={{
+              background: 'rgba(15,15,25,0.95)',
+              borderBottom: `1px solid ${rarity.borderColor}20`,
+              boxShadow: `inset 0 0 60px ${rarity.borderColor}10`
+            }}
+          >
+            {/* Glowing border effect */}
+            <div
+              className="absolute inset-0 rounded-none pointer-events-none"
+              style={{
+                boxShadow: `inset 0 0 20px ${rarity.borderColor}30, 0 0 30px ${rarity.borderColor}15`,
+                border: `2px solid ${rarity.borderColor}40`
+              }}
+            />
+
+            <div className="relative z-10">
+              {/* Archetype Name Header with glow */}
+              <div className="text-center mb-4">
+                <div
+                  className="inline-block px-4 py-1.5 rounded-full font-black text-sm uppercase tracking-wider"
+                  style={{
+                    background: `linear-gradient(135deg, ${rarity.borderColor}30, ${rarity.borderColor}15)`,
+                    border: `2px solid ${rarity.borderColor}60`,
+                    color: rarity.borderColor,
+                    textShadow: `0 0 10px ${rarity.borderColor}80`
+                  }}
+                >
+                  {props.aiArchetype.name}
+                </div>
+                <div className="text-slate-400 text-xs mt-2">
+                  {props.aiArchetype.direction === 'away' ? '🔺' : '🔻'} {props.aiArchetype.points > 0 ? '+' : ''}{props.aiArchetype.points.toFixed(1)} pts contribution
                 </div>
               </div>
-              <div className="bg-purple-900/30 rounded-lg p-2 border border-purple-500/50">
-                <div className="text-[10px] text-purple-400 uppercase mb-1 font-semibold">🤖 AI</div>
-                <div className={`text-lg font-mono font-bold ${safeMarket.aiArchetypeContrib > 0 ? 'text-purple-400' : 'text-slate-400'}`}>
-                  {safeMarket.aiArchetypeContrib > 0 ? '+' : ''}{safeMarket.aiArchetypeContrib.toFixed(2)}
+
+              {/* Key Insights - 4 bullet points max */}
+              {props.aiArchetype.keyInsights && props.aiArchetype.keyInsights.length > 0 && (
+                <div className="space-y-2">
+                  {props.aiArchetype.keyInsights.slice(0, 4).map((insight: string, idx: number) => (
+                    <div
+                      key={idx}
+                      className="flex items-start gap-2 text-sm"
+                    >
+                      <span style={{ color: rarity.borderColor }} className="text-base mt-0.5">•</span>
+                      <span className="text-slate-200 leading-relaxed">{insight}</span>
+                    </div>
+                  ))}
                 </div>
-              </div>
-              <div className="rounded-lg p-2" style={{ background: `linear-gradient(135deg, ${rarity.borderColor}20, ${rarity.borderColor}10)`, border: `2px solid ${rarity.borderColor}60` }}>
-                <div className={`text-[10px] ${rarity.textColor} uppercase mb-1 font-bold`}>CONF FINAL</div>
-                <div className="text-lg font-mono font-bold text-white">
-                  {safeMarket.confFinal.toFixed(2)}
+              )}
+
+              {/* If no key insights, show notes */}
+              {(!props.aiArchetype.keyInsights || props.aiArchetype.keyInsights.length === 0) && props.aiArchetype.notes && (
+                <div className="text-slate-300 text-sm text-center italic">
+                  {props.aiArchetype.notes}
                 </div>
-              </div>
-              <div className="bg-slate-900/60 rounded-lg p-2 border border-slate-700/50">
-                <div className="text-[10px] text-slate-400 uppercase mb-1 font-semibold">DOMINANT</div>
-                <div className="text-sm font-bold text-white truncate">
-                  {formatSelectionAbbrev(safePick.selection)}
-                </div>
-              </div>
+              )}
             </div>
           </div>
         )}
@@ -1499,10 +1522,18 @@ export function InsightCard(props: InsightCardProps) {
             <div className="grid grid-cols-2 gap-3">
               {sortedFactors.map((factor, idx) => {
                 const factorMeta = getFactorMeta(factor.key)
-                const icon = factorMeta?.icon || 'ℹ️'
-                const shortName = factorMeta?.shortName || factor.label || factor.key
-                const fullName = factorMeta?.name || factor.label || factor.key
-                const description = factorMeta?.description || 'Factor analysis'
+                // For AI Archetype factor, use the archetype name from props instead of generic "AI"
+                const isAiArchetype = factor.key === 'aiArchetype'
+                const icon = isAiArchetype ? '🤖' : (factorMeta?.icon || 'ℹ️')
+                const shortName = isAiArchetype
+                  ? (props.aiArchetype?.name || 'AI')
+                  : (factorMeta?.shortName || factor.label || factor.key)
+                const fullName = isAiArchetype
+                  ? (props.aiArchetype?.name || 'AI Archetype')
+                  : (factorMeta?.name || factor.label || factor.key)
+                const description = isAiArchetype
+                  ? `AI-powered analysis using ${props.aiArchetype?.name || 'specialized archetype'}`
+                  : (factorMeta?.description || 'Factor analysis')
 
                 const isOver = factor.overScore > 0
                 const isUnder = factor.underScore > 0
@@ -1527,7 +1558,15 @@ export function InsightCard(props: InsightCardProps) {
                 return (
                   <div
                     key={factor.key}
-                    className="bg-gradient-to-br from-slate-700/80 to-slate-800/80 rounded-xl p-3 border border-slate-600/50 hover:border-slate-500/50 transition-all hover:scale-[1.02] relative"
+                    className={`rounded-xl p-3 transition-all hover:scale-[1.02] relative ${isAiArchetype
+                      ? ''
+                      : 'bg-gradient-to-br from-slate-700/80 to-slate-800/80 border border-slate-600/50 hover:border-slate-500/50'
+                      }`}
+                    style={isAiArchetype ? {
+                      background: `linear-gradient(135deg, ${rarity.borderColor}20, ${rarity.borderColor}10)`,
+                      border: `2px solid ${rarity.borderColor}60`,
+                      boxShadow: `0 0 20px ${rarity.borderColor}30`
+                    } : undefined}
                     onMouseEnter={() => setHoveredFactor(factor.key)}
                     onMouseLeave={() => setHoveredFactor(null)}
                   >
@@ -1539,11 +1578,25 @@ export function InsightCard(props: InsightCardProps) {
                     )}
 
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-gradient-to-br from-slate-600 to-slate-700 rounded-full flex items-center justify-center text-sm shadow-md border border-slate-500/50 flex-shrink-0">
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-sm shadow-md flex-shrink-0"
+                        style={isAiArchetype ? {
+                          background: `linear-gradient(135deg, ${rarity.borderColor}40, ${rarity.borderColor}20)`,
+                          border: `1px solid ${rarity.borderColor}60`
+                        } : {
+                          background: 'linear-gradient(to bottom right, rgb(71 85 105), rgb(51 65 85))',
+                          border: '1px solid rgba(100, 116, 139, 0.5)'
+                        }}
+                      >
                         {icon}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-bold text-white text-xs truncate">{shortName}</div>
+                        <div
+                          className="font-bold text-xs truncate"
+                          style={{ color: isAiArchetype ? rarity.borderColor : 'white' }}
+                        >
+                          {shortName}
+                        </div>
                         <div className={`text-[10px] ${isOver ? 'text-emerald-400' : isUnder ? 'text-red-400' : 'text-slate-400'}`}>
                           {direction} {score > 0 ? `+${score.toFixed(1)}` : '0.0'}
                         </div>
@@ -1605,6 +1658,49 @@ export function InsightCard(props: InsightCardProps) {
           </div>
         )}
 
+        {/* ===== CONFIDENCE BREAKDOWN - Market Stats (AI picks only) ===== */}
+        {!isManualPick && (
+          <div className="p-4 bg-slate-800" style={{ borderBottom: `1px solid ${rarity.borderColor}20` }}>
+            <div className={`text-xs font-bold ${rarity.textColor} uppercase mb-3 flex items-center gap-2`}>
+              <span>📊</span>
+              <span>Confidence Breakdown</span>
+            </div>
+            <div className="grid grid-cols-4 gap-2 text-center">
+              <div className="bg-slate-900/60 rounded-lg p-2 border border-slate-700/50">
+                <div className="text-[10px] text-slate-400 uppercase mb-1 font-semibold">CONF7</div>
+                <div className="text-lg font-mono font-bold text-white">{safeMarket.conf7.toFixed(2)}</div>
+              </div>
+              <div className="bg-slate-900/60 rounded-lg p-2 border border-slate-700/50">
+                <div className="text-[10px] text-slate-400 uppercase mb-1 font-semibold">MARKET ADJ</div>
+                <div className={`text-lg font-mono font-bold ${safeMarket.confAdj > 0 ? 'text-green-400' : safeMarket.confAdj < 0 ? 'text-red-400' : 'text-slate-400'}`}>
+                  {safeMarket.confAdj > 0 ? '+' : ''}{safeMarket.confAdj.toFixed(2)}
+                </div>
+              </div>
+              <div
+                className="rounded-lg p-2"
+                style={{
+                  background: `linear-gradient(135deg, ${rarity.borderColor}20, ${rarity.borderColor}10)`,
+                  border: `2px solid ${rarity.borderColor}60`,
+                  boxShadow: `0 0 15px ${rarity.borderColor}20`
+                }}
+              >
+                <div className={`text-[10px] ${rarity.textColor} uppercase mb-1 font-bold`}>
+                  {props.aiArchetype?.name || '🤖 AI'}
+                </div>
+                <div className={`text-lg font-mono font-bold`} style={{ color: rarity.borderColor }}>
+                  {safeMarket.aiArchetypeContrib > 0 ? '+' : ''}{safeMarket.aiArchetypeContrib.toFixed(2)}
+                </div>
+              </div>
+              <div className="rounded-lg p-2" style={{ background: `linear-gradient(135deg, ${rarity.borderColor}20, ${rarity.borderColor}10)`, border: `2px solid ${rarity.borderColor}60` }}>
+                <div className={`text-[10px] ${rarity.textColor} uppercase mb-1 font-bold`}>CONF FINAL</div>
+                <div className="text-lg font-mono font-bold text-white">
+                  {safeMarket.confFinal.toFixed(2)}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ===== QUICK SUMMARY - Game Prediction (AI picks only) ===== */}
         {!isManualPick && props.writeups && props.writeups.gamePrediction && (
           <div className="p-4" style={{ background: 'rgba(15,15,25,0.9)', borderBottom: `1px solid ${rarity.borderColor}20` }}>
@@ -1660,6 +1756,113 @@ export function InsightCard(props: InsightCardProps) {
         {/* ===== ADVANCED DETAILS SECTION (COLLAPSIBLE - AI picks only) ===== */}
         {!isManualPick && showAdvancedDetails && (
           <div style={{ borderBottom: `1px solid ${rarity.borderColor}20` }}>
+
+            {/* AI Archetype Advanced Details */}
+            {props.aiArchetype?.advanced && (
+              <div className="p-4" style={{ background: 'rgba(15,15,25,0.9)', borderBottom: `1px solid ${rarity.borderColor}15` }}>
+                <div className="space-y-4">
+                  {/* Section Header */}
+                  <div className="flex items-center gap-2 pb-2" style={{ borderBottom: `1px solid ${rarity.borderColor}30` }}>
+                    <span style={{ color: rarity.borderColor }}>🤖</span>
+                    <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: rarity.borderColor }}>
+                      {props.aiArchetype.name} Analysis
+                    </h3>
+                  </div>
+
+                  {/* Sentiment Bar Chart */}
+                  {(props.aiArchetype.advanced.awaySentimentPct > 0 || props.aiArchetype.advanced.homeSentimentPct > 0) && (
+                    <div className="space-y-2">
+                      <div className="text-xs text-slate-400 font-semibold uppercase">Sentiment Distribution</div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-6 bg-slate-800 rounded-lg overflow-hidden flex">
+                          <div
+                            className="h-full flex items-center justify-center text-[10px] font-bold text-white"
+                            style={{
+                              width: `${props.aiArchetype.advanced.awaySentimentPct}%`,
+                              background: 'linear-gradient(90deg, #22c55e, #16a34a)'
+                            }}
+                          >
+                            {props.aiArchetype.advanced.awaySentimentPct > 15 && `${props.aiArchetype.advanced.awaySentimentPct}%`}
+                          </div>
+                          <div
+                            className="h-full flex items-center justify-center text-[10px] font-bold text-white"
+                            style={{
+                              width: `${props.aiArchetype.advanced.homeSentimentPct}%`,
+                              background: 'linear-gradient(90deg, #ef4444, #dc2626)'
+                            }}
+                          >
+                            {props.aiArchetype.advanced.homeSentimentPct > 15 && `${props.aiArchetype.advanced.homeSentimentPct}%`}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex justify-between text-[10px] text-slate-400">
+                        <span>Away: {props.aiArchetype.advanced.awaySentimentPct}%</span>
+                        <span>Home: {props.aiArchetype.advanced.homeSentimentPct}%</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* All Reasons - Away */}
+                  {props.aiArchetype.advanced.awayReasons && props.aiArchetype.advanced.awayReasons.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="text-xs text-emerald-400 font-semibold uppercase">Away Team Factors</div>
+                      <div className="space-y-1">
+                        {props.aiArchetype.advanced.awayReasons.map((reason: string, idx: number) => (
+                          <div key={idx} className="flex items-start gap-2 text-xs text-slate-300">
+                            <span className="text-emerald-400">•</span>
+                            <span>{reason}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* All Reasons - Home */}
+                  {props.aiArchetype.advanced.homeReasons && props.aiArchetype.advanced.homeReasons.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="text-xs text-red-400 font-semibold uppercase">Home Team Factors</div>
+                      <div className="space-y-1">
+                        {props.aiArchetype.advanced.homeReasons.map((reason: string, idx: number) => (
+                          <div key={idx} className="flex items-start gap-2 text-xs text-slate-300">
+                            <span className="text-red-400">•</span>
+                            <span>{reason}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Sample Posts */}
+                  {props.aiArchetype.advanced.samplePosts && props.aiArchetype.advanced.samplePosts.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="text-xs text-slate-400 font-semibold uppercase">Sample Posts</div>
+                      <div className="space-y-2">
+                        {props.aiArchetype.advanced.samplePosts.slice(0, 3).map((post: string, idx: number) => (
+                          <div
+                            key={idx}
+                            className="bg-slate-800/60 rounded-lg p-3 text-xs text-slate-300 italic border-l-2"
+                            style={{ borderColor: rarity.borderColor }}
+                          >
+                            "{post}"
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Raw Analysis */}
+                  {props.aiArchetype.advanced.rawAnalysis && (
+                    <div className="space-y-2">
+                      <div className="text-xs text-slate-400 font-semibold uppercase">Raw Analysis</div>
+                      <div className="bg-slate-800/40 rounded-lg p-3 text-xs text-slate-400 leading-relaxed">
+                        {props.aiArchetype.advanced.rawAnalysis}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* AI Writeups - Bold Predictions */}
             {props.bold_predictions && props.bold_predictions.predictions && props.bold_predictions.predictions.length > 0 && (
               <div className="p-4" style={{ background: 'rgba(15,15,25,0.9)', borderBottom: `1px solid ${rarity.borderColor}15` }}>

@@ -86,6 +86,18 @@ export const GLOBAL_FACTORS: FactorMeta[] = [
     maxPoints: 5.0,
     defaultWeight: 0.15,
     defaultDataSource: 'system'
+  },
+  // AI Archetype factors - dynamic names based on archetype
+  {
+    key: 'aiArchetype',
+    name: 'AI Archetype',
+    shortName: 'AI',
+    icon: '🤖',
+    description: 'AI-powered analysis using specialized archetypes (The Pulse, The Influencer, etc.)',
+    appliesTo: { sports: '*', betTypes: '*', scope: 'GLOBAL' },
+    maxPoints: 5.0,
+    defaultWeight: 1.0,
+    defaultDataSource: 'openai'
   }
 ]
 

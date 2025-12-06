@@ -733,6 +733,26 @@ export async function GET(
       || pick.confidence
       || 0
 
+    // Extract AI Archetype display data from step5_5
+    const step5_5 = metadata.steps?.step5_5
+    const aiArchetypeData = step5_5?.factor ? {
+      name: step5_5.factor.name?.replace('AI Archetype: ', '') || 'Unknown',  // e.g., "The Pulse"
+      archetype: step5_5.archetype,  // e.g., "pulse", "influencer"
+      direction: step5_5.factor.parsed_values_json?.direction,  // "away" | "home"
+      points: step5_5.factor.parsed_values_json?.points || 0,
+      notes: step5_5.factor.notes,  // e.g., "Public sentiment: Bucks +3.1 (3.1 pts)"
+      // Rich sentiment data from raw_values_json
+      sentiment: step5_5.factor.raw_values_json || null,
+      // Extract key insights for bullet points
+      awayReasons: step5_5.factor.raw_values_json?.awayReasons || [],
+      homeReasons: step5_5.factor.raw_values_json?.homeReasons || [],
+      awaySentimentPct: step5_5.factor.raw_values_json?.awaySentimentPct || 0,
+      homeSentimentPct: step5_5.factor.raw_values_json?.homeSentimentPct || 0,
+      rawAnalysis: step5_5.factor.raw_values_json?.rawAnalysis || '',
+      samplePosts: step5_5.factor.raw_values_json?.samplePosts || [],
+      overallConfidence: step5_5.factor.raw_values_json?.overallConfidence || 'medium'
+    } : null
+
     console.log('[InsightCard] ✅ Data extracted:', {
       pickId,
       runId: run.run_id,
@@ -744,6 +764,8 @@ export async function GET(
       confMarketAdj,
       aiArchetypeContrib,
       confFinal,
+      hasAiArchetype: !!aiArchetypeData,
+      aiArchetypeName: aiArchetypeData?.name,
       hasBoldPredictions: !!boldPredictions,
       hasProfessionalAnalysis: !!professionalAnalysis,
       hasInjurySummary: !!injurySummary,
@@ -769,6 +791,7 @@ export async function GET(
       conf7,
       confMarketAdj,
       aiArchetypeContrib,
+      aiArchetypeData,
       confFinal,
       resultsAnalysis,
       factorAccuracy,
@@ -791,7 +814,7 @@ export async function GET(
 }
 
 // Build insight card data structure from run metadata
-function buildInsightCard({ pick, game, run, factorContributions, predictedTotal, baselineAvg, marketTotal, predictedHomeScore, predictedAwayScore, boldPredictions, professionalAnalysis, injurySummary, conf7, confMarketAdj, aiArchetypeContrib, confFinal, resultsAnalysis, factorAccuracy, tuningSuggestions, overallAccuracy }: any) {
+function buildInsightCard({ pick, game, run, factorContributions, predictedTotal, baselineAvg, marketTotal, predictedHomeScore, predictedAwayScore, boldPredictions, professionalAnalysis, injurySummary, conf7, confMarketAdj, aiArchetypeContrib, aiArchetypeData, confFinal, resultsAnalysis, factorAccuracy, tuningSuggestions, overallAccuracy }: any) {
 
   // Detect pick type from pick.pick_type
   const pickType = pick.pick_type?.toUpperCase() || 'TOTAL'
@@ -983,6 +1006,28 @@ function buildInsightCard({ pick, game, run, factorContributions, predictedTotal
     bold_predictions: boldPredictions,
     injury_summary: injurySummary,
     factors,
+    // NEW: AI Archetype display data for dedicated section
+    aiArchetype: aiArchetypeData ? {
+      name: aiArchetypeData.name,  // "The Pulse", "The Influencer", etc.
+      archetype: aiArchetypeData.archetype,  // "pulse", "influencer", etc.
+      direction: aiArchetypeData.direction,  // "away" | "home"
+      points: aiArchetypeData.points,  // 0-5 contribution
+      notes: aiArchetypeData.notes,
+      // Key insights for bullet points (pick the winning side's reasons)
+      keyInsights: aiArchetypeData.direction === 'away'
+        ? (aiArchetypeData.awayReasons || []).slice(0, 4)
+        : (aiArchetypeData.homeReasons || []).slice(0, 4),
+      // Full data for advanced details section
+      advanced: {
+        awaySentimentPct: aiArchetypeData.awaySentimentPct,
+        homeSentimentPct: aiArchetypeData.homeSentimentPct,
+        awayReasons: aiArchetypeData.awayReasons,
+        homeReasons: aiArchetypeData.homeReasons,
+        rawAnalysis: aiArchetypeData.rawAnalysis,
+        samplePosts: aiArchetypeData.samplePosts,
+        overallConfidence: aiArchetypeData.overallConfidence
+      }
+    } : null,
     market: {
       conf7: conf7,
       confAdj: confMarketAdj,
