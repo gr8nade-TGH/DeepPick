@@ -20,7 +20,10 @@ import {
   EyeOff,
   ThumbsUp,
   Users,
-  MessageSquare
+  MessageSquare,
+  Search,
+  AlertTriangle,
+  XCircle
 } from 'lucide-react'
 
 interface GrokResult {
@@ -639,47 +642,112 @@ export default function AIManagerPage() {
                                   <h3 className="text-sm font-bold text-purple-400">The Pulse - Public Sentiment Details</h3>
                                 </div>
                                 <div className="grid grid-cols-3 gap-4">
+                                  {/* Column 1: Score Breakdown */}
                                   <div className="bg-slate-800/50 rounded p-3">
                                     <h4 className="text-xs font-semibold text-purple-400 mb-2 flex items-center gap-1">
-                                      <Activity className="w-3 h-3" /> Score Breakdown
+                                      <Activity className="w-3 h-3" /> Pulse Score Breakdown
                                     </h4>
                                     <div className="space-y-1 text-xs">
-                                      <div className="flex justify-between"><span className="text-slate-500">Final Points:</span><span className="text-white font-mono">{pulseInsight.quantified_value?.points?.toFixed(3)}</span></div>
-                                      <div className="flex justify-between"><span className="text-slate-500">Direction:</span><Badge className={`text-[10px] ${pulseInsight.quantified_value?.direction === 'away' ? 'bg-blue-500/20 text-blue-400' : 'bg-orange-500/20 text-orange-400'}`}>{pulseInsight.quantified_value?.direction}</Badge></div>
-                                      <div className="flex justify-between"><span className="text-slate-500">Team:</span><span className="text-green-400">{pulseInsight.quantified_value?.teamName}</span></div>
+                                      <div className="flex justify-between">
+                                        <span className="text-slate-500">Final Points:</span>
+                                        <span className="text-white font-mono">{pulseInsight.quantified_value?.points?.toFixed(3)}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-slate-500">Direction:</span>
+                                        <Badge className={`text-[10px] ${pulseInsight.quantified_value?.direction === 'away' ? 'bg-blue-500/20 text-blue-400' : 'bg-orange-500/20 text-orange-400'}`}>
+                                          {pulseInsight.quantified_value?.direction}
+                                        </Badge>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-slate-500">Team:</span>
+                                        <span className="text-green-400">{pulseInsight.quantified_value?.teamName}</span>
+                                      </div>
                                       <div className="border-t border-slate-700 pt-1 mt-1">
-                                        <div className="flex justify-between"><span className="text-slate-500">Sentiment Lean:</span><span className="font-mono">{(pulseInsight.quantified_value?.breakdown?.sentimentLean * 100)?.toFixed(1)}%</span></div>
-                                        <div className="flex justify-between"><span className="text-slate-500">Engagement Lean:</span><span className="font-mono">{(pulseInsight.quantified_value?.breakdown?.engagementLean * 100)?.toFixed(1)}%</span></div>
-                                        <div className="flex justify-between"><span className="text-slate-500">Confidence:</span><span className="font-mono">{pulseInsight.quantified_value?.breakdown?.confidenceMultiplier}</span></div>
+                                        <div className="flex justify-between">
+                                          <span className="text-slate-500">Sentiment Lean:</span>
+                                          <span className="font-mono">{(pulseInsight.quantified_value?.breakdown?.sentimentLean * 100)?.toFixed(1)}%</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span className="text-slate-500">Engagement Lean:</span>
+                                          <span className="font-mono">{(pulseInsight.quantified_value?.breakdown?.engagementLean * 100)?.toFixed(1)}%</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span className="text-slate-500">Raw Lean:</span>
+                                          <span className="font-mono">{(pulseInsight.quantified_value?.breakdown?.rawLean * 100)?.toFixed(1)}%</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span className="text-slate-500">Confidence:</span>
+                                          <span className="font-mono">{pulseInsight.quantified_value?.breakdown?.confidenceMultiplier}</span>
+                                        </div>
                                       </div>
                                     </div>
                                   </div>
+
+                                  {/* Column 2: Public Sentiment with Reasons */}
                                   <div className="bg-slate-800/50 rounded p-3">
-                                    <h4 className="text-xs font-semibold text-green-400 mb-2 flex items-center gap-1"><Users className="w-3 h-3" /> Sentiment Split</h4>
+                                    <h4 className="text-xs font-semibold text-green-400 mb-2 flex items-center gap-1">
+                                      <Users className="w-3 h-3" /> Public Sentiment
+                                    </h4>
                                     <div className="grid grid-cols-2 gap-2 mb-3">
                                       <div className="bg-blue-500/10 rounded p-2 text-center">
                                         <div className="text-lg font-bold text-blue-400">{sentiment.awaySentimentPct}%</div>
-                                        <div className="text-[10px] text-slate-500">{game.away_team.abbreviation}</div>
-                                        <div className="text-[10px] text-slate-600"><ThumbsUp className="w-3 h-3 inline" /> {sentiment.awayTotalLikes}</div>
+                                        <div className="text-[10px] text-slate-500">{game.away_team.abbreviation} (Away)</div>
+                                        <div className="text-[10px] text-slate-600 flex items-center justify-center gap-1 mt-1">
+                                          <ThumbsUp className="w-3 h-3" /> {sentiment.awayTotalLikes} likes
+                                        </div>
                                       </div>
                                       <div className="bg-orange-500/10 rounded p-2 text-center">
                                         <div className="text-lg font-bold text-orange-400">{sentiment.homeSentimentPct}%</div>
-                                        <div className="text-[10px] text-slate-500">{game.home_team.abbreviation}</div>
-                                        <div className="text-[10px] text-slate-600"><ThumbsUp className="w-3 h-3 inline" /> {sentiment.homeTotalLikes}</div>
+                                        <div className="text-[10px] text-slate-500">{game.home_team.abbreviation} (Home)</div>
+                                        <div className="text-[10px] text-slate-600 flex items-center justify-center gap-1 mt-1">
+                                          <ThumbsUp className="w-3 h-3" /> {sentiment.homeTotalLikes} likes
+                                        </div>
                                       </div>
                                     </div>
+                                    <div className="text-[10px] text-slate-400">
+                                      <div className="mb-1"><strong className="text-blue-400">Away Reasons:</strong></div>
+                                      <ul className="space-y-0.5 ml-2">
+                                        {sentiment.awayReasons?.map((r: string, i: number) => (
+                                          <li key={i} className="text-slate-500">• {r}</li>
+                                        ))}
+                                      </ul>
+                                      <div className="mb-1 mt-2"><strong className="text-orange-400">Home Reasons:</strong></div>
+                                      <ul className="space-y-0.5 ml-2">
+                                        {sentiment.homeReasons?.map((r: string, i: number) => (
+                                          <li key={i} className="text-slate-500">• {r}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
                                   </div>
+
+                                  {/* Column 3: Sample Posts */}
                                   <div className="bg-slate-800/50 rounded p-3">
-                                    <h4 className="text-xs font-semibold text-yellow-400 mb-2 flex items-center gap-1"><MessageSquare className="w-3 h-3" /> Sample Posts ({sentiment.samplePosts?.length || 0})</h4>
-                                    <div className="space-y-1 max-h-32 overflow-auto">
-                                      {sentiment.samplePosts?.slice(0, 3).map((post: any, i: number) => (
-                                        <div key={i} className="bg-slate-900/50 rounded p-1.5 text-[10px]">
-                                          <Badge className={`text-[8px] ${post.sentiment === 'away' ? 'bg-blue-500/20 text-blue-400' : 'bg-orange-500/20 text-orange-400'}`}>{post.sentiment}</Badge>
-                                          <p className="text-slate-400 line-clamp-2 mt-1">{post.text}</p>
+                                    <h4 className="text-xs font-semibold text-yellow-400 mb-2 flex items-center gap-1">
+                                      <MessageSquare className="w-3 h-3" /> Sample Posts ({sentiment.samplePosts?.length || 0})
+                                    </h4>
+                                    <div className="space-y-2 max-h-48 overflow-auto">
+                                      {sentiment.samplePosts?.map((post: any, i: number) => (
+                                        <div key={i} className="bg-slate-900/50 rounded p-2 text-[10px]">
+                                          <div className="flex items-center gap-2 mb-1">
+                                            <Badge className={`text-[9px] ${post.sentiment === 'away' ? 'bg-blue-500/20 text-blue-400' : 'bg-orange-500/20 text-orange-400'}`}>
+                                              {post.sentiment}
+                                            </Badge>
+                                            <span className="text-slate-600">❤️ {post.likes}</span>
+                                          </div>
+                                          <p className="text-slate-400 line-clamp-3">{post.text}</p>
                                         </div>
                                       ))}
                                     </div>
+                                    <div className="mt-2 pt-2 border-t border-slate-700 text-[10px] text-slate-500">
+                                      <div>Confidence: <Badge className="text-[9px] bg-slate-700">{sentiment.overallConfidence}</Badge></div>
+                                    </div>
                                   </div>
+                                </div>
+
+                                {/* Raw Analysis */}
+                                <div className="mt-3 bg-slate-800/50 rounded p-3">
+                                  <h4 className="text-xs font-semibold text-slate-400 mb-2">Raw Grok Analysis</h4>
+                                  <p className="text-[11px] text-slate-500 leading-relaxed">{sentiment.rawAnalysis}</p>
                                 </div>
                                 <div className="mt-2 text-[10px] text-slate-600">Generated: {new Date(pulseInsight.created_at).toLocaleString()}</div>
                               </td>
@@ -692,37 +760,111 @@ export default function AIManagerPage() {
                               <td colSpan={7} className="p-4">
                                 <div className="flex items-center gap-2 mb-3">
                                   <span className="text-lg">👑</span>
-                                  <h3 className="text-sm font-bold text-amber-400">The Influencer - Betting Account Sentiment</h3>
+                                  <h3 className="text-sm font-bold text-amber-400">The Influencer - Betting Account Sentiment (10K+ Followers)</h3>
                                 </div>
                                 <div className="grid grid-cols-3 gap-4">
+                                  {/* Column 1: Score Breakdown */}
                                   <div className="bg-slate-800/50 rounded p-3">
-                                    <h4 className="text-xs font-semibold text-amber-400 mb-2">Score Breakdown</h4>
+                                    <h4 className="text-xs font-semibold text-amber-400 mb-2 flex items-center gap-1">
+                                      <Activity className="w-3 h-3" /> Influencer Score Breakdown
+                                    </h4>
                                     <div className="space-y-1 text-xs">
-                                      <div className="flex justify-between"><span className="text-slate-500">Final Points:</span><span className="text-white font-mono">{influencerInsight.quantified_value?.points?.toFixed(3)}</span></div>
-                                      <div className="flex justify-between"><span className="text-slate-500">Direction:</span><Badge className={`text-[10px] ${influencerInsight.quantified_value?.direction === 'away' ? 'bg-blue-500/20 text-blue-400' : 'bg-orange-500/20 text-orange-400'}`}>{influencerInsight.quantified_value?.direction}</Badge></div>
-                                      <div className="flex justify-between"><span className="text-slate-500">Team:</span><span className="text-green-400">{influencerInsight.quantified_value?.teamName}</span></div>
+                                      <div className="flex justify-between">
+                                        <span className="text-slate-500">Final Points:</span>
+                                        <span className="text-white font-mono">{influencerInsight.quantified_value?.points?.toFixed(3)}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-slate-500">Direction:</span>
+                                        <Badge className={`text-[10px] ${influencerInsight.quantified_value?.direction === 'away' ? 'bg-blue-500/20 text-blue-400' : 'bg-orange-500/20 text-orange-400'}`}>
+                                          {influencerInsight.quantified_value?.direction}
+                                        </Badge>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-slate-500">Team:</span>
+                                        <span className="text-green-400">{influencerInsight.quantified_value?.teamName}</span>
+                                      </div>
+                                      <div className="border-t border-slate-700 pt-1 mt-1">
+                                        <div className="flex justify-between">
+                                          <span className="text-slate-500">Sentiment Lean:</span>
+                                          <span className="font-mono">{(influencerInsight.quantified_value?.breakdown?.sentimentLean * 100)?.toFixed(1)}%</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span className="text-slate-500">Engagement Lean:</span>
+                                          <span className="font-mono">{(influencerInsight.quantified_value?.breakdown?.engagementLean * 100)?.toFixed(1)}%</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span className="text-slate-500">Confidence:</span>
+                                          <span className="font-mono">{influencerInsight.quantified_value?.breakdown?.confidenceMultiplier}</span>
+                                        </div>
+                                      </div>
                                     </div>
                                   </div>
+
+                                  {/* Column 2: Influencer Sentiment with Reasons */}
                                   <div className="bg-slate-800/50 rounded p-3">
-                                    <h4 className="text-xs font-semibold text-green-400 mb-2">Influencer Split</h4>
-                                    <div className="grid grid-cols-2 gap-2">
+                                    <h4 className="text-xs font-semibold text-green-400 mb-2 flex items-center gap-1">
+                                      <Users className="w-3 h-3" /> Influencer Sentiment
+                                    </h4>
+                                    <div className="grid grid-cols-2 gap-2 mb-3">
                                       <div className="bg-blue-500/10 rounded p-2 text-center">
                                         <div className="text-lg font-bold text-blue-400">{influencerData.awaySentimentPct}%</div>
-                                        <div className="text-[10px] text-slate-500">{game.away_team.abbreviation}</div>
+                                        <div className="text-[10px] text-slate-500">{game.away_team.abbreviation} (Away)</div>
+                                        <div className="text-[10px] text-slate-600 flex items-center justify-center gap-1 mt-1">
+                                          <ThumbsUp className="w-3 h-3" /> {influencerData.awayTotalLikes} likes
+                                        </div>
                                       </div>
                                       <div className="bg-orange-500/10 rounded p-2 text-center">
                                         <div className="text-lg font-bold text-orange-400">{influencerData.homeSentimentPct}%</div>
-                                        <div className="text-[10px] text-slate-500">{game.home_team.abbreviation}</div>
+                                        <div className="text-[10px] text-slate-500">{game.home_team.abbreviation} (Home)</div>
+                                        <div className="text-[10px] text-slate-600 flex items-center justify-center gap-1 mt-1">
+                                          <ThumbsUp className="w-3 h-3" /> {influencerData.homeTotalLikes} likes
+                                        </div>
                                       </div>
                                     </div>
-                                  </div>
-                                  <div className="bg-slate-800/50 rounded p-3">
-                                    <h4 className="text-xs font-semibold text-yellow-400 mb-2">Key Reasons</h4>
-                                    <div className="text-[10px] text-slate-400 space-y-1">
-                                      {influencerData.awayReasons?.slice(0, 2).map((r: string, i: number) => <div key={i} className="text-blue-400">• {r}</div>)}
-                                      {influencerData.homeReasons?.slice(0, 2).map((r: string, i: number) => <div key={i} className="text-orange-400">• {r}</div>)}
+                                    <div className="text-[10px] text-slate-400">
+                                      <div className="mb-1"><strong className="text-blue-400">Away Reasons:</strong></div>
+                                      <ul className="space-y-0.5 ml-2">
+                                        {influencerData.awayReasons?.map((r: string, i: number) => (
+                                          <li key={i} className="text-slate-500">• {r}</li>
+                                        ))}
+                                      </ul>
+                                      <div className="mb-1 mt-2"><strong className="text-orange-400">Home Reasons:</strong></div>
+                                      <ul className="space-y-0.5 ml-2">
+                                        {influencerData.homeReasons?.map((r: string, i: number) => (
+                                          <li key={i} className="text-slate-500">• {r}</li>
+                                        ))}
+                                      </ul>
                                     </div>
                                   </div>
+
+                                  {/* Column 3: Sample Posts */}
+                                  <div className="bg-slate-800/50 rounded p-3">
+                                    <h4 className="text-xs font-semibold text-yellow-400 mb-2 flex items-center gap-1">
+                                      <MessageSquare className="w-3 h-3" /> Influencer Posts ({influencerData.samplePosts?.length || 0})
+                                    </h4>
+                                    <div className="space-y-2 max-h-48 overflow-auto">
+                                      {influencerData.samplePosts?.map((post: any, i: number) => (
+                                        <div key={i} className="bg-slate-900/50 rounded p-2 text-[10px]">
+                                          <div className="flex items-center gap-2 mb-1">
+                                            <Badge className={`text-[9px] ${post.sentiment === 'away' ? 'bg-blue-500/20 text-blue-400' : 'bg-orange-500/20 text-orange-400'}`}>
+                                              {post.sentiment}
+                                            </Badge>
+                                            <span className="text-slate-600">❤️ {post.likes}</span>
+                                          </div>
+                                          <p className="text-slate-400 line-clamp-3">{post.text}</p>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    <div className="mt-2 pt-2 border-t border-slate-700 text-[10px] text-slate-500">
+                                      <div>Confidence: <Badge className="text-[9px] bg-slate-700">{influencerData.overallConfidence}</Badge></div>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Raw Analysis */}
+                                <div className="mt-3 bg-slate-800/50 rounded p-3">
+                                  <h4 className="text-xs font-semibold text-slate-400 mb-2">Raw Grok Analysis</h4>
+                                  <p className="text-[11px] text-slate-500 leading-relaxed">{influencerData.rawAnalysis}</p>
                                 </div>
                                 <div className="mt-2 text-[10px] text-slate-600">Generated: {new Date(influencerInsight.created_at).toLocaleString()}</div>
                               </td>
@@ -738,25 +880,90 @@ export default function AIManagerPage() {
                                   <h3 className="text-sm font-bold text-emerald-400">The Interpreter - Independent Research Analysis</h3>
                                 </div>
                                 <div className="grid grid-cols-3 gap-4">
+                                  {/* Column 1: Score & Pick */}
                                   <div className="bg-slate-800/50 rounded p-3">
-                                    <h4 className="text-xs font-semibold text-emerald-400 mb-2">Score & Pick</h4>
+                                    <h4 className="text-xs font-semibold text-emerald-400 mb-2 flex items-center gap-1">
+                                      <Activity className="w-3 h-3" /> Score & Pick
+                                    </h4>
                                     <div className="space-y-1 text-xs">
-                                      <div className="flex justify-between"><span className="text-slate-500">Final Points:</span><span className="text-white font-mono">{interpreterInsight.quantified_value?.points?.toFixed(3)}</span></div>
-                                      <div className="flex justify-between"><span className="text-slate-500">Pick:</span><Badge className="bg-emerald-500/20 text-emerald-400">{interpreterData.pick}</Badge></div>
-                                      <div className="flex justify-between"><span className="text-slate-500">Conviction:</span><span className="font-mono text-emerald-400">{interpreterData.conviction}/10</span></div>
-                                      <div className="flex justify-between"><span className="text-slate-500">Evidence Quality:</span><Badge className="bg-slate-700">{interpreterData.evidenceQuality}</Badge></div>
+                                      <div className="flex justify-between">
+                                        <span className="text-slate-500">Final Points:</span>
+                                        <span className="text-white font-mono">{interpreterInsight.quantified_value?.points?.toFixed(3)}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-slate-500">Pick:</span>
+                                        <Badge className="bg-emerald-500/20 text-emerald-400">{interpreterData.pick}</Badge>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-slate-500">Direction:</span>
+                                        <Badge className={`text-[10px] ${interpreterInsight.quantified_value?.direction === 'away' ? 'bg-blue-500/20 text-blue-400' : 'bg-orange-500/20 text-orange-400'}`}>
+                                          {interpreterInsight.quantified_value?.direction}
+                                        </Badge>
+                                      </div>
+                                      <div className="border-t border-slate-700 pt-1 mt-1">
+                                        <div className="flex justify-between">
+                                          <span className="text-slate-500">Conviction:</span>
+                                          <span className="font-mono text-emerald-400">{interpreterData.conviction}/10</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span className="text-slate-500">Evidence Quality:</span>
+                                          <Badge className="bg-slate-700">{interpreterData.evidenceQuality}</Badge>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span className="text-slate-500">News Found:</span>
+                                          <span className="font-mono">{interpreterData.recentNewsCount || 0}</span>
+                                        </div>
+                                      </div>
                                     </div>
                                   </div>
+
+                                  {/* Column 2: Research Findings */}
                                   <div className="bg-slate-800/50 rounded p-3">
-                                    <h4 className="text-xs font-semibold text-green-400 mb-2">Top Reasons</h4>
-                                    <div className="space-y-1 text-[10px] text-slate-400">
-                                      {interpreterData.topReasons?.map((r: string, i: number) => <div key={i}>• {r}</div>)}
+                                    <h4 className="text-xs font-semibold text-green-400 mb-2 flex items-center gap-1">
+                                      <Search className="w-3 h-3" /> Top Reasons
+                                    </h4>
+                                    <div className="space-y-1.5 text-[10px] text-slate-400">
+                                      {interpreterData.topReasons?.map((r: string, i: number) => (
+                                        <div key={i} className="flex gap-1">
+                                          <span className="text-emerald-400 font-bold">{i + 1}.</span>
+                                          <span>{r}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    {interpreterData.xFactors && interpreterData.xFactors.length > 0 && (
+                                      <div className="mt-2 pt-2 border-t border-slate-700">
+                                        <div className="text-[10px] text-yellow-400 font-semibold mb-1">X-Factors:</div>
+                                        <ul className="space-y-0.5 text-[10px] text-slate-500">
+                                          {interpreterData.xFactors.map((x: string, i: number) => (
+                                            <li key={i}>• {x}</li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Column 3: Key Insights */}
+                                  <div className="bg-slate-800/50 rounded p-3">
+                                    <h4 className="text-xs font-semibold text-yellow-400 mb-2 flex items-center gap-1">
+                                      <MessageSquare className="w-3 h-3" /> Key Insights
+                                    </h4>
+                                    <div className="space-y-2 text-[10px]">
+                                      {interpreterData.keyInsights?.map((insight: string, i: number) => (
+                                        <div key={i} className="bg-slate-900/50 rounded p-2 text-slate-400">
+                                          {insight}
+                                        </div>
+                                      ))}
+                                      {(!interpreterData.keyInsights || interpreterData.keyInsights.length === 0) && (
+                                        <p className="text-slate-500">{interpreterData.summary || 'No additional insights'}</p>
+                                      )}
                                     </div>
                                   </div>
-                                  <div className="bg-slate-800/50 rounded p-3">
-                                    <h4 className="text-xs font-semibold text-yellow-400 mb-2">Research Summary</h4>
-                                    <p className="text-[10px] text-slate-400 leading-relaxed">{interpreterData.summary || interpreterData.rawAnalysis?.slice(0, 300)}...</p>
-                                  </div>
+                                </div>
+
+                                {/* Raw Analysis */}
+                                <div className="mt-3 bg-slate-800/50 rounded p-3">
+                                  <h4 className="text-xs font-semibold text-slate-400 mb-2">Raw Grok Research</h4>
+                                  <p className="text-[11px] text-slate-500 leading-relaxed">{interpreterData.rawAnalysis}</p>
                                 </div>
                                 <div className="mt-2 text-[10px] text-slate-600">Generated: {new Date(interpreterInsight.created_at).toLocaleString()}</div>
                               </td>
@@ -772,24 +979,93 @@ export default function AIManagerPage() {
                                   <h3 className="text-sm font-bold text-red-400">The Devils Advocate - Contrarian Analysis</h3>
                                 </div>
                                 <div className="grid grid-cols-3 gap-4">
+                                  {/* Column 1: Risk Assessment */}
                                   <div className="bg-slate-800/50 rounded p-3">
-                                    <h4 className="text-xs font-semibold text-red-400 mb-2">Risk Assessment</h4>
+                                    <h4 className="text-xs font-semibold text-red-400 mb-2 flex items-center gap-1">
+                                      <AlertTriangle className="w-3 h-3" /> Risk Assessment
+                                    </h4>
                                     <div className="space-y-1 text-xs">
-                                      <div className="flex justify-between"><span className="text-slate-500">Warning Points:</span><span className="text-white font-mono">{devilsInsight.quantified_value?.points?.toFixed(3)}</span></div>
-                                      <div className="flex justify-between"><span className="text-slate-500">Risk Score:</span><span className="font-mono text-red-400">{devilsInsight.raw_data?.devilsAdvocate?.riskScore}/10</span></div>
-                                      <div className="flex justify-between"><span className="text-slate-500">Recommendation:</span><Badge className={devilsInsight.raw_data?.devilsAdvocate?.recommendation === 'PROCEED' ? 'bg-green-500/20 text-green-400' : devilsInsight.raw_data?.devilsAdvocate?.recommendation === 'CAUTION' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'}>{devilsInsight.raw_data?.devilsAdvocate?.recommendation}</Badge></div>
+                                      <div className="flex justify-between">
+                                        <span className="text-slate-500">Warning Points:</span>
+                                        <span className="text-white font-mono">{devilsInsight.quantified_value?.points?.toFixed(3)}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-slate-500">Risk Score:</span>
+                                        <span className="font-mono text-red-400">{devilsInsight.raw_data?.devilsAdvocate?.riskScore}/10</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-slate-500">Severity:</span>
+                                        <Badge className={`text-[10px] ${devilsInsight.raw_data?.devilsAdvocate?.severity === 'high' ? 'bg-red-500/20 text-red-400' : devilsInsight.raw_data?.devilsAdvocate?.severity === 'medium' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-500/20 text-green-400'}`}>
+                                          {devilsInsight.raw_data?.devilsAdvocate?.severity || 'unknown'}
+                                        </Badge>
+                                      </div>
+                                      <div className="border-t border-slate-700 pt-1 mt-1">
+                                        <div className="flex justify-between">
+                                          <span className="text-slate-500">Recommendation:</span>
+                                          <Badge className={devilsInsight.raw_data?.devilsAdvocate?.recommendation === 'PROCEED' ? 'bg-green-500/20 text-green-400' : devilsInsight.raw_data?.devilsAdvocate?.recommendation === 'CAUTION' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'}>
+                                            {devilsInsight.raw_data?.devilsAdvocate?.recommendation}
+                                          </Badge>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span className="text-slate-500">Your Pick:</span>
+                                          <span className="text-slate-400">{devilsInsight.raw_data?.devilsAdvocate?.yourPick}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span className="text-slate-500">Your Confidence:</span>
+                                          <span className="font-mono">{devilsInsight.raw_data?.devilsAdvocate?.yourConfidence}%</span>
+                                        </div>
+                                      </div>
                                     </div>
                                   </div>
+
+                                  {/* Column 2: Contra Evidence */}
                                   <div className="bg-slate-800/50 rounded p-3">
-                                    <h4 className="text-xs font-semibold text-yellow-400 mb-2">Contra Evidence</h4>
-                                    <div className="space-y-1 text-[10px] text-slate-400">
-                                      {devilsInsight.raw_data?.devilsAdvocate?.contraEvidence?.map((r: string, i: number) => <div key={i} className="text-red-300">• {r}</div>)}
+                                    <h4 className="text-xs font-semibold text-yellow-400 mb-2 flex items-center gap-1">
+                                      <AlertTriangle className="w-3 h-3" /> Contra Evidence
+                                    </h4>
+                                    <div className="space-y-1.5 text-[10px] text-slate-400">
+                                      {devilsInsight.raw_data?.devilsAdvocate?.contraEvidence?.map((r: string, i: number) => (
+                                        <div key={i} className="flex gap-1">
+                                          <span className="text-red-400">⚠️</span>
+                                          <span className="text-red-300">{r}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    {devilsInsight.raw_data?.devilsAdvocate?.counterArguments && (
+                                      <div className="mt-2 pt-2 border-t border-slate-700">
+                                        <div className="text-[10px] text-slate-400 font-semibold mb-1">Counter Arguments:</div>
+                                        <ul className="space-y-0.5 text-[10px] text-slate-500">
+                                          {devilsInsight.raw_data?.devilsAdvocate?.counterArguments?.map((a: string, i: number) => (
+                                            <li key={i}>• {a}</li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Column 3: Red Flags */}
+                                  <div className="bg-slate-800/50 rounded p-3">
+                                    <h4 className="text-xs font-semibold text-red-400 mb-2 flex items-center gap-1">
+                                      <XCircle className="w-3 h-3" /> Red Flags
+                                    </h4>
+                                    <div className="space-y-1.5 text-[10px]">
+                                      {devilsInsight.raw_data?.devilsAdvocate?.redFlags?.map((flag: string, i: number) => (
+                                        <div key={i} className="bg-red-900/30 rounded p-2 text-red-300 flex gap-1">
+                                          <span>🚩</span>
+                                          <span>{flag}</span>
+                                        </div>
+                                      ))}
+                                      {(!devilsInsight.raw_data?.devilsAdvocate?.redFlags || devilsInsight.raw_data?.devilsAdvocate?.redFlags?.length === 0) && (
+                                        <p className="text-slate-500 italic">No major red flags identified</p>
+                                      )}
                                     </div>
                                   </div>
-                                  <div className="bg-slate-800/50 rounded p-3">
-                                    <h4 className="text-xs font-semibold text-slate-400 mb-2">Analysis</h4>
-                                    <p className="text-[10px] text-slate-400 leading-relaxed">{devilsInsight.raw_data?.devilsAdvocate?.rawAnalysis?.slice(0, 300)}...</p>
-                                  </div>
+                                </div>
+
+                                {/* Raw Analysis */}
+                                <div className="mt-3 bg-slate-800/50 rounded p-3">
+                                  <h4 className="text-xs font-semibold text-slate-400 mb-2">Raw Devils Advocate Analysis</h4>
+                                  <p className="text-[11px] text-slate-500 leading-relaxed">{devilsInsight.raw_data?.devilsAdvocate?.rawAnalysis}</p>
                                 </div>
                                 <div className="mt-2 text-[10px] text-slate-600">Generated: {new Date(devilsInsight.created_at).toLocaleString()}</div>
                               </td>
