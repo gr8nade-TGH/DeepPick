@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
       betType: betType || 'SPREAD'
     }
 
-    if (insightType === 'PULSE_SENTIMENT') {
+    if (insightType === 'PULSE_GLOBAL') {
       provider = 'GROK'
       const grokResult = await getGrokSentiment(baseRequest)
 
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
         usage: grokResult.usage
       }
       quantifiedValue = grokResult.pulseScore
-    } else if (insightType === 'INFLUENCER_SENTIMENT') {
+    } else if (insightType === 'INFLUENCER_GLOBAL') {
       provider = 'GROK'
       const influencerResult = await getInfluencerSentiment(baseRequest)
 
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
         usage: influencerResult.usage
       }
       quantifiedValue = influencerResult.influencerScore
-    } else if (insightType === 'INTERPRETER_ANALYSIS') {
+    } else if (insightType === 'INTERPRETER_GLOBAL') {
       provider = 'GROK'
       const interpreterResult = await getInterpreterAnalysis(baseRequest)
 
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
         usage: interpreterResult.usage
       }
       quantifiedValue = interpreterResult.interpreterScore
-    } else if (insightType === 'DEVILS_ADVOCATE') {
+    } else if (insightType === 'DEVILS_ADVOCATE_GLOBAL') {
       // Devils Advocate - auto-select a weak capper's pick to critique
       let { ourPick, ourConfidence, capperName, capperRecord } = body
 

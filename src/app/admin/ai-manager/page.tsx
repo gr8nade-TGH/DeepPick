@@ -91,7 +91,7 @@ const AI_INSIGHTS_REGISTRY = [
     outputFormat: 'Percentage lean (-100% to +100%) toward away or home',
     usedByArchetypes: ['The Pulse', 'The Contrarian', 'The Market Mover'],
     status: 'active',
-    apiCall: 'Combined with Engagement Lean in PULSE_SENTIMENT',
+    apiCall: 'Combined with Engagement Lean in PULSE_GLOBAL',
     weight: '60% of Pulse Score'
   },
   {
@@ -105,7 +105,7 @@ const AI_INSIGHTS_REGISTRY = [
     outputFormat: 'Percentage lean (-100% to +100%) based on total engagement',
     usedByArchetypes: ['The Pulse', 'The Buzz Tracker'],
     status: 'active',
-    apiCall: 'Combined with Sentiment Lean in PULSE_SENTIMENT',
+    apiCall: 'Combined with Sentiment Lean in PULSE_GLOBAL',
     weight: '40% of Pulse Score'
   },
   {
@@ -508,10 +508,10 @@ export default function AIManagerPage() {
                   ) : (
                     todaysGames.map(game => {
                       const gameInsights = getInsightsForGame(game.id)
-                      const pulseInsight = gameInsights.find(i => i.insight_type === 'PULSE_SENTIMENT')
-                      const influencerInsight = gameInsights.find(i => i.insight_type === 'INFLUENCER_SENTIMENT')
-                      const interpreterInsight = gameInsights.find(i => i.insight_type === 'INTERPRETER_ANALYSIS')
-                      const devilsInsight = gameInsights.find(i => i.insight_type === 'DEVILS_ADVOCATE')
+                      const pulseInsight = gameInsights.find(i => i.insight_type === 'PULSE_GLOBAL')
+                      const influencerInsight = gameInsights.find(i => i.insight_type === 'INFLUENCER_GLOBAL')
+                      const interpreterInsight = gameInsights.find(i => i.insight_type === 'INTERPRETER_GLOBAL')
+                      const devilsInsight = gameInsights.find(i => i.insight_type === 'DEVILS_ADVOCATE_GLOBAL')
                       const mathInsight = gameInsights.find(i => i.insight_type === 'MATHEMATICIAN_TOTAL')
                       const expandedType = expandedInsight?.gameId === game.id ? expandedInsight.type : null
                       const sentiment = pulseInsight?.raw_data?.sentiment
@@ -551,7 +551,7 @@ export default function AIManagerPage() {
                                 </div>
                               ) : (
                                 <Button
-                                  onClick={() => generateInsight(game, 'PULSE_SENTIMENT')}
+                                  onClick={() => generateInsight(game, 'PULSE_GLOBAL')}
                                   disabled={generatingGame === game.id}
                                   size="sm"
                                   className="h-5 text-[9px] px-2 bg-purple-600/50 hover:bg-purple-500"
@@ -578,7 +578,7 @@ export default function AIManagerPage() {
                                 </div>
                               ) : (
                                 <Button
-                                  onClick={() => generateInsight(game, 'INFLUENCER_SENTIMENT')}
+                                  onClick={() => generateInsight(game, 'INFLUENCER_GLOBAL')}
                                   disabled={generatingGame === game.id}
                                   size="sm"
                                   className="h-5 text-[9px] px-2 bg-amber-600/50 hover:bg-amber-500"
@@ -605,7 +605,7 @@ export default function AIManagerPage() {
                                 </div>
                               ) : (
                                 <Button
-                                  onClick={() => generateInsight(game, 'INTERPRETER_ANALYSIS')}
+                                  onClick={() => generateInsight(game, 'INTERPRETER_GLOBAL')}
                                   disabled={generatingGame === game.id}
                                   size="sm"
                                   className="h-5 text-[9px] px-2 bg-emerald-600/50 hover:bg-emerald-500"
@@ -632,7 +632,7 @@ export default function AIManagerPage() {
                                 </div>
                               ) : (
                                 <Button
-                                  onClick={() => generateInsight(game, 'DEVILS_ADVOCATE')}
+                                  onClick={() => generateInsight(game, 'DEVILS_ADVOCATE_GLOBAL')}
                                   disabled={generatingGame === game.id}
                                   size="sm"
                                   className="h-5 text-[9px] px-2 bg-red-600/50 hover:bg-red-500"
