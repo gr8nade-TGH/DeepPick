@@ -14,7 +14,9 @@ import {
   Loader2,
   ChevronDown,
   ChevronUp,
-  ExternalLink
+  Copy,
+  Check,
+  Database
 } from 'lucide-react'
 import {
   TOTALS_ARCHETYPES,
@@ -58,17 +60,39 @@ interface GameInfo {
   odds?: { spread?: { line: number }; total?: { line: number } }
 }
 
+interface StoredInsight {
+  id: string
+  game_id: string
+  insight_type: string
+  provider: string
+  bet_type: string
+  away_team: string
+  home_team: string
+  spread_line: number | null
+  total_line: number | null
+  raw_data: any
+  quantified_value: any
+  status: string
+  created_at: string
+  expires_at: string | null
+}
+
 export default function AIManagerPage() {
-  const [activeTab, setActiveTab] = useState('pulse')
+  const [activeTab, setActiveTab] = useState('insights')
   const [expandedRow, setExpandedRow] = useState<string | null>(null)
   const [todaysGames, setTodaysGames] = useState<GameInfo[]>([])
   const [selectedGame, setSelectedGame] = useState<string>('')
   const [grokResult, setGrokResult] = useState<GrokResult | null>(null)
   const [grokLoading, setGrokLoading] = useState(false)
   const [betType, setBetType] = useState<'SPREAD' | 'TOTAL'>('SPREAD')
+  const [storedInsights, setStoredInsights] = useState<StoredInsight[]>([])
+  const [insightsLoading, setInsightsLoading] = useState(false)
+  const [generatingGame, setGeneratingGame] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     fetchTodaysGames()
+    fetchStoredInsights()
   }, [])
 
   const fetchTodaysGames = async () => {
@@ -82,6 +106,66 @@ export default function AIManagerPage() {
     } catch (err) {
       console.error('Failed to fetch games:', err)
     }
+  }
+
+  const fetchStoredInsights = async () => {
+    setInsightsLoading(true)
+    try {
+      const res = await fetch('/api/admin/ai-insights')
+      const data = await res.json()
+      if (data.success) {
+        setStoredInsights(data.insights || [])
+      }
+    } catch (err) {
+      console.error('Failed to fetch insights:', err)
+    }
+    setInsightsLoading(false)
+  }
+
+  const generateInsight = async (game: GameInfo, type: string) => {
+    setGeneratingGame(game.id)
+    try {
+      const spreadLine = game.odds?.spread?.line || 0
+      const res = await fetch('/api/admin/ai-insights', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gameId: game.id,
+          insightType: type,
+          awayTeam: game.away_team.name,
+          homeTeam: game.home_team.name,
+          spread: { away: spreadLine, home: -spreadLine },
+          total: game.odds?.total?.line,
+          betType: 'SPREAD'
+        })
+      })
+      await res.json()
+      await fetchStoredInsights()
+    } catch (err) {
+      console.error('Failed to generate insight:', err)
+    }
+    setGeneratingGame(null)
+  }
+
+  const copyDebugInfo = () => {
+    const debugData = {
+      timestamp: new Date().toISOString(),
+      todaysGames: todaysGames.map(g => ({
+        id: g.id,
+        matchup: `${g.away_team.abbreviation} @ ${g.home_team.abbreviation}`,
+        spread: g.odds?.spread?.line,
+        total: g.odds?.total?.line
+      })),
+      storedInsights: storedInsights,
+      grokResult: grokResult
+    }
+    navigator.clipboard.writeText(JSON.stringify(debugData, null, 2))
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const getInsightsForGame = (gameId: string) => {
+    return storedInsights.filter(i => i.game_id === gameId)
   }
 
   const selectedGameData = todaysGames.find(g => g.id === selectedGame)
@@ -125,15 +209,40 @@ export default function AIManagerPage() {
             <h1 className="text-xl font-bold">AI Manager</h1>
             <Badge className="bg-purple-500/20 text-purple-400 text-xs">Internal</Badge>
           </div>
-          <div className="flex items-center gap-2 text-xs text-slate-500">
-            <span>{ALL_ARCHETYPES.length} archetypes</span>
-            <span>•</span>
-            <span>{todaysGames.length} games today</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 text-xs text-slate-500">
+              <span>{ALL_ARCHETYPES.length} archetypes</span>
+              <span>•</span>
+              <span>{todaysGames.length} games</span>
+              <span>•</span>
+              <span>{storedInsights.length} insights</span>
+            </div>
+            <Button
+              onClick={copyDebugInfo}
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs gap-1"
+            >
+              {copied ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
+              {copied ? 'Copied!' : 'Copy Debug'}
+            </Button>
+            <Button
+              onClick={() => { fetchTodaysGames(); fetchStoredInsights() }}
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs gap-1"
+            >
+              <RefreshCw className="w-3 h-3" />
+              Refresh
+            </Button>
           </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="bg-slate-900 mb-4 h-8">
+            <TabsTrigger value="insights" className="text-xs h-7 px-3">
+              <Database className="w-3 h-3 mr-1" /> Game Insights ({storedInsights.length})
+            </TabsTrigger>
             <TabsTrigger value="pulse" className="text-xs h-7 px-3">
               <Activity className="w-3 h-3 mr-1" /> The Pulse (Grok)
             </TabsTrigger>
@@ -147,6 +256,118 @@ export default function AIManagerPage() {
               <Zap className="w-3 h-3 mr-1" /> SPREAD ({SPREAD_ARCHETYPES.length})
             </TabsTrigger>
           </TabsList>
+
+          {/* Game Insights - Stored per matchup */}
+          <TabsContent value="insights" className="mt-0">
+            <div className="bg-slate-900 border border-slate-800 rounded overflow-hidden">
+              <div className="p-3 border-b border-slate-800 flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-medium text-white">Stored AI Insights</h3>
+                  <p className="text-xs text-slate-500">Generated once per game, referenced by all cappers</p>
+                </div>
+                {insightsLoading && <Loader2 className="w-4 h-4 animate-spin text-slate-500" />}
+              </div>
+
+              <table className="w-full text-sm">
+                <thead className="bg-slate-800/50">
+                  <tr className="text-left text-xs text-slate-500">
+                    <th className="p-2">Game</th>
+                    <th className="p-2 w-24">Spread</th>
+                    <th className="p-2 w-24">Total</th>
+                    <th className="p-2">PULSE_SENTIMENT</th>
+                    <th className="p-2">Details</th>
+                    <th className="p-2 w-32">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {todaysGames.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="p-8 text-center text-slate-500">No games found</td>
+                    </tr>
+                  ) : (
+                    todaysGames.map(game => {
+                      const gameInsights = getInsightsForGame(game.id)
+                      const pulseInsight = gameInsights.find(i => i.insight_type === 'PULSE_SENTIMENT')
+
+                      return (
+                        <tr key={game.id} className="border-t border-slate-800 hover:bg-slate-800/30">
+                          <td className="p-2">
+                            <div className="font-medium text-white">
+                              {game.away_team.abbreviation} @ {game.home_team.abbreviation}
+                            </div>
+                            <div className="text-[10px] text-slate-600 font-mono">{game.id}</div>
+                          </td>
+                          <td className="p-2 text-slate-400">
+                            {game.odds?.spread?.line ? `${game.odds.spread.line > 0 ? '+' : ''}${game.odds.spread.line}` : '-'}
+                          </td>
+                          <td className="p-2 text-slate-400">
+                            {game.odds?.total?.line || '-'}
+                          </td>
+                          <td className="p-2">
+                            {pulseInsight ? (
+                              <div className="flex items-center gap-2">
+                                <Badge className="bg-green-500/20 text-green-400 text-[10px]">✓ Generated</Badge>
+                                <span className="text-xs font-mono text-purple-400">
+                                  {pulseInsight.quantified_value?.points?.toFixed(2)} pts → {pulseInsight.quantified_value?.direction}
+                                </span>
+                              </div>
+                            ) : (
+                              <Badge className="bg-slate-700 text-slate-400 text-[10px]">Not Generated</Badge>
+                            )}
+                          </td>
+                          <td className="p-2">
+                            {pulseInsight && (
+                              <div className="text-[10px] text-slate-500 space-y-0.5">
+                                <div>Sent: {(pulseInsight.quantified_value?.breakdown?.sentimentLean * 100)?.toFixed(1)}%</div>
+                                <div>Eng: {(pulseInsight.quantified_value?.breakdown?.engagementLean * 100)?.toFixed(1)}%</div>
+                                <div className="text-slate-600">{new Date(pulseInsight.created_at).toLocaleTimeString()}</div>
+                              </div>
+                            )}
+                          </td>
+                          <td className="p-2">
+                            <Button
+                              onClick={() => generateInsight(game, 'PULSE_SENTIMENT')}
+                              disabled={generatingGame === game.id}
+                              size="sm"
+                              className={`h-6 text-[10px] gap-1 ${pulseInsight ? 'bg-slate-700 hover:bg-slate-600' : 'bg-purple-600 hover:bg-purple-500'}`}
+                            >
+                              {generatingGame === game.id ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <Play className="w-3 h-3" />
+                              )}
+                              {pulseInsight ? 'Regenerate' : 'Generate'}
+                            </Button>
+                          </td>
+                        </tr>
+                      )
+                    })
+                  )}
+                </tbody>
+              </table>
+
+              {/* Raw Insights Debug */}
+              {storedInsights.length > 0 && (
+                <div className="border-t border-slate-800 p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-xs text-slate-500">Raw Stored Insights ({storedInsights.length})</h4>
+                  </div>
+                  <div className="max-h-48 overflow-auto bg-slate-950 rounded p-2">
+                    <pre className="text-[10px] text-slate-400 font-mono whitespace-pre-wrap">
+                      {JSON.stringify(storedInsights.map(i => ({
+                        id: i.id.slice(0, 8),
+                        game: `${i.away_team} @ ${i.home_team}`,
+                        type: i.insight_type,
+                        points: i.quantified_value?.points?.toFixed(2),
+                        direction: i.quantified_value?.direction,
+                        created: new Date(i.created_at).toLocaleTimeString()
+                      })), null, 2)}
+                    </pre>
+                  </div>
+                </div>
+              )}
+            </div>
+          </TabsContent>
 
           {/* The Pulse - Grok Sentiment Testing */}
           <TabsContent value="pulse" className="mt-0">
