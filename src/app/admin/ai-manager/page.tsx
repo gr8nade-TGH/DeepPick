@@ -311,6 +311,11 @@ export default function AIManagerPage() {
   const [testResult, setTestResult] = useState<any>(null)
   const [testLoading, setTestLoading] = useState(false)
 
+  // The Influencer state
+  const [influencerResult, setInfluencerResult] = useState<any>(null)
+  const [influencerLoading, setInfluencerLoading] = useState(false)
+  const [minFollowers, setMinFollowers] = useState(10000)
+
   useEffect(() => {
     fetchTodaysGames()
     fetchStoredInsights()
@@ -409,6 +414,37 @@ export default function AIManagerPage() {
     }
   }
 
+  const runInfluencerTest = async () => {
+    if (!selectedGameData) return
+    setInfluencerLoading(true)
+    setInfluencerResult(null)
+
+    try {
+      const spreadLine = selectedGameData.odds?.spread?.line || 0
+      const body = {
+        awayTeam: selectedGameData.away_team.name,
+        homeTeam: selectedGameData.home_team.name,
+        spread: { away: spreadLine, home: -spreadLine },
+        total: selectedGameData.odds?.total?.line,
+        gameDate: new Date().toISOString().split('T')[0],
+        betType,
+        minFollowers
+      }
+
+      const res = await fetch('/api/admin/test-influencer-sentiment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      })
+      const data = await res.json()
+      setInfluencerResult(data)
+    } catch (err) {
+      setInfluencerResult({ error: 'Failed to call API' })
+    } finally {
+      setInfluencerLoading(false)
+    }
+  }
+
   const runGrokTest = async () => {
     if (!selectedGameData) return
     setGrokLoading(true)
@@ -488,11 +524,11 @@ export default function AIManagerPage() {
             <TabsTrigger value="test" className="text-xs h-7 px-3">
               <Play className="w-3 h-3 mr-1" /> Test Insights
             </TabsTrigger>
-            <TabsTrigger value="pulse" className="text-xs h-7 px-3">
-              <Activity className="w-3 h-3 mr-1" /> The Pulse (Grok)
+            <TabsTrigger value="ai-archetypes" className="text-xs h-7 px-3">
+              <Activity className="w-3 h-3 mr-1" /> AI Archetypes
             </TabsTrigger>
             <TabsTrigger value="archetypes" className="text-xs h-7 px-3">
-              <Brain className="w-3 h-3 mr-1" /> Archetypes ({ALL_ARCHETYPES.length})
+              <Brain className="w-3 h-3 mr-1" /> Factor Archetypes ({ALL_ARCHETYPES.length})
             </TabsTrigger>
             <TabsTrigger value="totals" className="text-xs h-7 px-3">
               <Target className="w-3 h-3 mr-1" /> TOTALS ({TOTALS_ARCHETYPES.length})
@@ -989,8 +1025,8 @@ export default function AIManagerPage() {
                           </Badge>
                           <span className="font-medium text-white text-sm">{t.name}</span>
                           <Badge className={`text-[9px] ${t.betType === 'TOTAL' ? 'bg-blue-500/20 text-blue-400' :
-                              t.betType === 'SPREAD' ? 'bg-orange-500/20 text-orange-400' :
-                                'bg-cyan-500/20 text-cyan-400'
+                            t.betType === 'SPREAD' ? 'bg-orange-500/20 text-orange-400' :
+                              'bg-cyan-500/20 text-cyan-400'
                             }`}>
                             {t.betType}
                           </Badge>
@@ -1027,220 +1063,243 @@ export default function AIManagerPage() {
             </div>
           </TabsContent>
 
-          {/* The Pulse - Grok Sentiment Testing */}
-          <TabsContent value="pulse" className="mt-0">
-            <div className="grid grid-cols-12 gap-4">
-              {/* Left: Controls */}
-              <div className="col-span-4 space-y-3">
-                <div className="bg-slate-900 border border-slate-800 rounded p-3">
-                  <h3 className="text-sm font-medium mb-2 text-purple-400">Test Grok Sentiment</h3>
-
-                  <div className="space-y-2">
-                    <div>
-                      <label className="text-xs text-slate-500 block mb-1">Game</label>
-                      <select
-                        value={selectedGame}
-                        onChange={(e) => setSelectedGame(e.target.value)}
-                        className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-sm"
-                      >
-                        {todaysGames.map(g => (
-                          <option key={g.id} value={g.id}>
-                            {g.away_team.abbreviation} @ {g.home_team.abbreviation}
-                            {g.odds?.spread?.line ? ` (${g.odds.spread.line > 0 ? '+' : ''}${g.odds.spread.line})` : ''}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-xs text-slate-500 block mb-1">Bet Type</label>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => setBetType('SPREAD')}
-                          className={`flex-1 px-2 py-1 text-xs rounded ${betType === 'SPREAD' ? 'bg-orange-500 text-white' : 'bg-slate-800 text-slate-400'}`}
-                        >
-                          SPREAD
-                        </button>
-                        <button
-                          onClick={() => setBetType('TOTAL')}
-                          className={`flex-1 px-2 py-1 text-xs rounded ${betType === 'TOTAL' ? 'bg-blue-500 text-white' : 'bg-slate-800 text-slate-400'}`}
-                        >
-                          TOTAL
-                        </button>
-                      </div>
-                    </div>
-
-                    {selectedGameData && (
-                      <div className="text-xs bg-slate-800/50 rounded p-2 space-y-1">
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Away:</span>
-                          <span>{selectedGameData.away_team.name}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Home:</span>
-                          <span>{selectedGameData.home_team.name}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Spread:</span>
-                          <span>{selectedGameData.odds?.spread?.line ? `${selectedGameData.odds.spread.line > 0 ? '+' : ''}${selectedGameData.odds.spread.line}` : 'N/A'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Total:</span>
-                          <span>{selectedGameData.odds?.total?.line || 'N/A'}</span>
-                        </div>
-                      </div>
-                    )}
-
-                    <Button
-                      onClick={runGrokTest}
-                      disabled={grokLoading || !selectedGame}
-                      className="w-full bg-purple-600 hover:bg-purple-500 h-8 text-sm"
+          {/* AI Archetypes - The Pulse & The Influencer */}
+          <TabsContent value="ai-archetypes" className="mt-0">
+            {/* Shared Controls */}
+            <div className="bg-slate-900 border border-slate-800 rounded p-3 mb-4">
+              <div className="grid grid-cols-12 gap-4 items-end">
+                <div className="col-span-4">
+                  <label className="text-xs text-slate-500 block mb-1">Select Game</label>
+                  <select
+                    value={selectedGame}
+                    onChange={(e) => setSelectedGame(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-sm"
+                  >
+                    {todaysGames.map(g => (
+                      <option key={g.id} value={g.id}>
+                        {g.away_team.abbreviation} @ {g.home_team.abbreviation}
+                        {g.odds?.spread?.line ? ` (${g.odds.spread.line > 0 ? '+' : ''}${g.odds.spread.line})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="col-span-2">
+                  <label className="text-xs text-slate-500 block mb-1">Bet Type</label>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => setBetType('SPREAD')}
+                      className={`flex-1 px-2 py-1.5 text-xs rounded ${betType === 'SPREAD' ? 'bg-orange-500 text-white' : 'bg-slate-800 text-slate-400'}`}
                     >
-                      {grokLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Play className="w-4 h-4 mr-1" />}
-                      Run Grok Test
-                    </Button>
+                      SPREAD
+                    </button>
+                    <button
+                      onClick={() => setBetType('TOTAL')}
+                      className={`flex-1 px-2 py-1.5 text-xs rounded ${betType === 'TOTAL' ? 'bg-blue-500 text-white' : 'bg-slate-800 text-slate-400'}`}
+                    >
+                      TOTAL
+                    </button>
                   </div>
                 </div>
-
-                {/* Formula Explanation */}
-                <div className="bg-slate-900 border border-slate-800 rounded p-3">
-                  <h3 className="text-sm font-medium mb-2 text-slate-400">Pulse Score Formula</h3>
-                  <div className="text-xs text-slate-500 space-y-1 font-mono">
-                    <p>sentimentLean = (away% - home%) / 100</p>
-                    <p>engagementLean = (awayLikes - homeLikes) / total</p>
-                    <p>rawLean = (sent * 0.6) + (eng * 0.4)</p>
-                    <p>adjLean = rawLean * confidence</p>
-                    <p className="text-purple-400">points = √|adjLean| * 5.0</p>
-                  </div>
-                  <p className="text-[10px] text-slate-600 mt-2">Sqrt curve amplifies moderate signals</p>
+                <div className="col-span-2">
+                  <label className="text-xs text-slate-500 block mb-1">Min Followers (Influencer)</label>
+                  <select
+                    value={minFollowers}
+                    onChange={(e) => setMinFollowers(Number(e.target.value))}
+                    className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-sm"
+                  >
+                    <option value={5000}>5K+</option>
+                    <option value={10000}>10K+</option>
+                    <option value={25000}>25K+</option>
+                    <option value={50000}>50K+</option>
+                    <option value={100000}>100K+</option>
+                  </select>
                 </div>
-              </div>
-
-              {/* Right: Results */}
-              <div className="col-span-8">
-                {grokResult ? (
-                  <div className="space-y-3">
-                    {/* Pulse Score Card */}
-                    <div className="bg-slate-900 border border-slate-800 rounded p-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-sm font-medium text-green-400">✓ Pulse Score Result</h3>
-                        <span className="text-xs text-slate-500">{grokResult.meta?.duration}</span>
-                      </div>
-
-                      {grokResult.pulseScore && (
-                        <div className="grid grid-cols-4 gap-3 mb-3">
-                          <div className="bg-slate-800 rounded p-2 text-center">
-                            <div className="text-2xl font-bold text-purple-400">
-                              {grokResult.pulseScore.points.toFixed(2)}
-                            </div>
-                            <div className="text-xs text-slate-500">Points</div>
-                          </div>
-                          <div className="bg-slate-800 rounded p-2 text-center">
-                            <div className="text-lg font-bold text-white">
-                              {grokResult.pulseScore.teamName}
-                            </div>
-                            <div className="text-xs text-slate-500">Direction</div>
-                          </div>
-                          <div className="bg-slate-800 rounded p-2 text-center">
-                            <div className="text-lg font-bold text-slate-300">
-                              {(grokResult.pulseScore.breakdown.sentimentLean * 100).toFixed(1)}%
-                            </div>
-                            <div className="text-xs text-slate-500">Sent. Lean</div>
-                          </div>
-                          <div className="bg-slate-800 rounded p-2 text-center">
-                            <div className="text-lg font-bold text-slate-300">
-                              {(grokResult.pulseScore.breakdown.engagementLean * 100).toFixed(1)}%
-                            </div>
-                            <div className="text-xs text-slate-500">Eng. Lean</div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Breakdown Table */}
-                      {grokResult.pulseScore && (
-                        <table className="w-full text-xs">
-                          <tbody>
-                            <tr className="border-b border-slate-800">
-                              <td className="py-1 text-slate-500">Raw Lean</td>
-                              <td className="py-1 text-right font-mono">{grokResult.pulseScore.breakdown.rawLean.toFixed(3)}</td>
-                            </tr>
-                            <tr className="border-b border-slate-800">
-                              <td className="py-1 text-slate-500">Confidence Multiplier</td>
-                              <td className="py-1 text-right font-mono">{grokResult.pulseScore.breakdown.confidenceMultiplier}</td>
-                            </tr>
-                            <tr className="border-b border-slate-800">
-                              <td className="py-1 text-slate-500">Tokens Used</td>
-                              <td className="py-1 text-right font-mono">{grokResult.usage?.totalTokens}</td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      )}
-                    </div>
-
-                    {/* Sentiment Details */}
-                    {grokResult.sentiment && (
-                      <div className="bg-slate-900 border border-slate-800 rounded p-3">
-                        <h3 className="text-sm font-medium mb-2 text-slate-400">Sentiment Breakdown</h3>
-
-                        <div className="grid grid-cols-2 gap-3 mb-3">
-                          <div className="bg-slate-800/50 rounded p-2">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-xs text-slate-500">Away ({selectedGameData?.away_team.abbreviation})</span>
-                              <span className="text-lg font-bold text-blue-400">{grokResult.sentiment.awaySentimentPct}%</span>
-                            </div>
-                            <div className="text-xs text-slate-500">{grokResult.sentiment.awayTotalLikes} likes</div>
-                            <ul className="text-xs text-slate-400 mt-1 space-y-0.5">
-                              {grokResult.sentiment.awayReasons.map((r, i) => (
-                                <li key={i} className="truncate">• {r}</li>
-                              ))}
-                            </ul>
-                          </div>
-                          <div className="bg-slate-800/50 rounded p-2">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-xs text-slate-500">Home ({selectedGameData?.home_team.abbreviation})</span>
-                              <span className="text-lg font-bold text-orange-400">{grokResult.sentiment.homeSentimentPct}%</span>
-                            </div>
-                            <div className="text-xs text-slate-500">{grokResult.sentiment.homeTotalLikes} likes</div>
-                            <ul className="text-xs text-slate-400 mt-1 space-y-0.5">
-                              {grokResult.sentiment.homeReasons.map((r, i) => (
-                                <li key={i} className="truncate">• {r}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        </div>
-
-                        {/* Sample Posts */}
-                        <div className="border-t border-slate-800 pt-2">
-                          <h4 className="text-xs text-slate-500 mb-1">Sample Posts</h4>
-                          <div className="space-y-1">
-                            {grokResult.sentiment.samplePosts.map((post, i) => (
-                              <div key={i} className="text-xs bg-slate-800/30 rounded px-2 py-1 flex items-start gap-2">
-                                <Badge className={`shrink-0 text-[10px] ${post.sentiment === 'away' ? 'bg-blue-500/20 text-blue-400' : 'bg-orange-500/20 text-orange-400'}`}>
-                                  {post.sentiment}
-                                </Badge>
-                                <span className="text-slate-400 flex-1 line-clamp-2">{post.text}</span>
-                                <span className="text-slate-600 shrink-0">❤️ {post.likes}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Raw Analysis */}
-                        <div className="border-t border-slate-800 pt-2 mt-2">
-                          <h4 className="text-xs text-slate-500 mb-1">Raw Analysis</h4>
-                          <p className="text-xs text-slate-400">{grokResult.sentiment.rawAnalysis}</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="bg-slate-900 border border-slate-800 rounded p-8 text-center">
-                    <Activity className="w-12 h-12 text-slate-700 mx-auto mb-3" />
-                    <p className="text-slate-500 text-sm">Select a game and run Grok test to see results</p>
+                {selectedGameData && (
+                  <div className="col-span-4 text-xs bg-slate-800/50 rounded p-2 flex gap-4">
+                    <span><span className="text-slate-500">Away:</span> {selectedGameData.away_team.abbreviation}</span>
+                    <span><span className="text-slate-500">Home:</span> {selectedGameData.home_team.abbreviation}</span>
+                    <span><span className="text-slate-500">Spread:</span> {selectedGameData.odds?.spread?.line || 'N/A'}</span>
+                    <span><span className="text-slate-500">Total:</span> {selectedGameData.odds?.total?.line || 'N/A'}</span>
                   </div>
                 )}
               </div>
             </div>
+
+            {/* Two Columns: The Pulse vs The Influencer */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* THE PULSE */}
+              <div className="space-y-3">
+                <div className="bg-slate-900 border border-purple-500/30 rounded overflow-hidden">
+                  <div className="p-3 border-b border-slate-800 bg-purple-500/10 flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-bold text-purple-400">🌊 THE PULSE</h3>
+                      <p className="text-[10px] text-slate-500">General public sentiment (all X users)</p>
+                    </div>
+                    <Button
+                      onClick={runGrokTest}
+                      disabled={grokLoading || !selectedGame}
+                      size="sm"
+                      className="bg-purple-600 hover:bg-purple-500 h-7 text-xs"
+                    >
+                      {grokLoading ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Play className="w-3 h-3 mr-1" />}
+                      Run Test
+                    </Button>
+                  </div>
+
+                  <div className="p-3">
+                    {grokResult?.pulseScore ? (
+                      <div className="space-y-3">
+                        {/* Score Card */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="bg-slate-800 rounded p-2 text-center">
+                            <div className="text-2xl font-bold text-purple-400">{grokResult.pulseScore.points.toFixed(2)}</div>
+                            <div className="text-[10px] text-slate-500">Points</div>
+                          </div>
+                          <div className="bg-slate-800 rounded p-2 text-center">
+                            <div className="text-lg font-bold text-white">{grokResult.pulseScore.teamName}</div>
+                            <div className="text-[10px] text-slate-500">Direction</div>
+                          </div>
+                        </div>
+
+                        {/* Lean Breakdown */}
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="bg-slate-800/50 rounded p-2">
+                            <span className="text-slate-500">Sentiment Lean:</span>
+                            <span className="float-right font-mono text-purple-300">{(grokResult.pulseScore.breakdown.sentimentLean * 100).toFixed(1)}%</span>
+                          </div>
+                          <div className="bg-slate-800/50 rounded p-2">
+                            <span className="text-slate-500">Engagement Lean:</span>
+                            <span className="float-right font-mono text-purple-300">{(grokResult.pulseScore.breakdown.engagementLean * 100).toFixed(1)}%</span>
+                          </div>
+                        </div>
+
+                        {/* Sample Posts */}
+                        {grokResult.sentiment?.samplePosts && (
+                          <div className="text-xs">
+                            <div className="text-slate-500 mb-1">Sample Posts:</div>
+                            <div className="space-y-1 max-h-32 overflow-y-auto">
+                              {grokResult.sentiment.samplePosts.slice(0, 3).map((post: any, i: number) => (
+                                <div key={i} className="bg-slate-800/30 rounded p-1.5 text-[10px]">
+                                  <span className="text-slate-400">{post.text?.substring(0, 80)}...</span>
+                                  <span className="text-purple-400 ml-1">({post.likes} ❤️)</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center py-6 text-slate-500">
+                        <Users className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                        <p className="text-xs">Click "Run Test" to analyze public sentiment</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Formula */}
+                  <div className="p-2 border-t border-slate-800 bg-slate-800/30">
+                    <div className="text-[9px] text-slate-600 font-mono">
+                      rawLean = (sent×0.6) + (eng×0.4) → points = √|lean| × 5
+                    </div>
+                  </div>
+                </div>
+                {/* THE INFLUENCER */}
+                <div className="space-y-3">
+                  <div className="bg-slate-900 border border-amber-500/30 rounded overflow-hidden">
+                    <div className="p-3 border-b border-slate-800 bg-amber-500/10 flex items-center justify-between">
+                      <div>
+                        <h3 className="text-sm font-bold text-amber-400">👑 THE INFLUENCER</h3>
+                        <p className="text-[10px] text-slate-500">Betting influencer sentiment ({minFollowers.toLocaleString()}+ followers)</p>
+                      </div>
+                      <Button
+                        onClick={runInfluencerTest}
+                        disabled={influencerLoading || !selectedGame}
+                        size="sm"
+                        className="bg-amber-600 hover:bg-amber-500 h-7 text-xs"
+                      >
+                        {influencerLoading ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Play className="w-3 h-3 mr-1" />}
+                        Run Test
+                      </Button>
+                    </div>
+
+                    <div className="p-3">
+                      {influencerResult?.influencerScore ? (
+                        <div className="space-y-3">
+                          {/* Score Card */}
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="bg-slate-800 rounded p-2 text-center">
+                              <div className="text-2xl font-bold text-amber-400">{influencerResult.influencerScore.points.toFixed(2)}</div>
+                              <div className="text-[10px] text-slate-500">Points</div>
+                            </div>
+                            <div className="bg-slate-800 rounded p-2 text-center">
+                              <div className="text-lg font-bold text-white">{influencerResult.influencerScore.teamName}</div>
+                              <div className="text-[10px] text-slate-500">Direction</div>
+                            </div>
+                          </div>
+
+                          {/* Influencer Stats */}
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="bg-slate-800/50 rounded p-2">
+                              <span className="text-slate-500">Accounts Analyzed:</span>
+                              <span className="float-right font-mono text-amber-300">{influencerResult.influencerScore.breakdown.accountsAnalyzed}</span>
+                            </div>
+                            <div className="bg-slate-800/50 rounded p-2">
+                              <span className="text-slate-500">Avg Followers:</span>
+                              <span className="float-right font-mono text-amber-300">{(influencerResult.influencerScore.breakdown.avgFollowerCount / 1000).toFixed(0)}K</span>
+                            </div>
+                          </div>
+
+                          {/* Lean Breakdown */}
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="bg-slate-800/50 rounded p-2">
+                              <span className="text-slate-500">Influencer Sent. Lean:</span>
+                              <span className="float-right font-mono text-amber-300">{(influencerResult.influencerScore.breakdown.influencerSentimentLean * 100).toFixed(1)}%</span>
+                            </div>
+                            <div className="bg-slate-800/50 rounded p-2">
+                              <span className="text-slate-500">Influencer Eng. Lean:</span>
+                              <span className="float-right font-mono text-amber-300">{(influencerResult.influencerScore.breakdown.influencerEngagementLean * 100).toFixed(1)}%</span>
+                            </div>
+                          </div>
+
+                          {/* Sample Posts with Followers */}
+                          {influencerResult.sentiment?.samplePosts && (
+                            <div className="text-xs">
+                              <div className="text-slate-500 mb-1">Influencer Posts:</div>
+                              <div className="space-y-1 max-h-32 overflow-y-auto">
+                                {influencerResult.sentiment.samplePosts.slice(0, 3).map((post: any, i: number) => (
+                                  <div key={i} className="bg-slate-800/30 rounded p-1.5 text-[10px]">
+                                    <span className="text-slate-400">{post.text?.substring(0, 80)}...</span>
+                                    <div className="flex gap-2 mt-0.5">
+                                      <span className="text-amber-400">👤 {((post.followers || 0) / 1000).toFixed(0)}K</span>
+                                      <span className="text-purple-400">❤️ {post.likes}</span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ) : influencerResult?.error ? (
+                        <div className="text-center py-6 text-red-400">
+                          <p className="text-xs">{influencerResult.error}</p>
+                        </div>
+                      ) : (
+                        <div className="text-center py-6 text-slate-500">
+                          <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                          <p className="text-xs">Click "Run Test" to analyze influencer sentiment</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Formula */}
+                    <div className="p-2 border-t border-slate-800 bg-slate-800/30">
+                      <div className="text-[9px] text-slate-600 font-mono">
+                        rawLean = (sent×0.7) + (eng×0.3) → weighted by follower count
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
           </TabsContent>
 
           {/* All Archetypes Table */}
