@@ -10,7 +10,7 @@ import { getGrokSentiment, type GrokSentimentRequest } from '@/lib/ai-insights/g
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    
+
     const { awayTeam, homeTeam, spread, total, gameDate, betType } = body
 
     if (!awayTeam || !homeTeam || !betType) {
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('[test-grok-sentiment] Request:', sentimentRequest)
-    
+
     const startTime = Date.now()
     const result = await getGrokSentiment(sentimentRequest)
     const duration = Date.now() - startTime
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     console.log('[test-grok-sentiment] Result:', {
       success: result.success,
       duration: `${duration}ms`,
-      quantified: result.quantified,
+      pulseScore: result.pulseScore,
       error: result.error
     })
 
@@ -54,9 +54,9 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('[test-grok-sentiment] Error:', error)
     return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
     )
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
 // GET endpoint for quick testing with defaults
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
-  
+
   // Default test: Lakers @ Celtics spread
   const testRequest: GrokSentimentRequest = {
     awayTeam: searchParams.get('away') || 'Lakers',
@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
   }
 
   console.log('[test-grok-sentiment GET] Testing with:', testRequest)
-  
+
   const startTime = Date.now()
   const result = await getGrokSentiment(testRequest)
   const duration = Date.now() - startTime
