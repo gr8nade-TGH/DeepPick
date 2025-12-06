@@ -63,7 +63,7 @@ export async function getCachedTeamForm(cacheKey: string): Promise<TeamFormData 
     // Parse cache key to get team and limit
     const [team, limitStr] = cacheKey.split(':')
     const limit = parseInt(limitStr, 10)
-    const season = 'current' // Always use 'current' season
+    const season = getNBASeason().season // Use calculated season (e.g., "2025-2026-regular")
 
     const { data, error } = await supabase
       .from('team_stats_cache')
@@ -108,7 +108,7 @@ export async function setCachedTeamForm(cacheKey: string, data: TeamFormData): P
     // Parse cache key to get team and limit
     const [team, limitStr] = cacheKey.split(':')
     const limit = parseInt(limitStr, 10)
-    const season = 'current' // Always use 'current' season
+    const season = getNBASeason().season // Use calculated season (e.g., "2025-2026-regular")
 
     const { error } = await supabase
       .from('team_stats_cache')

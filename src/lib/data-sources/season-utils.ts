@@ -22,13 +22,31 @@ export interface SeasonInfo {
  * - July-September: Off-season
  */
 export function getNBASeason(date: Date = new Date()): SeasonInfo {
-  // Use MySportsFeeds 'current' keyword for the season
-  // This automatically resolves to the current in-progress season
+  // Calculate explicit season instead of using 'current' keyword
+  // This ensures we're always targeting the correct NBA season
+  const year = date.getFullYear()
+  const month = date.getMonth() + 1 // 1-12
+
+  let startYear: number
+
+  if (month >= 10) {
+    // October-December: Season starts this year
+    startYear = year
+  } else if (month >= 1 && month <= 6) {
+    // January-June: Season started last year
+    startYear = year - 1
+  } else {
+    // July-September: Off-season, next season starts in October
+    startYear = year
+  }
+
+  const endYear = startYear + 1
+
   return {
-    season: 'current',
-    startYear: 0, // Not applicable when using 'current'
-    endYear: 0,   // Not applicable when using 'current'
-    displayName: 'Current Season'
+    season: `${startYear}-${endYear}-regular`,
+    startYear,
+    endYear,
+    displayName: `${startYear}-${String(endYear).slice(2)}`
   }
 }
 
