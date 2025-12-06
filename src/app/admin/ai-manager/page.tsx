@@ -433,7 +433,7 @@ export default function AIManagerPage() {
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 text-xs text-slate-500">
-              <span>{ALL_ARCHETYPES.length} archetypes</span>
+              <span>4 AI archetypes</span>
               <span>•</span>
               <span>{todaysGames.length} games</span>
               <span>•</span>
