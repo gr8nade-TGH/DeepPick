@@ -82,6 +82,114 @@ interface StoredInsight {
   expires_at: string | null
 }
 
+// AI Insights Registry - catalog of all available insight types
+const AI_INSIGHTS_REGISTRY = [
+  {
+    id: 'SENTIMENT_LEAN',
+    name: 'Sentiment Lean',
+    provider: 'GROK',
+    providerModel: 'grok-3-mini',
+    category: 'Social Sentiment',
+    description: 'Measures public opinion % on each side based on X/Twitter discourse',
+    outputFormat: 'Percentage lean (-100% to +100%) toward away or home',
+    usedByArchetypes: ['The Pulse', 'The Contrarian', 'The Market Mover'],
+    status: 'active',
+    apiCall: 'Combined with Engagement Lean in PULSE_SENTIMENT',
+    weight: '60% of Pulse Score'
+  },
+  {
+    id: 'ENGAGEMENT_LEAN',
+    name: 'Engagement Lean',
+    provider: 'GROK',
+    providerModel: 'grok-3-mini',
+    category: 'Social Sentiment',
+    description: 'Measures social media engagement (likes/retweets) distribution between sides',
+    outputFormat: 'Percentage lean (-100% to +100%) based on total engagement',
+    usedByArchetypes: ['The Pulse', 'The Buzz Tracker'],
+    status: 'active',
+    apiCall: 'Combined with Sentiment Lean in PULSE_SENTIMENT',
+    weight: '40% of Pulse Score'
+  },
+  {
+    id: 'BOLD_PREDICTIONS',
+    name: 'Bold Predictions',
+    provider: 'OPENAI',
+    providerModel: 'gpt-4o',
+    category: 'Player Performance',
+    description: 'AI-generated player performance predictions with confidence levels',
+    outputFormat: 'Array of player predictions with reasoning',
+    usedByArchetypes: ['The Prophet', 'The Statistician'],
+    status: 'active',
+    apiCall: 'Individual call per game',
+    weight: 'Variable by archetype'
+  },
+  {
+    id: 'PROFESSIONAL_ANALYSIS',
+    name: 'Professional Analysis',
+    provider: 'OPENAI',
+    providerModel: 'gpt-4o-mini',
+    category: 'Game Breakdown',
+    description: 'Comprehensive game analysis writeup for insight cards',
+    outputFormat: 'Structured text analysis with key factors',
+    usedByArchetypes: ['All cappers (per-pick)'],
+    status: 'active',
+    apiCall: 'Per-pick generation (not shared)',
+    weight: 'N/A (narrative only)'
+  },
+  {
+    id: 'NEWS_SIGNAL',
+    name: 'News Signal',
+    provider: 'PERPLEXITY',
+    providerModel: 'sonar-pro',
+    category: 'Breaking News',
+    description: 'Real-time news and injury updates that could impact the game',
+    outputFormat: 'News items with sentiment impact scores',
+    usedByArchetypes: ['The Insider', 'The News Hawk'],
+    status: 'planned',
+    apiCall: 'Per game, cached 1 hour',
+    weight: 'TBD'
+  },
+  {
+    id: 'INJURY_IMPACT',
+    name: 'Injury Impact',
+    provider: 'OPENAI',
+    providerModel: 'gpt-4o',
+    category: 'Lineup Analysis',
+    description: 'Analyzes how injuries/rest affect pace, totals, and spreads',
+    outputFormat: 'Impact score with affected metrics',
+    usedByArchetypes: ['The Medic', 'The Pace Analyst'],
+    status: 'planned',
+    apiCall: 'Per game, uses MySportsFeeds injury data',
+    weight: 'TBD'
+  },
+  {
+    id: 'SHARP_MONEY',
+    name: 'Sharp Money Flow',
+    provider: 'SYSTEM',
+    providerModel: 'Internal calculation',
+    category: 'Betting Markets',
+    description: 'Tracks line movement and betting percentages to identify sharp action',
+    outputFormat: 'Sharp lean direction with confidence',
+    usedByArchetypes: ['The Contrarian', 'The Sharp Follower'],
+    status: 'planned',
+    apiCall: 'Requires odds API integration',
+    weight: 'TBD'
+  },
+  {
+    id: 'HISTORICAL_MATCHUP',
+    name: 'Historical Matchup',
+    provider: 'SYSTEM',
+    providerModel: 'MySportsFeeds',
+    category: 'Historical Data',
+    description: 'Head-to-head history and trends between teams',
+    outputFormat: 'Trend indicators with win rates',
+    usedByArchetypes: ['The Historian', 'The Trend Spotter'],
+    status: 'planned',
+    apiCall: 'Per matchup, uses MySportsFeeds',
+    weight: 'TBD'
+  }
+]
+
 export default function AIManagerPage() {
   const [activeTab, setActiveTab] = useState('insights')
   const [expandedRow, setExpandedRow] = useState<string | null>(null)
@@ -248,6 +356,9 @@ export default function AIManagerPage() {
           <TabsList className="bg-slate-900 mb-4 h-8">
             <TabsTrigger value="insights" className="text-xs h-7 px-3">
               <Database className="w-3 h-3 mr-1" /> Game Insights ({storedInsights.length})
+            </TabsTrigger>
+            <TabsTrigger value="registry" className="text-xs h-7 px-3">
+              <Zap className="w-3 h-3 mr-1" /> AI Insights Registry
             </TabsTrigger>
             <TabsTrigger value="pulse" className="text-xs h-7 px-3">
               <Activity className="w-3 h-3 mr-1" /> The Pulse (Grok)
@@ -498,6 +609,87 @@ export default function AIManagerPage() {
                   </div>
                 </div>
               )}
+            </div>
+          </TabsContent>
+
+          {/* AI Insights Registry - Catalog of all insight types */}
+          <TabsContent value="registry" className="mt-0">
+            <div className="bg-slate-900 border border-slate-800 rounded overflow-hidden">
+              <div className="p-3 border-b border-slate-800">
+                <h3 className="text-sm font-medium text-white">AI Insights Registry</h3>
+                <p className="text-xs text-slate-500">Catalog of all AI insight types available in the system</p>
+              </div>
+
+              <table className="w-full text-sm">
+                <thead className="bg-slate-800/50">
+                  <tr className="text-left text-xs text-slate-500">
+                    <th className="p-2 w-10">Status</th>
+                    <th className="p-2">Insight Name</th>
+                    <th className="p-2">Provider</th>
+                    <th className="p-2">Category</th>
+                    <th className="p-2">Description</th>
+                    <th className="p-2">Used By</th>
+                    <th className="p-2">Weight</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {AI_INSIGHTS_REGISTRY.map(insight => (
+                    <tr key={insight.id} className="border-t border-slate-800 hover:bg-slate-800/30">
+                      <td className="p-2">
+                        {insight.status === 'active' ? (
+                          <Badge className="bg-green-500/20 text-green-400 text-[10px]">✓</Badge>
+                        ) : (
+                          <Badge className="bg-yellow-500/20 text-yellow-400 text-[10px]">○</Badge>
+                        )}
+                      </td>
+                      <td className="p-2">
+                        <div className="font-medium text-white">{insight.name}</div>
+                        <div className="text-[10px] text-slate-600 font-mono">{insight.id}</div>
+                      </td>
+                      <td className="p-2">
+                        <Badge className={`text-[10px] ${insight.provider === 'GROK' ? 'bg-purple-500/20 text-purple-400' :
+                            insight.provider === 'OPENAI' ? 'bg-green-500/20 text-green-400' :
+                              insight.provider === 'PERPLEXITY' ? 'bg-blue-500/20 text-blue-400' :
+                                'bg-slate-500/20 text-slate-400'
+                          }`}>
+                          {insight.provider}
+                        </Badge>
+                        <div className="text-[10px] text-slate-600 mt-0.5">{insight.providerModel}</div>
+                      </td>
+                      <td className="p-2 text-slate-400 text-xs">{insight.category}</td>
+                      <td className="p-2 text-slate-500 text-xs max-w-xs">
+                        <div className="line-clamp-2">{insight.description}</div>
+                        <div className="text-[10px] text-slate-600 mt-1">Output: {insight.outputFormat}</div>
+                      </td>
+                      <td className="p-2">
+                        <div className="flex flex-wrap gap-1">
+                          {insight.usedByArchetypes.map((arch, i) => (
+                            <Badge key={i} className="bg-slate-700 text-slate-300 text-[9px]">{arch}</Badge>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="p-2 text-xs text-slate-400">{insight.weight}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* Legend */}
+              <div className="p-3 border-t border-slate-800 flex items-center gap-4 text-[10px] text-slate-500">
+                <div className="flex items-center gap-1">
+                  <Badge className="bg-green-500/20 text-green-400 text-[9px]">✓</Badge>
+                  <span>Active</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Badge className="bg-yellow-500/20 text-yellow-400 text-[9px]">○</Badge>
+                  <span>Planned</span>
+                </div>
+                <span className="text-slate-600">|</span>
+                <Badge className="bg-purple-500/20 text-purple-400 text-[9px]">GROK</Badge>
+                <Badge className="bg-green-500/20 text-green-400 text-[9px]">OPENAI</Badge>
+                <Badge className="bg-blue-500/20 text-blue-400 text-[9px]">PERPLEXITY</Badge>
+                <Badge className="bg-slate-500/20 text-slate-400 text-[9px]">SYSTEM</Badge>
+              </div>
             </div>
           </TabsContent>
 
