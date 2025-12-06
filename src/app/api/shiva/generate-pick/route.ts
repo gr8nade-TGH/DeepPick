@@ -265,6 +265,16 @@ export async function POST(request: Request) {
     // Extract baseline model from factorConfig for transparency
     const baselineModel = factorConfig?.baseline_model || (betType === 'TOTAL' ? 'pace-efficiency' : 'net-rating')
 
+    // Extract AI Archetype info from Step 5.5 (if applied)
+    const aiArchetypeInfo = result.steps?.step5_5?.factor ? {
+      archetype: result.steps.step5_5.archetype,
+      direction: result.steps.step5_5.factor.parsed_values_json?.direction,
+      points: result.steps.step5_5.factor.parsed_values_json?.points,
+      notes: result.steps.step5_5.factor.notes,
+      confidenceBefore: result.steps.step5_5.confidenceBefore,
+      confidenceAfter: result.steps.step5_5.confidenceAfter
+    } : null
+
     const metadata: any = {
       capper: capperId,
       sport: 'NBA',
@@ -273,12 +283,15 @@ export async function POST(request: Request) {
       confidence,
       pick_type: result.pick?.pickType || betType,
       selection: result.pick?.selection || 'PASS',
-      factor_contributions: result.log?.factors || [], // Now contains F1-F5 or S1-S5 factors!
+      factor_contributions: result.log?.factors || [], // Now contains F1-F5 or S1-S5 factors + AI Archetype!
       predicted_total: predictedValue, // For TOTAL: predicted total, For SPREAD: predicted margin
       baseline_avg: baselineAvg, // NEW: Stats-based baseline (not Vegas) for pick diversity
       market_total: marketLine, // For TOTAL: market total line, For SPREAD: market spread line
       // NEW: Baseline model used for pick diversity
       baseline_model: baselineModel,
+      // NEW: AI Archetype used for personality layer
+      ai_archetype: factorConfig?.ai_archetype || null,
+      ai_archetype_info: aiArchetypeInfo,
       // NEW: Stats baseline debug info for transparency in insight cards
       stats_baseline_debug: statsBaselineDebug,
       predicted_home_score: result.log?.finalPrediction?.home || 0,

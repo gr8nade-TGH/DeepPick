@@ -16,6 +16,7 @@ interface CreateCapperRequest {
   bet_types: string[]
   pick_mode: 'manual' | 'auto' | 'hybrid'
   excluded_teams?: string[]
+  ai_archetype?: 'pulse' | 'influencer' | 'interpreter' | 'mathematician'  // Grok-powered personality
   social_links?: {
     twitter?: string
     instagram?: string
@@ -26,6 +27,7 @@ interface CreateCapperRequest {
     [betType: string]: {
       enabled_factors: string[]
       weights: { [factor: string]: number }
+      baseline_model?: string  // Projection Engine
     }
   }
   execution_interval_minutes: number
@@ -141,6 +143,12 @@ export async function POST(request: Request) {
       }, { status: 409 })
     }
 
+    // Build factor_config with ai_archetype at top level
+    const factorConfigWithArchetype = {
+      ...body.factor_config,
+      ai_archetype: body.ai_archetype || 'pulse'  // Default to 'pulse' if not specified
+    }
+
     // Insert new capper (linked to authenticated user)
     const { data: newCapper, error: insertError } = await supabase
       .from('user_cappers')
@@ -156,7 +164,7 @@ export async function POST(request: Request) {
         pick_mode: body.pick_mode,
         excluded_teams: body.excluded_teams || [],
         social_links: body.social_links || {},
-        factor_config: body.factor_config || {},
+        factor_config: factorConfigWithArchetype,
         execution_interval_minutes: body.execution_interval_minutes,
         execution_priority: body.execution_priority,
         is_active: body.is_active !== undefined ? body.is_active : true,

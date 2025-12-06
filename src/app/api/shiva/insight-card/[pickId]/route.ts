@@ -1040,12 +1040,14 @@ function buildInsightCard({ pick, game, run, factorContributions, predictedTotal
 function getFactorIcon(key: string): string {
   const icons: Record<string, string> = {
     edgeVsMarket: '💰',
+    edgeVsMarketSpread: '💰',
     paceIndex: '⚡',
     offForm: '🎯',
     defErosion: '🛡️',
     threeEnv: '🏀',
     whistleEnv: '🎺',
-    injuryAvailability: '🏥'
+    injuryAvailability: '🏥',
+    aiArchetype: '🤖'
   }
   return icons[key] || '📊'
 }

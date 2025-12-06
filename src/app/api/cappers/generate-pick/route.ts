@@ -199,6 +199,15 @@ export async function GET(request: Request) {
 
       const generateEndpoint = `${baseUrl}/api/shiva/generate-pick`
 
+      // Build factorConfig with bet-type-specific weights AND top-level ai_archetype
+      const betTypeConfig = capper.factor_config?.[betType] || {}
+      const aiArchetype = capper.factor_config?.ai_archetype // AI Archetype is at top level (applies to both bet types)
+
+      const factorConfigWithArchetype = {
+        ...betTypeConfig,
+        ai_archetype: aiArchetype // Include AI Archetype in the config passed to orchestrator
+      }
+
       const generateResponse = await fetch(generateEndpoint, {
         method: 'POST',
         headers: {
@@ -210,7 +219,7 @@ export async function GET(request: Request) {
           selectedGame: selectedGame, // Use the normalized selectedGame variable
           betType: betType, // Pass bet type to generate-pick endpoint
           capperId: capperId, // Pass capper ID so picks are saved with correct capper
-          factorConfig: capper.factor_config[betType] // Use custom factor weights!
+          factorConfig: factorConfigWithArchetype // Use custom factor weights + AI Archetype!
         })
       })
 

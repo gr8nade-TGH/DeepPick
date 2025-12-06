@@ -296,6 +296,38 @@ export const FACTOR_REGISTRY: FactorRegistry = {
     scope: 'global',
     icon: '⚖️',
     shortName: 'Edge vs Market'
+  },
+
+  edgeVsMarketSpread: {
+    name: 'Edge vs Market - Spread',
+    description: 'Final confidence adjustment based on predicted margin vs market spread',
+    defaultWeight: 100, // Always 100% (fixed)
+    maxPoints: 5.0,
+    supportedSports: ['NBA'],
+    supportedBetTypes: ['SPREAD'],
+    availableDataSources: ['system'],
+    defaultDataSource: 'system',
+    scope: 'global',
+    icon: '⚖️',
+    shortName: 'Edge vs Market'
+  },
+
+  // ========================================================================
+  // AI ARCHETYPE FACTOR (Grok-powered personality layer)
+  // ========================================================================
+
+  aiArchetype: {
+    name: 'AI Archetype',
+    description: 'Grok-powered AI personality analysis (The Pulse, Influencer, Interpreter, or Mathematician)',
+    defaultWeight: 100, // Always 100% (fixed)
+    maxPoints: 5.0,
+    supportedSports: ['NBA'],
+    supportedBetTypes: ['TOTAL', 'SPREAD'],
+    availableDataSources: ['openai'], // Uses Grok API
+    defaultDataSource: 'openai',
+    scope: 'global',
+    icon: '🤖',
+    shortName: 'AI Archetype'
   }
 }
 

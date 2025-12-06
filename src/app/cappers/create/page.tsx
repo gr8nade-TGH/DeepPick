@@ -13,9 +13,9 @@ import { useCallback } from 'react'
 type ConfigTab = 'archetype' | 'options'
 
 // ============================================
-// BASELINE MODELS - For Pick Diversity
-// Different models produce different predictions, creating genuine splits
-// Each model has a unique avatar border style for visual differentiation
+// PROJECTION ENGINE (formerly "Baseline Models") - For Pick Diversity
+// Different engines produce different predictions, creating genuine splits
+// Each engine has a unique avatar border style for visual differentiation
 // ============================================
 type TotalsBaselineModel = 'pace-efficiency' | 'ppg-based' | 'matchup-defensive'
 type SpreadBaselineModel = 'net-rating' | 'scoring-margin' | 'h2h-projection'
@@ -33,19 +33,19 @@ interface BaselineModelInfo {
 
 const TOTALS_BASELINE_MODELS: Record<TotalsBaselineModel, BaselineModelInfo> = {
   'pace-efficiency': {
-    name: 'Pace-Efficiency',
-    shortName: 'Pace',
-    description: 'Uses pace × offensive ratings',
+    name: 'Tempo Analyst',
+    shortName: 'Tempo',
+    description: 'Speed wins games. More possessions = more points.',
     iconName: 'Zap',
     color: 'yellow',
     borderStyle: 'border-4 border-yellow-400 shadow-[0_0_20px_rgba(250,204,21,0.5),inset_0_0_15px_rgba(250,204,21,0.2)]',
     glowColor: 'rgba(250,204,21,0.6)',
-    philosophy: 'Speed kills. Trust the tempo.'
+    philosophy: 'Trust the tempo. Fast games score big.'
   },
   'ppg-based': {
-    name: 'PPG Average',
-    shortName: 'PPG',
-    description: 'Uses raw scoring averages',
+    name: 'Scoring Historian',
+    shortName: 'Historian',
+    description: 'Past performance predicts future results.',
     iconName: 'BarChart3',
     color: 'blue',
     borderStyle: 'border-4 border-blue-400 shadow-[0_0_20px_rgba(96,165,250,0.5),inset_0_0_15px_rgba(96,165,250,0.2)]',
@@ -53,9 +53,9 @@ const TOTALS_BASELINE_MODELS: Record<TotalsBaselineModel, BaselineModelInfo> = {
     philosophy: 'Numbers don\'t lie. Trust the average.'
   },
   'matchup-defensive': {
-    name: 'Matchup-Defensive',
+    name: 'Defensive Specialist',
     shortName: 'Defense',
-    description: 'Weights opponent defense heavily',
+    description: 'Defense travels. Great D limits scoring.',
     iconName: 'Shield',
     color: 'emerald',
     borderStyle: 'border-4 border-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.5),inset_0_0_15px_rgba(52,211,153,0.2)]',
@@ -66,9 +66,9 @@ const TOTALS_BASELINE_MODELS: Record<TotalsBaselineModel, BaselineModelInfo> = {
 
 const SPREAD_BASELINE_MODELS: Record<SpreadBaselineModel, BaselineModelInfo> = {
   'net-rating': {
-    name: 'Net Rating',
-    shortName: 'Net',
-    description: 'Uses efficiency differential',
+    name: 'Efficiency Expert',
+    shortName: 'Efficiency',
+    description: 'Quality over quantity. Points per 100 is truth.',
     iconName: 'TrendingUp',
     color: 'purple',
     borderStyle: 'border-4 border-purple-400 shadow-[0_0_20px_rgba(192,132,252,0.5),inset_0_0_15px_rgba(192,132,252,0.2)]',
@@ -76,9 +76,9 @@ const SPREAD_BASELINE_MODELS: Record<SpreadBaselineModel, BaselineModelInfo> = {
     philosophy: 'Quality matters. Trust the ratings.'
   },
   'scoring-margin': {
-    name: 'Scoring Margin',
+    name: 'Point Differential Pro',
     shortName: 'Margin',
-    description: 'Uses actual point differentials',
+    description: 'The scoreboard doesn\'t lie.',
     iconName: 'Target',
     color: 'red',
     borderStyle: 'border-4 border-red-400 shadow-[0_0_20px_rgba(248,113,113,0.5),inset_0_0_15px_rgba(248,113,113,0.2)]',
@@ -86,14 +86,75 @@ const SPREAD_BASELINE_MODELS: Record<SpreadBaselineModel, BaselineModelInfo> = {
     philosophy: 'Scoreboard is truth. Trust the margins.'
   },
   'h2h-projection': {
-    name: 'Head-to-Head',
-    shortName: 'H2H',
-    description: 'Projects vs specific opponent',
+    name: 'Matchup Maestro',
+    shortName: 'Matchup',
+    description: 'Every opponent is different. Context is king.',
     iconName: 'Swords',
     color: 'orange',
     borderStyle: 'border-4 border-orange-400 shadow-[0_0_20px_rgba(251,146,60,0.5),inset_0_0_15px_rgba(251,146,60,0.2)]',
     glowColor: 'rgba(251,146,60,0.6)',
     philosophy: 'Every opponent is different. Project the clash.'
+  }
+}
+
+// ============================================
+// AI ARCHETYPES - Grok-powered personality layer
+// Each archetype uses real-time X/Twitter data to contribute 0-5 points
+// One archetype per capper - defines their "personality"
+// ============================================
+type AIArchetypeId = 'pulse' | 'influencer' | 'interpreter' | 'mathematician'
+
+interface AIArchetypeInfo {
+  id: AIArchetypeId
+  name: string
+  icon: string  // Emoji
+  description: string
+  philosophy: string
+  color: string
+  glowColor: string
+  dataSource: string
+}
+
+const AI_ARCHETYPES: Record<AIArchetypeId, AIArchetypeInfo> = {
+  'pulse': {
+    id: 'pulse',
+    name: 'The Pulse',
+    icon: '🌊',
+    description: 'Ride the wave. Public sentiment moves lines.',
+    philosophy: 'The crowd isn\'t always wrong. Massive public consensus creates value when the line hasn\'t adjusted.',
+    color: 'purple',
+    glowColor: 'rgba(168,85,247,0.6)',
+    dataSource: 'General public X/Twitter sentiment'
+  },
+  'influencer': {
+    id: 'influencer',
+    name: 'The Influencer',
+    icon: '👑',
+    description: 'Follow the money. Sharp accounts know best.',
+    philosophy: 'Betting influencers with large followings have information edges. Their picks move markets.',
+    color: 'amber',
+    glowColor: 'rgba(245,158,11,0.6)',
+    dataSource: 'High-follower betting accounts (10K+)'
+  },
+  'interpreter': {
+    id: 'interpreter',
+    name: 'The Interpreter',
+    icon: '🔮',
+    description: 'Deep research reveals hidden edges.',
+    philosophy: 'Independent analysis finds what others miss. Research-based conviction beats gut feelings.',
+    color: 'emerald',
+    glowColor: 'rgba(16,185,129,0.6)',
+    dataSource: 'Grok research-based analysis'
+  },
+  'mathematician': {
+    id: 'mathematician',
+    name: 'The Mathematician',
+    icon: '🧮',
+    description: 'Pure stats. Let the numbers decide.',
+    philosophy: 'Formula-driven projections with real-time adjustments. Math cuts through the noise.',
+    color: 'cyan',
+    glowColor: 'rgba(6,182,212,0.6)',
+    dataSource: 'MySportsFeeds stats + Grok adjustments'
   }
 }
 
@@ -139,11 +200,12 @@ interface CapperConfig {
   bet_types: string[]
   pick_mode: PickMode
   excluded_teams: string[]
+  ai_archetype: AIArchetypeId  // Grok-powered personality (pulse, influencer, interpreter, mathematician)
   factor_config: {
     [betType: string]: {
       enabled_factors: string[]
       weights: { [factor: string]: number }
-      baseline_model?: string // For pick diversity - different models produce different predictions
+      baseline_model?: string // Projection Engine - different engines produce different predictions
     }
   }
   execution_interval_minutes: number
@@ -738,7 +800,7 @@ export default function CreateCapperPage() {
   const [nameError, setNameError] = useState<string | null>(null)
   const [isCheckingName, setIsCheckingName] = useState(false)
 
-  // Default config uses Sharp Scholar (TOTALS) + Matchup Master (SPREAD) - balanced approach
+  // Default config uses balanced Factor Build + random AI Archetype
   // Valid TOTALS: paceIndex, offForm, defErosion, threeEnv, whistleEnv, injuryAvailability, restAdvantage
   // Valid SPREAD: netRatingDiff, turnoverDiff, shootingEfficiencyMomentum, reboundingDiff, fourFactorsDiff, injuryAvailability, momentumIndex, defensivePressure, assistEfficiency
   const [config, setConfig] = useState<CapperConfig>({
@@ -750,6 +812,7 @@ export default function CreateCapperPage() {
     bet_types: ['TOTAL', 'SPREAD'],
     pick_mode: 'hybrid',
     excluded_teams: [],
+    ai_archetype: 'pulse',  // Default AI Archetype - will be randomized on load
     factor_config: {
       TOTAL: {
         enabled_factors: ['paceIndex', 'offForm', 'defErosion', 'threeEnv', 'whistleEnv'],
@@ -793,7 +856,7 @@ export default function CreateCapperPage() {
     return leastUsed[Math.floor(Math.random() * leastUsed.length)]
   }
 
-  // Fetch baseline model usage and select 2 archetypes + 2 baseline models on page load
+  // Fetch baseline model usage and select Factor Builds + Projection Engines + AI Archetype on page load
   useEffect(() => {
     const initializeSelections = async () => {
       // Fetch usage counts for smart default selection
@@ -812,15 +875,15 @@ export default function CreateCapperPage() {
         console.log('Could not fetch baseline model usage, using random selection')
       }
 
-      // Pick random TOTAL archetype
+      // Pick random TOTAL Factor Build
       const randomTotalIndex = Math.floor(Math.random() * TOTALS_ARCHETYPES.length)
       const randomTotalArchetype = TOTALS_ARCHETYPES[randomTotalIndex]
 
-      // Pick random SPREAD archetype
+      // Pick random SPREAD Factor Build
       const randomSpreadIndex = Math.floor(Math.random() * SPREAD_ARCHETYPES.length)
       const randomSpreadArchetype = SPREAD_ARCHETYPES[randomSpreadIndex]
 
-      // Select baseline models (prefer least-used for diversity)
+      // Select Projection Engines (prefer least-used for diversity)
       const totalsBaselineKeys = Object.keys(TOTALS_BASELINE_MODELS) as TotalsBaselineModel[]
       const spreadBaselineKeys = Object.keys(SPREAD_BASELINE_MODELS) as SpreadBaselineModel[]
 
@@ -832,15 +895,20 @@ export default function CreateCapperPage() {
         ? selectLeastUsedModel(spreadBaselineKeys, spreadUsage)
         : spreadBaselineKeys[Math.floor(Math.random() * spreadBaselineKeys.length)]
 
-      // Set selected presets
+      // Pick random AI Archetype (one per capper - defines personality)
+      const aiArchetypeKeys = Object.keys(AI_ARCHETYPES) as AIArchetypeId[]
+      const randomAiArchetype = aiArchetypeKeys[Math.floor(Math.random() * aiArchetypeKeys.length)]
+
+      // Set selected Factor Build presets
       setSelectedPresets({
         TOTAL: randomTotalArchetype.id,
         SPREAD: randomSpreadArchetype.id
       })
 
-      // Apply their factor configurations + baseline models
+      // Apply Factor Build configurations + Projection Engines + AI Archetype
       setConfig(prev => ({
         ...prev,
+        ai_archetype: randomAiArchetype,
         factor_config: {
           TOTAL: {
             enabled_factors: randomTotalArchetype.totalFactors.enabled,
@@ -1304,9 +1372,30 @@ export default function CreateCapperPage() {
                 )}
                 <p className="text-[10px] text-slate-500 mb-4">Once created, name cannot be changed</p>
 
-                {/* Archetype List - Shows all bet types */}
+                {/* AI Archetype + Factor Builds - Shows all selections */}
                 <div className="w-full space-y-2 mb-4">
-                  {/* NBA TOTALS */}
+                  {/* AI ARCHETYPE - Personality */}
+                  {(() => {
+                    const archetype = AI_ARCHETYPES[config.ai_archetype]
+                    return (
+                      <div
+                        className={`flex items-center gap-2 px-3 py-2.5 rounded-lg transition-all border`}
+                        style={{
+                          backgroundColor: `${archetype.glowColor.replace('0.6', '0.1')}`,
+                          borderColor: archetype.glowColor.replace('0.6', '0.4'),
+                          boxShadow: `0 0 12px ${archetype.glowColor.replace('0.6', '0.2')}`
+                        }}
+                      >
+                        <span className="text-lg">{archetype.icon}</span>
+                        <div className="flex-1">
+                          <div className="text-[10px] font-bold text-slate-400 uppercase">AI Archetype</div>
+                          <span className={`text-xs font-bold text-${archetype.color}-400`}>{archetype.name}</span>
+                        </div>
+                      </div>
+                    )
+                  })()}
+
+                  {/* NBA TOTALS Factor Build */}
                   {(() => {
                     const totalsPreset = TOTALS_ARCHETYPES.find(p => p.id === selectedPresets.TOTAL)
                     return (
@@ -1314,17 +1403,17 @@ export default function CreateCapperPage() {
                         ? `bg-${totalsPreset.color}-500/10 border border-${totalsPreset.color}-500/30`
                         : 'bg-slate-800/50 border border-slate-700/50'
                         }`}>
-                        <span className="text-[10px] font-bold text-cyan-400 uppercase w-20">NBA Totals:</span>
+                        <span className="text-[10px] font-bold text-cyan-400 uppercase w-24">Totals Build:</span>
                         {totalsPreset ? (
                           <span className={`text-xs font-semibold text-${totalsPreset.color}-400`}>{totalsPreset.name}</span>
                         ) : (
-                          <span className="text-xs text-amber-400/80">⚠️ Select archetype</span>
+                          <span className="text-xs text-amber-400/80">⚠️ Select build</span>
                         )}
                       </div>
                     )
                   })()}
 
-                  {/* NBA SPREAD */}
+                  {/* NBA SPREAD Factor Build */}
                   {(() => {
                     const spreadPreset = SPREAD_ARCHETYPES.find(p => p.id === selectedPresets.SPREAD)
                     return (
@@ -1332,26 +1421,26 @@ export default function CreateCapperPage() {
                         ? `bg-${spreadPreset.color}-500/10 border border-${spreadPreset.color}-500/30`
                         : 'bg-slate-800/50 border border-slate-700/50'
                         }`}>
-                        <span className="text-[10px] font-bold text-purple-400 uppercase w-20">NBA Spread:</span>
+                        <span className="text-[10px] font-bold text-purple-400 uppercase w-24">Spread Build:</span>
                         {spreadPreset ? (
                           <span className={`text-xs font-semibold text-${spreadPreset.color}-400`}>{spreadPreset.name}</span>
                         ) : (
-                          <span className="text-xs text-amber-400/80">⚠️ Select archetype</span>
+                          <span className="text-xs text-amber-400/80">⚠️ Select build</span>
                         )}
                       </div>
                     )
                   })()}
 
-                  {/* Baseline Models - Interactive Selection */}
+                  {/* Projection Engine - Interactive Selection */}
                   <div className="mt-4 pt-3 border-t border-slate-700/50">
                     <div className="text-[10px] font-bold text-slate-400 uppercase mb-3 flex items-center gap-1.5">
                       <Activity className="w-3.5 h-3.5 text-cyan-400" />
-                      Prediction Brain
+                      Projection Engine
                     </div>
 
-                    {/* TOTALS Baseline Selector */}
+                    {/* TOTALS Projection Engine Selector */}
                     <div className="mb-3">
-                      <div className="text-[9px] text-cyan-400/80 uppercase mb-1.5 font-medium">Totals Model</div>
+                      <div className="text-[9px] text-cyan-400/80 uppercase mb-1.5 font-medium">Totals Engine</div>
                       <div className="grid grid-cols-3 gap-2">
                         {(Object.entries(TOTALS_BASELINE_MODELS) as [TotalsBaselineModel, BaselineModelInfo][]).map(([key, info]) => {
                           const isSelected = config.factor_config?.TOTAL?.baseline_model === key
@@ -1398,8 +1487,9 @@ export default function CreateCapperPage() {
                     </div>
 
                     {/* SPREAD Baseline Selector */}
+                    {/* SPREAD Projection Engine Selector */}
                     <div>
-                      <div className="text-[9px] text-purple-400/80 uppercase mb-1.5 font-medium">Spread Model</div>
+                      <div className="text-[9px] text-purple-400/80 uppercase mb-1.5 font-medium">Spread Engine</div>
                       <div className="grid grid-cols-3 gap-2">
                         {(Object.entries(SPREAD_BASELINE_MODELS) as [SpreadBaselineModel, BaselineModelInfo][]).map(([key, info]) => {
                           const isSelected = config.factor_config?.SPREAD?.baseline_model === key
@@ -1513,10 +1603,10 @@ export default function CreateCapperPage() {
 
           {/* RIGHT PANEL - Configuration (Scrollable) */}
           <div className="lg:col-span-8 flex flex-col lg:overflow-y-auto lg:max-h-[calc(100vh-140px)]">
-            {/* Tab Navigation - Only Archetype and Options */}
+            {/* Tab Navigation - Factor Build and Options */}
             <div className="flex gap-1 mb-4 bg-slate-800/50 p-1 rounded-lg border border-slate-700/50">
               {[
-                { id: 'archetype' as const, label: 'Archetype', icon: Swords },
+                { id: 'archetype' as const, label: 'Factor Build', icon: Swords },
                 { id: 'options' as const, label: 'Options', icon: Ban },
               ].map(tab => (
                 <button
@@ -1536,7 +1626,7 @@ export default function CreateCapperPage() {
             {/* Tab Content */}
             <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-5 flex-1 overflow-y-auto">
 
-              {/* ARCHETYPE TAB */}
+              {/* FACTOR BUILD TAB */}
               {activeTab === 'archetype' && (
                 <div className="space-y-5">
                   {/* Pick Mode Toggle */}
@@ -1574,12 +1664,73 @@ export default function CreateCapperPage() {
                     </div>
                   </div>
 
-                  {/* Archetype Selection with TOTAL/SPREAD toggle */}
+                  {/* AI ARCHETYPE SELECTION - Diablo-style personality cards */}
+                  {config.pick_mode !== 'manual' && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <h3 className="text-sm font-semibold text-slate-400 uppercase">AI Archetype</h3>
+                        <span className="text-[10px] text-slate-500 bg-slate-700/50 px-2 py-0.5 rounded-full">Defines your capper's personality</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        {(Object.values(AI_ARCHETYPES) as AIArchetypeInfo[]).map(archetype => {
+                          const isSelected = config.ai_archetype === archetype.id
+                          return (
+                            <button
+                              key={archetype.id}
+                              onClick={() => setConfig(prev => ({ ...prev, ai_archetype: archetype.id }))}
+                              className={`group relative p-4 rounded-xl border-2 transition-all text-left overflow-hidden ${isSelected
+                                ? 'border-transparent'
+                                : 'border-slate-600 hover:border-slate-500 bg-slate-700/30 hover:bg-slate-700/50'
+                                }`}
+                              style={{
+                                backgroundColor: isSelected ? `${archetype.glowColor.replace('0.6', '0.15')}` : undefined,
+                                boxShadow: isSelected ? `0 0 20px ${archetype.glowColor}, inset 0 0 0 2px ${archetype.glowColor}` : 'none'
+                              }}
+                            >
+                              {/* Glow effect for selected */}
+                              {isSelected && (
+                                <div
+                                  className="absolute inset-0 opacity-20"
+                                  style={{
+                                    background: `radial-gradient(circle at 30% 30%, ${archetype.glowColor}, transparent 70%)`
+                                  }}
+                                />
+                              )}
+                              <div className="relative flex items-start gap-3">
+                                <div
+                                  className={`text-3xl p-2 rounded-lg transition-all ${isSelected ? 'scale-110' : 'group-hover:scale-105'}`}
+                                  style={{
+                                    backgroundColor: isSelected ? archetype.glowColor.replace('0.6', '0.3') : 'rgba(100,116,139,0.2)'
+                                  }}
+                                >
+                                  {archetype.icon}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h4 className={`font-bold text-sm ${isSelected ? `text-${archetype.color}-400` : 'text-white'}`}>
+                                    {archetype.name}
+                                  </h4>
+                                  <p className="text-[11px] text-slate-400 mt-1 line-clamp-2">{archetype.description}</p>
+                                  <p className="text-[9px] text-slate-500 mt-1.5 italic">{archetype.dataSource}</p>
+                                </div>
+                                {isSelected && (
+                                  <div className="absolute top-1 right-1">
+                                    <Star className={`w-4 h-4 text-${archetype.color}-400`} />
+                                  </div>
+                                )}
+                              </div>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Factor Build Selection with TOTAL/SPREAD toggle */}
                   {config.pick_mode !== 'manual' && (
                     <div>
                       <div className="flex items-center gap-3 mb-3">
-                        <h3 className="text-sm font-semibold text-slate-400 uppercase">Choose Your Archetype</h3>
-                        {/* Unified Bet Type Toggle - syncs archetypes AND factors */}
+                        <h3 className="text-sm font-semibold text-slate-400 uppercase">Choose Your Factor Build</h3>
+                        {/* Unified Bet Type Toggle - syncs Factor Builds AND factors */}
                         <div className="flex gap-1 bg-slate-900/80 p-0.5 rounded-lg border border-slate-700/50">
                           {(['TOTAL', 'SPREAD'] as const).map(bt => (
                             <button
@@ -1599,7 +1750,7 @@ export default function CreateCapperPage() {
                         </div>
                       </div>
 
-                      {/* Archetype Cards - Uniform 2x2 grid with equal heights */}
+                      {/* Factor Build Cards - Uniform 2x2 grid with equal heights */}
                       {(() => {
                         const archetypes = archetypeBetType === 'TOTAL' ? TOTALS_ARCHETYPES : SPREAD_ARCHETYPES
                         return (

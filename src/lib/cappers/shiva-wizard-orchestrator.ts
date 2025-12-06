@@ -35,6 +35,7 @@ export interface WizardOrchestratorInput {
     weights: Record<string, number>
     enabled_factors: string[]
     baseline_model?: string // For pick diversity - different models produce different predictions
+    ai_archetype?: 'pulse' | 'influencer' | 'interpreter' | 'mathematician'  // Grok-powered personality
   }
 }
 
@@ -47,6 +48,7 @@ export interface WizardOrchestratorResult {
     step3?: any
     step4?: any
     step5?: any
+    step5_5?: any  // AI Archetype factor (Grok-powered)
     step6?: any
     step7?: any
   }
@@ -287,6 +289,84 @@ export async function executeWizardPipeline(input: WizardOrchestratorInput): Pro
 
     console.log('[WizardOrchestrator] Step 5: Market edge calculated, final confidence:', finalConfidence)
 
+    // Step 5.5: AI Archetype Factor (Grok-powered personality layer)
+    // This adds 0-5 points to one side based on the capper's selected AI archetype
+    const aiArchetype = factorConfig?.ai_archetype
+    let aiArchetypeFactor: any = null
+    let step5_5Confidence = finalConfidence
+
+    if (aiArchetype && aiArchetype !== 'none') {
+      console.log('[WizardOrchestrator] Step 5.5: Calling AI Archetype:', aiArchetype)
+
+      try {
+        const aiArchetypeResult = await executeAIArchetype({
+          archetype: aiArchetype,
+          awayTeam,
+          homeTeam,
+          betType,
+          spread: steps.step2.snapshot?.spread,
+          total: steps.step2.snapshot?.total?.line,
+          gameDate: game.game_time || new Date().toISOString()
+        })
+
+        if (aiArchetypeResult.success && aiArchetypeResult.factor) {
+          aiArchetypeFactor = aiArchetypeResult.factor
+
+          // Add AI Archetype factor to the factors array and recalculate confidence
+          const allFactorsWithArchetype = [
+            ...(steps.step5.confidenceResult?.factorContributions || []),
+            aiArchetypeFactor
+          ]
+
+          // Recalculate confidence with AI Archetype included
+          const { calculateConfidence } = await import('@/lib/cappers/shiva-v1/confidence-calculator')
+          const factorWeightsWithArchetype = {
+            ...steps.step3.factorWeights,
+            edgeVsMarket: 100,
+            edgeVsMarketSpread: 100,
+            aiArchetype: 100  // 100% weight (fixed)
+          }
+          const confSource = betType === 'TOTAL' ? 'nba_totals_v1' : 'nba_spread_v1'
+          const confidenceWithArchetype = calculateConfidence({
+            factors: [...(steps.step3.factors || []), edgeVsMarketFactor, aiArchetypeFactor],
+            factorWeights: factorWeightsWithArchetype,
+            confSource
+          })
+
+          step5_5Confidence = confidenceWithArchetype.confScore
+
+          steps.step5_5 = {
+            run_id: runId,
+            archetype: aiArchetype,
+            factor: aiArchetypeFactor,
+            confidenceBefore: finalConfidence,
+            confidenceAfter: step5_5Confidence,
+            confidenceResult: confidenceWithArchetype
+          }
+
+          console.log('[WizardOrchestrator] Step 5.5: AI Archetype applied:', {
+            archetype: aiArchetype,
+            direction: aiArchetypeFactor.parsed_values_json?.direction,
+            points: aiArchetypeFactor.parsed_values_json?.points,
+            confidenceBefore: finalConfidence.toFixed(2),
+            confidenceAfter: step5_5Confidence.toFixed(2)
+          })
+        } else {
+          console.log('[WizardOrchestrator] Step 5.5: AI Archetype returned no factor, skipping')
+          steps.step5_5 = { skipped: true, reason: aiArchetypeResult.error || 'No factor returned' }
+        }
+      } catch (archetypeError) {
+        console.error('[WizardOrchestrator] Step 5.5: AI Archetype error:', archetypeError)
+        steps.step5_5 = { skipped: true, error: archetypeError instanceof Error ? archetypeError.message : 'Unknown error' }
+      }
+    } else {
+      console.log('[WizardOrchestrator] Step 5.5: No AI Archetype configured, skipping')
+      steps.step5_5 = { skipped: true, reason: 'No AI archetype configured' }
+    }
+
+    // Update finalConfidence to include AI Archetype contribution
+    finalConfidence = step5_5Confidence
+
     // Step 6: Bold Player Predictions (SKIP for cron - this is AI-powered player props)
     console.log('[WizardOrchestrator] Step 6: Skipped (player predictions not needed for cron)')
     steps.step6 = { skipped: true }
@@ -306,10 +386,19 @@ export async function executeWizardPipeline(input: WizardOrchestratorInput): Pro
     console.log('[WizardOrchestrator] Step 7: Pick finalized')
 
     // Build result
-    // CRITICAL: Use factorContributions from Step 5 confidence calculation
+    // CRITICAL: Use factorContributions from Step 5.5 if AI Archetype was applied,
+    // otherwise fall back to Step 5 confidence calculation
     // This includes weighted scores (overScore, underScore) for run log display
     // The confidence calculator already computed these with proper weights applied
-    const factorContributions = steps.step5.confidenceResult?.factorContributions || []
+    let factorContributions = steps.step5.confidenceResult?.factorContributions || []
+
+    // If AI Archetype was applied, use the updated factor contributions from Step 5.5
+    if (steps.step5_5?.confidenceResult?.factorContributions) {
+      factorContributions = steps.step5_5.confidenceResult.factorContributions
+    } else if (aiArchetypeFactor) {
+      // Fallback: manually add AI Archetype factor if confidence wasn't recalculated
+      factorContributions = [...factorContributions, aiArchetypeFactor]
+    }
 
     const result: WizardOrchestratorResult = {
       success: true,
@@ -1113,6 +1202,200 @@ async function finalizePick(
     decision,
     confidence: finalConfidence,
     pick
+  }
+}
+
+/**
+ * Step 5.5: Execute AI Archetype
+ * Calls the appropriate Grok function based on the capper's selected archetype
+ * Returns a factor object with 0-5 points contribution
+ */
+interface AIArchetypeInput {
+  archetype: 'pulse' | 'influencer' | 'interpreter' | 'mathematician'
+  awayTeam: string
+  homeTeam: string
+  betType: 'TOTAL' | 'SPREAD'
+  spread?: { away: number; home: number; line?: number }
+  total?: number
+  gameDate: string
+}
+
+interface AIArchetypeResult {
+  success: boolean
+  factor?: {
+    key: string
+    name: string
+    factor_no: number
+    normalized_value: number
+    weight_total_pct: number
+    raw_values_json: any
+    parsed_values_json: {
+      direction: 'away' | 'home'
+      points: number
+      archetype: string
+      overScore?: number
+      underScore?: number
+      awayScore?: number
+      homeScore?: number
+    }
+    notes: string
+    caps_applied: boolean
+    cap_reason: string | null
+  }
+  error?: string
+}
+
+async function executeAIArchetype(input: AIArchetypeInput): Promise<AIArchetypeResult> {
+  const { archetype, awayTeam, homeTeam, betType, spread, total, gameDate } = input
+
+  try {
+    // Import Grok client functions
+    const {
+      getGrokSentiment,
+      getInfluencerSentiment,
+      getInterpreterAnalysis,
+      getMathematicianAnalysis
+    } = await import('@/lib/ai-insights/grok-client')
+
+    // Build request based on bet type
+    const baseRequest = {
+      awayTeam,
+      homeTeam,
+      spread: spread ? { away: spread.away || -(spread.line || 0), home: spread.home || (spread.line || 0) } : undefined,
+      total,
+      gameDate,
+      betType
+    }
+
+    let direction: 'away' | 'home' = 'home'
+    let points = 0
+    let archetypeName = ''
+    let rawData: any = {}
+    let notes = ''
+
+    switch (archetype) {
+      case 'pulse': {
+        archetypeName = 'The Pulse'
+        const result = await getGrokSentiment(baseRequest)
+        if (result.success && result.pulseScore) {
+          direction = result.pulseScore.direction
+          points = result.pulseScore.points
+          rawData = result.sentiment
+          notes = `Public sentiment: ${result.pulseScore.teamName} (${points.toFixed(1)} pts)`
+        } else {
+          return { success: false, error: result.error || 'Pulse returned no score' }
+        }
+        break
+      }
+
+      case 'influencer': {
+        archetypeName = 'The Influencer'
+        const result = await getInfluencerSentiment({ ...baseRequest, minFollowers: 10000 })
+        if (result.success && result.influencerScore) {
+          direction = result.influencerScore.direction
+          points = result.influencerScore.points
+          rawData = result.sentiment
+          notes = `Influencer sentiment: ${result.influencerScore.teamName} (${points.toFixed(1)} pts)`
+        } else {
+          return { success: false, error: result.error || 'Influencer returned no score' }
+        }
+        break
+      }
+
+      case 'interpreter': {
+        archetypeName = 'The Interpreter'
+        const result = await getInterpreterAnalysis(baseRequest)
+        if (result.success && result.interpreterScore) {
+          direction = result.interpreterScore.direction
+          points = result.interpreterScore.points
+          rawData = result.analysis
+          notes = `Research analysis: ${result.interpreterScore.teamName} (${points.toFixed(1)} pts)`
+        } else {
+          return { success: false, error: result.error || 'Interpreter returned no score' }
+        }
+        break
+      }
+
+      case 'mathematician': {
+        archetypeName = 'The Mathematician'
+        // Mathematician needs stats data - use placeholder for now
+        const mathRequest = {
+          ...baseRequest,
+          awayPpg: 110,
+          homePpg: 112,
+          awayPace: 100,
+          homePace: 98,
+          awayOffRtg: 112,
+          homeOffRtg: 114,
+          awayDefRtg: 110,
+          homeDefRtg: 108,
+          awayRestDays: 1,
+          homeRestDays: 2
+        }
+        const result = await getMathematicianAnalysis(mathRequest)
+        if (result.success && result.mathScore) {
+          direction = result.mathScore.direction
+          points = result.mathScore.points
+          rawData = result.analysis
+          notes = `Math projection: ${result.mathScore.teamName} (${points.toFixed(1)} pts)`
+        } else {
+          return { success: false, error: result.error || 'Mathematician returned no score' }
+        }
+        break
+      }
+
+      default:
+        return { success: false, error: `Unknown archetype: ${archetype}` }
+    }
+
+    // Build factor object
+    // For TOTALS: away = OVER, home = UNDER
+    // For SPREAD: away = away team, home = home team
+    let overScore = 0, underScore = 0, awayScore = 0, homeScore = 0
+
+    if (betType === 'TOTAL') {
+      if (direction === 'away') {
+        overScore = points
+      } else {
+        underScore = points
+      }
+    } else {
+      if (direction === 'away') {
+        awayScore = points
+      } else {
+        homeScore = points
+      }
+    }
+
+    const factor = {
+      key: 'aiArchetype',
+      name: `AI Archetype: ${archetypeName}`,
+      factor_no: 7,  // After Edge vs Market (factor 6)
+      normalized_value: direction === 'away' ? points / 5 : -points / 5,  // Normalize to [-1, 1]
+      weight_total_pct: 100,  // 100% weight (fixed)
+      raw_values_json: rawData,
+      parsed_values_json: {
+        direction,
+        points,
+        archetype,
+        overScore,
+        underScore,
+        awayScore,
+        homeScore
+      },
+      notes,
+      caps_applied: points >= 4.9,
+      cap_reason: points >= 4.9 ? 'max points reached' : null
+    }
+
+    return { success: true, factor }
+
+  } catch (error) {
+    console.error('[executeAIArchetype] Error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }
   }
 }
 
