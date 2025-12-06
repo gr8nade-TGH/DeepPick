@@ -218,13 +218,16 @@ export async function POST(request: Request) {
         220
       predictedValue = result.log?.finalPrediction?.total || 220
       // NEW: Extract stats-based baseline from step4 predictions
+      // The debug object has `finalBaseline` (the clamped value), not `clampedBaseline`
       const baselineDebug = result.steps?.step4?.predictions?.baseline_debug
       if (baselineDebug?.source === 'stats') {
-        baselineAvg = baselineDebug.clampedBaseline ?? marketLine
+        baselineAvg = baselineDebug.finalBaseline ?? marketLine
         statsBaselineDebug = baselineDebug
+        console.log('[SHIVA:GeneratePick] Using STATS-BASED baseline:', baselineAvg, 'model:', baselineDebug.model)
       } else {
         baselineAvg = marketLine // Fallback to Vegas if no stats available
         statsBaselineDebug = { source: 'vegas_fallback', reason: 'No stats baseline in step4' }
+        console.log('[SHIVA:GeneratePick] Falling back to Vegas baseline:', baselineAvg)
       }
     } else if (betType === 'SPREAD') {
       // SPREAD: Vegas spread for market comparison
@@ -237,9 +240,11 @@ export async function POST(request: Request) {
       if (baselineDebug?.source === 'stats') {
         baselineAvg = baselineDebug.baseline ?? 0
         statsBaselineDebug = baselineDebug
+        console.log('[SHIVA:GeneratePick] Using STATS-BASED spread baseline:', baselineAvg, 'model:', baselineDebug.model)
       } else {
         baselineAvg = 0 // Fallback to 0 if no stats available (neutral margin)
         statsBaselineDebug = { source: 'vegas_fallback', reason: 'No stats baseline in step4' }
+        console.log('[SHIVA:GeneratePick] Falling back to neutral spread baseline')
       }
     } else {
       // Fallback for unknown bet types
