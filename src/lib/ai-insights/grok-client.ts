@@ -1103,7 +1103,7 @@ function parseDevilsAdvocateResponse(content: string, betType: string, request: 
         blindSpots: parsed.blindSpots || [],
         breakingNews: parsed.breakingNews || [],
         recommendation: parsed.recommendation || 'PROCEED',
-        capperCallout: parsed.capperCallout || null,
+        capperCallout: parsed.capperCallout || undefined,
         rawAnalysis: content
       },
       devilsScore: {
@@ -1125,7 +1125,7 @@ function parseDevilsAdvocateResponse(content: string, betType: string, request: 
         blindSpots: [],
         breakingNews: [],
         recommendation: 'CAUTION',
-        capperCallout: null,
+        capperCallout: undefined,
         rawAnalysis: content.substring(0, 500)
       },
       devilsScore: {
