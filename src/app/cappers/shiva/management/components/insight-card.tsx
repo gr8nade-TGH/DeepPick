@@ -269,8 +269,27 @@ export interface InsightCardProps {
   market: {
     conf7: number
     confAdj: number
+    aiArchetypeContrib?: number
     confFinal: number
     dominant: 'side' | 'total'
+  }
+  // AI Archetype display data
+  aiArchetype?: {
+    name: string  // "The Pulse", "The Influencer", etc.
+    archetype: string  // "pulse", "influencer", etc.
+    direction: 'away' | 'home'
+    points: number
+    notes?: string
+    keyInsights: string[]  // 4 bullet points max
+    advanced?: {
+      awaySentimentPct: number
+      homeSentimentPct: number
+      awayReasons: string[]
+      homeReasons: string[]
+      rawAnalysis?: string
+      samplePosts?: string[]
+      overallConfidence?: string
+    }
   }
   results?: {
     status: 'pending' | 'win' | 'loss' | 'push'
