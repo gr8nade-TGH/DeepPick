@@ -77,8 +77,7 @@ export async function POST(request: NextRequest) {
 
       rawData = {
         sentiment: grokResult.sentiment,
-        usage: grokResult.usage,
-        meta: grokResult.meta
+        usage: grokResult.usage
       }
       quantifiedValue = grokResult.pulseScore
     } else {
