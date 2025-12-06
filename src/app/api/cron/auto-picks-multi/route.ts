@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+export const maxDuration = 300 // 5 minutes for cron execution
+
 /**
  * MULTI-CAPPER AUTO-PICKS CRON
  *
@@ -78,7 +82,7 @@ export async function GET(request: Request) {
       })
     }
 
-    console.log(`✅ [MULTI-CAPPER-CRON] Found ${cappers.length} active cappers:`, 
+    console.log(`✅ [MULTI-CAPPER-CRON] Found ${cappers.length} active cappers:`,
       cappers.map(c => `${c.capper_id} (priority: ${c.execution_priority})`).join(', '))
 
     // Step 2: Determine base URL for API calls

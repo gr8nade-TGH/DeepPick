@@ -5,6 +5,8 @@ import type { CookieOptions } from '@supabase/ssr'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 import type { UserWithStats, AdminUserFilters } from '@/types/admin'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/admin/users
  * Fetch all users with their stats

@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+export const maxDuration = 300 // 5 minutes for pick generation
+
 /**
  * UNIFIED CAPPER PICK GENERATION ENDPOINT
  * 
