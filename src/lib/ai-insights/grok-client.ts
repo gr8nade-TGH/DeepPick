@@ -1141,3 +1141,475 @@ function parseDevilsAdvocateResponse(content: string, betType: string, request: 
     }
   }
 }
+
+// ============================================================================
+// THE MATHEMATICIAN - Stats-Based Totals Analyst (0-5 points)
+// ============================================================================
+
+export interface MathematicianRequest {
+  awayTeam: string
+  homeTeam: string
+  total: number
+  gameDate: string
+  stats: {
+    away: TeamStatsInput
+    home: TeamStatsInput
+  }
+}
+
+export interface TeamStatsInput {
+  pace: number
+  ortg: number  // Offensive Rating
+  drtg: number  // Defensive Rating
+  ppg: number   // Points Per Game
+  oppPpg: number // Opponent PPG
+  threeP_pct: number
+  threeP_rate: number
+  ft_rate: number
+  ftPct: number
+  turnovers: number
+  offReb: number
+  defReb: number
+  restDays?: number
+  isBackToBack?: boolean
+  winStreak?: number
+  last10Record?: { wins: number; losses: number }
+}
+
+export interface MathematicianResponse {
+  success: boolean
+  analysis?: {
+    projectedTotal: number
+    marketLine: number
+    edge: number
+    direction: 'OVER' | 'UNDER'
+    confidence: 'HIGH' | 'MEDIUM' | 'LOW'
+    formula: {
+      step1_baseProjection: number
+      step2_paceAdjustment: number
+      step3_restAdjustment: number
+      step4_trendAdjustment: number
+      step5_injuryAdjustment: number
+      finalProjection: number
+    }
+    breakdown: {
+      awayExpectedPts: number
+      homeExpectedPts: number
+      combinedPace: number
+      combinedOffRtg: number
+      combinedDefRtg: number
+      paceImpact: string
+      defenseMatchup: string
+      restNotes: string
+    }
+    xFactors: string[]  // Breaking news from X that might affect total
+    rawAnalysis: string
+  }
+  mathScore?: {
+    direction: 'away' | 'home'  // away = OVER, home = UNDER
+    points: number
+    teamName: string  // "OVER" or "UNDER"
+    breakdown: {
+      edgeStrength: number       // 0-1 based on edge size
+      confidenceMultiplier: number  // 0.7-1.0 based on data quality
+      formulaScore: number       // Raw formula output
+    }
+  }
+  error?: string
+  usage?: { promptTokens: number; completionTokens: number; totalTokens: number }
+}
+
+/**
+ * THE MATHEMATICIAN - Uses formula + Grok search for real-time adjustments
+ */
+export async function getMathematicianAnalysis(request: MathematicianRequest): Promise<MathematicianResponse> {
+  const apiKey = process.env.GROK_API_KEY
+
+  if (!apiKey) {
+    return { success: false, error: 'GROK_API_KEY not configured' }
+  }
+
+  // Step 1: Calculate base projection using the formula
+  const formulaResult = calculateMathematicianProjection(request)
+
+  // Step 2: Use Grok to search X for injury/lineup news that might affect the total
+  const prompt = buildMathematicianPrompt(request, formulaResult)
+
+  try {
+    const response = await fetch(GROK_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'grok-3-mini',
+        messages: [
+          {
+            role: 'system',
+            content: `You are THE MATHEMATICIAN, an elite NBA totals analyst who combines statistical models with real-time X/Twitter intelligence.
+Your job is to VERIFY or ADJUST a mathematical projection based on breaking news.
+Be specific about player names, injury statuses, and lineup changes.
+Search X for the most recent updates on this game.`
+          },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.3,  // Low temp for analytical precision
+        max_tokens: 1200
+      })
+    })
+
+    if (!response.ok) {
+      return { success: false, error: `Grok API error: ${response.status}` }
+    }
+
+    const data = await response.json()
+    const content = data.choices?.[0]?.message?.content || ''
+
+    // Parse Grok's response for adjustments
+    const grokAnalysis = parseMathematicianResponse(content, formulaResult, request)
+
+    return {
+      success: true,
+      analysis: grokAnalysis.analysis,
+      mathScore: grokAnalysis.mathScore,
+      usage: {
+        promptTokens: data.usage?.prompt_tokens || 0,
+        completionTokens: data.usage?.completion_tokens || 0,
+        totalTokens: data.usage?.total_tokens || 0
+      }
+    }
+  } catch (err) {
+    console.error('[MATHEMATICIAN] Error:', err)
+
+    // Return formula-only result if Grok fails
+    return {
+      success: true,
+      analysis: {
+        projectedTotal: formulaResult.projectedTotal,
+        marketLine: request.total,
+        edge: formulaResult.edge,
+        direction: formulaResult.direction,
+        confidence: formulaResult.confidence,
+        formula: formulaResult.formula,
+        breakdown: formulaResult.breakdown,
+        xFactors: ['Grok search unavailable - using formula only'],
+        rawAnalysis: 'Formula-based projection without X/Twitter verification'
+      },
+      mathScore: formulaResult.mathScore
+    }
+  }
+}
+
+interface FormulaResult {
+  projectedTotal: number
+  edge: number
+  direction: 'OVER' | 'UNDER'
+  confidence: 'HIGH' | 'MEDIUM' | 'LOW'
+  formula: {
+    step1_baseProjection: number
+    step2_paceAdjustment: number
+    step3_restAdjustment: number
+    step4_trendAdjustment: number
+    step5_injuryAdjustment: number
+    finalProjection: number
+  }
+  breakdown: {
+    awayExpectedPts: number
+    homeExpectedPts: number
+    combinedPace: number
+    combinedOffRtg: number
+    combinedDefRtg: number
+    paceImpact: string
+    defenseMatchup: string
+    restNotes: string
+  }
+  mathScore: {
+    direction: 'away' | 'home'
+    points: number
+    teamName: string
+    breakdown: {
+      edgeStrength: number
+      confidenceMultiplier: number
+      formulaScore: number
+    }
+  }
+}
+
+/**
+ * Core mathematical projection formula
+ */
+function calculateMathematicianProjection(request: MathematicianRequest): FormulaResult {
+  const { away, home } = request.stats
+  const marketLine = request.total
+
+  // League averages (2024-25 NBA)
+  const LEAGUE_PACE = 99.5
+  const LEAGUE_ORTG = 114.5
+  const LEAGUE_DRTG = 114.5
+
+  // =========================================================================
+  // STEP 1: Base Projection using Offensive/Defensive Rating matchup
+  // =========================================================================
+  // Expected points = (Team ORtg × Opp DRtg / League Avg) × Pace / 100
+
+  const combinedPace = (away.pace + home.pace) / 2
+  const paceMultiplier = combinedPace / LEAGUE_PACE
+
+  // Away team expected points: Their offense vs Home defense
+  const awayExpectedPts = (away.ortg * home.drtg / LEAGUE_DRTG) * paceMultiplier / 100 * combinedPace
+
+  // Home team expected points: Their offense vs Away defense
+  const homeExpectedPts = (home.ortg * away.drtg / LEAGUE_DRTG) * paceMultiplier / 100 * combinedPace
+
+  const step1_baseProjection = awayExpectedPts + homeExpectedPts
+
+  // =========================================================================
+  // STEP 2: Pace Adjustment (high pace = more possessions = more points)
+  // =========================================================================
+  const paceDelta = combinedPace - LEAGUE_PACE
+  // Each possession above average = ~2.29 points (both teams)
+  const step2_paceAdjustment = paceDelta * 2.29
+
+  // =========================================================================
+  // STEP 3: Rest Adjustment (B2B = tired = lower scoring)
+  // =========================================================================
+  let step3_restAdjustment = 0
+  let restNotes = 'Normal rest for both teams'
+
+  if (away.isBackToBack && home.isBackToBack) {
+    step3_restAdjustment = -4.0  // Both tired
+    restNotes = 'BOTH teams on B2B - expect lower total'
+  } else if (away.isBackToBack) {
+    step3_restAdjustment = -2.0
+    restNotes = `${request.awayTeam} on B2B - fatigue factor`
+  } else if (home.isBackToBack) {
+    step3_restAdjustment = -2.0
+    restNotes = `${request.homeTeam} on B2B - fatigue factor`
+  } else if ((away.restDays || 1) >= 3 && (home.restDays || 1) >= 3) {
+    step3_restAdjustment = +1.5  // Well rested = fresh legs
+    restNotes = 'Both teams well-rested (3+ days)'
+  }
+
+  // =========================================================================
+  // STEP 4: Trend Adjustment (hot/cold shooting, momentum)
+  // =========================================================================
+  // Compare recent PPG to season average
+  const awayPpgTrend = away.ppg - ((away.ppg + away.oppPpg) / 2)
+  const homePpgTrend = home.ppg - ((home.ppg + home.oppPpg) / 2)
+  const step4_trendAdjustment = (awayPpgTrend + homePpgTrend) * 0.2  // 20% weight
+
+  // =========================================================================
+  // STEP 5: Injury placeholder (Grok will fill this in)
+  // =========================================================================
+  const step5_injuryAdjustment = 0  // Grok will adjust
+
+  // =========================================================================
+  // FINAL PROJECTION
+  // =========================================================================
+  const finalProjection = step1_baseProjection + step2_paceAdjustment + step3_restAdjustment + step4_trendAdjustment + step5_injuryAdjustment
+
+  const edge = finalProjection - marketLine
+  const direction: 'OVER' | 'UNDER' = edge > 0 ? 'OVER' : 'UNDER'
+
+  // Confidence based on edge size
+  let confidence: 'HIGH' | 'MEDIUM' | 'LOW' = 'LOW'
+  if (Math.abs(edge) >= 4) confidence = 'HIGH'
+  else if (Math.abs(edge) >= 2) confidence = 'MEDIUM'
+
+  // =========================================================================
+  // MATH SCORE (0-5 points)
+  // =========================================================================
+  // Edge to points mapping:
+  // 0-1 pts edge = 0.5-1.0 points
+  // 1-2 pts edge = 1.0-2.0 points
+  // 2-4 pts edge = 2.0-3.0 points
+  // 4-6 pts edge = 3.0-4.0 points
+  // 6+ pts edge = 4.0-5.0 points
+
+  const absEdge = Math.abs(edge)
+  let rawPoints = 0
+  if (absEdge <= 1) rawPoints = 0.5 + (absEdge * 0.5)
+  else if (absEdge <= 2) rawPoints = 1.0 + ((absEdge - 1) * 1.0)
+  else if (absEdge <= 4) rawPoints = 2.0 + ((absEdge - 2) * 0.5)
+  else if (absEdge <= 6) rawPoints = 3.0 + ((absEdge - 4) * 0.5)
+  else rawPoints = 4.0 + Math.min((absEdge - 6) * 0.25, 1.0)
+
+  // Confidence multiplier
+  const confidenceMultiplier = confidence === 'HIGH' ? 1.0 : confidence === 'MEDIUM' ? 0.85 : 0.7
+  const finalPoints = Math.min(rawPoints * confidenceMultiplier, 5.0)
+
+  const paceImpact = paceDelta > 2 ? 'HIGH PACE - expect more possessions' :
+    paceDelta < -2 ? 'LOW PACE - grinding matchup' : 'Neutral pace'
+
+  const combinedOffRtg = (away.ortg + home.ortg) / 2
+  const combinedDefRtg = (away.drtg + home.drtg) / 2
+  const defenseMatchup = combinedDefRtg > LEAGUE_DRTG + 2 ? 'Poor defenses - expect points' :
+    combinedDefRtg < LEAGUE_DRTG - 2 ? 'Strong defenses - lower total' : 'Average defensive matchup'
+
+  return {
+    projectedTotal: Math.round(finalProjection * 10) / 10,
+    edge: Math.round(edge * 10) / 10,
+    direction,
+    confidence,
+    formula: {
+      step1_baseProjection: Math.round(step1_baseProjection * 10) / 10,
+      step2_paceAdjustment: Math.round(step2_paceAdjustment * 10) / 10,
+      step3_restAdjustment,
+      step4_trendAdjustment: Math.round(step4_trendAdjustment * 10) / 10,
+      step5_injuryAdjustment,
+      finalProjection: Math.round(finalProjection * 10) / 10
+    },
+    breakdown: {
+      awayExpectedPts: Math.round(awayExpectedPts * 10) / 10,
+      homeExpectedPts: Math.round(homeExpectedPts * 10) / 10,
+      combinedPace: Math.round(combinedPace * 10) / 10,
+      combinedOffRtg: Math.round(combinedOffRtg * 10) / 10,
+      combinedDefRtg: Math.round(combinedDefRtg * 10) / 10,
+      paceImpact,
+      defenseMatchup,
+      restNotes
+    },
+    mathScore: {
+      direction: direction === 'OVER' ? 'away' : 'home',
+      points: Math.round(finalPoints * 100) / 100,
+      teamName: direction,
+      breakdown: {
+        edgeStrength: Math.min(absEdge / 6, 1),
+        confidenceMultiplier,
+        formulaScore: rawPoints
+      }
+    }
+  }
+}
+
+/**
+ * Build prompt for Grok to search X for real-time adjustments
+ */
+function buildMathematicianPrompt(request: MathematicianRequest, formula: FormulaResult): string {
+  const { awayTeam, homeTeam, total, stats } = request
+
+  return `🧮 MATHEMATICAL PROJECTION VERIFICATION
+
+GAME: ${awayTeam} @ ${homeTeam}
+DATE: ${request.gameDate}
+MARKET TOTAL: ${total}
+
+═══════════════════════════════════════════════════════════
+MY FORMULA PROJECTION: ${formula.projectedTotal} (${formula.direction} by ${Math.abs(formula.edge).toFixed(1)} pts)
+═══════════════════════════════════════════════════════════
+
+FORMULA BREAKDOWN:
+┌─────────────────────────────────────────────────────────┐
+│ Step 1 - Base Projection:     ${formula.formula.step1_baseProjection.toFixed(1).padStart(6)} pts           │
+│ Step 2 - Pace Adjustment:     ${(formula.formula.step2_paceAdjustment >= 0 ? '+' : '')}${formula.formula.step2_paceAdjustment.toFixed(1).padStart(5)} pts           │
+│ Step 3 - Rest Adjustment:     ${(formula.formula.step3_restAdjustment >= 0 ? '+' : '')}${formula.formula.step3_restAdjustment.toFixed(1).padStart(5)} pts           │
+│ Step 4 - Trend Adjustment:    ${(formula.formula.step4_trendAdjustment >= 0 ? '+' : '')}${formula.formula.step4_trendAdjustment.toFixed(1).padStart(5)} pts           │
+│ Step 5 - Injury Adjustment:   ${(formula.formula.step5_injuryAdjustment >= 0 ? '+' : '')}${formula.formula.step5_injuryAdjustment.toFixed(1).padStart(5)} pts (TBD)     │
+├─────────────────────────────────────────────────────────┤
+│ FINAL PROJECTION:             ${formula.projectedTotal.toFixed(1).padStart(6)} pts           │
+│ vs MARKET LINE:               ${total.toFixed(1).padStart(6)} pts           │
+│ EDGE:                         ${(formula.edge >= 0 ? '+' : '')}${formula.edge.toFixed(1).padStart(5)} pts (${formula.direction})   │
+└─────────────────────────────────────────────────────────┘
+
+STATS USED:
+${awayTeam}: Pace=${stats.away.pace.toFixed(1)}, ORtg=${stats.away.ortg.toFixed(1)}, DRtg=${stats.away.drtg.toFixed(1)}, PPG=${stats.away.ppg.toFixed(1)}
+${homeTeam}: Pace=${stats.home.pace.toFixed(1)}, ORtg=${stats.home.ortg.toFixed(1)}, DRtg=${stats.home.drtg.toFixed(1)}, PPG=${stats.home.ppg.toFixed(1)}
+
+YOUR TASK:
+1. Search X/Twitter for BREAKING NEWS about this game (injuries, lineup changes, rest decisions)
+2. Provide an INJURY ADJUSTMENT value (-5 to +5 points) based on what you find
+3. List any X-FACTORS that could affect the total
+4. Give your FINAL VERDICT: agree with ${formula.direction} or flip to ${formula.direction === 'OVER' ? 'UNDER' : 'OVER'}?
+
+RESPOND IN THIS FORMAT:
+INJURY_ADJUSTMENT: [number between -5 and +5]
+X_FACTORS:
+- [factor 1]
+- [factor 2]
+- [factor 3]
+FINAL_VERDICT: [OVER or UNDER]
+CONFIDENCE: [HIGH, MEDIUM, or LOW]
+ANALYSIS: [2-3 sentence summary of your findings]`
+}
+
+/**
+ * Parse Grok's response and merge with formula result
+ */
+function parseMathematicianResponse(
+  content: string,
+  formula: FormulaResult,
+  request: MathematicianRequest
+): { analysis: MathematicianResponse['analysis']; mathScore: MathematicianResponse['mathScore'] } {
+
+  // Extract injury adjustment
+  const injuryMatch = content.match(/INJURY_ADJUSTMENT:\s*([+-]?\d+\.?\d*)/i)
+  const injuryAdjustment = injuryMatch ? parseFloat(injuryMatch[1]) : 0
+
+  // Extract X-factors
+  const xFactorsSection = content.match(/X_FACTORS:([\s\S]*?)(?=FINAL_VERDICT|$)/i)
+  const xFactors: string[] = []
+  if (xFactorsSection) {
+    const factors = xFactorsSection[1].match(/[-•]\s*(.+)/g)
+    if (factors) {
+      factors.forEach(f => xFactors.push(f.replace(/^[-•]\s*/, '').trim()))
+    }
+  }
+
+  // Extract final verdict
+  const verdictMatch = content.match(/FINAL_VERDICT:\s*(OVER|UNDER)/i)
+  const grokVerdict = verdictMatch ? verdictMatch[1].toUpperCase() as 'OVER' | 'UNDER' : formula.direction
+
+  // Extract confidence
+  const confMatch = content.match(/CONFIDENCE:\s*(HIGH|MEDIUM|LOW)/i)
+  const grokConfidence = confMatch ? confMatch[1].toUpperCase() as 'HIGH' | 'MEDIUM' | 'LOW' : formula.confidence
+
+  // Extract analysis
+  const analysisMatch = content.match(/ANALYSIS:\s*([\s\S]+?)$/i)
+  const rawAnalysis = analysisMatch ? analysisMatch[1].trim() : content.substring(0, 500)
+
+  // Recalculate with injury adjustment
+  const adjustedTotal = formula.projectedTotal + injuryAdjustment
+  const adjustedEdge = adjustedTotal - request.total
+  const finalDirection = grokVerdict
+
+  // Recalculate points with adjustment
+  const absEdge = Math.abs(adjustedEdge)
+  let rawPoints = 0
+  if (absEdge <= 1) rawPoints = 0.5 + (absEdge * 0.5)
+  else if (absEdge <= 2) rawPoints = 1.0 + ((absEdge - 1) * 1.0)
+  else if (absEdge <= 4) rawPoints = 2.0 + ((absEdge - 2) * 0.5)
+  else if (absEdge <= 6) rawPoints = 3.0 + ((absEdge - 4) * 0.5)
+  else rawPoints = 4.0 + Math.min((absEdge - 6) * 0.25, 1.0)
+
+  const confidenceMultiplier = grokConfidence === 'HIGH' ? 1.0 : grokConfidence === 'MEDIUM' ? 0.85 : 0.7
+  const finalPoints = Math.min(rawPoints * confidenceMultiplier, 5.0)
+
+  return {
+    analysis: {
+      projectedTotal: Math.round(adjustedTotal * 10) / 10,
+      marketLine: request.total,
+      edge: Math.round(adjustedEdge * 10) / 10,
+      direction: finalDirection,
+      confidence: grokConfidence,
+      formula: {
+        ...formula.formula,
+        step5_injuryAdjustment: injuryAdjustment,
+        finalProjection: Math.round(adjustedTotal * 10) / 10
+      },
+      breakdown: formula.breakdown,
+      xFactors: xFactors.length > 0 ? xFactors : ['No breaking news found'],
+      rawAnalysis
+    },
+    mathScore: {
+      direction: finalDirection === 'OVER' ? 'away' : 'home',
+      points: Math.round(finalPoints * 100) / 100,
+      teamName: finalDirection,
+      breakdown: {
+        edgeStrength: Math.min(absEdge / 6, 1),
+        confidenceMultiplier,
+        formulaScore: rawPoints
+      }
+    }
+  }
+}

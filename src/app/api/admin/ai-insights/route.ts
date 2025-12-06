@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { getGrokSentiment, getInfluencerSentiment, getInterpreterAnalysis, getDevilsAdvocate } from '@/lib/ai-insights/grok-client'
+import { getGrokSentiment, getInfluencerSentiment, getInterpreterAnalysis, getDevilsAdvocate, getMathematicianAnalysis } from '@/lib/ai-insights/grok-client'
+import { getTeamFormData } from '@/lib/data-sources/mysportsfeeds-stats'
+import { getTeamAbbrev } from '@/lib/data-sources/team-mappings'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -217,6 +219,87 @@ export async function POST(request: NextRequest) {
         usage: devilsResult.usage
       }
       quantifiedValue = devilsResult.devilsScore
+    } else if (insightType === 'MATHEMATICIAN_TOTAL') {
+      // The Mathematician - Fetch MySportsFeeds data and run formula + Grok
+      provider = 'GROK'
+
+      try {
+        // Fetch team stats from MySportsFeeds
+        const awayAbbrev = getTeamAbbrev(awayTeam)
+        const homeAbbrev = getTeamAbbrev(homeTeam)
+
+        const [awayStats, homeStats] = await Promise.all([
+          getTeamFormData(awayAbbrev, 10),
+          getTeamFormData(homeAbbrev, 10)
+        ])
+
+        // Build the stats input for The Mathematician
+        const mathRequest = {
+          awayTeam,
+          homeTeam,
+          total: total || 220,
+          gameDate: new Date().toISOString().split('T')[0],
+          stats: {
+            away: {
+              pace: awayStats.pace,
+              ortg: awayStats.ortg,
+              drtg: awayStats.drtg,
+              ppg: awayStats.avgPpg,
+              oppPpg: awayStats.avgOppPpg,
+              threeP_pct: awayStats.threeP_pct,
+              threeP_rate: awayStats.threeP_rate,
+              ft_rate: awayStats.ft_rate,
+              ftPct: awayStats.avgFtPct,
+              turnovers: awayStats.avgTurnovers,
+              offReb: awayStats.avgOffReb,
+              defReb: awayStats.avgDefReb,
+              restDays: awayStats.restDays,
+              isBackToBack: awayStats.isBackToBack,
+              winStreak: awayStats.winStreak,
+              last10Record: awayStats.last10Record
+            },
+            home: {
+              pace: homeStats.pace,
+              ortg: homeStats.ortg,
+              drtg: homeStats.drtg,
+              ppg: homeStats.avgPpg,
+              oppPpg: homeStats.avgOppPpg,
+              threeP_pct: homeStats.threeP_pct,
+              threeP_rate: homeStats.threeP_rate,
+              ft_rate: homeStats.ft_rate,
+              ftPct: homeStats.avgFtPct,
+              turnovers: homeStats.avgTurnovers,
+              offReb: homeStats.avgOffReb,
+              defReb: homeStats.avgDefReb,
+              restDays: homeStats.restDays,
+              isBackToBack: homeStats.isBackToBack,
+              winStreak: homeStats.winStreak,
+              last10Record: homeStats.last10Record
+            }
+          }
+        }
+
+        const mathResult = await getMathematicianAnalysis(mathRequest)
+
+        if (!mathResult.success) {
+          return NextResponse.json({ success: false, error: mathResult.error }, { status: 500 })
+        }
+
+        rawData = {
+          mathematician: mathResult.analysis,
+          statsUsed: {
+            away: mathRequest.stats.away,
+            home: mathRequest.stats.home
+          },
+          usage: mathResult.usage
+        }
+        quantifiedValue = mathResult.mathScore
+      } catch (statsError: any) {
+        return NextResponse.json({
+          success: false,
+          error: `Failed to fetch team stats: ${statsError.message}`
+        }, { status: 500 })
+      }
     } else {
       return NextResponse.json({ success: false, error: `Unknown insight type: ${insightType}` }, { status: 400 })
     }

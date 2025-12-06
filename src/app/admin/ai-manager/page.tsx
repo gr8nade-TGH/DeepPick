@@ -497,12 +497,13 @@ export default function AIManagerPage() {
                     <th className="p-2 text-amber-400">👑 Influencer</th>
                     <th className="p-2 text-emerald-400">🔮 Interpreter</th>
                     <th className="p-2 text-red-400">😈 Devils Adv.</th>
+                    <th className="p-2 text-cyan-400">🧮 Mathematician</th>
                   </tr>
                 </thead>
                 <tbody>
                   {todaysGames.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="p-8 text-center text-slate-500">No games found</td>
+                      <td colSpan={8} className="p-8 text-center text-slate-500">No games found</td>
                     </tr>
                   ) : (
                     todaysGames.map(game => {
@@ -511,6 +512,7 @@ export default function AIManagerPage() {
                       const influencerInsight = gameInsights.find(i => i.insight_type === 'INFLUENCER_SENTIMENT')
                       const interpreterInsight = gameInsights.find(i => i.insight_type === 'INTERPRETER_ANALYSIS')
                       const devilsInsight = gameInsights.find(i => i.insight_type === 'DEVILS_ADVOCATE')
+                      const mathInsight = gameInsights.find(i => i.insight_type === 'MATHEMATICIAN_TOTAL')
                       const expandedType = expandedInsight?.gameId === game.id ? expandedInsight.type : null
                       const sentiment = pulseInsight?.raw_data?.sentiment
                       const interpreterData = interpreterInsight?.raw_data?.interpreter
@@ -639,11 +641,38 @@ export default function AIManagerPage() {
                                 </Button>
                               )}
                             </td>
+                            {/* Mathematician */}
+                            <td className="p-2">
+                              {mathInsight ? (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-xs font-mono text-cyan-400">
+                                    {mathInsight.quantified_value?.points?.toFixed(1)}pts
+                                  </span>
+                                  <Button
+                                    onClick={() => setExpandedInsight(expandedType === 'MATH' ? null : { gameId: game.id, type: 'MATH' })}
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-4 w-4 p-0 text-cyan-400 hover:text-cyan-300"
+                                  >
+                                    {expandedType === 'MATH' ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                                  </Button>
+                                </div>
+                              ) : (
+                                <Button
+                                  onClick={() => generateInsight(game, 'MATHEMATICIAN_TOTAL')}
+                                  disabled={generatingGame === game.id}
+                                  size="sm"
+                                  className="h-5 text-[9px] px-2 bg-cyan-600/50 hover:bg-cyan-500"
+                                >
+                                  {generatingGame === game.id ? <Loader2 className="w-2 h-2 animate-spin" /> : 'Gen'}
+                                </Button>
+                              )}
+                            </td>
                           </tr>
                           {/* Expanded Detail Row - PULSE */}
                           {expandedType === 'PULSE' && pulseInsight && sentiment && (
                             <tr className="bg-purple-900/20 border-l-2 border-purple-500">
-                              <td colSpan={7} className="p-4">
+                              <td colSpan={8} className="p-4">
                                 <div className="flex items-center gap-2 mb-3">
                                   <span className="text-lg">🌊</span>
                                   <h3 className="text-sm font-bold text-purple-400">The Pulse - Public Sentiment Details</h3>
@@ -764,7 +793,7 @@ export default function AIManagerPage() {
                           {/* Expanded Detail Row - INFLUENCER */}
                           {expandedType === 'INFLUENCER' && influencerInsight && influencerData && (
                             <tr className="bg-amber-900/20 border-l-2 border-amber-500">
-                              <td colSpan={7} className="p-4">
+                              <td colSpan={8} className="p-4">
                                 <div className="flex items-center gap-2 mb-3">
                                   <span className="text-lg">👑</span>
                                   <h3 className="text-sm font-bold text-amber-400">The Influencer - Betting Account Sentiment (10K+ Followers)</h3>
@@ -881,7 +910,7 @@ export default function AIManagerPage() {
                           {/* Expanded Detail Row - INTERPRETER */}
                           {expandedType === 'INTERPRETER' && interpreterInsight && interpreterData && (
                             <tr className="bg-emerald-900/20 border-l-2 border-emerald-500">
-                              <td colSpan={7} className="p-4">
+                              <td colSpan={8} className="p-4">
                                 <div className="flex items-center gap-2 mb-3">
                                   <span className="text-lg">🔮</span>
                                   <h3 className="text-sm font-bold text-emerald-400">The Interpreter - Independent Research Analysis</h3>
@@ -984,7 +1013,7 @@ export default function AIManagerPage() {
                             const targetRecord = da?.targetCapperRecord
                             return (
                               <tr className="bg-red-900/20 border-l-2 border-red-500">
-                                <td colSpan={7} className="p-4">
+                                <td colSpan={8} className="p-4">
                                   {/* Header with Target Capper */}
                                   <div className="flex items-center justify-between mb-3">
                                     <div className="flex items-center gap-2">
@@ -1098,6 +1127,134 @@ export default function AIManagerPage() {
                                     <p className="text-[11px] text-slate-500 leading-relaxed">{da?.rawAnalysis}</p>
                                   </div>
                                   <div className="mt-2 text-[10px] text-slate-600">Generated: {new Date(devilsInsight.created_at).toLocaleString()}</div>
+                                </td>
+                              </tr>
+                            )
+                          })()}
+
+                          {/* Expanded Detail Row - MATHEMATICIAN */}
+                          {expandedType === 'MATH' && mathInsight && (() => {
+                            const math = mathInsight.raw_data?.mathematician
+                            const statsUsed = mathInsight.raw_data?.statsUsed
+                            return (
+                              <tr className="bg-cyan-900/20 border-l-2 border-cyan-500">
+                                <td colSpan={8} className="p-4">
+                                  <div className="flex items-center gap-2 mb-3">
+                                    <span className="text-lg">🧮</span>
+                                    <h3 className="text-sm font-bold text-cyan-400">The Mathematician - Stats-Based Totals Projection</h3>
+                                  </div>
+                                  <div className="grid grid-cols-3 gap-4">
+                                    {/* Column 1: Projection & Edge */}
+                                    <div className="bg-slate-800/50 rounded p-3">
+                                      <h4 className="text-xs font-semibold text-cyan-400 mb-2 flex items-center gap-1">
+                                        📊 Projection vs Market
+                                      </h4>
+                                      <div className="space-y-2">
+                                        <div className="text-center p-2 bg-slate-900/50 rounded">
+                                          <div className="text-2xl font-bold text-cyan-300">{math?.projectedTotal}</div>
+                                          <div className="text-[10px] text-slate-500">Projected Total</div>
+                                        </div>
+                                        <div className="text-center p-2 bg-slate-900/50 rounded">
+                                          <div className="text-lg font-bold text-slate-400">{math?.marketLine}</div>
+                                          <div className="text-[10px] text-slate-500">Market Line</div>
+                                        </div>
+                                        <div className={`text-center p-2 rounded ${math?.edge > 0 ? 'bg-green-900/30' : 'bg-red-900/30'}`}>
+                                          <div className={`text-xl font-bold ${math?.edge > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                            {math?.edge > 0 ? '+' : ''}{math?.edge} → {math?.direction}
+                                          </div>
+                                          <div className="text-[10px] text-slate-500">Edge (pts)</div>
+                                        </div>
+                                        <div className="flex justify-between text-xs mt-2">
+                                          <span className="text-slate-500">Confidence:</span>
+                                          <span className={`font-bold ${math?.confidence === 'HIGH' ? 'text-green-400' : math?.confidence === 'MEDIUM' ? 'text-yellow-400' : 'text-slate-400'}`}>
+                                            {math?.confidence}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* Column 2: Formula Breakdown */}
+                                    <div className="bg-slate-800/50 rounded p-3">
+                                      <h4 className="text-xs font-semibold text-cyan-400 mb-2 flex items-center gap-1">
+                                        🔢 Formula Breakdown
+                                      </h4>
+                                      <div className="space-y-1 text-xs font-mono">
+                                        <div className="flex justify-between border-b border-slate-700 pb-1">
+                                          <span className="text-slate-500">Step 1 - Base:</span>
+                                          <span className="text-white">{math?.formula?.step1_baseProjection} pts</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span className="text-slate-500">Step 2 - Pace:</span>
+                                          <span className={math?.formula?.step2_paceAdjustment >= 0 ? 'text-green-400' : 'text-red-400'}>
+                                            {math?.formula?.step2_paceAdjustment >= 0 ? '+' : ''}{math?.formula?.step2_paceAdjustment}
+                                          </span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span className="text-slate-500">Step 3 - Rest:</span>
+                                          <span className={math?.formula?.step3_restAdjustment >= 0 ? 'text-green-400' : 'text-red-400'}>
+                                            {math?.formula?.step3_restAdjustment >= 0 ? '+' : ''}{math?.formula?.step3_restAdjustment}
+                                          </span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span className="text-slate-500">Step 4 - Trend:</span>
+                                          <span className={math?.formula?.step4_trendAdjustment >= 0 ? 'text-green-400' : 'text-red-400'}>
+                                            {math?.formula?.step4_trendAdjustment >= 0 ? '+' : ''}{math?.formula?.step4_trendAdjustment}
+                                          </span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span className="text-slate-500">Step 5 - Injury:</span>
+                                          <span className={math?.formula?.step5_injuryAdjustment >= 0 ? 'text-green-400' : 'text-red-400'}>
+                                            {math?.formula?.step5_injuryAdjustment >= 0 ? '+' : ''}{math?.formula?.step5_injuryAdjustment}
+                                          </span>
+                                        </div>
+                                        <div className="flex justify-between border-t border-slate-700 pt-1 mt-1">
+                                          <span className="text-cyan-400 font-bold">FINAL:</span>
+                                          <span className="text-cyan-300 font-bold">{math?.formula?.finalProjection} pts</span>
+                                        </div>
+                                      </div>
+                                      <div className="mt-3 text-[10px] text-slate-500 space-y-1">
+                                        <div>📈 {math?.breakdown?.paceImpact}</div>
+                                        <div>🛡️ {math?.breakdown?.defenseMatchup}</div>
+                                        <div>💤 {math?.breakdown?.restNotes}</div>
+                                      </div>
+                                    </div>
+
+                                    {/* Column 3: X-Factors & Stats */}
+                                    <div className="bg-slate-800/50 rounded p-3">
+                                      <h4 className="text-xs font-semibold text-cyan-400 mb-2 flex items-center gap-1">
+                                        ⚡ X-Factors (from X/Twitter)
+                                      </h4>
+                                      <div className="space-y-1 max-h-24 overflow-y-auto">
+                                        {math?.xFactors?.map((factor: string, i: number) => (
+                                          <div key={i} className="bg-cyan-900/20 rounded p-1.5 text-[10px] text-cyan-300">
+                                            • {factor}
+                                          </div>
+                                        ))}
+                                      </div>
+                                      <h4 className="text-xs font-semibold text-slate-400 mt-3 mb-2">📊 Stats Used</h4>
+                                      <div className="grid grid-cols-2 gap-2 text-[9px]">
+                                        <div className="bg-slate-900/50 rounded p-1.5">
+                                          <div className="text-slate-500 mb-1">{game.away_team.abbreviation}</div>
+                                          <div>Pace: {statsUsed?.away?.pace?.toFixed(1)}</div>
+                                          <div>ORtg: {statsUsed?.away?.ortg?.toFixed(1)}</div>
+                                          <div>DRtg: {statsUsed?.away?.drtg?.toFixed(1)}</div>
+                                        </div>
+                                        <div className="bg-slate-900/50 rounded p-1.5">
+                                          <div className="text-slate-500 mb-1">{game.home_team.abbreviation}</div>
+                                          <div>Pace: {statsUsed?.home?.pace?.toFixed(1)}</div>
+                                          <div>ORtg: {statsUsed?.home?.ortg?.toFixed(1)}</div>
+                                          <div>DRtg: {statsUsed?.home?.drtg?.toFixed(1)}</div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Raw Analysis */}
+                                  <div className="mt-3 bg-slate-800/50 rounded p-3">
+                                    <h4 className="text-xs font-semibold text-slate-400 mb-2">Grok Analysis</h4>
+                                    <p className="text-[11px] text-slate-500 leading-relaxed">{math?.rawAnalysis}</p>
+                                  </div>
+                                  <div className="mt-2 text-[10px] text-slate-600">Generated: {new Date(mathInsight.created_at).toLocaleString()}</div>
                                 </td>
                               </tr>
                             )
