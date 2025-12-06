@@ -1227,98 +1227,143 @@ export default function CreateCapperPage() {
           {/* LEFT PANEL - Character Preview (Sticky) */}
           <div className="lg:col-span-4 lg:sticky lg:top-24 lg:self-start">
             <div className="bg-gradient-to-b from-slate-800/80 to-slate-900/80 border border-slate-700/50 rounded-xl p-6 flex flex-col">
-              {/* Merged Avatar - Shows both archetypes */}
+              {/* 5-Square Avatar Grid - Based on tier squares from pick history */}
               <div className="flex-1 flex flex-col items-center justify-center">
                 {(() => {
                   const totalsPreset = TOTALS_ARCHETYPES.find(p => p.id === selectedPresets.TOTAL)
                   const spreadPreset = SPREAD_ARCHETYPES.find(p => p.id === selectedPresets.SPREAD)
-                  const hasBoth = totalsPreset && spreadPreset
-                  const hasAny = totalsPreset || spreadPreset
                   const TotalsIcon = totalsPreset?.icon || Swords
                   const SpreadIcon = spreadPreset?.icon || Swords
 
-                  // Get baseline model border style (combine both for unique visual)
+                  // Get all model/archetype info
                   const totalsModel = config.factor_config?.TOTAL?.baseline_model as TotalsBaselineModel | undefined
                   const spreadModel = config.factor_config?.SPREAD?.baseline_model as SpreadBaselineModel | undefined
                   const totalsModelInfo = totalsModel ? TOTALS_BASELINE_MODELS[totalsModel] : null
                   const spreadModelInfo = spreadModel ? SPREAD_BASELINE_MODELS[spreadModel] : null
+                  const aiArchetype = AI_ARCHETYPES[config.ai_archetype]
 
-                  // Create combined glow from both baseline models
-                  const combinedGlow = totalsModelInfo && spreadModelInfo
-                    ? `0 0 25px ${totalsModelInfo.glowColor}, 0 0 40px ${spreadModelInfo.glowColor}`
-                    : totalsModelInfo ? `0 0 30px ${totalsModelInfo.glowColor}`
-                      : spreadModelInfo ? `0 0 30px ${spreadModelInfo.glowColor}`
-                        : 'none'
+                  // Square styling helper
+                  const getSquareStyle = (glowColor: string, isLarge = false) => ({
+                    background: `linear-gradient(135deg, ${glowColor.replace('0.6', '0.4')}, ${glowColor.replace('0.6', '0.2')})`,
+                    border: `2px solid ${glowColor.replace('0.6', '0.8')}`,
+                    boxShadow: `0 0 ${isLarge ? '15' : '10'}px ${glowColor}`
+                  })
+
+                  const defaultSquareStyle = {
+                    background: 'linear-gradient(135deg, rgba(100,116,139,0.3), rgba(100,116,139,0.1))',
+                    border: '2px solid rgba(100,116,139,0.5)',
+                    boxShadow: 'none'
+                  }
 
                   return (
-                    <div className="relative w-32 h-32 mb-4">
-                      {/* Outer ring - Baseline Model border (animated glow) */}
+                    <div className="relative w-36 h-36 mb-4">
+                      {/* Container glow effect */}
                       <div
-                        className="absolute -inset-1 rounded-full transition-all duration-500 animate-pulse"
+                        className="absolute -inset-2 rounded-lg opacity-30 blur-xl transition-all duration-500"
                         style={{
-                          boxShadow: combinedGlow,
-                          background: totalsModelInfo && spreadModelInfo
-                            ? `conic-gradient(from 0deg, ${totalsModelInfo.glowColor}, ${spreadModelInfo.glowColor}, ${totalsModelInfo.glowColor})`
-                            : 'transparent',
-                          opacity: 0.6
+                          background: `radial-gradient(circle, ${aiArchetype.glowColor}, transparent 70%)`
                         }}
                       />
 
-                      {/* Inner avatar circle */}
-                      <div className={`absolute inset-0 rounded-full transition-all duration-500 bg-gradient-to-br from-slate-800 to-slate-900 ${totalsModelInfo && spreadModelInfo
-                        ? `border-4 border-transparent`
-                        : 'border-2 border-slate-600'
-                        }`}
-                        style={{
-                          borderImage: totalsModelInfo && spreadModelInfo
-                            ? `linear-gradient(135deg, ${totalsModelInfo.glowColor}, ${spreadModelInfo.glowColor}) 1`
-                            : undefined
-                        }}
-                      />
+                      {/* Top-Left Square: TOTAL Projection Engine */}
+                      <div
+                        className="absolute top-0 left-0 w-10 h-10 rounded-lg transition-all duration-300 hover:scale-110 flex items-center justify-center cursor-pointer"
+                        style={totalsModelInfo ? getSquareStyle(totalsModelInfo.glowColor) : defaultSquareStyle}
+                        title={totalsModelInfo ? `TOTAL: ${totalsModelInfo.name}` : 'TOTAL Projection Engine'}
+                      >
+                        {totalsModelInfo ? (
+                          <BaselineIcon iconName={totalsModelInfo.iconName} className="w-5 h-5 text-white" />
+                        ) : (
+                          <Zap className="w-5 h-5 text-slate-500" />
+                        )}
+                      </div>
 
-                      {hasBoth ? (
-                        <>
-                          {/* Dual icon display - split avatar */}
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="relative w-full h-full">
-                              {/* Left icon (TOTALS) */}
-                              <div className="absolute left-2 top-1/2 -translate-y-1/2">
-                                <TotalsIcon className={`w-10 h-10 text-${totalsPreset.color}-400 transition-all duration-300`} />
-                              </div>
-                              {/* Center divider */}
-                              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-0.5 h-12 bg-gradient-to-b from-transparent via-amber-500/50 to-transparent" />
-                              {/* Right icon (SPREAD) */}
-                              <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                                <SpreadIcon className={`w-10 h-10 text-${spreadPreset.color}-400 transition-all duration-300`} />
-                              </div>
-                            </div>
-                          </div>
-                          {/* Baseline model badge */}
-                          <div
-                            className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[8px] font-bold text-white uppercase tracking-wider shadow-lg flex items-center gap-1"
-                            style={{
-                              background: totalsModelInfo && spreadModelInfo
-                                ? `linear-gradient(135deg, ${totalsModelInfo.glowColor}, ${spreadModelInfo.glowColor})`
-                                : 'linear-gradient(135deg, #fbbf24, #f97316)'
-                            }}
-                          >
-                            {totalsModelInfo && <BaselineIcon iconName={totalsModelInfo.iconName} className="w-3 h-3" />}
-                            {spreadModelInfo && <BaselineIcon iconName={spreadModelInfo.iconName} className="w-3 h-3" />}
-                          </div>
-                        </>
-                      ) : hasAny ? (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          {totalsPreset && <TotalsIcon className={`w-16 h-16 text-${totalsPreset.color}-400 transition-all duration-500`} />}
-                          {spreadPreset && <SpreadIcon className={`w-16 h-16 text-${spreadPreset.color}-400 transition-all duration-500`} />}
-                        </div>
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <Swords className="w-16 h-16 text-slate-500 transition-all duration-500" />
-                        </div>
-                      )}
+                      {/* Top-Right Square: SPREAD Projection Engine */}
+                      <div
+                        className="absolute top-0 right-0 w-10 h-10 rounded-lg transition-all duration-300 hover:scale-110 flex items-center justify-center cursor-pointer"
+                        style={spreadModelInfo ? getSquareStyle(spreadModelInfo.glowColor) : defaultSquareStyle}
+                        title={spreadModelInfo ? `SPREAD: ${spreadModelInfo.name}` : 'SPREAD Projection Engine'}
+                      >
+                        {spreadModelInfo ? (
+                          <BaselineIcon iconName={spreadModelInfo.iconName} className="w-5 h-5 text-white" />
+                        ) : (
+                          <TrendingUp className="w-5 h-5 text-slate-500" />
+                        )}
+                      </div>
+
+                      {/* CENTER Square: AI Archetype (larger) */}
+                      <div
+                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-lg transition-all duration-300 hover:scale-105 flex items-center justify-center cursor-pointer z-10"
+                        style={getSquareStyle(aiArchetype.glowColor, true)}
+                        title={`AI: ${aiArchetype.name}`}
+                      >
+                        <span className="text-2xl">{aiArchetype.icon}</span>
+                      </div>
+
+                      {/* Bottom-Left Square: TOTAL Factor Build */}
+                      <div
+                        className="absolute bottom-0 left-0 w-10 h-10 rounded-lg transition-all duration-300 hover:scale-110 flex items-center justify-center cursor-pointer"
+                        style={totalsPreset ? getSquareStyle(`rgba(${totalsPreset.color === 'amber' ? '245,158,11' : totalsPreset.color === 'purple' ? '168,85,247' : totalsPreset.color === 'emerald' ? '16,185,129' : totalsPreset.color === 'cyan' ? '6,182,212' : totalsPreset.color === 'red' ? '248,113,113' : totalsPreset.color === 'blue' ? '96,165,250' : '100,116,139'},0.6)`) : defaultSquareStyle}
+                        title={totalsPreset ? `TOTAL Build: ${totalsPreset.name}` : 'TOTAL Factor Build'}
+                      >
+                        {totalsPreset ? (
+                          <TotalsIcon className="w-5 h-5 text-white" />
+                        ) : (
+                          <Swords className="w-5 h-5 text-slate-500" />
+                        )}
+                      </div>
+
+                      {/* Bottom-Right Square: SPREAD Factor Build */}
+                      <div
+                        className="absolute bottom-0 right-0 w-10 h-10 rounded-lg transition-all duration-300 hover:scale-110 flex items-center justify-center cursor-pointer"
+                        style={spreadPreset ? getSquareStyle(`rgba(${spreadPreset.color === 'amber' ? '245,158,11' : spreadPreset.color === 'purple' ? '168,85,247' : spreadPreset.color === 'emerald' ? '16,185,129' : spreadPreset.color === 'cyan' ? '6,182,212' : spreadPreset.color === 'red' ? '248,113,113' : spreadPreset.color === 'blue' ? '96,165,250' : '100,116,139'},0.6)`) : defaultSquareStyle}
+                        title={spreadPreset ? `SPREAD Build: ${spreadPreset.name}` : 'SPREAD Factor Build'}
+                      >
+                        {spreadPreset ? (
+                          <SpreadIcon className="w-5 h-5 text-white" />
+                        ) : (
+                          <Swords className="w-5 h-5 text-slate-500" />
+                        )}
+                      </div>
+
+                      {/* Connecting lines (subtle) */}
+                      <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 0 }}>
+                        {/* Top-left to center */}
+                        <line x1="40" y1="40" x2="72" y2="72" stroke={totalsModelInfo?.glowColor || 'rgba(100,116,139,0.3)'} strokeWidth="1" opacity="0.5" />
+                        {/* Top-right to center */}
+                        <line x1="104" y1="40" x2="72" y2="72" stroke={spreadModelInfo?.glowColor || 'rgba(100,116,139,0.3)'} strokeWidth="1" opacity="0.5" />
+                        {/* Bottom-left to center */}
+                        <line x1="40" y1="104" x2="72" y2="72" stroke={totalsPreset ? 'rgba(245,158,11,0.5)' : 'rgba(100,116,139,0.3)'} strokeWidth="1" opacity="0.5" />
+                        {/* Bottom-right to center */}
+                        <line x1="104" y1="104" x2="72" y2="72" stroke={spreadPreset ? 'rgba(168,85,247,0.5)' : 'rgba(100,116,139,0.3)'} strokeWidth="1" opacity="0.5" />
+                      </svg>
                     </div>
                   )
                 })()}
+
+                {/* Square Legend */}
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[9px] text-slate-500 mb-2">
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-sm bg-yellow-400/40 border border-yellow-400/60" />
+                    <span>TOTAL Engine</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-sm bg-purple-400/40 border border-purple-400/60" />
+                    <span>SPREAD Engine</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-sm bg-amber-400/40 border border-amber-400/60" />
+                    <span>TOTAL Build</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-sm bg-cyan-400/40 border border-cyan-400/60" />
+                    <span>SPREAD Build</span>
+                  </div>
+                  <div className="col-span-2 flex items-center justify-center gap-1 mt-1">
+                    <div className="w-3 h-3 rounded-sm bg-gradient-to-br from-purple-400/40 to-emerald-400/40 border border-white/30" />
+                    <span className="text-slate-400 font-medium">AI Archetype (center)</span>
+                  </div>
+                </div>
 
                 {/* Name - Editable */}
                 {isEditingName ? (
