@@ -1375,21 +1375,44 @@ async function executeAIArchetype(input: AIArchetypeInput): Promise<AIArchetypeR
     }
 
     // Build factor object
-    // For TOTALS: away = OVER, home = UNDER
-    // For SPREAD: away = away team, home = home team
-    let overScore = 0, underScore = 0, awayScore = 0, homeScore = 0
+    // For TOTALS: use overScore/underScore ONLY
+    // For SPREAD: use awayScore/homeScore ONLY
+    // CRITICAL: Do NOT include both sets - this breaks bet type detection in confidence calculator
+
+    // Build parsed_values_json based on bet type (only include relevant score fields)
+    const parsedValuesJson: {
+      direction: 'away' | 'home'
+      points: number
+      archetype: string
+      signal: number
+      overScore?: number
+      underScore?: number
+      awayScore?: number
+      homeScore?: number
+    } = {
+      direction,
+      points,
+      archetype,
+      signal: direction === 'away' ? points / 5 : -points / 5
+    }
 
     if (betType === 'TOTAL') {
+      // TOTALS: Use overScore/underScore
       if (direction === 'away') {
-        overScore = points
+        parsedValuesJson.overScore = points
+        parsedValuesJson.underScore = 0
       } else {
-        underScore = points
+        parsedValuesJson.overScore = 0
+        parsedValuesJson.underScore = points
       }
     } else {
+      // SPREAD: Use awayScore/homeScore
       if (direction === 'away') {
-        awayScore = points
+        parsedValuesJson.awayScore = points
+        parsedValuesJson.homeScore = 0
       } else {
-        homeScore = points
+        parsedValuesJson.awayScore = 0
+        parsedValuesJson.homeScore = points
       }
     }
 
@@ -1400,15 +1423,7 @@ async function executeAIArchetype(input: AIArchetypeInput): Promise<AIArchetypeR
       normalized_value: direction === 'away' ? points / 5 : -points / 5,  // Normalize to [-1, 1]
       weight_total_pct: 100,  // 100% weight (fixed)
       raw_values_json: rawData,
-      parsed_values_json: {
-        direction,
-        points,
-        archetype,
-        overScore,
-        underScore,
-        awayScore,
-        homeScore
-      },
+      parsed_values_json: parsedValuesJson,
       notes,
       caps_applied: points >= 4.9,
       cap_reason: points >= 4.9 ? 'max points reached' : null
