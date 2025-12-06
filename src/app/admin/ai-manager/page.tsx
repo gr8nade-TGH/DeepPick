@@ -268,7 +268,7 @@ export default function AIManagerPage() {
           homeTeam: game.home_team.name,
           spread: { away: spreadLine, home: -spreadLine },
           total: game.odds?.total?.line,
-          betType: 'SPREAD'
+          betType  // Use the state variable, not hardcoded
         })
       })
       await res.json()
@@ -484,7 +484,30 @@ export default function AIManagerPage() {
                   <h3 className="text-sm font-medium text-white">Stored AI Insights</h3>
                   <p className="text-xs text-slate-500">Generated once per game, referenced by all cappers</p>
                 </div>
-                {insightsLoading && <Loader2 className="w-4 h-4 animate-spin text-slate-500" />}
+                <div className="flex items-center gap-3">
+                  {/* Bet Type Toggle */}
+                  <div className="flex items-center gap-1 bg-slate-800 rounded p-0.5">
+                    <button
+                      onClick={() => setBetType('SPREAD')}
+                      className={`px-3 py-1 text-xs font-medium rounded transition-colors ${betType === 'SPREAD'
+                        ? 'bg-orange-500 text-white'
+                        : 'text-slate-400 hover:text-white'
+                        }`}
+                    >
+                      SPREAD
+                    </button>
+                    <button
+                      onClick={() => setBetType('TOTAL')}
+                      className={`px-3 py-1 text-xs font-medium rounded transition-colors ${betType === 'TOTAL'
+                        ? 'bg-blue-500 text-white'
+                        : 'text-slate-400 hover:text-white'
+                        }`}
+                    >
+                      TOTAL
+                    </button>
+                  </div>
+                  {insightsLoading && <Loader2 className="w-4 h-4 animate-spin text-slate-500" />}
+                </div>
               </div>
 
               <table className="w-full text-sm">
@@ -508,10 +531,11 @@ export default function AIManagerPage() {
                   ) : (
                     todaysGames.map(game => {
                       const gameInsights = getInsightsForGame(game.id)
-                      const pulseInsight = gameInsights.find(i => i.insight_type === 'PULSE_GLOBAL')
-                      const influencerInsight = gameInsights.find(i => i.insight_type === 'INFLUENCER_GLOBAL')
-                      const interpreterInsight = gameInsights.find(i => i.insight_type === 'INTERPRETER_GLOBAL')
-                      const devilsInsight = gameInsights.find(i => i.insight_type === 'DEVILS_ADVOCATE_GLOBAL')
+                      // Filter insights by current bet type (except Mathematician which is always TOTAL)
+                      const pulseInsight = gameInsights.find(i => i.insight_type === 'PULSE_GLOBAL' && i.bet_type === betType)
+                      const influencerInsight = gameInsights.find(i => i.insight_type === 'INFLUENCER_GLOBAL' && i.bet_type === betType)
+                      const interpreterInsight = gameInsights.find(i => i.insight_type === 'INTERPRETER_GLOBAL' && i.bet_type === betType)
+                      const devilsInsight = gameInsights.find(i => i.insight_type === 'DEVILS_ADVOCATE_GLOBAL' && i.bet_type === betType)
                       const mathInsight = gameInsights.find(i => i.insight_type === 'MATHEMATICIAN_TOTAL')
                       const expandedType = expandedInsight?.gameId === game.id ? expandedInsight.type : null
                       const sentiment = pulseInsight?.raw_data?.sentiment
@@ -537,6 +561,9 @@ export default function AIManagerPage() {
                             <td className="p-2">
                               {pulseInsight ? (
                                 <div className="flex items-center gap-1">
+                                  <span className={`text-[8px] px-1 rounded ${betType === 'SPREAD' ? 'bg-orange-500/30 text-orange-300' : 'bg-blue-500/30 text-blue-300'}`}>
+                                    {betType === 'SPREAD' ? 'S' : 'T'}
+                                  </span>
                                   <span className="text-xs font-mono text-purple-400">
                                     {pulseInsight.quantified_value?.points?.toFixed(1)}pts
                                   </span>
@@ -554,9 +581,9 @@ export default function AIManagerPage() {
                                   onClick={() => generateInsight(game, 'PULSE_GLOBAL')}
                                   disabled={generatingGame === game.id}
                                   size="sm"
-                                  className="h-5 text-[9px] px-2 bg-purple-600/50 hover:bg-purple-500"
+                                  className={`h-5 text-[9px] px-2 ${betType === 'SPREAD' ? 'bg-orange-600/50 hover:bg-orange-500' : 'bg-blue-600/50 hover:bg-blue-500'}`}
                                 >
-                                  {generatingGame === game.id ? <Loader2 className="w-2 h-2 animate-spin" /> : 'Gen'}
+                                  {generatingGame === game.id ? <Loader2 className="w-2 h-2 animate-spin" /> : `Gen ${betType === 'SPREAD' ? 'S' : 'T'}`}
                                 </Button>
                               )}
                             </td>
@@ -564,6 +591,9 @@ export default function AIManagerPage() {
                             <td className="p-2">
                               {influencerInsight ? (
                                 <div className="flex items-center gap-1">
+                                  <span className={`text-[8px] px-1 rounded ${betType === 'SPREAD' ? 'bg-orange-500/30 text-orange-300' : 'bg-blue-500/30 text-blue-300'}`}>
+                                    {betType === 'SPREAD' ? 'S' : 'T'}
+                                  </span>
                                   <span className="text-xs font-mono text-amber-400">
                                     {influencerInsight.quantified_value?.points?.toFixed(1)}pts
                                   </span>
@@ -581,9 +611,9 @@ export default function AIManagerPage() {
                                   onClick={() => generateInsight(game, 'INFLUENCER_GLOBAL')}
                                   disabled={generatingGame === game.id}
                                   size="sm"
-                                  className="h-5 text-[9px] px-2 bg-amber-600/50 hover:bg-amber-500"
+                                  className={`h-5 text-[9px] px-2 ${betType === 'SPREAD' ? 'bg-orange-600/50 hover:bg-orange-500' : 'bg-blue-600/50 hover:bg-blue-500'}`}
                                 >
-                                  {generatingGame === game.id ? <Loader2 className="w-2 h-2 animate-spin" /> : 'Gen'}
+                                  {generatingGame === game.id ? <Loader2 className="w-2 h-2 animate-spin" /> : `Gen ${betType === 'SPREAD' ? 'S' : 'T'}`}
                                 </Button>
                               )}
                             </td>
@@ -591,6 +621,9 @@ export default function AIManagerPage() {
                             <td className="p-2">
                               {interpreterInsight ? (
                                 <div className="flex items-center gap-1">
+                                  <span className={`text-[8px] px-1 rounded ${betType === 'SPREAD' ? 'bg-orange-500/30 text-orange-300' : 'bg-blue-500/30 text-blue-300'}`}>
+                                    {betType === 'SPREAD' ? 'S' : 'T'}
+                                  </span>
                                   <span className="text-xs font-mono text-emerald-400">
                                     {interpreterInsight.quantified_value?.points?.toFixed(1)}pts
                                   </span>
@@ -608,9 +641,9 @@ export default function AIManagerPage() {
                                   onClick={() => generateInsight(game, 'INTERPRETER_GLOBAL')}
                                   disabled={generatingGame === game.id}
                                   size="sm"
-                                  className="h-5 text-[9px] px-2 bg-emerald-600/50 hover:bg-emerald-500"
+                                  className={`h-5 text-[9px] px-2 ${betType === 'SPREAD' ? 'bg-orange-600/50 hover:bg-orange-500' : 'bg-blue-600/50 hover:bg-blue-500'}`}
                                 >
-                                  {generatingGame === game.id ? <Loader2 className="w-2 h-2 animate-spin" /> : 'Gen'}
+                                  {generatingGame === game.id ? <Loader2 className="w-2 h-2 animate-spin" /> : `Gen ${betType === 'SPREAD' ? 'S' : 'T'}`}
                                 </Button>
                               )}
                             </td>
@@ -618,6 +651,9 @@ export default function AIManagerPage() {
                             <td className="p-2">
                               {devilsInsight ? (
                                 <div className="flex items-center gap-1">
+                                  <span className={`text-[8px] px-1 rounded ${betType === 'SPREAD' ? 'bg-orange-500/30 text-orange-300' : 'bg-blue-500/30 text-blue-300'}`}>
+                                    {betType === 'SPREAD' ? 'S' : 'T'}
+                                  </span>
                                   <span className="text-xs font-mono text-red-400">
                                     {devilsInsight.quantified_value?.points?.toFixed(1)}pts
                                   </span>
@@ -635,16 +671,17 @@ export default function AIManagerPage() {
                                   onClick={() => generateInsight(game, 'DEVILS_ADVOCATE_GLOBAL')}
                                   disabled={generatingGame === game.id}
                                   size="sm"
-                                  className="h-5 text-[9px] px-2 bg-red-600/50 hover:bg-red-500"
+                                  className={`h-5 text-[9px] px-2 ${betType === 'SPREAD' ? 'bg-orange-600/50 hover:bg-orange-500' : 'bg-blue-600/50 hover:bg-blue-500'}`}
                                 >
-                                  {generatingGame === game.id ? <Loader2 className="w-2 h-2 animate-spin" /> : 'Gen'}
+                                  {generatingGame === game.id ? <Loader2 className="w-2 h-2 animate-spin" /> : `Gen ${betType === 'SPREAD' ? 'S' : 'T'}`}
                                 </Button>
                               )}
                             </td>
-                            {/* Mathematician */}
+                            {/* Mathematician - Always TOTAL */}
                             <td className="p-2">
                               {mathInsight ? (
                                 <div className="flex items-center gap-1">
+                                  <span className="text-[8px] px-1 rounded bg-blue-500/30 text-blue-300">T</span>
                                   <span className="text-xs font-mono text-cyan-400">
                                     {mathInsight.quantified_value?.points?.toFixed(1)}pts
                                   </span>
@@ -662,9 +699,10 @@ export default function AIManagerPage() {
                                   onClick={() => generateInsight(game, 'MATHEMATICIAN_TOTAL')}
                                   disabled={generatingGame === game.id}
                                   size="sm"
-                                  className="h-5 text-[9px] px-2 bg-cyan-600/50 hover:bg-cyan-500"
+                                  className="h-5 text-[9px] px-2 bg-blue-600/50 hover:bg-blue-500"
+                                  title="Mathematician is TOTALS-only"
                                 >
-                                  {generatingGame === game.id ? <Loader2 className="w-2 h-2 animate-spin" /> : 'Gen'}
+                                  {generatingGame === game.id ? <Loader2 className="w-2 h-2 animate-spin" /> : 'Gen T'}
                                 </Button>
                               )}
                             </td>
