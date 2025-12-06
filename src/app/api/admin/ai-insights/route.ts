@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { analyzeGameSentiment } from '@/lib/ai-insights/grok-client'
+import { getGrokSentiment } from '@/lib/ai-insights/grok-client'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
   try {
     if (insightType === 'PULSE_SENTIMENT') {
       provider = 'GROK'
-      const grokResult = await analyzeGameSentiment({
+      const grokResult = await getGrokSentiment({
         awayTeam,
         homeTeam,
         spread: spread || { away: 0, home: 0 },
