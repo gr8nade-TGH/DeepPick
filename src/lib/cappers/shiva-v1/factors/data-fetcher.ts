@@ -32,12 +32,28 @@ export async function fetchNBAStatsBundle(ctx: RunCtx): Promise<NBAStatsBundle> 
     // The function will use whatever games are available and calculate averages accordingly
     console.log('[DATA_FETCHER] Fetching team statistics from MySportsFeeds (10-game and 3-game windows)...')
 
-    const [awayRecent, homeRecent, awayRecent3, homeRecent3] = await Promise.all([
+    // First fetch the 10-game stats (required - these are the primary stats)
+    const [awayRecent, homeRecent] = await Promise.all([
       getTeamFormData(awayAbbrev, 10),
-      getTeamFormData(homeAbbrev, 10),
-      getTeamFormData(awayAbbrev, 3),  // For S3 momentum calculation
-      getTeamFormData(homeAbbrev, 3)   // For S3 momentum calculation
+      getTeamFormData(homeAbbrev, 10)
     ])
+
+    // Then fetch 3-game stats for momentum (if cache misses, use 10-game data)
+    // This prevents pipeline failures when 3-game cache is missing but 10-game is available
+    let awayRecent3 = awayRecent
+    let homeRecent3 = homeRecent
+
+    try {
+      const [away3, home3] = await Promise.all([
+        getTeamFormData(awayAbbrev, 3),
+        getTeamFormData(homeAbbrev, 3)
+      ])
+      awayRecent3 = away3
+      homeRecent3 = home3
+      console.log('[DATA_FETCHER] Successfully fetched 3-game momentum stats')
+    } catch (err) {
+      console.warn('[DATA_FETCHER] 3-game stats unavailable, using 10-game data for momentum:', err instanceof Error ? err.message : err)
+    }
 
     console.log('[DATA_FETCHER] Successfully fetched all team statistics')
     console.log(`[DATA_FETCHER] ${awayAbbrev} L10: Pace=${awayRecent.pace.toFixed(1)}, ORtg=${awayRecent.ortg.toFixed(1)}`)
