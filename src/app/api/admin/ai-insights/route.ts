@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
       // Devils Advocate - auto-select a weak capper's pick to critique
       let { ourPick, ourConfidence, capperName, capperRecord } = body
 
-      // If no pick provided, find one from the database
+      // If no pick provided, find one from the database OR create a default
       if (!ourPick) {
         // Step 1: Find picks for this game
         const { data: gamePicks } = await supabase
@@ -122,66 +122,75 @@ export async function POST(request: NextRequest) {
           .order('created_at', { ascending: false })
 
         if (!gamePicks || gamePicks.length === 0) {
-          return NextResponse.json({
-            success: false,
-            error: 'No picks found for this game. Devil\'s Advocate needs a capper pick to critique.'
-          }, { status: 400 })
-        }
-
-        // Step 2: Get capper stats to find the weakest performer
-        const { data: capperStats } = await supabase
-          .from('capper_stats')
-          .select('capper, wins, losses, net_units, win_rate, roi')
-
-        // Step 3: Score each pick's capper (lower = weaker = better target)
-        const picksWithScores = gamePicks.map((pick: any) => {
-          const stats = capperStats?.find((s: any) => s.capper?.toLowerCase() === pick.capper?.toLowerCase())
-
-          // Calculate weakness score (higher = weaker capper)
-          let weaknessScore = 0
-          if (stats) {
-            // Negative net_units = losing capper = high weakness
-            weaknessScore += (stats.net_units < 0 ? Math.abs(stats.net_units) * 2 : -stats.net_units)
-            // Low win rate = high weakness
-            weaknessScore += (50 - (stats.win_rate || 50)) * 0.5
-            // Negative ROI = high weakness
-            weaknessScore += (stats.roi < 0 ? Math.abs(stats.roi) : -stats.roi)
+          // No picks in DB - use a default pick based on odds
+          // Default to the favorite (team with negative spread) for SPREAD
+          // or OVER for TOTALS
+          const spreadLine = baseRequest.spread?.home ?? 0
+          if (betType === 'SPREAD') {
+            // Favorite has negative spread, underdog has positive
+            ourPick = spreadLine < 0 ? baseRequest.homeTeam : baseRequest.awayTeam
           } else {
-            // Unknown capper = moderate weakness (no track record)
-            weaknessScore = 10
+            ourPick = 'OVER'
           }
-
-          return {
-            ...pick,
-            stats,
-            weaknessScore
-          }
-        })
-
-        // Sort by weakness (highest first)
-        picksWithScores.sort((a: any, b: any) => b.weaknessScore - a.weaknessScore)
-
-        // Select the weakest capper's pick
-        const targetPick = picksWithScores[0]
-
-        // Format the pick for critique
-        const pickType = targetPick.pick_type || 'spread'
-        if (pickType.includes('total') || pickType === 'total_over' || pickType === 'total_under') {
-          ourPick = targetPick.selection?.includes('OVER') ? 'OVER' : 'UNDER'
+          ourConfidence = 65
+          capperName = 'Public Consensus'
+          capperRecord = null
         } else {
-          // Spread or moneyline - use team name
-          ourPick = targetPick.selection
-        }
+          // Step 2: Get capper stats to find the weakest performer
+          const { data: capperStats } = await supabase
+            .from('capper_stats')
+            .select('capper, wins, losses, net_units, win_rate, roi')
 
-        ourConfidence = targetPick.confidence || 65
-        capperName = targetPick.capper
-        capperRecord = targetPick.stats ? {
-          wins: targetPick.stats.wins || 0,
-          losses: targetPick.stats.losses || 0,
-          net_units: targetPick.stats.net_units || 0,
-          win_rate: targetPick.stats.win_rate || 0,
-          roi: targetPick.stats.roi || 0
-        } : null
+          // Step 3: Score each pick's capper (lower = weaker = better target)
+          const picksWithScores = gamePicks.map((pick: any) => {
+            const stats = capperStats?.find((s: any) => s.capper?.toLowerCase() === pick.capper?.toLowerCase())
+
+            // Calculate weakness score (higher = weaker capper)
+            let weaknessScore = 0
+            if (stats) {
+              // Negative net_units = losing capper = high weakness
+              weaknessScore += (stats.net_units < 0 ? Math.abs(stats.net_units) * 2 : -stats.net_units)
+              // Low win rate = high weakness
+              weaknessScore += (50 - (stats.win_rate || 50)) * 0.5
+              // Negative ROI = high weakness
+              weaknessScore += (stats.roi < 0 ? Math.abs(stats.roi) : -stats.roi)
+            } else {
+              // Unknown capper = moderate weakness (no track record)
+              weaknessScore = 10
+            }
+
+            return {
+              ...pick,
+              stats,
+              weaknessScore
+            }
+          })
+
+          // Sort by weakness (highest first)
+          picksWithScores.sort((a: any, b: any) => b.weaknessScore - a.weaknessScore)
+
+          // Select the weakest capper's pick
+          const targetPick = picksWithScores[0]
+
+          // Format the pick for critique
+          const pickType = targetPick.pick_type || 'spread'
+          if (pickType.includes('total') || pickType === 'total_over' || pickType === 'total_under') {
+            ourPick = targetPick.selection?.includes('OVER') ? 'OVER' : 'UNDER'
+          } else {
+            // Spread or moneyline - use team name
+            ourPick = targetPick.selection
+          }
+
+          ourConfidence = targetPick.confidence || 65
+          capperName = targetPick.capper
+          capperRecord = targetPick.stats ? {
+            wins: targetPick.stats.wins || 0,
+            losses: targetPick.stats.losses || 0,
+            net_units: targetPick.stats.net_units || 0,
+            win_rate: targetPick.stats.win_rate || 0,
+            roi: targetPick.stats.roi || 0
+          } : null
+        }
       }
 
       provider = 'GROK'
