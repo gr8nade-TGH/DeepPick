@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -16,7 +16,12 @@ import {
   ChevronUp,
   Copy,
   Check,
-  Database
+  Database,
+  Eye,
+  EyeOff,
+  ThumbsUp,
+  Users,
+  MessageSquare
 } from 'lucide-react'
 import {
   TOTALS_ARCHETYPES,
@@ -80,6 +85,7 @@ interface StoredInsight {
 export default function AIManagerPage() {
   const [activeTab, setActiveTab] = useState('insights')
   const [expandedRow, setExpandedRow] = useState<string | null>(null)
+  const [expandedInsight, setExpandedInsight] = useState<string | null>(null)
   const [todaysGames, setTodaysGames] = useState<GameInfo[]>([])
   const [selectedGame, setSelectedGame] = useState<string>('')
   const [grokResult, setGrokResult] = useState<GrokResult | null>(null)
@@ -288,58 +294,184 @@ export default function AIManagerPage() {
                     todaysGames.map(game => {
                       const gameInsights = getInsightsForGame(game.id)
                       const pulseInsight = gameInsights.find(i => i.insight_type === 'PULSE_SENTIMENT')
+                      const isExpanded = expandedInsight === game.id
+                      const sentiment = pulseInsight?.raw_data?.sentiment
 
                       return (
-                        <tr key={game.id} className="border-t border-slate-800 hover:bg-slate-800/30">
-                          <td className="p-2">
-                            <div className="font-medium text-white">
-                              {game.away_team.abbreviation} @ {game.home_team.abbreviation}
-                            </div>
-                            <div className="text-[10px] text-slate-600 font-mono">{game.id}</div>
-                          </td>
-                          <td className="p-2 text-slate-400">
-                            {game.odds?.spread?.line ? `${game.odds.spread.line > 0 ? '+' : ''}${game.odds.spread.line}` : '-'}
-                          </td>
-                          <td className="p-2 text-slate-400">
-                            {game.odds?.total?.line || '-'}
-                          </td>
-                          <td className="p-2">
-                            {pulseInsight ? (
-                              <div className="flex items-center gap-2">
-                                <Badge className="bg-green-500/20 text-green-400 text-[10px]">✓ Generated</Badge>
-                                <span className="text-xs font-mono text-purple-400">
-                                  {pulseInsight.quantified_value?.points?.toFixed(2)} pts → {pulseInsight.quantified_value?.direction}
-                                </span>
+                        <React.Fragment key={game.id}>
+                          <tr className="border-t border-slate-800 hover:bg-slate-800/30">
+                            <td className="p-2">
+                              <div className="font-medium text-white">
+                                {game.away_team.abbreviation} @ {game.home_team.abbreviation}
                               </div>
-                            ) : (
-                              <Badge className="bg-slate-700 text-slate-400 text-[10px]">Not Generated</Badge>
-                            )}
-                          </td>
-                          <td className="p-2">
-                            {pulseInsight && (
-                              <div className="text-[10px] text-slate-500 space-y-0.5">
-                                <div>Sent: {(pulseInsight.quantified_value?.breakdown?.sentimentLean * 100)?.toFixed(1)}%</div>
-                                <div>Eng: {(pulseInsight.quantified_value?.breakdown?.engagementLean * 100)?.toFixed(1)}%</div>
-                                <div className="text-slate-600">{new Date(pulseInsight.created_at).toLocaleTimeString()}</div>
-                              </div>
-                            )}
-                          </td>
-                          <td className="p-2">
-                            <Button
-                              onClick={() => generateInsight(game, 'PULSE_SENTIMENT')}
-                              disabled={generatingGame === game.id}
-                              size="sm"
-                              className={`h-6 text-[10px] gap-1 ${pulseInsight ? 'bg-slate-700 hover:bg-slate-600' : 'bg-purple-600 hover:bg-purple-500'}`}
-                            >
-                              {generatingGame === game.id ? (
-                                <Loader2 className="w-3 h-3 animate-spin" />
+                              <div className="text-[10px] text-slate-600 font-mono">{game.id.slice(0, 12)}...</div>
+                            </td>
+                            <td className="p-2 text-slate-400">
+                              {game.odds?.spread?.line ? `${game.odds.spread.line > 0 ? '+' : ''}${game.odds.spread.line}` : '-'}
+                            </td>
+                            <td className="p-2 text-slate-400">
+                              {game.odds?.total?.line || '-'}
+                            </td>
+                            <td className="p-2">
+                              {pulseInsight ? (
+                                <div className="flex items-center gap-2">
+                                  <Badge className="bg-green-500/20 text-green-400 text-[10px]">✓ Generated</Badge>
+                                  <span className="text-xs font-mono text-purple-400">
+                                    {pulseInsight.quantified_value?.points?.toFixed(2)} pts → {pulseInsight.quantified_value?.direction}
+                                  </span>
+                                </div>
                               ) : (
-                                <Play className="w-3 h-3" />
+                                <Badge className="bg-slate-700 text-slate-400 text-[10px]">Not Generated</Badge>
                               )}
-                              {pulseInsight ? 'Regenerate' : 'Generate'}
-                            </Button>
-                          </td>
-                        </tr>
+                            </td>
+                            <td className="p-2">
+                              {pulseInsight ? (
+                                <Button
+                                  onClick={() => setExpandedInsight(isExpanded ? null : game.id)}
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 text-[10px] gap-1 text-purple-400 hover:text-purple-300"
+                                >
+                                  {isExpanded ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                                  {isExpanded ? 'Hide' : 'View Data'}
+                                </Button>
+                              ) : (
+                                <span className="text-[10px] text-slate-600">-</span>
+                              )}
+                            </td>
+                            <td className="p-2">
+                              <Button
+                                onClick={() => generateInsight(game, 'PULSE_SENTIMENT')}
+                                disabled={generatingGame === game.id}
+                                size="sm"
+                                className={`h-6 text-[10px] gap-1 ${pulseInsight ? 'bg-slate-700 hover:bg-slate-600' : 'bg-purple-600 hover:bg-purple-500'}`}
+                              >
+                                {generatingGame === game.id ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <Play className="w-3 h-3" />
+                                )}
+                                {pulseInsight ? 'Regenerate' : 'Generate'}
+                              </Button>
+                            </td>
+                          </tr>
+                          {/* Expanded Detail Row */}
+                          {isExpanded && pulseInsight && sentiment && (
+                            <tr className="bg-slate-900/80">
+                              <td colSpan={6} className="p-4">
+                                <div className="grid grid-cols-3 gap-4">
+                                  {/* Column 1: Pulse Score Breakdown */}
+                                  <div className="bg-slate-800/50 rounded p-3">
+                                    <h4 className="text-xs font-semibold text-purple-400 mb-2 flex items-center gap-1">
+                                      <Activity className="w-3 h-3" /> Pulse Score Breakdown
+                                    </h4>
+                                    <div className="space-y-1 text-xs">
+                                      <div className="flex justify-between">
+                                        <span className="text-slate-500">Final Points:</span>
+                                        <span className="text-white font-mono">{pulseInsight.quantified_value?.points?.toFixed(3)}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-slate-500">Direction:</span>
+                                        <Badge className={`text-[10px] ${pulseInsight.quantified_value?.direction === 'away' ? 'bg-blue-500/20 text-blue-400' : 'bg-orange-500/20 text-orange-400'}`}>
+                                          {pulseInsight.quantified_value?.direction}
+                                        </Badge>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-slate-500">Team:</span>
+                                        <span className="text-green-400">{pulseInsight.quantified_value?.teamName}</span>
+                                      </div>
+                                      <div className="border-t border-slate-700 pt-1 mt-1">
+                                        <div className="flex justify-between">
+                                          <span className="text-slate-500">Sentiment Lean:</span>
+                                          <span className="font-mono">{(pulseInsight.quantified_value?.breakdown?.sentimentLean * 100)?.toFixed(1)}%</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span className="text-slate-500">Engagement Lean:</span>
+                                          <span className="font-mono">{(pulseInsight.quantified_value?.breakdown?.engagementLean * 100)?.toFixed(1)}%</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span className="text-slate-500">Raw Lean:</span>
+                                          <span className="font-mono">{(pulseInsight.quantified_value?.breakdown?.rawLean * 100)?.toFixed(1)}%</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span className="text-slate-500">Confidence:</span>
+                                          <span className="font-mono">{pulseInsight.quantified_value?.breakdown?.confidenceMultiplier}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Column 2: Sentiment & Engagement */}
+                                  <div className="bg-slate-800/50 rounded p-3">
+                                    <h4 className="text-xs font-semibold text-green-400 mb-2 flex items-center gap-1">
+                                      <Users className="w-3 h-3" /> Public Sentiment
+                                    </h4>
+                                    <div className="grid grid-cols-2 gap-2 mb-3">
+                                      <div className="bg-blue-500/10 rounded p-2 text-center">
+                                        <div className="text-lg font-bold text-blue-400">{sentiment.awaySentimentPct}%</div>
+                                        <div className="text-[10px] text-slate-500">{game.away_team.abbreviation} (Away)</div>
+                                        <div className="text-[10px] text-slate-600 flex items-center justify-center gap-1 mt-1">
+                                          <ThumbsUp className="w-3 h-3" /> {sentiment.awayTotalLikes} likes
+                                        </div>
+                                      </div>
+                                      <div className="bg-orange-500/10 rounded p-2 text-center">
+                                        <div className="text-lg font-bold text-orange-400">{sentiment.homeSentimentPct}%</div>
+                                        <div className="text-[10px] text-slate-500">{game.home_team.abbreviation} (Home)</div>
+                                        <div className="text-[10px] text-slate-600 flex items-center justify-center gap-1 mt-1">
+                                          <ThumbsUp className="w-3 h-3" /> {sentiment.homeTotalLikes} likes
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="text-[10px] text-slate-400">
+                                      <div className="mb-1"><strong className="text-blue-400">Away Reasons:</strong></div>
+                                      <ul className="space-y-0.5 ml-2">
+                                        {sentiment.awayReasons?.map((r: string, i: number) => (
+                                          <li key={i} className="text-slate-500">• {r}</li>
+                                        ))}
+                                      </ul>
+                                      <div className="mb-1 mt-2"><strong className="text-orange-400">Home Reasons:</strong></div>
+                                      <ul className="space-y-0.5 ml-2">
+                                        {sentiment.homeReasons?.map((r: string, i: number) => (
+                                          <li key={i} className="text-slate-500">• {r}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  </div>
+
+                                  {/* Column 3: Sample Posts */}
+                                  <div className="bg-slate-800/50 rounded p-3">
+                                    <h4 className="text-xs font-semibold text-yellow-400 mb-2 flex items-center gap-1">
+                                      <MessageSquare className="w-3 h-3" /> Sample Posts ({sentiment.samplePosts?.length || 0})
+                                    </h4>
+                                    <div className="space-y-2 max-h-48 overflow-auto">
+                                      {sentiment.samplePosts?.map((post: any, i: number) => (
+                                        <div key={i} className="bg-slate-900/50 rounded p-2 text-[10px]">
+                                          <div className="flex items-center gap-2 mb-1">
+                                            <Badge className={`text-[9px] ${post.sentiment === 'away' ? 'bg-blue-500/20 text-blue-400' : 'bg-orange-500/20 text-orange-400'}`}>
+                                              {post.sentiment}
+                                            </Badge>
+                                            <span className="text-slate-600">❤️ {post.likes}</span>
+                                          </div>
+                                          <p className="text-slate-400 line-clamp-3">{post.text}</p>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    <div className="mt-2 pt-2 border-t border-slate-700 text-[10px] text-slate-500">
+                                      <div>Confidence: <Badge className="text-[9px] bg-slate-700">{sentiment.overallConfidence}</Badge></div>
+                                      <div className="mt-1 text-slate-600">Generated: {new Date(pulseInsight.created_at).toLocaleString()}</div>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Raw Analysis */}
+                                <div className="mt-3 bg-slate-800/50 rounded p-3">
+                                  <h4 className="text-xs font-semibold text-slate-400 mb-2">Raw Grok Analysis</h4>
+                                  <p className="text-[11px] text-slate-500 leading-relaxed">{sentiment.rawAnalysis}</p>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
                       )
                     })
                   )}
