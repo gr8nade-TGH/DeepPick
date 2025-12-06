@@ -1,12 +1,14 @@
 /**
- * Grok API Client for Sentiment Analysis
+ * Grok API Client for AI Archetypes
  *
  * Uses xAI's Grok models which are trained on real-time X/Twitter data
- * for sentiment analysis on sports betting.
+ * for sentiment analysis and research on sports betting.
  *
- * Two insight sources:
+ * AI Archetypes (0-5 points each):
  * 1. THE PULSE - General public sentiment (all X users)
  * 2. THE INFLUENCER - Betting influencer sentiment (10K+ follower accounts)
+ * 3. THE INTERPRETER - Independent research-based analysis
+ * 4. THE DEVIL'S ADVOCATE - Contrarian check / finds holes in picks
  */
 
 export interface GrokSentimentRequest {
@@ -620,6 +622,481 @@ function parseInfluencerResponse(
           confidenceMultiplier: 0.7,
           accountsAnalyzed: 0,
           avgFollowerCount: 0
+        }
+      }
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// THE INTERPRETER - Independent Research-Based Analysis
+// ═══════════════════════════════════════════════════════════════════════════
+
+export interface InterpreterRequest {
+  awayTeam: string
+  homeTeam: string
+  spread?: { away: number; home: number }
+  total?: number
+  gameDate: string
+  betType: 'SPREAD' | 'TOTAL'
+}
+
+export interface InterpreterResponse {
+  success: boolean
+  analysis?: {
+    pick: string                    // "OVER" | "UNDER" | "away_team" | "home_team"
+    conviction: number              // 1-10
+    confidence: 'high' | 'medium' | 'low'
+    topReasons: string[]            // Top 3 reasons for the pick
+    newsFindings: string[]          // Breaking news discovered
+    riskFactors: string[]           // Potential concerns
+    rawAnalysis: string
+  }
+  interpreterScore?: {
+    direction: 'away' | 'home'      // or 'over' | 'under' for TOTALS
+    points: number                  // 0-5
+    teamName: string
+    breakdown: {
+      conviction: number            // 1-10 from Grok
+      evidenceQuality: number       // How many concrete citations
+      confidenceMultiplier: number  // Based on evidence quality
+    }
+  }
+  error?: string
+  usage?: { promptTokens: number; completionTokens: number; totalTokens: number }
+}
+
+export async function getInterpreterAnalysis(request: InterpreterRequest): Promise<InterpreterResponse> {
+  const apiKey = process.env.GROK_API_KEY
+
+  if (!apiKey) {
+    return { success: false, error: 'GROK_API_KEY not configured' }
+  }
+
+  const prompt = request.betType === 'SPREAD'
+    ? buildInterpreterSpreadPrompt(request)
+    : buildInterpreterTotalPrompt(request)
+
+  try {
+    const response = await fetch(GROK_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'grok-3-mini',
+        messages: [
+          {
+            role: 'system',
+            content: `You are THE INTERPRETER - an elite sports betting analyst with real-time access to X/Twitter and news.
+Your job is to RESEARCH and form your OWN independent opinion on games.
+You don't just aggregate sentiment - you analyze news, matchups, trends, and form a thesis.
+Be specific and cite evidence. Always respond in valid JSON format.`
+          },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.4,  // Slightly higher for more creative research
+        max_tokens: 2000
+      })
+    })
+
+    if (!response.ok) {
+      return { success: false, error: `Grok API error: ${response.status}` }
+    }
+
+    const data = await response.json()
+    const content = data.choices?.[0]?.message?.content
+
+    if (!content) {
+      return { success: false, error: 'No response from Grok' }
+    }
+
+    const parsed = parseInterpreterResponse(content, request.betType, request)
+
+    return {
+      success: true,
+      analysis: parsed.analysis,
+      interpreterScore: parsed.interpreterScore,
+      usage: {
+        promptTokens: data.usage?.prompt_tokens || 0,
+        completionTokens: data.usage?.completion_tokens || 0,
+        totalTokens: data.usage?.total_tokens || 0
+      }
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }
+  }
+}
+
+function buildInterpreterSpreadPrompt(req: InterpreterRequest): string {
+  return `You are THE INTERPRETER. Research this NBA game and form your own opinion on the SPREAD:
+
+**${req.awayTeam} @ ${req.homeTeam}**
+**Spread:** ${req.awayTeam} ${(req.spread?.away ?? 0) > 0 ? '+' : ''}${req.spread?.away ?? 0} / ${req.homeTeam} ${(req.spread?.home ?? 0) > 0 ? '+' : ''}${req.spread?.home ?? 0}
+**Date:** ${req.gameDate}
+
+RESEARCH these areas using real-time X/Twitter and news:
+1. **Breaking News** (last 24h) - Injuries, lineup changes, load management, trade rumors
+2. **Recent Form** - Which team is hot/cold? Last 5 games performance
+3. **Matchup Dynamics** - Key player matchups, style clashes, pace differences
+4. **X-Factors** - Revenge games, back-to-backs, travel fatigue, motivation factors
+
+Based on your research, form YOUR opinion. Who covers the spread?
+
+Respond in JSON:
+{
+  "pick": "${req.awayTeam}" | "${req.homeTeam}",
+  "conviction": <1-10>,
+  "confidence": "high" | "medium" | "low",
+  "topReasons": ["reason 1 with evidence", "reason 2 with evidence", "reason 3 with evidence"],
+  "newsFindings": ["any breaking news you found"],
+  "riskFactors": ["potential concerns for this pick"]
+}`
+}
+
+function buildInterpreterTotalPrompt(req: InterpreterRequest): string {
+  return `You are THE INTERPRETER. Research this NBA game and form your own opinion on the TOTAL:
+
+**${req.awayTeam} @ ${req.homeTeam}**
+**Total:** ${req.total}
+**Date:** ${req.gameDate}
+
+RESEARCH these areas using real-time X/Twitter and news:
+1. **Breaking News** (last 24h) - Injuries to key scorers, lineup changes affecting pace
+2. **Pace Analysis** - Both teams' recent pace, tempo trends
+3. **Defensive Matchups** - Are defenses clicking or struggling?
+4. **Environment** - Back-to-backs, travel fatigue, rivalry intensity
+
+Based on your research, form YOUR opinion. Over or Under?
+
+Respond in JSON:
+{
+  "pick": "OVER" | "UNDER",
+  "conviction": <1-10>,
+  "confidence": "high" | "medium" | "low",
+  "topReasons": ["reason 1 with evidence", "reason 2 with evidence", "reason 3 with evidence"],
+  "newsFindings": ["any breaking news you found"],
+  "riskFactors": ["potential concerns for this pick"]
+}`
+}
+
+function parseInterpreterResponse(content: string, betType: string, request: InterpreterRequest): { analysis: InterpreterResponse['analysis']; interpreterScore: InterpreterResponse['interpreterScore'] } {
+  try {
+    const jsonMatch = content.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) throw new Error('No JSON found')
+
+    const parsed = JSON.parse(jsonMatch[0])
+
+    const conviction = Math.min(10, Math.max(1, parsed.conviction || 5))
+    const evidenceCount = (parsed.topReasons?.length || 0) + (parsed.newsFindings?.length || 0)
+    const evidenceQuality = Math.min(1, evidenceCount / 5)  // Max at 5 pieces of evidence
+
+    // Calculate points: conviction (1-10) -> 0-5 points, scaled by evidence quality
+    const basePoints = (conviction / 10) * 5  // 0-5 range
+    const confidenceMultiplier = evidenceQuality * 0.3 + 0.7  // 0.7-1.0 range
+    const points = Math.min(5, basePoints * confidenceMultiplier)
+
+    // Determine direction
+    let direction: 'away' | 'home'
+    if (betType === 'SPREAD') {
+      direction = parsed.pick?.toLowerCase().includes(request.awayTeam.toLowerCase()) ? 'away' : 'home'
+    } else {
+      // For TOTALS, OVER = away (convention), UNDER = home
+      direction = parsed.pick?.toUpperCase() === 'OVER' ? 'away' : 'home'
+    }
+
+    const teamName = betType === 'SPREAD'
+      ? parsed.pick
+      : parsed.pick?.toUpperCase()
+
+    return {
+      analysis: {
+        pick: parsed.pick || 'N/A',
+        conviction,
+        confidence: parsed.confidence || 'medium',
+        topReasons: parsed.topReasons || [],
+        newsFindings: parsed.newsFindings || [],
+        riskFactors: parsed.riskFactors || [],
+        rawAnalysis: content
+      },
+      interpreterScore: {
+        direction,
+        points: Number(points.toFixed(2)),
+        teamName,
+        breakdown: {
+          conviction,
+          evidenceQuality: Number(evidenceQuality.toFixed(2)),
+          confidenceMultiplier: Number(confidenceMultiplier.toFixed(2))
+        }
+      }
+    }
+  } catch (error) {
+    return {
+      analysis: {
+        pick: 'N/A',
+        conviction: 5,
+        confidence: 'low',
+        topReasons: ['Parse error'],
+        newsFindings: [],
+        riskFactors: [],
+        rawAnalysis: content.substring(0, 500)
+      },
+      interpreterScore: {
+        direction: 'home',
+        points: 0,
+        teamName: 'N/A',
+        breakdown: {
+          conviction: 5,
+          evidenceQuality: 0,
+          confidenceMultiplier: 0.7
+        }
+      }
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// THE DEVIL'S ADVOCATE - Contrarian Check / Find Holes in Picks
+// ═══════════════════════════════════════════════════════════════════════════
+
+export interface DevilsAdvocateRequest {
+  awayTeam: string
+  homeTeam: string
+  spread?: { away: number; home: number }
+  total?: number
+  gameDate: string
+  betType: 'SPREAD' | 'TOTAL'
+  ourPick: string                   // Our model's pick (e.g., "Lakers" or "OVER")
+  ourConfidence: number             // Our model's confidence (0-100)
+}
+
+export interface DevilsAdvocateResponse {
+  success: boolean
+  analysis?: {
+    riskScore: number               // 1-10: How much evidence found against our pick
+    contraEvidence: string[]        // Evidence against our pick
+    blindSpots: string[]            // Things our model might be missing
+    breakingNews: string[]          // Recent news that could affect the pick
+    recommendation: 'PROCEED' | 'CAUTION' | 'ABORT'
+    rawAnalysis: string
+  }
+  devilsScore?: {
+    direction: 'away' | 'home'      // Direction OPPOSITE to our pick (warns us)
+    points: number                  // 0-5: Warning points against our pick
+    teamName: string
+    breakdown: {
+      riskScore: number             // 1-10 from Grok
+      evidenceCount: number         // How many contra points found
+      severityMultiplier: number    // Based on breaking news
+    }
+  }
+  error?: string
+  usage?: { promptTokens: number; completionTokens: number; totalTokens: number }
+}
+
+export async function getDevilsAdvocate(request: DevilsAdvocateRequest): Promise<DevilsAdvocateResponse> {
+  const apiKey = process.env.GROK_API_KEY
+
+  if (!apiKey) {
+    return { success: false, error: 'GROK_API_KEY not configured' }
+  }
+
+  const prompt = request.betType === 'SPREAD'
+    ? buildDevilsAdvocateSpreadPrompt(request)
+    : buildDevilsAdvocateTotalPrompt(request)
+
+  try {
+    const response = await fetch(GROK_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'grok-3-mini',
+        messages: [
+          {
+            role: 'system',
+            content: `You are THE DEVIL'S ADVOCATE - your job is to find HOLES in betting picks.
+You are given a pick and you must research AGAINST it. Find every reason it could fail.
+Search X/Twitter and news for breaking info, narratives, and concerns.
+Be aggressive in finding counter-evidence. Always respond in valid JSON format.`
+          },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.5,  // Higher for more creative devil's advocacy
+        max_tokens: 2000
+      })
+    })
+
+    if (!response.ok) {
+      return { success: false, error: `Grok API error: ${response.status}` }
+    }
+
+    const data = await response.json()
+    const content = data.choices?.[0]?.message?.content
+
+    if (!content) {
+      return { success: false, error: 'No response from Grok' }
+    }
+
+    const parsed = parseDevilsAdvocateResponse(content, request.betType, request)
+
+    return {
+      success: true,
+      analysis: parsed.analysis,
+      devilsScore: parsed.devilsScore,
+      usage: {
+        promptTokens: data.usage?.prompt_tokens || 0,
+        completionTokens: data.usage?.completion_tokens || 0,
+        totalTokens: data.usage?.total_tokens || 0
+      }
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }
+  }
+}
+
+function buildDevilsAdvocateSpreadPrompt(req: DevilsAdvocateRequest): string {
+  return `You are THE DEVIL'S ADVOCATE. Your job is to DESTROY this pick if possible.
+
+**OUR MODEL'S PICK:**
+- Game: ${req.awayTeam} @ ${req.homeTeam}
+- Spread: ${req.awayTeam} ${(req.spread?.away ?? 0) > 0 ? '+' : ''}${req.spread?.away ?? 0} / ${req.homeTeam} ${(req.spread?.home ?? 0) > 0 ? '+' : ''}${req.spread?.home ?? 0}
+- Our Pick: **${req.ourPick}** to cover
+- Our Confidence: ${req.ourConfidence}%
+- Date: ${req.gameDate}
+
+YOUR MISSION: Find every reason this pick could FAIL.
+
+Search X/Twitter and news for:
+1. **Breaking News** - Injuries, lineup changes announced in last 6 hours
+2. **Contra Narratives** - What are people saying AGAINST ${req.ourPick}?
+3. **Blind Spots** - What might our model be missing? Historical trends, ref assignments, rest situations
+4. **Red Flags** - Any concerning patterns or warnings
+
+Rate the RISK to our pick (1-10):
+- 1-3: Low risk, pick looks solid
+- 4-6: Moderate risk, some concerns
+- 7-10: High risk, significant evidence against pick
+
+Respond in JSON:
+{
+  "riskScore": <1-10>,
+  "contraEvidence": ["evidence point 1", "evidence point 2", ...],
+  "blindSpots": ["thing we might be missing 1", ...],
+  "breakingNews": ["any breaking news found"],
+  "recommendation": "PROCEED" | "CAUTION" | "ABORT"
+}`
+}
+
+function buildDevilsAdvocateTotalPrompt(req: DevilsAdvocateRequest): string {
+  return `You are THE DEVIL'S ADVOCATE. Your job is to DESTROY this pick if possible.
+
+**OUR MODEL'S PICK:**
+- Game: ${req.awayTeam} @ ${req.homeTeam}
+- Total: ${req.total}
+- Our Pick: **${req.ourPick}** (${req.ourPick === 'OVER' ? 'expecting high scoring' : 'expecting low scoring'})
+- Our Confidence: ${req.ourConfidence}%
+- Date: ${req.gameDate}
+
+YOUR MISSION: Find every reason this pick could FAIL.
+
+Search X/Twitter and news for:
+1. **Breaking News** - Injuries to key scorers/defenders announced in last 6 hours
+2. **Contra Narratives** - What are people saying against ${req.ourPick}?
+3. **Blind Spots** - Pace changes, defensive schemes, ref tendencies, weather/arena factors
+4. **Red Flags** - Historical O/U trends, back-to-back fatigue, motivation factors
+
+Rate the RISK to our pick (1-10):
+- 1-3: Low risk, pick looks solid
+- 4-6: Moderate risk, some concerns
+- 7-10: High risk, significant evidence against pick
+
+Respond in JSON:
+{
+  "riskScore": <1-10>,
+  "contraEvidence": ["evidence point 1", "evidence point 2", ...],
+  "blindSpots": ["thing we might be missing 1", ...],
+  "breakingNews": ["any breaking news found"],
+  "recommendation": "PROCEED" | "CAUTION" | "ABORT"
+}`
+}
+
+function parseDevilsAdvocateResponse(content: string, betType: string, request: DevilsAdvocateRequest): { analysis: DevilsAdvocateResponse['analysis']; devilsScore: DevilsAdvocateResponse['devilsScore'] } {
+  try {
+    const jsonMatch = content.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) throw new Error('No JSON found')
+
+    const parsed = JSON.parse(jsonMatch[0])
+
+    const riskScore = Math.min(10, Math.max(1, parsed.riskScore || 5))
+    const evidenceCount = (parsed.contraEvidence?.length || 0) + (parsed.blindSpots?.length || 0)
+    const hasBreakingNews = (parsed.breakingNews?.length || 0) > 0
+
+    // Calculate warning points: higher risk = more warning points against our pick
+    // Risk 1-3 = 0-1.5 pts, Risk 4-6 = 1.5-3 pts, Risk 7-10 = 3-5 pts
+    const basePoints = (riskScore / 10) * 5  // 0-5 range
+    const severityMultiplier = hasBreakingNews ? 1.2 : 1.0  // Boost if breaking news found
+    const points = Math.min(5, basePoints * severityMultiplier)
+
+    // Direction is OPPOSITE to our pick (warning points go to the other side)
+    let direction: 'away' | 'home'
+    if (betType === 'SPREAD') {
+      const ourPickIsAway = request.ourPick.toLowerCase().includes(request.awayTeam.toLowerCase())
+      direction = ourPickIsAway ? 'home' : 'away'  // Opposite
+    } else {
+      // For TOTALS, if we picked OVER, warnings point to UNDER (home)
+      direction = request.ourPick.toUpperCase() === 'OVER' ? 'home' : 'away'
+    }
+
+    const teamName = points >= 3 ? 'WARNING' : points >= 1.5 ? 'CAUTION' : 'CLEAR'
+
+    return {
+      analysis: {
+        riskScore,
+        contraEvidence: parsed.contraEvidence || [],
+        blindSpots: parsed.blindSpots || [],
+        breakingNews: parsed.breakingNews || [],
+        recommendation: parsed.recommendation || 'PROCEED',
+        rawAnalysis: content
+      },
+      devilsScore: {
+        direction,
+        points: Number(points.toFixed(2)),
+        teamName,
+        breakdown: {
+          riskScore,
+          evidenceCount,
+          severityMultiplier: Number(severityMultiplier.toFixed(2))
+        }
+      }
+    }
+  } catch (error) {
+    return {
+      analysis: {
+        riskScore: 5,
+        contraEvidence: ['Parse error'],
+        blindSpots: [],
+        breakingNews: [],
+        recommendation: 'CAUTION',
+        rawAnalysis: content.substring(0, 500)
+      },
+      devilsScore: {
+        direction: 'home',
+        points: 2.5,
+        teamName: 'CAUTION',
+        breakdown: {
+          riskScore: 5,
+          evidenceCount: 0,
+          severityMultiplier: 1.0
         }
       }
     }

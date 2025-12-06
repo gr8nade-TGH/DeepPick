@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { getGrokSentiment } from '@/lib/ai-insights/grok-client'
+import { getGrokSentiment, getInfluencerSentiment, getInterpreterAnalysis, getDevilsAdvocate } from '@/lib/ai-insights/grok-client'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -60,16 +60,18 @@ export async function POST(request: NextRequest) {
   let provider = 'UNKNOWN'
 
   try {
+    const baseRequest = {
+      awayTeam,
+      homeTeam,
+      spread: spread || { away: 0, home: 0 },
+      total,
+      gameDate: new Date().toISOString().split('T')[0],
+      betType: betType || 'SPREAD'
+    }
+
     if (insightType === 'PULSE_SENTIMENT') {
       provider = 'GROK'
-      const grokResult = await getGrokSentiment({
-        awayTeam,
-        homeTeam,
-        spread: spread || { away: 0, home: 0 },
-        total,
-        gameDate: new Date().toISOString().split('T')[0],
-        betType: betType || 'SPREAD'
-      })
+      const grokResult = await getGrokSentiment(baseRequest)
 
       if (!grokResult.success) {
         return NextResponse.json({ success: false, error: grokResult.error }, { status: 500 })
@@ -80,6 +82,55 @@ export async function POST(request: NextRequest) {
         usage: grokResult.usage
       }
       quantifiedValue = grokResult.pulseScore
+    } else if (insightType === 'INFLUENCER_SENTIMENT') {
+      provider = 'GROK'
+      const influencerResult = await getInfluencerSentiment(baseRequest)
+
+      if (!influencerResult.success) {
+        return NextResponse.json({ success: false, error: influencerResult.error }, { status: 500 })
+      }
+
+      rawData = {
+        sentiment: influencerResult.sentiment,
+        usage: influencerResult.usage
+      }
+      quantifiedValue = influencerResult.influencerScore
+    } else if (insightType === 'INTERPRETER_ANALYSIS') {
+      provider = 'GROK'
+      const interpreterResult = await getInterpreterAnalysis(baseRequest)
+
+      if (!interpreterResult.success) {
+        return NextResponse.json({ success: false, error: interpreterResult.error }, { status: 500 })
+      }
+
+      rawData = {
+        analysis: interpreterResult.analysis,
+        usage: interpreterResult.usage
+      }
+      quantifiedValue = interpreterResult.interpreterScore
+    } else if (insightType === 'DEVILS_ADVOCATE') {
+      // Devils Advocate requires ourPick and ourConfidence
+      const { ourPick, ourConfidence } = body
+      if (!ourPick) {
+        return NextResponse.json({ success: false, error: 'Devils Advocate requires ourPick parameter' }, { status: 400 })
+      }
+
+      provider = 'GROK'
+      const devilsResult = await getDevilsAdvocate({
+        ...baseRequest,
+        ourPick,
+        ourConfidence: ourConfidence || 65
+      })
+
+      if (!devilsResult.success) {
+        return NextResponse.json({ success: false, error: devilsResult.error }, { status: 500 })
+      }
+
+      rawData = {
+        analysis: devilsResult.analysis,
+        usage: devilsResult.usage
+      }
+      quantifiedValue = devilsResult.devilsScore
     } else {
       return NextResponse.json({ success: false, error: `Unknown insight type: ${insightType}` }, { status: 400 })
     }

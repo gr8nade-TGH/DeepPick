@@ -316,6 +316,16 @@ export default function AIManagerPage() {
   const [influencerLoading, setInfluencerLoading] = useState(false)
   const [minFollowers, setMinFollowers] = useState(10000)
 
+  // The Interpreter state
+  const [interpreterResult, setInterpreterResult] = useState<any>(null)
+  const [interpreterLoading, setInterpreterLoading] = useState(false)
+
+  // The Devil's Advocate state
+  const [devilsResult, setDevilsResult] = useState<any>(null)
+  const [devilsLoading, setDevilsLoading] = useState(false)
+  const [ourPick, setOurPick] = useState('')
+  const [ourConfidence, setOurConfidence] = useState(65)
+
   useEffect(() => {
     fetchTodaysGames()
     fetchStoredInsights()
@@ -474,6 +484,68 @@ export default function AIManagerPage() {
     setGrokLoading(false)
   }
 
+  const runInterpreterTest = async () => {
+    if (!selectedGameData) return
+    setInterpreterLoading(true)
+    setInterpreterResult(null)
+
+    try {
+      const spreadLine = selectedGameData.odds?.spread?.line || 0
+      const body = {
+        awayTeam: selectedGameData.away_team.name,
+        homeTeam: selectedGameData.home_team.name,
+        spread: { away: spreadLine, home: -spreadLine },
+        total: selectedGameData.odds?.total?.line,
+        gameDate: new Date().toISOString().split('T')[0],
+        betType
+      }
+
+      const res = await fetch('/api/admin/test-interpreter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      })
+      const data = await res.json()
+      setInterpreterResult(data)
+    } catch (err) {
+      setInterpreterResult({ error: 'Failed to call API' })
+    } finally {
+      setInterpreterLoading(false)
+    }
+  }
+
+  const runDevilsAdvocateTest = async () => {
+    if (!selectedGameData || !ourPick) return
+    setDevilsLoading(true)
+    setDevilsResult(null)
+
+    try {
+      const spreadLine = selectedGameData.odds?.spread?.line || 0
+      const body = {
+        awayTeam: selectedGameData.away_team.name,
+        homeTeam: selectedGameData.home_team.name,
+        spread: { away: spreadLine, home: -spreadLine },
+        total: selectedGameData.odds?.total?.line,
+        gameDate: new Date().toISOString().split('T')[0],
+        betType,
+        ourPick,
+        ourConfidence
+      }
+
+      const res = await fetch('/api/admin/test-devils-advocate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      })
+      const data = await res.json()
+      setDevilsResult(data)
+    } catch (err) {
+      setDevilsResult({ error: 'Failed to call API' })
+    } finally {
+      setDevilsLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <div className="max-w-[1600px] mx-auto px-4 py-4">
@@ -553,22 +625,27 @@ export default function AIManagerPage() {
                 <thead className="bg-slate-800/50">
                   <tr className="text-left text-xs text-slate-500">
                     <th className="p-2">Game</th>
-                    <th className="p-2 w-24">Spread</th>
-                    <th className="p-2 w-24">Total</th>
-                    <th className="p-2">PULSE_SENTIMENT</th>
-                    <th className="p-2">Details</th>
-                    <th className="p-2 w-32">Actions</th>
+                    <th className="p-2 w-20">Spread</th>
+                    <th className="p-2 w-20">Total</th>
+                    <th className="p-2 text-purple-400">🌊 Pulse</th>
+                    <th className="p-2 text-amber-400">👑 Influencer</th>
+                    <th className="p-2 text-emerald-400">🔮 Interpreter</th>
+                    <th className="p-2 text-red-400">😈 Devils Adv.</th>
+                    <th className="p-2 w-24">Details</th>
                   </tr>
                 </thead>
                 <tbody>
                   {todaysGames.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="p-8 text-center text-slate-500">No games found</td>
+                      <td colSpan={8} className="p-8 text-center text-slate-500">No games found</td>
                     </tr>
                   ) : (
                     todaysGames.map(game => {
                       const gameInsights = getInsightsForGame(game.id)
                       const pulseInsight = gameInsights.find(i => i.insight_type === 'PULSE_SENTIMENT')
+                      const influencerInsight = gameInsights.find(i => i.insight_type === 'INFLUENCER_SENTIMENT')
+                      const interpreterInsight = gameInsights.find(i => i.insight_type === 'INTERPRETER_ANALYSIS')
+                      const devilsInsight = gameInsights.find(i => i.insight_type === 'DEVILS_ADVOCATE')
                       const isExpanded = expandedInsight === game.id
                       const sentiment = pulseInsight?.raw_data?.sentiment
 
@@ -581,22 +658,71 @@ export default function AIManagerPage() {
                               </div>
                               <div className="text-[10px] text-slate-600 font-mono">{game.id.slice(0, 12)}...</div>
                             </td>
-                            <td className="p-2 text-slate-400">
+                            <td className="p-2 text-slate-400 text-xs">
                               {game.odds?.spread?.line ? `${game.odds.spread.line > 0 ? '+' : ''}${game.odds.spread.line}` : '-'}
                             </td>
-                            <td className="p-2 text-slate-400">
+                            <td className="p-2 text-slate-400 text-xs">
                               {game.odds?.total?.line || '-'}
                             </td>
+                            {/* Pulse */}
                             <td className="p-2">
                               {pulseInsight ? (
-                                <div className="flex items-center gap-2">
-                                  <Badge className="bg-green-500/20 text-green-400 text-[10px]">✓ Generated</Badge>
-                                  <span className="text-xs font-mono text-purple-400">
-                                    {pulseInsight.quantified_value?.points?.toFixed(2)} pts → {pulseInsight.quantified_value?.direction}
-                                  </span>
+                                <div className="text-xs font-mono text-purple-400">
+                                  {pulseInsight.quantified_value?.points?.toFixed(1)}pts
                                 </div>
                               ) : (
-                                <Badge className="bg-slate-700 text-slate-400 text-[10px]">Not Generated</Badge>
+                                <Button
+                                  onClick={() => generateInsight(game, 'PULSE_SENTIMENT')}
+                                  disabled={generatingGame === game.id}
+                                  size="sm"
+                                  className="h-5 text-[9px] px-2 bg-purple-600/50 hover:bg-purple-500"
+                                >
+                                  {generatingGame === game.id ? <Loader2 className="w-2 h-2 animate-spin" /> : 'Gen'}
+                                </Button>
+                              )}
+                            </td>
+                            {/* Influencer */}
+                            <td className="p-2">
+                              {influencerInsight ? (
+                                <div className="text-xs font-mono text-amber-400">
+                                  {influencerInsight.quantified_value?.points?.toFixed(1)}pts
+                                </div>
+                              ) : (
+                                <Button
+                                  onClick={() => generateInsight(game, 'INFLUENCER_SENTIMENT')}
+                                  disabled={generatingGame === game.id}
+                                  size="sm"
+                                  className="h-5 text-[9px] px-2 bg-amber-600/50 hover:bg-amber-500"
+                                >
+                                  {generatingGame === game.id ? <Loader2 className="w-2 h-2 animate-spin" /> : 'Gen'}
+                                </Button>
+                              )}
+                            </td>
+                            {/* Interpreter */}
+                            <td className="p-2">
+                              {interpreterInsight ? (
+                                <div className="text-xs font-mono text-emerald-400">
+                                  {interpreterInsight.quantified_value?.points?.toFixed(1)}pts
+                                </div>
+                              ) : (
+                                <Button
+                                  onClick={() => generateInsight(game, 'INTERPRETER_ANALYSIS')}
+                                  disabled={generatingGame === game.id}
+                                  size="sm"
+                                  className="h-5 text-[9px] px-2 bg-emerald-600/50 hover:bg-emerald-500"
+                                >
+                                  {generatingGame === game.id ? <Loader2 className="w-2 h-2 animate-spin" /> : 'Gen'}
+                                </Button>
+                              )}
+                            </td>
+                            {/* Devils Advocate */}
+                            <td className="p-2">
+                              {devilsInsight ? (
+                                <div className="text-xs font-mono text-red-400">
+                                  {devilsInsight.quantified_value?.points?.toFixed(1)}pts
+                                </div>
+                              ) : (
+                                <Badge className="bg-slate-700/50 text-slate-500 text-[9px]">Needs Pick</Badge>
                               )}
                             </td>
                             <td className="p-2">
@@ -605,35 +731,19 @@ export default function AIManagerPage() {
                                   onClick={() => setExpandedInsight(isExpanded ? null : game.id)}
                                   variant="ghost"
                                   size="sm"
-                                  className="h-6 text-[10px] gap-1 text-purple-400 hover:text-purple-300"
+                                  className="h-5 text-[9px] gap-1 text-slate-400 hover:text-white"
                                 >
                                   {isExpanded ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                                  {isExpanded ? 'Hide' : 'View Data'}
                                 </Button>
                               ) : (
                                 <span className="text-[10px] text-slate-600">-</span>
                               )}
                             </td>
-                            <td className="p-2">
-                              <Button
-                                onClick={() => generateInsight(game, 'PULSE_SENTIMENT')}
-                                disabled={generatingGame === game.id}
-                                size="sm"
-                                className={`h-6 text-[10px] gap-1 ${pulseInsight ? 'bg-slate-700 hover:bg-slate-600' : 'bg-purple-600 hover:bg-purple-500'}`}
-                              >
-                                {generatingGame === game.id ? (
-                                  <Loader2 className="w-3 h-3 animate-spin" />
-                                ) : (
-                                  <Play className="w-3 h-3" />
-                                )}
-                                {pulseInsight ? 'Regenerate' : 'Generate'}
-                              </Button>
-                            </td>
                           </tr>
                           {/* Expanded Detail Row */}
                           {isExpanded && pulseInsight && sentiment && (
                             <tr className="bg-slate-900/80">
-                              <td colSpan={6} className="p-4">
+                              <td colSpan={8} className="p-4">
                                 <div className="grid grid-cols-3 gap-4">
                                   {/* Column 1: Pulse Score Breakdown */}
                                   <div className="bg-slate-800/50 rounded p-3">
@@ -1297,6 +1407,194 @@ export default function AIManagerPage() {
                   <div className="p-2 border-t border-slate-800 bg-slate-800/30">
                     <div className="text-[9px] text-slate-600 font-mono">
                       {"rawLean = (sent*0.7) + (eng*0.3) -> weighted by follower count"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Row 2: The Interpreter & The Devil's Advocate */}
+            <div className="grid grid-cols-2 gap-4 mt-4">
+              {/* THE INTERPRETER */}
+              <div className="space-y-3">
+                <div className="bg-slate-900 border border-emerald-500/30 rounded overflow-hidden">
+                  <div className="p-3 border-b border-slate-800 bg-emerald-500/10 flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-bold text-emerald-400">🔮 THE INTERPRETER</h3>
+                      <p className="text-[10px] text-slate-500">Independent research-based analysis</p>
+                    </div>
+                    <Button
+                      onClick={runInterpreterTest}
+                      disabled={interpreterLoading || !selectedGame}
+                      size="sm"
+                      className="bg-emerald-600 hover:bg-emerald-500 h-7 text-xs"
+                    >
+                      {interpreterLoading ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Play className="w-3 h-3 mr-1" />}
+                      Run Test
+                    </Button>
+                  </div>
+
+                  <div className="p-3">
+                    {interpreterResult?.interpreterScore ? (
+                      <div className="space-y-3">
+                        {/* Score Card */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="bg-slate-800 rounded p-2 text-center">
+                            <div className="text-2xl font-bold text-emerald-400">{interpreterResult.interpreterScore.points.toFixed(2)}</div>
+                            <div className="text-[10px] text-slate-500">Points (0-5)</div>
+                          </div>
+                          <div className="bg-slate-800 rounded p-2 text-center">
+                            <div className="text-lg font-bold text-white">{interpreterResult.interpreterScore.teamName}</div>
+                            <div className="text-[10px] text-slate-500">Pick</div>
+                          </div>
+                        </div>
+
+                        {/* Conviction & Evidence */}
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="bg-slate-800/50 rounded p-2">
+                            <span className="text-slate-500">Conviction:</span>
+                            <span className="float-right font-mono text-emerald-300">{interpreterResult.interpreterScore.breakdown.conviction}/10</span>
+                          </div>
+                          <div className="bg-slate-800/50 rounded p-2">
+                            <span className="text-slate-500">Evidence Quality:</span>
+                            <span className="float-right font-mono text-emerald-300">{(interpreterResult.interpreterScore.breakdown.evidenceQuality * 100).toFixed(0)}%</span>
+                          </div>
+                        </div>
+
+                        {/* Top Reasons */}
+                        {interpreterResult.analysis?.topReasons && (
+                          <div className="text-xs">
+                            <div className="text-slate-500 mb-1">Research Findings:</div>
+                            <div className="space-y-1 max-h-32 overflow-y-auto">
+                              {interpreterResult.analysis.topReasons.slice(0, 3).map((reason: string, i: number) => (
+                                <div key={i} className="bg-slate-800/30 rounded p-1.5 text-[10px] text-slate-400">
+                                  • {reason}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : interpreterResult?.error ? (
+                      <div className="text-center py-6 text-red-400">
+                        <p className="text-xs">{interpreterResult.error}</p>
+                      </div>
+                    ) : (
+                      <div className="text-center py-6 text-slate-500">
+                        <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                        <p className="text-xs">Click "Run Test" for independent analysis</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Formula */}
+                  <div className="p-2 border-t border-slate-800 bg-slate-800/30">
+                    <div className="text-[9px] text-slate-600 font-mono">
+                      {"points = (conviction/10) * 5 * evidenceMultiplier"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* THE DEVIL'S ADVOCATE */}
+              <div className="space-y-3">
+                <div className="bg-slate-900 border border-red-500/30 rounded overflow-hidden">
+                  <div className="p-3 border-b border-slate-800 bg-red-500/10">
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <h3 className="text-sm font-bold text-red-400">😈 THE DEVIL&apos;S ADVOCATE</h3>
+                        <p className="text-[10px] text-slate-500">Find holes in your pick</p>
+                      </div>
+                      <Button
+                        onClick={runDevilsAdvocateTest}
+                        disabled={devilsLoading || !selectedGame || !ourPick}
+                        size="sm"
+                        className="bg-red-600 hover:bg-red-500 h-7 text-xs"
+                      >
+                        {devilsLoading ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Play className="w-3 h-3 mr-1" />}
+                        Run Test
+                      </Button>
+                    </div>
+                    {/* Pick Input */}
+                    <div className="flex gap-2 mt-2">
+                      <input
+                        type="text"
+                        placeholder="Our Pick (e.g., Lakers or OVER)"
+                        value={ourPick}
+                        onChange={(e) => setOurPick(e.target.value)}
+                        className="flex-1 bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Conf %"
+                        value={ourConfidence}
+                        onChange={(e) => setOurConfidence(Number(e.target.value))}
+                        className="w-16 bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="p-3">
+                    {devilsResult?.devilsScore ? (
+                      <div className="space-y-3">
+                        {/* Risk Card */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="bg-slate-800 rounded p-2 text-center">
+                            <div className={`text-2xl font-bold ${devilsResult.devilsScore.points >= 3 ? 'text-red-400' : devilsResult.devilsScore.points >= 1.5 ? 'text-yellow-400' : 'text-green-400'}`}>
+                              {devilsResult.devilsScore.points.toFixed(2)}
+                            </div>
+                            <div className="text-[10px] text-slate-500">Warning Points</div>
+                          </div>
+                          <div className="bg-slate-800 rounded p-2 text-center">
+                            <div className={`text-lg font-bold ${devilsResult.analysis?.recommendation === 'ABORT' ? 'text-red-400' : devilsResult.analysis?.recommendation === 'CAUTION' ? 'text-yellow-400' : 'text-green-400'}`}>
+                              {devilsResult.analysis?.recommendation}
+                            </div>
+                            <div className="text-[10px] text-slate-500">Recommendation</div>
+                          </div>
+                        </div>
+
+                        {/* Risk Score */}
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="bg-slate-800/50 rounded p-2">
+                            <span className="text-slate-500">Risk Score:</span>
+                            <span className="float-right font-mono text-red-300">{devilsResult.devilsScore.breakdown.riskScore}/10</span>
+                          </div>
+                          <div className="bg-slate-800/50 rounded p-2">
+                            <span className="text-slate-500">Evidence Found:</span>
+                            <span className="float-right font-mono text-red-300">{devilsResult.devilsScore.breakdown.evidenceCount} items</span>
+                          </div>
+                        </div>
+
+                        {/* Contra Evidence */}
+                        {devilsResult.analysis?.contraEvidence && (
+                          <div className="text-xs">
+                            <div className="text-slate-500 mb-1">Contra Evidence:</div>
+                            <div className="space-y-1 max-h-32 overflow-y-auto">
+                              {devilsResult.analysis.contraEvidence.slice(0, 3).map((ev: string, i: number) => (
+                                <div key={i} className="bg-red-900/20 rounded p-1.5 text-[10px] text-red-300">
+                                  ⚠️ {ev}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : devilsResult?.error ? (
+                      <div className="text-center py-6 text-red-400">
+                        <p className="text-xs">{devilsResult.error}</p>
+                      </div>
+                    ) : (
+                      <div className="text-center py-6 text-slate-500">
+                        <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                        <p className="text-xs">Enter your pick and click "Run Test"</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Formula */}
+                  <div className="p-2 border-t border-slate-800 bg-slate-800/30">
+                    <div className="text-[9px] text-slate-600 font-mono">
+                      {"warningPoints = (riskScore/10) * 5 * severityMultiplier"}
                     </div>
                   </div>
                 </div>
