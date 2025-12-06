@@ -892,7 +892,7 @@ export default function AIManagerPage() {
                         ))}
                       </select>
                       <p className="text-[10px] text-slate-600 mt-1">
-                        {TEST_INSIGHT_TYPES.find(t => t.id === testInsightType)?.description}
+                        {TEST_INSIGHT_TYPES.find(t => t.id === testInsightType)?.shortDesc}
                       </p>
                     </div>
 
@@ -1199,107 +1199,109 @@ export default function AIManagerPage() {
                   {/* Formula */}
                   <div className="p-2 border-t border-slate-800 bg-slate-800/30">
                     <div className="text-[9px] text-slate-600 font-mono">
-                      rawLean = (sent×0.6) + (eng×0.4) → points = √|lean| × 5
-                    </div>
-                  </div>
-                </div>
-                {/* THE INFLUENCER */}
-                <div className="space-y-3">
-                  <div className="bg-slate-900 border border-amber-500/30 rounded overflow-hidden">
-                    <div className="p-3 border-b border-slate-800 bg-amber-500/10 flex items-center justify-between">
-                      <div>
-                        <h3 className="text-sm font-bold text-amber-400">👑 THE INFLUENCER</h3>
-                        <p className="text-[10px] text-slate-500">Betting influencer sentiment ({minFollowers.toLocaleString()}+ followers)</p>
-                      </div>
-                      <Button
-                        onClick={runInfluencerTest}
-                        disabled={influencerLoading || !selectedGame}
-                        size="sm"
-                        className="bg-amber-600 hover:bg-amber-500 h-7 text-xs"
-                      >
-                        {influencerLoading ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Play className="w-3 h-3 mr-1" />}
-                        Run Test
-                      </Button>
-                    </div>
-
-                    <div className="p-3">
-                      {influencerResult?.influencerScore ? (
-                        <div className="space-y-3">
-                          {/* Score Card */}
-                          <div className="grid grid-cols-2 gap-2">
-                            <div className="bg-slate-800 rounded p-2 text-center">
-                              <div className="text-2xl font-bold text-amber-400">{influencerResult.influencerScore.points.toFixed(2)}</div>
-                              <div className="text-[10px] text-slate-500">Points</div>
-                            </div>
-                            <div className="bg-slate-800 rounded p-2 text-center">
-                              <div className="text-lg font-bold text-white">{influencerResult.influencerScore.teamName}</div>
-                              <div className="text-[10px] text-slate-500">Direction</div>
-                            </div>
-                          </div>
-
-                          {/* Influencer Stats */}
-                          <div className="grid grid-cols-2 gap-2 text-xs">
-                            <div className="bg-slate-800/50 rounded p-2">
-                              <span className="text-slate-500">Accounts Analyzed:</span>
-                              <span className="float-right font-mono text-amber-300">{influencerResult.influencerScore.breakdown.accountsAnalyzed}</span>
-                            </div>
-                            <div className="bg-slate-800/50 rounded p-2">
-                              <span className="text-slate-500">Avg Followers:</span>
-                              <span className="float-right font-mono text-amber-300">{(influencerResult.influencerScore.breakdown.avgFollowerCount / 1000).toFixed(0)}K</span>
-                            </div>
-                          </div>
-
-                          {/* Lean Breakdown */}
-                          <div className="grid grid-cols-2 gap-2 text-xs">
-                            <div className="bg-slate-800/50 rounded p-2">
-                              <span className="text-slate-500">Influencer Sent. Lean:</span>
-                              <span className="float-right font-mono text-amber-300">{(influencerResult.influencerScore.breakdown.influencerSentimentLean * 100).toFixed(1)}%</span>
-                            </div>
-                            <div className="bg-slate-800/50 rounded p-2">
-                              <span className="text-slate-500">Influencer Eng. Lean:</span>
-                              <span className="float-right font-mono text-amber-300">{(influencerResult.influencerScore.breakdown.influencerEngagementLean * 100).toFixed(1)}%</span>
-                            </div>
-                          </div>
-
-                          {/* Sample Posts with Followers */}
-                          {influencerResult.sentiment?.samplePosts && (
-                            <div className="text-xs">
-                              <div className="text-slate-500 mb-1">Influencer Posts:</div>
-                              <div className="space-y-1 max-h-32 overflow-y-auto">
-                                {influencerResult.sentiment.samplePosts.slice(0, 3).map((post: any, i: number) => (
-                                  <div key={i} className="bg-slate-800/30 rounded p-1.5 text-[10px]">
-                                    <span className="text-slate-400">{post.text?.substring(0, 80)}...</span>
-                                    <div className="flex gap-2 mt-0.5">
-                                      <span className="text-amber-400">👤 {((post.followers || 0) / 1000).toFixed(0)}K</span>
-                                      <span className="text-purple-400">❤️ {post.likes}</span>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ) : influencerResult?.error ? (
-                        <div className="text-center py-6 text-red-400">
-                          <p className="text-xs">{influencerResult.error}</p>
-                        </div>
-                      ) : (
-                        <div className="text-center py-6 text-slate-500">
-                          <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                          <p className="text-xs">Click "Run Test" to analyze influencer sentiment</p>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Formula */}
-                    <div className="p-2 border-t border-slate-800 bg-slate-800/30">
-                      <div className="text-[9px] text-slate-600 font-mono">
-                        rawLean = (sent×0.7) + (eng×0.3) → weighted by follower count
-                      </div>
+                      {"rawLean = (sent*0.6) + (eng*0.4) -> points = sqrt|lean| * 5"}
                     </div>
                   </div>
                 </div>
               </div>
+
+              {/* THE INFLUENCER */}
+              <div className="space-y-3">
+                <div className="bg-slate-900 border border-amber-500/30 rounded overflow-hidden">
+                  <div className="p-3 border-b border-slate-800 bg-amber-500/10 flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-bold text-amber-400">👑 THE INFLUENCER</h3>
+                      <p className="text-[10px] text-slate-500">Betting influencer sentiment ({minFollowers.toLocaleString()}+ followers)</p>
+                    </div>
+                    <Button
+                      onClick={runInfluencerTest}
+                      disabled={influencerLoading || !selectedGame}
+                      size="sm"
+                      className="bg-amber-600 hover:bg-amber-500 h-7 text-xs"
+                    >
+                      {influencerLoading ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Play className="w-3 h-3 mr-1" />}
+                      Run Test
+                    </Button>
+                  </div>
+
+                  <div className="p-3">
+                    {influencerResult?.influencerScore ? (
+                      <div className="space-y-3">
+                        {/* Score Card */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="bg-slate-800 rounded p-2 text-center">
+                            <div className="text-2xl font-bold text-amber-400">{influencerResult.influencerScore.points.toFixed(2)}</div>
+                            <div className="text-[10px] text-slate-500">Points</div>
+                          </div>
+                          <div className="bg-slate-800 rounded p-2 text-center">
+                            <div className="text-lg font-bold text-white">{influencerResult.influencerScore.teamName}</div>
+                            <div className="text-[10px] text-slate-500">Direction</div>
+                          </div>
+                        </div>
+
+                        {/* Influencer Stats */}
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="bg-slate-800/50 rounded p-2">
+                            <span className="text-slate-500">Accounts Analyzed:</span>
+                            <span className="float-right font-mono text-amber-300">{influencerResult.influencerScore.breakdown.accountsAnalyzed}</span>
+                          </div>
+                          <div className="bg-slate-800/50 rounded p-2">
+                            <span className="text-slate-500">Avg Followers:</span>
+                            <span className="float-right font-mono text-amber-300">{(influencerResult.influencerScore.breakdown.avgFollowerCount / 1000).toFixed(0)}K</span>
+                          </div>
+                        </div>
+
+                        {/* Lean Breakdown */}
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="bg-slate-800/50 rounded p-2">
+                            <span className="text-slate-500">Influencer Sent. Lean:</span>
+                            <span className="float-right font-mono text-amber-300">{(influencerResult.influencerScore.breakdown.influencerSentimentLean * 100).toFixed(1)}%</span>
+                          </div>
+                          <div className="bg-slate-800/50 rounded p-2">
+                            <span className="text-slate-500">Influencer Eng. Lean:</span>
+                            <span className="float-right font-mono text-amber-300">{(influencerResult.influencerScore.breakdown.influencerEngagementLean * 100).toFixed(1)}%</span>
+                          </div>
+                        </div>
+
+                        {/* Sample Posts with Followers */}
+                        {influencerResult.sentiment?.samplePosts && (
+                          <div className="text-xs">
+                            <div className="text-slate-500 mb-1">Influencer Posts:</div>
+                            <div className="space-y-1 max-h-32 overflow-y-auto">
+                              {influencerResult.sentiment.samplePosts.slice(0, 3).map((post: any, i: number) => (
+                                <div key={i} className="bg-slate-800/30 rounded p-1.5 text-[10px]">
+                                  <span className="text-slate-400">{post.text?.substring(0, 80)}...</span>
+                                  <div className="flex gap-2 mt-0.5">
+                                    <span className="text-amber-400">👤 {((post.followers || 0) / 1000).toFixed(0)}K</span>
+                                    <span className="text-purple-400">❤️ {post.likes}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : influencerResult?.error ? (
+                      <div className="text-center py-6 text-red-400">
+                        <p className="text-xs">{influencerResult.error}</p>
+                      </div>
+                    ) : (
+                      <div className="text-center py-6 text-slate-500">
+                        <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                        <p className="text-xs">Click "Run Test" to analyze influencer sentiment</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Formula */}
+                  <div className="p-2 border-t border-slate-800 bg-slate-800/30">
+                    <div className="text-[9px] text-slate-600 font-mono">
+                      {"rawLean = (sent*0.7) + (eng*0.3) -> weighted by follower count"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </TabsContent>
 
           {/* All Archetypes Table */}
