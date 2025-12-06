@@ -193,7 +193,7 @@ const AI_INSIGHTS_REGISTRY = [
 
 export default function AIManagerPage() {
   const [activeTab, setActiveTab] = useState('insights')
-  const [expandedInsight, setExpandedInsight] = useState<string | null>(null)
+  const [expandedInsight, setExpandedInsight] = useState<{ gameId: string; type: string } | null>(null)
   const [todaysGames, setTodaysGames] = useState<GameInfo[]>([])
   const [selectedGame, setSelectedGame] = useState<string>('')
   const [grokResult, setGrokResult] = useState<GrokResult | null>(null)
@@ -494,13 +494,12 @@ export default function AIManagerPage() {
                     <th className="p-2 text-amber-400">👑 Influencer</th>
                     <th className="p-2 text-emerald-400">🔮 Interpreter</th>
                     <th className="p-2 text-red-400">😈 Devils Adv.</th>
-                    <th className="p-2 w-24">Details</th>
                   </tr>
                 </thead>
                 <tbody>
                   {todaysGames.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="p-8 text-center text-slate-500">No games found</td>
+                      <td colSpan={7} className="p-8 text-center text-slate-500">No games found</td>
                     </tr>
                   ) : (
                     todaysGames.map(game => {
@@ -509,8 +508,10 @@ export default function AIManagerPage() {
                       const influencerInsight = gameInsights.find(i => i.insight_type === 'INFLUENCER_SENTIMENT')
                       const interpreterInsight = gameInsights.find(i => i.insight_type === 'INTERPRETER_ANALYSIS')
                       const devilsInsight = gameInsights.find(i => i.insight_type === 'DEVILS_ADVOCATE')
-                      const isExpanded = expandedInsight === game.id
+                      const expandedType = expandedInsight?.gameId === game.id ? expandedInsight.type : null
                       const sentiment = pulseInsight?.raw_data?.sentiment
+                      const interpreterData = interpreterInsight?.raw_data?.interpreter
+                      const influencerData = influencerInsight?.raw_data?.sentiment
 
                       return (
                         <React.Fragment key={game.id}>
@@ -530,8 +531,18 @@ export default function AIManagerPage() {
                             {/* Pulse */}
                             <td className="p-2">
                               {pulseInsight ? (
-                                <div className="text-xs font-mono text-purple-400">
-                                  {pulseInsight.quantified_value?.points?.toFixed(1)}pts
+                                <div className="flex items-center gap-1">
+                                  <span className="text-xs font-mono text-purple-400">
+                                    {pulseInsight.quantified_value?.points?.toFixed(1)}pts
+                                  </span>
+                                  <Button
+                                    onClick={() => setExpandedInsight(expandedType === 'PULSE' ? null : { gameId: game.id, type: 'PULSE' })}
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-4 w-4 p-0 text-purple-400 hover:text-purple-300"
+                                  >
+                                    {expandedType === 'PULSE' ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                                  </Button>
                                 </div>
                               ) : (
                                 <Button
@@ -547,8 +558,18 @@ export default function AIManagerPage() {
                             {/* Influencer */}
                             <td className="p-2">
                               {influencerInsight ? (
-                                <div className="text-xs font-mono text-amber-400">
-                                  {influencerInsight.quantified_value?.points?.toFixed(1)}pts
+                                <div className="flex items-center gap-1">
+                                  <span className="text-xs font-mono text-amber-400">
+                                    {influencerInsight.quantified_value?.points?.toFixed(1)}pts
+                                  </span>
+                                  <Button
+                                    onClick={() => setExpandedInsight(expandedType === 'INFLUENCER' ? null : { gameId: game.id, type: 'INFLUENCER' })}
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-4 w-4 p-0 text-amber-400 hover:text-amber-300"
+                                  >
+                                    {expandedType === 'INFLUENCER' ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                                  </Button>
                                 </div>
                               ) : (
                                 <Button
@@ -564,8 +585,18 @@ export default function AIManagerPage() {
                             {/* Interpreter */}
                             <td className="p-2">
                               {interpreterInsight ? (
-                                <div className="text-xs font-mono text-emerald-400">
-                                  {interpreterInsight.quantified_value?.points?.toFixed(1)}pts
+                                <div className="flex items-center gap-1">
+                                  <span className="text-xs font-mono text-emerald-400">
+                                    {interpreterInsight.quantified_value?.points?.toFixed(1)}pts
+                                  </span>
+                                  <Button
+                                    onClick={() => setExpandedInsight(expandedType === 'INTERPRETER' ? null : { gameId: game.id, type: 'INTERPRETER' })}
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-4 w-4 p-0 text-emerald-400 hover:text-emerald-300"
+                                  >
+                                    {expandedType === 'INTERPRETER' ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                                  </Button>
                                 </div>
                               ) : (
                                 <Button
@@ -581,141 +612,186 @@ export default function AIManagerPage() {
                             {/* Devils Advocate */}
                             <td className="p-2">
                               {devilsInsight ? (
-                                <div className="text-xs font-mono text-red-400">
-                                  {devilsInsight.quantified_value?.points?.toFixed(1)}pts
+                                <div className="flex items-center gap-1">
+                                  <span className="text-xs font-mono text-red-400">
+                                    {devilsInsight.quantified_value?.points?.toFixed(1)}pts
+                                  </span>
+                                  <Button
+                                    onClick={() => setExpandedInsight(expandedType === 'DEVILS' ? null : { gameId: game.id, type: 'DEVILS' })}
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-4 w-4 p-0 text-red-400 hover:text-red-300"
+                                  >
+                                    {expandedType === 'DEVILS' ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                                  </Button>
                                 </div>
                               ) : (
                                 <Badge className="bg-slate-700/50 text-slate-500 text-[9px]">Needs Pick</Badge>
                               )}
                             </td>
-                            <td className="p-2">
-                              {pulseInsight ? (
-                                <Button
-                                  onClick={() => setExpandedInsight(isExpanded ? null : game.id)}
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-5 text-[9px] gap-1 text-slate-400 hover:text-white"
-                                >
-                                  {isExpanded ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                                </Button>
-                              ) : (
-                                <span className="text-[10px] text-slate-600">-</span>
-                              )}
-                            </td>
                           </tr>
-                          {/* Expanded Detail Row */}
-                          {isExpanded && pulseInsight && sentiment && (
-                            <tr className="bg-slate-900/80">
-                              <td colSpan={8} className="p-4">
+                          {/* Expanded Detail Row - PULSE */}
+                          {expandedType === 'PULSE' && pulseInsight && sentiment && (
+                            <tr className="bg-purple-900/20 border-l-2 border-purple-500">
+                              <td colSpan={7} className="p-4">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <span className="text-lg">🌊</span>
+                                  <h3 className="text-sm font-bold text-purple-400">The Pulse - Public Sentiment Details</h3>
+                                </div>
                                 <div className="grid grid-cols-3 gap-4">
-                                  {/* Column 1: Pulse Score Breakdown */}
                                   <div className="bg-slate-800/50 rounded p-3">
                                     <h4 className="text-xs font-semibold text-purple-400 mb-2 flex items-center gap-1">
-                                      <Activity className="w-3 h-3" /> Pulse Score Breakdown
+                                      <Activity className="w-3 h-3" /> Score Breakdown
                                     </h4>
                                     <div className="space-y-1 text-xs">
-                                      <div className="flex justify-between">
-                                        <span className="text-slate-500">Final Points:</span>
-                                        <span className="text-white font-mono">{pulseInsight.quantified_value?.points?.toFixed(3)}</span>
-                                      </div>
-                                      <div className="flex justify-between">
-                                        <span className="text-slate-500">Direction:</span>
-                                        <Badge className={`text-[10px] ${pulseInsight.quantified_value?.direction === 'away' ? 'bg-blue-500/20 text-blue-400' : 'bg-orange-500/20 text-orange-400'}`}>
-                                          {pulseInsight.quantified_value?.direction}
-                                        </Badge>
-                                      </div>
-                                      <div className="flex justify-between">
-                                        <span className="text-slate-500">Team:</span>
-                                        <span className="text-green-400">{pulseInsight.quantified_value?.teamName}</span>
-                                      </div>
+                                      <div className="flex justify-between"><span className="text-slate-500">Final Points:</span><span className="text-white font-mono">{pulseInsight.quantified_value?.points?.toFixed(3)}</span></div>
+                                      <div className="flex justify-between"><span className="text-slate-500">Direction:</span><Badge className={`text-[10px] ${pulseInsight.quantified_value?.direction === 'away' ? 'bg-blue-500/20 text-blue-400' : 'bg-orange-500/20 text-orange-400'}`}>{pulseInsight.quantified_value?.direction}</Badge></div>
+                                      <div className="flex justify-between"><span className="text-slate-500">Team:</span><span className="text-green-400">{pulseInsight.quantified_value?.teamName}</span></div>
                                       <div className="border-t border-slate-700 pt-1 mt-1">
-                                        <div className="flex justify-between">
-                                          <span className="text-slate-500">Sentiment Lean:</span>
-                                          <span className="font-mono">{(pulseInsight.quantified_value?.breakdown?.sentimentLean * 100)?.toFixed(1)}%</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                          <span className="text-slate-500">Engagement Lean:</span>
-                                          <span className="font-mono">{(pulseInsight.quantified_value?.breakdown?.engagementLean * 100)?.toFixed(1)}%</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                          <span className="text-slate-500">Raw Lean:</span>
-                                          <span className="font-mono">{(pulseInsight.quantified_value?.breakdown?.rawLean * 100)?.toFixed(1)}%</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                          <span className="text-slate-500">Confidence:</span>
-                                          <span className="font-mono">{pulseInsight.quantified_value?.breakdown?.confidenceMultiplier}</span>
-                                        </div>
+                                        <div className="flex justify-between"><span className="text-slate-500">Sentiment Lean:</span><span className="font-mono">{(pulseInsight.quantified_value?.breakdown?.sentimentLean * 100)?.toFixed(1)}%</span></div>
+                                        <div className="flex justify-between"><span className="text-slate-500">Engagement Lean:</span><span className="font-mono">{(pulseInsight.quantified_value?.breakdown?.engagementLean * 100)?.toFixed(1)}%</span></div>
+                                        <div className="flex justify-between"><span className="text-slate-500">Confidence:</span><span className="font-mono">{pulseInsight.quantified_value?.breakdown?.confidenceMultiplier}</span></div>
                                       </div>
                                     </div>
                                   </div>
-
-                                  {/* Column 2: Sentiment & Engagement */}
                                   <div className="bg-slate-800/50 rounded p-3">
-                                    <h4 className="text-xs font-semibold text-green-400 mb-2 flex items-center gap-1">
-                                      <Users className="w-3 h-3" /> Public Sentiment
-                                    </h4>
+                                    <h4 className="text-xs font-semibold text-green-400 mb-2 flex items-center gap-1"><Users className="w-3 h-3" /> Sentiment Split</h4>
                                     <div className="grid grid-cols-2 gap-2 mb-3">
                                       <div className="bg-blue-500/10 rounded p-2 text-center">
                                         <div className="text-lg font-bold text-blue-400">{sentiment.awaySentimentPct}%</div>
-                                        <div className="text-[10px] text-slate-500">{game.away_team.abbreviation} (Away)</div>
-                                        <div className="text-[10px] text-slate-600 flex items-center justify-center gap-1 mt-1">
-                                          <ThumbsUp className="w-3 h-3" /> {sentiment.awayTotalLikes} likes
-                                        </div>
+                                        <div className="text-[10px] text-slate-500">{game.away_team.abbreviation}</div>
+                                        <div className="text-[10px] text-slate-600"><ThumbsUp className="w-3 h-3 inline" /> {sentiment.awayTotalLikes}</div>
                                       </div>
                                       <div className="bg-orange-500/10 rounded p-2 text-center">
                                         <div className="text-lg font-bold text-orange-400">{sentiment.homeSentimentPct}%</div>
-                                        <div className="text-[10px] text-slate-500">{game.home_team.abbreviation} (Home)</div>
-                                        <div className="text-[10px] text-slate-600 flex items-center justify-center gap-1 mt-1">
-                                          <ThumbsUp className="w-3 h-3" /> {sentiment.homeTotalLikes} likes
-                                        </div>
+                                        <div className="text-[10px] text-slate-500">{game.home_team.abbreviation}</div>
+                                        <div className="text-[10px] text-slate-600"><ThumbsUp className="w-3 h-3 inline" /> {sentiment.homeTotalLikes}</div>
                                       </div>
                                     </div>
-                                    <div className="text-[10px] text-slate-400">
-                                      <div className="mb-1"><strong className="text-blue-400">Away Reasons:</strong></div>
-                                      <ul className="space-y-0.5 ml-2">
-                                        {sentiment.awayReasons?.map((r: string, i: number) => (
-                                          <li key={i} className="text-slate-500">• {r}</li>
-                                        ))}
-                                      </ul>
-                                      <div className="mb-1 mt-2"><strong className="text-orange-400">Home Reasons:</strong></div>
-                                      <ul className="space-y-0.5 ml-2">
-                                        {sentiment.homeReasons?.map((r: string, i: number) => (
-                                          <li key={i} className="text-slate-500">• {r}</li>
-                                        ))}
-                                      </ul>
-                                    </div>
                                   </div>
-
-                                  {/* Column 3: Sample Posts */}
                                   <div className="bg-slate-800/50 rounded p-3">
-                                    <h4 className="text-xs font-semibold text-yellow-400 mb-2 flex items-center gap-1">
-                                      <MessageSquare className="w-3 h-3" /> Sample Posts ({sentiment.samplePosts?.length || 0})
-                                    </h4>
-                                    <div className="space-y-2 max-h-48 overflow-auto">
-                                      {sentiment.samplePosts?.map((post: any, i: number) => (
-                                        <div key={i} className="bg-slate-900/50 rounded p-2 text-[10px]">
-                                          <div className="flex items-center gap-2 mb-1">
-                                            <Badge className={`text-[9px] ${post.sentiment === 'away' ? 'bg-blue-500/20 text-blue-400' : 'bg-orange-500/20 text-orange-400'}`}>
-                                              {post.sentiment}
-                                            </Badge>
-                                            <span className="text-slate-600">❤️ {post.likes}</span>
-                                          </div>
-                                          <p className="text-slate-400 line-clamp-3">{post.text}</p>
+                                    <h4 className="text-xs font-semibold text-yellow-400 mb-2 flex items-center gap-1"><MessageSquare className="w-3 h-3" /> Sample Posts ({sentiment.samplePosts?.length || 0})</h4>
+                                    <div className="space-y-1 max-h-32 overflow-auto">
+                                      {sentiment.samplePosts?.slice(0, 3).map((post: any, i: number) => (
+                                        <div key={i} className="bg-slate-900/50 rounded p-1.5 text-[10px]">
+                                          <Badge className={`text-[8px] ${post.sentiment === 'away' ? 'bg-blue-500/20 text-blue-400' : 'bg-orange-500/20 text-orange-400'}`}>{post.sentiment}</Badge>
+                                          <p className="text-slate-400 line-clamp-2 mt-1">{post.text}</p>
                                         </div>
                                       ))}
                                     </div>
-                                    <div className="mt-2 pt-2 border-t border-slate-700 text-[10px] text-slate-500">
-                                      <div>Confidence: <Badge className="text-[9px] bg-slate-700">{sentiment.overallConfidence}</Badge></div>
-                                      <div className="mt-1 text-slate-600">Generated: {new Date(pulseInsight.created_at).toLocaleString()}</div>
+                                  </div>
+                                </div>
+                                <div className="mt-2 text-[10px] text-slate-600">Generated: {new Date(pulseInsight.created_at).toLocaleString()}</div>
+                              </td>
+                            </tr>
+                          )}
+
+                          {/* Expanded Detail Row - INFLUENCER */}
+                          {expandedType === 'INFLUENCER' && influencerInsight && influencerData && (
+                            <tr className="bg-amber-900/20 border-l-2 border-amber-500">
+                              <td colSpan={7} className="p-4">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <span className="text-lg">👑</span>
+                                  <h3 className="text-sm font-bold text-amber-400">The Influencer - Betting Account Sentiment</h3>
+                                </div>
+                                <div className="grid grid-cols-3 gap-4">
+                                  <div className="bg-slate-800/50 rounded p-3">
+                                    <h4 className="text-xs font-semibold text-amber-400 mb-2">Score Breakdown</h4>
+                                    <div className="space-y-1 text-xs">
+                                      <div className="flex justify-between"><span className="text-slate-500">Final Points:</span><span className="text-white font-mono">{influencerInsight.quantified_value?.points?.toFixed(3)}</span></div>
+                                      <div className="flex justify-between"><span className="text-slate-500">Direction:</span><Badge className={`text-[10px] ${influencerInsight.quantified_value?.direction === 'away' ? 'bg-blue-500/20 text-blue-400' : 'bg-orange-500/20 text-orange-400'}`}>{influencerInsight.quantified_value?.direction}</Badge></div>
+                                      <div className="flex justify-between"><span className="text-slate-500">Team:</span><span className="text-green-400">{influencerInsight.quantified_value?.teamName}</span></div>
+                                    </div>
+                                  </div>
+                                  <div className="bg-slate-800/50 rounded p-3">
+                                    <h4 className="text-xs font-semibold text-green-400 mb-2">Influencer Split</h4>
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div className="bg-blue-500/10 rounded p-2 text-center">
+                                        <div className="text-lg font-bold text-blue-400">{influencerData.awaySentimentPct}%</div>
+                                        <div className="text-[10px] text-slate-500">{game.away_team.abbreviation}</div>
+                                      </div>
+                                      <div className="bg-orange-500/10 rounded p-2 text-center">
+                                        <div className="text-lg font-bold text-orange-400">{influencerData.homeSentimentPct}%</div>
+                                        <div className="text-[10px] text-slate-500">{game.home_team.abbreviation}</div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="bg-slate-800/50 rounded p-3">
+                                    <h4 className="text-xs font-semibold text-yellow-400 mb-2">Key Reasons</h4>
+                                    <div className="text-[10px] text-slate-400 space-y-1">
+                                      {influencerData.awayReasons?.slice(0, 2).map((r: string, i: number) => <div key={i} className="text-blue-400">• {r}</div>)}
+                                      {influencerData.homeReasons?.slice(0, 2).map((r: string, i: number) => <div key={i} className="text-orange-400">• {r}</div>)}
                                     </div>
                                   </div>
                                 </div>
+                                <div className="mt-2 text-[10px] text-slate-600">Generated: {new Date(influencerInsight.created_at).toLocaleString()}</div>
+                              </td>
+                            </tr>
+                          )}
 
-                                {/* Raw Analysis */}
-                                <div className="mt-3 bg-slate-800/50 rounded p-3">
-                                  <h4 className="text-xs font-semibold text-slate-400 mb-2">Raw Grok Analysis</h4>
-                                  <p className="text-[11px] text-slate-500 leading-relaxed">{sentiment.rawAnalysis}</p>
+                          {/* Expanded Detail Row - INTERPRETER */}
+                          {expandedType === 'INTERPRETER' && interpreterInsight && interpreterData && (
+                            <tr className="bg-emerald-900/20 border-l-2 border-emerald-500">
+                              <td colSpan={7} className="p-4">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <span className="text-lg">🔮</span>
+                                  <h3 className="text-sm font-bold text-emerald-400">The Interpreter - Independent Research Analysis</h3>
                                 </div>
+                                <div className="grid grid-cols-3 gap-4">
+                                  <div className="bg-slate-800/50 rounded p-3">
+                                    <h4 className="text-xs font-semibold text-emerald-400 mb-2">Score & Pick</h4>
+                                    <div className="space-y-1 text-xs">
+                                      <div className="flex justify-between"><span className="text-slate-500">Final Points:</span><span className="text-white font-mono">{interpreterInsight.quantified_value?.points?.toFixed(3)}</span></div>
+                                      <div className="flex justify-between"><span className="text-slate-500">Pick:</span><Badge className="bg-emerald-500/20 text-emerald-400">{interpreterData.pick}</Badge></div>
+                                      <div className="flex justify-between"><span className="text-slate-500">Conviction:</span><span className="font-mono text-emerald-400">{interpreterData.conviction}/10</span></div>
+                                      <div className="flex justify-between"><span className="text-slate-500">Evidence Quality:</span><Badge className="bg-slate-700">{interpreterData.evidenceQuality}</Badge></div>
+                                    </div>
+                                  </div>
+                                  <div className="bg-slate-800/50 rounded p-3">
+                                    <h4 className="text-xs font-semibold text-green-400 mb-2">Top Reasons</h4>
+                                    <div className="space-y-1 text-[10px] text-slate-400">
+                                      {interpreterData.topReasons?.map((r: string, i: number) => <div key={i}>• {r}</div>)}
+                                    </div>
+                                  </div>
+                                  <div className="bg-slate-800/50 rounded p-3">
+                                    <h4 className="text-xs font-semibold text-yellow-400 mb-2">Research Summary</h4>
+                                    <p className="text-[10px] text-slate-400 leading-relaxed">{interpreterData.summary || interpreterData.rawAnalysis?.slice(0, 300)}...</p>
+                                  </div>
+                                </div>
+                                <div className="mt-2 text-[10px] text-slate-600">Generated: {new Date(interpreterInsight.created_at).toLocaleString()}</div>
+                              </td>
+                            </tr>
+                          )}
+
+                          {/* Expanded Detail Row - DEVILS ADVOCATE */}
+                          {expandedType === 'DEVILS' && devilsInsight && (
+                            <tr className="bg-red-900/20 border-l-2 border-red-500">
+                              <td colSpan={7} className="p-4">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <span className="text-lg">😈</span>
+                                  <h3 className="text-sm font-bold text-red-400">The Devils Advocate - Contrarian Analysis</h3>
+                                </div>
+                                <div className="grid grid-cols-3 gap-4">
+                                  <div className="bg-slate-800/50 rounded p-3">
+                                    <h4 className="text-xs font-semibold text-red-400 mb-2">Risk Assessment</h4>
+                                    <div className="space-y-1 text-xs">
+                                      <div className="flex justify-between"><span className="text-slate-500">Warning Points:</span><span className="text-white font-mono">{devilsInsight.quantified_value?.points?.toFixed(3)}</span></div>
+                                      <div className="flex justify-between"><span className="text-slate-500">Risk Score:</span><span className="font-mono text-red-400">{devilsInsight.raw_data?.devilsAdvocate?.riskScore}/10</span></div>
+                                      <div className="flex justify-between"><span className="text-slate-500">Recommendation:</span><Badge className={devilsInsight.raw_data?.devilsAdvocate?.recommendation === 'PROCEED' ? 'bg-green-500/20 text-green-400' : devilsInsight.raw_data?.devilsAdvocate?.recommendation === 'CAUTION' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'}>{devilsInsight.raw_data?.devilsAdvocate?.recommendation}</Badge></div>
+                                    </div>
+                                  </div>
+                                  <div className="bg-slate-800/50 rounded p-3">
+                                    <h4 className="text-xs font-semibold text-yellow-400 mb-2">Contra Evidence</h4>
+                                    <div className="space-y-1 text-[10px] text-slate-400">
+                                      {devilsInsight.raw_data?.devilsAdvocate?.contraEvidence?.map((r: string, i: number) => <div key={i} className="text-red-300">• {r}</div>)}
+                                    </div>
+                                  </div>
+                                  <div className="bg-slate-800/50 rounded p-3">
+                                    <h4 className="text-xs font-semibold text-slate-400 mb-2">Analysis</h4>
+                                    <p className="text-[10px] text-slate-400 leading-relaxed">{devilsInsight.raw_data?.devilsAdvocate?.rawAnalysis?.slice(0, 300)}...</p>
+                                  </div>
+                                </div>
+                                <div className="mt-2 text-[10px] text-slate-600">Generated: {new Date(devilsInsight.created_at).toLocaleString()}</div>
                               </td>
                             </tr>
                           )}
