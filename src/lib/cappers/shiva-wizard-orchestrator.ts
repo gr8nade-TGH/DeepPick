@@ -1318,19 +1318,45 @@ async function executeAIArchetype(input: AIArchetypeInput): Promise<AIArchetypeR
 
       case 'mathematician': {
         archetypeName = 'The Mathematician'
-        // Mathematician needs stats data - use placeholder for now
+        // Mathematician needs stats data - use placeholder values for now
+        // TODO: Pass real stats from Step 3 when available
         const mathRequest = {
-          ...baseRequest,
-          awayPpg: 110,
-          homePpg: 112,
-          awayPace: 100,
-          homePace: 98,
-          awayOffRtg: 112,
-          homeOffRtg: 114,
-          awayDefRtg: 110,
-          homeDefRtg: 108,
-          awayRestDays: 1,
-          homeRestDays: 2
+          awayTeam,
+          homeTeam,
+          total: total || 220,
+          gameDate,
+          stats: {
+            away: {
+              pace: 100,
+              ortg: 112,
+              drtg: 110,
+              ppg: 110,
+              oppPpg: 108,
+              threeP_pct: 0.36,
+              threeP_rate: 0.38,
+              ft_rate: 0.25,
+              ftPct: 0.78,
+              turnovers: 13,
+              offReb: 10,
+              defReb: 34,
+              restDays: 1
+            },
+            home: {
+              pace: 98,
+              ortg: 114,
+              drtg: 108,
+              ppg: 112,
+              oppPpg: 106,
+              threeP_pct: 0.37,
+              threeP_rate: 0.40,
+              ft_rate: 0.26,
+              ftPct: 0.80,
+              turnovers: 12,
+              offReb: 9,
+              defReb: 35,
+              restDays: 2
+            }
+          }
         }
         const result = await getMathematicianAnalysis(mathRequest)
         if (result.success && result.mathScore) {
