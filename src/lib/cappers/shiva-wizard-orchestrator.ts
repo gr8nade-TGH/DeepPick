@@ -827,9 +827,9 @@ function calculateStatsBaseline(
 
     // FIX: Regress toward Vegas to avoid systematic OVER bias
     // Raw stats-based calculations tend to overestimate totals by 5-15 points
-    // Blend: 40% raw stats + 60% Vegas to stay grounded
-    // This preserves model diversity while avoiding extreme predictions
-    const REGRESSION_WEIGHT = 0.60 // 60% Vegas, 40% stats
+    // Blend: 80% raw stats + 20% Vegas to stay grounded
+    // Reduced from 60% to 20% Vegas to allow more baseline model diversity
+    const REGRESSION_WEIGHT = 0.20 // 20% Vegas, 80% stats
     const regressedBaseline = (rawBaseline * (1 - REGRESSION_WEIGHT)) + (vegasFallback * REGRESSION_WEIGHT)
 
     const baseline = Math.max(180, Math.min(260, regressedBaseline))
