@@ -7,7 +7,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Brain,
   RefreshCw,
-  Target,
   Zap,
   Activity,
   Play,
@@ -23,12 +22,6 @@ import {
   Users,
   MessageSquare
 } from 'lucide-react'
-import {
-  TOTALS_ARCHETYPES,
-  SPREAD_ARCHETYPES,
-  ALL_ARCHETYPES,
-  type ArchetypeDefinition
-} from '@/lib/ai-insights/archetype-definitions'
 
 interface GrokResult {
   success: boolean
@@ -198,102 +191,8 @@ const AI_INSIGHTS_REGISTRY = [
   }
 ]
 
-// Available test insight types with full documentation
-const TEST_INSIGHT_TYPES = [
-  {
-    id: 'pace',
-    name: 'Pace Sentiment',
-    betType: 'TOTAL',
-    status: 'testing',
-    shortDesc: 'Fast-paced shootout vs defensive grind',
-    fullDesc: 'Analyzes X/Twitter for discussion about expected game TEMPO. Searches for keywords like "shootout", "high-scoring", "run and gun" vs "defensive battle", "grind", "slow it down". Useful for TOTALS because pace directly affects scoring.',
-    searchTerms: ['"shootout"', '"high-scoring"', '"run and gun"', '"fast pace"', '"defensive battle"', '"grind"', '"slow"'],
-    outputFields: ['paceSentiment (fast/slow/neutral)', 'fastPacePct (0-100)', 'slowPacePct (0-100)', 'fastReasons[]', 'slowReasons[]', 'samplePosts[]'],
-    totalsUse: 'If 70%+ expect "fast pace" → lean OVER. If 70%+ expect "grind" → lean UNDER.',
-  },
-  {
-    id: 'scoring',
-    name: 'Scoring Buzz',
-    betType: 'TOTAL',
-    status: 'testing',
-    shortDesc: 'What combined score are people predicting',
-    fullDesc: 'Searches X/Twitter for explicit score predictions and total predictions. Looks for posts like "Lakers 115, Celtics 120" or "I\'m taking over 225". Aggregates fan-predicted totals and compares to Vegas line.',
-    searchTerms: ['explicit scores', '"taking over/under"', 'point total predictions', 'combined score guesses'],
-    outputFields: ['averagePredictedTotal', 'vsVegasLine (over/under)', 'marginVsLine', 'overPct', 'underPct', 'scorePredictions[]'],
-    totalsUse: 'If average predicted total is 8+ points above Vegas → strong OVER lean. Crowd wisdom signal.',
-  },
-  {
-    id: 'blowout',
-    name: 'Blowout Risk',
-    betType: 'GLOBAL',
-    status: 'testing',
-    shortDesc: 'Is this expected to be a lopsided game',
-    fullDesc: 'Analyzes chatter about expected margin of victory. Searches for "blowout", "gonna be ugly", "no contest", "domination". Blowouts affect TOTALS (garbage time scoring OR starters sitting) and SPREADS (cover probability).',
-    searchTerms: ['"blowout"', '"gonna be ugly"', '"no contest"', '"domination"', 'margin predictions'],
-    outputFields: ['blowoutRisk (high/medium/low)', 'expectedMargin', 'blowoutPct', 'closeGamePct', 'favoredTeam', 'totalsImplication'],
-    totalsUse: 'High blowout risk = unpredictable totals (garbage time can go either way). Close game = more predictable.',
-  },
-  {
-    id: 'rest',
-    name: 'Rest/Load Management',
-    betType: 'GLOBAL',
-    status: 'testing',
-    shortDesc: 'Are key players expected to sit out',
-    fullDesc: 'Searches for load management rumors, DNP speculation, back-to-back fatigue discussion. Key for both bet types: missing stars affects scoring AND spread.',
-    searchTerms: ['"resting"', '"DNP"', '"load management"', '"sitting out"', 'back-to-back', 'injury rumors'],
-    outputFields: ['restRisk (high/medium/low)', 'playersLikelyResting[]', 'backToBackTeam', 'fatigueLevel', 'totalsImplication'],
-    totalsUse: 'Star resting = lower scoring typically. Multiple stars out = significant total adjustment needed.',
-  },
-  // --- FUTURE IDEAS (not yet implemented) ---
-  {
-    id: 'defensive_matchup',
-    name: 'Defensive Matchup Hype',
-    betType: 'TOTAL',
-    status: 'idea',
-    shortDesc: 'Are people hyping a defensive matchup',
-    fullDesc: 'Searches for discussion about key defensive matchups that could limit scoring. "X is gonna lock down Y", "DPOY matchup", elite perimeter defense talk.',
-    searchTerms: ['"lock down"', '"DPOY"', '"elite defense"', '"can\'t score on"', '"shutdown"'],
-    outputFields: ['defensiveHype (high/medium/low)', 'keyMatchups[]', 'expectedScoringImpact'],
-    totalsUse: 'High defensive hype on star matchup → lean UNDER.',
-  },
-  {
-    id: 'revenge',
-    name: 'Revenge Game Narrative',
-    betType: 'SPREAD',
-    status: 'idea',
-    shortDesc: 'Is there a revenge storyline',
-    fullDesc: 'Searches for revenge game narratives - traded players facing old team, beef between players/coaches, statements to media.',
-    searchTerms: ['"revenge game"', '"facing old team"', '"has something to prove"', '"bulletin board material"'],
-    outputFields: ['revengeNarrative (strong/mild/none)', 'playerInvolved', 'narrativeStrength', 'expectedMotivation'],
-    totalsUse: 'Strong revenge narrative = player may overperform, affecting spread and potentially total if star player.',
-  },
-  {
-    id: 'weather_travel',
-    name: 'Travel/Schedule Fatigue',
-    betType: 'GLOBAL',
-    status: 'idea',
-    shortDesc: 'Travel and schedule difficulty chatter',
-    fullDesc: 'Analyzes discussion about travel schedules, time zone changes, 4-in-5 nights, west coast trips.',
-    searchTerms: ['"road trip"', '"4 in 5"', '"time zone"', '"jet lag"', '"tired legs"', '"schedule loss"'],
-    outputFields: ['fatigueFactor (high/medium/low)', 'travelContext', 'scheduleNote'],
-    totalsUse: 'Heavy fatigue = sloppy play, could go either way. Usually correlates with lower scoring.',
-  },
-  {
-    id: 'public_fade',
-    name: 'Sharp vs Public Split',
-    betType: 'SPREAD',
-    status: 'idea',
-    shortDesc: 'Are sharps fading the public',
-    fullDesc: 'Searches for discussion about betting splits, sharp money vs public money, line movement against public.',
-    searchTerms: ['"sharps on"', '"public on"', '"fading the public"', '"line moving against"', '"steam move"'],
-    outputFields: ['publicSide', 'sharpSide', 'lineMovement', 'fadeConfidence'],
-    totalsUse: 'Classic contrarian signal - if 80% public on one side and line moving other way, sharps are fading.',
-  },
-]
-
 export default function AIManagerPage() {
   const [activeTab, setActiveTab] = useState('insights')
-  const [expandedRow, setExpandedRow] = useState<string | null>(null)
   const [expandedInsight, setExpandedInsight] = useState<string | null>(null)
   const [todaysGames, setTodaysGames] = useState<GameInfo[]>([])
   const [selectedGame, setSelectedGame] = useState<string>('')
@@ -304,12 +203,6 @@ export default function AIManagerPage() {
   const [insightsLoading, setInsightsLoading] = useState(false)
   const [generatingGame, setGeneratingGame] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
-
-  // Test insights state
-  const [testInsightType, setTestInsightType] = useState('pace')
-  const [testGameId, setTestGameId] = useState('')
-  const [testResult, setTestResult] = useState<any>(null)
-  const [testLoading, setTestLoading] = useState(false)
 
   // The Influencer state
   const [influencerResult, setInfluencerResult] = useState<any>(null)
@@ -405,24 +298,6 @@ export default function AIManagerPage() {
   }
 
   const selectedGameData = todaysGames.find(g => g.id === selectedGame)
-  const testGameData = todaysGames.find(g => g.id === testGameId)
-
-  const runTestInsight = async () => {
-    if (!testGameData) return
-    setTestLoading(true)
-    setTestResult(null)
-
-    try {
-      const url = `/api/test/grok-insights?type=${testInsightType}&away=${encodeURIComponent(testGameData.away_team.name)}&home=${encodeURIComponent(testGameData.home_team.name)}&total=${testGameData.odds?.total?.line || 225}`
-      const res = await fetch(url)
-      const data = await res.json()
-      setTestResult(data)
-    } catch (error) {
-      setTestResult({ error: 'Failed to run test' })
-    } finally {
-      setTestLoading(false)
-    }
-  }
 
   const runInfluencerTest = async () => {
     if (!selectedGameData) return
@@ -593,20 +468,8 @@ export default function AIManagerPage() {
             <TabsTrigger value="registry" className="text-xs h-7 px-3">
               <Zap className="w-3 h-3 mr-1" /> AI Insights Registry
             </TabsTrigger>
-            <TabsTrigger value="test" className="text-xs h-7 px-3">
-              <Play className="w-3 h-3 mr-1" /> Test Insights
-            </TabsTrigger>
             <TabsTrigger value="ai-archetypes" className="text-xs h-7 px-3">
-              <Activity className="w-3 h-3 mr-1" /> AI Archetypes
-            </TabsTrigger>
-            <TabsTrigger value="archetypes" className="text-xs h-7 px-3">
-              <Brain className="w-3 h-3 mr-1" /> Factor Archetypes ({ALL_ARCHETYPES.length})
-            </TabsTrigger>
-            <TabsTrigger value="totals" className="text-xs h-7 px-3">
-              <Target className="w-3 h-3 mr-1" /> TOTALS ({TOTALS_ARCHETYPES.length})
-            </TabsTrigger>
-            <TabsTrigger value="spread" className="text-xs h-7 px-3">
-              <Zap className="w-3 h-3 mr-1" /> SPREAD ({SPREAD_ARCHETYPES.length})
+              <Activity className="w-3 h-3 mr-1" /> AI Archetypes (4)
             </TabsTrigger>
           </TabsList>
 
@@ -980,200 +843,7 @@ export default function AIManagerPage() {
             </div>
           </TabsContent>
 
-          {/* Test Insights - Explore new insight types */}
-          <TabsContent value="test" className="mt-0">
-            <div className="grid grid-cols-12 gap-4">
-              {/* Left: Controls */}
-              <div className="col-span-4 space-y-3">
-                <div className="bg-slate-900 border border-slate-800 rounded p-3">
-                  <h3 className="text-sm font-medium mb-2 text-green-400">Test New Insight Types</h3>
-                  <p className="text-xs text-slate-500 mb-3">Explore potential TOTALS insights from Grok</p>
-
-                  <div className="space-y-2">
-                    <div>
-                      <label className="text-xs text-slate-500 block mb-1">Insight Type</label>
-                      <select
-                        value={testInsightType}
-                        onChange={(e) => setTestInsightType(e.target.value)}
-                        className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm"
-                      >
-                        {TEST_INSIGHT_TYPES.map(t => (
-                          <option key={t.id} value={t.id}>{t.name} ({t.betType})</option>
-                        ))}
-                      </select>
-                      <p className="text-[10px] text-slate-600 mt-1">
-                        {TEST_INSIGHT_TYPES.find(t => t.id === testInsightType)?.shortDesc}
-                      </p>
-                    </div>
-
-                    <div>
-                      <label className="text-xs text-slate-500 block mb-1">Select Game</label>
-                      <select
-                        value={testGameId}
-                        onChange={(e) => setTestGameId(e.target.value)}
-                        className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm"
-                      >
-                        <option value="">Select a game...</option>
-                        {todaysGames.map(g => (
-                          <option key={g.id} value={g.id}>
-                            {g.away_team.abbreviation} @ {g.home_team.abbreviation} (O/U {g.odds?.total?.line || 'N/A'})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {testGameData && (
-                      <div className="text-xs bg-slate-800/50 rounded p-2 space-y-1">
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Away:</span>
-                          <span>{testGameData.away_team.name}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Home:</span>
-                          <span>{testGameData.home_team.name}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Total:</span>
-                          <span className="text-blue-400">{testGameData.odds?.total?.line || 'N/A'}</span>
-                        </div>
-                      </div>
-                    )}
-
-                    <Button
-                      onClick={runTestInsight}
-                      disabled={testLoading || !testGameId}
-                      className="w-full bg-green-600 hover:bg-green-500 h-8 text-sm"
-                    >
-                      {testLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Play className="w-4 h-4 mr-1" />}
-                      Run Test
-                    </Button>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Right: Results + Documentation */}
-              <div className="col-span-8 space-y-4">
-                {/* Test Result */}
-                <div className="bg-slate-900 border border-slate-800 rounded">
-                  <div className="p-3 border-b border-slate-800 flex items-center justify-between">
-                    <h3 className="text-sm font-medium">Test Result</h3>
-                    {testResult && (
-                      <Button
-                        onClick={() => {
-                          navigator.clipboard.writeText(JSON.stringify(testResult, null, 2))
-                        }}
-                        variant="outline"
-                        size="sm"
-                        className="h-6 text-[10px]"
-                      >
-                        Copy JSON
-                      </Button>
-                    )}
-                  </div>
-                  <div className="p-3">
-                    {!testResult ? (
-                      <div className="text-center py-8 text-slate-500">
-                        <Activity className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                        <p className="text-sm">Select a game and insight type, then click Run Test</p>
-                      </div>
-                    ) : testResult.error ? (
-                      <div className="bg-red-500/10 border border-red-500/30 rounded p-3 text-red-400 text-sm">
-                        {testResult.error}
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {/* Summary */}
-                        <div className="bg-slate-800/50 rounded p-3">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Badge className="bg-green-500/20 text-green-400 text-[10px]">Success</Badge>
-                            <span className="text-sm text-white">{testResult.matchup}</span>
-                            <Badge className="bg-purple-500/20 text-purple-400 text-[10px]">{testResult.insightType}</Badge>
-                          </div>
-                          {testResult.usage && (
-                            <div className="text-[10px] text-slate-500">
-                              Tokens: {testResult.usage.total_tokens} (prompt: {testResult.usage.prompt_tokens}, completion: {testResult.usage.completion_tokens})
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Parsed Data */}
-                        {testResult.parsed && (
-                          <div className="bg-slate-800/50 rounded p-3">
-                            <h4 className="text-xs font-medium text-green-400 mb-2">Parsed Response</h4>
-                            <pre className="text-[11px] text-slate-300 overflow-auto max-h-64 whitespace-pre-wrap">
-                              {JSON.stringify(testResult.parsed, null, 2)}
-                            </pre>
-                          </div>
-                        )}
-
-                        {/* Raw Response */}
-                        <div className="bg-slate-800/50 rounded p-3">
-                          <h4 className="text-xs font-medium text-slate-400 mb-2">Raw Grok Response</h4>
-                          <pre className="text-[10px] text-slate-500 overflow-auto max-h-48 whitespace-pre-wrap">
-                            {testResult.rawResponse}
-                          </pre>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* All Insight Types Documentation */}
-                <div className="bg-slate-900 border border-slate-800 rounded">
-                  <div className="p-3 border-b border-slate-800">
-                    <h3 className="text-sm font-medium">All Insight Types</h3>
-                    <p className="text-[10px] text-slate-500 mt-1">Implemented and proposed insights for The Pulse and other archetypes</p>
-                  </div>
-                  <div className="divide-y divide-slate-800 max-h-[500px] overflow-y-auto">
-                    {TEST_INSIGHT_TYPES.map(t => (
-                      <div key={t.id} className="p-3">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Badge className={`text-[9px] ${t.status === 'testing' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
-                            }`}>
-                            {t.status === 'testing' ? '🧪 TESTING' : '💡 IDEA'}
-                          </Badge>
-                          <span className="font-medium text-white text-sm">{t.name}</span>
-                          <Badge className={`text-[9px] ${t.betType === 'TOTAL' ? 'bg-blue-500/20 text-blue-400' :
-                            t.betType === 'SPREAD' ? 'bg-orange-500/20 text-orange-400' :
-                              'bg-cyan-500/20 text-cyan-400'
-                            }`}>
-                            {t.betType}
-                          </Badge>
-                        </div>
-
-                        <p className="text-xs text-slate-300 mb-2">{t.fullDesc}</p>
-
-                        <div className="grid grid-cols-2 gap-3 text-[10px]">
-                          <div>
-                            <div className="text-slate-500 mb-1">Search Terms:</div>
-                            <div className="flex flex-wrap gap-1">
-                              {t.searchTerms.map((term, i) => (
-                                <span key={i} className="bg-slate-800 px-1.5 py-0.5 rounded text-slate-400">{term}</span>
-                              ))}
-                            </div>
-                          </div>
-                          <div>
-                            <div className="text-slate-500 mb-1">Output Fields:</div>
-                            <div className="text-slate-400">
-                              {t.outputFields.join(', ')}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="mt-2 bg-slate-800/50 rounded p-2">
-                          <span className="text-[10px] text-green-400 font-medium">How to use for picks: </span>
-                          <span className="text-[10px] text-slate-300">{t.totalsUse}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </TabsContent>
-
-          {/* AI Archetypes - The Pulse & The Influencer */}
+          {/* AI Archetypes - The Pulse, Influencer, Interpreter, Devil's Advocate */}
           <TabsContent value="ai-archetypes" className="mt-0">
             {/* Shared Controls */}
             <div className="bg-slate-900 border border-slate-800 rounded p-3 mb-4">
@@ -1233,12 +903,12 @@ export default function AIManagerPage() {
                   </div>
                 )}
               </div>
-            </div>
+            </div >
 
             {/* Two Columns: The Pulse vs The Influencer */}
-            <div className="grid grid-cols-2 gap-4">
+            < div className="grid grid-cols-2 gap-4" >
               {/* THE PULSE */}
-              <div className="space-y-3">
+              < div className="space-y-3" >
                 <div className="bg-slate-900 border border-purple-500/30 rounded overflow-hidden">
                   <div className="p-3 border-b border-slate-800 bg-purple-500/10 flex items-center justify-between">
                     <div>
@@ -1313,10 +983,10 @@ export default function AIManagerPage() {
                     </div>
                   </div>
                 </div>
-              </div>
+              </div >
 
               {/* THE INFLUENCER */}
-              <div className="space-y-3">
+              < div className="space-y-3" >
                 <div className="bg-slate-900 border border-amber-500/30 rounded overflow-hidden">
                   <div className="p-3 border-b border-slate-800 bg-amber-500/10 flex items-center justify-between">
                     <div>
@@ -1410,13 +1080,13 @@ export default function AIManagerPage() {
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
+              </div >
+            </div >
 
             {/* Row 2: The Interpreter & The Devil's Advocate */}
-            <div className="grid grid-cols-2 gap-4 mt-4">
+            < div className="grid grid-cols-2 gap-4 mt-4" >
               {/* THE INTERPRETER */}
-              <div className="space-y-3">
+              < div className="space-y-3" >
                 <div className="bg-slate-900 border border-emerald-500/30 rounded overflow-hidden">
                   <div className="p-3 border-b border-slate-800 bg-emerald-500/10 flex items-center justify-between">
                     <div>
@@ -1494,10 +1164,10 @@ export default function AIManagerPage() {
                     </div>
                   </div>
                 </div>
-              </div>
+              </div >
 
               {/* THE DEVIL'S ADVOCATE */}
-              <div className="space-y-3">
+              < div className="space-y-3" >
                 <div className="bg-slate-900 border border-red-500/30 rounded overflow-hidden">
                   <div className="p-3 border-b border-slate-800 bg-red-500/10">
                     <div className="flex items-center justify-between mb-2">
@@ -1598,172 +1268,12 @@ export default function AIManagerPage() {
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          </TabsContent>
+              </div >
+            </div >
+          </TabsContent >
 
-          {/* All Archetypes Table */}
-          <TabsContent value="archetypes" className="mt-0">
-            <ArchetypeTable archetypes={ALL_ARCHETYPES} expandedRow={expandedRow} setExpandedRow={setExpandedRow} />
-          </TabsContent>
-
-          {/* TOTALS Archetypes Table */}
-          <TabsContent value="totals" className="mt-0">
-            <ArchetypeTable archetypes={TOTALS_ARCHETYPES} expandedRow={expandedRow} setExpandedRow={setExpandedRow} />
-          </TabsContent>
-
-          {/* SPREAD Archetypes Table */}
-          <TabsContent value="spread" className="mt-0">
-            <ArchetypeTable archetypes={SPREAD_ARCHETYPES} expandedRow={expandedRow} setExpandedRow={setExpandedRow} />
-          </TabsContent>
         </Tabs>
-      </div>
+      </div >
     </div>
   )
 }
-
-// Compact Archetype Table Component
-function ArchetypeTable({
-  archetypes,
-  expandedRow,
-  setExpandedRow
-}: {
-  archetypes: ArchetypeDefinition[]
-  expandedRow: string | null
-  setExpandedRow: (id: string | null) => void
-}) {
-  return (
-    <div className="bg-slate-900 border border-slate-800 rounded overflow-hidden">
-      <table className="w-full text-sm">
-        <thead className="bg-slate-800/50">
-          <tr className="text-left text-xs text-slate-500">
-            <th className="p-2 w-8"></th>
-            <th className="p-2 w-10">Icon</th>
-            <th className="p-2">Name / ID</th>
-            <th className="p-2 w-20">Type</th>
-            <th className="p-2">Description</th>
-            <th className="p-2">X Output</th>
-            <th className="p-2">Y Output</th>
-            <th className="p-2">Z Output</th>
-            <th className="p-2 w-24">Focus</th>
-          </tr>
-        </thead>
-        <tbody>
-          {archetypes.map((a) => (
-            <>
-              <tr
-                key={a.id}
-                className={`border-t border-slate-800 hover:bg-slate-800/30 cursor-pointer ${expandedRow === a.id ? 'bg-slate-800/50' : ''}`}
-                onClick={() => setExpandedRow(expandedRow === a.id ? null : a.id)}
-              >
-                <td className="p-2 text-center">
-                  {expandedRow === a.id ? (
-                    <ChevronUp className="w-3 h-3 text-slate-500" />
-                  ) : (
-                    <ChevronDown className="w-3 h-3 text-slate-500" />
-                  )}
-                </td>
-                <td className="p-2 text-center text-lg">{a.icon}</td>
-                <td className="p-2">
-                  <div className="font-medium text-white">{a.name}</div>
-                  <div className="text-xs text-slate-600 font-mono">{a.id}</div>
-                </td>
-                <td className="p-2">
-                  <Badge className={`text-[10px] ${a.betType === 'TOTAL' ? 'bg-blue-500/20 text-blue-400' : 'bg-orange-500/20 text-orange-400'}`}>
-                    {a.betType}
-                  </Badge>
-                </td>
-                <td className="p-2 text-slate-400 text-xs max-w-[200px] truncate">{a.description}</td>
-                <td className="p-2">
-                  <div className="text-xs">
-                    <span className="text-purple-400 font-mono font-bold">X</span>
-                    <span className="text-slate-500 ml-1">{a.factorInputs.X.name}</span>
-                  </div>
-                  <div className="text-[10px] text-slate-600 font-mono">
-                    [{a.factorInputs.X.range.min}, {a.factorInputs.X.range.max}]
-                  </div>
-                </td>
-                <td className="p-2">
-                  <div className="text-xs">
-                    <span className="text-purple-400 font-mono font-bold">Y</span>
-                    <span className="text-slate-500 ml-1">{a.factorInputs.Y.name}</span>
-                  </div>
-                  <div className="text-[10px] text-slate-600 font-mono">
-                    [{a.factorInputs.Y.range.min}, {a.factorInputs.Y.range.max}]
-                  </div>
-                </td>
-                <td className="p-2">
-                  <div className="text-xs">
-                    <span className="text-purple-400 font-mono font-bold">Z</span>
-                    <span className="text-slate-500 ml-1">{a.factorInputs.Z.name}</span>
-                  </div>
-                  <div className="text-[10px] text-slate-600 font-mono">
-                    [{a.factorInputs.Z.range.min}, {a.factorInputs.Z.range.max}]
-                  </div>
-                </td>
-                <td className="p-2">
-                  <div className="flex flex-wrap gap-0.5">
-                    {a.focusFactors.slice(0, 2).map(f => (
-                      <Badge key={f} variant="outline" className="text-[9px] px-1 py-0">{f}</Badge>
-                    ))}
-                    {a.focusFactors.length > 2 && (
-                      <Badge variant="outline" className="text-[9px] px-1 py-0">+{a.focusFactors.length - 2}</Badge>
-                    )}
-                  </div>
-                </td>
-              </tr>
-              {expandedRow === a.id && (
-                <tr key={`${a.id}-expanded`} className="bg-slate-800/30">
-                  <td colSpan={9} className="p-3">
-                    <div className="grid grid-cols-3 gap-4 text-xs">
-                      <div>
-                        <h4 className="text-slate-500 uppercase text-[10px] mb-1">Philosophy</h4>
-                        <p className="text-slate-300">{a.philosophy}</p>
-                      </div>
-                      <div>
-                        <h4 className="text-slate-500 uppercase text-[10px] mb-1">Full Description</h4>
-                        <p className="text-slate-300">{a.description}</p>
-                      </div>
-                      <div>
-                        <h4 className="text-slate-500 uppercase text-[10px] mb-1">All Focus Factors</h4>
-                        <div className="flex flex-wrap gap-1">
-                          {a.focusFactors.map(f => (
-                            <Badge key={f} variant="outline" className="text-[10px]">{f}</Badge>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="col-span-3 border-t border-slate-700 pt-2 mt-2">
-                        <h4 className="text-slate-500 uppercase text-[10px] mb-2">X/Y/Z Output Details</h4>
-                        <div className="grid grid-cols-3 gap-3">
-                          {(['X', 'Y', 'Z'] as const).map(key => (
-                            <div key={key} className="bg-slate-900/50 rounded p-2">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="text-purple-400 font-mono font-bold text-sm">{key}</span>
-                                <span className="text-white font-medium">{a.factorInputs[key].name}</span>
-                              </div>
-                              <p className="text-slate-500 text-[10px] mb-1">{a.factorInputs[key].description}</p>
-                              <div className="flex items-center gap-2 text-[10px]">
-                                <span className="text-slate-600">Range:</span>
-                                <span className="font-mono text-slate-400">
-                                  [{a.factorInputs[key].range.min}, {a.factorInputs[key].range.max}]
-                                </span>
-                                {a.factorInputs[key].unit && (
-                                  <span className="text-slate-600">{a.factorInputs[key].unit}</span>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  )
-}
-
