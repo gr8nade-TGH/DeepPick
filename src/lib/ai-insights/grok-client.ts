@@ -243,9 +243,11 @@ function parseGrokResponse(
     // Adjust for confidence
     const adjustedLean = rawLean * confidenceMultiplier
 
-    // Scale to 0-3.5 range
-    // |adjustedLean| ranges from 0 to 1, multiply by 3.5 for max points
-    const points = Math.min(3.5, Math.abs(adjustedLean) * 3.5)
+    // Scale to 0-5.0 range using sqrt curve for amplification
+    // Sqrt curve makes moderate signals (20-40% gaps) more meaningful
+    // |adjustedLean| ranges from 0 to 1, sqrt amplifies smaller values
+    const absLean = Math.abs(adjustedLean)
+    const points = Math.min(5.0, Math.sqrt(absLean) * 5.0)
 
     // Determine direction
     const direction: 'away' | 'home' = adjustedLean >= 0 ? 'away' : 'home'

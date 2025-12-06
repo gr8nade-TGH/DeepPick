@@ -230,8 +230,10 @@ export default function AIManagerPage() {
                     <p>sentimentLean = (away% - home%) / 100</p>
                     <p>engagementLean = (awayLikes - homeLikes) / total</p>
                     <p>rawLean = (sent * 0.6) + (eng * 0.4)</p>
-                    <p>points = |rawLean * conf| * 3.5</p>
+                    <p>adjLean = rawLean * confidence</p>
+                    <p className="text-purple-400">points = √|adjLean| * 5.0</p>
                   </div>
+                  <p className="text-[10px] text-slate-600 mt-2">Sqrt curve amplifies moderate signals</p>
                 </div>
               </div>
 
