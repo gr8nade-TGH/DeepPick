@@ -629,7 +629,14 @@ export default function AIManagerPage() {
                                   </Button>
                                 </div>
                               ) : (
-                                <Badge className="bg-slate-700/50 text-slate-500 text-[9px]">Needs Pick</Badge>
+                                <Button
+                                  onClick={() => generateInsight(game, 'DEVILS_ADVOCATE')}
+                                  disabled={generatingGame === game.id}
+                                  size="sm"
+                                  className="h-5 text-[9px] px-2 bg-red-600/50 hover:bg-red-500"
+                                >
+                                  {generatingGame === game.id ? <Loader2 className="w-2 h-2 animate-spin" /> : 'Gen'}
+                                </Button>
                               )}
                             </td>
                           </tr>
