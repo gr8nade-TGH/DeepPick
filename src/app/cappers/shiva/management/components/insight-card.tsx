@@ -914,6 +914,7 @@ export function InsightCard(props: InsightCardProps) {
   const safeMarket = {
     conf7: Number(props.market?.conf7 ?? 0),
     confAdj: Number(props.market?.confAdj ?? 0),
+    aiArchetypeContrib: Number(props.market?.aiArchetypeContrib ?? 0),
     confFinal: Number(props.market?.confFinal ?? 0),
     dominant: props.market?.dominant || 'side',
   }
@@ -1446,7 +1447,7 @@ export function InsightCard(props: InsightCardProps) {
               <span>📊</span>
               <span>Confidence Breakdown</span>
             </div>
-            <div className="grid grid-cols-4 gap-2 text-center">
+            <div className="grid grid-cols-5 gap-2 text-center">
               <div className="bg-slate-900/60 rounded-lg p-2 border border-slate-700/50">
                 <div className="text-[10px] text-slate-400 uppercase mb-1 font-semibold">CONF7</div>
                 <div className="text-lg font-mono font-bold text-white">{safeMarket.conf7.toFixed(2)}</div>
@@ -1455,6 +1456,12 @@ export function InsightCard(props: InsightCardProps) {
                 <div className="text-[10px] text-slate-400 uppercase mb-1 font-semibold">MARKET ADJ</div>
                 <div className={`text-lg font-mono font-bold ${safeMarket.confAdj > 0 ? 'text-green-400' : safeMarket.confAdj < 0 ? 'text-red-400' : 'text-slate-400'}`}>
                   {safeMarket.confAdj > 0 ? '+' : ''}{safeMarket.confAdj.toFixed(2)}
+                </div>
+              </div>
+              <div className="bg-purple-900/30 rounded-lg p-2 border border-purple-500/50">
+                <div className="text-[10px] text-purple-400 uppercase mb-1 font-semibold">🤖 AI</div>
+                <div className={`text-lg font-mono font-bold ${safeMarket.aiArchetypeContrib > 0 ? 'text-purple-400' : 'text-slate-400'}`}>
+                  {safeMarket.aiArchetypeContrib > 0 ? '+' : ''}{safeMarket.aiArchetypeContrib.toFixed(2)}
                 </div>
               </div>
               <div className="rounded-lg p-2" style={{ background: `linear-gradient(135deg, ${rarity.borderColor}20, ${rarity.borderColor}10)`, border: `2px solid ${rarity.borderColor}60` }}>

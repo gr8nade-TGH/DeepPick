@@ -724,7 +724,14 @@ export async function GET(
     // Extract confidence values
     const conf7 = metadata.steps?.step4?.predictions?.conf7_score || run.conf7 || 0
     const confMarketAdj = metadata.steps?.step5?.conf_market_adj || 0
-    const confFinal = metadata.steps?.step5?.conf_final || run.conf_final || pick.confidence || 0
+    // AI Archetype contribution (Step 5.5)
+    const aiArchetypeContrib = metadata.steps?.step5_5?.factor?.normalized_value || 0
+    // Use step5_5's confidenceAfter if available (includes AI Archetype), otherwise fall back
+    const confFinal = metadata.steps?.step5_5?.confidenceAfter
+      || metadata.steps?.step5?.conf_final
+      || run.conf_final
+      || pick.confidence
+      || 0
 
     console.log('[InsightCard] ✅ Data extracted:', {
       pickId,
@@ -735,6 +742,7 @@ export async function GET(
       marketTotal,
       conf7,
       confMarketAdj,
+      aiArchetypeContrib,
       confFinal,
       hasBoldPredictions: !!boldPredictions,
       hasProfessionalAnalysis: !!professionalAnalysis,
@@ -760,6 +768,7 @@ export async function GET(
       injurySummary,
       conf7,
       confMarketAdj,
+      aiArchetypeContrib,
       confFinal,
       resultsAnalysis,
       factorAccuracy,
@@ -782,7 +791,7 @@ export async function GET(
 }
 
 // Build insight card data structure from run metadata
-function buildInsightCard({ pick, game, run, factorContributions, predictedTotal, baselineAvg, marketTotal, predictedHomeScore, predictedAwayScore, boldPredictions, professionalAnalysis, injurySummary, conf7, confMarketAdj, confFinal, resultsAnalysis, factorAccuracy, tuningSuggestions, overallAccuracy }: any) {
+function buildInsightCard({ pick, game, run, factorContributions, predictedTotal, baselineAvg, marketTotal, predictedHomeScore, predictedAwayScore, boldPredictions, professionalAnalysis, injurySummary, conf7, confMarketAdj, aiArchetypeContrib, confFinal, resultsAnalysis, factorAccuracy, tuningSuggestions, overallAccuracy }: any) {
 
   // Detect pick type from pick.pick_type
   const pickType = pick.pick_type?.toUpperCase() || 'TOTAL'
@@ -977,6 +986,7 @@ function buildInsightCard({ pick, game, run, factorContributions, predictedTotal
     market: {
       conf7: conf7,
       confAdj: confMarketAdj,
+      aiArchetypeContrib: aiArchetypeContrib || 0,  // AI Archetype contribution (Step 5.5)
       confFinal: confFinal,
       dominant: isSpread ? 'spread' as const : 'total' as const
     },
