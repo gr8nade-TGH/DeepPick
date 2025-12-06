@@ -870,8 +870,16 @@ export interface DevilsAdvocateRequest {
   total?: number
   gameDate: string
   betType: 'SPREAD' | 'TOTAL'
-  ourPick: string                   // Our model's pick (e.g., "Lakers" or "OVER")
-  ourConfidence: number             // Our model's confidence (0-100)
+  ourPick: string                   // Capper's pick (e.g., "Lakers" or "OVER")
+  ourConfidence: number             // Capper's confidence (0-100)
+  capperName?: string               // Name of the capper we're critiquing
+  capperRecord?: {                  // Capper's track record
+    wins: number
+    losses: number
+    net_units: number
+    win_rate: number
+    roi: number
+  }
 }
 
 export interface DevilsAdvocateResponse {
@@ -882,6 +890,7 @@ export interface DevilsAdvocateResponse {
     blindSpots: string[]            // Things our model might be missing
     breakingNews: string[]          // Recent news that could affect the pick
     recommendation: 'PROCEED' | 'CAUTION' | 'ABORT'
+    capperCallout?: string          // Snarky one-liner about the capper
     rawAnalysis: string
   }
   devilsScore?: {
@@ -965,25 +974,38 @@ Be aggressive in finding counter-evidence. Always respond in valid JSON format.`
 }
 
 function buildDevilsAdvocateSpreadPrompt(req: DevilsAdvocateRequest): string {
+  const capperIntro = req.capperName && req.capperRecord
+    ? `We've selected **${req.capperName.toUpperCase()}** for scrutiny because they have a ${req.capperRecord.net_units >= 0 ? 'mediocre' : 'LOSING'} track record:
+- Record: ${req.capperRecord.wins}W - ${req.capperRecord.losses}L (${req.capperRecord.win_rate.toFixed(1)}%)
+- Net Units: ${req.capperRecord.net_units >= 0 ? '+' : ''}${req.capperRecord.net_units.toFixed(2)}u
+- ROI: ${req.capperRecord.roi >= 0 ? '+' : ''}${req.capperRecord.roi.toFixed(1)}%
+
+This capper thinks they're right, but let's see if the evidence says otherwise...`
+    : req.capperName
+      ? `We've selected **${req.capperName.toUpperCase()}** for scrutiny (new capper, no track record yet).`
+      : ''
+
   return `You are THE DEVIL'S ADVOCATE. Your job is to DESTROY this pick if possible.
 
-**OUR MODEL'S PICK:**
+${capperIntro}
+
+**THE PICK UNDER FIRE:**
 - Game: ${req.awayTeam} @ ${req.homeTeam}
 - Spread: ${req.awayTeam} ${(req.spread?.away ?? 0) > 0 ? '+' : ''}${req.spread?.away ?? 0} / ${req.homeTeam} ${(req.spread?.home ?? 0) > 0 ? '+' : ''}${req.spread?.home ?? 0}
-- Our Pick: **${req.ourPick}** to cover
-- Our Confidence: ${req.ourConfidence}%
+- ${req.capperName ? req.capperName.toUpperCase() + "'s" : 'Their'} Pick: **${req.ourPick}** to cover
+- Confidence: ${req.ourConfidence}%
 - Date: ${req.gameDate}
 
-YOUR MISSION: Find every reason this pick could FAIL.
+YOUR MISSION: Find every reason this pick could FAIL. ${req.capperName ? `Show ${req.capperName} why they might be wrong!` : ''}
 
 Search X/Twitter and news for:
 1. **Breaking News** - Injuries, lineup changes announced in last 6 hours
 2. **Contra Narratives** - What are people saying AGAINST ${req.ourPick}?
-3. **Blind Spots** - What might our model be missing? Historical trends, ref assignments, rest situations
+3. **Blind Spots** - What might this capper be missing? Historical trends, ref assignments, rest situations
 4. **Red Flags** - Any concerning patterns or warnings
 
-Rate the RISK to our pick (1-10):
-- 1-3: Low risk, pick looks solid
+Rate the RISK to this pick (1-10):
+- 1-3: Low risk, pick looks solid (even ${req.capperName || 'they'} got lucky)
 - 4-6: Moderate risk, some concerns
 - 7-10: High risk, significant evidence against pick
 
@@ -991,23 +1013,37 @@ Respond in JSON:
 {
   "riskScore": <1-10>,
   "contraEvidence": ["evidence point 1", "evidence point 2", ...],
-  "blindSpots": ["thing we might be missing 1", ...],
+  "blindSpots": ["thing they might be missing 1", ...],
   "breakingNews": ["any breaking news found"],
-  "recommendation": "PROCEED" | "CAUTION" | "ABORT"
+  "recommendation": "PROCEED" | "CAUTION" | "ABORT",
+  "capperCallout": "${req.capperName ? `A snarky one-liner calling out ${req.capperName} for this pick` : 'A snarky one-liner about this pick'}"
 }`
 }
 
 function buildDevilsAdvocateTotalPrompt(req: DevilsAdvocateRequest): string {
+  const capperIntro = req.capperName && req.capperRecord
+    ? `We've selected **${req.capperName.toUpperCase()}** for scrutiny because they have a ${req.capperRecord.net_units >= 0 ? 'mediocre' : 'LOSING'} track record:
+- Record: ${req.capperRecord.wins}W - ${req.capperRecord.losses}L (${req.capperRecord.win_rate.toFixed(1)}%)
+- Net Units: ${req.capperRecord.net_units >= 0 ? '+' : ''}${req.capperRecord.net_units.toFixed(2)}u
+- ROI: ${req.capperRecord.roi >= 0 ? '+' : ''}${req.capperRecord.roi.toFixed(1)}%
+
+This capper thinks they're right about the total, but let's see if the evidence says otherwise...`
+    : req.capperName
+      ? `We've selected **${req.capperName.toUpperCase()}** for scrutiny (new capper, no track record yet).`
+      : ''
+
   return `You are THE DEVIL'S ADVOCATE. Your job is to DESTROY this pick if possible.
 
-**OUR MODEL'S PICK:**
+${capperIntro}
+
+**THE PICK UNDER FIRE:**
 - Game: ${req.awayTeam} @ ${req.homeTeam}
 - Total: ${req.total}
-- Our Pick: **${req.ourPick}** (${req.ourPick === 'OVER' ? 'expecting high scoring' : 'expecting low scoring'})
-- Our Confidence: ${req.ourConfidence}%
+- ${req.capperName ? req.capperName.toUpperCase() + "'s" : 'Their'} Pick: **${req.ourPick}** (${req.ourPick === 'OVER' ? 'expecting high scoring' : 'expecting low scoring'})
+- Confidence: ${req.ourConfidence}%
 - Date: ${req.gameDate}
 
-YOUR MISSION: Find every reason this pick could FAIL.
+YOUR MISSION: Find every reason this pick could FAIL. ${req.capperName ? `Show ${req.capperName} why they might be wrong!` : ''}
 
 Search X/Twitter and news for:
 1. **Breaking News** - Injuries to key scorers/defenders announced in last 6 hours
@@ -1015,8 +1051,8 @@ Search X/Twitter and news for:
 3. **Blind Spots** - Pace changes, defensive schemes, ref tendencies, weather/arena factors
 4. **Red Flags** - Historical O/U trends, back-to-back fatigue, motivation factors
 
-Rate the RISK to our pick (1-10):
-- 1-3: Low risk, pick looks solid
+Rate the RISK to this pick (1-10):
+- 1-3: Low risk, pick looks solid (even ${req.capperName || 'they'} got lucky)
 - 4-6: Moderate risk, some concerns
 - 7-10: High risk, significant evidence against pick
 
@@ -1024,9 +1060,10 @@ Respond in JSON:
 {
   "riskScore": <1-10>,
   "contraEvidence": ["evidence point 1", "evidence point 2", ...],
-  "blindSpots": ["thing we might be missing 1", ...],
+  "blindSpots": ["thing they might be missing 1", ...],
   "breakingNews": ["any breaking news found"],
-  "recommendation": "PROCEED" | "CAUTION" | "ABORT"
+  "recommendation": "PROCEED" | "CAUTION" | "ABORT",
+  "capperCallout": "${req.capperName ? `A snarky one-liner calling out ${req.capperName} for this pick` : 'A snarky one-liner about this pick'}"
 }`
 }
 
@@ -1066,6 +1103,7 @@ function parseDevilsAdvocateResponse(content: string, betType: string, request: 
         blindSpots: parsed.blindSpots || [],
         breakingNews: parsed.breakingNews || [],
         recommendation: parsed.recommendation || 'PROCEED',
+        capperCallout: parsed.capperCallout || null,
         rawAnalysis: content
       },
       devilsScore: {
@@ -1087,6 +1125,7 @@ function parseDevilsAdvocateResponse(content: string, betType: string, request: 
         blindSpots: [],
         breakingNews: [],
         recommendation: 'CAUTION',
+        capperCallout: null,
         rawAnalysis: content.substring(0, 500)
       },
       devilsScore: {

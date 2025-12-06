@@ -971,106 +971,130 @@ export default function AIManagerPage() {
                           )}
 
                           {/* Expanded Detail Row - DEVILS ADVOCATE */}
-                          {expandedType === 'DEVILS' && devilsInsight && (
-                            <tr className="bg-red-900/20 border-l-2 border-red-500">
-                              <td colSpan={7} className="p-4">
-                                <div className="flex items-center gap-2 mb-3">
-                                  <span className="text-lg">😈</span>
-                                  <h3 className="text-sm font-bold text-red-400">The Devils Advocate - Contrarian Analysis</h3>
-                                </div>
-                                <div className="grid grid-cols-3 gap-4">
-                                  {/* Column 1: Risk Assessment */}
-                                  <div className="bg-slate-800/50 rounded p-3">
-                                    <h4 className="text-xs font-semibold text-red-400 mb-2 flex items-center gap-1">
-                                      <AlertTriangle className="w-3 h-3" /> Risk Assessment
-                                    </h4>
-                                    <div className="space-y-1 text-xs">
-                                      <div className="flex justify-between">
-                                        <span className="text-slate-500">Warning Points:</span>
-                                        <span className="text-white font-mono">{devilsInsight.quantified_value?.points?.toFixed(3)}</span>
-                                      </div>
-                                      <div className="flex justify-between">
-                                        <span className="text-slate-500">Risk Score:</span>
-                                        <span className="font-mono text-red-400">{devilsInsight.raw_data?.devilsAdvocate?.riskScore}/10</span>
-                                      </div>
-                                      <div className="flex justify-between">
-                                        <span className="text-slate-500">Severity:</span>
-                                        <Badge className={`text-[10px] ${devilsInsight.raw_data?.devilsAdvocate?.severity === 'high' ? 'bg-red-500/20 text-red-400' : devilsInsight.raw_data?.devilsAdvocate?.severity === 'medium' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-500/20 text-green-400'}`}>
-                                          {devilsInsight.raw_data?.devilsAdvocate?.severity || 'unknown'}
-                                        </Badge>
-                                      </div>
-                                      <div className="border-t border-slate-700 pt-1 mt-1">
-                                        <div className="flex justify-between">
-                                          <span className="text-slate-500">Recommendation:</span>
-                                          <Badge className={devilsInsight.raw_data?.devilsAdvocate?.recommendation === 'PROCEED' ? 'bg-green-500/20 text-green-400' : devilsInsight.raw_data?.devilsAdvocate?.recommendation === 'CAUTION' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'}>
-                                            {devilsInsight.raw_data?.devilsAdvocate?.recommendation}
-                                          </Badge>
-                                        </div>
-                                        <div className="flex justify-between">
-                                          <span className="text-slate-500">Your Pick:</span>
-                                          <span className="text-slate-400">{devilsInsight.raw_data?.devilsAdvocate?.yourPick}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                          <span className="text-slate-500">Your Confidence:</span>
-                                          <span className="font-mono">{devilsInsight.raw_data?.devilsAdvocate?.yourConfidence}%</span>
-                                        </div>
-                                      </div>
+                          {expandedType === 'DEVILS' && devilsInsight && (() => {
+                            const da = devilsInsight.raw_data?.devilsAdvocate
+                            const targetCapper = da?.targetCapper
+                            const targetRecord = da?.targetCapperRecord
+                            return (
+                              <tr className="bg-red-900/20 border-l-2 border-red-500">
+                                <td colSpan={7} className="p-4">
+                                  {/* Header with Target Capper */}
+                                  <div className="flex items-center justify-between mb-3">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-lg">😈</span>
+                                      <h3 className="text-sm font-bold text-red-400">The Devils Advocate</h3>
                                     </div>
-                                  </div>
-
-                                  {/* Column 2: Contra Evidence */}
-                                  <div className="bg-slate-800/50 rounded p-3">
-                                    <h4 className="text-xs font-semibold text-yellow-400 mb-2 flex items-center gap-1">
-                                      <AlertTriangle className="w-3 h-3" /> Contra Evidence
-                                    </h4>
-                                    <div className="space-y-1.5 text-[10px] text-slate-400">
-                                      {devilsInsight.raw_data?.devilsAdvocate?.contraEvidence?.map((r: string, i: number) => (
-                                        <div key={i} className="flex gap-1">
-                                          <span className="text-red-400">⚠️</span>
-                                          <span className="text-red-300">{r}</span>
-                                        </div>
-                                      ))}
-                                    </div>
-                                    {devilsInsight.raw_data?.devilsAdvocate?.counterArguments && (
-                                      <div className="mt-2 pt-2 border-t border-slate-700">
-                                        <div className="text-[10px] text-slate-400 font-semibold mb-1">Counter Arguments:</div>
-                                        <ul className="space-y-0.5 text-[10px] text-slate-500">
-                                          {devilsInsight.raw_data?.devilsAdvocate?.counterArguments?.map((a: string, i: number) => (
-                                            <li key={i}>• {a}</li>
-                                          ))}
-                                        </ul>
+                                    {targetCapper && (
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-xs text-slate-500">Targeting:</span>
+                                        <Badge className="bg-red-500/20 text-red-400 text-xs">{targetCapper.toUpperCase()}</Badge>
+                                        {targetRecord && (
+                                          <span className="text-[10px] text-slate-500">
+                                            ({targetRecord.wins}W-{targetRecord.losses}L, {targetRecord.net_units >= 0 ? '+' : ''}{targetRecord.net_units?.toFixed(1)}u)
+                                          </span>
+                                        )}
                                       </div>
                                     )}
                                   </div>
 
-                                  {/* Column 3: Red Flags */}
-                                  <div className="bg-slate-800/50 rounded p-3">
-                                    <h4 className="text-xs font-semibold text-red-400 mb-2 flex items-center gap-1">
-                                      <XCircle className="w-3 h-3" /> Red Flags
-                                    </h4>
-                                    <div className="space-y-1.5 text-[10px]">
-                                      {devilsInsight.raw_data?.devilsAdvocate?.redFlags?.map((flag: string, i: number) => (
-                                        <div key={i} className="bg-red-900/30 rounded p-2 text-red-300 flex gap-1">
-                                          <span>🚩</span>
-                                          <span>{flag}</span>
+                                  {/* Capper Callout Banner */}
+                                  {da?.capperCallout && (
+                                    <div className="mb-3 bg-red-900/40 border border-red-500/30 rounded-lg p-3">
+                                      <p className="text-sm text-red-300 italic">"😈 {da.capperCallout}"</p>
+                                    </div>
+                                  )}
+
+                                  <div className="grid grid-cols-3 gap-4">
+                                    {/* Column 1: Risk Assessment & Target Info */}
+                                    <div className="bg-slate-800/50 rounded p-3">
+                                      <h4 className="text-xs font-semibold text-red-400 mb-2 flex items-center gap-1">
+                                        <AlertTriangle className="w-3 h-3" /> Risk Assessment
+                                      </h4>
+                                      <div className="space-y-1 text-xs">
+                                        <div className="flex justify-between">
+                                          <span className="text-slate-500">Warning Points:</span>
+                                          <span className="text-white font-mono">{devilsInsight.quantified_value?.points?.toFixed(2)}</span>
                                         </div>
-                                      ))}
-                                      {(!devilsInsight.raw_data?.devilsAdvocate?.redFlags || devilsInsight.raw_data?.devilsAdvocate?.redFlags?.length === 0) && (
-                                        <p className="text-slate-500 italic">No major red flags identified</p>
+                                        <div className="flex justify-between">
+                                          <span className="text-slate-500">Risk Score:</span>
+                                          <span className="font-mono text-red-400">{da?.riskScore}/10</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span className="text-slate-500">Recommendation:</span>
+                                          <Badge className={da?.recommendation === 'PROCEED' ? 'bg-green-500/20 text-green-400' : da?.recommendation === 'CAUTION' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'}>
+                                            {da?.recommendation}
+                                          </Badge>
+                                        </div>
+                                        <div className="border-t border-slate-700 pt-1 mt-1">
+                                          <div className="text-[10px] text-slate-400 mb-1">The Pick Under Fire:</div>
+                                          <div className="flex justify-between">
+                                            <span className="text-slate-500">{targetCapper || 'Capper'}:</span>
+                                            <span className="text-red-300 font-bold">{da?.yourPick}</span>
+                                          </div>
+                                          <div className="flex justify-between">
+                                            <span className="text-slate-500">Confidence:</span>
+                                            <span className="font-mono">{da?.yourConfidence}%</span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* Column 2: Contra Evidence */}
+                                    <div className="bg-slate-800/50 rounded p-3">
+                                      <h4 className="text-xs font-semibold text-yellow-400 mb-2 flex items-center gap-1">
+                                        <AlertTriangle className="w-3 h-3" /> Contra Evidence
+                                      </h4>
+                                      <div className="space-y-1.5 text-[10px] text-slate-400 max-h-40 overflow-auto">
+                                        {da?.contraEvidence?.map((r: string, i: number) => (
+                                          <div key={i} className="flex gap-1">
+                                            <span className="text-red-400 shrink-0">⚠️</span>
+                                            <span className="text-red-300">{r}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                      {da?.blindSpots && da.blindSpots.length > 0 && (
+                                        <div className="mt-2 pt-2 border-t border-slate-700">
+                                          <div className="text-[10px] text-slate-400 font-semibold mb-1">Blind Spots:</div>
+                                          <ul className="space-y-0.5 text-[10px] text-slate-500">
+                                            {da.blindSpots.map((b: string, i: number) => (
+                                              <li key={i}>👁️ {b}</li>
+                                            ))}
+                                          </ul>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* Column 3: Breaking News & Red Flags */}
+                                    <div className="bg-slate-800/50 rounded p-3">
+                                      <h4 className="text-xs font-semibold text-red-400 mb-2 flex items-center gap-1">
+                                        <XCircle className="w-3 h-3" /> Breaking News & Flags
+                                      </h4>
+                                      {da?.breakingNews && da.breakingNews.length > 0 && (
+                                        <div className="mb-2">
+                                          <div className="text-[10px] text-yellow-400 font-semibold mb-1">📰 Breaking:</div>
+                                          <div className="space-y-1 text-[10px]">
+                                            {da.breakingNews.map((news: string, i: number) => (
+                                              <div key={i} className="bg-yellow-900/30 rounded p-1.5 text-yellow-300">{news}</div>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                      {(!da?.breakingNews || da.breakingNews.length === 0) && (
+                                        <p className="text-[10px] text-slate-500 italic mb-2">No breaking news found</p>
                                       )}
                                     </div>
                                   </div>
-                                </div>
 
-                                {/* Raw Analysis */}
-                                <div className="mt-3 bg-slate-800/50 rounded p-3">
-                                  <h4 className="text-xs font-semibold text-slate-400 mb-2">Raw Devils Advocate Analysis</h4>
-                                  <p className="text-[11px] text-slate-500 leading-relaxed">{devilsInsight.raw_data?.devilsAdvocate?.rawAnalysis}</p>
-                                </div>
-                                <div className="mt-2 text-[10px] text-slate-600">Generated: {new Date(devilsInsight.created_at).toLocaleString()}</div>
-                              </td>
-                            </tr>
-                          )}
+                                  {/* Raw Analysis */}
+                                  <div className="mt-3 bg-slate-800/50 rounded p-3">
+                                    <h4 className="text-xs font-semibold text-slate-400 mb-2">Full Devils Advocate Analysis</h4>
+                                    <p className="text-[11px] text-slate-500 leading-relaxed">{da?.rawAnalysis}</p>
+                                  </div>
+                                  <div className="mt-2 text-[10px] text-slate-600">Generated: {new Date(devilsInsight.created_at).toLocaleString()}</div>
+                                </td>
+                              </tr>
+                            )
+                          })()}
                         </React.Fragment>
                       )
                     })
