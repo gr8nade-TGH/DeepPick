@@ -198,6 +198,14 @@ const AI_INSIGHTS_REGISTRY = [
   }
 ]
 
+// Available test insight types
+const TEST_INSIGHT_TYPES = [
+  { id: 'pace', name: 'Pace Sentiment', description: 'Fast-paced shootout vs defensive grind', betType: 'TOTAL' },
+  { id: 'scoring', name: 'Scoring Buzz', description: 'What total are people predicting', betType: 'TOTAL' },
+  { id: 'blowout', name: 'Blowout Risk', description: 'Is this expected to be lopsided', betType: 'GLOBAL' },
+  { id: 'rest', name: 'Rest/Load Management', description: 'Are key players sitting out', betType: 'GLOBAL' },
+]
+
 export default function AIManagerPage() {
   const [activeTab, setActiveTab] = useState('insights')
   const [expandedRow, setExpandedRow] = useState<string | null>(null)
@@ -211,6 +219,12 @@ export default function AIManagerPage() {
   const [insightsLoading, setInsightsLoading] = useState(false)
   const [generatingGame, setGeneratingGame] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+
+  // Test insights state
+  const [testInsightType, setTestInsightType] = useState('pace')
+  const [testGameId, setTestGameId] = useState('')
+  const [testResult, setTestResult] = useState<any>(null)
+  const [testLoading, setTestLoading] = useState(false)
 
   useEffect(() => {
     fetchTodaysGames()
@@ -291,6 +305,24 @@ export default function AIManagerPage() {
   }
 
   const selectedGameData = todaysGames.find(g => g.id === selectedGame)
+  const testGameData = todaysGames.find(g => g.id === testGameId)
+
+  const runTestInsight = async () => {
+    if (!testGameData) return
+    setTestLoading(true)
+    setTestResult(null)
+
+    try {
+      const url = `/api/test/grok-insights?type=${testInsightType}&away=${encodeURIComponent(testGameData.away_team.name)}&home=${encodeURIComponent(testGameData.home_team.name)}&total=${testGameData.odds?.total?.line || 225}`
+      const res = await fetch(url)
+      const data = await res.json()
+      setTestResult(data)
+    } catch (error) {
+      setTestResult({ error: 'Failed to run test' })
+    } finally {
+      setTestLoading(false)
+    }
+  }
 
   const runGrokTest = async () => {
     if (!selectedGameData) return
@@ -367,6 +399,9 @@ export default function AIManagerPage() {
             </TabsTrigger>
             <TabsTrigger value="registry" className="text-xs h-7 px-3">
               <Zap className="w-3 h-3 mr-1" /> AI Insights Registry
+            </TabsTrigger>
+            <TabsTrigger value="test" className="text-xs h-7 px-3">
+              <Play className="w-3 h-3 mr-1" /> Test Insights
             </TabsTrigger>
             <TabsTrigger value="pulse" className="text-xs h-7 px-3">
               <Activity className="w-3 h-3 mr-1" /> The Pulse (Grok)
@@ -710,6 +745,164 @@ export default function AIManagerPage() {
                 <Badge className="bg-green-500/20 text-green-400 text-[9px]">OPENAI</Badge>
                 <Badge className="bg-blue-500/20 text-blue-400 text-[9px]">PERPLEXITY</Badge>
                 <Badge className="bg-slate-500/20 text-slate-400 text-[9px]">SYSTEM</Badge>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Test Insights - Explore new insight types */}
+          <TabsContent value="test" className="mt-0">
+            <div className="grid grid-cols-12 gap-4">
+              {/* Left: Controls */}
+              <div className="col-span-4 space-y-3">
+                <div className="bg-slate-900 border border-slate-800 rounded p-3">
+                  <h3 className="text-sm font-medium mb-2 text-green-400">Test New Insight Types</h3>
+                  <p className="text-xs text-slate-500 mb-3">Explore potential TOTALS insights from Grok</p>
+
+                  <div className="space-y-2">
+                    <div>
+                      <label className="text-xs text-slate-500 block mb-1">Insight Type</label>
+                      <select
+                        value={testInsightType}
+                        onChange={(e) => setTestInsightType(e.target.value)}
+                        className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm"
+                      >
+                        {TEST_INSIGHT_TYPES.map(t => (
+                          <option key={t.id} value={t.id}>{t.name} ({t.betType})</option>
+                        ))}
+                      </select>
+                      <p className="text-[10px] text-slate-600 mt-1">
+                        {TEST_INSIGHT_TYPES.find(t => t.id === testInsightType)?.description}
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-slate-500 block mb-1">Select Game</label>
+                      <select
+                        value={testGameId}
+                        onChange={(e) => setTestGameId(e.target.value)}
+                        className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm"
+                      >
+                        <option value="">Select a game...</option>
+                        {todaysGames.map(g => (
+                          <option key={g.id} value={g.id}>
+                            {g.away_team.abbreviation} @ {g.home_team.abbreviation} (O/U {g.odds?.total?.line || 'N/A'})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {testGameData && (
+                      <div className="text-xs bg-slate-800/50 rounded p-2 space-y-1">
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">Away:</span>
+                          <span>{testGameData.away_team.name}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">Home:</span>
+                          <span>{testGameData.home_team.name}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">Total:</span>
+                          <span className="text-blue-400">{testGameData.odds?.total?.line || 'N/A'}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    <Button
+                      onClick={runTestInsight}
+                      disabled={testLoading || !testGameId}
+                      className="w-full bg-green-600 hover:bg-green-500 h-8 text-sm"
+                    >
+                      {testLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Play className="w-4 h-4 mr-1" />}
+                      Run Test
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Insight Types Legend */}
+                <div className="bg-slate-900 border border-slate-800 rounded p-3">
+                  <h3 className="text-sm font-medium mb-2 text-slate-400">Insight Types</h3>
+                  <div className="space-y-2 text-xs">
+                    {TEST_INSIGHT_TYPES.map(t => (
+                      <div key={t.id} className="flex items-start gap-2">
+                        <Badge className={`text-[9px] mt-0.5 ${t.betType === 'TOTAL' ? 'bg-blue-500/20 text-blue-400' : 'bg-cyan-500/20 text-cyan-400'}`}>
+                          {t.betType}
+                        </Badge>
+                        <div>
+                          <div className="text-white font-medium">{t.name}</div>
+                          <div className="text-slate-500">{t.description}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right: Results */}
+              <div className="col-span-8">
+                <div className="bg-slate-900 border border-slate-800 rounded">
+                  <div className="p-3 border-b border-slate-800 flex items-center justify-between">
+                    <h3 className="text-sm font-medium">Test Result</h3>
+                    {testResult && (
+                      <Button
+                        onClick={() => {
+                          navigator.clipboard.writeText(JSON.stringify(testResult, null, 2))
+                        }}
+                        variant="outline"
+                        size="sm"
+                        className="h-6 text-[10px]"
+                      >
+                        Copy JSON
+                      </Button>
+                    )}
+                  </div>
+                  <div className="p-3">
+                    {!testResult ? (
+                      <div className="text-center py-12 text-slate-500">
+                        <Activity className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">Select a game and insight type, then click Run Test</p>
+                      </div>
+                    ) : testResult.error ? (
+                      <div className="bg-red-500/10 border border-red-500/30 rounded p-3 text-red-400 text-sm">
+                        {testResult.error}
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {/* Summary */}
+                        <div className="bg-slate-800/50 rounded p-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge className="bg-green-500/20 text-green-400 text-[10px]">Success</Badge>
+                            <span className="text-sm text-white">{testResult.matchup}</span>
+                            <Badge className="bg-purple-500/20 text-purple-400 text-[10px]">{testResult.insightType}</Badge>
+                          </div>
+                          {testResult.usage && (
+                            <div className="text-[10px] text-slate-500">
+                              Tokens: {testResult.usage.total_tokens} (prompt: {testResult.usage.prompt_tokens}, completion: {testResult.usage.completion_tokens})
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Parsed Data */}
+                        {testResult.parsed && (
+                          <div className="bg-slate-800/50 rounded p-3">
+                            <h4 className="text-xs font-medium text-green-400 mb-2">Parsed Response</h4>
+                            <pre className="text-[11px] text-slate-300 overflow-auto max-h-64 whitespace-pre-wrap">
+                              {JSON.stringify(testResult.parsed, null, 2)}
+                            </pre>
+                          </div>
+                        )}
+
+                        {/* Raw Response */}
+                        <div className="bg-slate-800/50 rounded p-3">
+                          <h4 className="text-xs font-medium text-slate-400 mb-2">Raw Grok Response</h4>
+                          <pre className="text-[10px] text-slate-500 overflow-auto max-h-48 whitespace-pre-wrap">
+                            {testResult.rawResponse}
+                          </pre>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </TabsContent>
