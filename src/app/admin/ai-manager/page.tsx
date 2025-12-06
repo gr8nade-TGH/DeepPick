@@ -89,6 +89,7 @@ const AI_INSIGHTS_REGISTRY = [
     name: 'Sentiment Lean',
     provider: 'GROK',
     providerModel: 'grok-3-mini',
+    betType: 'GLOBAL',
     category: 'Social Sentiment',
     description: 'Measures public opinion % on each side based on X/Twitter discourse',
     outputFormat: 'Percentage lean (-100% to +100%) toward away or home',
@@ -102,6 +103,7 @@ const AI_INSIGHTS_REGISTRY = [
     name: 'Engagement Lean',
     provider: 'GROK',
     providerModel: 'grok-3-mini',
+    betType: 'GLOBAL',
     category: 'Social Sentiment',
     description: 'Measures social media engagement (likes/retweets) distribution between sides',
     outputFormat: 'Percentage lean (-100% to +100%) based on total engagement',
@@ -115,6 +117,7 @@ const AI_INSIGHTS_REGISTRY = [
     name: 'Bold Predictions',
     provider: 'OPENAI',
     providerModel: 'gpt-4o',
+    betType: 'TOTAL',
     category: 'Player Performance',
     description: 'AI-generated player performance predictions with confidence levels',
     outputFormat: 'Array of player predictions with reasoning',
@@ -128,6 +131,7 @@ const AI_INSIGHTS_REGISTRY = [
     name: 'Professional Analysis',
     provider: 'OPENAI',
     providerModel: 'gpt-4o-mini',
+    betType: 'GLOBAL',
     category: 'Game Breakdown',
     description: 'Comprehensive game analysis writeup for insight cards',
     outputFormat: 'Structured text analysis with key factors',
@@ -141,6 +145,7 @@ const AI_INSIGHTS_REGISTRY = [
     name: 'News Signal',
     provider: 'PERPLEXITY',
     providerModel: 'sonar-pro',
+    betType: 'GLOBAL',
     category: 'Breaking News',
     description: 'Real-time news and injury updates that could impact the game',
     outputFormat: 'News items with sentiment impact scores',
@@ -154,6 +159,7 @@ const AI_INSIGHTS_REGISTRY = [
     name: 'Injury Impact',
     provider: 'OPENAI',
     providerModel: 'gpt-4o',
+    betType: 'GLOBAL',
     category: 'Lineup Analysis',
     description: 'Analyzes how injuries/rest affect pace, totals, and spreads',
     outputFormat: 'Impact score with affected metrics',
@@ -167,6 +173,7 @@ const AI_INSIGHTS_REGISTRY = [
     name: 'Sharp Money Flow',
     provider: 'SYSTEM',
     providerModel: 'Internal calculation',
+    betType: 'SPREAD',
     category: 'Betting Markets',
     description: 'Tracks line movement and betting percentages to identify sharp action',
     outputFormat: 'Sharp lean direction with confidence',
@@ -180,6 +187,7 @@ const AI_INSIGHTS_REGISTRY = [
     name: 'Historical Matchup',
     provider: 'SYSTEM',
     providerModel: 'MySportsFeeds',
+    betType: 'GLOBAL',
     category: 'Historical Data',
     description: 'Head-to-head history and trends between teams',
     outputFormat: 'Trend indicators with win rates',
@@ -625,11 +633,11 @@ export default function AIManagerPage() {
                   <tr className="text-left text-xs text-slate-500">
                     <th className="p-2 w-10">Status</th>
                     <th className="p-2">Insight Name</th>
+                    <th className="p-2">Bet Type</th>
                     <th className="p-2">Provider</th>
                     <th className="p-2">Category</th>
                     <th className="p-2">Description</th>
                     <th className="p-2">Used By</th>
-                    <th className="p-2">Weight</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -647,10 +655,18 @@ export default function AIManagerPage() {
                         <div className="text-[10px] text-slate-600 font-mono">{insight.id}</div>
                       </td>
                       <td className="p-2">
+                        <Badge className={`text-[10px] ${insight.betType === 'GLOBAL' ? 'bg-cyan-500/20 text-cyan-400' :
+                          insight.betType === 'SPREAD' ? 'bg-orange-500/20 text-orange-400' :
+                            'bg-blue-500/20 text-blue-400'
+                          }`}>
+                          {insight.betType}
+                        </Badge>
+                      </td>
+                      <td className="p-2">
                         <Badge className={`text-[10px] ${insight.provider === 'GROK' ? 'bg-purple-500/20 text-purple-400' :
-                            insight.provider === 'OPENAI' ? 'bg-green-500/20 text-green-400' :
-                              insight.provider === 'PERPLEXITY' ? 'bg-blue-500/20 text-blue-400' :
-                                'bg-slate-500/20 text-slate-400'
+                          insight.provider === 'OPENAI' ? 'bg-green-500/20 text-green-400' :
+                            insight.provider === 'PERPLEXITY' ? 'bg-blue-500/20 text-blue-400' :
+                              'bg-slate-500/20 text-slate-400'
                           }`}>
                           {insight.provider}
                         </Badge>
@@ -668,14 +684,13 @@ export default function AIManagerPage() {
                           ))}
                         </div>
                       </td>
-                      <td className="p-2 text-xs text-slate-400">{insight.weight}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
 
               {/* Legend */}
-              <div className="p-3 border-t border-slate-800 flex items-center gap-4 text-[10px] text-slate-500">
+              <div className="p-3 border-t border-slate-800 flex flex-wrap items-center gap-4 text-[10px] text-slate-500">
                 <div className="flex items-center gap-1">
                   <Badge className="bg-green-500/20 text-green-400 text-[9px]">✓</Badge>
                   <span>Active</span>
@@ -685,6 +700,12 @@ export default function AIManagerPage() {
                   <span>Planned</span>
                 </div>
                 <span className="text-slate-600">|</span>
+                <span className="text-slate-400">Bet Type:</span>
+                <Badge className="bg-cyan-500/20 text-cyan-400 text-[9px]">GLOBAL</Badge>
+                <Badge className="bg-orange-500/20 text-orange-400 text-[9px]">SPREAD</Badge>
+                <Badge className="bg-blue-500/20 text-blue-400 text-[9px]">TOTAL</Badge>
+                <span className="text-slate-600">|</span>
+                <span className="text-slate-400">Provider:</span>
                 <Badge className="bg-purple-500/20 text-purple-400 text-[9px]">GROK</Badge>
                 <Badge className="bg-green-500/20 text-green-400 text-[9px]">OPENAI</Badge>
                 <Badge className="bg-blue-500/20 text-blue-400 text-[9px]">PERPLEXITY</Badge>
