@@ -295,7 +295,7 @@ export async function executeWizardPipeline(input: WizardOrchestratorInput): Pro
     let aiArchetypeFactor: any = null
     let step5_5Confidence = finalConfidence
 
-    if (aiArchetype && aiArchetype !== 'none') {
+    if (aiArchetype) {
       console.log('[WizardOrchestrator] Step 5.5: Calling AI Archetype:', aiArchetype)
 
       try {
