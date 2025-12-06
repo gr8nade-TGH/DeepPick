@@ -222,6 +222,10 @@ export default function AIManagerPage() {
   const [ourPick, setOurPick] = useState('')
   const [ourConfidence, setOurConfidence] = useState(65)
 
+  // Baseline Adjustment Test state
+  const [baselineTestResults, setBaselineTestResults] = useState<Record<string, any>>({})
+  const [baselineTestLoading, setBaselineTestLoading] = useState<string | null>(null)
+
   useEffect(() => {
     fetchTodaysGames()
     fetchStoredInsights()
@@ -301,6 +305,35 @@ export default function AIManagerPage() {
   }
 
   const selectedGameData = todaysGames.find(g => g.id === selectedGame)
+
+  // Test baseline adjustment for a specific archetype
+  const runBaselineTest = async (archetype: string) => {
+    if (!selectedGameData) return
+    const testKey = `${archetype}-${betType}`
+    setBaselineTestLoading(testKey)
+
+    try {
+      const spreadLine = selectedGameData.odds?.spread?.line || 0
+      const res = await fetch('/api/admin/archetype-baseline-test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          awayTeam: selectedGameData.away_team.name,
+          homeTeam: selectedGameData.home_team.name,
+          spread: { away: spreadLine, home: -spreadLine },
+          total: selectedGameData.odds?.total?.line || 220,
+          betType,
+          archetype
+        })
+      })
+      const data = await res.json()
+      setBaselineTestResults(prev => ({ ...prev, [testKey]: data }))
+    } catch (err) {
+      console.error('Baseline test failed:', err)
+      setBaselineTestResults(prev => ({ ...prev, [testKey]: { success: false, error: 'Request failed' } }))
+    }
+    setBaselineTestLoading(null)
+  }
 
   const runInfluencerTest = async () => {
     if (!selectedGameData) return
@@ -468,11 +501,14 @@ export default function AIManagerPage() {
             <TabsTrigger value="insights" className="text-xs h-7 px-3">
               <Database className="w-3 h-3 mr-1" /> Game Insights ({storedInsights.length})
             </TabsTrigger>
+            <TabsTrigger value="baseline-test" className="text-xs h-7 px-3">
+              <Activity className="w-3 h-3 mr-1" /> Baseline Test
+            </TabsTrigger>
             <TabsTrigger value="registry" className="text-xs h-7 px-3">
               <Zap className="w-3 h-3 mr-1" /> AI Insights Registry
             </TabsTrigger>
             <TabsTrigger value="ai-archetypes" className="text-xs h-7 px-3">
-              <Activity className="w-3 h-3 mr-1" /> AI Archetypes (4)
+              <Brain className="w-3 h-3 mr-1" /> AI Archetypes (4)
             </TabsTrigger>
           </TabsList>
 
@@ -1324,6 +1360,132 @@ export default function AIManagerPage() {
                   </div>
                 </div>
               )}
+            </div>
+          </TabsContent>
+
+          {/* Baseline Test - Test archetype baseline adjustments */}
+          <TabsContent value="baseline-test" className="mt-0">
+            <div className="bg-slate-900 border border-slate-800 rounded overflow-hidden">
+              <div className="p-3 border-b border-slate-800 flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-medium text-white">🎯 Archetype Baseline Adjustment Test</h3>
+                  <p className="text-xs text-slate-500">Test how each archetype shifts the baseline prediction (-5 to +5 points)</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {/* Game Selector */}
+                  <select
+                    value={selectedGame}
+                    onChange={(e) => setSelectedGame(e.target.value)}
+                    className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs"
+                  >
+                    {todaysGames.map(g => (
+                      <option key={g.id} value={g.id}>
+                        {g.away_team.abbreviation} @ {g.home_team.abbreviation}
+                      </option>
+                    ))}
+                  </select>
+                  {/* Bet Type Toggle */}
+                  <div className="flex items-center gap-1 bg-slate-800 rounded p-0.5">
+                    <button
+                      onClick={() => setBetType('SPREAD')}
+                      className={`px-3 py-1 text-xs font-medium rounded transition-colors ${betType === 'SPREAD' ? 'bg-orange-500 text-white' : 'text-slate-400 hover:text-white'}`}
+                    >SPREAD</button>
+                    <button
+                      onClick={() => setBetType('TOTAL')}
+                      className={`px-3 py-1 text-xs font-medium rounded transition-colors ${betType === 'TOTAL' ? 'bg-blue-500 text-white' : 'text-slate-400 hover:text-white'}`}
+                    >TOTAL</button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Archetype Test Cards */}
+              <div className="p-4 grid grid-cols-2 gap-4">
+                {[
+                  { key: 'pulse', name: 'The Pulse', icon: '🌊', color: 'purple', desc: 'Public sentiment analysis' },
+                  { key: 'influencer', name: 'The Influencer', icon: '👑', color: 'amber', desc: 'Sharp money & influencer sentiment' },
+                  { key: 'interpreter', name: 'The Interpreter', icon: '🔮', color: 'emerald', desc: 'News & research analysis' },
+                  { key: 'mathematician', name: 'The Mathematician', icon: '🧮', color: 'cyan', desc: 'Statistical formula + X intel' },
+                ].map(arch => {
+                  const testKey = `${arch.key}-${betType}`
+                  const result = baselineTestResults[testKey]
+                  const isLoading = baselineTestLoading === testKey
+
+                  return (
+                    <div key={arch.key} className={`bg-slate-800 border border-${arch.color}-500/30 rounded overflow-hidden`}>
+                      <div className={`p-3 border-b border-slate-700 bg-${arch.color}-500/10 flex items-center justify-between`}>
+                        <div>
+                          <h4 className={`text-sm font-bold text-${arch.color}-400`}>{arch.icon} {arch.name}</h4>
+                          <p className="text-[10px] text-slate-500">{arch.desc}</p>
+                        </div>
+                        <Button
+                          onClick={() => runBaselineTest(arch.key)}
+                          disabled={isLoading || !selectedGame}
+                          size="sm"
+                          className={`bg-${arch.color}-600 hover:bg-${arch.color}-500 h-7 text-xs`}
+                        >
+                          {isLoading ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Play className="w-3 h-3 mr-1" />}
+                          Test {betType}
+                        </Button>
+                      </div>
+
+                      <div className="p-3">
+                        {result ? (
+                          result.success ? (
+                            <div className="space-y-2">
+                              {/* Baseline Adjustment Display */}
+                              <div className="grid grid-cols-3 gap-2">
+                                <div className="bg-slate-900 rounded p-2 text-center">
+                                  <div className={`text-2xl font-bold ${(result.baselineAdjustment?.value || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                    {result.baselineAdjustment?.value >= 0 ? '+' : ''}{result.baselineAdjustment?.value?.toFixed(2) || '0.00'}
+                                  </div>
+                                  <div className="text-[10px] text-slate-500">Baseline Adj</div>
+                                </div>
+                                <div className="bg-slate-900 rounded p-2 text-center">
+                                  <div className="text-lg font-bold text-white">{result.baselineAdjustment?.direction || 'N/A'}</div>
+                                  <div className="text-[10px] text-slate-500">Direction</div>
+                                </div>
+                                <div className="bg-slate-900 rounded p-2 text-center">
+                                  <div className="text-lg font-bold text-white">{result.score?.points?.toFixed(2) || '0.00'}</div>
+                                  <div className="text-[10px] text-slate-500">Factor Pts</div>
+                                </div>
+                              </div>
+
+                              {/* Reasoning */}
+                              {result.baselineAdjustment?.reasoning && (
+                                <div className="bg-slate-900/50 rounded p-2">
+                                  <div className="text-[10px] text-slate-500 mb-1">Reasoning:</div>
+                                  <div className="text-xs text-slate-300">{result.baselineAdjustment.reasoning}</div>
+                                </div>
+                              )}
+
+                              {/* Raw Analysis (collapsible) */}
+                              <details className="bg-slate-900/50 rounded overflow-hidden">
+                                <summary className="text-[10px] text-slate-500 p-2 cursor-pointer hover:bg-slate-800">View Raw AI Response</summary>
+                                <pre className="text-[9px] text-slate-400 p-2 overflow-auto max-h-40 whitespace-pre-wrap">{result.rawAnalysis}</pre>
+                              </details>
+
+                              {/* Usage */}
+                              {result.usage && (
+                                <div className="text-[9px] text-slate-600 flex gap-2">
+                                  <span>Tokens: {result.usage.totalTokens}</span>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="text-xs text-red-400 bg-red-500/10 rounded p-2">
+                              Error: {result.error}
+                            </div>
+                          )
+                        ) : (
+                          <div className="text-xs text-slate-500 text-center py-4">
+                            Click &quot;Test {betType}&quot; to run analysis
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           </TabsContent>
 

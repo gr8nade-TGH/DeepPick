@@ -50,6 +50,13 @@ export interface GrokSentimentResponse {
       confidenceMultiplier: number    // 0.7 to 1.0
     }
   }
+  // Baseline adjustment for pick diversity (-5 to +5 points)
+  // Positive = shift baseline toward OVER/AWAY, Negative = shift toward UNDER/HOME
+  baselineAdjustment?: {
+    value: number                     // -5 to +5
+    direction: 'OVER' | 'UNDER' | 'AWAY' | 'HOME'
+    reasoning: string                 // Why this adjustment
+  }
   error?: string
   usage?: { promptTokens: number; completionTokens: number; totalTokens: number }
 }
@@ -129,6 +136,7 @@ Be specific about percentages and cite real sentiment patterns you observe.`
       success: true,
       sentiment: parsed.sentiment,
       pulseScore: parsed.pulseScore,
+      baselineAdjustment: parsed.baselineAdjustment,
       usage: {
         promptTokens: data.usage?.prompt_tokens || 0,
         completionTokens: data.usage?.completion_tokens || 0,
@@ -163,6 +171,11 @@ Search for recent posts about this game and analyze:
 4. How confident/loud is each camp?
 5. Find 2-3 sample posts with high engagement
 
+Finally, based on your sentiment analysis, provide a BASELINE ADJUSTMENT:
+- If public sentiment strongly favors AWAY team, provide a positive number (+1 to +5)
+- If public sentiment strongly favors HOME team, provide a negative number (-1 to -5)
+- Small lean = ±1-2, Strong consensus = ±3-4, Overwhelming = ±5
+
 Respond in this exact JSON format:
 {
   "awaySentimentPct": <number 0-100>,
@@ -173,7 +186,10 @@ Respond in this exact JSON format:
   "samplePosts": [
     {"text": "post text...", "likes": <number>, "sentiment": "away" | "home"}
   ],
-  "rawAnalysis": "Brief 2-3 sentence summary of the overall vibe"
+  "rawAnalysis": "Brief 2-3 sentence summary of the overall vibe",
+  "baselineAdjustment": <number -5 to +5>,
+  "baselineDirection": "AWAY" | "HOME",
+  "baselineReasoning": "One sentence explaining why this adjustment"
 }`
 }
 
@@ -191,6 +207,11 @@ Search for recent posts about this game's total and analyze:
 4. How confident/loud is each camp?
 5. Find 2-3 sample posts with high engagement
 
+Finally, based on your sentiment analysis, provide a BASELINE ADJUSTMENT:
+- If public sentiment strongly favors OVER, provide a positive number (+1 to +5)
+- If public sentiment strongly favors UNDER, provide a negative number (-1 to -5)
+- Small lean = ±1-2, Strong consensus = ±3-4, Overwhelming = ±5
+
 Respond in this exact JSON format:
 {
   "awaySentimentPct": <number 0-100 for OVER>,
@@ -201,7 +222,10 @@ Respond in this exact JSON format:
   "samplePosts": [
     {"text": "post text...", "likes": <number>, "sentiment": "over" | "under"}
   ],
-  "rawAnalysis": "Brief 2-3 sentence summary of the overall vibe"
+  "rawAnalysis": "Brief 2-3 sentence summary of the overall vibe",
+  "baselineAdjustment": <number -5 to +5>,
+  "baselineDirection": "OVER" | "UNDER",
+  "baselineReasoning": "One sentence explaining why this adjustment"
 }`
 }
 
@@ -212,6 +236,7 @@ function parseGrokResponse(
 ): {
   sentiment: GrokSentimentResponse['sentiment']
   pulseScore: GrokSentimentResponse['pulseScore']
+  baselineAdjustment?: GrokSentimentResponse['baselineAdjustment']
 } {
   try {
     // Try to extract JSON from the response
@@ -293,6 +318,13 @@ function parseGrokResponse(
       teamName = direction === 'away' ? 'OVER' : 'UNDER'
     }
 
+    // Parse baseline adjustment from AI response
+    const rawAdjustment = Number(parsed.baselineAdjustment) || 0
+    const clampedAdjustment = Math.max(-5, Math.min(5, rawAdjustment))
+    const baselineDirection = parsed.baselineDirection || (betType === 'TOTAL'
+      ? (clampedAdjustment >= 0 ? 'OVER' : 'UNDER')
+      : (clampedAdjustment >= 0 ? 'AWAY' : 'HOME'))
+
     return {
       sentiment: {
         awaySentimentPct,
@@ -315,6 +347,11 @@ function parseGrokResponse(
           rawLean: Number(rawLean.toFixed(3)),
           confidenceMultiplier
         }
+      },
+      baselineAdjustment: {
+        value: clampedAdjustment,
+        direction: baselineDirection as 'OVER' | 'UNDER' | 'AWAY' | 'HOME',
+        reasoning: parsed.baselineReasoning || `Sentiment ${clampedAdjustment >= 0 ? 'favors' : 'against'} ${baselineDirection}`
       }
     }
   } catch (error) {
@@ -342,7 +379,8 @@ function parseGrokResponse(
           rawLean: 0,
           confidenceMultiplier: 0.7
         }
-      }
+      },
+      baselineAdjustment: undefined  // No adjustment on parse failure
     }
   }
 }
@@ -405,6 +443,7 @@ Always respond in valid JSON format.`
       success: true,
       sentiment: parsed.sentiment,
       influencerScore: parsed.influencerScore,
+      baselineAdjustment: parsed.baselineAdjustment,
       usage: {
         promptTokens: data.usage?.prompt_tokens || 0,
         completionTokens: data.usage?.completion_tokens || 0,
@@ -440,6 +479,11 @@ Find posts discussing this game's spread and analyze:
 3. Key reasons cited by influencers
 4. Find 2-4 sample posts from high-follower accounts (include follower count)
 
+Finally, based on INFLUENCER consensus, provide a BASELINE ADJUSTMENT:
+- If influencers strongly favor AWAY team, provide a positive number (+1 to +5)
+- If influencers strongly favor HOME team, provide a negative number (-1 to -5)
+- Small lean = ±1-2, Strong consensus = ±3-4, Overwhelming = ±5
+
 Respond in JSON:
 {
   "awaySentimentPct": <0-100>,
@@ -452,7 +496,10 @@ Respond in JSON:
   "samplePosts": [
     {"text": "...", "likes": <num>, "sentiment": "away"|"home", "followers": <account follower count>}
   ],
-  "rawAnalysis": "2-3 sentence summary of influencer consensus"
+  "rawAnalysis": "2-3 sentence summary of influencer consensus",
+  "baselineAdjustment": <number -5 to +5>,
+  "baselineDirection": "AWAY" | "HOME",
+  "baselineReasoning": "One sentence explaining why"
 }`
 }
 
@@ -477,6 +524,11 @@ Find posts discussing this game's total and analyze:
 3. Key reasons cited by influencers
 4. Find 2-4 sample posts from high-follower accounts (include follower count)
 
+Finally, based on INFLUENCER consensus, provide a BASELINE ADJUSTMENT:
+- If influencers strongly favor OVER, provide a positive number (+1 to +5)
+- If influencers strongly favor UNDER, provide a negative number (-1 to -5)
+- Small lean = ±1-2, Strong consensus = ±3-4, Overwhelming = ±5
+
 Respond in JSON:
 {
   "awaySentimentPct": <0-100 for OVER>,
@@ -489,7 +541,10 @@ Respond in JSON:
   "samplePosts": [
     {"text": "...", "likes": <num>, "sentiment": "over"|"under", "followers": <account follower count>}
   ],
-  "rawAnalysis": "2-3 sentence summary of influencer consensus"
+  "rawAnalysis": "2-3 sentence summary of influencer consensus",
+  "baselineAdjustment": <number -5 to +5>,
+  "baselineDirection": "OVER" | "UNDER",
+  "baselineReasoning": "One sentence explaining why"
 }`
 }
 
@@ -501,6 +556,7 @@ function parseInfluencerResponse(
 ): {
   sentiment: InfluencerSentimentResponse['sentiment']
   influencerScore: InfluencerSentimentResponse['influencerScore']
+  baselineAdjustment?: GrokSentimentResponse['baselineAdjustment']
 } {
   try {
     const jsonMatch = content.match(/\{[\s\S]*\}/)
@@ -571,6 +627,13 @@ function parseInfluencerResponse(
       teamName = direction === 'away' ? 'OVER' : 'UNDER'
     }
 
+    // Parse baseline adjustment from AI response
+    const rawAdjustment = Number(parsed.baselineAdjustment) || 0
+    const clampedAdjustment = Math.max(-5, Math.min(5, rawAdjustment))
+    const baselineDirection = parsed.baselineDirection || (betType === 'TOTAL'
+      ? (clampedAdjustment >= 0 ? 'OVER' : 'UNDER')
+      : (clampedAdjustment >= 0 ? 'AWAY' : 'HOME'))
+
     return {
       sentiment: {
         awaySentimentPct,
@@ -595,6 +658,11 @@ function parseInfluencerResponse(
           accountsAnalyzed,
           avgFollowerCount: Math.round(avgFollowerCount)
         }
+      },
+      baselineAdjustment: {
+        value: clampedAdjustment,
+        direction: baselineDirection as 'OVER' | 'UNDER' | 'AWAY' | 'HOME',
+        reasoning: parsed.baselineReasoning || `Influencer consensus ${clampedAdjustment >= 0 ? 'favors' : 'against'} ${baselineDirection}`
       }
     }
   } catch (error) {
@@ -623,7 +691,8 @@ function parseInfluencerResponse(
           accountsAnalyzed: 0,
           avgFollowerCount: 0
         }
-      }
+      },
+      baselineAdjustment: undefined
     }
   }
 }
@@ -661,6 +730,12 @@ export interface InterpreterResponse {
       evidenceQuality: number       // How many concrete citations
       confidenceMultiplier: number  // Based on evidence quality
     }
+  }
+  // Baseline adjustment for pick diversity (-5 to +5 points)
+  baselineAdjustment?: {
+    value: number                   // -5 to +5
+    direction: 'OVER' | 'UNDER' | 'AWAY' | 'HOME'
+    reasoning: string
   }
   error?: string
   usage?: { promptTokens: number; completionTokens: number; totalTokens: number }
@@ -718,6 +793,7 @@ Be specific and cite evidence. Always respond in valid JSON format.`
       success: true,
       analysis: parsed.analysis,
       interpreterScore: parsed.interpreterScore,
+      baselineAdjustment: parsed.baselineAdjustment,
       usage: {
         promptTokens: data.usage?.prompt_tokens || 0,
         completionTokens: data.usage?.completion_tokens || 0,
@@ -747,6 +823,11 @@ RESEARCH these areas using real-time X/Twitter and news:
 
 Based on your research, form YOUR opinion. Who covers the spread?
 
+Finally, provide a BASELINE ADJUSTMENT based on your research:
+- If your research strongly favors AWAY team, provide a positive number (+1 to +5)
+- If your research strongly favors HOME team, provide a negative number (-1 to -5)
+- Small lean = ±1-2, Strong evidence = ±3-4, Overwhelming = ±5
+
 Respond in JSON:
 {
   "pick": "${req.awayTeam}" | "${req.homeTeam}",
@@ -754,7 +835,10 @@ Respond in JSON:
   "confidence": "high" | "medium" | "low",
   "topReasons": ["reason 1 with evidence", "reason 2 with evidence", "reason 3 with evidence"],
   "newsFindings": ["any breaking news you found"],
-  "riskFactors": ["potential concerns for this pick"]
+  "riskFactors": ["potential concerns for this pick"],
+  "baselineAdjustment": <number -5 to +5>,
+  "baselineDirection": "AWAY" | "HOME",
+  "baselineReasoning": "One sentence explaining why"
 }`
 }
 
@@ -773,6 +857,11 @@ RESEARCH these areas using real-time X/Twitter and news:
 
 Based on your research, form YOUR opinion. Over or Under?
 
+Finally, provide a BASELINE ADJUSTMENT based on your research:
+- If your research strongly favors OVER, provide a positive number (+1 to +5)
+- If your research strongly favors UNDER, provide a negative number (-1 to -5)
+- Small lean = ±1-2, Strong evidence = ±3-4, Overwhelming = ±5
+
 Respond in JSON:
 {
   "pick": "OVER" | "UNDER",
@@ -780,11 +869,18 @@ Respond in JSON:
   "confidence": "high" | "medium" | "low",
   "topReasons": ["reason 1 with evidence", "reason 2 with evidence", "reason 3 with evidence"],
   "newsFindings": ["any breaking news you found"],
-  "riskFactors": ["potential concerns for this pick"]
+  "riskFactors": ["potential concerns for this pick"],
+  "baselineAdjustment": <number -5 to +5>,
+  "baselineDirection": "OVER" | "UNDER",
+  "baselineReasoning": "One sentence explaining why"
 }`
 }
 
-function parseInterpreterResponse(content: string, betType: string, request: InterpreterRequest): { analysis: InterpreterResponse['analysis']; interpreterScore: InterpreterResponse['interpreterScore'] } {
+function parseInterpreterResponse(content: string, betType: string, request: InterpreterRequest): {
+  analysis: InterpreterResponse['analysis']
+  interpreterScore: InterpreterResponse['interpreterScore']
+  baselineAdjustment?: InterpreterResponse['baselineAdjustment']
+} {
   try {
     const jsonMatch = content.match(/\{[\s\S]*\}/)
     if (!jsonMatch) throw new Error('No JSON found')
@@ -813,6 +909,13 @@ function parseInterpreterResponse(content: string, betType: string, request: Int
       ? parsed.pick
       : parsed.pick?.toUpperCase()
 
+    // Parse baseline adjustment from AI response
+    const rawAdjustment = Number(parsed.baselineAdjustment) || 0
+    const clampedAdjustment = Math.max(-5, Math.min(5, rawAdjustment))
+    const baselineDirection = parsed.baselineDirection || (betType === 'TOTAL'
+      ? (clampedAdjustment >= 0 ? 'OVER' : 'UNDER')
+      : (clampedAdjustment >= 0 ? 'AWAY' : 'HOME'))
+
     return {
       analysis: {
         pick: parsed.pick || 'N/A',
@@ -832,6 +935,11 @@ function parseInterpreterResponse(content: string, betType: string, request: Int
           evidenceQuality: Number(evidenceQuality.toFixed(2)),
           confidenceMultiplier: Number(confidenceMultiplier.toFixed(2))
         }
+      },
+      baselineAdjustment: {
+        value: clampedAdjustment,
+        direction: baselineDirection as 'OVER' | 'UNDER' | 'AWAY' | 'HOME',
+        reasoning: parsed.baselineReasoning || `Research ${clampedAdjustment >= 0 ? 'favors' : 'against'} ${baselineDirection}`
       }
     }
   } catch (error) {
@@ -854,7 +962,8 @@ function parseInterpreterResponse(content: string, betType: string, request: Int
           evidenceQuality: 0,
           confidenceMultiplier: 0.7
         }
-      }
+      },
+      baselineAdjustment: undefined
     }
   }
 }
@@ -902,6 +1011,13 @@ export interface DevilsAdvocateResponse {
       evidenceCount: number         // How many contra points found
       severityMultiplier: number    // Based on breaking news
     }
+  }
+  // Baseline adjustment for pick diversity (-5 to +5 points)
+  // Devil's Advocate typically provides NEGATIVE adjustments (warns against current direction)
+  baselineAdjustment?: {
+    value: number                   // -5 to +5
+    direction: 'OVER' | 'UNDER' | 'AWAY' | 'HOME'
+    reasoning: string
   }
   error?: string
   usage?: { promptTokens: number; completionTokens: number; totalTokens: number }
@@ -959,6 +1075,7 @@ Be aggressive in finding counter-evidence. Always respond in valid JSON format.`
       success: true,
       analysis: parsed.analysis,
       devilsScore: parsed.devilsScore,
+      baselineAdjustment: parsed.baselineAdjustment,
       usage: {
         promptTokens: data.usage?.prompt_tokens || 0,
         completionTokens: data.usage?.completion_tokens || 0,
@@ -1009,6 +1126,11 @@ Rate the RISK to this pick (1-10):
 - 4-6: Moderate risk, some concerns
 - 7-10: High risk, significant evidence against pick
 
+Finally, provide a BASELINE ADJUSTMENT (as the contrarian):
+- If evidence strongly supports the OPPOSITE of the pick (AWAY team), provide POSITIVE adjustment (+1 to +5)
+- If evidence strongly supports the OPPOSITE of the pick (HOME team), provide NEGATIVE adjustment (-1 to -5)
+- Small concern = ±1-2, Moderate = ±3-4, Major red flags = ±5
+
 Respond in JSON:
 {
   "riskScore": <1-10>,
@@ -1016,7 +1138,10 @@ Respond in JSON:
   "blindSpots": ["thing they might be missing 1", ...],
   "breakingNews": ["any breaking news found"],
   "recommendation": "PROCEED" | "CAUTION" | "ABORT",
-  "capperCallout": "${req.capperName ? `A snarky one-liner calling out ${req.capperName} for this pick` : 'A snarky one-liner about this pick'}"
+  "capperCallout": "${req.capperName ? `A snarky one-liner calling out ${req.capperName} for this pick` : 'A snarky one-liner about this pick'}",
+  "baselineAdjustment": <number -5 to +5>,
+  "baselineDirection": "AWAY" | "HOME",
+  "baselineReasoning": "One sentence explaining the contrarian view"
 }`
 }
 
@@ -1056,6 +1181,11 @@ Rate the RISK to this pick (1-10):
 - 4-6: Moderate risk, some concerns
 - 7-10: High risk, significant evidence against pick
 
+Finally, provide a BASELINE ADJUSTMENT (as the contrarian):
+- If evidence strongly supports the OPPOSITE of the pick (OVER), provide POSITIVE adjustment (+1 to +5)
+- If evidence strongly supports the OPPOSITE of the pick (UNDER), provide NEGATIVE adjustment (-1 to -5)
+- Small concern = ±1-2, Moderate = ±3-4, Major red flags = ±5
+
 Respond in JSON:
 {
   "riskScore": <1-10>,
@@ -1063,11 +1193,18 @@ Respond in JSON:
   "blindSpots": ["thing they might be missing 1", ...],
   "breakingNews": ["any breaking news found"],
   "recommendation": "PROCEED" | "CAUTION" | "ABORT",
-  "capperCallout": "${req.capperName ? `A snarky one-liner calling out ${req.capperName} for this pick` : 'A snarky one-liner about this pick'}"
+  "capperCallout": "${req.capperName ? `A snarky one-liner calling out ${req.capperName} for this pick` : 'A snarky one-liner about this pick'}",
+  "baselineAdjustment": <number -5 to +5>,
+  "baselineDirection": "OVER" | "UNDER",
+  "baselineReasoning": "One sentence explaining the contrarian view"
 }`
 }
 
-function parseDevilsAdvocateResponse(content: string, betType: string, request: DevilsAdvocateRequest): { analysis: DevilsAdvocateResponse['analysis']; devilsScore: DevilsAdvocateResponse['devilsScore'] } {
+function parseDevilsAdvocateResponse(content: string, betType: string, request: DevilsAdvocateRequest): {
+  analysis: DevilsAdvocateResponse['analysis']
+  devilsScore: DevilsAdvocateResponse['devilsScore']
+  baselineAdjustment?: DevilsAdvocateResponse['baselineAdjustment']
+} {
   try {
     const jsonMatch = content.match(/\{[\s\S]*\}/)
     if (!jsonMatch) throw new Error('No JSON found')
@@ -1096,6 +1233,13 @@ function parseDevilsAdvocateResponse(content: string, betType: string, request: 
 
     const teamName = points >= 3 ? 'WARNING' : points >= 1.5 ? 'CAUTION' : 'CLEAR'
 
+    // Parse baseline adjustment from AI response (contrarian view)
+    const rawAdjustment = Number(parsed.baselineAdjustment) || 0
+    const clampedAdjustment = Math.max(-5, Math.min(5, rawAdjustment))
+    const baselineDirection = parsed.baselineDirection || (betType === 'TOTAL'
+      ? (clampedAdjustment >= 0 ? 'OVER' : 'UNDER')
+      : (clampedAdjustment >= 0 ? 'AWAY' : 'HOME'))
+
     return {
       analysis: {
         riskScore,
@@ -1115,6 +1259,11 @@ function parseDevilsAdvocateResponse(content: string, betType: string, request: 
           evidenceCount,
           severityMultiplier: Number(severityMultiplier.toFixed(2))
         }
+      },
+      baselineAdjustment: {
+        value: clampedAdjustment,
+        direction: baselineDirection as 'OVER' | 'UNDER' | 'AWAY' | 'HOME',
+        reasoning: parsed.baselineReasoning || `Contrarian view ${clampedAdjustment >= 0 ? 'favors' : 'against'} ${baselineDirection}`
       }
     }
   } catch (error) {
@@ -1137,7 +1286,8 @@ function parseDevilsAdvocateResponse(content: string, betType: string, request: 
           evidenceCount: 0,
           severityMultiplier: 1.0
         }
-      }
+      },
+      baselineAdjustment: undefined
     }
   }
 }
@@ -1215,6 +1365,12 @@ export interface MathematicianResponse {
       formulaScore: number       // Raw formula output
     }
   }
+  // Baseline adjustment for pick diversity (-5 to +5 points)
+  baselineAdjustment?: {
+    value: number                   // -5 to +5
+    direction: 'OVER' | 'UNDER' | 'AWAY' | 'HOME'
+    reasoning: string
+  }
   error?: string
   usage?: { promptTokens: number; completionTokens: number; totalTokens: number }
 }
@@ -1273,6 +1429,7 @@ Search X for the most recent updates on this game.`
       success: true,
       analysis: grokAnalysis.analysis,
       mathScore: grokAnalysis.mathScore,
+      baselineAdjustment: grokAnalysis.baselineAdjustment,
       usage: {
         promptTokens: data.usage?.prompt_tokens || 0,
         completionTokens: data.usage?.completion_tokens || 0,
@@ -1296,7 +1453,8 @@ Search X for the most recent updates on this game.`
         xFactors: ['Grok search unavailable - using formula only'],
         rawAnalysis: 'Formula-based projection without X/Twitter verification'
       },
-      mathScore: formulaResult.mathScore
+      mathScore: formulaResult.mathScore,
+      baselineAdjustment: undefined  // No adjustment when Grok fails
     }
   }
 }
@@ -1521,6 +1679,9 @@ YOUR TASK:
 2. Provide an INJURY ADJUSTMENT value (-5 to +5 points) based on what you find
 3. List any X-FACTORS that could affect the total
 4. Give your FINAL VERDICT: agree with ${formula.direction} or flip to ${formula.direction === 'OVER' ? 'UNDER' : 'OVER'}?
+5. Provide a BASELINE ADJUSTMENT (-5 to +5) based on your statistical analysis:
+   - Positive = shift baseline toward OVER (higher scoring expected)
+   - Negative = shift baseline toward UNDER (lower scoring expected)
 
 RESPOND IN THIS FORMAT:
 INJURY_ADJUSTMENT: [number between -5 and +5]
@@ -1530,6 +1691,8 @@ X_FACTORS:
 - [factor 3]
 FINAL_VERDICT: [OVER or UNDER]
 CONFIDENCE: [HIGH, MEDIUM, or LOW]
+BASELINE_ADJUSTMENT: [number between -5 and +5]
+BASELINE_REASONING: [One sentence explaining why]
 ANALYSIS: [2-3 sentence summary of your findings]`
 }
 
@@ -1540,7 +1703,11 @@ function parseMathematicianResponse(
   content: string,
   formula: FormulaResult,
   request: MathematicianRequest
-): { analysis: MathematicianResponse['analysis']; mathScore: MathematicianResponse['mathScore'] } {
+): {
+  analysis: MathematicianResponse['analysis']
+  mathScore: MathematicianResponse['mathScore']
+  baselineAdjustment?: MathematicianResponse['baselineAdjustment']
+} {
 
   // Extract injury adjustment
   const injuryMatch = content.match(/INJURY_ADJUSTMENT:\s*([+-]?\d+\.?\d*)/i)
@@ -1564,6 +1731,15 @@ function parseMathematicianResponse(
   const confMatch = content.match(/CONFIDENCE:\s*(HIGH|MEDIUM|LOW)/i)
   const grokConfidence = confMatch ? confMatch[1].toUpperCase() as 'HIGH' | 'MEDIUM' | 'LOW' : formula.confidence
 
+  // Extract baseline adjustment
+  const baselineMatch = content.match(/BASELINE_ADJUSTMENT:\s*([+-]?\d+\.?\d*)/i)
+  const rawBaselineAdjustment = baselineMatch ? parseFloat(baselineMatch[1]) : 0
+  const clampedBaselineAdjustment = Math.max(-5, Math.min(5, rawBaselineAdjustment))
+
+  // Extract baseline reasoning
+  const baselineReasoningMatch = content.match(/BASELINE_REASONING:\s*(.+?)(?=\n|ANALYSIS:|$)/i)
+  const baselineReasoning = baselineReasoningMatch ? baselineReasoningMatch[1].trim() : ''
+
   // Extract analysis
   const analysisMatch = content.match(/ANALYSIS:\s*([\s\S]+?)$/i)
   const rawAnalysis = analysisMatch ? analysisMatch[1].trim() : content.substring(0, 500)
@@ -1584,6 +1760,9 @@ function parseMathematicianResponse(
 
   const confidenceMultiplier = grokConfidence === 'HIGH' ? 1.0 : grokConfidence === 'MEDIUM' ? 0.85 : 0.7
   const finalPoints = Math.min(rawPoints * confidenceMultiplier, 5.0)
+
+  // Determine baseline direction based on adjustment sign
+  const baselineDirection = clampedBaselineAdjustment >= 0 ? 'OVER' : 'UNDER'
 
   return {
     analysis: {
@@ -1610,6 +1789,11 @@ function parseMathematicianResponse(
         confidenceMultiplier,
         formulaScore: rawPoints
       }
+    },
+    baselineAdjustment: {
+      value: clampedBaselineAdjustment,
+      direction: baselineDirection as 'OVER' | 'UNDER',
+      reasoning: baselineReasoning || `Statistical analysis ${clampedBaselineAdjustment >= 0 ? 'favors' : 'against'} ${baselineDirection}`
     }
   }
 }

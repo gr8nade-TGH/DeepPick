@@ -114,6 +114,58 @@ export async function executeWizardPipeline(input: WizardOrchestratorInput): Pro
     steps.step3 = await computeFactors(runId, { home: homeTeam, away: awayTeam }, sport, betType, capperId, aiProvider, newsWindowHours, factorConfig)
     console.log('[WizardOrchestrator] Step 3: Factors computed:', steps.step3.factors?.length || 0, 'factors')
 
+    // Step 0 (Pre-Analysis): AI Archetype Baseline Adjustment
+    // Run archetype BEFORE Step 4 to influence baseline calculation
+    // This enables pick diversity - different archetypes shift the baseline differently
+    const aiArchetype = factorConfig?.ai_archetype
+    let archetypeBaselineAdjustment = 0
+    let cachedArchetypeResult: any = null
+
+    if (aiArchetype) {
+      console.log('[WizardOrchestrator] Step 0: Running AI Archetype pre-analysis:', aiArchetype)
+
+      try {
+        const aiArchetypeResult = await executeAIArchetype({
+          archetype: aiArchetype,
+          awayTeam,
+          homeTeam,
+          betType,
+          spread: steps.step2.snapshot?.spread,
+          total: steps.step2.snapshot?.total?.line,
+          gameDate: game.game_time || new Date().toISOString()
+        })
+
+        if (aiArchetypeResult.success) {
+          // Extract baseline adjustment from archetype result
+          const adjustment = aiArchetypeResult.baselineAdjustment
+          if (adjustment) {
+            archetypeBaselineAdjustment = adjustment.value || 0
+            console.log('[WizardOrchestrator] Step 0: Archetype baseline adjustment:', {
+              archetype: aiArchetype,
+              adjustment: archetypeBaselineAdjustment,
+              direction: adjustment.direction,
+              reasoning: adjustment.reasoning
+            })
+          }
+
+          // Cache the full result for Step 5.5 (avoid re-running AI)
+          cachedArchetypeResult = aiArchetypeResult
+
+          steps.step0 = {
+            run_id: runId,
+            archetype: aiArchetype,
+            baselineAdjustment: archetypeBaselineAdjustment,
+            adjustmentDetails: adjustment,
+            cachedForStep5_5: true
+          }
+        } else {
+          console.warn('[WizardOrchestrator] Step 0: Archetype failed, proceeding without adjustment:', aiArchetypeResult.error)
+        }
+      } catch (error) {
+        console.error('[WizardOrchestrator] Step 0: Archetype error:', error)
+      }
+    }
+
     // Step 4: Score Predictions
     // IMPORTANT: Use Vegas market line as baseline instead of calculated team stats
     // This ensures all cappers start from the same anchor (market consensus)
@@ -124,8 +176,8 @@ export async function executeWizardPipeline(input: WizardOrchestratorInput): Pro
 
     // Get baseline model from factor config (for pick diversity)
     const baselineModel = factorConfig?.baseline_model
-    console.log('[WizardOrchestrator] Step 4: Generating predictions with Vegas baseline:', { marketBaseline, betType, baselineModel })
-    steps.step4 = await generatePredictions(runId, steps.step3, sport, betType, game, marketBaseline, baselineModel)
+    console.log('[WizardOrchestrator] Step 4: Generating predictions with Vegas baseline:', { marketBaseline, betType, baselineModel, archetypeBaselineAdjustment })
+    steps.step4 = await generatePredictions(runId, steps.step3, sport, betType, game, marketBaseline, baselineModel, archetypeBaselineAdjustment)
     console.log('[WizardOrchestrator] Step 4: Predictions generated')
 
     // Step 5: Market Edge Adjustment
@@ -291,26 +343,17 @@ export async function executeWizardPipeline(input: WizardOrchestratorInput): Pro
 
     // Step 5.5: AI Archetype Factor (Grok-powered personality layer)
     // This adds 0-5 points to one side based on the capper's selected AI archetype
-    const aiArchetype = factorConfig?.ai_archetype
+    // NOTE: The AI was already called in Step 0 - we use the cached result here
     let aiArchetypeFactor: any = null
     let step5_5Confidence = finalConfidence
 
-    if (aiArchetype) {
-      console.log('[WizardOrchestrator] Step 5.5: Calling AI Archetype:', aiArchetype)
+    if (aiArchetype && cachedArchetypeResult) {
+      console.log('[WizardOrchestrator] Step 5.5: Using cached AI Archetype result from Step 0:', aiArchetype)
 
       try {
-        const aiArchetypeResult = await executeAIArchetype({
-          archetype: aiArchetype,
-          awayTeam,
-          homeTeam,
-          betType,
-          spread: steps.step2.snapshot?.spread,
-          total: steps.step2.snapshot?.total?.line,
-          gameDate: game.game_time || new Date().toISOString()
-        })
-
-        if (aiArchetypeResult.success && aiArchetypeResult.factor) {
-          aiArchetypeFactor = aiArchetypeResult.factor
+        // Use the cached result from Step 0 (no re-run needed)
+        if (cachedArchetypeResult.success && cachedArchetypeResult.factor) {
+          aiArchetypeFactor = cachedArchetypeResult.factor
 
           // Add AI Archetype factor to the factors array and recalculate confidence
           const allFactorsWithArchetype = [
@@ -341,10 +384,73 @@ export async function executeWizardPipeline(input: WizardOrchestratorInput): Pro
             factor: aiArchetypeFactor,
             confidenceBefore: finalConfidence,
             confidenceAfter: step5_5Confidence,
-            confidenceResult: confidenceWithArchetype
+            confidenceResult: confidenceWithArchetype,
+            baselineAdjustment: cachedArchetypeResult.baselineAdjustment,  // Include baseline adjustment details
+            usedCachedResult: true  // Flag that we used Step 0 cache
           }
 
-          console.log('[WizardOrchestrator] Step 5.5: AI Archetype applied:', {
+          console.log('[WizardOrchestrator] Step 5.5: AI Archetype applied (from cache):', {
+            archetype: aiArchetype,
+            direction: aiArchetypeFactor.parsed_values_json?.direction,
+            points: aiArchetypeFactor.parsed_values_json?.points,
+            baselineAdjustment: cachedArchetypeResult.baselineAdjustment?.value || 0,
+            confidenceBefore: finalConfidence.toFixed(2),
+            confidenceAfter: step5_5Confidence.toFixed(2)
+          })
+        } else {
+          console.log('[WizardOrchestrator] Step 5.5: Cached archetype result has no factor, skipping')
+          steps.step5_5 = { skipped: true, reason: cachedArchetypeResult.error || 'No factor in cached result' }
+        }
+      } catch (archetypeError) {
+        console.error('[WizardOrchestrator] Step 5.5: AI Archetype error:', archetypeError)
+        steps.step5_5 = { skipped: true, error: archetypeError instanceof Error ? archetypeError.message : 'Unknown error' }
+      }
+    } else if (aiArchetype && !cachedArchetypeResult) {
+      // Fallback: If Step 0 failed but archetype is configured, try running now
+      console.log('[WizardOrchestrator] Step 5.5: No cached result, running AI Archetype now:', aiArchetype)
+
+      try {
+        const aiArchetypeResult = await executeAIArchetype({
+          archetype: aiArchetype,
+          awayTeam,
+          homeTeam,
+          betType,
+          spread: steps.step2.snapshot?.spread,
+          total: steps.step2.snapshot?.total?.line,
+          gameDate: game.game_time || new Date().toISOString()
+        })
+
+        if (aiArchetypeResult.success && aiArchetypeResult.factor) {
+          aiArchetypeFactor = aiArchetypeResult.factor
+
+          const { calculateConfidence } = await import('@/lib/cappers/shiva-v1/confidence-calculator')
+          const factorWeightsWithArchetype = {
+            ...steps.step3.factorWeights,
+            edgeVsMarket: 100,
+            edgeVsMarketSpread: 100,
+            aiArchetype: 100
+          }
+          const confSource = betType === 'TOTAL' ? 'nba_totals_v1' : 'nba_spread_v1'
+          const confidenceWithArchetype = calculateConfidence({
+            factors: [...(steps.step3.factors || []), edgeVsMarketFactor, aiArchetypeFactor],
+            factorWeights: factorWeightsWithArchetype,
+            confSource
+          })
+
+          step5_5Confidence = confidenceWithArchetype.confScore
+
+          steps.step5_5 = {
+            run_id: runId,
+            archetype: aiArchetype,
+            factor: aiArchetypeFactor,
+            confidenceBefore: finalConfidence,
+            confidenceAfter: step5_5Confidence,
+            confidenceResult: confidenceWithArchetype,
+            baselineAdjustment: aiArchetypeResult.baselineAdjustment,
+            usedCachedResult: false  // Flag that we ran fresh (Step 0 failed)
+          }
+
+          console.log('[WizardOrchestrator] Step 5.5: AI Archetype applied (fresh run):', {
             archetype: aiArchetype,
             direction: aiArchetypeFactor.parsed_values_json?.direction,
             points: aiArchetypeFactor.parsed_values_json?.points,
@@ -352,7 +458,6 @@ export async function executeWizardPipeline(input: WizardOrchestratorInput): Pro
             confidenceAfter: step5_5Confidence.toFixed(2)
           })
         } else {
-          console.log('[WizardOrchestrator] Step 5.5: AI Archetype returned no factor, skipping')
           steps.step5_5 = { skipped: true, reason: aiArchetypeResult.error || 'No factor returned' }
         }
       } catch (archetypeError) {
@@ -907,7 +1012,7 @@ function calculateStatsBaseline(
  * The Edge vs Market factor (Step 5) then captures the TRUE edge:
  * how far our stats-based prediction differs from market consensus.
  */
-async function generatePredictions(runId: string, step3Result: any, sport: string, betType: string, game?: any, vegasLine?: number, baselineModel?: string) {
+async function generatePredictions(runId: string, step3Result: any, sport: string, betType: string, game?: any, vegasLine?: number, baselineModel?: string, archetypeBaselineAdjustment: number = 0) {
   const { calculateConfidence } = await import('@/lib/cappers/shiva-v1/confidence-calculator')
 
   if (!step3Result?.factors || step3Result.factors.length === 0) {
@@ -926,12 +1031,26 @@ async function generatePredictions(runId: string, step3Result: any, sport: strin
   // This enables pick diversity - different cappers will produce different predictions
   // The baselineModel parameter determines which calculation method to use
   const vegasFallback = vegasLine ?? (betType === 'TOTAL' ? 220 : 0)
-  const { baseline: statsBaseline, debug: baselineDebug } = calculateStatsBaseline(
+  const { baseline: rawStatsBaseline, debug: baselineDebug } = calculateStatsBaseline(
     step3Result.statsBundle,
     betType,
     vegasFallback,
     baselineModel
   )
+
+  // Apply AI Archetype baseline adjustment (Step 0)
+  // This shifts the baseline BEFORE factor adjustments are applied
+  // Positive adjustment = shift toward OVER/AWAY, Negative = shift toward UNDER/HOME
+  const statsBaseline = rawStatsBaseline + archetypeBaselineAdjustment
+  if (archetypeBaselineAdjustment !== 0) {
+    console.log('[WizardOrchestrator:Step4] Archetype baseline adjustment applied:', {
+      rawBaseline: rawStatsBaseline.toFixed(2),
+      adjustment: archetypeBaselineAdjustment,
+      adjustedBaseline: statsBaseline.toFixed(2)
+    })
+    baselineDebug.archetypeAdjustment = archetypeBaselineAdjustment
+    baselineDebug.rawBaseline = rawStatsBaseline
+  }
 
   // Extract team names for winner field
   const awayTeamName = game ? (typeof game.away_team === 'string' ? game.away_team : game.away_team?.name) : 'AWAY'
@@ -1242,6 +1361,12 @@ interface AIArchetypeResult {
     caps_applied: boolean
     cap_reason: string | null
   }
+  // NEW: Baseline adjustment for pick diversity (Step 0)
+  baselineAdjustment?: {
+    value: number          // -5 to +5
+    direction: 'OVER' | 'UNDER' | 'AWAY' | 'HOME'
+    reasoning: string
+  }
   error?: string
 }
 
@@ -1272,6 +1397,7 @@ async function executeAIArchetype(input: AIArchetypeInput): Promise<AIArchetypeR
     let archetypeName = ''
     let rawData: any = {}
     let notes = ''
+    let baselineAdjustment: AIArchetypeResult['baselineAdjustment'] = undefined
 
     switch (archetype) {
       case 'pulse': {
@@ -1282,6 +1408,7 @@ async function executeAIArchetype(input: AIArchetypeInput): Promise<AIArchetypeR
           points = result.pulseScore.points
           rawData = result.sentiment
           notes = `Public sentiment: ${result.pulseScore.teamName} (${points.toFixed(1)} pts)`
+          baselineAdjustment = result.baselineAdjustment
         } else {
           return { success: false, error: result.error || 'Pulse returned no score' }
         }
@@ -1296,6 +1423,7 @@ async function executeAIArchetype(input: AIArchetypeInput): Promise<AIArchetypeR
           points = result.influencerScore.points
           rawData = result.sentiment
           notes = `Influencer sentiment: ${result.influencerScore.teamName} (${points.toFixed(1)} pts)`
+          baselineAdjustment = result.baselineAdjustment
         } else {
           return { success: false, error: result.error || 'Influencer returned no score' }
         }
@@ -1310,6 +1438,7 @@ async function executeAIArchetype(input: AIArchetypeInput): Promise<AIArchetypeR
           points = result.interpreterScore.points
           rawData = result.analysis
           notes = `Research analysis: ${result.interpreterScore.teamName} (${points.toFixed(1)} pts)`
+          baselineAdjustment = result.baselineAdjustment
         } else {
           return { success: false, error: result.error || 'Interpreter returned no score' }
         }
@@ -1364,6 +1493,7 @@ async function executeAIArchetype(input: AIArchetypeInput): Promise<AIArchetypeR
           points = result.mathScore.points
           rawData = result.analysis
           notes = `Math projection: ${result.mathScore.teamName} (${points.toFixed(1)} pts)`
+          baselineAdjustment = result.baselineAdjustment
         } else {
           return { success: false, error: result.error || 'Mathematician returned no score' }
         }
@@ -1429,7 +1559,7 @@ async function executeAIArchetype(input: AIArchetypeInput): Promise<AIArchetypeR
       cap_reason: points >= 4.9 ? 'max points reached' : null
     }
 
-    return { success: true, factor }
+    return { success: true, factor, baselineAdjustment }
 
   } catch (error) {
     console.error('[executeAIArchetype] Error:', error)
