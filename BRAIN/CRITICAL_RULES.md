@@ -1,6 +1,6 @@
 # CRITICAL RULES - READ FIRST
 
-**Last Updated:** 2025-12-05 (Update #28)
+**Last Updated:** 2025-12-06 (Update #29)
 **Priority:** HIGHEST - Read before any work
 **Production URL:** https://deep-pick.vercel.app
 
@@ -8,16 +8,26 @@
 
 ## 🚨 TOP PRIORITY ISSUES
 
-### #1 NEW: AI Archetype Insights Implementation
-**Status:** 🎯 DESIGN COMPLETE - Ready for implementation
-**Goal:** Add AI-powered insights to all 24 archetypes with 3-pass verification system
-**Next Step:** Primary agent builds AI Manager admin page (`/admin/ai-manager`)
-**Documentation:**
-- `docs/AI_ARCHETYPE_INSIGHTS_IMPLEMENTATION.md` - Full implementation guide
-- `docs/AI_INSIGHTS_HANDOFF.md` - Quick start for primary agent
-- `src/lib/ai-insights/archetype-definitions.ts` - Archetype metadata
+### #1 NEW: AI Insights System (IMPLEMENTED!)
+**Status:** ✅ SHIPPED - Grok-powered sentiment analysis live
+**What:** 5 AI archetypes using Grok (xAI) for real-time X/Twitter sentiment
+**Admin UI:** `/admin/ai-manager` - Test and manage insights
+**Files:**
+- `src/lib/ai-insights/grok-client.ts` - Grok integration (1616 lines)
+- `src/app/admin/ai-manager/page.tsx` - Admin UI (1858 lines)
+- `src/app/api/admin/ai-insights/route.ts` - API endpoints
 
-**Key Innovation:** Self-validating AI that prevents hallucinations with Researcher → Auditor → Judge pipeline
+**5 Archetypes:**
+1. THE PULSE - Public sentiment (0-5 points)
+2. THE INFLUENCER - Betting influencer sentiment
+3. THE INTERPRETER - Independent research
+4. THE DEVIL'S ADVOCATE - Contrarian check
+5. THE MATHEMATICIAN - Pure math (TOTALS only)
+
+**Next Steps:**
+1. Integrate Pulse Score into pick generation as factor
+2. Add cache warming cron (30min before games)
+3. Monitor Grok API costs and reliability
 
 ### #2 ONGOING: Factor Data & Pick Generation
 **Problem:** Factors and pick generation partially working, some cappers work, others don't
@@ -37,7 +47,7 @@
 
 ---
 
-## 🏭 FACTOR FACTORY (NEW - Update #25)
+## 🏭 FACTOR FACTORY (Update #25)
 
 **IMPORTANT:** Factor system has been refactored to use a single source of truth!
 
@@ -46,14 +56,19 @@
 
 **Factor Factory Location:** `src/lib/factors/`
 - `types.ts` - FactorDefinition interface
-- `registry.ts` - Central registry (all 14 factors)
+- `registry.ts` - Central registry
 - `compat.ts` - Backward-compatible layer
-- `definitions/nba/totals/` - F1-F7 factor files
-- `definitions/nba/spread/` - S1-S7 factor files
+- `definitions/nba/totals/` - F1-F9 factor files
+- `definitions/nba/spread/` - S1-S13 factor files
 
-**Current Factors:**
-- **TOTALS (7):** F1-Pace, F2-OffForm, F3-DefErosion, F4-ThreeEnv, F5-WhistleEnv, F6-Injury, F7-RestAdvantage
-- **SPREAD (7):** S1-NetRating, S2-Turnover, S3-Shooting, S4-HomeAway, S5-FourFactors, S6-Injury, S7-MomentumIndex
+**Current Factors (Update #27):**
+- **TOTALS (9):** F1-Pace, F2-OffForm, F3-DefErosion, F4-ThreeEnv, F5-WhistleEnv, F6-Injury, F7-RestAdvantage, F8-TrendMomentum, F9-MarketEdge
+- **SPREAD (13):** S1-NetRating, S2-Turnover, S3-Shooting, S4-HomeAway (broken), S5-FourFactors, S6-Injury, S7-MomentumIndex, S10-Rebounding, S11-ClutchPerf, S12-DefensiveImpact, S13-HomeAwaySplits
+
+**AI Insights (Update #29):**
+- **F10 (planned):** AI Archetype Insight for TOTALS
+- **S14 (planned):** AI Archetype Insight for SPREAD
+- **Current:** 5 Grok-powered insights (Pulse, Influencer, Interpreter, Devil's Advocate, Mathematician)
 
 **Documentation:** `docs/FACTOR_FACTORY.md` (capper diagnostics, troubleshooting, how to add factors)
 

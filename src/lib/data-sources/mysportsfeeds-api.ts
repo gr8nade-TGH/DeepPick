@@ -15,13 +15,17 @@ const MYSPORTSFEEDS_API_KEY = process.env.MYSPORTSFEEDS_API_KEY
 const MYSPORTSFEEDS_BASE_URL = 'https://api.mysportsfeeds.com/v2.1/pull/nba'
 
 /**
- * Global request queue for ALL MySportsFeeds API requests to enforce 30-second backoff
+ * Global request queue for ALL MySportsFeeds API requests to enforce backoff
  * Per MySportsFeeds API docs: Daily/Weekly Team Gamelogs require 5-second backoff
- * INCREASED TO 30 SECONDS: Even with Live tier, we're hitting 429 rate limits on multiple endpoints
- * This applies to ALL MySportsFeeds API requests (team_gamelogs, player_stats_totals, etc.)
+ *
+ * REDUCED FROM 30s TO 5s: The 30-second backoff was causing Vercel function timeouts
+ * because fetching stats for 2 teams requires ~11 API calls per team. With 30s backoff,
+ * that's 11 minutes total - far exceeding the 5-minute maxDuration.
+ *
+ * If we hit 429 rate limits, the retry logic uses exponential backoff (10s, 20s, 40s).
  */
 let lastMySportsFeedsRequest = 0
-const MYSPORTSFEEDS_BACKOFF_MS = 30000 // 30 seconds (increased from 10s due to persistent rate limits)
+const MYSPORTSFEEDS_BACKOFF_MS = 5000 // 5 seconds (reduced from 30s to prevent function timeouts)
 
 /**
  * Sleep utility for backoff delays
@@ -60,13 +64,13 @@ function getAuthHeader(): string | null {
  * @param maxRetries - Maximum number of retry attempts for rate limits (default: 3)
  */
 async function fetchMySportsFeeds(endpoint: string, season?: string, maxRetries: number = 3): Promise<any> {
-  // Enforce 30-second backoff for ALL MySportsFeeds API requests
+  // Enforce 5-second backoff for ALL MySportsFeeds API requests
   const now = Date.now()
   const timeSinceLastRequest = now - lastMySportsFeedsRequest
 
   if (timeSinceLastRequest < MYSPORTSFEEDS_BACKOFF_MS) {
     const waitTime = MYSPORTSFEEDS_BACKOFF_MS - timeSinceLastRequest
-    console.log(`[MySportsFeeds] Enforcing 30-second backoff - waiting ${waitTime}ms before request...`)
+    console.log(`[MySportsFeeds] Enforcing 5-second backoff - waiting ${waitTime}ms before request...`)
     await sleep(waitTime)
   }
 

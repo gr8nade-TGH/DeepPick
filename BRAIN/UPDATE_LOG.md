@@ -7,53 +7,243 @@
 
 ## 📋 Update History
 
-### 2025-12-05 (Update #28) - AI Archetype Insights System Design
+### 2025-12-06 (Update #29) - AI Insights System IMPLEMENTED with Grok
 **Brain Agent:** v1.0
-**Trigger:** User requested AI-powered archetype-specific insights with 3-pass verification
+**Trigger:** User requested brain update after implementing AI insights with Grok/X API
 
-**Status:** DESIGN PHASE - Implementation plan created, ready for primary agent
+**Commits Analyzed:** 32 new commits (13a9d7b → 77bd696)
+**Date Range:** 2025-12-05 to 2025-12-06
+**Current HEAD:** 77bd696
 **Production URL:** https://deep-pick.vercel.app
 
-**MAJOR ARCHITECTURAL DECISION:** Adding AI-powered insights to all 24 archetypes (12 TOTALS, 12 SPREAD) with 3-pass verification system to prevent hallucinations.
+**MAJOR FEATURE SHIPPED:** AI Insights system using Grok (xAI) for real-time X/Twitter sentiment analysis
 
 ---
 
-## 🤖 NEW SYSTEM: AI Archetype Insights (DESIGNED)
+## 🤖 AI INSIGHTS SYSTEM (IMPLEMENTED!)
 
-**Problem:** Current system uses mathematical factors only. Need real AI reasoning per archetype.
+**What Changed:** Pivoted from 3-pass verification design to simpler Grok-powered sentiment system
 
-**Solution:** 3-Pass Verification Pipeline
-1. **Pass 1 (Researcher)**: AI generates initial analysis with specific claims
-2. **Pass 2 (Auditor)**: Verifies claims against ground truth data (MySportsFeeds, NBA.com)
-3. **Pass 3 (Judge)**: Synthesizes verified data into X, Y, Z values for factor computation
+**Architecture Implemented:**
+- **Provider:** Grok (xAI) - trained on real-time X/Twitter data
+- **Model:** grok-3-mini (fast, cheap, real-time social data)
+- **Insight Types:** 5 AI archetypes (not 24 as originally planned)
+- **Storage:** `ai_insights` table in Supabase
 
-**Quality Control:**
-- Pass 2 quality < 0.70 → Reject insight
-- Pass 2 quality 0.70-0.85 → Flag for review
-- Overall quality ≥ 0.75 → Use in picks
+### **5 AI Archetypes Implemented:**
 
-**Cost Analysis:**
-- $0.29 per game (24 archetypes)
-- $4.35/day (15 games)
-- $130/month (using GPT-4.1 for Pass 3)
-- $35/month (optimization: GPT-4o-mini for all passes)
+1. **THE PULSE (PULSE_GLOBAL)** 🌊
+   - General public sentiment from all X users
+   - Outputs: Sentiment % + Engagement lean
+   - Formula: `(sentimentLean * 0.6 + engagementLean * 0.4) * confidenceMultiplier * sqrt(5.0)`
+   - Range: 0-5.0 points
 
-**Files Created:**
-- `docs/AI_ARCHETYPE_INSIGHTS_IMPLEMENTATION.md` - Complete implementation guide
-- `docs/AI_INSIGHTS_HANDOFF.md` - Handoff document for primary agent
-- `src/lib/ai-insights/archetype-definitions.ts` - Archetype metadata (starter)
+2. **THE INFLUENCER (INFLUENCER_GLOBAL)** 📢
+   - Betting influencer sentiment (10K+ followers)
+   - Tracks high-follower accounts
+   - Same scoring formula as Pulse
+
+3. **THE INTERPRETER (INTERPRETER_GLOBAL)** 🔍
+   - Independent research-based analysis
+   - No social sentiment, pure stats/trends
+   - Outputs: Research findings + confidence
+
+4. **THE DEVIL'S ADVOCATE (DEVILS_ADVOCATE_GLOBAL)** 😈
+   - Contrarian check - finds holes in picks
+   - Auto-selects weakest capper's pick to critique
+   - Fallback: Critiques public consensus if no DB picks
+
+5. **THE MATHEMATICIAN (MATHEMATICIAN_TOTAL)** 🧮
+   - TOTALS-only archetype
+   - Pure mathematical analysis
+   - No sentiment, just numbers
+
+### **Key Design Decisions:**
+
+**Why Grok instead of 3-pass verification?**
+- Real-time X/Twitter data access (Grok's unique advantage)
+- Simpler implementation, faster to market
+- Lower cost: ~$0.05 per insight vs $0.29 for 3-pass
+- Social sentiment is valuable signal for sports betting
+
+**GLOBAL vs BET-SPECIFIC:**
+- `_GLOBAL` archetypes work for both SPREAD and TOTAL
+- Separate prompts for SPREAD vs TOTAL bet types
+- Only MATHEMATICIAN is TOTAL-specific
 
 **Database Schema:**
-- `game_archetype_insights` table - Stores all 3 passes + quality scores
+```sql
+ai_insights table:
+- id (uuid)
+- game_id (text)
+- insight_type (text) - e.g., 'PULSE_GLOBAL'
+- provider (text) - 'GROK'
+- bet_type (text) - 'SPREAD' or 'TOTAL'
+- away_team, home_team (text)
+- spread_line, total_line (numeric)
+- raw_data (jsonb) - Full Grok response
+- quantified_value (jsonb) - Pulse score breakdown
+- status (text)
+- created_at, expires_at (timestamp)
+```
 
-**Next Steps:**
-1. Primary agent builds AI Manager admin page (`/admin/ai-manager`)
-2. Implement 3-pass pipeline for one archetype (Pace Prophet)
-3. Scale to all 24 archetypes
-4. Integrate with factor system (F10 for TOTALS, S14 for SPREAD)
-5. Deploy cache warming cron
+---
 
-**Key Innovation:** Self-validating AI system that catches hallucinations before they reach pick generation.
+## 🆕 NEW FEATURES
+
+### 1. AI Manager Admin Page (`/admin/ai-manager`)
+**File:** `src/app/admin/ai-manager/page.tsx` (1858 lines!)
+
+**3 Tabs:**
+1. **AI Insights Registry** - Catalog of all 5 insight types
+2. **Test Insights** - Generate insights for any game
+3. **Game Insights** - View/manage stored insights
+
+**Features:**
+- Generate insights on-demand for any game
+- View raw Grok responses
+- See quantified Pulse scores
+- SPREAD/TOTAL toggle for GLOBAL archetypes
+- Copy insight data to clipboard
+- Delete insights for testing
+
+### 2. Grok Client (`src/lib/ai-insights/grok-client.ts`)
+**File:** 1616 lines of Grok integration
+
+**Functions:**
+- `getGrokSentiment()` - THE PULSE
+- `getInfluencerSentiment()` - THE INFLUENCER
+- `getInterpreterResearch()` - THE INTERPRETER
+- `getDevilsAdvocate()` - THE DEVIL'S ADVOCATE
+- `getMathematicianAnalysis()` - THE MATHEMATICIAN
+
+**Prompt Engineering:**
+- Separate prompts for SPREAD vs TOTAL
+- Structured JSON outputs
+- Sample post extraction (top 5 posts)
+- Engagement metrics (likes, retweets)
+
+### 3. AI Insights API (`/api/admin/ai-insights`)
+**File:** `src/app/api/admin/ai-insights/route.ts`
+
+**Endpoints:**
+- `GET` - Fetch insights for game or all games
+- `POST` - Generate and save insight
+- `DELETE` - Clear insights (testing)
+
+**Caching:**
+- Checks if insight exists before generating
+- 24-hour expiration
+- Returns cached insights instantly
+
+### 4. Archetype Definitions (`src/lib/ai-insights/archetype-definitions.ts`)
+**File:** 838 lines
+
+**Contains:**
+- All 24 archetype definitions (12 TOTALS, 12 SPREAD)
+- X, Y, Z factor input definitions
+- Philosophy and focus factors
+- Icons and descriptions
+
+**Status:** Complete definitions, but only 5 archetypes have Grok implementations
+
+---
+
+## 🔧 TECHNICAL IMPLEMENTATION
+
+### **Pulse Score Formula:**
+```typescript
+const sentimentLean = (awaySentimentPct - homeSentimentPct) / 100  // -1 to +1
+const engagementLean = (awayLikes - homeLikes) / (awayLikes + homeLikes)  // -1 to +1
+const rawLean = (sentimentLean * 0.6) + (engagementLean * 0.4)
+const confidenceMultiplier = confidence === 'high' ? 1.0 : confidence === 'medium' ? 0.85 : 0.7
+const pulseScore = Math.abs(rawLean) * confidenceMultiplier * Math.sqrt(5.0)  // 0 to 5.0
+```
+
+### **Grok API Integration:**
+- **Endpoint:** `https://api.x.ai/v1/chat/completions`
+- **Model:** `grok-3-mini`
+- **Cost:** ~$0.05 per insight (1000-2000 tokens)
+- **Response Time:** 2-4 seconds
+
+### **Environment Variables:**
+- `GROK_API_KEY` - xAI API key (required)
+
+---
+
+## 📊 FILES CREATED/MODIFIED
+
+**New Files:**
+- `src/app/admin/ai-manager/page.tsx` - Admin UI (1858 lines)
+- `src/lib/ai-insights/grok-client.ts` - Grok integration (1616 lines)
+- `src/lib/ai-insights/archetype-definitions.ts` - Archetype metadata (838 lines)
+- `src/app/api/admin/ai-insights/route.ts` - API endpoints
+- `docs/AI_ARCHETYPE_INSIGHTS_IMPLEMENTATION.md` - Original 3-pass design (reference)
+- `docs/AI_INSIGHTS_HANDOFF.md` - Handoff doc (reference)
+- `PROMPT_FOR_PRIMARY_AGENT.md` - Implementation prompt (reference)
+
+**Modified Files:**
+- `src/components/navigation/nav-bar.tsx` - Added AI Manager to admin dropdown
+
+**Database:**
+- `ai_insights` table created (no migration file found - likely created via Supabase UI)
+
+---
+
+## 🎯 WHAT'S NEXT
+
+### **Immediate Priorities:**
+
+1. **Integrate AI Insights into Pick Generation**
+   - Add Pulse Score as factor input
+   - Weight: TBD (test with 5-10% initially)
+   - Use in confidence calculation
+
+2. **Cache Warming Cron**
+   - Pre-generate insights 30min before games
+   - Reduce latency during pick generation
+   - Cost: ~$0.75/day (15 games × 5 insights)
+
+3. **Monitoring Dashboard**
+   - Track insight generation success rate
+   - Monitor Grok API costs
+   - Alert on failures
+
+### **Future Enhancements:**
+
+1. **Implement Remaining 19 Archetypes**
+   - Original plan had 24 archetypes
+   - Currently only 5 implemented
+   - Decision: Keep 5 or expand?
+
+2. **3-Pass Verification (Optional)**
+   - Original design still valid
+   - Could add verification layer to Grok insights
+   - Catch hallucinations before using in picks
+
+3. **Multi-Provider Support**
+   - Add OpenAI for non-social insights
+   - Add Claude for research-heavy archetypes
+   - Compare provider performance
+
+---
+
+## 💡 KEY LEARNINGS
+
+**What Worked:**
+- Grok's real-time X data is unique and valuable
+- Simple sentiment analysis is easier to debug than 3-pass
+- Admin UI for testing is essential
+
+**What to Watch:**
+- Grok API reliability (new provider)
+- Cost scaling (currently cheap, but volume matters)
+- Sentiment accuracy (need to validate against actual outcomes)
+
+**Architecture Decision:**
+- Chose speed-to-market over complexity
+- Can always add verification layer later
+- Grok + manual review > complex automated verification (for now)
 
 ---
 
