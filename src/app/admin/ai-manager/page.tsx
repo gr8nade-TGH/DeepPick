@@ -198,12 +198,97 @@ const AI_INSIGHTS_REGISTRY = [
   }
 ]
 
-// Available test insight types
+// Available test insight types with full documentation
 const TEST_INSIGHT_TYPES = [
-  { id: 'pace', name: 'Pace Sentiment', description: 'Fast-paced shootout vs defensive grind', betType: 'TOTAL' },
-  { id: 'scoring', name: 'Scoring Buzz', description: 'What total are people predicting', betType: 'TOTAL' },
-  { id: 'blowout', name: 'Blowout Risk', description: 'Is this expected to be lopsided', betType: 'GLOBAL' },
-  { id: 'rest', name: 'Rest/Load Management', description: 'Are key players sitting out', betType: 'GLOBAL' },
+  {
+    id: 'pace',
+    name: 'Pace Sentiment',
+    betType: 'TOTAL',
+    status: 'testing',
+    shortDesc: 'Fast-paced shootout vs defensive grind',
+    fullDesc: 'Analyzes X/Twitter for discussion about expected game TEMPO. Searches for keywords like "shootout", "high-scoring", "run and gun" vs "defensive battle", "grind", "slow it down". Useful for TOTALS because pace directly affects scoring.',
+    searchTerms: ['"shootout"', '"high-scoring"', '"run and gun"', '"fast pace"', '"defensive battle"', '"grind"', '"slow"'],
+    outputFields: ['paceSentiment (fast/slow/neutral)', 'fastPacePct (0-100)', 'slowPacePct (0-100)', 'fastReasons[]', 'slowReasons[]', 'samplePosts[]'],
+    totalsUse: 'If 70%+ expect "fast pace" → lean OVER. If 70%+ expect "grind" → lean UNDER.',
+  },
+  {
+    id: 'scoring',
+    name: 'Scoring Buzz',
+    betType: 'TOTAL',
+    status: 'testing',
+    shortDesc: 'What combined score are people predicting',
+    fullDesc: 'Searches X/Twitter for explicit score predictions and total predictions. Looks for posts like "Lakers 115, Celtics 120" or "I\'m taking over 225". Aggregates fan-predicted totals and compares to Vegas line.',
+    searchTerms: ['explicit scores', '"taking over/under"', 'point total predictions', 'combined score guesses'],
+    outputFields: ['averagePredictedTotal', 'vsVegasLine (over/under)', 'marginVsLine', 'overPct', 'underPct', 'scorePredictions[]'],
+    totalsUse: 'If average predicted total is 8+ points above Vegas → strong OVER lean. Crowd wisdom signal.',
+  },
+  {
+    id: 'blowout',
+    name: 'Blowout Risk',
+    betType: 'GLOBAL',
+    status: 'testing',
+    shortDesc: 'Is this expected to be a lopsided game',
+    fullDesc: 'Analyzes chatter about expected margin of victory. Searches for "blowout", "gonna be ugly", "no contest", "domination". Blowouts affect TOTALS (garbage time scoring OR starters sitting) and SPREADS (cover probability).',
+    searchTerms: ['"blowout"', '"gonna be ugly"', '"no contest"', '"domination"', 'margin predictions'],
+    outputFields: ['blowoutRisk (high/medium/low)', 'expectedMargin', 'blowoutPct', 'closeGamePct', 'favoredTeam', 'totalsImplication'],
+    totalsUse: 'High blowout risk = unpredictable totals (garbage time can go either way). Close game = more predictable.',
+  },
+  {
+    id: 'rest',
+    name: 'Rest/Load Management',
+    betType: 'GLOBAL',
+    status: 'testing',
+    shortDesc: 'Are key players expected to sit out',
+    fullDesc: 'Searches for load management rumors, DNP speculation, back-to-back fatigue discussion. Key for both bet types: missing stars affects scoring AND spread.',
+    searchTerms: ['"resting"', '"DNP"', '"load management"', '"sitting out"', 'back-to-back', 'injury rumors'],
+    outputFields: ['restRisk (high/medium/low)', 'playersLikelyResting[]', 'backToBackTeam', 'fatigueLevel', 'totalsImplication'],
+    totalsUse: 'Star resting = lower scoring typically. Multiple stars out = significant total adjustment needed.',
+  },
+  // --- FUTURE IDEAS (not yet implemented) ---
+  {
+    id: 'defensive_matchup',
+    name: 'Defensive Matchup Hype',
+    betType: 'TOTAL',
+    status: 'idea',
+    shortDesc: 'Are people hyping a defensive matchup',
+    fullDesc: 'Searches for discussion about key defensive matchups that could limit scoring. "X is gonna lock down Y", "DPOY matchup", elite perimeter defense talk.',
+    searchTerms: ['"lock down"', '"DPOY"', '"elite defense"', '"can\'t score on"', '"shutdown"'],
+    outputFields: ['defensiveHype (high/medium/low)', 'keyMatchups[]', 'expectedScoringImpact'],
+    totalsUse: 'High defensive hype on star matchup → lean UNDER.',
+  },
+  {
+    id: 'revenge',
+    name: 'Revenge Game Narrative',
+    betType: 'SPREAD',
+    status: 'idea',
+    shortDesc: 'Is there a revenge storyline',
+    fullDesc: 'Searches for revenge game narratives - traded players facing old team, beef between players/coaches, statements to media.',
+    searchTerms: ['"revenge game"', '"facing old team"', '"has something to prove"', '"bulletin board material"'],
+    outputFields: ['revengeNarrative (strong/mild/none)', 'playerInvolved', 'narrativeStrength', 'expectedMotivation'],
+    totalsUse: 'Strong revenge narrative = player may overperform, affecting spread and potentially total if star player.',
+  },
+  {
+    id: 'weather_travel',
+    name: 'Travel/Schedule Fatigue',
+    betType: 'GLOBAL',
+    status: 'idea',
+    shortDesc: 'Travel and schedule difficulty chatter',
+    fullDesc: 'Analyzes discussion about travel schedules, time zone changes, 4-in-5 nights, west coast trips.',
+    searchTerms: ['"road trip"', '"4 in 5"', '"time zone"', '"jet lag"', '"tired legs"', '"schedule loss"'],
+    outputFields: ['fatigueFactor (high/medium/low)', 'travelContext', 'scheduleNote'],
+    totalsUse: 'Heavy fatigue = sloppy play, could go either way. Usually correlates with lower scoring.',
+  },
+  {
+    id: 'public_fade',
+    name: 'Sharp vs Public Split',
+    betType: 'SPREAD',
+    status: 'idea',
+    shortDesc: 'Are sharps fading the public',
+    fullDesc: 'Searches for discussion about betting splits, sharp money vs public money, line movement against public.',
+    searchTerms: ['"sharps on"', '"public on"', '"fading the public"', '"line moving against"', '"steam move"'],
+    outputFields: ['publicSide', 'sharpSide', 'lineMovement', 'fadeConfidence'],
+    totalsUse: 'Classic contrarian signal - if 80% public on one side and line moving other way, sharps are fading.',
+  },
 ]
 
 export default function AIManagerPage() {
@@ -819,27 +904,11 @@ export default function AIManagerPage() {
                   </div>
                 </div>
 
-                {/* Insight Types Legend */}
-                <div className="bg-slate-900 border border-slate-800 rounded p-3">
-                  <h3 className="text-sm font-medium mb-2 text-slate-400">Insight Types</h3>
-                  <div className="space-y-2 text-xs">
-                    {TEST_INSIGHT_TYPES.map(t => (
-                      <div key={t.id} className="flex items-start gap-2">
-                        <Badge className={`text-[9px] mt-0.5 ${t.betType === 'TOTAL' ? 'bg-blue-500/20 text-blue-400' : 'bg-cyan-500/20 text-cyan-400'}`}>
-                          {t.betType}
-                        </Badge>
-                        <div>
-                          <div className="text-white font-medium">{t.name}</div>
-                          <div className="text-slate-500">{t.description}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
               </div>
 
-              {/* Right: Results */}
-              <div className="col-span-8">
+              {/* Right: Results + Documentation */}
+              <div className="col-span-8 space-y-4">
+                {/* Test Result */}
                 <div className="bg-slate-900 border border-slate-800 rounded">
                   <div className="p-3 border-b border-slate-800 flex items-center justify-between">
                     <h3 className="text-sm font-medium">Test Result</h3>
@@ -858,7 +927,7 @@ export default function AIManagerPage() {
                   </div>
                   <div className="p-3">
                     {!testResult ? (
-                      <div className="text-center py-12 text-slate-500">
+                      <div className="text-center py-8 text-slate-500">
                         <Activity className="w-8 h-8 mx-auto mb-2 opacity-50" />
                         <p className="text-sm">Select a game and insight type, then click Run Test</p>
                       </div>
@@ -901,6 +970,57 @@ export default function AIManagerPage() {
                         </div>
                       </div>
                     )}
+                  </div>
+                </div>
+
+                {/* All Insight Types Documentation */}
+                <div className="bg-slate-900 border border-slate-800 rounded">
+                  <div className="p-3 border-b border-slate-800">
+                    <h3 className="text-sm font-medium">All Insight Types</h3>
+                    <p className="text-[10px] text-slate-500 mt-1">Implemented and proposed insights for The Pulse and other archetypes</p>
+                  </div>
+                  <div className="divide-y divide-slate-800 max-h-[500px] overflow-y-auto">
+                    {TEST_INSIGHT_TYPES.map(t => (
+                      <div key={t.id} className="p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge className={`text-[9px] ${t.status === 'testing' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
+                            }`}>
+                            {t.status === 'testing' ? '🧪 TESTING' : '💡 IDEA'}
+                          </Badge>
+                          <span className="font-medium text-white text-sm">{t.name}</span>
+                          <Badge className={`text-[9px] ${t.betType === 'TOTAL' ? 'bg-blue-500/20 text-blue-400' :
+                              t.betType === 'SPREAD' ? 'bg-orange-500/20 text-orange-400' :
+                                'bg-cyan-500/20 text-cyan-400'
+                            }`}>
+                            {t.betType}
+                          </Badge>
+                        </div>
+
+                        <p className="text-xs text-slate-300 mb-2">{t.fullDesc}</p>
+
+                        <div className="grid grid-cols-2 gap-3 text-[10px]">
+                          <div>
+                            <div className="text-slate-500 mb-1">Search Terms:</div>
+                            <div className="flex flex-wrap gap-1">
+                              {t.searchTerms.map((term, i) => (
+                                <span key={i} className="bg-slate-800 px-1.5 py-0.5 rounded text-slate-400">{term}</span>
+                              ))}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-slate-500 mb-1">Output Fields:</div>
+                            <div className="text-slate-400">
+                              {t.outputFields.join(', ')}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-2 bg-slate-800/50 rounded p-2">
+                          <span className="text-[10px] text-green-400 font-medium">How to use for picks: </span>
+                          <span className="text-[10px] text-slate-300">{t.totalsUse}</span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
